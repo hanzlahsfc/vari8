@@ -1,5 +1,5 @@
 {
-  "baseUrl": "https://127.0.0.1:58133",
+  "baseUrl": "https://127.0.0.1:58135",
   "fixedNow": "2026-10-19T09:00:00+02:00",
   "timezone": "Europe/Vienna",
   "screens": [
@@ -9,10 +9,10 @@
       "stem": "s01-roster",
       "route": "/coach",
       "screen": "Clients roster",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients",
       "marker": "Filter athletes",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients",
+        "url": "https://127.0.0.1:58135/coach?section=clients",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nClients\n\nThe people behind the progress.\n\nFilter athletes\nAll athletes\nNeeds attention\nUnread messages\nSort athletes\nName\nAttention\nNext check-in\nAthlete\tCoaching\tAssigned template\tNext check-in\tAttention\t\nOpen profile\n\n\nAL\nAmara Lewis\nLifestyle\n\tStrength\nWeek 7\n\tStrength & balance\n6 tabs\n\t18 Oct\t\nUp to date\n\t\n\n\nCP\nChloe Park\nLifestyle\n\tFat loss\nWeek 6\n\tPerformance foundation\n6 tabs\n\t17 Oct\t\nOverdue task\n\t\n\n\nEA\nEmma Anders\nLifestyle\n\tFat loss\nWeek 8\n\tStrength & balance\n6 tabs\n\t15 Oct\t\nAwaiting feedback\n1 unread\nOverdue task\n\t\n\n\nEC\nEthan Cole\nLifestyle\n\tFat loss\nWeek 3\n\tPerformance foundation\n6 tabs\n\t14 Oct\t\nOverdue task\n\t\n\n\nEF\nEva Fischer\nLifestyle\n\tMaintenance\nWeek 9\n\tNot assigned\tNo scheduled dates\t\nUp to date\n\t\n\n\nFW\nFinn Walsh\nLifestyle\n\tStrength\nWeek 8\n\tPerformance foundation\n6 tabs\n\t16 Oct\t\nUp to date\n\t\n\n\nIM\nIsla Morgan\nLifestyle\n\tMaintenance\nWeek 11\n\tPerformance foundation\n6 tabs\n\t13 Oct\t\nUp to date\n\t\n\n\nJK\nJack Kim\nPrep\n\tPrep\nWeek 5\n\tStrength & balance\n6 tabs\n\t19 Oct\t\nUp to date\n\t\n\n\nJR\nJames Reed\nPrep\n\tPrep\nWeek 12\n\tStrength & balance\n6 tabs\n\t13 Oct\t\n1 unread\nOverdue task\n\t\n\n\nLC\nLily Chen\nLifestyle\n\tMaintenance\nWeek 6\n\tStrength & balance\n6 tabs\n\t14 Oct\t\nAwaiting feedback\n1 unread\n\t\n\n\nMP\nMaya Patel\nLifestyle\n\tFat loss\nWeek 4\n\tStrength & balance\n6 tabs\n\t14 Oct\t\n1 unread\n\t\n\n\nNW\nNoah Williams\nPrep\n\tPrep\nWeek 9\n\tStrength & balance\n6 tabs\n\t17 Oct\t\nUp to date\n\t\n\n\nOS\nOliver Stone\nLifestyle\n\tStrength\nWeek 10\n\tStrength & balance\n6 tabs\n\t15 Oct\t\n1 unread\nOverdue task\n\t\n\n\nTG\nTheo Grant\nPrep\n\tPrep\nWeek 2\n\tNot assigned\t18 Oct\t\nOverdue task\n\t\n\n\nZA\nZara Ahmed\nPrep\n\tPrep\nWeek 14\n\tPerformance foundation\n6 tabs\n\t15 Oct\t\nUp to date\n\t",
         "state": [
           "Clients",
@@ -3909,10 +3909,10 @@
       "stem": "s01-profile-overview",
       "route": "/coach",
       "screen": "Client profile, Overview tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013",
       "marker": "Chloe Park",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n59.4 kg\nAssigned template\nPerformance foundation\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In · Nutrition: Meal plan · Habits: enabled\nPreview assigned tool\nChange assignment\nEdit plans\nPlans & targets\n2 configured modules\nNutrition\nNot started\nTraining\nNot started\nGoals\nNo goals saved\nConfigured fields only\nHabits\n1 client habits\nEnabled\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n\nNo additional dates.\n\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.",
         "state": [
           "Clients",
@@ -5691,10 +5691,10 @@
       "stem": "s01-profile-plans",
       "route": "/coach",
       "screen": "Client profile, Plans tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Plans",
       "marker": "Plans & targets",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Plans",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nPlans & targets\n\nConfigured from Performance foundation.\n\nNutrition\nNot started\nCreate\nTraining\nNot started\nCreate\nGoals\n\nNo goals saved\n\nNumeric fields enabled by setup\nSet goals\nHabits\n\n1 configured\n\nOptional client habits\nEdit habits",
         "state": [
           "Clients",
@@ -7152,10 +7152,10 @@
       "stem": "s01-profile-checkins",
       "route": "/coach",
       "screen": "Client profile, Check-ins tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Check-ins",
       "marker": "Check-in calendar",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Check-ins",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nSubmission history\n◇\nNo submissions yet\n\nScheduled dates will appear in the shared calendar.\n\nOpen calendar",
         "state": [
           "Clients",
@@ -8360,10 +8360,10 @@
       "stem": "s01-profile-notes",
       "route": "/coach",
       "screen": "Client profile, Notes & tasks tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
       "marker": "Notes & tasks",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nPrivate coach notes\n\nVisible only in your workspace.\n\nCheck-in mentions stiffness after longer walks; clarify whether it persists during training.\n\nGeneral coaching notes\n\nMonday check-in; enjoys walking as primary cardio.\n\nYour to-dos\nReply to check-in and review knee note\nAdd to\nPrivate coach note\nCoach to-do\nClient-assigned task\nPrivate coach note\nAdd\nClient-assigned tasks\n\n0 completed · 1 overdue\n\nSend Sunday step count\n4 Oct · overdue",
         "state": [
           "Clients",
@@ -9751,10 +9751,10 @@
       "stem": "s01-profile-onboarding",
       "route": "/coach",
       "screen": "Client profile, Onboarding tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Onboarding",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Onboarding",
       "marker": "Onboarding",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Onboarding",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Onboarding",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nSubmitted onboarding\n\nOriginal answers retained with Chloe’s profile.\n\nWhat is your current goal?\n\nLose weight while keeping walking comfortable.\n\nAny symptoms we should monitor?\n\nOccasional knee stiffness after longer walks.",
         "state": [
           "Clients",
@@ -10934,10 +10934,10 @@
       "stem": "s02-messages",
       "route": "/coach",
       "screen": "Messages section, conversations",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages",
       "marker": "Conversations",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages",
+        "url": "https://127.0.0.1:58135/coach?section=messages",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nMessages\nLocal demo\nMessages\nConversations\n5 unread\nAll\nUnread\nFlagged\nEA\nEmma Anders\n11:40\nJust sent my check-in! I added a note about the split squats. Everything else felt really good this week.\n1\nJR\nJames Reed\n11:37\nWork has been running late. I’ll send my update this evening.\n1\nLC\nLily Chen\n11:34\nThe new routine is feeling good. Thanks for the guidance!\n1\nOS\nOliver Stone\n10:31\nThe new routine is feeling good. Thanks for the guidance!\n1\nMP\nMaya Patel\n10:28\nA quick question before tomorrow’s session — could we check the rest times?\n1\nNW\nNoah Williams\n10:25\nThe new routine is feeling good. Thanks for the guidance!\nAL\nAmara Lewis\n09:22\nThe new routine is feeling good. Thanks for the guidance!\nJK\nJack Kim\n09:19\nThe new routine is feeling good. Thanks for the guidance!\nIM\nIsla Morgan\n09:16\nThe new routine is feeling good. Thanks for the guidance!\nEC\nEthan Cole\n08:13\nThe new routine is feeling good. Thanks for the guidance!\nZA\nZara Ahmed\nStart a conversation\nFW\nFinn Walsh\nStart a conversation\nCP\nChloe Park\nStart a conversation\nTG\nTheo Grant\nStart a conversation\nEF\nEva Fischer\nStart a conversation",
         "state": [
           "Messages",
@@ -13044,10 +13044,10 @@
       "stem": "s02-thread",
       "route": "/coach",
       "screen": "Message thread open",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
       "marker": "Your coaching conversation",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nMessages\nLocal demo\nMessages\nCP\nChloe Park\nLifestyle · Fat loss\nYour coaching conversation\n◇\nSay hello to Chloe\n\nTheir coaching conversation starts here.",
         "state": [
           "Messages",
@@ -14668,10 +14668,10 @@
       "stem": "s02-thread-attachments",
       "route": "/coach",
       "screen": "Thread attachment and context-link picker",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
       "marker": "Choose photo, video or file",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nMessages\nLocal demo\nMessages\nCP\nChloe Park\nLifestyle · Fat loss\nYour coaching conversation\n◇\nSay hello to Chloe\n\nTheir coaching conversation starts here.\n\nChoose photo, video or fileLink nutrition plan\nLink training program",
         "state": [
           "Messages",
@@ -16381,10 +16381,10 @@
       "stem": "s02-notes-todos",
       "route": "/coach",
       "screen": "Notes & to-dos section",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=notes",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=notes",
       "marker": "Notes & to-dos",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=notes",
+        "url": "https://127.0.0.1:58135/coach?section=notes",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nNotes & to-dos\nLocal demo\nNotes & to-dos\n\nYour private notes and follow-ups, across the workspace.\n\nAdd note\nAdd to-do\nShow notes and to-dos for\nEveryone & workspace\nWorkspace only\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nTo-dos\n8 open\nOpen\nCompleted\nAll\nPrepare feedback video\nEmma Anders\nReview missed check-in and adjust prep plan\nJames Reed\nCheck deadlift setup video\nOliver Stone\nSend travel meal framework\nMaya Patel\nReview check-in photos\nJack Kim\nOffer a shorter check-in format\nEthan Cole\nReply to check-in and review knee note\nChloe Park\nReach out about onboarding support\nTheo Grant\nPrivate notes\n16\n\nReview split-squat setup before increasing load.\n\nEmma Anders\n\nCheck whether late shifts are affecting meal timing.\n\nJames Reed\n\nMaintenance phase is going smoothly; keep changes small.\n\nLily Chen\n\nRight shoulder elevation appears when fatigue sets in.\n\nOliver Stone\n\nUpcoming work trip; focus on flexible choices over exact tracking.\n\nMaya Patel\n\nThree unread messages likely relate to show-week schedule; check before routine review.\n\nNoah Williams\n\nBuild lower body strength with a gradual return to heavier hinges.\n\nAmara Lewis\n\nCheck-in is awaiting coach response; compare photos under similar lighting.\n\nJack Kim\n\nWeight is stable; client is ready to practice flexible portions when eating out.\n\nIsla Morgan\n\nHas not checked in since September 21; lead with a low-pressure message and ask about schedule.\n\nEthan Cole\n\nAvoid increasing training volume until routine is re-established.\n\nEthan Cole\n\nPrep is steady; small scale fluctuation likely reflects travel and sodium.\n\nZara Ahmed\n\nStrength block is progressing without missed sessions.\n\nFinn Walsh\n\nCheck-in mentions stiffness after longer walks; clarify whether it persists during training.\n\nChloe Park\n\nNew client; check that the first two weeks feel manageable before adding targets.\n\nTheo Grant\n\nMaintenance is stable; review how breakfast change affects afternoon hunger.\n\nEva Fischer",
         "state": [
           "Notes & to-dos",
@@ -19869,10 +19869,10 @@
       "stem": "s03-checkins-board",
       "route": "/coach",
       "screen": "Check-ins board, week view",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins",
       "marker": "Awaiting feedback",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nCheck-ins\nLocal demo\nCheck-ins\n\nA little context. A better conversation.\n\nAdd extra date\n12 Oct – 18 Oct 2026\nToday\nWeek\nMonth\nAgenda\nAthlete\nAll athletes\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nStatus\nAll statuses\nScheduled\nOverdue\nAwaiting feedback\nFeedback sent\n2 awaiting feedback\nMon\n12\nEA\nEmma Anders\nRecurring · Full\nAwaiting feedback\nLC\nLily Chen\nAdditional · Custom\nAwaiting feedback\nJK\nJack Kim\nRecurring · Full\nOverdue\nTue\n13\nToday\nJR\nJames Reed\nRecurring · Full\nScheduled\nIM\nIsla Morgan\nRecurring · Full\nScheduled\nWed\n14\nLC\nLily Chen\nRecurring · Full\nScheduled\nMP\nMaya Patel\nAdditional · Custom\nScheduled\nEC\nEthan Cole\nRecurring · Full\nScheduled\nThu\n15\nEA\nEmma Anders\nAdditional · Custom\nScheduled\nOS\nOliver Stone\nRecurring · Full\nScheduled\nZA\nZara Ahmed\nRecurring · Full\nScheduled\nFri\n16\nMP\nMaya Patel\nRecurring · Full\nScheduled\nFW\nFinn Walsh\nRecurring · Full\nScheduled\nSat\n17\nNW\nNoah Williams\nRecurring · Full\nScheduled\nCP\nChloe Park\nRecurring · Full\nScheduled\nSun\n18\nAL\nAmara Lewis\nRecurring · Full\nScheduled\nTG\nTheo Grant\nRecurring · Full\nScheduled",
         "state": [
           "Check-ins",
@@ -22538,10 +22538,10 @@
       "stem": "s03-add-extra",
       "route": "/coach",
       "screen": "Add extra check-in date dialog",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins",
       "marker": "Add an extra check-in date",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nCheck-ins\nLocal demo\nCheck-ins\n\nA little context. A better conversation.\n\nAdd extra date\n12 Oct – 18 Oct 2026\nToday\nWeek\nMonth\nAgenda\nAthlete\nAll athletes\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nStatus\nAll statuses\nScheduled\nOverdue\nAwaiting feedback\nFeedback sent\n2 awaiting feedback\nMon\n12\nEA\nEmma Anders\nRecurring · Full\nAwaiting feedback\nLC\nLily Chen\nAdditional · Custom\nAwaiting feedback\nJK\nJack Kim\nRecurring · Full\nOverdue\nTue\n13\nToday\nJR\nJames Reed\nRecurring · Full\nScheduled\nIM\nIsla Morgan\nRecurring · Full\nScheduled\nWed\n14\nLC\nLily Chen\nRecurring · Full\nScheduled\nMP\nMaya Patel\nAdditional · Custom\nScheduled\nEC\nEthan Cole\nRecurring · Full\nScheduled\nThu\n15\nEA\nEmma Anders\nAdditional · Custom\nScheduled\nOS\nOliver Stone\nRecurring · Full\nScheduled\nZA\nZara Ahmed\nRecurring · Full\nScheduled\nFri\n16\nMP\nMaya Patel\nRecurring · Full\nScheduled\nFW\nFinn Walsh\nRecurring · Full\nScheduled\nSat\n17\nNW\nNoah Williams\nRecurring · Full\nScheduled\nCP\nChloe Park\nRecurring · Full\nScheduled\nSun\n18\nAL\nAmara Lewis\nRecurring · Full\nScheduled\nTG\nTheo Grant\nRecurring · Full\nScheduled\nAdd an extra check-in date\nAthlete\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nDate · Europe/Vienna\nRequested update\nCustom\nFull\nNote to athlete\nCancel\nSave date",
         "state": [
           "Check-ins",
@@ -25469,10 +25469,10 @@
       "stem": "s03-checkin-review",
       "route": "/coach",
       "screen": "Check-in review workspace",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins&client=client-001&review=submission-emma",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins&client=client-001&review=submission-emma",
       "marker": "Tracker & progress",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins&client=client-001&review=submission-emma",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins&client=client-001&review=submission-emma",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nCheck-ins\nLocal demo\nBack\nEmma’s check-in\n\nFull update · Monday, 12 Oct 2026\n\nAwaiting feedback\nConversation\nEA\nIn Emma’s words\nFull questionnaire\nHow did you feel this week?\n\nEnergy was good and the morning routine really helped. A busy Friday, but meal prep kept me on track.\n\nHow was your training?\n\n8 / 10 — feeling stronger\n\nAnything you would like me to know?\n\nMy left knee felt unsettled on the last split-squat set. Could we look at the setup?\n\nAthlete note\n\nKept all three sessions this week.\n\nSubmitted visuals\nFront · 12 October\nIllustrative demo visual\nSide · 12 October\nIllustrative demo visual\nTracker & progress\nOpen profile\nBodyweight\n71.9 kg\nEnergy intake\n2180 kcal\nSleep duration\n7.6 hours\nHabit consistency\n5 / 7 days\nDate\tBodyweight\tSleep\tActivity\n6 Oct\t72.4 kg\t7.2 h\t7,800 steps\n7 Oct\t72.3 kg\t7.3 h\t8,010 steps\n8 Oct\t72.2 kg\t7.4 h\t8,220 steps\n9 Oct\t72.1 kg\t7.5 h\t8,430 steps\n10 Oct\t72.1 kg\t7.6 h\t8,640 steps\n11 Oct\t72 kg\t7.7 h\t8,850 steps\n12 Oct\t71.9 kg\t7.8 h\t9,060 steps\nFlagged training notes\nBulgarian split squat · Set 3\n11 Oct · Athlete training note\n\nLeft knee feels unsettled near the bottom. Is my stance too short?\n\nOpen training setup\nRespond with context\nFeedback to athlete\n\nDraft kept automatically. Opening a review does not mark it answered.\n\nVideo feedback\nRecord video feedback\nAdjust this athlete’s plan\nNutrition\nTraining\nSubmit feedback",
         "state": [
           "Check-ins"
@@ -27663,10 +27663,10 @@
       "stem": "s04-habit-editor",
       "route": "/coach",
       "screen": "Coach habit editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-010&plan=habits&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-010&plan=habits&tab=Plans",
       "marker": "Client habit definitions",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-010&plan=habits&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-010&plan=habits&tab=Plans",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nEthan Cole · Habits\nHabits\n\nClient habit definitions and completion history remain with this profile.\n\nEvening walk\nDaily · 20 minutes · Create a calm transition into the evening.\n5 completions\nEdit\nAdd habit\nName\nFrequency\nGoal\nReason (optional)\nAdd habit",
         "state": [
           "Clients"
@@ -28724,10 +28724,10 @@
       "stem": "s04-template-habits",
       "route": "/coach",
       "screen": "Template Habits tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Include Habit Tracker",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\nTabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining\nCheck-In\nHabits\nRestore saved\nCancel template\nHabits\nInclude Habit Tracker\nSeparate logging preview\nEvening walk\nDaily · 20 minutes · 5 / 7 completed\n\nCreate a calm transition into the evening.\n\nDefine each athlete’s actual habits, frequency, goals and reasons in client setup.\n\nInclude habit status in check-ins",
         "state": [
           "Templates",
@@ -30086,10 +30086,10 @@
       "stem": "s05-templates",
       "route": "/coach",
       "screen": "Template library",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "A thoughtful starting point for every athlete",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit",
         "state": [
           "Templates"
@@ -31864,10 +31864,10 @@
       "stem": "s05-template-editor",
       "route": "/coach",
       "screen": "Template setup editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Tabs",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\nTabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining\nCheck-In\nHabits\nRestore saved\nCancel template\nTabs\nDescription\nClient tabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits",
         "state": [
           "Templates",
@@ -33268,10 +33268,10 @@
       "stem": "s05-tracker-setup",
       "route": "/coach",
       "screen": "Template tracker setup (parameter library)",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Daily log",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\nTabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining\nCheck-In\nHabits\nRestore saved\nCancel template\nTracker\n\nSet the daily log in the order athletes will use it. Their history stays available when a field is removed.\n\n01 / TRACKER CONTENT\nDaily fields\n7 active\n01\nBodyweight\nWeight basics\nSettings\n02\nWeigh-in time\nWeight basics\nSettings\n03\nSleep duration\nSleep\nSettings\n04\nEnergy outside gym\nEnergy and readiness\nSettings\n05\nStep count\nMovement and cardio\nSettings\n06\nEnergy intake\nNutrition\nSettings\n07\nProtein intake\nNutrition\nSettings\nAdd parameter\nBrowse the health input library\n02 / AT A GLANCE\nDaily overview\n3 / 4\n\nChoose up to four numeric or rating fields to pin above the daily log.\n\n01\nBodyweight\n02\nEnergy intake\n03\nSleep duration\nAdd overview metric\nChoose a numeric or rating field…\nEnergy outside gym\nStep count\nProtein intake",
         "state": [
           "Templates",
@@ -36056,10 +36056,10 @@
       "stem": "s05-client-setup",
       "route": "/coach",
       "screen": "Client setup, assign template",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-015",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-015",
       "marker": "Assign a setup to Eva Fischer",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-015",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-015",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nEva Fischer\n\nLifestyle · Maintenance · Week 9\n\nCheck-in calendar\nOpen chat\nEF\neva.fischer@example.com\nCoaching since 3 Aug 2026 · 166 cm\nNext check-in\nNot scheduled\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n63.5 kg\nAssigned template\nNot assigned\nPreview assigned tool\nAssign template\nPlans & targets\nNo plan configured\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n\nNo additional dates.\n\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.\nAssign a setup to Eva Fischer\n\nChoose a saved setup. The client’s plans and history stay with their profile.\n\nTemplate\nStrength & balance\nPerformance foundation\nEveryday essentials\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nIncluded views\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In\nNutrition\nMeal plan\nTraining\nTraining program included\nHabits\nEnabled\nCancel\nAssign & personalize",
         "state": [
           "Clients",
@@ -37923,10 +37923,10 @@
       "stem": "s06-mealplan-editor",
       "route": "/coach",
       "screen": "Meal plan editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
       "marker": "Meal plan",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack to Chloe Park\nChloe Park · Fat loss\nNot started\nMeal plan\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nPlan overview\n2 options\nTraining Day\n0 meals\n0 kcal\nProtein\n0 g\nCarbs\n0 g\nFat\n0 g\nP 0%\nC 0%\nF 0%\nRest Day\n0 meals\n0 kcal\nProtein\n0 g\nCarbs\n0 g\nFat\n0 g\nP 0%\nC 0%\nF 0%\nVariant schedule\nPattern\nEvery day\nWeekly\nTraining day\nTraining Day\nRest Day\nRest day\nTraining Day\nRest Day\nWeekly assignments\nMon\nRest Day\nTue\nRest Day\nWed\nRest Day\nThu\nRest Day\nFri\nRest Day\nSat\nRest Day\nSun\nRest Day\nAdvanced\n\nTap a weekday to switch between its training and rest plan.\n\nTraining Day\nRest Day\nAdd option\nOption label\nDuplicate option\nDelete option\nSaved meals\n0\nAdd meal\nSave draft\nReview & activate",
         "state": [
           "Clients",
@@ -40476,10 +40476,10 @@
       "stem": "s06-template-nutrition",
       "route": "/coach",
       "screen": "Template Nutrition tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Nutrition",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\nTabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining\nCheck-In\nHabits\nRestore saved\nCancel template\nNutrition\n\nChoose the nutrition experience. Meal count, labels, times, foods, swaps, targets and training/rest-day schedules are personalized in each athlete’s client setup.\n\nMeal plan\nIIFYM · macro targets\nClient setup owns the prescription. This template controls its presentation.",
         "state": [
           "Templates",
@@ -41738,10 +41738,10 @@
       "stem": "s07-training-editor",
       "route": "/coach",
       "screen": "Training program editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
       "marker": "Training program",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n4\nNotes & to-dos\nClients\nLocal demo\nBack to Emma Anders\nEmma Anders · Fat loss\nNot started\nTraining program\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nProgram structure\nEvergreen\nWeek-based\n\nOngoing plan · changes apply across the program\n\nDropdown choices and starting values follow the template. Existing prescriptions stay unchanged.\n\nExercise library\n10 exercises · plan prescriptions keep their own snapshot\nManage library\nOngoing sessions\n\nEdit the ongoing prescription. Saved drafts stay separate from active content.\n\nAdd session\n\nThis week has no sessions yet.\n\nCreate first session\nPreview prescription & muscle volume\n\nVolume is calculated from the prescribed sets in this week. Unallocated exercises remain unassigned.\n\nSave draft\nReview & activate",
         "state": [
           "Clients"
@@ -43177,10 +43177,10 @@
       "stem": "s07-exercise-library",
       "route": "/coach",
       "screen": "Exercise library manager",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
       "marker": "Add an exercise",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n4\nNotes & to-dos\nClients\nLocal demo\nBack to Emma Anders\nEmma Anders · Fat loss\nNot started\nTraining program\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nProgram structure\nEvergreen\nWeek-based\n\nOngoing plan · changes apply across the program\n\nDropdown choices and starting values follow the template. Existing prescriptions stay unchanged.\n\nExercise library\n10 exercises · plan prescriptions keep their own snapshot\nDone\nAdd an exercise\nExercise name\nPrimary muscle\nChoose group\nChest\nBack\nShoulders\nBiceps\nTriceps\nCore\nGlutes\nQuadriceps\nHamstrings\nCalves\nSecondary groups\nChest\nBack\nShoulders\nBiceps\nTriceps\nCore\nGlutes\nQuadriceps\nHamstrings\nCalves\nGeneral coaching notes\nAdd to library\nBack squat\nQuadriceps · Brace before each rep; keep the whole foot grounded.\nEdit\nBench press\nChest · Set the shoulder blades before unracking.\nEdit\nDeadlift\nHamstrings · Build tension against the bar before lifting.\nEdit\nChest-supported row\nBack · Pause briefly with the shoulder blades drawn back.\nEdit\nLat pulldown\nBack · Lead with the elbows and keep the torso steady.\nEdit\nDumbbell shoulder press\nShoulders · Use a comfortable range without arching the lower back.\nEdit\nHip thrust\nGlutes · Finish with the hips, keeping the ribs stacked over the pelvis.\nEdit\nLeg extension\nQuadriceps · Control the lowering phase; avoid bouncing at the bottom.\nEdit\nStanding calf raise\nCalves · Use a full stretch and controlled pause at the top.\nEdit\nForearm plank\nCore · Maintain a straight line from head to heels; stop before form changes.\nEdit\nOngoing sessions\n\nEdit the ongoing prescription. Saved drafts stay separate from active content.\n\nAdd session\n\nThis week has no sessions yet.\n\nCreate first session\nPreview prescription & muscle volume\n\nVolume is calculated from the prescribed sets in this week. Unallocated exercises remain unassigned.\n\nSave draft\nReview & activate",
         "state": [
           "Clients"
@@ -45862,10 +45862,10 @@
       "stem": "s08-builder",
       "route": "/ethereal",
       "screen": "Dashboard builder (Ethereal studio)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#dashboard",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#dashboard",
       "marker": "A canvas for your coaching",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#dashboard",
+        "url": "https://127.0.0.1:58135/ethereal#dashboard",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nDashboard name\n\nMaya Chen · Fictional client · 6 October 2026\n\nSaved locally\nAdd widget\nClient preview\nEdit canvas · 2 columns · 358 px\n0 widgets\nA canvas for your coaching.\n\nChoose the signals, plans and actions Maya needs.\nYour widgets will find their place.\n\nChoose your first widgets\nLoad example layout\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Dashboard",
@@ -48281,10 +48281,10 @@
       "stem": "s08-widget-gallery",
       "route": "/ethereal",
       "screen": "Widget gallery",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#dashboard",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#dashboard",
       "marker": "Choose widgets to add",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#dashboard",
+        "url": "https://127.0.0.1:58135/ethereal#dashboard",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nDashboard name\n\nMaya Chen · Fictional client · 6 October 2026\n\nSaved locally\nAdd widget\nClient preview\nEdit canvas · 2 columns · 358 px\n0 widgets\nA canvas for your coaching.\n\nChoose the signals, plans and actions Maya needs.\nYour widgets will find their place.\n\nChoose your first widgets\nLoad example layout\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.\n\nAdd widgets\n\nChoose widgets to add. Each starts with its desktop default layout and settings.\n\nCategory\nAll categories\nCoaching\nRoadmap\nNutrition\nTraining\nData/Progress\nActivity\nRecovery\nHabits\nShortcuts\n20 widgets\nCoaching\nThis week’s focus\nStrength foundation\nWeek 6 focus\nOct 5–Oct 11\n\nKeep lower-body training steady while making each rep controlled.\n\nWeekly focus\nKeep the current phase and weekly focus visible.\nCoaching · Compact\nThis week at a glance\nWeek 6\nOct 5–Oct 11\nBodyweight average\n67.8 kg\n+2 more selected\nThis week at a glance\nReview your coaching week and selected indicators.\nCoaching · Compact\nYour tasks\n2 open\nDue in 30d · 1 completed in this window\nAdd front and side progress photos\nOct 7 · Due\nNote meals that felt low energy\nOct 9 · Due\nClient tasks\nKeep assigned tasks and due dates visible.\nCoaching · Regular\nCheck-in\nFRI\n09\nNext check-in\nOct 9\nIn 3 days · Draft saved\nLatest submission\nOct 5 · Submitted\nCheck-in status\nSee the next check-in and latest response.\nCoaching · Compact\nCoach feedback\nSent Oct 4 · Past 30d\nUnread · Video\n\nGreat consistency this week. Keep the deadlift effort steady; I’ve adjusted the next block and added a recovery note.\n\nWeek 6 training update\nCoach feedback\nReview recent coach feedback and links.\nCoaching · Wide\nRoadmap\nSelected roadmap metrics\nBodyweight average\n67.8 kg\nWeek 6 · Oct 5–Oct 11 · 8w\nBodyweight average trend\n8 weeks\nWeek\nMonth\n6 months\nYear\nSep 28\nOct 5\n+2 selected metrics · open for all\nSelected roadmap metrics\nCompare separately labelled weekly trends.\nRoadmap · Regular\nCurrent phase progress\nStrength foundation\nWeek 6 of 9\nCurrent phase progress\nSee the current phase and coaching week.\nRoadmap · Compact\nNutrition\nNutrition today\nTraining day · Tue, Oct 6 · Target Oct 1\nProtein\n88 g\nFixed 130 g\nCarbs\n142 g\n190–230 g\nFat\n60 g\nAt least 55 g\nMacro target summary\nCompare nutrition intake with targets.\nNutrition · Wide\nNutrition intake trend\nCalories history\nRange\nWeek\nMonth\n6 months\nYear\nSep 7\nOct 6\nLogged\nTarget / range\n\nOct 6: 1,460 kcal · target Range 2,050–2,200 kcal\n\nNutrition intake trend\nCompare consumed nutrition with dated targets.\nNutrition · Wide\nTraining\nYour training\nCurrent session\nTue, Oct 6 · Week 6\nLower strength\nDeadlift\n4 sets · 4–5 reps\nSplit squat\n3 sets · 8 / side reps\nCurrent / next workout\nSee the current and next workouts.\nTraining · Regular\nDeadlift progress\n62.5 kg\nDeadlift · Oct 6 · recorded load\nSession entries · 8w\n4 sets · 4 reps\nSession trend\n8 weeks\nWeek\nMonth\n6 months\nYear\nSep 8\nOct 6\nExercise performance trend\nTrack performance for a chosen exercise.\nTraining · Wide\nData/Progress\nBody measurements\n75.8 cm\nLatest · Oct 6\nWaist · Past 30d\nCustom metric card\nTrack weight, waist, or steps.\nData/Progress · Compact\nBodyweight trend\n67.8kg\nLatest · Oct 6\n67.8kg\nPast 7 days average\n↓ −0.1 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\nSep 7\nOct 6\nBodyweight trend\nFollow bodyweight readings over time.\nData/Progress · Wide\nWeekly bodyweight change\n67.9 kg\nLatest week · Sep 28\n8w\nWeek over week · −0.1 kg\nWeekly average\n8 weeks\nWeek\nMonth\n6 months\nYear\nAug 10\nSep 28\nWeekly bodyweight change\nCompare observed weekly bodyweight averages.\nData/Progress · Regular\nActivity\nDaily steps\n6,659 steps\nDaily average\nDaily steps: Sep 30, 2026 · 8,240 steps; Oct 1, 2026 · Not logged; Oct 2, 2026 · 10,418 steps; Oct 3, 2026 · 0 steps; Oct 4, 2026 · 7,312 steps; Oct 5, 2026 · 9,126 steps; Oct 6, 2026 · 4,860 steps\nStep count\nReview daily steps and weekly averages.\nActivity · Compact\nRecovery\nSleep duration\n7.3 h\nAverage per logged night\nPast 7d\nSleep duration: Sep 30, 2026 · 7.2 h; Oct 1, 2026 · 6.8 h; Oct 2, 2026 · 7.6 h; Oct 3, 2026 · 7.1 h; Oct 4, 2026 · Not logged; Oct 5, 2026 · 7.4 h; Oct 6, 2026 · 7.8 h\nSep 30\nOct 6\nSleep duration\nReview recorded sleep duration.\nRecovery · Regular\nRecovery\nEnergy outside training\nHigh · Oct 6\nLow / Steady / High\nStress\nLow · Oct 6\nLow / Moderate / High\nPerceived readiness\nReady · Oct 6\nLow / Okay / Ready\nRecovery ratings\nReview recent recovery ratings.\nRecovery · Regular\nHabits\nToday’s habits\nScheduled today\nTue, Oct 6\n1/5\ndone\nOutdoor walk\n20 minutes\nDone\nWater before coffee\n1 glass\nNot logged\nEvening mobility\n8 minutes\nNot logged\nInclude protein at breakfast\n1 serving\nSkipped\n+1 more scheduled\nToday’s habits\nCheck off habits or view consistency.\nHabits · Tall\nHabit consistency\n9/17 done\n\n2 skipped · 6 not logged\n\n3 selected habits · Sep 30–Oct 6\nHabit consistency\nSee completions against scheduled habits.\nHabits · Compact\nShortcuts\nQuick links\nTracker\nLatest reading · Oct 6\nMealplan\nActive plan · TD\nTraining\nNext workout · Oct 6\nCheck-in\nNext check-in · Oct 9\nQuick links launcher\nOpen frequently used coaching sections.\nShortcuts · Regular\n0\nwidgets selected\nCancel\nAdd widgets\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Dashboard",
@@ -56799,10 +56799,10 @@
       "stem": "s08-template-dashboard",
       "route": "/coach",
       "screen": "Template dashboard editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Dashboard",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\nTabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining\nCheck-In\nHabits\nRestore saved\nCancel template\nDashboard\nDashboard name\n\nEmma Anders · Sample athlete · 2026-10-13\n\nTemplate draft\nAdd widget\nClient preview\nEdit canvas · 2 columns · 312 px\n4 widgets\nBodyweight trend\n71.9\nkg\nLatest · Oct 12\n72.1\nkg\nPast 7 days average\n↓ −0.3 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\n72.7\n72.2\n71.6\nOct 6\nOct 12\nNutrition today\nTraining day · Tue, Oct 13\nProtein\nNot logged\nNo target\nCarbs\nNot logged\nNo target\nFat\nNot logged\nNo target\nYour training\nNo workout scheduled.\nOpen training\nSleep duration\n7.6\nh\nAverage per logged night\nPast 7d\n7.8\n3.9\n0\nSleep duration: Oct 7, 2026 · 7.3 h; Oct 8, 2026 · 7.4 h; Oct 9, 2026 · 7.5 h; Oct 10, 2026 · 7.6 h; Oct 11, 2026 · 7.7 h; Oct 12, 2026 · 7.8 h\nOct 7\nOct 12\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.",
         "state": [
           "Templates",
@@ -59975,10 +59975,10 @@
       "stem": "s09-tracker-today",
       "route": "/coach",
       "screen": "Client tracker, Today view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Today",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\nMon\n12\nTue\n13\nWed\n14\nThu\n15\nFri\n16\nSat\n17\nSun\n18\nPreview session\nTuesday 13 October\n7 of 7 recorded\nBodyweight\n64.3 kg\nEnergy intake\n2,093 kcal\nSleep duration\n7.8 hours\nCategory\nAll fields (7/7)\nWeight basics (2/2)\nSleep (1/1)\nEnergy and readiness (1/1)\nMovement and cardio (1/1)\nNutrition (2/2)\nWeight basics\n2 of 2 entered\nBodyweight\n64.3\nkg\nWeigh-in time\n07:12\nSleep\n1 of 1 entered\nSleep duration\n7.8\nhours\nEnergy and readiness\n1 of 1 entered\nEnergy outside gym\n8\n/ 10\nMovement and cardio\n1 of 1 entered\nStep count\n7166\nsteps\nNutrition\n2 of 2 entered\nEnergy intake\n2093\nkcal\nProtein intake\n140\ng",
         "state": [
           "Templates",
@@ -64711,10 +64711,10 @@
       "stem": "s09-tracker-week",
       "route": "/coach",
       "screen": "Client tracker, Week view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Week",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\nPreview session\nWeekly comparison\n\n7 metrics · 2 days recorded\n\nScroll to compare · select a value to open its day\nDaily readings and configured summaries for the selected week.\nWeight basics\nBodyweight\nkg\n64\n64.3\n—\n—\n—\n—\n—\n64.2\nAverage\nWeigh-in time\n07:18\n07:12\n—\n—\n—\n—\n—\n—\nNotes\nSleep\nSleep duration\nhours\n7.9\n7.8\n—\n—\n—\n—\n—\n7.9\nAverage\nEnergy and readiness\nEnergy outside gym\n1–10\n9\n8\n—\n—\n—\n—\n—\n8.5\nAverage\nMovement and cardio\nStep count\nsteps\n9,104\n7,166\n—\n—\n—\n—\n—\n8,135\nAverage\nNutrition\nEnergy intake\nkcal\n2,245\n2,093\n—\n—\n—\n—\n—\n2,169\nAverage\nProtein intake\ng\n144\n140\n—\n—\n—\n—\n—\n142\nAverage",
         "state": [
           "Templates",
@@ -69700,10 +69700,10 @@
       "stem": "s09-tracker-trends",
       "route": "/coach",
       "screen": "Client tracker, Trends view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Trends",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\nPreview session\nMetrics\n1/3\nRange\n7 days\n30 days\n8 weeks\n3 months\n6 months\nBodyweight\n14 Sept – 13 Oct 2026\nBodyweight\nkg\n\n30 of 30 days recorded\n\n64.5\n64\n63.5\n14 Sept\n28 Sept\n13 Oct\nTue 13 Oct\n64.3 kg\nLatest 64.3 kg · 13 Oct\nAverage 64.1 kg\nChange +0.4 kg\nOpen selected day",
         "state": [
           "Templates",
@@ -74183,10 +74183,10 @@
       "stem": "s09-tracker-config",
       "route": "/ethereal",
       "screen": "Tracker configurator (Ethereal studio)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#tracker",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#tracker",
       "marker": "Client tracker",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#tracker",
+        "url": "https://127.0.0.1:58135/ethereal#tracker",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\n\nCLIENT TRACKER\n\nChoose what to track\n\nSelect the measures that fit your coaching approach. You can change these any time.\n\n6 selected\nAdd tracker measures\nAdd measures\n\nSearch by measure, category or unit.\n\nSearch measures\nBody measurements\n\nWeight and optional measurements over time.\n\n1/2\nBodyweight\nkg\nWeekly average\nWaist circumference\ncm\nLatest\nNutrition\n\nDaily energy, protein and fluid intake.\n\n2/3\nEnergy intake\nkcal\nWeekly average\nProtein intake\ng\nWeekly average\nWater intake\nL\nWeekly average\nRecovery\n\nSleep duration, sleep quality and stress ratings.\n\n2/3\nSleep duration\nh\nWeekly average\nSleep quality\n1–10 scale\nDistribution\nStress\n1–10 scale\nDistribution\nMovement\n\nEveryday steps and active minutes.\n\n1/2\nStep count\nsteps\nWeekly average\nActive minutes\nmin\nWeekly total\nSelected measures\n\nActive in this client tracker.\n\n6\nBodyweight\nkg\n×\nEnergy intake\nkcal\n×\nProtein intake\ng\n×\nSleep duration\nh\n×\nSleep quality\n1–10 scale\n×\nStep count\nsteps\n×\nDaily overview\n\nChoose up to four measures to surface above the daily log.\n\n4/4\n1\nBodyweight\nkg\n↑\n↓\n×\n2\nEnergy intake\nkcal\n↑\n↓\n×\n3\nSleep duration\nh\n↑\n↓\n×\n4\nStep count\nsteps\n↑\n↓\n×\nAdd a measure to daily overview\nOverview is full\nProtein intake · g\nSleep quality · 1–10 scale\n\nDISPLAY UNITS\n\nBodyweight\nkg\nlb\nMeasurements\ncm\nin\nWater\nL\nfl oz\nRatings\n1–10\n1–5\nWords\nCreate tracker\n→\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Tracker",
@@ -78414,10 +78414,10 @@
       "stem": "s10-appearance",
       "route": "/ethereal",
       "screen": "Appearance studio (Make it yours)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#appearance",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#appearance",
       "marker": "Make it yours",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#appearance",
+        "url": "https://127.0.0.1:58135/ethereal#appearance",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\n\nWorkspace settings / Appearance\n\nMake it yours.\n\nA few small choices shape the feel of every session.\n\nReset\n01\nLight\n\nSet the canvas tone.\n\nLight\nDark\n02\nAccent\n\nChoose the color that marks what matters.\n\nChoose color\n#\nSuggested accent colors\n\nCurrent color · #EB91B8\n\n03\nTypography\n\nChoose the voice of the interface.\n\nSans\nGeist\nAa 012\nSerif\nGaramond\nAa 012\nCondensed\nAvenir Next Condensed\nAa 012\nMonospace\nMenlo\nAa 012\nRounded\nSystem Rounded\nAa 012\n\nSaved automatically on this device\n\nIn context\n\nYour workspace, in tune.\nRoomy\nCompact\n#EB91B8\nDark canvas\nGeist\nBodyweight\n\nLogged measurements\n\nBodyweight trend period\n7 days\n14 days\n30 days\n72.7 kg\n71.6 kg\n26 Sept\n2 Oct\nLatest logged\n71.9\nkg\n2 Oct\n7-day average\n72.1\nkg\n7-day trend\n−0.6\nkg\n−0.8%\n30-day trend\n−1.6\nkg\n−2.2%\n\nIllustrative history · change from 7 / 30 days earlier\n\nNutrition\n\nConsumed against daily target\n\nNutrition day type\nTD · Training day\nNTD · Rest day\n1,045\n/ 1,997 kcal\nProtein\n85 / 150 g\nCarbohydrate\n120 / 230 g\nFat\n25 / 53 g\nEmma Anders · fictional log for today\nAdd sample snack\nReset log\nEA\nEmma Anders\nSample profile\nView profile\n\nPreview reflects your current choices.\n\n04\nFoundations\n\nType, health inputs and choice controls.\n\nType & numbers\n\nTabular figures keep readings aligned with their units.\n\nBody text\n\nDaily signals, recorded with care.\n\nMeasurement\n71.9 kg\nDaily target\n1,997 kcal\nInitials avatar\nEA\nActions & states\n\nThree familiar button treatments.\n\nPrimary action\nSecondary\nDisabled\nStatus examples\nOn track\nAwaiting feedback\nOverdue\nText & selection\n\nField labels and inline recovery guidance.\n\nEmail address\nAdd a complete email address.\nMetric\nChoose a metric\nBodyweight\nSleep\nSteps\nChoose one to continue.\nChoices & tabs\n\nNative keyboard and focus behavior is retained.\n\nInclude in next check-in\nVisible to client\nInputs\nChoices\nFeedback\n\nInput examples selected.\n\nCompact health fields\n\nShort readings stay the same size and keep units close.\n\nHeart rate\nbpm\nGlucose\nmg/dL\nBlood pressure\nmmHg\nType digits or enter a slash (e.g. 112/72).\nFeedback\n\nConfirmation and empty states keep the next step clear.\n\nChanges saved\nYour example is ready to use.\nShow empty example\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Appearance",
@@ -81948,10 +81948,10 @@
       "stem": "s10-clients-studio",
       "route": "/ethereal#clients",
       "screen": "Clients studio",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#clients",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#clients",
       "marker": "active clients",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#clients",
+        "url": "https://127.0.0.1:58135/ethereal#clients",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nClients\n\n15 active clients · Demo workspace · 5 Oct 2026\n\nSHOWING\n15 athletes\nFilter clients\nAll\n15\nNeeds attention\n10\nUnread\n7\nSearch clients\nFilter by client label\nAll labels\nLifestyle\nPrep\nSort clients\nNext check-in\nAttention first\nName\nView style\nTG\nTheo Grant\nPrep\nNeeds attention\nNeeds attention: check-in overdue, 2 unread messages, 1 overdue task, 1 pending task.\nPrep\nWeek 2\n1 overdue task\nCheck-in due 27 Sept\n2 unread\n1 pending\nLast check-in 20 Sept\nOpen profile\nEC\nEthan Cole\nLifestyle\nNeeds attention\nNeeds attention: check-in overdue, 2 overdue tasks, 1 training flag.\nFat loss\nWeek 3\n2 overdue tasks\nCheck-in due 28 Sept\nNo unread messages\n1 flag\nLast check-in 21 Sept\nOpen profile\nJR\nJames Reed\nPrep\nNeeds attention\nNeeds attention: check-in overdue, 2 unread messages, 1 overdue task, 1 pending task.\nPrep\nWeek 12\n1 overdue task\nCheck-in due 1 Oct\n2 unread\n1 pending\nLast check-in 24 Sept\nOpen profile\nEF\nEva Fischer\nLifestyle\nNeeds attention\nNeeds attention: 1 unread message.\nMaintenance\nWeek 9\nNext check-in 8 Oct\n1 unread\nLast check-in 1 Oct\nOpen profile\nIM\nIsla Morgan\nLifestyle\nMaintenance\nWeek 11\nNext check-in 8 Oct\nNo unread messages\nLast check-in 1 Oct\nOpen profile\nAL\nAmara Lewis\nLifestyle\nStrength\nWeek 7\nNext check-in 9 Oct\nNo unread messages\nLast check-in 2 Oct\nOpen profile\nEA\nEmma Anders\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 overdue task, 1 pending task, 1 training flag.\nFat loss\nWeek 8\n1 received · awaiting feedback\n1 overdue task\nNext check-in 9 Oct\n1 unread\n1 pending\n1 flag\nLast check-in 5 Oct\nOpen profile\nLC\nLily Chen\nLifestyle\nMaintenance\nWeek 6\nNext check-in 9 Oct\nNo unread messages\nLast check-in 2 Oct\nOpen profile\nOS\nOliver Stone\nLifestyle\nNeeds attention\nNeeds attention: 1 overdue task, 1 training flag.\nStrength\nWeek 10\n1 overdue task\nNext check-in 9 Oct\nNo unread messages\n1 flag\nLast check-in 2 Oct\nOpen profile\nNW\nNoah Williams\nPrep\nNeeds attention\nNeeds attention: 3 unread messages, 1 pending task.\nPrep\nWeek 9\nNext check-in 10 Oct\n3 unread\n1 pending\nLast check-in 3 Oct\nOpen profile\nZA\nZara Ahmed\nPrep\nPrep\nWeek 14\nNext check-in 10 Oct\nNo unread messages\nLast check-in 3 Oct\nOpen profile\nFW\nFinn Walsh\nLifestyle\nStrength\nWeek 8\nNext check-in 11 Oct\nNo unread messages\nLast check-in 4 Oct\nOpen profile\nJK\nJack Kim\nPrep\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 pending task.\nPrep\nWeek 5\n1 received · awaiting feedback\nNext check-in 11 Oct\n1 unread\n1 pending\nLast check-in 4 Oct\nOpen profile\nCP\nChloe Park\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 overdue task, 1 training flag.\nFat loss\nWeek 6\n1 received · awaiting feedback\n1 overdue task\nNext check-in 12 Oct\nNo unread messages\n1 flag\nLast check-in 5 Oct\nOpen profile\nMP\nMaya Patel\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 pending task.\nFat loss\nWeek 4\n1 received · awaiting feedback\nNext check-in 12 Oct\n1 unread\n1 pending\nLast check-in 5 Oct\nOpen profile\n\nFrontend demo · Changes are saved in this browser. Messages and feedback are not delivered.\n\nReset demo\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Clients",
@@ -88913,10 +88913,10 @@
       "stem": "s10-mealplan-studio",
       "route": "/ethereal#mealplan",
       "screen": "Meal plans studio",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#mealplan",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#mealplan",
       "marker": "Demo workspace",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#mealplan",
+        "url": "https://127.0.0.1:58135/ethereal#mealplan",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nMeal plans\nDemo workspace\nClient\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nPlan preview\nSave plan\nPlan name\nStarts\nOct 19, 2026\nArchive & start version\nHistory · 0\nSaved meals · 0\nPlan overview\n1 variant\nTD\n4 meals\n907\nkcal\nProtein\n107.6 g\nCarbs\n48.6 g\nFat\n30.7 g\nP\n47.8%\nC\n21.6%\nF\n30.7%\nVariant schedule\nSchedule mode\nEveryday\nWeekdays\nRepeating rhythm\n\nChoose how your client moves between plan variants.\n\nPlan for every day\nTD\nTD\n4 meals · edits apply to TD\nVariant name\nAdd variant\n01\n08:00\nOats\ng\n187 kcal\nProtein 5.5g\nCarbs 32g\nFat 4.1g\nSwap\nAdd food\nMeal total\n187 kcal\nP 5.5g\nC 32g\nF 4.1g\n02\n12:30\nChicken Breast (Cooked)\ng\n218 kcal\nProtein 48g\nCarbs 0g\nFat 2.8g\nSwap\nAdd food\nMeal total\n218 kcal\nP 48g\nC 0g\nF 2.8g\n03\n16:00\nArla 0% Fat Vanilla Skyr\ng\n144 kcal\nProtein 17.2g\nCarbs 16.6g\nFat 0.4g\nSwap\nAdd food\nMeal total\n144 kcal\nP 17.2g\nC 16.6g\nF 0.4g\n04\n19:30\nSalmon (Cooked)\ng\n359 kcal\nProtein 36.9g\nCarbs 0g\nFat 23.4g\nSwap\nAdd food\nMeal total\n359 kcal\nP 36.9g\nC 0g\nF 23.4g\nAdd meal\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Meal plans",
@@ -93585,10 +93585,10 @@
       "stem": "s11-preferences",
       "route": "/coach",
       "screen": "Workspace preferences (coach identity)",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Workspace preferences",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nWorkspace preferences\nAppearance\nColor mode\nLight\nDark\nAccent color\n#\nReset accent\nBranding\nWorkspace logo\nNo custom logo\nPNG, JPG or WebP, up to 2 MB. Saved in this browser only.\nUpload logo\nAvailability\nShown in your workspace\nIn-app notification preferences\nUnread message attention\nPermitted priority message attention\n\nPreferences are saved locally. System notifications are not used.\n\nReset this mockup\nDone\nSign out",
         "state": [
           "Templates",
@@ -95953,10 +95953,10 @@
       "stem": "s11-client-preview",
       "route": "/coach",
       "screen": "Preview assigned tool",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001",
       "marker": "Client preview",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001",
         "text": "Skip to workspace\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nClients\nLocal demo\nBack\nEmma Anders\n\nLifestyle · Fat loss · Week 8\n\nCheck-in calendar\nOpen chat\n1\nEA\nemma.anders@example.com\nCoaching since 10 Aug 2026 · 170 cm\nNext check-in\nThu 15 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n71.9 kg\nAssigned template\nStrength & balance\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In · Nutrition: Meal plan · Habits: enabled\nPreview assigned tool\nChange assignment\nEdit plans\nPlans & targets\n2 configured modules\nNutrition\nNot started\nTraining\nNot started\nGoals\nNo goals saved\nConfigured fields only\nHabits\n1 client habits\nEnabled\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n15 Oct\nCustom · How is the knee after the adjusted session?\nManage\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.\nClient preview\nEA\nEmma Anders\nAssigned athlete · Strength & balance\nClient preview · changes stay inside preview\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nDaily overview\n\nEmma Anders · 2026-10-13\n\nBodyweight trend\n71.9\nkg\nLatest · Oct 12\n72.1\nkg\nPast 7 days average\n↓ −0.3 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\n72.7\n72.2\n71.6\nOct 6\nOct 12\nNutrition today\nTraining day · Tue, Oct 13\nProtein\nNot logged\nNo target\nCarbs\nNot logged\nNo target\nFat\nNot logged\nNo target\nYour training\nNo workout scheduled.\nOpen training\nSleep duration\n7.6\nh\nAverage per logged night\nPast 7d\n7.8\n3.9\n0\nSleep duration: Oct 7, 2026 · 7.3 h; Oct 8, 2026 · 7.4 h; Oct 9, 2026 · 7.5 h; Oct 10, 2026 · 7.6 h; Oct 11, 2026 · 7.7 h; Oct 12, 2026 · 7.8 h\nOct 7\nOct 12\n\nPresentation preview only. Habit and task actions update the shared fictional records.",
         "state": [
           "Clients",
@@ -101118,10 +101118,10 @@
       "stem": "s01-roster",
       "route": "/coach",
       "screen": "Clients roster",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients",
       "marker": "Filter athletes",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients",
+        "url": "https://127.0.0.1:58135/coach?section=clients",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nClients\n\nThe people behind the progress.\n\nFilter athletes\nAll athletes\nNeeds attention\nUnread messages\nSort athletes\nName\nAttention\nNext check-in\nAthlete\tCoaching\tAssigned template\tNext check-in\tAttention\t\nOpen profile\n\n\nAL\nAmara Lewis\nLifestyle\n\tStrength\nWeek 7\n\tStrength & balance\n6 tabs\n\t18 Oct\t\nUp to date\n\t\n\n\nCP\nChloe Park\nLifestyle\n\tFat loss\nWeek 6\n\tPerformance foundation\n6 tabs\n\t17 Oct\t\nOverdue task\n\t\n\n\nEA\nEmma Anders\nLifestyle\n\tFat loss\nWeek 8\n\tStrength & balance\n6 tabs\n\t15 Oct\t\nAwaiting feedback\n1 unread\nOverdue task\n\t\n\n\nEC\nEthan Cole\nLifestyle\n\tFat loss\nWeek 3\n\tPerformance foundation\n6 tabs\n\t14 Oct\t\nOverdue task\n\t\n\n\nEF\nEva Fischer\nLifestyle\n\tMaintenance\nWeek 9\n\tNot assigned\tNo scheduled dates\t\nUp to date\n\t\n\n\nFW\nFinn Walsh\nLifestyle\n\tStrength\nWeek 8\n\tPerformance foundation\n6 tabs\n\t16 Oct\t\nUp to date\n\t\n\n\nIM\nIsla Morgan\nLifestyle\n\tMaintenance\nWeek 11\n\tPerformance foundation\n6 tabs\n\t13 Oct\t\nUp to date\n\t\n\n\nJK\nJack Kim\nPrep\n\tPrep\nWeek 5\n\tStrength & balance\n6 tabs\n\t19 Oct\t\nUp to date\n\t\n\n\nJR\nJames Reed\nPrep\n\tPrep\nWeek 12\n\tStrength & balance\n6 tabs\n\t13 Oct\t\n1 unread\nOverdue task\n\t\n\n\nLC\nLily Chen\nLifestyle\n\tMaintenance\nWeek 6\n\tStrength & balance\n6 tabs\n\t14 Oct\t\nAwaiting feedback\n1 unread\n\t\n\n\nMP\nMaya Patel\nLifestyle\n\tFat loss\nWeek 4\n\tStrength & balance\n6 tabs\n\t14 Oct\t\n1 unread\n\t\n\n\nNW\nNoah Williams\nPrep\n\tPrep\nWeek 9\n\tStrength & balance\n6 tabs\n\t17 Oct\t\nUp to date\n\t\n\n\nOS\nOliver Stone\nLifestyle\n\tStrength\nWeek 10\n\tStrength & balance\n6 tabs\n\t15 Oct\t\n1 unread\nOverdue task\n\t\n\n\nTG\nTheo Grant\nPrep\n\tPrep\nWeek 2\n\tNot assigned\t18 Oct\t\nOverdue task\n\t\n\n\nZA\nZara Ahmed\nPrep\n\tPrep\nWeek 14\n\tPerformance foundation\n6 tabs\n\t15 Oct\t\nUp to date\n\t",
         "state": [
           "Clients",
@@ -105054,10 +105054,10 @@
       "stem": "s01-profile-overview",
       "route": "/coach",
       "screen": "Client profile, Overview tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013",
       "marker": "Chloe Park",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n59.4 kg\nAssigned template\nPerformance foundation\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In · Nutrition: Meal plan · Habits: enabled\nPreview assigned tool\nChange assignment\nEdit plans\nPlans & targets\n2 configured modules\nNutrition\nNot started\nTraining\nNot started\nGoals\nNo goals saved\nConfigured fields only\nHabits\n1 client habits\nEnabled\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n\nNo additional dates.\n\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.",
         "state": [
           "Clients",
@@ -106884,10 +106884,10 @@
       "stem": "s01-profile-plans",
       "route": "/coach",
       "screen": "Client profile, Plans tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Plans",
       "marker": "Plans & targets",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Plans",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nPlans & targets\n\nConfigured from Performance foundation.\n\nNutrition\nNot started\nCreate\nTraining\nNot started\nCreate\nGoals\n\nNo goals saved\n\nNumeric fields enabled by setup\nSet goals\nHabits\n\n1 configured\n\nOptional client habits\nEdit habits",
         "state": [
           "Clients",
@@ -108393,10 +108393,10 @@
       "stem": "s01-profile-checkins",
       "route": "/coach",
       "screen": "Client profile, Check-ins tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Check-ins",
       "marker": "Check-in calendar",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Check-ins",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nSubmission history\n◇\nNo submissions yet\n\nScheduled dates will appear in the shared calendar.\n\nOpen calendar",
         "state": [
           "Clients",
@@ -109649,10 +109649,10 @@
       "stem": "s01-profile-notes",
       "route": "/coach",
       "screen": "Client profile, Notes & tasks tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
       "marker": "Notes & tasks",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Notes+%26+tasks",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nPrivate coach notes\n\nVisible only in your workspace.\n\nCheck-in mentions stiffness after longer walks; clarify whether it persists during training.\n\nGeneral coaching notes\n\nMonday check-in; enjoys walking as primary cardio.\n\nYour to-dos\nReply to check-in and review knee note\nAdd to\nPrivate coach note\nCoach to-do\nClient-assigned task\nPrivate coach note\nAdd\nClient-assigned tasks\n\n0 completed · 1 overdue\n\nSend Sunday step count\n4 Oct · overdue",
         "state": [
           "Clients",
@@ -111088,10 +111088,10 @@
       "stem": "s01-profile-onboarding",
       "route": "/coach",
       "screen": "Client profile, Onboarding tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Onboarding",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Onboarding",
       "marker": "Onboarding",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&tab=Onboarding",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&tab=Onboarding",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nChloe Park\n\nLifestyle · Fat loss · Week 6\n\nCheck-in calendar\nOpen chat\nCP\nchloe.park@example.com\nCoaching since 24 Aug 2026 · 159 cm\nNext check-in\nSat 17 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nSubmitted onboarding\n\nOriginal answers retained with Chloe’s profile.\n\nWhat is your current goal?\n\nLose weight while keeping walking comfortable.\n\nAny symptoms we should monitor?\n\nOccasional knee stiffness after longer walks.",
         "state": [
           "Clients",
@@ -112319,10 +112319,10 @@
       "stem": "s02-messages",
       "route": "/coach",
       "screen": "Messages section, conversations",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages",
       "marker": "Conversations",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages",
+        "url": "https://127.0.0.1:58135/coach?section=messages",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nMessages\nLocal demo\nMessages\nWeekdays · 09:00–18:00\nConversations\n5 unread\nAll\nUnread\nFlagged\nEA\nEmma Anders\n11:40\nJust sent my check-in! I added a note about the split squats. Everything else felt really good this week.\n1\nJR\nJames Reed\n11:37\nWork has been running late. I’ll send my update this evening.\n1\nLC\nLily Chen\n11:34\nThe new routine is feeling good. Thanks for the guidance!\n1\nOS\nOliver Stone\n10:31\nThe new routine is feeling good. Thanks for the guidance!\n1\nMP\nMaya Patel\n10:28\nA quick question before tomorrow’s session — could we check the rest times?\n1\nNW\nNoah Williams\n10:25\nThe new routine is feeling good. Thanks for the guidance!\nAL\nAmara Lewis\n09:22\nThe new routine is feeling good. Thanks for the guidance!\nJK\nJack Kim\n09:19\nThe new routine is feeling good. Thanks for the guidance!\nIM\nIsla Morgan\n09:16\nThe new routine is feeling good. Thanks for the guidance!\nEC\nEthan Cole\n08:13\nThe new routine is feeling good. Thanks for the guidance!\nZA\nZara Ahmed\nStart a conversation\nFW\nFinn Walsh\nStart a conversation\nCP\nChloe Park\nStart a conversation\nTG\nTheo Grant\nStart a conversation\nEF\nEva Fischer\nStart a conversation\nA conversation,\nwith the whole picture.\n\nSelect an athlete to pick up where you left off.\n\nOpen latest conversation",
         "state": [
           "Messages",
@@ -114561,10 +114561,10 @@
       "stem": "s02-thread",
       "route": "/coach",
       "screen": "Message thread open",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
       "marker": "Your coaching conversation",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nMessages\nLocal demo\nMessages\nWeekdays · 09:00–18:00\nConversations\n5 unread\nAll\nUnread\nFlagged\nEA\nEmma Anders\n11:40\nJust sent my check-in! I added a note about the split squats. Everything else felt really good this week.\n1\nJR\nJames Reed\n11:37\nWork has been running late. I’ll send my update this evening.\n1\nLC\nLily Chen\n11:34\nThe new routine is feeling good. Thanks for the guidance!\n1\nOS\nOliver Stone\n10:31\nThe new routine is feeling good. Thanks for the guidance!\n1\nMP\nMaya Patel\n10:28\nA quick question before tomorrow’s session — could we check the rest times?\n1\nNW\nNoah Williams\n10:25\nThe new routine is feeling good. Thanks for the guidance!\nAL\nAmara Lewis\n09:22\nThe new routine is feeling good. Thanks for the guidance!\nJK\nJack Kim\n09:19\nThe new routine is feeling good. Thanks for the guidance!\nIM\nIsla Morgan\n09:16\nThe new routine is feeling good. Thanks for the guidance!\nEC\nEthan Cole\n08:13\nThe new routine is feeling good. Thanks for the guidance!\nZA\nZara Ahmed\nStart a conversation\nFW\nFinn Walsh\nStart a conversation\nCP\nChloe Park\nStart a conversation\nTG\nTheo Grant\nStart a conversation\nEF\nEva Fischer\nStart a conversation\nCP\nChloe Park\nLifestyle · Fat loss\nYour coaching conversation\n◇\nSay hello to Chloe\n\nTheir coaching conversation starts here.\n\nEnter to send · Shift + Enter for a new line",
         "state": [
           "Messages",
@@ -117062,10 +117062,10 @@
       "stem": "s02-thread-attachments",
       "route": "/coach",
       "screen": "Thread attachment and context-link picker",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
       "marker": "Choose photo, video or file",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=messages&client=client-013",
+        "url": "https://127.0.0.1:58135/coach?section=messages&client=client-013",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nMessages\nLocal demo\nMessages\nWeekdays · 09:00–18:00\nConversations\n5 unread\nAll\nUnread\nFlagged\nEA\nEmma Anders\n11:40\nJust sent my check-in! I added a note about the split squats. Everything else felt really good this week.\n1\nJR\nJames Reed\n11:37\nWork has been running late. I’ll send my update this evening.\n1\nLC\nLily Chen\n11:34\nThe new routine is feeling good. Thanks for the guidance!\n1\nOS\nOliver Stone\n10:31\nThe new routine is feeling good. Thanks for the guidance!\n1\nMP\nMaya Patel\n10:28\nA quick question before tomorrow’s session — could we check the rest times?\n1\nNW\nNoah Williams\n10:25\nThe new routine is feeling good. Thanks for the guidance!\nAL\nAmara Lewis\n09:22\nThe new routine is feeling good. Thanks for the guidance!\nJK\nJack Kim\n09:19\nThe new routine is feeling good. Thanks for the guidance!\nIM\nIsla Morgan\n09:16\nThe new routine is feeling good. Thanks for the guidance!\nEC\nEthan Cole\n08:13\nThe new routine is feeling good. Thanks for the guidance!\nZA\nZara Ahmed\nStart a conversation\nFW\nFinn Walsh\nStart a conversation\nCP\nChloe Park\nStart a conversation\nTG\nTheo Grant\nStart a conversation\nEF\nEva Fischer\nStart a conversation\nCP\nChloe Park\nLifestyle · Fat loss\nYour coaching conversation\n◇\nSay hello to Chloe\n\nTheir coaching conversation starts here.\n\nChoose photo, video or fileLink nutrition plan\nLink training program\nEnter to send · Shift + Enter for a new line",
         "state": [
           "Messages",
@@ -119652,10 +119652,10 @@
       "stem": "s02-notes-todos",
       "route": "/coach",
       "screen": "Notes & to-dos section",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=notes",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=notes",
       "marker": "Notes & to-dos",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=notes",
+        "url": "https://127.0.0.1:58135/coach?section=notes",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nNotes & to-dos\nLocal demo\nNotes & to-dos\n\nYour private notes and follow-ups, across the workspace.\n\nAdd note\nAdd to-do\nShow notes and to-dos for\nEveryone & workspace\nWorkspace only\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nTo-dos\n8 open\nOpen\nCompleted\nAll\nPrepare feedback video\nEmma Anders\nReview missed check-in and adjust prep plan\nJames Reed\nCheck deadlift setup video\nOliver Stone\nSend travel meal framework\nMaya Patel\nReview check-in photos\nJack Kim\nOffer a shorter check-in format\nEthan Cole\nReply to check-in and review knee note\nChloe Park\nReach out about onboarding support\nTheo Grant\nPrivate notes\n16\n\nReview split-squat setup before increasing load.\n\nEmma Anders\n\nCheck whether late shifts are affecting meal timing.\n\nJames Reed\n\nMaintenance phase is going smoothly; keep changes small.\n\nLily Chen\n\nRight shoulder elevation appears when fatigue sets in.\n\nOliver Stone\n\nUpcoming work trip; focus on flexible choices over exact tracking.\n\nMaya Patel\n\nThree unread messages likely relate to show-week schedule; check before routine review.\n\nNoah Williams\n\nBuild lower body strength with a gradual return to heavier hinges.\n\nAmara Lewis\n\nCheck-in is awaiting coach response; compare photos under similar lighting.\n\nJack Kim\n\nWeight is stable; client is ready to practice flexible portions when eating out.\n\nIsla Morgan\n\nHas not checked in since September 21; lead with a low-pressure message and ask about schedule.\n\nEthan Cole\n\nAvoid increasing training volume until routine is re-established.\n\nEthan Cole\n\nPrep is steady; small scale fluctuation likely reflects travel and sodium.\n\nZara Ahmed\n\nStrength block is progressing without missed sessions.\n\nFinn Walsh\n\nCheck-in mentions stiffness after longer walks; clarify whether it persists during training.\n\nChloe Park\n\nNew client; check that the first two weeks feel manageable before adding targets.\n\nTheo Grant\n\nMaintenance is stable; review how breakfast change affects afternoon hunger.\n\nEva Fischer",
         "state": [
           "Notes & to-dos",
@@ -123228,10 +123228,10 @@
       "stem": "s03-checkins-board",
       "route": "/coach",
       "screen": "Check-ins board, week view",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins",
       "marker": "Awaiting feedback",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nCheck-ins\nLocal demo\nCheck-ins\n\nA little context. A better conversation.\n\nAdd extra date\n12 Oct – 18 Oct 2026\nToday\nWeek\nMonth\nAgenda\nAthlete\nAll athletes\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nStatus\nAll statuses\nScheduled\nOverdue\nAwaiting feedback\nFeedback sent\n2 awaiting feedback\nEurope/Vienna · Monday first\nMon\n12\nEA\nEmma Anders\nRecurring · Full\nAwaiting feedback\nLC\nLily Chen\nAdditional · Custom\nAwaiting feedback\nJK\nJack Kim\nRecurring · Full\nOverdue\nTue\n13\nJR\nJames Reed\nRecurring · Full\nScheduled\nIM\nIsla Morgan\nRecurring · Full\nScheduled\nWed\n14\nLC\nLily Chen\nRecurring · Full\nScheduled\nMP\nMaya Patel\nAdditional · Custom\nScheduled\nEC\nEthan Cole\nRecurring · Full\nScheduled\nThu\n15\nEA\nEmma Anders\nAdditional · Custom\nScheduled\nOS\nOliver Stone\nRecurring · Full\nScheduled\nZA\nZara Ahmed\nRecurring · Full\nScheduled\nFri\n16\nMP\nMaya Patel\nRecurring · Full\nScheduled\nFW\nFinn Walsh\nRecurring · Full\nScheduled\nSat\n17\nNW\nNoah Williams\nRecurring · Full\nScheduled\nCP\nChloe Park\nRecurring · Full\nScheduled\nSun\n18\nAL\nAmara Lewis\nRecurring · Full\nScheduled\nTG\nTheo Grant\nRecurring · Full\nScheduled",
         "state": [
           "Check-ins",
@@ -125985,10 +125985,10 @@
       "stem": "s03-add-extra",
       "route": "/coach",
       "screen": "Add extra check-in date dialog",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins",
       "marker": "Add an extra check-in date",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nCheck-ins\nLocal demo\nCheck-ins\n\nA little context. A better conversation.\n\nAdd extra date\n12 Oct – 18 Oct 2026\nToday\nWeek\nMonth\nAgenda\nAthlete\nAll athletes\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nStatus\nAll statuses\nScheduled\nOverdue\nAwaiting feedback\nFeedback sent\n2 awaiting feedback\nEurope/Vienna · Monday first\nMon\n12\nEA\nEmma Anders\nRecurring · Full\nAwaiting feedback\nLC\nLily Chen\nAdditional · Custom\nAwaiting feedback\nJK\nJack Kim\nRecurring · Full\nOverdue\nTue\n13\nJR\nJames Reed\nRecurring · Full\nScheduled\nIM\nIsla Morgan\nRecurring · Full\nScheduled\nWed\n14\nLC\nLily Chen\nRecurring · Full\nScheduled\nMP\nMaya Patel\nAdditional · Custom\nScheduled\nEC\nEthan Cole\nRecurring · Full\nScheduled\nThu\n15\nEA\nEmma Anders\nAdditional · Custom\nScheduled\nOS\nOliver Stone\nRecurring · Full\nScheduled\nZA\nZara Ahmed\nRecurring · Full\nScheduled\nFri\n16\nMP\nMaya Patel\nRecurring · Full\nScheduled\nFW\nFinn Walsh\nRecurring · Full\nScheduled\nSat\n17\nNW\nNoah Williams\nRecurring · Full\nScheduled\nCP\nChloe Park\nRecurring · Full\nScheduled\nSun\n18\nAL\nAmara Lewis\nRecurring · Full\nScheduled\nTG\nTheo Grant\nRecurring · Full\nScheduled\nAdd an extra check-in date\nAthlete\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nDate · Europe/Vienna\nRequested update\nCustom\nFull\nNote to athlete\nCancel\nSave date",
         "state": [
           "Check-ins",
@@ -129004,10 +129004,10 @@
       "stem": "s03-checkin-review",
       "route": "/coach",
       "screen": "Check-in review workspace",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=check-ins&client=client-001&review=submission-emma",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=check-ins&client=client-001&review=submission-emma",
       "marker": "Tracker & progress",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=check-ins&client=client-001&review=submission-emma",
+        "url": "https://127.0.0.1:58135/coach?section=check-ins&client=client-001&review=submission-emma",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nCheck-ins\nLocal demo\nBack\nEmma’s check-in\n\nFull update · Monday, 12 Oct 2026\n\nAwaiting feedback\nConversation\nEA\nIn Emma’s words\nFull questionnaire\nHow did you feel this week?\n\nEnergy was good and the morning routine really helped. A busy Friday, but meal prep kept me on track.\n\nHow was your training?\n\n8 / 10 — feeling stronger\n\nAnything you would like me to know?\n\nMy left knee felt unsettled on the last split-squat set. Could we look at the setup?\n\nAthlete note\n\nKept all three sessions this week.\n\nSubmitted visuals\nFront · 12 October\nIllustrative demo visual\nSide · 12 October\nIllustrative demo visual\nTracker & progress\nOpen profile\nBodyweight\n71.9 kg\nEnergy intake\n2180 kcal\nSleep duration\n7.6 hours\nHabit consistency\n5 / 7 days\nDate\tBodyweight\tSleep\tActivity\n6 Oct\t72.4 kg\t7.2 h\t7,800 steps\n7 Oct\t72.3 kg\t7.3 h\t8,010 steps\n8 Oct\t72.2 kg\t7.4 h\t8,220 steps\n9 Oct\t72.1 kg\t7.5 h\t8,430 steps\n10 Oct\t72.1 kg\t7.6 h\t8,640 steps\n11 Oct\t72 kg\t7.7 h\t8,850 steps\n12 Oct\t71.9 kg\t7.8 h\t9,060 steps\nFlagged training notes\nBulgarian split squat · Set 3\n11 Oct · Athlete training note\n\nLeft knee feels unsettled near the bottom. Is my stance too short?\n\nOpen training setup\nRespond with context\nFeedback to athlete\n\nDraft kept automatically. Opening a review does not mark it answered.\n\nVideo feedback\nRecord video feedback\nAdjust this athlete’s plan\nNutrition\nTraining\nSubmit feedback",
         "state": [
           "Check-ins"
@@ -131286,10 +131286,10 @@
       "stem": "s04-habit-editor",
       "route": "/coach",
       "screen": "Coach habit editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-010&plan=habits&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-010&plan=habits&tab=Plans",
       "marker": "Client habit definitions",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-010&plan=habits&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-010&plan=habits&tab=Plans",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nEthan Cole · Habits\nHabits\n\nClient habit definitions and completion history remain with this profile.\n\nEvening walk\nDaily · 20 minutes · Create a calm transition into the evening.\n5 completions\nEdit\nAdd habit\nName\nFrequency\nGoal\nReason (optional)\nAdd habit",
         "state": [
           "Clients"
@@ -132435,10 +132435,10 @@
       "stem": "s04-template-habits",
       "route": "/coach",
       "screen": "Template Habits tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Include Habit Tracker",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\n/\nEditor\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\n01\nTabs\n02\nDashboard\n03\nTracker\n04\nTimeline / Roadmap\n05\nNutrition\n06\nTraining\n07\nCheck-In\n08\nHabits\nRestore saved\nCancel template\nHabits\nInclude Habit Tracker\nSeparate logging preview\nEvening walk\nDaily · 20 minutes · 5 / 7 completed\n\nCreate a calm transition into the evening.\n\nDefine each athlete’s actual habits, frequency, goals and reasons in client setup.\n\nInclude habit status in check-ins",
         "state": [
           "Templates",
@@ -133955,10 +133955,10 @@
       "stem": "s05-templates",
       "route": "/coach",
       "screen": "Template library",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "A thoughtful starting point for every athlete",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit",
         "state": [
           "Templates"
@@ -135821,10 +135821,10 @@
       "stem": "s05-template-editor",
       "route": "/coach",
       "screen": "Template setup editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Tabs",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\n/\nEditor\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\n01\nTabs\n02\nDashboard\n03\nTracker\n04\nTimeline / Roadmap\n05\nNutrition\n06\nTraining\n07\nCheck-In\n08\nHabits\nRestore saved\nCancel template\nTabs\nDescription\nClient tabs\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits",
         "state": [
           "Templates",
@@ -137383,10 +137383,10 @@
       "stem": "s05-tracker-setup",
       "route": "/coach",
       "screen": "Template tracker setup (parameter library)",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Daily log",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\n/\nEditor\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\n01\nTabs\n02\nDashboard\n03\nTracker\n04\nTimeline / Roadmap\n05\nNutrition\n06\nTraining\n07\nCheck-In\n08\nHabits\nRestore saved\nCancel template\nTracker\n\nSet the daily log in the order athletes will use it. Their history stays available when a field is removed.\n\n01 / TRACKER CONTENT\nDaily fields\n7 active\n01\nBodyweight\nWeight basics\nSettings\n02\nWeigh-in time\nWeight basics\nSettings\n03\nSleep duration\nSleep\nSettings\n04\nEnergy outside gym\nEnergy and readiness\nSettings\n05\nStep count\nMovement and cardio\nSettings\n06\nEnergy intake\nNutrition\nSettings\n07\nProtein intake\nNutrition\nSettings\nAdd parameter\nBrowse the health input library\n02 / AT A GLANCE\nDaily overview\n3 / 4\n\nChoose up to four numeric or rating fields to pin above the daily log.\n\n01\nBodyweight\n02\nEnergy intake\n03\nSleep duration\nAdd overview metric\nChoose a numeric or rating field…\nEnergy outside gym\nStep count\nProtein intake",
         "state": [
           "Templates",
@@ -140329,10 +140329,10 @@
       "stem": "s05-client-setup",
       "route": "/coach",
       "screen": "Client setup, assign template",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-015",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-015",
       "marker": "Assign a setup to Eva Fischer",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-015",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-015",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nEva Fischer\n\nLifestyle · Maintenance · Week 9\n\nCheck-in calendar\nOpen chat\nEF\neva.fischer@example.com\nCoaching since 3 Aug 2026 · 166 cm\nNext check-in\nNot scheduled\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n63.5 kg\nAssigned template\nNot assigned\nPreview assigned tool\nAssign template\nPlans & targets\nNo plan configured\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n\nNo additional dates.\n\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.\nAssign a setup to Eva Fischer\n\nChoose a saved setup. The client’s plans and history stay with their profile.\n\nTemplate\nStrength & balance\nPerformance foundation\nEveryday essentials\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nIncluded views\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In\nNutrition\nMeal plan\nTraining\nTraining program included\nHabits\nEnabled\nCancel\nAssign & personalize",
         "state": [
           "Clients",
@@ -142244,10 +142244,10 @@
       "stem": "s06-mealplan-editor",
       "route": "/coach",
       "screen": "Meal plan editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
       "marker": "Meal plan",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-013&plan=nutrition&tab=Plans",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack to Chloe Park\nChloe Park · Fat loss\nNot started\nMeal plan\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nPlan overview\n2 options\nOption\nCalories\nMacros\nMacro distribution\nTraining Day\n0 meals\n0 kcal\nProtein\n0 g\nCarbs\n0 g\nFat\n0 g\nP 0%\nC 0%\nF 0%\nRest Day\n0 meals\n0 kcal\nProtein\n0 g\nCarbs\n0 g\nFat\n0 g\nP 0%\nC 0%\nF 0%\nVariant schedule\nPattern\nEvery day\nWeekly\nTraining day\nTraining Day\nRest Day\nRest day\nTraining Day\nRest Day\nWeekly assignments\nMon\nRest Day\nTue\nRest Day\nWed\nRest Day\nThu\nRest Day\nFri\nRest Day\nSat\nRest Day\nSun\nRest Day\nAdvanced\n\nTap a weekday to switch between its training and rest plan.\n\nTraining Day\nRest Day\nAdd option\nOption label\nDuplicate option\nDelete option\nSaved meals\n0\nAdd meal\n\nSave partial work now, or review and activate when ready.\n\nSave draft\nReview & activate",
         "state": [
           "Clients",
@@ -144940,10 +144940,10 @@
       "stem": "s06-template-nutrition",
       "route": "/coach",
       "screen": "Template Nutrition tab",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Nutrition",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\n/\nEditor\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\n01\nTabs\n02\nDashboard\n03\nTracker\n04\nTimeline / Roadmap\n05\nNutrition\n06\nTraining\n07\nCheck-In\n08\nHabits\nRestore saved\nCancel template\nNutrition\n\nChoose the nutrition experience. Meal count, labels, times, foods, swaps, targets and training/rest-day schedules are personalized in each athlete’s client setup.\n\nMeal plan\nIIFYM · macro targets\nClient setup owns the prescription. This template controls its presentation.",
         "state": [
           "Templates",
@@ -146360,10 +146360,10 @@
       "stem": "s07-training-editor",
       "route": "/coach",
       "screen": "Training program editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
       "marker": "Training program",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n4\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack to Emma Anders\nEmma Anders · Fat loss\nNot started\nTraining program\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nProgram structure\nEvergreen\nWeek-based\n\nOngoing plan · changes apply across the program\n\nIndividual training program · starts 2026-10-13\n\nDropdown choices and starting values follow the template. Existing prescriptions stay unchanged.\n\nExercise library\n10 exercises · plan prescriptions keep their own snapshot\nManage library\nOngoing sessions\n\nEdit the ongoing prescription. Saved drafts stay separate from active content.\n\nAdd session\n\nThis week has no sessions yet.\n\nCreate first session\nPreview prescription & muscle volume\n\nVolume is calculated from the prescribed sets in this week. Unallocated exercises remain unassigned.\n\nSave partial work now, or review and activate when ready.\n\nSave draft\nReview & activate",
         "state": [
           "Clients"
@@ -147909,10 +147909,10 @@
       "stem": "s07-exercise-library",
       "route": "/coach",
       "screen": "Exercise library manager",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
       "marker": "Add an exercise",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001&plan=training",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001&plan=training",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n4\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack to Emma Anders\nEmma Anders · Fat loss\nNot started\nTraining program\n\nLocal workspace demo · activation updates this browser’s client preview.\n\nHistory (0)\nPreview draft\nSave draft\nReview & activate\nSaved draft and active client content are separate.\nPlan name\nStarts\nOct 13, 2026\nProgram structure\nEvergreen\nWeek-based\n\nOngoing plan · changes apply across the program\n\nIndividual training program · starts 2026-10-13\n\nDropdown choices and starting values follow the template. Existing prescriptions stay unchanged.\n\nExercise library\n10 exercises · plan prescriptions keep their own snapshot\nDone\nAdd an exercise\nExercise name\nPrimary muscle\nChoose group\nChest\nBack\nShoulders\nBiceps\nTriceps\nCore\nGlutes\nQuadriceps\nHamstrings\nCalves\nSecondary groups\nChest\nBack\nShoulders\nBiceps\nTriceps\nCore\nGlutes\nQuadriceps\nHamstrings\nCalves\nGeneral coaching notes\nAdd to library\nBack squat\nQuadriceps · Brace before each rep; keep the whole foot grounded.\nEdit\nBench press\nChest · Set the shoulder blades before unracking.\nEdit\nDeadlift\nHamstrings · Build tension against the bar before lifting.\nEdit\nChest-supported row\nBack · Pause briefly with the shoulder blades drawn back.\nEdit\nLat pulldown\nBack · Lead with the elbows and keep the torso steady.\nEdit\nDumbbell shoulder press\nShoulders · Use a comfortable range without arching the lower back.\nEdit\nHip thrust\nGlutes · Finish with the hips, keeping the ribs stacked over the pelvis.\nEdit\nLeg extension\nQuadriceps · Control the lowering phase; avoid bouncing at the bottom.\nEdit\nStanding calf raise\nCalves · Use a full stretch and controlled pause at the top.\nEdit\nForearm plank\nCore · Maintain a straight line from head to heels; stop before form changes.\nEdit\nOngoing sessions\n\nEdit the ongoing prescription. Saved drafts stay separate from active content.\n\nAdd session\n\nThis week has no sessions yet.\n\nCreate first session\nPreview prescription & muscle volume\n\nVolume is calculated from the prescribed sets in this week. Unallocated exercises remain unassigned.\n\nSave partial work now, or review and activate when ready.\n\nSave draft\nReview & activate",
         "state": [
           "Clients"
@@ -150704,10 +150704,10 @@
       "stem": "s08-builder",
       "route": "/ethereal",
       "screen": "Dashboard builder (Ethereal studio)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#dashboard",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#dashboard",
       "marker": "A canvas for your coaching",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#dashboard",
+        "url": "https://127.0.0.1:58135/ethereal#dashboard",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nDashboard name\n\nMaya Chen · Fictional client · 6 October 2026\n\nSaved locally\nAdd widget\nClient preview\nEdit canvas · 12 columns · 1360 px\n0 widgets\nA canvas for your coaching.\n\nChoose the signals, plans and actions Maya needs.\nYour widgets will find their place.\n\nChoose your first widgets\nLoad example layout\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Dashboard",
@@ -153083,10 +153083,10 @@
       "stem": "s08-widget-gallery",
       "route": "/ethereal",
       "screen": "Widget gallery",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#dashboard",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#dashboard",
       "marker": "Choose widgets to add",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#dashboard",
+        "url": "https://127.0.0.1:58135/ethereal#dashboard",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nDashboard name\n\nMaya Chen · Fictional client · 6 October 2026\n\nSaved locally\nAdd widget\nClient preview\nEdit canvas · 12 columns · 1360 px\n0 widgets\nA canvas for your coaching.\n\nChoose the signals, plans and actions Maya needs.\nYour widgets will find their place.\n\nChoose your first widgets\nLoad example layout\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.\n\nAdd widgets\n\nChoose widgets to add. Each starts with its desktop default layout and settings.\n\nCategory\nAll categories\nCoaching\nRoadmap\nNutrition\nTraining\nData/Progress\nActivity\nRecovery\nHabits\nShortcuts\n20 widgets\nCoaching\nThis week’s focus\nStrength foundation\nWeek 6 focus\nOct 5–Oct 11\n\nKeep lower-body training steady while making each rep controlled.\n\nWeekly focus\nKeep the current phase and weekly focus visible.\nCoaching · Compact\nThis week at a glance\nWeek 6\nOct 5–Oct 11\nBodyweight average\n67.8 kg\n+2 more selected\nThis week at a glance\nReview your coaching week and selected indicators.\nCoaching · Compact\nYour tasks\n2 open\nDue in 30d · 1 completed in this window\nAdd front and side progress photos\nOct 7 · Due\nNote meals that felt low energy\nOct 9 · Due\nClient tasks\nKeep assigned tasks and due dates visible.\nCoaching · Regular\nCheck-in\nFRI\n09\nNext check-in\nOct 9\nIn 3 days · Draft saved\nLatest submission\nOct 5 · Submitted\nCheck-in status\nSee the next check-in and latest response.\nCoaching · Compact\nCoach feedback\nSent Oct 4 · Past 30d\nUnread · Video\n\nGreat consistency this week. Keep the deadlift effort steady; I’ve adjusted the next block and added a recovery note.\n\nWeek 6 training update\nRecovery notes\nCoach feedback\nReview recent coach feedback and links.\nCoaching · Wide\nRoadmap\nSelected roadmap metrics\nBodyweight average\n67.8 kg\nWeek 6 · Oct 5–Oct 11 · 8w\nBodyweight average trend\n8 weeks\nWeek\nMonth\n6 months\nYear\nSep 28\nOct 5\n+2 selected metrics · open for all\nSelected roadmap metrics\nCompare separately labelled weekly trends.\nRoadmap · Regular\nCurrent phase progress\nStrength foundation\nWeek 6 of 9\nCurrent phase progress\nSee the current phase and coaching week.\nRoadmap · Compact\nNutrition\nNutrition today\nTraining day · Tue, Oct 6 · Target Oct 1\nProtein\n88 g\nFixed 130 g\nCarbs\n142 g\n190–230 g\nFat\n60 g\nAt least 55 g\nMacro target summary\nCompare nutrition intake with targets.\nNutrition · Wide\nNutrition intake trend\nCalories history\nRange\nWeek\nMonth\n6 months\nYear\nSep 7\nSep 21\nOct 6\nLogged\nTarget / range\n\nOct 6: 1,460 kcal · target Range 2,050–2,200 kcal\n\nNutrition intake trend\nCompare consumed nutrition with dated targets.\nNutrition · Wide\nTraining\nYour training\nCurrent session\nTue, Oct 6 · Week 6\nLower strength\nDeadlift\n4 sets · 4–5 reps\nSplit squat\n3 sets · 8 / side reps\nCurrent / next workout\nSee the current and next workouts.\nTraining · Regular\nDeadlift progress\n62.5 kg\nDeadlift · Oct 6 · recorded load\nSession entries · 8w\n4 sets · 4 reps\nSession trend\n8 weeks\nWeek\nMonth\n6 months\nYear\nSep 8\nSep 22\nOct 6\nExercise performance trend\nTrack performance for a chosen exercise.\nTraining · Wide\nData/Progress\nBody measurements\n75.8 cm\nLatest · Oct 6\nWaist · Past 30d\nCustom metric card\nTrack weight, waist, or steps.\nData/Progress · Compact\nBodyweight trend\n67.8kg\nLatest · Oct 6\n67.8kg\nPast 7 days average\n↓ −0.1 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\nSep 7\nSep 21\nOct 6\nBodyweight trend\nFollow bodyweight readings over time.\nData/Progress · Wide\nWeekly bodyweight change\n67.9 kg\nLatest week · Sep 28\n8w\nWeek over week · −0.1 kg\nWeekly average\n8 weeks\nWeek\nMonth\n6 months\nYear\nAug 10\nSep 28\nWeekly bodyweight change\nCompare observed weekly bodyweight averages.\nData/Progress · Regular\nActivity\nDaily steps\n6,659 steps\nDaily average\nDaily steps: Sep 30, 2026 · 8,240 steps; Oct 1, 2026 · Not logged; Oct 2, 2026 · 10,418 steps; Oct 3, 2026 · 0 steps; Oct 4, 2026 · 7,312 steps; Oct 5, 2026 · 9,126 steps; Oct 6, 2026 · 4,860 steps\nStep count\nReview daily steps and weekly averages.\nActivity · Compact\nRecovery\nSleep duration\n7.3 h\nAverage per logged night\nPast 7d\nSleep duration: Sep 30, 2026 · 7.2 h; Oct 1, 2026 · 6.8 h; Oct 2, 2026 · 7.6 h; Oct 3, 2026 · 7.1 h; Oct 4, 2026 · Not logged; Oct 5, 2026 · 7.4 h; Oct 6, 2026 · 7.8 h\nSep 30\nOct 6\nSleep duration\nReview recorded sleep duration.\nRecovery · Regular\nRecovery\nEnergy outside training\nHigh · Oct 6\nLow / Steady / High\nStress\nLow · Oct 6\nLow / Moderate / High\nPerceived readiness\nReady · Oct 6\nLow / Okay / Ready\nRecovery ratings\nReview recent recovery ratings.\nRecovery · Regular\nHabits\nToday’s habits\nScheduled today\nTue, Oct 6\n1/5\ndone\nOutdoor walk\n20 minutes\nDone\nWater before coffee\n1 glass\nNot logged\nEvening mobility\n8 minutes\nNot logged\nInclude protein at breakfast\n1 serving\nSkipped\n+1 more scheduled\nToday’s habits\nCheck off habits or view consistency.\nHabits · Tall\nHabit consistency\n9/17 done\n\n2 skipped · 6 not logged\n\n3 selected habits · Sep 30–Oct 6\nHabit consistency\nSee completions against scheduled habits.\nHabits · Compact\nShortcuts\nQuick links\nTracker\nLatest reading · Oct 6\nMealplan\nActive plan · TD\nTraining\nNext workout · Oct 6\nCheck-in\nNext check-in · Oct 9\nQuick links launcher\nOpen frequently used coaching sections.\nShortcuts · Regular\n0\nwidgets selected\nCancel\nAdd widgets\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Dashboard",
@@ -161595,10 +161595,10 @@
       "stem": "s08-template-dashboard",
       "route": "/coach",
       "screen": "Template dashboard editor",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
       "marker": "Dashboard",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
+        "url": "https://127.0.0.1:58135/coach?section=templates&editor=template-28011cc9-9105-443d-814d-34bc15df7c27",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\n/\nEditor\nLocal demo\nTemplates\nUnsaved draft · kept on this device\nPreview\nSave template\n01\nTabs\n02\nDashboard\n03\nTracker\n04\nTimeline / Roadmap\n05\nNutrition\n06\nTraining\n07\nCheck-In\n08\nHabits\nRestore saved\nCancel template\nDashboard\nDashboard name\n\nEmma Anders · Sample athlete · 2026-10-13\n\nTemplate draft\nAdd widget\nClient preview\nEdit canvas · 12 columns · 916 px\n4 widgets\nBodyweight trend\n71.9\nkg\nLatest · Oct 12\n72.1\nkg\nPast 7 days average\n↓ −0.3 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\nOct 6\nOct 9\nOct 12\nNutrition today\nTraining day · Tue, Oct 13\nProtein\nNot logged\nNo target\nCarbs\nNot logged\nNo target\nFat\nNot logged\nNo target\nYour training\nNo workout scheduled.\nOpen training\nSleep duration\n7.6\nh\nAverage per logged night\nPast 7d\n7.8\n3.9\n0\nSleep duration: Oct 7, 2026 · 7.3 h; Oct 8, 2026 · 7.4 h; Oct 9, 2026 · 7.5 h; Oct 10, 2026 · 7.6 h; Oct 11, 2026 · 7.7 h; Oct 12, 2026 · 7.8 h\nOct 7\nOct 12\n\nDrag the Move handle to rearrange. Drag Resize or set exact column and row spans. Keyboard arrows adjust one grid step; Enter confirms and Escape cancels.",
         "state": [
           "Templates",
@@ -164867,10 +164867,10 @@
       "stem": "s09-tracker-today",
       "route": "/coach",
       "screen": "Client tracker, Today view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Today",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\nMon\n12\nTue\n13\nWed\n14\nThu\n15\nFri\n16\nSat\n17\nSun\n18\nDaily check-in\n13 Oct is today\n\nYour daily metrics, in one place.\n\nPreview session\nTuesday 13 October\n7 of 7 recorded\nBodyweight\n64.3 kg\nEnergy intake\n2,093 kcal\nSleep duration\n7.8 hours\n\nCATEGORIES\n\nAll fields\n7/7\nWeight basics\n2/2\nSleep\n1/1\nEnergy and readiness\n1/1\nMovement and cardio\n1/1\nNutrition\n2/2\nWeight basics\n2 of 2 entered\nBodyweight\n64.3\nkg\nWeigh-in time\n07:12\nSleep\n1 of 1 entered\nSleep duration\n7.8\nhours\nEnergy and readiness\n1 of 1 entered\nEnergy outside gym\n8\n/ 10\nMovement and cardio\n1 of 1 entered\nStep count\n7166\nsteps\nNutrition\n2 of 2 entered\nEnergy intake\n2093\nkcal\nProtein intake\n140\ng",
         "state": [
           "Templates",
@@ -169818,10 +169818,10 @@
       "stem": "s09-tracker-week",
       "route": "/coach",
       "screen": "Client tracker, Week view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Week",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\n\nCompare your week at a glance.\n\nPreview session\nWeekly comparison\n\n7 metrics · 2 days recorded\n\nScroll to compare · select a value to open its day\nDaily readings and configured summaries for the selected week.\nMETRIC\t\nMon\n12 Oct\n\t\nTue\n13 Oct\n\t\nWed\n14 Oct\n\t\nThu\n15 Oct\n\t\nFri\n16 Oct\n\t\nSat\n17 Oct\n\t\nSun\n18 Oct\n\t\nSummary\nthis week\n\n\nWeight basics\n2 metrics\n\t\n\nBodyweight\nkg\n\t\n64\n\t\n64.3\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n64.2\nAverage\n\n\nWeigh-in time\n\t\n07:18\n\t\n07:12\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\nNotes\n\n\nSleep\n1 metric\n\t\n\nSleep duration\nhours\n\t\n7.9\n\t\n7.8\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n7.9\nAverage\n\n\nEnergy and readiness\n1 metric\n\t\n\nEnergy outside gym\n1–10\n\t\n9\n\t\n8\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n8.5\nAverage\n\n\nMovement and cardio\n1 metric\n\t\n\nStep count\nsteps\n\t\n9,104\n\t\n7,166\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n8,135\nAverage\n\n\nNutrition\n2 metrics\n\t\n\nEnergy intake\nkcal\n\t\n2,245\n\t\n2,093\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n2,169\nAverage\n\n\nProtein intake\ng\n\t\n144\n\t\n140\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n—\n\t\n142\nAverage",
         "state": [
           "Templates",
@@ -175098,10 +175098,10 @@
       "stem": "s09-tracker-trends",
       "route": "/coach",
       "screen": "Client tracker, Trends view",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Trends",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nClient preview\nEA\nEmma Anders\nSample athlete · Strength & balance\nClient preview · 8 weeks of sample tracker data\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nTracker\nToday\nWeek\nTrends\n12 Oct – 18 Oct 2026\n\nExplore how your metrics change over time.\n\nPreview session\nMetrics\n1/3\nRange\n7 days\n30 days\n8 weeks\n3 months\n6 months\nBodyweight\n14 Sept – 13 Oct 2026\nBodyweight\nkg\n\n30 of 30 days recorded\n\n64.5\n64\n63.5\n14 Sept\n28 Sept\n13 Oct\nTue 13 Oct\n64.3 kg\nLatest 64.3 kg · 13 Oct\nAverage 64.1 kg\nChange +0.4 kg\nOpen selected day",
         "state": [
           "Templates",
@@ -179602,10 +179602,10 @@
       "stem": "s09-tracker-config",
       "route": "/ethereal",
       "screen": "Tracker configurator (Ethereal studio)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#tracker",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#tracker",
       "marker": "Client tracker",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#tracker",
+        "url": "https://127.0.0.1:58135/ethereal#tracker",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\n\nCLIENT TRACKER\n\nChoose what to track\n\nSelect the measures that fit your coaching approach. You can change these any time.\n\n6 selected\nAdd tracker measures\nAdd measures\n\nSearch by measure, category or unit.\n\nSearch measures\nBody measurements\n\nWeight and optional measurements over time.\n\n1/2\nBodyweight\nkg\nWeekly average\nWaist circumference\ncm\nLatest\nNutrition\n\nDaily energy, protein and fluid intake.\n\n2/3\nEnergy intake\nkcal\nWeekly average\nProtein intake\ng\nWeekly average\nWater intake\nL\nWeekly average\nRecovery\n\nSleep duration, sleep quality and stress ratings.\n\n2/3\nSleep duration\nh\nWeekly average\nSleep quality\n1–10 scale\nDistribution\nStress\n1–10 scale\nDistribution\nMovement\n\nEveryday steps and active minutes.\n\n1/2\nStep count\nsteps\nWeekly average\nActive minutes\nmin\nWeekly total\nSelected measures\n\nActive in this client tracker.\n\n6\nBodyweight\nkg\n×\nEnergy intake\nkcal\n×\nProtein intake\ng\n×\nSleep duration\nh\n×\nSleep quality\n1–10 scale\n×\nStep count\nsteps\n×\nDaily overview\n\nChoose up to four measures to surface above the daily log.\n\n4/4\n1\nBodyweight\nkg\n↑\n↓\n×\n2\nEnergy intake\nkcal\n↑\n↓\n×\n3\nSleep duration\nh\n↑\n↓\n×\n4\nStep count\nsteps\n↑\n↓\n×\nAdd a measure to daily overview\nOverview is full\nProtein intake · g\nSleep quality · 1–10 scale\n\nDISPLAY UNITS\n\nBodyweight\nkg\nlb\nMeasurements\ncm\nin\nWater\nL\nfl oz\nRatings\n1–10\n1–5\nWords\nCreate tracker\n→\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Tracker",
@@ -183833,10 +183833,10 @@
       "stem": "s10-appearance",
       "route": "/ethereal",
       "screen": "Appearance studio (Make it yours)",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#appearance",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#appearance",
       "marker": "Make it yours",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#appearance",
+        "url": "https://127.0.0.1:58135/ethereal#appearance",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\n\nWorkspace settings / Appearance\n\nMake it yours.\n\nA few small choices shape the feel of every session.\n\nReset\n01\nLight\n\nSet the canvas tone.\n\nLight\nDark\n02\nAccent\n\nChoose the color that marks what matters.\n\nChoose color\n#\nSuggested accent colors\n\nCurrent color · #EB91B8\n\n03\nTypography\n\nChoose the voice of the interface.\n\nSans\nGeist\nAa 012\nSerif\nGaramond\nAa 012\nCondensed\nAvenir Next Condensed\nAa 012\nMonospace\nMenlo\nAa 012\nRounded\nSystem Rounded\nAa 012\n\nSaved automatically on this device\n\nIn context\n\nYour workspace, in tune.\nRoomy\nCompact\n#EB91B8\nDark canvas\nGeist\nBodyweight\n\nLogged measurements\n\nBodyweight trend period\n7 days\n14 days\n30 days\n72.7 kg\n71.6 kg\n26 Sept\n29 Sept\n2 Oct\nLatest logged\n71.9\nkg\n2 Oct\n7-day average\n72.1\nkg\n7-day trend\n−0.6\nkg\n−0.8%\n30-day trend\n−1.6\nkg\n−2.2%\n\nIllustrative history · change from 7 / 30 days earlier\n\nNutrition\n\nConsumed against daily target\n\nNutrition day type\nTD · Training day\nNTD · Rest day\n1,045\n/ 1,997 kcal\nProtein\n85 / 150 g\nCarbohydrate\n120 / 230 g\nFat\n25 / 53 g\nEmma Anders · fictional log for today\nAdd sample snack\nReset log\nEA\nEmma Anders\nSample profile\nOn track\nView profile\n\nPreview reflects your current choices.\n\n04\nFoundations\n\nType, health inputs and choice controls.\n\nType & numbers\n\nTabular figures keep readings aligned with their units.\n\nBody text\n\nDaily signals, recorded with care.\n\nMeasurement\n71.9 kg\nDaily target\n1,997 kcal\nInitials avatar\nEA\nActions & states\n\nThree familiar button treatments.\n\nPrimary action\nSecondary\nDisabled\nStatus examples\nOn track\nAwaiting feedback\nOverdue\nText & selection\n\nField labels and inline recovery guidance.\n\nEmail address\nAdd a complete email address.\nMetric\nChoose a metric\nBodyweight\nSleep\nSteps\nChoose one to continue.\nChoices & tabs\n\nNative keyboard and focus behavior is retained.\n\nInclude in next check-in\nVisible to client\nInputs\nChoices\nFeedback\n\nInput examples selected.\n\nCompact health fields\n\nShort readings stay the same size and keep units close.\n\nHeart rate\nbpm\nGlucose\nmg/dL\nBlood pressure\nmmHg\nType digits or enter a slash (e.g. 112/72).\nFeedback\n\nConfirmation and empty states keep the next step clear.\n\nChanges saved\nYour example is ready to use.\nShow empty example\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Appearance",
@@ -187401,10 +187401,10 @@
       "stem": "s10-clients-studio",
       "route": "/ethereal#clients",
       "screen": "Clients studio",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#clients",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#clients",
       "marker": "active clients",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#clients",
+        "url": "https://127.0.0.1:58135/ethereal#clients",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nClients\n\n15 active clients · Demo workspace · 5 Oct 2026\n\nSHOWING\n15 athletes\nFilter clients\nAll\n15\nNeeds attention\n10\nUnread\n7\nSearch clients\nFilter by client label\nAll labels\nLifestyle\nPrep\nSort clients\nNext check-in\nAttention first\nName\nView style\nTG\nTheo Grant\nPrep\nNeeds attention\nNeeds attention: check-in overdue, 2 unread messages, 1 overdue task, 1 pending task.\nPrep\nWeek 2\n1 overdue task\nCheck-in due 27 Sept\n2 unread\n1 pending\nLast check-in 20 Sept\nOpen profile\nEC\nEthan Cole\nLifestyle\nNeeds attention\nNeeds attention: check-in overdue, 2 overdue tasks, 1 training flag.\nFat loss\nWeek 3\n2 overdue tasks\nCheck-in due 28 Sept\nNo unread messages\n1 flag\nLast check-in 21 Sept\nOpen profile\nJR\nJames Reed\nPrep\nNeeds attention\nNeeds attention: check-in overdue, 2 unread messages, 1 overdue task, 1 pending task.\nPrep\nWeek 12\n1 overdue task\nCheck-in due 1 Oct\n2 unread\n1 pending\nLast check-in 24 Sept\nOpen profile\nEF\nEva Fischer\nLifestyle\nNeeds attention\nNeeds attention: 1 unread message.\nMaintenance\nWeek 9\nNext check-in 8 Oct\n1 unread\nLast check-in 1 Oct\nOpen profile\nIM\nIsla Morgan\nLifestyle\nMaintenance\nWeek 11\nNext check-in 8 Oct\nNo unread messages\nLast check-in 1 Oct\nOpen profile\nAL\nAmara Lewis\nLifestyle\nStrength\nWeek 7\nNext check-in 9 Oct\nNo unread messages\nLast check-in 2 Oct\nOpen profile\nEA\nEmma Anders\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 overdue task, 1 pending task, 1 training flag.\nFat loss\nWeek 8\n1 received · awaiting feedback\n1 overdue task\nNext check-in 9 Oct\n1 unread\n1 pending\n1 flag\nLast check-in 5 Oct\nOpen profile\nLC\nLily Chen\nLifestyle\nMaintenance\nWeek 6\nNext check-in 9 Oct\nNo unread messages\nLast check-in 2 Oct\nOpen profile\nOS\nOliver Stone\nLifestyle\nNeeds attention\nNeeds attention: 1 overdue task, 1 training flag.\nStrength\nWeek 10\n1 overdue task\nNext check-in 9 Oct\nNo unread messages\n1 flag\nLast check-in 2 Oct\nOpen profile\nNW\nNoah Williams\nPrep\nNeeds attention\nNeeds attention: 3 unread messages, 1 pending task.\nPrep\nWeek 9\nNext check-in 10 Oct\n3 unread\n1 pending\nLast check-in 3 Oct\nOpen profile\nZA\nZara Ahmed\nPrep\nPrep\nWeek 14\nNext check-in 10 Oct\nNo unread messages\nLast check-in 3 Oct\nOpen profile\nFW\nFinn Walsh\nLifestyle\nStrength\nWeek 8\nNext check-in 11 Oct\nNo unread messages\nLast check-in 4 Oct\nOpen profile\nJK\nJack Kim\nPrep\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 pending task.\nPrep\nWeek 5\n1 received · awaiting feedback\nNext check-in 11 Oct\n1 unread\n1 pending\nLast check-in 4 Oct\nOpen profile\nCP\nChloe Park\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 overdue task, 1 training flag.\nFat loss\nWeek 6\n1 received · awaiting feedback\n1 overdue task\nNext check-in 12 Oct\nNo unread messages\n1 flag\nLast check-in 5 Oct\nOpen profile\nMP\nMaya Patel\nLifestyle\nNeeds attention\nNeeds attention: check-in awaiting feedback, 1 unread message, 1 pending task.\nFat loss\nWeek 4\n1 received · awaiting feedback\nNext check-in 12 Oct\n1 unread\n1 pending\nLast check-in 5 Oct\nOpen profile\n\nFrontend demo · Changes are saved in this browser. Messages and feedback are not delivered.\n\nReset demo\n\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Clients",
@@ -194366,10 +194366,10 @@
       "stem": "s10-mealplan-studio",
       "route": "/ethereal#mealplan",
       "screen": "Meal plans studio",
-      "finalUrl": "https://127.0.0.1:58133/ethereal#mealplan",
+      "finalUrl": "https://127.0.0.1:58135/ethereal#mealplan",
       "marker": "Demo workspace",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/ethereal#mealplan",
+        "url": "https://127.0.0.1:58135/ethereal#mealplan",
         "text": "Skip to content\nCoaching UI\nAppearance\nDashboard\nTracker\nClients\nMeal plans\nMeal plans\nDemo workspace\nClient\nEmma Anders\nJames Reed\nLily Chen\nOliver Stone\nMaya Patel\nNoah Williams\nAmara Lewis\nJack Kim\nIsla Morgan\nEthan Cole\nZara Ahmed\nFinn Walsh\nChloe Park\nTheo Grant\nEva Fischer\nPlan preview\nSave plan\nPlan name\nStarts\nOct 19, 2026\nArchive & start version\nHistory · 0\nSaved meals · 0\nPlan overview\n1 variant\nVariant\nCalories\nMacros\nMacro distribution\nTD\n4 meals\n907\nkcal\nProtein\n107.6 g\nCarbs\n48.6 g\nFat\n30.7 g\nP\n47.8%\nC\n21.6%\nF\n30.7%\nVariant schedule\nSchedule mode\nEveryday\nWeekdays\nRepeating rhythm\n\nChoose how your client moves between plan variants.\n\nPlan for every day\nTD\nTD\n4 meals · edits apply to TD\nVariant name\nAdd variant\n01\n08:00\nOats\ng\nProtein 5.5g\nCarbs 32g\nFat 4.1g\n187 kcal\nSwap\nAdd food\nMeal total\n187 kcal\nP 5.5g\nC 32g\nF 4.1g\n02\n12:30\nChicken Breast (Cooked)\ng\nProtein 48g\nCarbs 0g\nFat 2.8g\n218 kcal\nSwap\nAdd food\nMeal total\n218 kcal\nP 48g\nC 0g\nF 2.8g\n03\n16:00\nArla 0% Fat Vanilla Skyr\ng\nProtein 17.2g\nCarbs 16.6g\nFat 0.4g\n144 kcal\nSwap\nAdd food\nMeal total\n144 kcal\nP 17.2g\nC 16.6g\nF 0.4g\n04\n19:30\nSalmon (Cooked)\ng\nProtein 36.9g\nCarbs 0g\nFat 23.4g\n359 kcal\nSwap\nAdd food\nMeal total\n359 kcal\nP 36.9g\nC 0g\nF 23.4g\nAdd meal\nEthereal edition\nAll names and figures are illustrative.",
         "state": [
           "Meal plans",
@@ -199082,10 +199082,10 @@
       "stem": "s11-preferences",
       "route": "/coach",
       "screen": "Workspace preferences (coach identity)",
-      "finalUrl": "https://127.0.0.1:58133/coach",
+      "finalUrl": "https://127.0.0.1:58135/coach",
       "marker": "Workspace preferences",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach",
+        "url": "https://127.0.0.1:58135/coach",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nTemplates\nLocal demo\nTemplates\n\nA thoughtful starting point for every athlete.\n\nAdd template\n3 saved templates\nStrength & balance\n\nA complete coaching setup for sustainable strength, nutrition and everyday progress.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n8 assigned\nEdited 12 Oct\nPreview\nAssign\nEdit\nPerformance foundation\n\nTraining-led coaching with recovery, activity and a detailed weekly review.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nMeal plan\n5 assigned\nEdited 10 Oct\nPreview\nAssign\nEdit\nEveryday essentials\n\nA lighter starting point. The essentials, with room to make it their own.\n\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nMeal plan\n0 assigned\nEdited 8 Oct\nPreview\nAssign\nEdit\nWorkspace preferences\nAppearance\nColor mode\nLight\nDark\nAccent color\n#\nReset accent\nBranding\nWorkspace logo\nNo custom logo\nPNG, JPG or WebP, up to 2 MB. Saved in this browser only.\nUpload logo\nAvailability\nShown in your workspace\nIn-app notification preferences\nUnread message attention\nPermitted priority message attention\n\nPreferences are saved locally. System notifications are not used.\n\nReset this mockup\nDone\nSign out",
         "state": [
           "Templates",
@@ -201538,10 +201538,10 @@
       "stem": "s11-client-preview",
       "route": "/coach",
       "screen": "Preview assigned tool",
-      "finalUrl": "https://127.0.0.1:58133/coach?section=clients&client=client-001",
+      "finalUrl": "https://127.0.0.1:58135/coach?section=clients&client=client-001",
       "marker": "Client preview",
       "captureEvidence": {
-        "url": "https://127.0.0.1:58133/coach?section=clients&client=client-001",
+        "url": "https://127.0.0.1:58135/coach?section=clients&client=client-001",
         "text": "Skip to workspace\ninfinity.\nLiliana Mansfeld Coaching\nClients\nTemplates\nCheck-ins\n2\nMessages\n5\nNotes & to-dos\nLM\nLiliana Mansfeld\nOwner\nWorkspace\n/\nClients\nLocal demo\nBack\nEmma Anders\n\nLifestyle · Fat loss · Week 8\n\nCheck-in calendar\nOpen chat\n1\nEA\nemma.anders@example.com\nCoaching since 10 Aug 2026 · 170 cm\nNext check-in\nThu 15 Oct\nOverview\nPlans\nCheck-ins\nNotes & tasks\nOnboarding\nClient setup\nCurrent bodyweight\n71.9 kg\nAssigned template\nStrength & balance\nDashboard · Tracker · Timeline / Roadmap · Nutrition · Training Program · Check-In · Nutrition: Meal plan · Habits: enabled\nPreview assigned tool\nChange assignment\nEdit plans\nPlans & targets\n2 configured modules\nNutrition\nNot started\nTraining\nNot started\nGoals\nNo goals saved\nConfigured fields only\nHabits\n1 client habits\nEnabled\nCoaching rhythm\n\nRecurring check-ins · Europe/Vienna\n\nMo\nTu\nWe\nTh\nFr\nSa\nSu\nAdditional dates\n15 Oct\nCustom · How is the knee after the adjusted session?\nManage\nAdd date\nPriority messages\nAllow priority flags\nApplies to new chat flags. Training set notes stay separate.\nClient preview\nEA\nEmma Anders\nAssigned athlete · Strength & balance\nClient preview · changes stay inside preview\nDashboard\nTracker\nTimeline / Roadmap\nNutrition\nTraining Program\nCheck-In\nHabits\nDaily overview\n\nEmma Anders · 2026-10-13\n\nBodyweight trend\n71.9\nkg\nLatest · Oct 12\n72.1\nkg\nPast 7 days average\n↓ −0.3 kg vs prior 7d\nWeight trend\nWeek\nMonth\n6 months\nYear\nOct 6\nOct 9\nOct 12\nNutrition today\nTraining day · Tue, Oct 13\nProtein\nNot logged\nNo target\nCarbs\nNot logged\nNo target\nFat\nNot logged\nNo target\nYour training\nNo workout scheduled.\nOpen training\nSleep duration\n7.6\nh\nAverage per logged night\nPast 7d\nSleep duration: Oct 7, 2026 · 7.3 h; Oct 8, 2026 · 7.4 h; Oct 9, 2026 · 7.5 h; Oct 10, 2026 · 7.6 h; Oct 11, 2026 · 7.7 h; Oct 12, 2026 · 7.8 h\nOct 7\nOct 12\n\nPresentation preview only. Habit and task actions update the shared fictional records.",
         "state": [
           "Clients",
