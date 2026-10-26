@@ -1,123 +1,123 @@
 {
-  "id": "visual-reference-comparer-v2",
-  "receiptVersion": 2,
-  "hashPolicy": {
-    "included": [
-      "execution component source hashes",
-      "root and reference dependency lockfile hashes",
-      "direct dependency version/integrity pins",
-      "contract hash",
-      "input manifest/provenance/artifact-index/shot-index hashes"
-    ],
-    "excluded": [
-      "receipts/canonical.json",
-      "receipts/strict.json",
-      "receipts/metadata.json",
-      "artifact-hashes.json is hashed as an input; its entries are verified separately",
-      "candidate/ and proposed/ artifacts are hashed by artifact-hashes.json"
-    ],
-    "note": "This manifest pins the execution closure. metadata.json hashes this manifest; neither this manifest nor the receipts hashes itself. Regenerate receipts only after an explicit reviewed pin update."
+ "id": "visual-reference-comparer-v2",
+ "receiptVersion": 2,
+ "hashPolicy": {
+  "included": [
+   "execution component source hashes",
+   "root and reference dependency lockfile hashes",
+   "direct dependency version/integrity pins",
+   "contract hash",
+   "input manifest/provenance/artifact-index/shot-index hashes"
+  ],
+  "excluded": [
+   "receipts/canonical.json",
+   "receipts/strict.json",
+   "receipts/metadata.json",
+   "artifact-hashes.json is hashed as an input; its entries are verified separately",
+   "candidate/ and proposed/ artifacts are hashed by artifact-hashes.json"
+  ],
+  "note": "This manifest pins the execution closure. metadata.json hashes this manifest; neither this manifest nor the receipts hashes itself. Regenerate receipts only after an explicit reviewed pin update."
+ },
+ "components": {
+  "reference": {
+   "path": "tools/parity/reference/reference.mjs",
+   "sha256": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674"
   },
-  "components": {
-    "reference": {
-      "path": "tools/parity/reference/reference.mjs",
-      "sha256": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674"
-    },
-    "referenceCompare": {
-      "path": "tools/parity/reference/compare.mjs",
-      "sha256": "6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95"
-    },
-    "legacyCompare": {
-      "path": "tools/parity/compare.mjs",
-      "sha256": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a"
-    },
-    "capture": {
-      "path": "tools/parity/capture.mjs",
-      "sha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a"
-    },
-    "captureMetadata": {
-      "path": "tools/parity/reference/capture-metadata.mjs",
-      "sha256": "2b025b7a79991652493989f4fa96c1569b98334e16eacc4e61fd476308dcf6a7"
-    },
-    "parityRunner": {
-      "path": "tools/parity/run.mjs",
-      "sha256": "cdf5cb89cbc7aa3f6c099c2f96a85bd813ef45eaf7a8b4ce713eff42a9f096e9"
-    },
-    "safePaths": {
-      "path": "tools/parity/safe-paths.mjs",
-      "sha256": "a8729a1613ab5de8f3b2fa194c1aef081dc81f63205934e849d4eedab0cb8d2d"
-    },
-    "combinedRun": {
-      "path": "tools/parity/reference/combined-run.mjs",
-      "sha256": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679"
-    },
-    "combinedPins": {
-      "path": "tools/parity/reference/combined-pins.mjs",
-      "sha256": "ec5c2f362544370fc12cb8180969890f6365e3d8a9bbb91eca2e1656157db194"
-    },
-    "sourceIdentity": {
-      "path": "tools/parity/reference/source-identity.mjs",
-      "sha256": "46c472a7ac91df0db8332d28ff7a330016b12cdaf3559b4a18535c9fb408dec9"
-    },
-    "packageCombined": {
-      "path": "tools/parity/reference/package-combined.mjs",
-      "sha256": "0d9e35e8742394edb9438f70e32d926280fc9d953af1d32bb40778b309e616e5"
-    },
-    "verifyCombined": {
-      "path": "tools/parity/reference/verify-combined.mjs",
-      "sha256": "2c048e910aadb01bdc38c75e78065269fc1b6dcb66b4c0e0a0ac0a40d1323092"
-    },
-    "environment": {
-      "path": "tools/parity/reference/environment.mjs",
-      "sha256": "ecf02d2c6b5a3db8c76739ffeb1346395a2f30a339c776d07967812e98884e97"
-    },
-    "recompare": {
-      "path": "tools/parity/reference/evidence/recompare.mjs",
-      "sha256": "6364167d7ff60322ef26a721c2d45a79a0ad80f6253d15fd6dfb764702617d8e"
-    },
-    "verifyEvidence": {
-      "path": "tools/parity/reference/evidence/verify-evidence.mjs",
-      "sha256": "0c0bd07179d7e9fc9dec8e9cbf8bca1f8392e0657b8e4baa8eb4ec7e12fd3e4d"
-    },
-    "evidenceLib": {
-      "path": "tools/parity/reference/evidence/evidence-lib.mjs",
-      "sha256": "c4da822e3b11d3d10848dae4f8634c04520befaaec187e63a87dbfcd68402223"
-    }
+  "referenceCompare": {
+   "path": "tools/parity/reference/compare.mjs",
+   "sha256": "6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95"
   },
-  "locks": {
-    "root": {
-      "path": "package-lock.json",
-      "sha256": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75"
-    },
-    "reference": {
-      "path": "tools/parity/reference/package-lock.json",
-      "sha256": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628"
-    }
+  "legacyCompare": {
+   "path": "tools/parity/compare.mjs",
+   "sha256": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a"
   },
-  "dependencies": {
-    "root": {
-      "@playwright/test": {
-        "version": "1.63.0",
-        "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ=="
-      }
-    },
-    "reference": {
-      "pixelmatch": {
-        "version": "7.1.0",
-        "integrity": "sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng=="
-      },
-      "pngjs": {
-        "version": "7.0.0",
-        "integrity": "sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow=="
-      }
-    }
+  "capture": {
+   "path": "tools/parity/capture.mjs",
+   "sha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a"
   },
-  "contract": {
-    "path": "tools/parity/reference/contract.json",
-    "sha256": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363"
+  "captureMetadata": {
+   "path": "tools/parity/reference/capture-metadata.mjs",
+   "sha256": "2b025b7a79991652493989f4fa96c1569b98334e16eacc4e61fd476308dcf6a7"
   },
-  "commands": [
-    "node tools/parity/reference/evidence/verify-evidence.mjs",
-    "node tools/parity/reference/evidence/recompare.mjs"
-  ]
+  "parityRunner": {
+   "path": "tools/parity/run.mjs",
+   "sha256": "b28f66589184caf7da01ea43eb6661e96b7432f414400652359d7ebc8bf404f9"
+  },
+  "safePaths": {
+   "path": "tools/parity/safe-paths.mjs",
+   "sha256": "a8729a1613ab5de8f3b2fa194c1aef081dc81f63205934e849d4eedab0cb8d2d"
+  },
+  "combinedRun": {
+   "path": "tools/parity/reference/combined-run.mjs",
+   "sha256": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679"
+  },
+  "combinedPins": {
+   "path": "tools/parity/reference/combined-pins.mjs",
+   "sha256": "ec5c2f362544370fc12cb8180969890f6365e3d8a9bbb91eca2e1656157db194"
+  },
+  "sourceIdentity": {
+   "path": "tools/parity/reference/source-identity.mjs",
+   "sha256": "b83b9da81d060d559577fec633017a2daeb21495fedf4fc4473ef0170fe986be"
+  },
+  "packageCombined": {
+   "path": "tools/parity/reference/package-combined.mjs",
+   "sha256": "0d9e35e8742394edb9438f70e32d926280fc9d953af1d32bb40778b309e616e5"
+  },
+  "verifyCombined": {
+   "path": "tools/parity/reference/verify-combined.mjs",
+   "sha256": "5752fa446f2d64ad19d61267f15afab349acc05722b2a4d6046bf49bbccfddf3"
+  },
+  "environment": {
+   "path": "tools/parity/reference/environment.mjs",
+   "sha256": "ecf02d2c6b5a3db8c76739ffeb1346395a2f30a339c776d07967812e98884e97"
+  },
+  "recompare": {
+   "path": "tools/parity/reference/evidence/recompare.mjs",
+   "sha256": "6364167d7ff60322ef26a721c2d45a79a0ad80f6253d15fd6dfb764702617d8e"
+  },
+  "verifyEvidence": {
+   "path": "tools/parity/reference/evidence/verify-evidence.mjs",
+   "sha256": "0c0bd07179d7e9fc9dec8e9cbf8bca1f8392e0657b8e4baa8eb4ec7e12fd3e4d"
+  },
+  "evidenceLib": {
+   "path": "tools/parity/reference/evidence/evidence-lib.mjs",
+   "sha256": "c4da822e3b11d3d10848dae4f8634c04520befaaec187e63a87dbfcd68402223"
+  }
+ },
+ "locks": {
+  "root": {
+   "path": "package-lock.json",
+   "sha256": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75"
+  },
+  "reference": {
+   "path": "tools/parity/reference/package-lock.json",
+   "sha256": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628"
+  }
+ },
+ "dependencies": {
+  "root": {
+   "@playwright/test": {
+    "version": "1.63.0",
+    "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ=="
+   }
+  },
+  "reference": {
+   "pixelmatch": {
+    "version": "7.1.0",
+    "integrity": "sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng=="
+   },
+   "pngjs": {
+    "version": "7.0.0",
+    "integrity": "sha512-LKWqWJRhstyYo9pGvgor/ivk2w94eSjE3RGVuzLGlr3NmD8bf7RcYGze1mNdEHRP6TRP6rMuDHk5t44hnTRyow=="
+   }
+  }
+ },
+ "contract": {
+  "path": "tools/parity/reference/contract.json",
+  "sha256": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363"
+ },
+ "commands": [
+  "node tools/parity/reference/evidence/verify-evidence.mjs",
+  "node tools/parity/reference/evidence/recompare.mjs"
+ ]
 }
