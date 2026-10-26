@@ -26,7 +26,6 @@ import {
   type WorkspaceAppearance,
 } from "./workspace-appearance";
 
-export { normalizeHex } from "./workspace-appearance";
 export type {
   Appearance,
   AppearanceDensity,
@@ -34,6 +33,7 @@ export type {
   AppearanceMode,
   WorkspaceAppearance,
 } from "./workspace-appearance";
+export { normalizeHex } from "./workspace-appearance";
 
 export const fontOptions: {
   id: AppearanceFont;
@@ -175,10 +175,7 @@ export function AppearanceProvider({
     if (fontIds.has(font)) setStored((current) => ({ ...current, font }));
   }, []);
 
-  const resetAppearance = useCallback(
-    () => setStored(defaultAppearance),
-    [],
-  );
+  const resetAppearance = useCallback(() => setStored(defaultAppearance), []);
 
   const value = useMemo(
     () => ({ appearance, setMode, setAccent, setFont, resetAppearance }),

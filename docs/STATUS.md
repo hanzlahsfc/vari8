@@ -1,3 +1,42 @@
+## 2026-10-26 - w2-c2 repair round 1: twin parity + evidence corrections
+
+- Independent verifier (different family) returned REPAIR on
+  `0b01b8cb916078defd12f50e14f2c9a2f5b1be98` with three findings. Repaired
+  inside C-lane ownership, no product behavior change beyond parity.
+- REPAIR-1 (twin parity): `lib/canvas/ethereal-appearance.tsx` reordered
+  to the Biome-canonical export order (`export type` block, then
+  `export { normalizeHex }`) and `resetAppearance` unwrapped to the
+  one-line `useCallback` form. `frontend/src/lib/ethereal-appearance.tsx`
+  now byte-identical to its HEAD version; pair diff is exactly the five
+  established port deltas. `npx prettier --check` both files: exit 0.
+- REPAIR-2 (evidence): compact topbar measures 44px rendered at 1440 +
+  390, not 42px. The 42px is the `--eg-density-topbar-block` token;
+  `.client-app-coach-link` `min-block-size: 44px` (client-app.css:317)
+  floors the rendered block. REPORT.md corrected; product code untouched.
+- REPAIR-3 (evidence): foreign-profile-prefix media GET is 403
+  (`app/api/v1/media/service.ts:193` own-scope prefix mismatch), not 404.
+  PROOF.md corrected.
+- Gates re-run on final state (exit codes): typecheck 0, lint 0
+  (90 warnings, pre-existing), build 0, index 0, index:check 0,
+  test 0 (117 files / 1386 tests), vitest
+  tests/unit/workspace-appearance.test.ts 0 (6/6), frontend biome lint 0,
+  prettier both twins 0, added-lines dash gate 0. Mechanical gate pass
+  delegated to a DeepSeek Flash child; a real Biome organizeImports
+  regression it caught was fixed and gate re-run by hand.
+- Live recheck on lane DB `app_fp_w2c2r1` (migrate deploy + default seed
+  + `VARI8_SEED_DEMO=1`), `next start` :4600 behind tls-proxy :4601:
+  role matrix own 200 / foreign 403 / signed-out 401 / own media 200 /
+  foreign-prefix media 403; baseline topbar 52px; after sanctioned
+  workspace-row update (LIGHT/#0B62D6/SERIF/COMPACT + logo media)
+  rendered topbar 44px at 1440 + 390, accent/font/mode applied, logo
+  `img.client-app-logo` naturalWidth>0 via server-minted media URL, no
+  390 overflow. Screenshots `repair1-*.png` + probe-repair.mjs in
+  FULL-PACKAGE-2/W2C2/. Lane DB dropped; `pg_database` proof in
+  `lane-db-teardown-r1.txt`.
+- INFO-1 (seed ordering: SEED_CLIENT_EMAIL credential but no
+  client_profile) and INFO-3 (logo inside coach-link slot) recorded for
+  the owner; not fixed in this card.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,
