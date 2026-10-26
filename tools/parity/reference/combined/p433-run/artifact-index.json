@@ -964,7 +964,7 @@
     },
     {
       "path": "receipts/source-compatibility.json",
-      "sha256": "8f5700bb34986dd0a1869d9c3fc1738e1505bbc57b952e91e0923c48358c2358"
+      "sha256": "8abb7cba5922717ecd74b7a3a7de92cf4dcbca829cbf8c081b051cc40bfae699"
     },
     {
       "path": "receipts/strict.json",
