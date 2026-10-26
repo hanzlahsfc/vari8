@@ -2,6 +2,7 @@
 
 import { Check, FileText, X } from "lucide-react";
 import { type CSSProperties, useState } from "react";
+import { TriageContent } from "../../coach/builder/triage-content";
 import {
   dateLabel,
   getCurrentRoadmapWeek,
@@ -1159,6 +1160,8 @@ export function CoachingWidgetContent(props: AdaptiveWidgetProps) {
       return <DashboardSectionHeading {...props} />;
     case "CU18":
       return <CoachAnnouncement {...props} />;
+    case "CU19":
+      return <TriageContent {...props} />;
     default:
       return null;
   }

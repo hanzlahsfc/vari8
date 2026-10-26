@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 170 components in 90 files.
+Counts: 171 components in 91 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -139,6 +139,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `TrainingTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `Transition` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `TrendsView` | `frontend/src/components/coach/client-tracker-preview/trends-view.tsx` | /, /client, /coach, /ethereal |
+| `TriageContent` | `frontend/src/components/coach/builder/triage-content.tsx` | /, /client, /coach, /ethereal |
 | `WeekPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `WeekView` | `frontend/src/components/coach/client-tracker-preview/week-view.tsx` | /, /client, /coach, /ethereal |
 | `WidgetContent` | `frontend/src/components/coach/builder/widget-content.tsx` | /client, /coach |
@@ -220,6 +221,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `TrackingView` | `frontend/src/components/coach/client-tracker-preview/tracking-view.tsx` | /, /client, /coach, /ethereal |
 | `TrackingView` | `frontend/src/components/ethereal/client-tracker/tracking-view.tsx` | /, /ethereal |
 | `TrendsView` | `frontend/src/components/coach/client-tracker-preview/trends-view.tsx` | /, /client, /coach, /ethereal |
+| `TriageContent` | `frontend/src/components/coach/builder/triage-content.tsx` | /, /client, /coach, /ethereal |
 | `VariantSchedule` | `frontend/src/components/ethereal/mealplan/variant-schedule.tsx` | /, /ethereal |
 | `WeekPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `WeekView` | `frontend/src/components/coach/client-tracker-preview/week-view.tsx` | /, /client, /coach, /ethereal |

@@ -4,11 +4,23 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 162 modules with exports, 1609 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
 Imported type names are shown without their `import("...")` prefix.
+
+## `frontend/src/lib/attention.ts`
+
+- `export type AttentionClientLike = { checkInStatus: string; checkIns: { status: string }[]; unreadCount: number; clientTasks: { status: string }[]; trainingFlags: number; }`
+- `export type AttentionSignals = { checkInOverdue: boolean; awaitingFeedbackCount: number; unreadCount: number; openTaskCount: number; overdueTaskCount: number; trainingFlags: number; }`
+- `export type TriageRow = { clientId: string; name: string; reasons: string[]; priority: number; attentionCount: number; }`
+- `export function attentionCount(signals: AttentionSignals): number`
+- `export function attentionPriority(signals: AttentionSignals): number`
+- `export function attentionReasons(signals: AttentionSignals): string[]`
+- `export function attentionSignalsFrom(client: AttentionClientLike): AttentionSignals`
+- `export function buildTriageRows(clients: (AttentionSignals & { clientId: string; name: string })[]): TriageRow[]`
+- `export function needsAttention(signals: AttentionSignals): boolean`
 
 ## `frontend/src/lib/coaching-data.ts`
 
@@ -242,6 +254,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function failMessage(message: string): { ok: false; message: string }`
 - `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
 - `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
+
+## `lib/canvas/attention.ts`
+
+- `export type AttentionClientLike = { checkInStatus: string; checkIns: { status: string }[]; unreadCount: number; clientTasks: { status: string }[]; trainingFlags: number; }`
+- `export type AttentionSignals = { checkInOverdue: boolean; awaitingFeedbackCount: number; unreadCount: number; openTaskCount: number; overdueTaskCount: number; trainingFlags: number; }`
+- `export type TriageRow = { clientId: string; name: string; reasons: string[]; priority: number; attentionCount: number; }`
+- `export function attentionCount(signals: AttentionSignals): number`
+- `export function attentionPriority(signals: AttentionSignals): number`
+- `export function attentionReasons(signals: AttentionSignals): string[]`
+- `export function attentionSignalsFrom(client: AttentionClientLike): AttentionSignals`
+- `export function buildTriageRows(clients: (AttentionSignals & { clientId: string; name: string })[]): TriageRow[]`
+- `export function needsAttention(signals: AttentionSignals): boolean`
 
 ## `lib/canvas/coaching-data.ts`
 
@@ -965,13 +989,26 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/dashboard/service.ts`
 
+- `export type { AttentionTriageDeps } from "./triage"`
+- `export type { AttentionTriageItem } from "./triage"`
+- `export type { AttentionTriageResult } from "./triage"`
 - `export type DashboardDeps = { db?: PrismaLike }`
 - `export class DashboardError extends Error (1 members)`
 - `export type StaffDashboardLayout = { layoutId: string; revision: number; configVersion: number; config: DashboardConfig; updatedByMemberId: string | null; updatedAt: string; }`
+- `export type { TriagePrismaLike } from "./triage"`
 - `export type UpdateDashboardInput = { workspaceId: string; clientProfileId: string; config: unknown; expectedRevision: number; }`
+- `export { listWorkspaceAttentionTriage } from "./triage"`
 - `export async function readOwnDashboardLayout(session: SessionLike, input: { workspaceId: string }, deps: DashboardDeps = {}): Promise<{ layout: Omit< StaffDashboardLayout, "updatedByMemberId" | "co...`
 - `export async function readStaffDashboardLayout(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DashboardDeps = {}): Promise<{ layout: StaffDashboardLayout | nul...`
 - `export async function updateClientDashboardLayout(session: SessionLike, input: UpdateDashboardInput, deps: DashboardDeps = {}): Promise<{ revision: number; config: DashboardConfig }>`
+
+## `lib/dashboard/triage.ts`
+
+- `export type AttentionTriageDeps = { db?: TriagePrismaLike; now?: Date; }`
+- `export type AttentionTriageItem = { clientProfileId: string; name: string; } & Omit<TriageRow, "clientId" | "name">`
+- `export type AttentionTriageResult = { items: AttentionTriageItem[] }`
+- `export type TriagePrismaLike = Pick< PrismaClient, "clientProfile" | "checkInInstance" | "clientTask" | "message" >`
+- `export async function listWorkspaceAttentionTriage(viewer: ApiViewer, workspace: ApiWorkspaceContext, deps: AttentionTriageDeps = {}): Promise<AttentionTriageResult>`
 
 ## `lib/db-types/client-plans.ts`
 

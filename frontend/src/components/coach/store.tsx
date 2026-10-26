@@ -41,6 +41,8 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
+  /** Server workspace binding when embedded in the app; unset standalone. */
+  workspaceId?: string;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
