@@ -1,0 +1,46 @@
+{
+  "kind": "owner-authorized-scoped-transition",
+  "executor": {
+    "role": "orchestrator executing under recorded owner authorization"
+  },
+  "ownerDecisions": [
+    {
+      "ref": "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-6417192584",
+      "description": "Owner cross-review authorizing the scoped #203/#206/#207 transition"
+    }
+  ],
+  "items": [
+    {
+      "order": 1,
+      "pr": 203,
+      "head": "90c16bee63e2609ebc4f09e91459332390562464",
+      "base": "Vari8-Beta"
+    },
+    {
+      "order": 2,
+      "pr": 206,
+      "head": "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
+      "base": "Vari8-Beta"
+    },
+    {
+      "order": 3,
+      "pr": 207,
+      "head": "04902f1dc3d317e0959ae533f2f4c479a8fc55f9",
+      "base": "Vari8-Beta"
+    }
+  ],
+  "gates": {
+    "fast": true,
+    "combined": {
+      "required": true,
+      "evidence": "tools/parity/reference/combined/p437-run",
+      "expectedCanonical": "70/70",
+      "expectedStrict": "68/70"
+    }
+  },
+  "baselineActivation": "prohibited",
+  "authorization": {
+    "scope": "merge-sequence only; no baseline activation, no head changes",
+    "note": "Changed integration heads require fresh owner review/authorization evidence."
+  }
+}
