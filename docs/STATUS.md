@@ -1,3 +1,43 @@
+## 2026-10-26 - Wave 2 T2: shared states and input contract on `w2/t2`
+
+- New primitives authored in `frontend/src/components/vari8/states.tsx` +
+  `states.css` (`EmptyState`, `LoadingState`, `Skeleton`, `ErrorState`),
+  ported byte-identically to `components/canvas/vari8/` (diff -q clean).
+  `EmptyState` renders a region labelled by its required title,
+  `LoadingState` uses `role="status"`, `ErrorState` uses `role="alert"`,
+  `Skeleton` is `aria-hidden`. Actions compose as shared `Button` /
+  `IconButton` through the `action` prop.
+- R13 contract documented in `frontend/docs/DESIGN_SYSTEM.md` ("Shared
+  states" + input contract paragraph): accessible names required, focus
+  order is DOM order (no positive tabindex), motion collapses under
+  `prefers-reduced-motion`. Enforced by
+  `frontend/src/components/vari8/states.checks.mjs`, picked up by
+  `npm run test` (278/278 pass).
+- Demo mount `frontend/src/app/coach/states/page.tsx` (synthetic data
+  only): one surface cycling populated / empty / loading / error phases
+  plus a labelled keyboard-walk strip.
+- Gates: `npx tsc --noEmit` (root) 0; `npm run lint` 0 (89 warnings,
+  baseline); `npx eslint components/canvas/vari8/states.tsx` 0;
+  `npx prettier --check` on all diff files 0; `npx biome check` on all
+  frontend diff files 0; `npm run build` (root) 0; `npm run index` wrote
+  index (new `/coach/states` route + states exports), `index:check` 0;
+  `cd frontend && npm run test` 0 (278 tests).
+- Known inherited, not repaired: `frontend` `npm run typecheck` and
+  `npm run build` fail on `client/legacy-sheet/dialog.tsx:109`
+  `labelHidden` (F1 from stage 10, present at merge base `6d3a07f`; fix
+  lives on unmerged branches). My frontend files typecheck clean; the
+  only error is that one. `frontend npm run ui:check` reports 7
+  unapproved drift violations, all in untouched `coach/` CSS files,
+  pre-existing at base.
+- Browser pass: `preview:up` dev app on 127.0.0.1:4091 (3000 held by
+  another lane; prod frontend build blocked by F1). Playwright pass at
+  1440x900 and 390x844: 18/18 checks. All four phases render, Retry
+  recovers, tab order = DOM order (9 stops), reduced-motion kills the
+  spinner animation. PNGs + `browser-pass.mjs` in the W2T2 evidence dir.
+- No migration (expected: none), no lane database used, no main-app
+  surface. T3 onward adopts the primitives; the ported files compile
+  under root tsc/build but mount nothing yet by design.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,

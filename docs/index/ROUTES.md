@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 58 backend pages, 47 API routes, 14 layouts, 5 canvas pages.
+Counts: 58 backend pages, 47 API routes, 14 layouts, 6 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -157,6 +157,7 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/client` | `frontend/src/app/client/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
+| `/coach/states` | `frontend/src/app/coach/states/page.tsx` | client | none detected |
 | `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 
