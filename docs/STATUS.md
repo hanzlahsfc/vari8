@@ -7,16 +7,26 @@
 - Lane DBs on 127.0.0.1:5433: `app_fp_stage10_b1` default seed (7 modules,
   `50-demo-coverage` absent) and `app_fp_stage10_b1d` demo seed ×2 (8
   modules, `50-demo-coverage` present; run 2 idempotent — normalized dump
-  diff empty, 155 seeded CUIDs identical). Both dropped at teardown.
-- Live sweep against the production build (216 PNGs in evidence): unauth
-  `/` `/coach` `/me` → 307; staff + client logins; 43 surfaces at 1440 and
-  390 — coach canvas (roster, client overview/timeline/plans/check-ins/
-  notes+tasks/habits/targets, all five plan-part editors, client setup,
-  check-in board/review, messages, notes, templates + template editor,
-  legacy-sheet dialog, ethereal, workspace home) and client app (home,
-  plans + nutrition + roadmap, tracker, training, check-ins incl. list,
-  photos) plus `/me` tracker. Denials hold: foreign workspace 403
-  (page+API), cross-client API 404, client→`/coach` 307→`/me`.
+  diff empty, 155 seeded CUIDs identical). Both dropped at teardown —
+  the verifier found them still present on 5433, the repair-1 pass
+  dropped them and re-checked `pg_database` (zero `app_fp_stage10%`
+  rows, output in `teardown-databases.txt`).
+- Live sweep against the production build (44 distinct slugs, 91 PNGs at
+  1440 + 125 at 390 = 216 pre-repair; repair-1 added 4 slugs / 44 PNGs
+  → 48 slugs / 260 PNGs): unauth `/` `/coach` `/me` → 307; staff +
+  client logins; surfaces at 1440 and 390 — coach canvas (roster,
+  client overview/timeline/plans/check-ins/notes+tasks/habits/targets,
+  all five plan-part editors, client setup, check-in board/review,
+  messages, notes, templates + template editor, legacy-sheet dialog,
+  ethereal, workspace home, **staff progress-photos gallery +
+  comparator**, the stage-6 surface added in repair-1) and client app
+  (home, plans + nutrition + roadmap, tracker, training, check-ins
+  incl. list, **check-in submit flow end-to-end**, photos) plus `/me`
+  tracker. Denials hold: foreign workspace 403 (page+API), cross-client
+  API 404 in `sweep-results.json` (client session →
+  `…/clients/<foreign-profile>/tasks`; the verifier's client-session
+  sample returned 403 — both inside the expected 403/404 band),
+  client→`/coach` 307→`/me`.
 - Parity (owner ruling 2026-10-25): 10 stale click recipes re-derived
   against the merged UI (profile tabs, renumbered template nav 01–07,
   `.cd-plan-module`→`.cp-card` scoping, `Open chat (1 unread)`,
@@ -41,6 +51,13 @@
   vs http-auth guard (inherited interplay); F3 iifym/supplements APIs
   403 under the card env (feature flags unset — config boundary, by
   design); `BETTER_AUTH_URL`-unset boot warning (cosmetic).
+- Repair-1 (verifier REPAIR vs `d85dddc`, closed on `fp/stage-10`):
+  b1/b1d actually dropped (were still present); staff photos gallery +
+  comparator and client check-in submit exercised at 1440/390 on a
+  fresh `app_fp_stage10_r1d` lane (`sweep-r1-results.json` 4/4, PNGs in
+  evidence dir); report counts corrected (44→48 slugs, real per-width
+  numbers), `format-failing-files.txt` completed to 57, cross-client
+  denial attributed to its actor/sample. Full detail: REPORT.md §10.
 - Full record: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-10/REPORT.md`.
   NOT done: owner sign-off; no push, no PR.
 
