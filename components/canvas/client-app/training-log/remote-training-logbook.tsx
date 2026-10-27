@@ -306,6 +306,8 @@ export function RemoteTrainingLogbook({
   const [navWeek, setNavWeek] = useState<number | undefined>(undefined);
   const [open, setOpen] = useState<ScheduledSession | undefined>(undefined);
   const [saveError, setSaveError] = useState(false);
+  // Remote writes queued or in flight; the beforeunload guard follows this.
+  const [pendingWrites, setPendingWrites] = useState(0);
 
   // Serialized write queue — start must land before the first set save.
   const queue = useRef<Promise<void>>(Promise.resolve());
@@ -449,6 +451,7 @@ export function RemoteTrainingLogbook({
       const prescribed = next.exercises.flatMap((e) =>
         e.prescription.sets.map((s) => ({ exerciseId: e.exerciseId, set: s })),
       );
+      setPendingWrites((n) => n + 1);
       queue.current = queue.current.then(async () => {
         try {
           let logId = startedRef.current.get(key);
@@ -508,11 +511,25 @@ export function RemoteTrainingLogbook({
                 ]),
               )
               .catch(() => undefined);
+        } finally {
+          setPendingWrites((n) => Math.max(0, n - 1));
         }
       });
     },
     [plan, own.workspaceId, meta, unit, applyLogs],
   );
+
+  // Dirty-only beforeunload: warn while a remote write is queued or in flight,
+  // dropped as soon as the chain settles (a finished session goes quiet).
+  useEffect(() => {
+    if (pendingWrites === 0) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [pendingWrites]);
 
   const openSession = useCallback(
     (item: ScheduledSession, log?: TrainingSessionLog) => {

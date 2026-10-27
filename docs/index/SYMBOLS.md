@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1583 exported symbols.
+Counts: 160 modules with exports, 1589 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -832,10 +832,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
 - `export type StaffDailyEntryListItem = { entryDate: string; revisionCount: number; currentRevisionSeq: number | null; }`
 - `export type StaffDailyEntryListResult = | { state: "ready"; clientName: string; items: StaffDailyEntryListItem[]; nextCursor: string | null; } | { state: "consent_missing" }`
+- `export type StaffTrackerCellNote = StaffTrackerNote & { parameterKey: string; }`
+- `export type StaffTrackerNote = { entryDate: string; body: string; }`
+- `export type StaffTrackerValueRow = { parameterKey: string; kind: string; display: string; }`
+- `export type StaffTrackerValuesResult = | { state: "consent_missing" } | { state: "ready"; clientName: string; entries: { entryDate: string; values: StaffTrackerValueRow[] }[]; cellNotes: StaffTrack...`
 - `export async function advisoryLock(tx: Prisma.TransactionClient, key: string): Promise<void>`
 - `export async function checkRequiredConsent(tx: PrismaLike, clientProfileId: string, registry: ConsentPolicyRegistry, forUpdate: boolean): Promise<void>`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
+- `export async function listStaffTrackerValues(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DailyEntryDeps = {}): Promise<StaffTrackerValuesResult>`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
 - `export async function lockRow(tx: Prisma.TransactionClient, sql: string, ...params: string[]): Promise<void>`
 - `export function parseDeclaredDate(raw: unknown): string`
@@ -845,6 +850,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function resolveOwnClient(tx: Prisma.TransactionClient, workspaceId: string, userId: string): Promise<{ id: string } | null>`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
 - `export async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T>`
+- `export async function writeStaffTrackerNote(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string; parameterKey?: string | null; body: string | null; }, dep...`
 
 ## `lib/daily-entry/validate.ts`
 

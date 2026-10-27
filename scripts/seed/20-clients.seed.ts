@@ -59,11 +59,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     throw new Error(
       `workspace ${WORKSPACE_SLUG} missing; run 00-workspace.seed.ts first`,
     );
-  const coachMember = await prisma.workspaceMember.findFirst({
+  const coachMembers = await prisma.workspaceMember.findMany({
     where: { workspaceId: workspace.id, role: "COACH", status: "ACTIVE" },
     orderBy: { createdAt: "asc" },
     select: { id: true },
   });
+  const coachMember = coachMembers[0];
+  // W2-FE2: any further seeded coaches are assigned at COACH scope so the
+  // assigned-scope matrix has more than one authorized staff member.
+  const extraCoachMembers = coachMembers.slice(1);
 
   let written = 0;
   const clients = canvasClients();
@@ -109,6 +113,23 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           clientProfileId: profile.id,
           coachMemberId: coachMember.id,
           role: "PRIMARY",
+          status: "ACTIVE",
+        },
+      });
+    for (const extraCoach of extraCoachMembers)
+      await prisma.clientAssignment.upsert({
+        where: {
+          clientProfileId_coachMemberId: {
+            clientProfileId: profile.id,
+            coachMemberId: extraCoach.id,
+          },
+        },
+        update: { status: "ACTIVE" },
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          coachMemberId: extraCoach.id,
+          role: "COACH",
           status: "ACTIVE",
         },
       });

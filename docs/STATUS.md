@@ -28,6 +28,123 @@
 - NOT done: no push, no PR, no fetch. Lane database not needed (no gate
   demanded one).
 
+## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
+
+- Scope implemented on top of merge tip `01c66b0`:
+  - `components/canvas/client-app/photos.tsx` rewritten: shared
+    presentational `PhotoGallery` plus live wrapper: pose select on
+    upload encoded as `{pose} · {date}` in the minted media fileName,
+    pose parsed back with `"Photo"` fallback, compare mode driven by
+    `compareProgressPhotos`, delete via `deleteProgressPhoto`,
+    `SharedMedia` kept verbatim after the gallery.
+  - `frontend/src/components/client-app/photos.tsx` new authored twin:
+    byte-identical presentational block; demo wrapper uses local state +
+    object URLs (frontend has no photos section id; intentionally
+    unmounted there, named deviation).
+  - `components/canvas/client-app/client-app.tsx`: `poses` wired from
+    the variant's visual-upload question, `DEFAULT_POSES` fallback.
+  - `components/canvas/client-app/training-log/session-logger.tsx` +
+    frontend twin: typed-set dirty tracking (weight/reps/RPE/RIR/note/
+    flag set and not done) with dirty-only `beforeunload`; finish clears
+    permanently for the logger instance. Twins differ only by the
+    pre-existing `&apos;` hunk.
+  - `components/canvas/client-app/training-log/remote-training-logbook.tsx`:
+    queued/in-flight remote write counter arms the same dirty-only
+    beforeunload; no-op writes never arm.
+  - `components/canvas/ethereal/client-tracker/remote-client-tracker.tsx`:
+    day dirty = pending edits, raws differing from the loaded surface
+    baseline, or a save/refetch round trip running; guard registered
+    only while dirty; autosave/token-refresh/override semantics kept.
+- Live API proofs on lane DB `app_fp_w2c7r2` (TLS front
+  `https://localhost:5178` -> private `next start` :5177, production
+  runtime via `APP_ENV=development`, all dev flags unset):
+  Amara + Emma real logins; media intent -> local PUT -> register 200
+  for both; photo lists disjoint (Amara 16 seeded + probe, Emma probe
+  only); compare 200 own pair; Emma -> Amara photo path 403, foreign
+  session 404 both directions; own delete 200; training lifecycle
+  start/set/finish 200 for both; Amara's already-finished log correctly
+  409 `state_conflict`.
+- Browser pass (Playwright, real login) at 1440 and 390:
+  17 photo tiles rendered live each width; compare picker renders
+  `.ca-photos-compare`; training list shows 4 scheduled sessions;
+  390 overflow probe `{doc:390, win:390, offenders:[]}`.
+  Tracker guard proven live: PUT daily-entry write delayed in-flight
+  via route intercept -> synthetic cancelable `beforeunload` dispatch
+  returns `defaultPrevented:true` (armed); after save settles,
+  `defaultPrevented:false` (disarmed). Both widths.
+  Screenshots: `Vari8-evidence/FULL-PACKAGE-2/W2C7/w2c7-{1440,390}px-*.png`.
+- Gates: `npm run typecheck` 0; `npm run build` 0 (post-change, before
+  prod boot); `npm run index` + `index:check` 0; eslint touched files
+  0 errors; frontend `biome check` touched files clean; canvas-file
+  biome findings all verified pre-existing against HEAD baselines;
+  `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
+  277/277; no new en/em dashes in added lines. Known pre-existing
+  frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+- Lane teardown: `DROP DATABASE app_fp_w2c7r2` executed;
+  `pg_database` count for `app_fp_w2c7%` is 0; prod server :5177 and
+  TLS front :5178 stopped. Work committed as `d4a8659`, tree clean.
+
+## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
+
+- Lead amendment tick 160 extended the step-3 named resolution set by
+  exactly one file: `frontend/src/components/coach/clients.tsx`,
+  resolved by the same union rule granted for
+  `components/canvas/coach/store.tsx` (keep both sides' additions;
+  order matches the canvas twin's auto-merged order).
+- Merge 3 re-run: `git merge-tree --write-tree` on HEAD + fe2 pin
+  `2df2d8200fcc5aefc2a5d6629928e56d8f803e16` -> tree OID
+  `f29b779115485a06bee951458909bb55b5b7cc38`; conflicts exactly the
+  amended set (`store.tsx`, `frontend/.../clients.tsx`,
+  `docs/STATUS.md`, `docs/index/{COMPONENTS,DATA-MODEL,ROUTES}.md`);
+  `components/canvas/coach/clients.tsx` auto-merged. Merge commit
+  `01c66b0d01d6c25011d3f89f5ecbb488730af193`.
+- Resolutions: `store.tsx` union (fe2 tracker/training-logs imports
+  plus HEAD `addLocalDays`, both call sites live at 807/906);
+  `frontend/.../clients.tsx` union (both `AthleteTrackerTab` and
+  `ClientMediaPanel`, canvas auto-merge order: tracker-tab import
+  before the model block, media import after it); `STATUS.md`
+  hand-merged ours-new then theirs-new over a byte-identical tail;
+  index docs regenerated via `npm run index` (exit 0).
+- Merged-tip gates: first `npm run typecheck` exit 2 on stale Prisma
+  client (`trackerDayNote` missing), fixed by `npx prisma generate`;
+  re-run exit 0. `npm run build` exit 0.
+- New lane DB for this run: `app_fp_w2c7r2` (`app_fp_w2c7` was never
+  created; not reused).
+
+## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
+
+- Card w2-c7 (client photos, training log, tracker entry polish),
+  branch `w2/c7` off c1 tip `788714b`. Lane DB `app_fp_w2c7`, port
+  floor >4999, migration stamp `20261027000017` reserved and free.
+- Merge 1: `w2/a3` `0e91798` -> `git merge-tree --write-tree` OID
+  `8dd37c086de6a63b807cb39e6ca8f533f8ed3a72` (matches the card's
+  verified OID, clean). Merge commit
+  `842851ad8679d8d645f35a79f1bccacbdd5ae628`.
+- Merge 2: `w2/t6` pinned `f0dddf3` (note: the `w2/t6` branch tip had
+  advanced to `da34672`, a later merge of w2/fe1; the card pins
+  `f0dddf3`, so the SHA was merged, not the branch tip). merge-tree
+  OID `1c321ddf5ac0415339a56b16137ca012dd65aefd`; conflicts only in
+  the two named files, resolved per card: `docs/STATUS.md` hand-merged
+  newest-first keeping both sides, `docs/index/ROUTES.md` regenerated
+  via `npm run index` (exit 0). Merge commit
+  `0c6b0a8c87069c8f44c5cd15da96ee2d12c6b87f`.
+- Merge 3: `w2/fe2` `2df2d82` -> merge-tree OID
+  `96e7573f9705326c0b487e5589f505cf1a2e239a`; conflicts: named
+  `components/canvas/coach/store.tsx`, named docs class
+  (`docs/STATUS.md`, `docs/index/COMPONENTS.md`,
+  `docs/index/DATA-MODEL.md`, `docs/index/ROUTES.md`), PLUS the
+  unlisted `frontend/src/components/coach/clients.tsx` (t6 side adds
+  `import { ClientMediaPanel } from "./media"`, fe2 side adds
+  `import { AthleteTrackerTab } from "./athlete/tracker-tab"` in the
+  same import-block slot; the canvas twin auto-merged cleanly).
+  Card rule: any conflict beyond the named files stops the merge,
+  verbatim to report, no resolution attempt. Merge aborted; branch at
+  `0c6b0a8`. Verbatim conflicted file and stage list under
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7/`.
+- Card BLOCKED pending owner/lead ruling on `clients.tsx` resolution
+  scope. No card item work started; merged-tip typecheck/build not
+  run, per the step order.
+
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
 - Verifier B1: the T6 migration added `client_profile_id` with no
@@ -104,6 +221,176 @@
 - Note: `/client` renders sections from the canvas-local client config
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
+
+## 2026-10-27 - w2-fe2 merge resolution: absorbed w2/a3, preview line product-clean
+
+- Merge-resolution card after preview rebuild 20261027T054901Z hit a real
+  product conflict merging the fe2 READY tip 2df2d82 against the merged
+  stage set. Goal: absorb conflicting verified stages into w2/fe2 so the
+  preview merge line is clean end to end. No feature work.
+- Step 1: probed w2/a3 0e91798 with `git merge-tree --write-tree`
+  (tree 21500021c68d23467823eb63ad01eaf19d2bed9f): one conflict,
+  `components/canvas/coach/store.tsx` import region. Merged as --no-ff
+  commit 5cea742. Resolution kept both sides: fe2's tracker and
+  training-logs import blocks plus a3's `addLocalDays` in the
+  `./targets/model` import; a3's new code uses `addLocalDays` at the
+  hydrated range fetch. All other files auto-merged.
+- Step 2 probes against the new HEAD: w2/c1 788714b clean
+  (tree e0746aea0a3c0fadaa22a7c71702473a7ced5e26); w2/c2 4ca38da
+  docs-only (b0d1e51841eb67f099c24ef780270d0e8499e9bc); w2/t3 a461e00
+  docs-only (14553f76d2495aa242f31e254396ad181939dd2e); w2/t4 33a3cab
+  docs-only (55ea9b2572d82bc337b307d87fc74ed65378f83e); w2/t5 5c8dae8
+  docs-only (0509bdc651ff853a2de5bff82c8d86515ec34e31) with
+  `db/schema.prisma` and the frontend twin store auto-merging clean once
+  a3 was absorbed; w2/t6 da34672 docs-only
+  (fc6f8ddcb32f846d47c62630dc6bd1fd76158991). No tip showed a non-docs
+  conflict, so per the card rule no further stage was merged. A
+  supplementary t5-on-t6 probe (71910a6b878f5781f99988fc088c505397b7e263)
+  also auto-merged schema.prisma, so the later preview merges stay
+  product-clean regardless of order.
+- Gates on the merged tip: `npx prisma validate` 0 (DATABASE_URL
+  placeholder; no .env in this worktree), typecheck 0, lint 0 (93
+  warnings, unchanged), frontend lint 0, `npx vitest run` 0 (118 files,
+  1398 tests), `npm run index` regenerated with no diff, index:check 0,
+  `npm run build` 0, dash gate prints 0, worktree clean.
+- Evidence: NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE-2/W2FE2/.
+
+## 2026-10-27 - w2-fe2 repair 2: tracker hydration scoped to the Tracker tab, logging test env isolation
+
+- Verdict `VERDICT-6069da5.md` blocked on B2 (the W2-FE2 tracker hydration
+  effect fired for every signed-in client route, not only the Tracker tab)
+  and B3 (inherited red: two logging.test.ts media/object tests, expected
+  500, got 403 in the full suite under the lane env).
+- B2 repair: `components/canvas/coach/store.tsx` hydration effect now
+  returns early unless `route.tab === "Tracker"`; `route.tab` added to its
+  dependency array. On the profile overview and onboarding screens no
+  tracker values or training-log fetch fires. The note-sync effect keeps
+  its `trackingHydrated` gate, so it stays inert until the Tracker tab has
+  hydrated once and keeps pending note writes alive across tab navigation.
+  The frontend twin `frontend/src/components/coach/store.tsx` holds only
+  local-storage hydration: no server fetch exists there to scope, so the
+  alias rewrite remains the only twin delta.
+- B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
+  stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
+  over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
+  so the route verified signed URLs against the wrong secret and answered
+  403. Full suite reproduction: standalone logging.test.ts red under the
+  lane env before the stub, green after. Product code unchanged.
+- Live proof on a lane dev server (seeded coach, 1440 and 390): the
+  profile overview fires 0 tracker values or training-logs GETs before
+  the Tracker tab opens; opening Tracker fires values 200 and
+  training-logs GET 200 once, note markers and the week matrix render.
+  Reference spot check on the unrepaired tree measured 1 values GET on
+  the same overview.
+- Parity on the production build through the fixed runner: 74/74 screens
+  captured, exit 1 with 63 problems. The four s01 lines returned exactly
+  to base values (s01-profile-overview 10723 px geom 5/2/12 at 1440 and
+  297827 px geom 5/2/218 at 390; s01-profile-onboarding 2186 and 193294
+  px with the same geoms). All other FAIL lines are byte-identical to the
+  reviewed tip run except s07-exercise-library and s11-client-preview,
+  which are capture-variable and now match the base and pre-stage
+  measurements instead.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), frontend
+  lint 0, index:check 0, vitest run 0 (117 files, 1396 tests under the
+  lane env), dash gate 0.
+
+## 2026-10-27 - w2-fe2 repair 1: parity runner https origin, s07 recipe fix, baseline refresh
+
+- Verdict `VERDICT-f16be09db2e9e5f192c245769257f76975a6538c.md` blocked on
+  twin parity only: the runner forced an http `BETTER_AUTH_URL` onto its own
+  spawned production server (boot_refused exit 2), and the dev-mode s07
+  capture failed on "Set up plan" then crashed pre-compare.
+- `tools/parity/run.mjs`: the spawned root-app production server now keeps
+  `next start` on a private http port while an in-process TLS front serves
+  `https://localhost:<port>` (self-signed loopback cert, or
+  `PARITY_TLS_CERT`/`PARITY_TLS_KEY`), and that https origin is what the
+  server gets as `BETTER_AUTH_URL`/`AUTH_URL`. Port ownership is still
+  enforced on both listeners; NODE_ENV is forced for the spawn env so a
+  sourced lane shell cannot poison the production build.
+- `tools/parity/capture.mjs`: loopback https origins get an undici
+  `rejectUnauthorized:false` dispatcher for fetches and
+  `ignoreHTTPSErrors` for Playwright contexts; context/page creation moved
+  inside the capture retry block so a `newContext` protocol error becomes a
+  retried failure instead of crashing the run before compare.
+- s07 attribution: the same capture on parent base `74cff77` renders
+  "Set up plan" for Emma Anders; on w2-fe2 the server plan hydration added
+  by this diff turns her card into "Edit plan" once the seeded published
+  program loads, so the recipe raced or missed. Recipe now uses Chloe Park
+  (no seeded training program, "Set up plan" deterministic) plus a scoped
+  alternate label for reruns where a prior capture already persisted a
+  draft.
+- `tools/parity/baseline` regenerated from the current `frontend/` tree via
+  `PARITY_DEV=1 --update-baseline` (74/74 screens): the committed baseline
+  predated the PR-204 frontend reset (recorded at `44eec07`) and the prod
+  frontend build still trips the inherited `dialog.tsx` `labelHidden`
+  typecheck defect (STATUS F1), so the documented dev path was used.
+- Result on the production build through the fixed runner: 74/74 screens
+  captured at both viewports, exit 1 at compare with 63 problems - the
+  identical fingerprint reproduces on base `74cff77` (same 63 problems),
+  so the residual is pre-existing seed-vs-canvas drift and owner-rulable
+  truth text, not a w2-fe2 regression. A `?demo` diagnostic run decomposes
+  it further (37 problems persist at render level without hydration; the
+  26 that clear are server-data drift). Exit 0 additionally needs the
+  project-level seed alignment or RULED decisions, which are outside this
+  card's scope.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), index:check
+  0, vitest 1396/1396, dash gate 0.
+
+## 2026-10-27 - w2-fe2: backend for the coach Tracker tab
+
+- Merge: `git merge-tree` (no ref updates) predicted one content conflict in
+  `docs/STATUS.md`; resolved keeping both entries, newest first. Merged
+  w2/a2 tip `8403a6230ee7fb97eff2ed8ed4769ade8f2db2a2` into `w2/fe2` as
+  merge commit `072eb5a9d35617fe716e7eed1d48e78ef40f6b93`. Typecheck and
+  build on the merged tip passed before feature work.
+- Schema: new `TrackerDayNote` model (one coach-authored day note per
+  client+date) beside the existing `TrackerComment` per-cell note;
+  migration `20261027000012_tracker_day_notes` with `down.sql`, deployed
+  via `prisma migrate deploy` on a fresh lane database.
+- API: `GET .../clients/:clientProfileId/daily-entries/values` returns the
+  tracker span (65 seeded days for Amara) with per-field display values,
+  cell notes, day notes and the workspace parameter list, batched (no
+  N+1); entries and both note lists are each capped at the newest 400
+  rows, capability `clientData.read`. `PUT`/`DELETE .../tracker-notes`
+  upsert and clear cell/day notes on natural keys, capability
+  `notes.write` at the route layer, with the service then applying the
+  authoritative `coachNotes` write matrix: ACTIVE `ClientAssignment`
+  required, so unassigned same-workspace coaches, owners, clients and
+  foreign members are denied (owner write is `denied` in rbac.ts D10;
+  `roles.ts` `notes.write` still says owner-workspace - open question for
+  Marcel, implementation follows rbac).
+- Canvas: `data/tracker.ts` fetchers plus the wire->tracking mapper;
+  `store.tsx` hydrates `client.tracking` and remote session logs for the
+  viewed client (reusing the w2-a2 training-log route) and debounce-syncs
+  `note:`/`coach-note` text keys to the notes route. Derived columns
+  without a server parameter keep their note local, matching pre-backend
+  behavior.
+- Seed: `36-daily-entries.seed.ts` and `50-demo-coverage.seed.ts` now set
+  field `decimals`/`summary` metadata and deterministic tracker cell/day
+  notes; two consecutive seeded dumps are byte-stable after normalizing
+  timestamps, cuids, password hashes and COPY row order
+  (`W2FE2/normalize-dump.py`).
+- Seed: a second same-workspace coach is provisioned when
+  `SEED_COACH2_EMAIL`/`SEED_COACH2_PASSWORD` are set (00-workspace) and
+  assigned at COACH scope to every canvas client (20-clients); seeded note
+  ids are profile-anchored constants and stale-date rows are cleaned, so
+  reseeding on a different calendar day leaves no orphans.
+- Verified: typecheck, lint (0 errors), build, 117 files / 1392 tests,
+  prettier clean on touched files, docs/index regenerated and
+  `index:check` green. Independent review (Claude family via
+  hermes-verify) returned REPAIR on round 1; all findings fixed and
+  re-proven. Live matrix on the lane app (APP_ENV=test, feature flags on,
+  consent gates off per D12): assigned coach GET/PUT 200, second assigned
+  coach GET 200 and sees the notes, unassigned same-workspace coach
+  GET/PUT 403, foreign-workspace coach 403, client 403, owner PUT 403,
+  anonymous 401, `2026-02-31` 400, bogus parameter key 400
+  (`W2FE2/role-matrix.txt`). Browser proof at 1440 and 2560, real login,
+  no `?demo`: UI cell note PUT 200 persists after reload, day note renders
+  server-side, 0 console errors; screenshots in
+  `Vari8-evidence/FULL-PACKAGE-2/W2FE2/shots/`.
+- Held for w2-a5 (not claimed here): template-editor persistence of
+  Decimals and Week summary, and the template-field read that drives tab
+  columns from the server.
 
 ## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
 

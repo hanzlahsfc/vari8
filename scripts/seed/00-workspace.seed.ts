@@ -35,6 +35,8 @@ import type { SeedContext } from "./index";
  *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD — client of `canvas-demo`, linked
  *     to the first canvas demo client profile.
  *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD — coach of `seed-second-workspace`.
+ *   SEED_COACH2_EMAIL, SEED_COACH2_PASSWORD - optional second COACH member of
+ *     `canvas-demo` (w2-fe2 notes matrix fixture).
  * Passwords need >= 10 code points and one ASCII digit (owner-decided policy).
  * Every write is an idempotent upsert so `npm run seed:dev` is safe to re-run.
  */
@@ -94,6 +96,17 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   const coach = await upsertUser(prisma, coachEmail, COACH_NAME);
   await upsertCredentialAccount(prisma, coach.id, coachPassword);
   await upsertMember(prisma, workspace.id, coach.id, "COACH");
+
+  // W2-FE2: optional second same-workspace coach (SEED_COACH2_EMAIL /
+  // SEED_COACH2_PASSWORD) so the staff notes matrix has a second authorized
+  // COACH member. Skipped when the envs are unset; idempotent like the rest.
+  const coach2Email = process.env.SEED_COACH2_EMAIL;
+  const coach2Password = process.env.SEED_COACH2_PASSWORD;
+  if (coach2Email && coach2Password) {
+    const coach2 = await upsertUser(prisma, coach2Email, "Rhea Tanaka");
+    await upsertCredentialAccount(prisma, coach2.id, coach2Password);
+    await upsertMember(prisma, workspace.id, coach2.id, "COACH");
+  }
 
   const names = canvasClientNames();
   // The seeded client signs in as the first canvas demo client so a lane can
