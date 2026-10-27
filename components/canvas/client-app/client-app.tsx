@@ -8,6 +8,8 @@ import {
   Dumbbell,
   House,
   Images,
+  ListChecks,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { HabitsTab } from "../coach/habits-tab";
@@ -19,6 +21,12 @@ import {
   fetchActivityTargets,
   versionsFromWire,
 } from "../data/activity-targets";
+import { fetchOwnMessages, sendOwnMessage } from "../data/messages";
+import {
+  fetchOwnTasks,
+  type OwnTaskWire,
+  setOwnTaskCompletion,
+} from "../data/tasks";
 import type { ActivityTargetVersion } from "../coach/targets/model";
 import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
@@ -31,6 +39,8 @@ import {
   PLAN_PART_LABELS,
   sectionForLegacyTab,
 } from "./sections";
+import { ClientMessages, type ClientMessageRow } from "./messages";
+import { ClientTasks, type ClientTaskRow } from "./tasks";
 import { TrainingLogbook } from "./training-log/training-logbook";
 import { RemoteTrainingLogbook } from "./training-log/remote-training-logbook";
 import { ClientPhotos } from "./photos";
@@ -54,6 +64,8 @@ const SECTION_ICONS: Partial<Record<ClientAppSectionId, typeof House>> = {
   tracker: Activity,
   training: Dumbbell,
   "check-ins": CalendarCheck,
+  messages: MessageCircle,
+  tasks: ListChecks,
   photos: Images,
 };
 
@@ -168,6 +180,167 @@ function RemoteActivityTargetsPart({
       )}
     </section>
   );
+}
+
+// Card w2-c5: the messages section reads and posts through the own-scope
+// /api/v1 messages surface (own.read + message.write). The client reply
+// path is the same own send the dashboard widget uses; no fixture
+// fallback exists for a signed-in client.
+function RemoteClientMessages({
+  own,
+  clientName,
+}: {
+  own: { workspaceId: string; clientProfileId: string };
+  clientName: string;
+}) {
+  const [rows, setRows] = useState<ClientMessageRow[] | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [sending, setSending] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnMessages(own.workspaceId)
+      .then((response) => {
+        if (cancelled) return;
+        setRows(
+          response.messages.map((wire) => ({
+            id: wire.id,
+            fromClient: wire.senderKind === "CLIENT",
+            sender: wire.senderKind === "STAFF" ? "Coach" : clientName,
+            date: wire.sentAt.slice(0, 10),
+            body: wire.body,
+            unread: false,
+          })),
+        );
+        setPhase("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setPhase("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [own.workspaceId, clientName]);
+  const send = (body: string) => {
+    if (sending) return;
+    setSending(true);
+    sendOwnMessage(own.workspaceId, body)
+      .then((result) => {
+        setRows((current) => [
+          ...(current ?? []),
+          {
+            id: result.message.id,
+            fromClient: true,
+            sender: clientName,
+            date: result.message.sentAt.slice(0, 10),
+            body: result.message.body,
+          },
+        ]);
+        setSending(false);
+      })
+      .catch(() => setSending(false));
+  };
+  if (phase === "loading")
+    return (
+      <div className="client-app-loading" role="status">
+        Loading your messages…
+      </div>
+    );
+  if (phase === "error")
+    return (
+      <section className="cd-preview-section" aria-label="Messages">
+        <h2>Messages</h2>
+        <Empty title="Your messages could not be loaded">
+          Check your connection and reload the page.
+        </Empty>
+      </section>
+    );
+  return <ClientMessages onSend={send} pending={sending} rows={rows ?? []} />;
+}
+
+// Card w2-c5: the tasks section lists the caller's own client_task rows
+// through the session-bound GET (own.read) and writes completion through
+// the own-scope PATCH (own.write, revision-checked). A failed write
+// refetches so the list never holds stale local state.
+function RemoteClientTasks({
+  own,
+}: {
+  own: { workspaceId: string; clientProfileId: string };
+}) {
+  const [tasks, setTasks] = useState<OwnTaskWire[] | null>(null);
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">(
+    "loading",
+  );
+  const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnTasks(own.workspaceId, "both")
+      .then((response) => {
+        if (cancelled) return;
+        setTasks(response.tasks);
+        setPhase("ready");
+      })
+      .catch(() => {
+        if (!cancelled) setPhase("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [own.workspaceId]);
+  const toggle = (id: string, complete: boolean) => {
+    const wire = tasks?.find((task) => task.id === id);
+    if (!wire || busy.has(id)) return;
+    setBusy((current) => new Set(current).add(id));
+    setOwnTaskCompletion(own.workspaceId, own.clientProfileId, id, {
+      desired: complete ? "COMPLETED" : "OPEN",
+      expectedRevision: wire.revision,
+    })
+      .then((result) => {
+        setTasks((current) =>
+          (current ?? []).map((task) =>
+            task.id === id
+              ? { ...task, status: result.status, revision: result.revision }
+              : task,
+          ),
+        );
+      })
+      .catch(() => {
+        fetchOwnTasks(own.workspaceId, "both")
+          .then((response) => setTasks(response.tasks))
+          .catch(() => undefined);
+      })
+      .finally(() => {
+        setBusy((current) => {
+          const next = new Set(current);
+          next.delete(id);
+          return next;
+        });
+      });
+  };
+  if (phase === "loading")
+    return (
+      <div className="client-app-loading" role="status">
+        Loading your tasks…
+      </div>
+    );
+  if (phase === "error")
+    return (
+      <section className="cd-preview-section" aria-label="Tasks">
+        <h2>Tasks</h2>
+        <Empty title="Your tasks could not be loaded">
+          Check your connection and reload the page.
+        </Empty>
+      </section>
+    );
+  const rows: ClientTaskRow[] = (tasks ?? []).map((wire) => ({
+    id: wire.id,
+    title: wire.title,
+    dueDate: wire.dueDate,
+    complete: wire.status === "COMPLETED",
+    dueState: wire.status === "COMPLETED" ? undefined : wire.dueState,
+  }));
+  return <ClientTasks busyIds={busy} onToggle={toggle} rows={rows} />;
 }
 
 export function ClientApp({
@@ -420,6 +593,10 @@ export function ClientApp({
                 clientProfileId={own?.clientProfileId}
               />
             )}
+            {active === "messages" && own && (
+              <RemoteClientMessages own={own} clientName={client.name} />
+            )}
+            {active === "tasks" && own && <RemoteClientTasks own={own} />}
             {active === "photos" && own && (
               <ClientPhotos
                 workspaceId={own.workspaceId}

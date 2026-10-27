@@ -69,6 +69,42 @@ test("habits alone enable Tracker; nothing enabled gives no sections", () => {
   );
 });
 
+test("messages and tasks appear only under the remote gate, after check-ins", () => {
+  const plans = {
+    supplements: { items: [] },
+    activityTargets: [{ id: "v1" }],
+  };
+  const config = { views: [...ALL].reverse(), habits: false };
+  const gated = clientAppSections(config, plans, { remote: true });
+  assert.deepEqual(ids(gated), [
+    "home",
+    "plans",
+    "tracker",
+    "training",
+    "check-ins",
+    "messages",
+    "tasks",
+  ]);
+  assert.deepEqual(
+    gated.map((s) => s.label),
+    ["Home", "Plans", "Tracker", "Training", "Check-ins", "Messages", "Tasks"],
+  );
+  assert.deepEqual(ids(clientAppSections(config, plans, { remote: false })), [
+    "home",
+    "plans",
+    "tracker",
+    "training",
+    "check-ins",
+  ]);
+  assert.deepEqual(ids(clientAppSections(config, plans)), [
+    "home",
+    "plans",
+    "tracker",
+    "training",
+    "check-ins",
+  ]);
+});
+
 test("legacy preview tab names map to sections and plan parts", () => {
   assert.deepEqual(sectionForLegacyTab("Dashboard"), { section: "home" });
   assert.deepEqual(sectionForLegacyTab("Habits"), { section: "tracker" });
