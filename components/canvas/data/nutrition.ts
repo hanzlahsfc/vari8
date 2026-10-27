@@ -1,10 +1,17 @@
 // Nutrition domain provider (PR-W0). Owns the per-client nutrition plan
 // lifecycles (meal-plan and IIFYM versions) and the supplement plan of the
-// coach store, plus the ethereal meal-plan workspace key. PR-W7 wires this
-// domain to the server; it edits this file only.
+// coach store, plus the ethereal meal-plan workspace key. W2-A2 wires the
+// coach-facing lifecycles to the server: the slice stays a write-through
+// cache so first paint is instant, and the store hydration below
+// re-reads `/api/v1` as the authority on every client switch.
 
 import type { CoachState } from "../coach/model";
-import { emptyClientPlans, type ClientPlans } from "../coach/plans/types";
+import {
+  type ClientPlans,
+  emptyClientPlans,
+  type IifymPlan,
+  type TemporaryNutrition,
+} from "../coach/plans/types";
 import { isMealPlan, type MealPlan } from "../ethereal/mealplan/model";
 import { apiFetch } from "./http";
 import { type CoachSlice, readStorage, writeJson } from "./provider";
@@ -225,4 +232,259 @@ export function fetchOwnIifymPlan(
   workspaceId: string,
 ): Promise<OwnIifymPlanWire> {
   return apiFetch<OwnIifymPlanWire>(`/workspaces/${workspaceId}/iifym-plans`);
+}
+
+/* -------------------------------------------------------------------------
+ * W2-A2 remote surface: staff meal-plan and staff IIFYM lifecycles. Wire
+ * shapes mirror `lib/mealplan/service.ts` and `lib/iifym/service.ts` -
+ * duplicated here so the canvas never imports server modules.
+ *
+ * Meal plan: GET returns the shared draft plus version HEADERS; the active
+ * payload needs the version-detail read (`fetchStaffMealPlanVersion`). PUT
+ * saves the shared draft under `expectedRevision` CAS; POST publish mints
+ * an immutable version.
+ *
+ * IIFYM: same lifecycle over the existing `/clients/{cp}/iifym-plans`
+ * routes. There is no staff version-detail read in the iifym service, so
+ * the store resolves the ACTIVE content from the draft (W2-A2 boundary
+ * note) - publish freezes the current draft, so the shapes agree at the
+ * moment of publication.
+ * ---------------------------------------------------------------------- */
+
+export type MealPlanVersionHeaderWire = {
+  id: string;
+  versionSeq: number;
+  effectiveDate: string;
+  effectiveTimezone: string;
+  publishedAt: string;
+};
+
+export type StaffMealPlanWire = {
+  plan: {
+    id: string;
+    title: string;
+    timezone: string | null;
+    draftRevision: number;
+    draft: {
+      variants: unknown[];
+      name?: string;
+      startDate?: string;
+      activeVariantId?: string;
+      schedule?: unknown;
+    } | null;
+  } | null;
+  versions: MealPlanVersionHeaderWire[];
+  nextCursor: number | null;
+  currentVersionId: string | null;
+  upcoming: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+  } | null;
+  canWrite: boolean;
+};
+
+export type MealPlanVersionDetailWire = {
+  id: string;
+  versionSeq: number;
+  effectiveDate: string;
+  effectiveTimezone: string;
+  activationInstant: string;
+  payload: MealPlanDraftWire | null;
+  publishedAt: string;
+};
+
+/** GET clients/:clientProfileId/meal-plans - staff draft + version headers. */
+export function fetchStaffMealPlan(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffMealPlanWire> {
+  return apiFetch<StaffMealPlanWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/meal-plans`,
+  );
+}
+
+/** GET clients/:clientProfileId/meal-plans/versions/:versionId - payload. */
+export function fetchStaffMealPlanVersion(
+  workspaceId: string,
+  clientProfileId: string,
+  versionId: string,
+): Promise<MealPlanVersionDetailWire> {
+  return apiFetch<MealPlanVersionDetailWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/meal-plans/versions/${versionId}`,
+  );
+}
+
+/** PUT clients/:clientProfileId/meal-plans - shared draft CAS save. */
+export function saveStaffMealPlanDraft(
+  workspaceId: string,
+  clientProfileId: string,
+  body: {
+    expectedRevision: number;
+    title?: string;
+    draft: unknown;
+    timezone?: string;
+  },
+): Promise<{ planId: string; revision: number }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/meal-plans`,
+    { method: "PUT", body },
+  );
+}
+
+/** POST clients/:clientProfileId/meal-plans/publish - mint a version. */
+export function publishStaffMealPlan(
+  workspaceId: string,
+  clientProfileId: string,
+  body: { expectedRevision: number; effectiveDate: string },
+): Promise<{ versionId: string; versionSeq: number }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/meal-plans/publish`,
+    { method: "POST", body },
+  );
+}
+
+export type StaffIifymWire = {
+  plan: {
+    id: string;
+    title: string;
+    timezone: string | null;
+    draftRevision: number;
+    draft: {
+      options: { id: string; label: string; targets: IifymTargetsWire }[];
+      name?: string;
+      startDate?: string;
+      schedule?: IifymScheduleWire;
+    } | null;
+  } | null;
+  versions: MealPlanVersionHeaderWire[];
+  currentVersionId: string | null;
+  upcoming: {
+    versionSeq: number;
+    effectiveDate: string;
+    effectiveTimezone: string;
+  } | null;
+  canWrite: boolean;
+};
+
+/** GET clients/:clientProfileId/iifym-plans - staff draft + headers. */
+export function fetchStaffIifymPlan(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffIifymWire> {
+  return apiFetch<StaffIifymWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/iifym-plans`,
+  );
+}
+
+/** PUT clients/:clientProfileId/iifym-plans - shared draft CAS save. */
+export function saveStaffIifymDraft(
+  workspaceId: string,
+  clientProfileId: string,
+  body: {
+    expectedRevision: number;
+    title?: string;
+    draft: unknown;
+    timezone?: string;
+  },
+): Promise<{ planId: string; revision: number }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/iifym-plans`,
+    { method: "PUT", body },
+  );
+}
+
+/** POST clients/:clientProfileId/iifym-plans/publish - mint a version. */
+export function publishStaffIifym(
+  workspaceId: string,
+  clientProfileId: string,
+  body: { expectedRevision: number; effectiveDate: string },
+): Promise<{ versionId: string; versionSeq: number }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/iifym-plans/publish`,
+    { method: "POST", body },
+  );
+}
+
+/* -------------------------------------------------------------------------
+ * W2-A2 canvas<->wire mapping helpers. Backend drafts carry only payload
+ * fields; the canvas `MealPlan`/`IifymPlan` add id, clientId and the
+ * coach-local archives (`archivedPlans`, `reusableMeals`). Strip on write,
+ * re-add on read, preserve the coach-local fields already in state.
+ * ---------------------------------------------------------------------- */
+
+export type MealPlanDraftWire = {
+  variants: MealPlan["variants"];
+  name?: string;
+  startDate?: string;
+  activeVariantId?: string;
+  schedule?: MealPlan["schedule"];
+};
+
+/** Canvas meal plan -> backend draft payload (closed key set). */
+export function mealPlanToDraftWire(plan: MealPlan): MealPlanDraftWire {
+  return {
+    variants: plan.variants,
+    name: plan.name,
+    startDate: plan.startDate,
+    activeVariantId: plan.activeVariantId,
+    schedule: plan.schedule,
+  };
+}
+
+/** Backend draft payload -> canvas meal plan shell. */
+export function draftWireToMealPlan(
+  draft: MealPlanDraftWire | null,
+  meta: { id: string; clientId: string; title: string },
+  fallback?: Pick<MealPlan, "archivedPlans" | "reusableMeals">,
+): MealPlan {
+  return {
+    id: meta.id,
+    clientId: meta.clientId,
+    name: draft?.name ?? meta.title,
+    startDate: draft?.startDate ?? "",
+    variants: (draft?.variants as MealPlan["variants"] | undefined) ?? [],
+    activeVariantId: draft?.activeVariantId ?? "",
+    schedule:
+      (draft?.schedule as MealPlan["schedule"] | undefined) ?? {
+        mode: "manual",
+        selectedVariantId: "",
+      },
+    archivedPlans: fallback?.archivedPlans ?? [],
+    reusableMeals: fallback?.reusableMeals ?? [],
+  };
+}
+
+/** Canvas IIFYM plan -> backend draft payload (closed key set). */
+export function iifymPlanToDraftWire(plan: IifymPlan): {
+  options: IifymPlan["options"];
+  name?: string;
+  startDate?: string;
+  schedule?: IifymPlan["schedule"];
+} {
+  return {
+    options: plan.options,
+    name: plan.name,
+    startDate: plan.startDate,
+    schedule: plan.schedule,
+  };
+}
+
+/** Backend IIFYM draft payload -> canvas plan shell. */
+export function iifymDraftWireToPlan(
+  draft: NonNullable<StaffIifymWire["plan"]>["draft"] | null,
+  meta: { id: string; clientId: string; title: string },
+): IifymPlan {
+  return {
+    id: meta.id,
+    clientId: meta.clientId,
+    name: draft?.name ?? meta.title,
+    startDate: draft?.startDate ?? "",
+    options: (draft?.options ?? []) as IifymPlan["options"],
+    schedule:
+      (draft?.schedule as IifymPlan["schedule"] | undefined) ?? {
+        mode: "manual",
+        selectedVariantId: "",
+      },
+  };
 }

@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 173 components in 91 files.
+Counts: 174 components in 91 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -37,6 +37,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `ChartPeriodControl` | `frontend/src/components/coach/builder/chart-period-control.tsx` | /client, /coach |
 | `CheckInForm` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
+| `CheckInSummary` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
 | `CheckInTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `CheckInsWorkspace` | `frontend/src/components/coach/check-ins.tsx` | /coach |
 | `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |

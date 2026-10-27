@@ -63,24 +63,35 @@ export default async function OnboardingListPage({
           {error}
         </p>
       ) : items.length === 0 ? (
-        <p className="notice" role="note">
-          No forms are assigned to you.
-        </p>
+        <div className="onb-empty" role="note">
+          <h2 className="onb-empty__title">No forms assigned</h2>
+          <p className="onb-empty__copy">
+            When your coach assigns you an intake form it will show up here.
+          </p>
+        </div>
       ) : (
-        <ul className="daily-entry__history" data-testid="onboarding-list">
+        <ul className="onb-list" data-testid="onboarding-list">
           {items.map((item) => (
-            <li key={item.assignmentId} className="daily-group">
+            <li key={item.assignmentId} className="onb-card">
               <Link
+                className="onb-card__link"
                 href={`/workspace/${workspaceId}/onboarding/${item.assignmentId}`}
               >
-                <strong>{item.formName}</strong>
+                <span className="onb-card__label">
+                  <strong>{item.formName}</strong>
+                  <small>
+                    {item.submittedAt !== null
+                      ? `Submitted ${item.submittedAt.slice(0, 10)}`
+                      : `Assigned ${item.assignedAt.slice(0, 10)}`}
+                  </small>
+                </span>
+                <span
+                  className="onb-status"
+                  data-status={item.status.toLowerCase()}
+                >
+                  {STATUS_LABEL[item.status]}
+                </span>
               </Link>
-              <p className="app-lede">
-                Status: {STATUS_LABEL[item.status]}
-                {item.submittedAt !== null
-                  ? ` — submitted ${item.submittedAt.slice(0, 10)}`
-                  : ` — assigned ${item.assignedAt.slice(0, 10)}`}
-              </p>
             </li>
           ))}
         </ul>
