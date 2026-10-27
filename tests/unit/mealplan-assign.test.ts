@@ -200,3 +200,45 @@ describe("assignSavedMealToClient - misses resolve false", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("assignSavedMealToClient - duplicate roster names", () => {
+  it("blocks an ambiguous name with no PUT/POST; a unique name still assigns", async () => {
+    const workspaceId = "ws-assign-duplicate";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        roster(200, [
+          { clientProfileId: "cp-1", name: "Emma Anders" },
+          { clientProfileId: "cp-2", name: "Emma Anders" },
+          { clientProfileId: "cp-3", name: "Mika Reyes" },
+        ]),
+      )
+      .mockResolvedValueOnce(ok())
+      .mockResolvedValueOnce(ok());
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      clientProfileIdForName(workspaceId, "Emma Anders"),
+    ).resolves.toBe(null);
+    await expect(
+      assignSavedMealToClient(workspaceId, "Emma Anders", meal, 1),
+    ).resolves.toBe(false);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      fetchMock.mock.calls.some(
+        ([, init]) => init?.method === "PUT" || init?.method === "POST",
+      ),
+    ).toBe(false);
+
+    await expect(
+      assignSavedMealToClient(workspaceId, "Mika Reyes", meal, 2),
+    ).resolves.toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock.mock.calls[1]?.[1]?.method).toBe("PUT");
+    expect(fetchMock.mock.calls[2]?.[1]?.method).toBe("POST");
+    expect(JSON.parse(fetchMock.mock.calls[2]?.[1]?.body as string)).toEqual({
+      clientProfileId: "cp-3",
+    });
+  });
+});

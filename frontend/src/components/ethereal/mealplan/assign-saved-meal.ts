@@ -26,8 +26,14 @@ export async function clientProfileIdForName(
           items?: RosterEntry[];
         } | null;
         const roster = new Map<string, string>();
-        for (const entry of body?.items ?? [])
+        const ambiguous = new Set<string>();
+        for (const entry of body?.items ?? []) {
+          if (roster.has(entry.name)) ambiguous.add(entry.name);
           roster.set(entry.name, entry.clientProfileId);
+        }
+        // A name shared by multiple clients never binds: the assign path
+        // would otherwise write to whichever profile loaded last.
+        for (const name of ambiguous) roster.delete(name);
         return roster;
       })
       .catch(() => null);

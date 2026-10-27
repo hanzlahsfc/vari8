@@ -1,3 +1,33 @@
+## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
+
+- Verdict on 59080f8, Finding 1 (blocking): the assign roster built
+  `Map.set(name, clientProfileId)`, so two clients sharing a name bound the
+  last-loaded profile while the assign still reported success;
+  `ClientProfile.name` has no unique constraint.
+- `assign-saved-meal.ts` (both twins byte-identical): the roster build now
+  tracks names seen more than once and drops them from the map, so
+  `clientProfileIdForName` resolves null and `assignSavedMealToClient`
+  returns false before any PUT or POST. Unique names are unchanged.
+- New case in `tests/unit/mealplan-assign.test.ts`: a duplicate-name roster
+  resolves null and assigns false with zero PUT/POST calls; a unique name
+  from the same roster still assigns. Red proof on the unfixed file:
+  `expected 'cp-2' to be null`; green 9/9 after the fix.
+- Gates: vitest on the file 9/9 exit 0; `npm run test` 118 files
+  1393/1393 exit 0; `npm run lint` 0 (90 warnings, pre-existing baseline);
+  `npm run typecheck` 0; `npm run index:check` 0; `npx prettier --check`
+  on changed files 0; `cd frontend && npm run lint` 0; dash gate on added
+  lines 0; twin diff 0.
+- Live proof on lane DB app_fp_w2t7fix (fresh create, prisma migrate
+  deploy, seed steps 00-36 ok, 40-media storage_not_configured as before;
+  lane fixture added a second "Emma Anders" profile): at 1440 and 390 the
+  roster response carried both Emma Anders profiles, Assign to Emma Anders
+  produced only the roster GET (zero PUT/POST) and the honest copy "could
+  not be assigned"; switching the studio client to James Reed assigned
+  "Lunch" with PUT 200 and POST 200 and a client-owned copy row. DB after:
+  zero rows bound to either Emma profile, no Breakfast library row.
+  Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T7/; the lane database was
+  dropped with pg_database absence and app_fp_w2t7% census saved.
+
 ## 2026-10-27 - w2-t7 option-a: studio Assign wired to the real saved-meals API on `w2/t7`
 
 - Owner ruling 2026-10-27 item 6, option (a) of the round-1 verdict:
@@ -66,8 +96,7 @@
   integration tests untouched.
 - Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
   baseline), prettier on changed files 0, vitest 117 files 1384 tests
-  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate
-  0. First vitest run flaked a `system-index` beforeAll timeout under
+  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
   parallel load; solo rerun passed clean.
 - Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
   no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
@@ -396,7 +425,7 @@
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -446,7 +475,7 @@
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -558,7 +587,7 @@
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  + media still mintable + rows retained in db.
+  - media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
