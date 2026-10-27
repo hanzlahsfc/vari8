@@ -2053,6 +2053,52 @@
 .coach-root .cd-media-card a {
   font-size: 12px;
 }
+.coach-root .cd-media-library {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.coach-root .cd-media-library-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.coach-root .cd-media-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.coach-root .cd-media-library-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--cd-border);
+  border-radius: 12px;
+  background: var(--cd-card);
+}
+.coach-root .cd-media-library-icon {
+  color: var(--cd-muted);
+  display: inline-flex;
+}
+.coach-root .cd-media-library-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+.coach-root .cd-media-library-name small {
+  display: block;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .cd-media-library-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
 .coach-root .cd-reattach {
   display: flex;
   flex-direction: column;

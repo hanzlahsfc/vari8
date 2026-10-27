@@ -12,6 +12,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { questionPoses } from "../coach/check-ins/photos";
 import { HabitsTab } from "../coach/habits-tab";
 import type { CoachClient, Variant } from "../coach/model";
 import type { SupplementPlan } from "../coach/supplements/model";
@@ -601,6 +602,11 @@ export function ClientApp({
               <ClientPhotos
                 workspaceId={own.workspaceId}
                 clientProfileId={own.clientProfileId}
+                poses={questionPoses(
+                  configuration.questions.find(
+                    (question) => question.type === "Visual upload",
+                  ) ?? { options: "" },
+                )}
               />
             )}
           </div>

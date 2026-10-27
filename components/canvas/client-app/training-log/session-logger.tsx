@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronLeft, Flag, StickyNote } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type CoachClient,
   formatDate,
@@ -100,6 +100,18 @@ function prescriptionText(
   return parts.join(" · ");
 }
 
+/** Values the client typed on a set (not the done acknowledgement itself). */
+function isTyped(set: LoggedSet): boolean {
+  return (
+    set.weight !== null ||
+    set.reps !== null ||
+    set.rpe !== null ||
+    set.rir !== null ||
+    set.note !== "" ||
+    set.flagged
+  );
+}
+
 const NUMERIC_FIELDS = [
   { id: "weight", label: "Weight", inputMode: "decimal" },
   { id: "reps", label: "Reps", inputMode: "numeric" },
@@ -144,6 +156,22 @@ export function SessionLogger({
   const showNotes = fields.includes("note");
   const editable = log?.status !== "finished" || editing;
 
+  // Dirty-only beforeunload: a set is at risk while it holds typed values the
+  // client has not marked done yet. Finishing clears the guard for good.
+  const drafts = useRef(new Set<string>());
+  const submittedRef = useRef(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!dirty || submittedRef.current) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
   const ensure = (): TrainingSessionLog => {
     if (log) return log;
     const created = startLog({
@@ -165,10 +193,21 @@ export function SessionLogger({
     patch: Partial<Omit<LoggedSet, "setId">>,
   ) => {
     const current = ensure();
-    writeLog(updateSet(current, exerciseId, setId, patch));
+    const next = updateSet(current, exerciseId, setId, patch);
+    writeLog(next);
+    const key = `${exerciseId}:${setId}`;
+    const set = next.exercises
+      .find((exercise) => exercise.exerciseId === exerciseId)
+      ?.sets.find((entry) => entry.setId === setId);
+    if (set && !set.done && isTyped(set)) drafts.current.add(key);
+    else drafts.current.delete(key);
+    setDirty(drafts.current.size > 0);
   };
 
   const finish = (at: string) => {
+    submittedRef.current = true;
+    drafts.current.clear();
+    setDirty(false);
     writeLog(finishLog(ensure(), at));
     setConfirmFinish(false);
     setEditing(false);
