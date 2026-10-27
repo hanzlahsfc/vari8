@@ -1,7 +1,16 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import { BookOpen, Copy, Pencil, Search, Trash2, Undo2, X } from "lucide-react";
+import {
+  BookOpen,
+  Copy,
+  Pencil,
+  Search,
+  Send,
+  Trash2,
+  Undo2,
+  X,
+} from "lucide-react";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -29,11 +38,13 @@ export function SavedMealLibrary({
   foodMap,
   clientName,
   onChange,
+  onAssign,
 }: {
   meals: ReusableMeal[];
   foodMap: Map<string, Food>;
   clientName: string;
   onChange: (meals: ReusableMeal[]) => void;
+  onAssign?: (meal: ReusableMeal) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -116,6 +127,12 @@ export function SavedMealLibrary({
     select(deleted.meal.id);
     setMessage(`“${deleted.meal.name}” restored.`);
     setDeleted(null);
+  }
+
+  function assign() {
+    if (!selected) return;
+    onAssign?.(selected);
+    setMessage(`“${selected.name}” assigned to ${clientName}.`);
   }
 
   return (
@@ -375,6 +392,14 @@ export function SavedMealLibrary({
                             onClick={duplicate}
                           >
                             <Copy size={13} /> Duplicate
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={assign}
+                          >
+                            <Send size={13} /> Assign to {clientName}
                           </Button>
                           <Button
                             type="button"

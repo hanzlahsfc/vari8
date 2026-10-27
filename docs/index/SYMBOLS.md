@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1583 exported symbols.
+Counts: 161 modules with exports, 1587 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1475,6 +1475,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function iifymTargetNutrients(targets: MealTargets): Nutrients`
 - `export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares`
 - `export function targetNumber(target: TargetValue | undefined): number`
+
+## `lib/nutrition/saved-meals.ts`
+
+- `export async function assignSavedMealToClient(workspace: ApiWorkspaceContext, savedMealId: string, clientProfileId: string)`
+- `export async function listAssignedMeals(viewer: ApiViewer, workspace: ApiWorkspaceContext, requestedClientProfileId?: string)`
+- `export async function listSavedMeals(workspace: ApiWorkspaceContext)`
+- `export async function upsertSavedMeal(workspace: ApiWorkspaceContext, savedMealId: string, input: { name: string; meal: SavedMealPayload; sortOrder?: number })`
 
 ## `lib/nutrition/search.ts`
 

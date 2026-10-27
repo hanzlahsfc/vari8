@@ -391,6 +391,7 @@ model WorkspaceMember {
   clientSetupPinsAssigned      ClientSetupPin[]           @relation("ClientSetupPinAssignedBy")
   clientSetupPinsEnded         ClientSetupPin[]           @relation("ClientSetupPinEndedBy")
   mediaAssignmentsAssigned     MediaAssignment[]          @relation("MediaAssignmentAssignedBy")
+  savedMealsAssigned           SavedMeal[]                @relation("SavedMealAssignedBy")
 
   dailyEntriesCreated            DailyEntry[]           @relation("DailyEntryCreator")
   dailyEntryRevisionsCreated     DailyEntryRevision[]   @relation("DailyEntryRevisionCreator")
@@ -535,6 +536,7 @@ model ClientProfile {
   conversations     Conversation[]     @relation("ConversationClient")
   mediaObjects      MediaObject[]      @relation("MediaObjectClient")
   mediaAssignments  MediaAssignment[]  @relation("MediaAssignmentClient")
+  savedMeals        SavedMeal[]        @relation("SavedMealClient")
 
   // Workspace-scoped uniqueness: the same identity may be a client in different workspaces.
   @@unique([workspaceId, userId])
@@ -2507,23 +2509,36 @@ model ActivityTarget {
 // N05/S06-10: workspace reusable-meal library. `meal` is the canvas Meal
 // payload (typed in lib/db-types).
 model SavedMeal {
-  id                String    @id @default(cuid())
-  workspaceId       String    @map("workspace_id")
-  name              String    @db.VarChar(120)
-  meal              Json
-  sortOrder         Int       @default(0) @map("sort_order")
-  createdByMemberId String    @map("created_by_member_id")
-  revision          Int       @default(1)
-  deletedAt         DateTime? @map("deleted_at") @db.Timestamptz(6)
-  restoreUntil      DateTime? @map("restore_until") @db.Timestamptz(6)
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id                 String    @id @default(cuid())
+  workspaceId        String    @map("workspace_id")
+  name               String    @db.VarChar(120)
+  meal               Json
+  sortOrder          Int       @default(0) @map("sort_order")
+  createdByMemberId  String    @map("created_by_member_id")
+  clientProfileId    String?   @map("client_profile_id")
+  sourceSavedMealId  String?   @map("source_saved_meal_id")
+  assignedByMemberId String?   @map("assigned_by_member_id")
+  assignedAt         DateTime? @map("assigned_at") @db.Timestamptz(6)
+  revision           Int       @default(1)
+  deletedAt          DateTime? @map("deleted_at") @db.Timestamptz(6)
+  restoreUntil       DateTime? @map("restore_until") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  createdByMember WorkspaceMember @relation("SavedMealCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMember WorkspaceMember  @relation("SavedMealCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)
+  // T7 (R6): NULL client means coach library row; a set client means a
+  // detached client-owned copy produced by the assign action. Composite
+  // coherence FKs live in raw migration SQL; the schema declares only the
+  // plain relations.
+  clientProfile   ClientProfile?   @relation("SavedMealClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  sourceSavedMeal SavedMeal?       @relation("SavedMealProvenance", fields: [sourceSavedMealId], references: [id], onDelete: SetNull)
+  assignedCopies  SavedMeal[]      @relation("SavedMealProvenance")
+  assignedBy      WorkspaceMember? @relation("SavedMealAssignedBy", fields: [assignedByMemberId], references: [id], onDelete: SetNull)
 
   @@unique([id, workspaceId])
   @@index([workspaceId, sortOrder])
+  @@index([workspaceId, clientProfileId])
   @@map("saved_meal")
 }
 

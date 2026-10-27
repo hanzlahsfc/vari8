@@ -1,3 +1,45 @@
+## 2026-10-27 - Wave 2 T7: saved meal assign-to-client on `w2/t7`
+
+- Semantics: `saved_meal.client_profile_id` NULL means coach library row;
+  a set value means a client-owned copy. Assign creates a NEW row with a
+  fresh cuid, a regenerated `meal.id` inside the JSONB payload,
+  `source_saved_meal_id` provenance, `assigned_by_member_id` and
+  `assigned_at`. The copy is detached: library edits never propagate and
+  every assign call produces an independent row (re-assign yields a
+  second copy, neither corrupted). Mirrors the T6 ownership pattern.
+- Migration consumed: `20261027000018_saved_meal_client_assignment` (one
+  directory, up + down), composite coherence FKs in raw SQL per
+  convention; schema declares plain relations only.
+- Routes added under the new `app/api/v1/saved-meals/` tree:
+  `GET /:workspaceId` (library.manage library list),
+  `PUT /:workspaceId/:savedMealId` (library.manage upsert; client-owned
+  copy ids are 404 through it),
+  `POST /:workspaceId/:savedMealId/assignments` (library.manage assign),
+  `GET /:workspaceId/assigned` (clientData.read; own-scope for clients,
+  `?clientProfileId=` staff preview). Error set raised: 400
+  `invalid_input`, 401 `unauthenticated`, 403 `forbidden`, 404
+  `not_found`; every code funnels through `defineApiV1Route`.
+- Service: `lib/nutrition/saved-meals.ts` (listSavedMeals,
+  upsertSavedMeal, assignSavedMealToClient, listAssignedMeals).
+- UI: `Assign to {clientName}` action on the selected saved meal in
+  `saved-meal-library.tsx`, authored in the frontend twin and ported to
+  the canvas twin (diff is only the pre-existing import-path lines).
+  `onAssign` is an optional callback: the studio surface invokes it with
+  local feedback; the backend wiring of that callback is a documented
+  consolidation hook (the studio has demo client ids, not profiles).
+- Gates on this tip: typecheck 0, lint 0 (0 errors; one unused-import
+  warning fixed), prettier diff-files clean, unit 1384/1384, integration
+  6/6 on real PG, build 0, index:check 0, frontend lint 0. Frontend
+  typecheck fails 1 pre-existing error in
+  `src/components/client/legacy-sheet/dialog.tsx` (untouched at merge
+  base, forbidden path, not this card's file).
+- Browser proof (prod server, lane DB app_fp_w2t7, real logins): coach
+  PUT+POST round trip live; two independent client-owned rows after
+  re-assign; library row unchanged; client own-scope list 200 with both
+  rows; spoofed `clientProfileId` 403; assign affordance + feedback at
+  1440 and 390 in the ethereal studio. Screenshots under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T7/`.
+
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
 - Verifier B1: the T6 migration added `client_profile_id` with no
