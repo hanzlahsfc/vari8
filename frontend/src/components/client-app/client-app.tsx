@@ -7,6 +7,8 @@ import {
   ClipboardList,
   Dumbbell,
   House,
+  ListChecks,
+  MessageCircle,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { HabitsTab } from "../coach/habits-tab";
@@ -16,6 +18,7 @@ import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { Empty } from "../coach/ui";
 import { SegmentedControl } from "../vari8/components";
+import { type ClientMessageRow, ClientMessages } from "./messages";
 import {
   type ClientAppSectionId,
   type ClientPlanPart,
@@ -23,6 +26,7 @@ import {
   PLAN_PART_LABELS,
   sectionForLegacyTab,
 } from "./sections";
+import { type ClientTaskRow, ClientTasks } from "./tasks";
 import { TrainingLogbook } from "./training-log/training-logbook";
 import {
   CheckInTab,
@@ -43,6 +47,8 @@ const SECTION_ICONS: Partial<Record<ClientAppSectionId, typeof House>> = {
   tracker: Activity,
   training: Dumbbell,
   "check-ins": CalendarCheck,
+  messages: MessageCircle,
+  tasks: ListChecks,
 };
 
 function ActivityTargetsPart({ client }: { client: CoachClient }) {
@@ -75,8 +81,11 @@ export function ClientApp({
   brand?: string;
 }) {
   const sections = useMemo(
-    () => clientAppSections(configuration, client.plans),
-    [configuration, client.plans],
+    () =>
+      clientAppSections(configuration, client.plans, {
+        remote: context === "standalone",
+      }),
+    [configuration, client.plans, context],
   );
   const plans = sections.find((section) => section.id === "plans");
   const [section, setSection] = useState<ClientAppSectionId | undefined>(
@@ -89,6 +98,42 @@ export function ClientApp({
     "sessions",
   );
   const [habitDone, setHabitDone] = useState<Record<string, boolean>>({});
+  // Demo overlays for the messages and tasks sections: the standalone app
+  // has no server, so replies and toggles live in local state on top of
+  // the client fixtures.
+  const [demoReplies, setDemoReplies] = useState<ClientMessageRow[]>([]);
+  const [demoTaskDone, setDemoTaskDone] = useState<Record<string, boolean>>({});
+  const [demoClientId, setDemoClientId] = useState(client.id);
+  if (demoClientId !== client.id) {
+    setDemoClientId(client.id);
+    setDemoReplies([]);
+    setDemoTaskDone({});
+  }
+  const messageRows = useMemo<ClientMessageRow[]>(
+    () => [
+      ...(client.messages ?? []).map((message) => ({
+        id: message.id,
+        fromClient: message.from === "client",
+        sender: message.from === "coach" ? "Coach" : client.name,
+        date: message.date.slice(0, 10),
+        body: message.text,
+        unread: false,
+      })),
+      ...demoReplies,
+    ],
+    [client.messages, client.name, demoReplies],
+  );
+  const taskRows = useMemo<ClientTaskRow[]>(
+    () =>
+      (client.clientTasks ?? []).map((task) => ({
+        id: task.id,
+        title: task.title,
+        dueDate: task.dueDate,
+        complete: demoTaskDone[task.id] ?? task.status === "complete",
+        dueState: task.status === "overdue" ? "overdue" : undefined,
+      })),
+    [client.clientTasks, demoTaskDone],
+  );
   const active: ClientAppSectionId | undefined = sections.some(
     (candidate) => candidate.id === section,
   )
@@ -254,6 +299,34 @@ export function ClientApp({
             )}
             {active === "check-ins" && (
               <CheckInTab configuration={configuration} client={client} />
+            )}
+            {active === "messages" && (
+              <ClientMessages
+                onSend={(body) =>
+                  setDemoReplies((current) => [
+                    ...current,
+                    {
+                      id: `demo-reply-${current.length}-${Date.now()}`,
+                      fromClient: true,
+                      sender: client.name,
+                      date: new Date().toISOString().slice(0, 10),
+                      body,
+                    },
+                  ])
+                }
+                rows={messageRows}
+              />
+            )}
+            {active === "tasks" && (
+              <ClientTasks
+                onToggle={(id, complete) =>
+                  setDemoTaskDone((current) => ({
+                    ...current,
+                    [id]: complete,
+                  }))
+                }
+                rows={taskRows}
+              />
             )}
           </div>
         </div>

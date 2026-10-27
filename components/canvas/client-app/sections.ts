@@ -7,6 +7,8 @@ export type ClientAppSectionId =
   | "tracker"
   | "training"
   | "check-ins"
+  | "messages"
+  | "tasks"
   | "photos";
 export type ClientPlanPart =
   | "nutrition"
@@ -32,6 +34,8 @@ const SECTION_LABELS: Record<ClientAppSectionId, string> = {
   tracker: "Tracker",
   training: "Training",
   "check-ins": "Check-ins",
+  messages: "Messages",
+  tasks: "Tasks",
   photos: "Photos",
 };
 
@@ -41,6 +45,8 @@ const SECTION_ORDER: ClientAppSectionId[] = [
   "tracker",
   "training",
   "check-ins",
+  "messages",
+  "tasks",
   "photos",
 ];
 
@@ -71,6 +77,11 @@ export function clientAppSections(
     tracker: views.has("Tracker") || configuration.habits === true,
     training: views.has("Training Program"),
     "check-ins": views.has("Check-In"),
+    // The thread and the task list read live own-scope data, so the
+    // sections only exist when a signed-in client's own binding is
+    // mounted; a preview configuration has none to show.
+    messages: options?.remote === true,
+    tasks: options?.remote === true,
     // Card 08: the gallery reads live own-scope data, so the section only
     // exists when a signed-in client's own binding is mounted — a preview
     // configuration has no entries to show.
