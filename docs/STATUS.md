@@ -1,3 +1,10 @@
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
 ## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
 
 - Codex builder repair, not independent review: runner listener ownership
