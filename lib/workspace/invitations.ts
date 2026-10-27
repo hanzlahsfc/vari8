@@ -760,10 +760,9 @@ function mapInvitationError(error: unknown): never {
 }
 
 /**
- * Fail-closed exposure assertion. The orchestration is internal-only until the
- * routing slice adds reviewed routes/actions, real delivery configuration, and
- * rate limiting — and passes independent review. Not a no-op auditor.
+ * T3: the routing slice exists now - `lib/workspace/invite-links.ts` fronts
+ * issue through the client-setups action and lookup through the rate-limited
+ * public route, both mapping only safe copy. The orchestration itself stays
+ * internal: `app/**` still never imports this module (the boundary scan in
+ * `tests/unit/invitations.test.ts` keeps that pin).
  */
-export function assertInvitationOrchestrationExternallyExposable(): never {
-  throw new InvitationError("invitations_not_exposable");
-}

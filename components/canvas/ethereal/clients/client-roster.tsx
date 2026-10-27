@@ -9,16 +9,17 @@ import {
   MessageCircle,
   Search,
 } from "lucide-react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Input, SegmentedControl, Select } from "@/components/canvas/vari8/components";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import {
   attentionCount,
   formatClientDate,
   needsAttention,
   type WorkspaceClient,
 } from "./model";
+import { matchingSearch } from "./roster-search";
 import "./client-roster.css";
 
 type RosterFilter = "all" | "attention" | "unread";
@@ -39,14 +40,6 @@ function initials(client: WorkspaceClient) {
       .join("")
       .slice(0, 2)
   );
-}
-
-function matchingSearch(client: WorkspaceClient, query: string) {
-  const normalized = query.trim().toLocaleLowerCase();
-  if (!normalized) return true;
-  return [client.name, client.label, client.phase, client.template]
-    .filter(Boolean)
-    .some((value) => value.toLocaleLowerCase().includes(normalized));
 }
 
 function isClientDate(value: string | null | undefined): value is string {

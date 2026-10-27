@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 
 import { sanitizeAuditMeta } from "../../lib/audit";
 import {
-  assertInvitationOrchestrationExternallyExposable,
   InvitationError,
   invitationResource,
   isInvitableRole,
@@ -56,14 +55,6 @@ describe("S1-F2C invitation helpers", () => {
         "audit_metadata_forbidden",
       );
     }
-  });
-
-  it("orchestration exposure assertion fails closed", () => {
-    expect(() =>
-      assertInvitationOrchestrationExternallyExposable(),
-    ).toThrowError(
-      expect.objectContaining({ code: "invitations_not_exposable" }),
-    );
   });
 
   it("no app/route file imports the invitations service", () => {
