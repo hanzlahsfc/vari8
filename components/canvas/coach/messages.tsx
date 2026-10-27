@@ -80,6 +80,7 @@ export function MessagesWorkspace() {
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
   const pendingUploads = useRef(new Set<string>());
+  const failedUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -248,6 +249,17 @@ export function MessagesWorkspace() {
       attachments.some((a) => pendingUploads.current.has(a.id))
     ) {
       toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    // A settled workspace upload that returned without a media_object
+    // stamp is a failed attachment. Its session blob still previews, but
+    // nothing can ride the wire, so the send refuses it until the item
+    // is removed or attached again.
+    if (
+      workspaceId &&
+      attachments.some((a) => failedUploads.current.has(a.id))
+    ) {
+      toast("Attachment upload failed. Remove it and reattach to send it.");
       return;
     }
     if (
@@ -877,16 +889,23 @@ export function MessagesWorkspace() {
                       // stays local-previewable meanwhile (S02-08).
                       pendingUploads.current.add(item.id);
                       void (async () => {
+                        let uploaded = false;
                         try {
                           const profileId = client
                             ? await clientProfileIdFor(client.name)
                             : null;
-                          await uploadCanvasMedia(item, f, {
+                          uploaded = await uploadCanvasMedia(item, f, {
                             workspaceId,
                             clientProfileId: profileId ?? undefined,
                           });
                         } finally {
                           pendingUploads.current.delete(item.id);
+                          // No workspace means no upload was attempted, so
+                          // the item keeps its local-preview path. With a
+                          // workspace, a settled upload without a stamp
+                          // is a failed attachment and blocks send.
+                          if (workspaceId && !uploaded)
+                            failedUploads.current.add(item.id);
                         }
                       })();
                     }

@@ -5,6 +5,12 @@
 // guard reads "no session blob URL" as "upload still in flight" and the
 // toast promises a retry that cannot land (the blob is gone for good).
 //
+// w2-t8 repair round 4, blocking defect B1: a composer attachment whose
+// background upload settles without a media_object id keeps its session
+// blob, so the send guard passed and the message landed with no server
+// attachment and no notice. The canvas twin now classifies that outcome
+// as failed and refuses the send until the item is removed or reattached.
+//
 // These tests mount the REAL CoachProvider + MessagesWorkspace for each
 // twin (frontend/ local preview and components/canvas/), seeding each
 // persistence seam the way a reload leaves it: the draft attachment's
@@ -14,6 +20,7 @@
 // Assertions read DOM state directly; jest-dom is not part of the harness.
 
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -22,12 +29,23 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocked = vi.hoisted(() => ({ query: "" }));
+const mocked = vi.hoisted(() => ({
+  query: "",
+  upload: vi.fn(async () => false),
+}));
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   useSearchParams: () => new URLSearchParams(mocked.query),
 }));
+
+vi.mock("../../components/canvas/coach/media-card", async (importOriginal) => {
+  const mod =
+    await importOriginal<
+      typeof import("../../components/canvas/coach/media-card")
+    >();
+  return { ...mod, uploadCanvasMedia: mocked.upload };
+});
 
 import type { Media } from "../../frontend/src/components/coach/model";
 import {
@@ -49,6 +67,8 @@ import { writeCoachState } from "../../components/canvas/data";
 
 const HONEST_COPY =
   "Attachment kept as metadata after reload - reattach it to send it, or remove it.";
+const FAILED_COPY =
+  "Attachment upload failed. Remove it and reattach to send it.";
 
 function restoredItem(): Media {
   return {
@@ -203,6 +223,38 @@ describe("canvas coach messages (backend twin)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Send message" }));
     const notice = await screen.findByTestId("notice");
     expect(notice.textContent).toBe(HONEST_COPY);
+    expect(notice.dataset.messages).toBe(before);
+    expect(notice.dataset.draftAttachments).toBe("1");
+  });
+
+  it("a failed upload keeps the draft and blocks the send", async () => {
+    mocked.upload.mockClear();
+    render(
+      <CanvasProvider workspaceId="ws-test">
+        <CanvasMessages />
+        <CanvasProbe />
+      </CanvasProvider>,
+    );
+    const area = await screen.findByPlaceholderText<HTMLTextAreaElement>(
+      /Write a message/,
+    );
+    const input = document.querySelector<HTMLInputElement>(
+      'input[type="file"]',
+    )!;
+    fireEvent.change(input, {
+      target: {
+        files: [new File(["x"], "plan.pdf", { type: "application/pdf" })],
+      },
+    });
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(1));
+    await act(async () => {
+      await mocked.upload.mock.results[0]?.value;
+    });
+    fireEvent.change(area, { target: { value: "see attached" } });
+    const before = screen.getByTestId("notice").dataset.messages;
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    const notice = await screen.findByTestId("notice");
+    await waitFor(() => expect(notice.textContent).toBe(FAILED_COPY));
     expect(notice.dataset.messages).toBe(before);
     expect(notice.dataset.draftAttachments).toBe("1");
   });
