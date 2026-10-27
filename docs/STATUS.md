@@ -1,3 +1,29 @@
+## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
+
+- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
+  unconditionally while no caller supplies `onAssign`; browser proof
+  showed success text with zero `/api/v1/saved-meals` requests.
+- Lead ruling, option (b): the Assign affordance renders only when
+  `onAssign` is provided; wiring the demo-backed studio to the real API
+  stays parked as an owner decision.
+- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
+  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
+  without a callback, awaits it, sets success only on a truthy resolve
+  and an honest failure message on false or rejection; the Assign
+  button renders behind `{onAssign && (...)}`. No fetch inside the
+  component. `mealplan-workspace.tsx`, routes, migration, schema and
+  integration tests untouched.
+- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
+  baseline), prettier on changed files 0, vitest 117 files 1384 tests
+  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
+  parallel load; solo rerun passed clean.
+- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
+  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
+  Duplicate, Delete and NO Assign button, no assigned text, zero
+  `/api/v1/saved-meals` requests, no console errors. Screenshots and
+  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
+  with pg_database absence proof and `app_fp_w2t7%` census saved.
+
 ## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
 
 - Verdict on 59080f8, Finding 1 (blocking): the assign roster built
@@ -79,32 +105,6 @@
   WITH (FORCE) and the pg_database absence proof plus the
   app_fp_w2t7% census were saved.
 
-## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
-
-- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
-  unconditionally while no caller supplies `onAssign`; browser proof
-  showed success text with zero `/api/v1/saved-meals` requests.
-- Lead ruling, option (b): the Assign affordance renders only when
-  `onAssign` is provided; wiring the demo-backed studio to the real API
-  stays parked as an owner decision.
-- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
-  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
-  without a callback, awaits it, sets success only on a truthy resolve
-  and an honest failure message on false or rejection; the Assign
-  button renders behind `{onAssign && (...)}`. No fetch inside the
-  component. `mealplan-workspace.tsx`, routes, migration, schema and
-  integration tests untouched.
-- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
-  baseline), prettier on changed files 0, vitest 117 files 1384 tests
-  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
-  parallel load; solo rerun passed clean.
-- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
-  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
-  Duplicate, Delete and NO Assign button, no assigned text, zero
-  `/api/v1/saved-meals` requests, no console errors. Screenshots and
-  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
-  with pg_database absence proof and `app_fp_w2t7%` census saved.
-
 ## 2026-10-27 - Wave 2 T7: saved meal assign-to-client on `w2/t7`
 
 - Semantics: `saved_meal.client_profile_id` NULL means coach library row;
@@ -147,6 +147,38 @@
   1440 and 390 in the ethereal studio. Screenshots under
   `Vari8-evidence/FULL-PACKAGE-2/W2T7/`.
 
+## 2026-10-27 - W2T6 preview conflict repair 2: w2/c7 merge line `daaad6e` merged into `w2/t6`
+
+- Preview rebuild skipped w2-t6 again after the verified c7 merge line
+  advanced to `daaad6e` (merge `9f28b3c` of `4bfaf2b` + `2f602b6` plus
+  its STATUS record commit). Absorbed into stage tip `b9f5003` as
+  `--no-ff` merge `03d2a93`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree b9f5003 daaad6e`
+  -> tree `440b528ace9fc186c3b5fd887d049d2349869577`; conflict list
+  `docs/STATUS.md` only. Both `client-app.css` twins and the generated
+  `docs/index/*` auto-merged clean this round.
+- Resolutions: `docs/STATUS.md` union, ours-new (the t6 repair entry)
+  then theirs-new (the c7 repair entry) over the shared tail, all
+  2026-10-27 entries above all 2026-10-26. `npm run index` regenerated
+  the merged docs byte-identical to the auto-merge; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (29 frontend-only + 85
+  canvas-only lines: the ca-nutrition actuals/split blocks plus the
+  end-positioned ca-shared-media block on the canvas side). The diff
+  hunk count moved 6 -> 4 only because surrounding merged lines
+  shifted hunk boundaries; the differing line set did not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
+  files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+  index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
 ## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
 
 - Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
@@ -176,6 +208,34 @@
   `twin-delta-pre-merge.diff`, `twin-delta-post-merge.diff`).
 - NOT done: no push, no PR, no fetch. Lane database not needed (no gate
   demanded one).
+
+## 2026-10-27 - w2-c7 conflict repair: absorbed verified c6 tip `2f602b6`
+
+- Preview merge probe `git merge-tree --write-tree 4bfaf2b 2f602b6`
+  -> tree `76845d35b2700fa26bed02a39d102ab2dbdd291f`; conflicts on
+  `components/canvas/client-app/client-app.css`, `docs/STATUS.md` and
+  generated `docs/index/{COMPONENTS,DATA-MODEL,ROUTES,SYMBOLS}.md`,
+  matching the lead probe. Frontend css twin auto-merged.
+- Merge commit `9f28b3c` (--no-ff of `2f602b6`).
+- `client-app.css` resolved by union: the auto-merged head (c7 photos,
+  training log and tracker polish plus the c6 bottom-nav repair lines
+  `min-inline-size: max-content` and the hidden-scrollbar rules) kept
+  whole, then the c6-side w2-c5 messages/tasks block appended whole so
+  neither side's cascade regresses; the stale base tail blocks the c7
+  polish had replaced stayed dropped. Frontend twin auto-merged to the
+  same union shape; twin delta stays the pre-existing 114 lines,
+  content identical before and after the merge.
+- `docs/STATUS.md`: ours-new entries then theirs-new (w2-a4 repair)
+  over the byte-identical tail; all 2026-10-27 entries above all
+  2026-10-26. Index docs regenerated via `npm run index` on the merged
+  tree; `npm run index:check` 0 on both runs.
+- Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
+  generate` (stale client missed `clientPhase`/`clientWeekNote`);
+  `npm run lint` 0 (0 errors, 94 pre-existing warnings);
+  `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
+  files (the inherited logging.test.ts env pair stayed green here, also
+  30/30 isolated); dash gate prints 0. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7M2/`.
 
 ## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
 
@@ -541,6 +601,62 @@
   Decimals and Week summary, and the template-field read that drives tab
   columns from the server.
 
+## 2026-10-27 - w2-a4 repair 1: localStorage seam and lazy client-detail fetch
+
+- Round 1 repair of stage w2-a4 on branch `w2/a4` (base commit
+  `e6a8e80`). Two branch-introduced defects fixed.
+- Defect (a), lost persisted data: `components/canvas/data/messages.ts`,
+  `notes.ts` and `clients.ts` had switched `extract` to drop the
+  remote-owned fields (`messages`, `drafts`, `coachNotes`, `coachTodos`,
+  and the client detail fields `internalNotes`, `generalNotes`,
+  `phases`, `weekNotes`), so write-then-read round-trips returned empty
+  values. All three slices persist the full local copy again; the
+  `/api/v1` reads stay authoritative and overwrite on hydration.
+- Defect (b), wasted fetch: in `components/canvas/coach/store.tsx` the
+  W2-A1 client-detail bundle fetch fired unconditionally on every
+  provider mount. It is now lazy on the surfaces that consume it
+  (sections `clients` and `notes`). That removes a wasted staff read
+  plus an unrelated `Client details could not be loaded.` banner on
+  other screens, and stops the mount fetch from displacing the roster
+  resolver's first request.
+- Gates on this worktree, real exit codes: `npm run test` 0 (117 files,
+  1382 tests passed); `npm run lint` 0 with 0 errors and 88 warnings,
+  all pre-existing; `npm run typecheck` 0; `npx prettier --check` on the
+  four source files 0 (`docs/STATUS.md` exits 1 identically at base
+  `e6a8e80`, inherited; the added entry itself is prettier-clean);
+  `npm run index` 0 with no regeneration diff; `npm run index:check` 0;
+  owned-lines dash gate prints 0 added violations.
+- `npm run build` 0. The inherited `_global-error` prerender TypeError
+  from the round-1 verdict did not reproduce in this environment (Node
+  v26.12.0, Next.js 16.3.8 webpack). Recorded as observed, no toolchain
+  fix attempted.
+- `frontend/` untouched, so `cd frontend && npm run lint` was not run.
+  Client to-do cancel versus soft-delete semantics untouched.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR1/`.
+- Round 2 repair (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the `e6a8e80` window carry cores without
+  those two fields, and `isCoachState` requires both as arrays
+  (`components/canvas/coach/model.ts:1717`), so the read failed the
+  guard and the store parked the workspace behind the preserve notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Verdict gate `npx vitest run` on `tests/unit/canvas-data-seam.test.ts`
+  and `tests/unit/coach-store-roster.test.tsx` exits 0, 2 files, 13
+  tests.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam, so the defect exists only on the canvas side.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR2/`.
+
 ## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
 
 - Client check-in surface wired: `components/canvas/data/checkins.ts`
@@ -713,6 +829,48 @@
   supplements), training draft rename persists after reload.
   Role matrix: in-workspace 200 / foreign 403 / unauth 401.
   Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
+
+## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
+
+- Branch `w2/a1` off `2967bb1`. One migration directory
+  `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
+  and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
+  false`, tenant-coherent FKs and indexes.
+- New service `lib/workspace/client-detail.ts`; new routes
+  `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
+  client role denied, unauthenticated 401, bad payload 400.
+- Provider swap: `components/canvas/data/clients.ts` reads/writes
+  `/api/v1` for the detail domain and drops the remote-owned fields
+  from the persisted slice; `components/canvas/data/notes.ts` moves the
+  workspace Private-notes list to `/api/v1/notes` while coach to-dos
+  stay local for w2-a4. `components/canvas/coach/store.tsx` hydrates
+  the viewed client after the roster seed and PUTs on owned-field
+  changes (the roster-wide `state.clients` reseed stays out of scope).
+- Seed `50-demo-coverage.seed.ts` writes `ClientPhase`, `ClientWeekNote`
+  and `CoachNote.pinned` directly (no `[pinned]` body prefix), idempotent.
+- Boundary notes (task record): the timeline week-table NOTES column is
+  shared. This card owns the `weekNotes` value only; the other columns
+  belong to w2-a5 and w2-a2. The audit's unresolved `CoachNote` pinned
+  mapping resolved to a real `pinned` column. The store override point
+  sits in `components/canvas/coach/store.tsx` after the seed runs
+  because `coach/model.ts` is outside lane A ownership.
+- Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
+  `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
+  `index:check` 0; `format:check` exits 1: 56 files fail, all
+  inherited at merge base `6d3a07f`, zero touched by this card
+  (scoped `prettier --check` on all card files clean).
+- Browser pass on prod build `127.0.0.1:4191`, real login as coach, no
+  `?demo`: 1440 + 390 evidence in `FULL-PACKAGE-2/W2A1/`. Seeded Amara
+  (client-007) shows label chips, email, coaching-since, height, phase
+  progress, pinned notes card, timeline phase band, private + general
+  notes. Add-note and timeline week-note edits persist through reload
+  (verified in `coach_note`/`client_week_note` rows). Second-workspace
+  coach gets literal 403 on both endpoints.
 
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 

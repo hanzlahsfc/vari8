@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 161 modules with exports, 1593 exported symbols.
+Counts: 163 modules with exports, 1617 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -516,6 +516,16 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInTrackerContextResult = StaffDailyEntryDetail`
 - `export async function readCheckInReviewTrackerContext(session: SessionLike, input: CheckInTrackerContextInput, deps: CheckInTrackerContextDeps = {}): Promise<StaffDailyEntryDetail>`
 - `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
+
+## `lib/coach-tasks/service.ts`
+
+- `export type CoachTaskDeps = { db?: PrismaLike }`
+- `export class CoachTaskError extends Error (1 members)`
+- `export type CoachTaskView = { id: string; clientProfileId: string | null; title: string; completedAt: string | null; completedByMemberId: string | null; createdByMemberId: string; revision: number; }`
+- `export async function createCoachTask(session: SessionLike, input: { workspaceId: string; clientProfileId?: unknown; title: unknown; }, deps: CoachTaskDeps = {}): Promise<{ coachTask: CoachTaskView }>`
+- `export async function deleteCoachTask(session: SessionLike, input: { workspaceId: string; coachTaskId: string; expectedRevision?: unknown; }, deps: CoachTaskDeps = {}): Promise<{ coachTask: CoachTa...`
+- `export async function listCoachTasks(session: SessionLike, input: { workspaceId: string; clientProfileId?: string }, deps: CoachTaskDeps = {}): Promise<{ coachTasks: CoachTaskView[] }>`
+- `export async function setCoachTaskCompleted(session: SessionLike, input: { workspaceId: string; coachTaskId: string; completed: unknown; expectedRevision?: unknown; }, deps: CoachTaskDeps = {}): Pr...`
 
 ## `lib/coaching/client-setup-boundary.ts`
 
@@ -1450,8 +1460,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type MessageDeps = { db?: PrismaLike }`
 - `export class MessageError extends Error (1 members)`
 - `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export type StaffConversationView = { clientProfileId: string; clientName: string; lastMessageAt: string | null; lastMessagePreview: string | null; unreadCount: number; hasPriority: boolean; }`
+- `export type StaffMessageView = MessageView & { read: boolean; priority: boolean; links: unknown; }`
+- `export async function getStaffThread(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ clientProfileId: string; messages: StaffMessag...`
 - `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function listStaffConversations(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ conversations: StaffConversationView[] }>`
+- `export async function markStaffThreadRead(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
+- `export async function saveStaffDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown }, deps: MessageDeps = {}): Promise<{ draft: { body: string; revision...`
 - `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
+- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; }, deps: MessageDeps = {}): Promise<{ m...`
 
 ## `lib/nutrition/foods.ts`
 
@@ -1993,6 +2010,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type PrismaLike = PrismaClient | Prisma.TransactionClient`
 - `export function createPrismaAuthorizationRepo(client: PrismaLike = prisma): AuthorizationRepo`
 - `export const prismaAuthorizationRepo = createPrismaAuthorizationRepo()`
+
+## `lib/workspace/client-detail.ts`
+
+- `export type ClientDetail = { clientProfileId: string; name: string; label: string | null; email: string | null; coachingSince: string | null; heightCm: number | null; phases: DetailPhase[]; interna...`
+- `export type ClientDetailBundle = { clients: ClientDetail[]; workspaceNotes: DetailNote[]; }`
+- `export type ClientDetailWrite = { phases: DetailPhase[]; internalNotes: DetailNote[]; generalNotes: DetailNote[]; weekNotes: Record<string, string>; }`
+- `export type DetailNote = { id: string; text: string; pinned?: boolean }`
+- `export type DetailPhase = { id: string; name: string; startDate: string; durationWeeks: number; }`
+- `export async function listWorkspaceCoachNotes(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<{ notes: DetailNote[] }>`
+- `export async function readClientDetail(workspace: ApiWorkspaceContext, clientProfileId: string, client: PrismaLike = prisma): Promise<ClientDetail>`
+- `export async function readClientDetailBundle(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<ClientDetailBundle>`
+- `export async function writeClientDetail(workspace: ApiWorkspaceContext, clientProfileId: string, input: ClientDetailWrite, db: PrismaClient = prisma): Promise<ClientDetail>`
+- `export async function writeWorkspaceCoachNotes(workspace: ApiWorkspaceContext, notes: DetailNote[], db: PrismaClient = prisma): Promise<{ notes: DetailNote[] }>`
 
 ## `lib/workspace/clients.ts`
 
