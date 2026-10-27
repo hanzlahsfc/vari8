@@ -11,7 +11,7 @@ import {
   Settings,
   Table2,
 } from "lucide-react";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   displayWeek,
   scheduledSessions,
@@ -1394,45 +1394,69 @@ function PhysiqueCard({
   onOpenReview: (submissionId: string) => void;
   onOpenTemplate: () => void;
 }) {
+  const { physiquePhotosFor } = useCoach();
+  const [remote, setRemote] = useState<Awaited<
+    ReturnType<typeof physiquePhotosFor>
+  > | null>(null);
+  useEffect(() => {
+    let live = true;
+    void physiquePhotosFor(client.name)
+      .then((columns) => {
+        if (live) setRemote(columns);
+      })
+      .catch(() => {
+        if (live) setRemote([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [physiquePhotosFor, client.name]);
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id && s.photos?.length)
     .sort((a, b) => a.date.localeCompare(b.date));
-  const poses = [
-    ...new Set(submissions.flatMap((s) => (s.photos ?? []).map((p) => p.pose))),
-  ];
+  // Backend progress photos win once they arrive; submission-carried
+  // photos remain the offline/demo path.
+  const rows = remote?.length
+    ? remote.map((c) => ({
+        key: c.submissionId ?? c.date,
+        date: c.date,
+        photos: c.photos,
+        submissionId: c.submissionId,
+      }))
+    : submissions.map((s) => ({
+        key: s.id,
+        date: s.date,
+        photos: s.photos ?? [],
+        submissionId: s.id as string | undefined,
+      }));
+  const poses = [...new Set(rows.flatMap((r) => r.photos.map((p) => p.pose)))];
   const [pose, setPose] = useState(poses[0] ?? "");
-  const [leftId, setLeftId] = useState(submissions[0]?.id ?? "");
-  const [rightId, setRightId] = useState(submissions.at(-1)?.id ?? "");
-  const left = submissions.find((s) => s.id === leftId) ?? submissions[0];
-  const right = submissions.find((s) => s.id === rightId) ?? submissions.at(-1);
-  const shot = (submission: (typeof submissions)[number] | undefined) =>
-    submission?.photos?.find((p) => p.pose === pose) ?? submission?.photos?.[0];
-  const options = submissions.map((s) => ({
-    value: s.id,
-    label: formatDate(s.date, { weekday: "short" }),
+  const [leftId, setLeftId] = useState(rows[0]?.key ?? "");
+  const [rightId, setRightId] = useState(rows.at(-1)?.key ?? "");
+  const activePose = poses.includes(pose) ? pose : (poses[0] ?? "");
+  const left = rows.find((r) => r.key === leftId) ?? rows[0];
+  const right = rows.find((r) => r.key === rightId) ?? rows.at(-1);
+  const shot = (row: (typeof rows)[number] | undefined) =>
+    row?.photos.find((p) => p.pose === activePose) ?? row?.photos[0];
+  const options = rows.map((r) => ({
+    value: r.key,
+    label: formatDate(r.date, { weekday: "short" }),
   }));
-  const figure = (
-    submission: (typeof submissions)[number] | undefined,
-    label: string,
-  ) => {
-    const photo = shot(submission);
-    const weight = submission ? weightOn(client, submission.date) : undefined;
+  const figure = (row: (typeof rows)[number] | undefined, label: string) => {
+    const photo = shot(row);
+    const weight = row ? weightOn(client, row.date) : undefined;
     return (
       <figure className="ap-phys">
         {photo ? (
           // biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs
-          <img src={photo.src} alt={`${photo.pose} — ${label}`} />
+          <img src={photo.src} alt={`${photo.pose} · ${label}`} />
         ) : (
           <div className="ap-phys-empty">No photo for this pose</div>
         )}
         <figcaption>
-          <b>
-            {submission
-              ? formatDate(submission.date, { weekday: "short" })
-              : "—"}
-          </b>
+          <b>{row ? formatDate(row.date, { weekday: "short" }) : "-"}</b>
           <span className="ap-sub">
-            {weight !== undefined ? `${number1.format(weight)} kg` : "—"}
+            {weight !== undefined ? `${number1.format(weight)} kg` : "-"}
           </span>
         </figcaption>
       </figure>
@@ -1442,26 +1466,30 @@ function PhysiqueCard({
     <Surface className="ap-card ap-w-s8">
       <CardLink
         title="Physique comparison"
-        onOpen={() => right && onOpenReview(right.id)}
+        onOpen={() =>
+          right?.submissionId
+            ? onOpenReview(right.submissionId)
+            : onOpenTemplate()
+        }
       />
-      {submissions.length ? (
+      {rows.length ? (
         <>
           <div className="ap-phys-controls">
             <Select
               label="Pose"
-              value={pose}
+              value={activePose}
               onChange={setPose}
               options={poses}
             />
             <Select
               label="From"
-              value={left?.id ?? ""}
+              value={left?.key ?? ""}
               onChange={setLeftId}
               options={options}
             />
             <Select
               label="To"
-              value={right?.id ?? ""}
+              value={right?.key ?? ""}
               onChange={setRightId}
               options={options}
             />
