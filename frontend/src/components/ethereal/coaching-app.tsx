@@ -1,7 +1,7 @@
 "use client";
 
 import { PanelsTopLeft } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppearanceScreen } from "@/components/ethereal/appearance-views";
 import { DashboardBuilder } from "@/components/ethereal/builder/dashboard-builder";
@@ -9,7 +9,6 @@ import { ClientTracker } from "@/components/ethereal/client-tracker/client-track
 import { ClientsWorkspace } from "@/components/ethereal/clients/clients-workspace";
 import { MealplanWorkspace } from "@/components/ethereal/mealplan/mealplan-workspace";
 import { AppearanceProvider } from "@/lib/ethereal-appearance";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type StudioPage =
   | "appearance"
@@ -35,7 +34,7 @@ function pageFromHash(): StudioPage {
       : "dashboard";
 }
 
-function ComponentStudio({ workspaceId }: { workspaceId?: string }) {
+function ComponentStudio() {
   const [page, setPage] = useState<StudioPage>("dashboard");
   const [clientId, setClientId] = useState<string | null>(null);
   const content = useRef<HTMLElement>(null);
@@ -142,7 +141,7 @@ function ComponentStudio({ workspaceId }: { workspaceId?: string }) {
       >
         {page === "dashboard" && <DashboardBuilder />}
         {page === "tracker" && <ClientTracker />}
-        {page === "mealplan" && <MealplanWorkspace workspaceId={workspaceId} />}
+        {page === "mealplan" && <MealplanWorkspace />}
         {page === "clients" && (
           <ClientsWorkspace clientId={clientId} onSelectClient={selectClient} />
         )}
@@ -172,10 +171,10 @@ function ComponentStudio({ workspaceId }: { workspaceId?: string }) {
   );
 }
 
-export function EtherealApp({ workspaceId }: { workspaceId?: string }) {
+export function EtherealApp() {
   return (
     <AppearanceProvider>
-      <ComponentStudio workspaceId={workspaceId} />
+      <ComponentStudio />
     </AppearanceProvider>
   );
 }

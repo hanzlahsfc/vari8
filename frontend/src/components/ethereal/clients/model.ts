@@ -1,9 +1,4 @@
 import {
-  attentionSignalsFrom,
-  attentionCount as sharedAttentionCount,
-  needsAttention as sharedNeedsAttention,
-} from "@/lib/attention";
-import {
   type Client,
   clientProfile,
   clients as seedClients,
@@ -1096,10 +1091,22 @@ export function createInitialClients(): WorkspaceClient[] {
   return structuredClone(initialClients);
 }
 
-// W2-T5: the derivation moved into the shared attention module; the
-// roster keeps its public names and calls the same result.
+function hasCheckInAttention(client: WorkspaceClient): boolean {
+  return (
+    client.checkInStatus === "overdue" ||
+    client.checkIns.some((checkIn) => checkIn.status === "awaiting feedback")
+  );
+}
+
 export function needsAttention(client: WorkspaceClient): boolean {
-  return sharedNeedsAttention(attentionSignalsFrom(client));
+  return (
+    hasCheckInAttention(client) ||
+    client.unreadCount > 0 ||
+    client.clientTasks.some(
+      (task) => task.status === "open" || task.status === "overdue",
+    ) ||
+    client.trainingFlags > 0
+  );
 }
 
 export function statusLabel(client: WorkspaceClient): string {
@@ -1109,7 +1116,14 @@ export function statusLabel(client: WorkspaceClient): string {
 }
 
 export function attentionCount(client: WorkspaceClient): number {
-  return sharedAttentionCount(attentionSignalsFrom(client));
+  return (
+    Number(hasCheckInAttention(client)) +
+    client.unreadCount +
+    client.clientTasks.filter(
+      (task) => task.status === "open" || task.status === "overdue",
+    ).length +
+    client.trainingFlags
+  );
 }
 
 export function formatClientDate(value: string): string {

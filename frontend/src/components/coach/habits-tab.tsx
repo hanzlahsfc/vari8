@@ -1,14 +1,13 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Section } from "@/components/vari8/layouts";
 import { type CoachClient, formatDate, TODAY } from "./model";
 import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
 import { Empty } from "./ui";
 import "./habits-tab.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type HabitFilter = "all" | "todo" | "done";
 

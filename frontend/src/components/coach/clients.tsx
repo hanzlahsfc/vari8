@@ -19,7 +19,6 @@ import { FormGrid, Toolbar } from "../vari8/layouts";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
 import { AthleteTrackerTab } from "./athlete/tracker-tab";
-import { ClientMediaPanel } from "./media";
 import {
   addDays,
   assignTemplate,
@@ -569,7 +568,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           </Surface>
         </div>
       )}
-      {tab === "Media" && <ClientMediaPanel client={c} />}
     </>
   );
   return (
@@ -599,7 +597,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           "Plans",
           "Check-ins",
           "Notes & tasks",
-          "Media",
         ].map((value) => ({
           value,
           label: value,

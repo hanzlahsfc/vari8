@@ -10,7 +10,7 @@ import {
   Plus,
   Settings,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import {
   displayWeek,
   scheduledSessions,
@@ -340,7 +340,15 @@ const open = (
   navigate: ReturnType<typeof useCoach>["navigate"],
   clientId: string,
   route: { tab?: string; plan?: string },
-) => navigate({ section: "clients", client: clientId, ...route });
+) =>
+  navigate({
+    section: "clients",
+    client: clientId,
+    tab: route.tab,
+    ...(route.tab === "Plans" && route.plan
+      ? { module: route.plan }
+      : { plan: route.plan }),
+  });
 
 // ─── Accuracy (targets vs tracked actuals) ──────────────────────────
 
@@ -861,7 +869,7 @@ function NutritionCard({
       )}
       {temp && (
         <div className="ap-nt-temp">
-          <span className="ap-nt-temp-kind">{kindLabel(temp.kind)}</span>
+          <span className="ap-nt-temp-kind">{temp.label}</span>
           <span className="ap-nt-temp-text">
             {temp.label} ·{" "}
             {formatDate(temp.startDate, { day: "numeric", month: "short" })} –{" "}
@@ -881,13 +889,6 @@ function NutritionCard({
     </Surface>
   );
 }
-
-const kindLabel = (kind: "refeed" | "diet-break" | "custom") =>
-  kind === "refeed"
-    ? "Refeed"
-    : kind === "diet-break"
-      ? "Diet break"
-      : "Custom";
 
 type MiniBar = {
   label: string;
@@ -1381,71 +1382,47 @@ function PhysiqueCard({
   client: CoachClient;
   state: CoachState;
   onOpenReview: (submissionId: string) => void;
-  onOpenTemplate: () => void;
+  onOpenTemplate?: () => void;
 }) {
-  const { physiquePhotosFor } = useCoach();
-  const [remote, setRemote] = useState<Awaited<
-    ReturnType<typeof physiquePhotosFor>
-  > | null>(null);
-  useEffect(() => {
-    let live = true;
-    void physiquePhotosFor(client.name)
-      .then((columns) => {
-        if (live) setRemote(columns);
-      })
-      .catch(() => {
-        if (live) setRemote([]);
-      });
-    return () => {
-      live = false;
-    };
-  }, [physiquePhotosFor, client.name]);
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id && s.photos?.length)
     .sort((a, b) => a.date.localeCompare(b.date));
-  // Backend progress photos win once they arrive; submission-carried
-  // photos remain the offline/demo path.
-  const rows = remote?.length
-    ? remote.map((c) => ({
-        key: c.submissionId ?? c.date,
-        date: c.date,
-        photos: c.photos,
-        submissionId: c.submissionId,
-      }))
-    : submissions.map((s) => ({
-        key: s.id,
-        date: s.date,
-        photos: s.photos ?? [],
-        submissionId: s.id as string | undefined,
-      }));
-  const poses = [...new Set(rows.flatMap((r) => r.photos.map((p) => p.pose)))];
+  const poses = [
+    ...new Set(submissions.flatMap((s) => (s.photos ?? []).map((p) => p.pose))),
+  ];
   const [pose, setPose] = useState(poses[0] ?? "");
-  const [leftId, setLeftId] = useState(rows[0]?.key ?? "");
-  const [rightId, setRightId] = useState(rows.at(-1)?.key ?? "");
-  const activePose = poses.includes(pose) ? pose : (poses[0] ?? "");
-  const left = rows.find((r) => r.key === leftId) ?? rows[0];
-  const right = rows.find((r) => r.key === rightId) ?? rows.at(-1);
-  const shot = (row: (typeof rows)[number] | undefined) =>
-    row?.photos.find((p) => p.pose === activePose) ?? row?.photos[0];
-  const options = rows.map((r) => ({
-    value: r.key,
-    label: formatDate(r.date, { weekday: "short" }),
+  const [leftId, setLeftId] = useState(submissions[0]?.id ?? "");
+  const [rightId, setRightId] = useState(submissions.at(-1)?.id ?? "");
+  const left = submissions.find((s) => s.id === leftId) ?? submissions[0];
+  const right = submissions.find((s) => s.id === rightId) ?? submissions.at(-1);
+  const shot = (submission: (typeof submissions)[number] | undefined) =>
+    submission?.photos?.find((p) => p.pose === pose) ?? submission?.photos?.[0];
+  const options = submissions.map((s) => ({
+    value: s.id,
+    label: formatDate(s.date, { weekday: "short" }),
   }));
-  const figure = (row: (typeof rows)[number] | undefined, label: string) => {
-    const photo = shot(row);
-    const weight = row ? weightOn(client, row.date) : undefined;
+  const figure = (
+    submission: (typeof submissions)[number] | undefined,
+    label: string,
+  ) => {
+    const photo = shot(submission);
+    const weight = submission ? weightOn(client, submission.date) : undefined;
     return (
       <figure className="ap-phys">
         {photo ? (
           // biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs
-          <img src={photo.src} alt={`${photo.pose} · ${label}`} />
+          <img src={photo.src} alt={`${photo.pose} — ${label}`} />
         ) : (
           <div className="ap-phys-empty">No photo for this pose</div>
         )}
         <figcaption>
-          <b>{row ? formatDate(row.date, { weekday: "short" }) : "-"}</b>
+          <b>
+            {submission
+              ? formatDate(submission.date, { weekday: "short" })
+              : "—"}
+          </b>
           <span className="ap-sub">
-            {weight !== undefined ? `${number1.format(weight)} kg` : "-"}
+            {weight !== undefined ? `${number1.format(weight)} kg` : "—"}
           </span>
         </figcaption>
       </figure>
@@ -1455,30 +1432,26 @@ function PhysiqueCard({
     <Surface className="ap-card ap-w-s8">
       <CardLink
         title="Physique comparison"
-        onOpen={() =>
-          right?.submissionId
-            ? onOpenReview(right.submissionId)
-            : onOpenTemplate()
-        }
+        onOpen={() => right && onOpenReview(right.id)}
       />
-      {rows.length ? (
+      {submissions.length ? (
         <>
           <div className="ap-phys-controls">
             <Select
               label="Pose"
-              value={activePose}
+              value={pose}
               onChange={setPose}
               options={poses}
             />
             <Select
               label="From"
-              value={left?.key ?? ""}
+              value={left?.id ?? ""}
               onChange={setLeftId}
               options={options}
             />
             <Select
               label="To"
-              value={right?.key ?? ""}
+              value={right?.id ?? ""}
               onChange={setRightId}
               options={options}
             />
@@ -1608,63 +1581,77 @@ function TrainingCard({
 
 // ─── Overview ───────────────────────────────────────────────────────
 
-export function AthleteOverview({ client }: { client: CoachClient }) {
+export function AthleteOverview({
+  client,
+  viewer = "coach",
+  onOpen,
+}: {
+  client: CoachClient;
+  viewer?: "coach" | "client";
+  onOpen?: (tab: string, plan?: string) => void;
+}) {
   const { state, navigate } = useCoach();
   const today = localToday();
+  const go = (tab: string, plan?: string) =>
+    onOpen ? onOpen(tab, plan) : open(navigate, client.id, { tab, plan });
   const openReview = (submissionId: string) =>
-    navigate({ section: "check-ins", review: submissionId, client: client.id });
+    onOpen
+      ? onOpen("Check-ins")
+      : navigate({
+          section: "check-ins",
+          review: submissionId,
+          client: client.id,
+        });
   return (
     <div className="ap-grid">
       <PhaseProgressCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <CheckinCard
         client={client}
         state={state}
         today={today}
-        onOpenTab={() => open(navigate, client.id, { tab: "Check-ins" })}
+        onOpenTab={() => go("Check-ins")}
         onOpenReview={openReview}
       />
-      <PinnedNotesCard
-        client={client}
-        onOpen={() => open(navigate, client.id, { tab: "Notes & tasks" })}
-      />
+      {viewer === "coach" && (
+        <PinnedNotesCard client={client} onOpen={() => go("Notes & tasks")} />
+      )}
       <NutritionCard
         client={client}
         today={today}
-        onOpen={() =>
-          open(navigate, client.id, { tab: "Plans", plan: "nutrition" })
-        }
+        onOpen={() => go("Plans", "nutrition")}
       />
       <CalorieCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <BodyweightCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <ExpenditureCard
         client={client}
         today={today}
-        onOpen={() =>
-          open(navigate, client.id, { tab: "Plans", plan: "activity-targets" })
-        }
+        onOpen={() => go("Plans", "activity-targets")}
       />
       <PhysiqueCard
         client={client}
         state={state}
         onOpenReview={openReview}
-        onOpenTemplate={() =>
-          client.assignment &&
-          navigate({
-            section: "templates",
-            editor: client.assignment.templateId,
-          })
+        onOpenTemplate={
+          viewer === "coach"
+            ? () =>
+                client.assignment &&
+                navigate({
+                  section: "templates",
+                  editor: client.assignment.templateId,
+                })
+            : undefined
         }
       />
       <TrainingCard

@@ -102,15 +102,9 @@ Import `PageHeader`, `Toolbar`, `FormGrid`, `Section`, and `EditorHeader` from `
 <Select label="Session type" value={type} onValueChange={setType} options={options} />
 ```
 
-## Shared states
-
-Import `EmptyState`, `LoadingState`, `Skeleton` and `ErrorState` from `src/components/vari8/states.tsx`. They are the only designed empty, loading and error renderings; a surface never invents its own. `EmptyState` renders a region labelled by its required `title`; `LoadingState` announces politely through `role="status"`; `ErrorState` announces assertively through `role="alert"`. `Skeleton` is a decorative placeholder hidden from assistive technology. Actions compose as shared `Button` or `IconButton` children through the `action` prop, so every state keeps the label and focus contract below.
-
 ## Interaction and accessibility
 
 Show a visible label for every field. Keep errors readable, linked to the control, and explain recovery. Treat read-only and disabled as distinct states. Preserve focus outlines, keyboard operation and selection semantics. Text field boundaries remain identifiable even when decorative button borders are softer. Phone fields use at least 16px text and 44px targets.
-
-The input contract for every surface: every interactive control carries an accessible name (a visible label, or `aria-label` on icon-only controls); focus order is DOM order, so positive `tabindex` values are not allowed; all motion respects `prefers-reduced-motion`, with durations collapsed through the shared motion tokens and no animation required to operate a control. `states.checks.mjs` enforces this contract on the shared primitives; each new surface repeats the same keyboard-only pass.
 
 Popups must inherit the active theme and accent. Mount inside the owning `ThemeScope`, or inside the nearest native dialog when present; never attach blindly to the first theme or document body. Date/time selection must update the value, dismiss appropriately and restore focus. Calendars support arrow keys, Home/End and PageUp/PageDown. Dates displayed during server rendering use an explicit consistent locale, avoiding hydration changes between server and browser.
 

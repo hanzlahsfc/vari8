@@ -132,6 +132,16 @@ test("schedule changes preserve submitted history", () => {
     a.submissions[0].id,
   );
 });
+test("opening a conversation changes only unread state for that athlete", () => {
+  const a = m.seedState();
+  const b = m.readConversation(a, a.clients[0].id);
+  assert.equal(m.unreadCount(b, a.clients[0].id), 0);
+  assert.equal(
+    m.unreadCount(b, a.clients[1].id),
+    m.unreadCount(a, a.clients[1].id),
+  );
+  assert.equal(b.submissions[0].response, undefined);
+});
 test("feedback is atomic, linked, preserves private notes and cannot be submitted twice", () => {
   const a = m.seedState();
   const sub = a.submissions[0];
@@ -241,6 +251,39 @@ test("invalid logo values are rejected without affecting other preferences", () 
     }),
     true,
   );
+});
+test("optional sidebarCollapsed persists with logo/accent and all collections intact", () => {
+  const a = m.seedState();
+  assert.equal(m.isCoachState(a), true);
+  assert.equal(a.preferences.sidebarCollapsed, undefined);
+  const logo = {
+    name: "s.png",
+    dataUrl:
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  };
+  const on = {
+    ...a,
+    preferences: {
+      ...a.preferences,
+      sidebarCollapsed: true,
+      logo,
+      accent: "#123ABC",
+    },
+  };
+  assert.equal(m.isCoachState(on), true);
+  const round = JSON.parse(JSON.stringify(on));
+  assert.equal(m.isCoachState(round), true);
+  assert.equal(round.preferences.sidebarCollapsed, true);
+  assert.deepEqual(round.preferences.logo, logo);
+  const stored = JSON.parse(JSON.stringify(a));
+  assert.deepEqual(round.templates, stored.templates);
+  assert.deepEqual(round.clients, stored.clients);
+  assert.deepEqual(round.submissions, stored.submissions);
+  const off = {
+    ...on,
+    preferences: { ...on.preferences, sidebarCollapsed: false },
+  };
+  assert.equal(m.isCoachState(off), true);
 });
 test("invalid sidebarCollapsed values are rejected", () => {
   const a = m.seedState();

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
-import { LayoutGroup, motion } from "motion/react";
+import { LayoutGroup, motion, useReducedMotion } from "motion/react";
 import {
   type ReactNode,
   useCallback,
@@ -27,7 +27,6 @@ import {
 } from "./view-model";
 import { WeekView } from "./week-view";
 import "./tracking-view.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type TrackingViewProps = {
   config: TrackerConfig;

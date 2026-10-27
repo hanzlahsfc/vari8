@@ -19,6 +19,7 @@ import {
   legacyPhasePlanToPhases,
   normalizePhases,
 } from "./phase-planning";
+import { normalizeTemporaryNutrition } from "./temporary-nutrition";
 import { defaultExerciseLibrary } from "./training/library-model";
 import {
   type ClientPlans,
@@ -117,7 +118,7 @@ export function emptyMealPlan(clientId: string, date: string): MealPlan {
     startDate: date,
     variants: [{ id: option, label: "Daily plan", meals: [] }],
     activeVariantId: option,
-    schedule: { mode: "manual", selectedVariantId: option },
+    schedule: { mode: "flexible" },
     archivedPlans: [],
     reusableMeals: [],
   };
@@ -136,7 +137,7 @@ export function emptyIifymPlan(clientId: string, date: string): IifymPlan {
         targets: { style: "calories", calories: { kind: "fixed", value: 0 } },
       },
     ],
-    schedule: { mode: "manual", selectedVariantId: option },
+    schedule: { mode: "flexible" },
   };
 }
 export function emptyTrainingPlan(
@@ -171,6 +172,7 @@ export function scheduledOption(
   date: string,
 ): string | undefined {
   if (!validDate(date)) return undefined;
+  if (schedule.mode === "flexible") return undefined;
   if (schedule.mode === "manual")
     return ids.includes(schedule.selectedVariantId)
       ? schedule.selectedVariantId
@@ -252,6 +254,29 @@ export function planTargets(
     carbs: targetNumber(t.carbs),
     fat: targetNumber(t.fat),
   };
+}
+/** The plan's headline calories: first variant/option total. Used by the
+ * plans list and timeline to summarise a temporary plan. */
+export function temporaryKcal(t: {
+  source: "mealPlan" | "iifym";
+  plan: MealPlan | IifymPlan;
+}): number | undefined {
+  if (t.source === "iifym") {
+    const option = (t.plan as IifymPlan).options[0];
+    if (!option) return undefined;
+    const direct = targetNumber(option.targets.calories);
+    return (
+      direct ||
+      (targetNumber(option.targets.protein) ?? 0) * 4 +
+        (targetNumber(option.targets.carbs) ?? 0) * 4 +
+        (targetNumber(option.targets.fat) ?? 0) * 9 ||
+      undefined
+    );
+  }
+  const variant = (t.plan as MealPlan).variants[0];
+  return variant
+    ? calculateVariantNutrients(variant, planFoodMap).calories
+    : undefined;
 }
 export function trainingWeek(plan: TrainingPlan, date: string): number {
   return plan.program === "Evergreen"
@@ -351,6 +376,26 @@ export function validateIndividualPlan(
   return [...new Set(errors)];
 }
 // Default new fields before structural validation. Never seed authored prescriptions from legacy scalar summaries.
+/** "Same every day" (manual) only made sense when it pinned a specific
+ *  option. With several options it's ambiguous — migrate those to the
+ *  client-chooses (flexible) schedule. Single-option plans and temporary
+ *  plans keep manual (temporary plans rely on it internally). */
+function flexibleScheduleIfNeeded(
+  plan:
+    | {
+        schedule?: unknown;
+        variants?: { id: string }[];
+        options?: { id: string }[];
+      }
+    | undefined,
+): void {
+  if (!plan?.schedule || typeof plan.schedule !== "object") return;
+  const schedule = plan.schedule as { mode?: string };
+  if (schedule.mode !== "manual") return;
+  const count = plan.variants?.length ?? plan.options?.length ?? 0;
+  if (count > 1) plan.schedule = { mode: "flexible" };
+}
+
 export function migrateCoachState(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   const state = structuredClone(value) as CoachState;
@@ -385,17 +430,37 @@ export function migrateCoachState(value: unknown): unknown {
             ...base,
             ...old,
             nutrition: {
-              mealPlan: {
-                ...base.nutrition.mealPlan,
-                ...old.nutrition?.mealPlan,
-                history: old.nutrition?.mealPlan?.history ?? [],
-              },
-              iifym: {
-                ...base.nutrition.iifym,
-                ...old.nutrition?.iifym,
-                history: old.nutrition?.iifym?.history ?? [],
-              },
-              temporary: old.nutrition?.temporary,
+              mealPlan: (() => {
+                const plan = {
+                  ...base.nutrition.mealPlan,
+                  ...old.nutrition?.mealPlan,
+                  history: old.nutrition?.mealPlan?.history ?? [],
+                };
+                flexibleScheduleIfNeeded(plan.draft as never);
+                flexibleScheduleIfNeeded(plan.active?.content as never);
+                for (const entry of plan.history as {
+                  content?: { schedule?: unknown; variants?: { id: string }[] };
+                }[])
+                  if (entry?.content) flexibleScheduleIfNeeded(entry.content);
+                return plan;
+              })(),
+              iifym: (() => {
+                const plan = {
+                  ...base.nutrition.iifym,
+                  ...old.nutrition?.iifym,
+                  history: old.nutrition?.iifym?.history ?? [],
+                };
+                flexibleScheduleIfNeeded(plan.draft as never);
+                flexibleScheduleIfNeeded(plan.active?.content as never);
+                for (const entry of plan.history as {
+                  content?: { schedule?: unknown; options?: { id: string }[] };
+                }[])
+                  if (entry?.content) flexibleScheduleIfNeeded(entry.content);
+                return plan;
+              })(),
+              temporary: (old.nutrition?.temporary ?? []).map(
+                normalizeTemporaryNutrition,
+              ),
             },
             training: old.training
               ? { ...old.training, history: old.training.history ?? [] }
@@ -415,17 +480,21 @@ const array = (v: unknown, guard: (x: unknown) => boolean): boolean =>
   Array.isArray(v) && v.every(guard);
 const schedule = (v: unknown) =>
   record(v) &&
-  (v.mode === "manual"
-    ? string(v.selectedVariantId)
-    : v.mode === "weekly"
-      ? record(v.days) &&
-        Object.entries(v.days).every(([k, x]) => /^[1-7]$/.test(k) && string(x))
-      : v.mode === "cycle" &&
-        string(v.anchorDate) &&
-        array(
-          v.steps,
-          (x) => record(x) && string(x.variantId) && number(x.days),
-        ));
+  (v.mode === "flexible"
+    ? true
+    : v.mode === "manual"
+      ? string(v.selectedVariantId)
+      : v.mode === "weekly"
+        ? record(v.days) &&
+          Object.entries(v.days).every(
+            ([k, x]) => /^[1-7]$/.test(k) && string(x),
+          )
+        : v.mode === "cycle" &&
+          string(v.anchorDate) &&
+          array(
+            v.steps,
+            (x) => record(x) && string(x.variantId) && number(x.days),
+          ));
 const target = (v: unknown) =>
   record(v) &&
   (v.kind === "fixed" || v.kind === "minimum"

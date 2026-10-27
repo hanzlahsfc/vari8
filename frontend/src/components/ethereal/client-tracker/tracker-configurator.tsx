@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useId, useMemo, useState } from "react";
 import { Checkbox, Input, Select } from "@/components/vari8/components";
 import {
@@ -10,7 +10,6 @@ import {
   type TrackerParameter,
 } from "./model";
 import "./tracker-configurator.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 export function TrackerConfigurator({
   initialConfig,

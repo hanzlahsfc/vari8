@@ -7,7 +7,9 @@ import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
   calculatePortionNutrients,
   calculateVariantNutrients,
+  type Meal,
   type MealPlan,
+  type MealPlanVariant,
   type Nutrients,
   scalePortion,
   type TargetValue,
@@ -40,7 +42,7 @@ import {
   type StepsTarget,
 } from "./targets/model";
 
-export const ATHLETE_DATA_DEMO_REVISION = 9;
+export const ATHLETE_DATA_DEMO_REVISION = 11;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
@@ -84,11 +86,36 @@ const DEMO_POSES = [
 const DEMO_TEMP_ID = "demo-temp-refeed";
 const DEMO_MEAL_PLAN_NAME = "Amara · prep nutrition";
 /** Prep-realistic day targets the seeded plan is scaled to. */
-const DEMO_MEAL_TARGETS = { protein: 170, carbs: 210, fat: 55 } as const;
 // Identifiers of the demo refeed event being converted to a temporary plan.
 const DEMO_PLAN_HISTORY_ID = "demo-plan-hist";
-const DEMO_HISTORY_TARGETS_A = { protein: 190, carbs: 260, fat: 62 } as const;
-const DEMO_HISTORY_TARGETS_B = { protein: 180, carbs: 240, fat: 58 } as const;
+type DemoMacroTargets = { protein: number; carbs: number; fat: number };
+/**
+ * Carb-cycled prep targets per plan version: High on lower-body days
+ * (Mon/Thu), Medium on upper days (Tue/Sat), Low on rest days (Wed/Fri/Sun).
+ * Earlier versions sit higher; the active plan is the leanest.
+ */
+const DEMO_VERSION_TARGETS = {
+  a: {
+    high: { protein: 190, carbs: 290, fat: 62 },
+    medium: { protein: 190, carbs: 240, fat: 65 },
+    low: { protein: 195, carbs: 170, fat: 70 },
+  },
+  b: {
+    high: { protein: 185, carbs: 265, fat: 58 },
+    medium: { protein: 185, carbs: 215, fat: 62 },
+    low: { protein: 190, carbs: 150, fat: 68 },
+  },
+  active: {
+    high: { protein: 180, carbs: 245, fat: 55 },
+    medium: { protein: 180, carbs: 195, fat: 60 },
+    low: { protein: 185, carbs: 130, fat: 65 },
+  },
+} as const;
+const DEMO_REFEED_TARGETS: DemoMacroTargets = {
+  protein: 160,
+  carbs: 330,
+  fat: 75,
+};
 const DEMO_REFEED_EVENT_IDS = new Set([
   "demo-refeed-upcoming",
   // Temporary plans own refeeds now — the old past-refeed tag is stale.
@@ -348,16 +375,168 @@ function demoTrackingDates(today: string): Set<string> {
  * class nudged toward the target over a few passes — cross-macro
  * contributions (e.g. protein in carb foods) make a single pass overshoot.
  */
-function scaleMealPlanToTargets(
-  plan: MealPlan,
-  mealTargets: {
-    protein: number;
-    carbs: number;
-    fat: number;
-  } = DEMO_MEAL_TARGETS,
-): MealPlan {
-  const scaled = structuredClone(plan);
-  const classOf = (foodId: string): keyof typeof mealTargets | null => {
+/**
+ * Base meal structure per day type. Portions are scaled to the version's
+ * targets and rounded to realistic amounts — High leans on oats/rice/
+ * potatoes, Low swaps most carbs for vegetables and fats.
+ */
+const DEMO_MEAL_TIMES = [
+  ["07:30", "Breakfast"],
+  ["12:30", "Lunch"],
+  ["16:00", "Pre-workout"],
+  ["19:30", "Dinner"],
+  ["21:30", "Evening"],
+] as const;
+const meal = (id: string, i: number, portions: Meal["portions"]): Meal => ({
+  id,
+  label: DEMO_MEAL_TIMES[i][1],
+  time: DEMO_MEAL_TIMES[i][0],
+  portions,
+});
+const portion = (foodId: string, quantity: number) => ({ foodId, quantity });
+const DEMO_VARIANT_BASES: MealPlanVariant[] = [
+  {
+    id: "high",
+    label: "High",
+    meals: [
+      meal("demo-high-m1", 0, [
+        portion("food-057", 60),
+        portion("food-021", 30),
+        portion("food-108", 80),
+        portion("food-072", 15),
+      ]),
+      meal("demo-high-m2", 1, [
+        portion("food-001", 150),
+        portion("food-051", 70),
+        portion("food-111", 100),
+        portion("food-083", 8),
+      ]),
+      meal("demo-high-m3", 2, [
+        portion("food-062", 60),
+        portion("food-021", 30),
+        portion("food-100", 100),
+      ]),
+      meal("demo-high-m4", 3, [
+        portion("food-003", 150),
+        portion("food-055", 300),
+        portion("food-114", 100),
+        portion("food-083", 8),
+      ]),
+      meal("demo-high-m5", 4, [
+        portion("food-018", 200),
+        portion("food-067", 3),
+        portion("food-096", 80),
+        portion("food-081", 15),
+      ]),
+    ],
+  },
+  {
+    id: "medium",
+    label: "Medium",
+    meals: [
+      meal("demo-med-m1", 0, [
+        portion("food-018", 250),
+        portion("food-057", 50),
+        portion("food-108", 100),
+        portion("food-072", 10),
+      ]),
+      meal("demo-med-m2", 1, [
+        portion("food-033", 140),
+        portion("food-055", 250),
+        portion("food-133", 100),
+        portion("food-083", 8),
+      ]),
+      meal("demo-med-m3", 2, [
+        portion("food-067", 4),
+        portion("food-021", 25),
+        portion("food-100", 80),
+      ]),
+      meal("demo-med-m4", 3, [
+        portion("food-009", 150),
+        portion("food-051", 50),
+        portion("food-111", 100),
+        portion("food-095", 60),
+      ]),
+      meal("demo-med-m5", 4, [
+        portion("food-016", 2),
+        portion("food-017", 150),
+        portion("food-074", 40),
+        portion("food-096", 80),
+      ]),
+    ],
+  },
+  {
+    id: "low",
+    label: "Low",
+    meals: [
+      meal("demo-low-m1", 0, [
+        portion("food-016", 2),
+        portion("food-017", 150),
+        portion("food-095", 60),
+        portion("food-074", 30),
+      ]),
+      meal("demo-low-m2", 1, [
+        portion("food-001", 150),
+        portion("food-111", 150),
+        portion("food-083", 10),
+        portion("food-055", 150),
+      ]),
+      meal("demo-low-m3", 2, [
+        portion("food-018", 200),
+        portion("food-096", 100),
+        portion("food-081", 10),
+      ]),
+      meal("demo-low-m4", 3, [
+        portion("food-005", 140),
+        portion("food-114", 150),
+        portion("food-095", 40),
+      ]),
+      meal("demo-low-m5", 4, [
+        portion("food-015", 80),
+        portion("food-017", 100),
+        portion("food-082", 10),
+      ]),
+    ],
+  },
+];
+/** Two refeed days: higher carbs and fats, slightly less protein. */
+const DEMO_REFEED_BASE: MealPlanVariant = {
+  id: "refeed",
+  label: "Refeed",
+  meals: [
+    meal("demo-ref-m1", 0, [
+      portion("food-057", 50),
+      portion("food-072", 15),
+      portion("food-100", 60),
+      portion("food-021", 20),
+    ]),
+    meal("demo-ref-m2", 1, [
+      portion("food-001", 120),
+      portion("food-051", 60),
+      portion("food-111", 100),
+      portion("food-083", 8),
+    ]),
+    meal("demo-ref-m3", 2, [portion("food-058", 1), portion("food-082", 15)]),
+    meal("demo-ref-m4", 3, [
+      portion("food-033", 120),
+      portion("food-055", 300),
+      portion("food-114", 100),
+    ]),
+    meal("demo-ref-m5", 4, [
+      portion("food-018", 200),
+      portion("food-067", 3),
+      portion("food-072", 10),
+      portion("food-096", 80),
+    ]),
+  ],
+};
+
+function scaleVariantToTargets(
+  variant: MealPlanVariant,
+  targets: DemoMacroTargets,
+): MealPlanVariant {
+  const scaled = structuredClone(variant);
+  const classOf = (foodId: string): keyof DemoMacroTargets | null => {
     const food = planFoodMap.get(foodId);
     if (!food || food.calories <= 0) return null;
     const p = food.protein * 4;
@@ -365,50 +544,91 @@ function scaleMealPlanToTargets(
     const f = food.fat * 9;
     return p >= c && p >= f ? "protein" : c >= f ? "carbs" : "fat";
   };
-  for (const variant of scaled.variants)
-    for (let pass = 0; pass < 4; pass += 1) {
-      const totals = { protein: 0, carbs: 0, fat: 0 };
-      for (const meal of variant.meals)
-        for (const portion of meal.portions) {
-          const food = planFoodMap.get(portion.foodId);
-          if (!food) continue;
-          const n = calculatePortionNutrients(food, portion.quantity);
-          totals.protein += n.protein;
-          totals.carbs += n.carbs;
-          totals.fat += n.fat;
-        }
-      for (const meal of variant.meals)
-        meal.portions = meal.portions.map((portion) => {
-          const cls = classOf(portion.foodId);
-          if (!cls || totals[cls] <= 0) return portion;
-          const factor = Math.min(
-            1.6,
-            Math.max(0.6, mealTargets[cls] / totals[cls]),
-          );
-          return scalePortion(portion, factor);
-        });
-    }
-  return scaled;
-}
-
-/** Scale carb-dominant portions +40 % and fat-dominant portions −20 %. */
-function scaleRefeedPlan(plan: MealPlan): MealPlan {
-  const scaled = structuredClone(plan);
-  for (const variant of scaled.variants)
-    for (const meal of variant.meals)
-      meal.portions = meal.portions.map((portion) => {
-        const food = planFoodMap.get(portion.foodId);
-        if (!food || food.calories <= 0) return portion;
-        const carbsShare = (food.carbs * 4) / food.calories;
-        const fatShare = (food.fat * 9) / food.calories;
-        if (carbsShare >= 0.5) return scalePortion(portion, 1.4);
-        if (fatShare >= 0.45) return scalePortion(portion, 0.8);
-        return portion;
+  for (let pass = 0; pass < 5; pass += 1) {
+    const totals = { protein: 0, carbs: 0, fat: 0 };
+    for (const m of scaled.meals)
+      for (const po of m.portions) {
+        const food = planFoodMap.get(po.foodId);
+        if (!food) continue;
+        const n = calculatePortionNutrients(food, po.quantity);
+        totals.protein += n.protein;
+        totals.carbs += n.carbs;
+        totals.fat += n.fat;
+      }
+    for (const m of scaled.meals)
+      m.portions = m.portions.map((po) => {
+        const cls = classOf(po.foodId);
+        if (!cls || totals[cls] <= 0) return po;
+        const factor = Math.min(1.6, Math.max(0.6, targets[cls] / totals[cls]));
+        return scalePortion(po, factor);
       });
+  }
   return scaled;
 }
 
-function answerFor(question: Question): string {
+/** Round portions to realistic amounts: 5 g for weighed foods, whole units
+ * for piece-based foods (eggs, bagels, rice cakes, wraps). */
+function roundVariantPortions(variant: MealPlanVariant): MealPlanVariant {
+  const rounded = structuredClone(variant);
+  for (const m of rounded.meals)
+    m.portions = m.portions.map((po) => {
+      const food = planFoodMap.get(po.foodId);
+      const step = food && /^(g|ml)$/i.test(food.unit) ? 5 : 1;
+      return {
+        ...po,
+        quantity: Math.max(step, Math.round(po.quantity / step) * step),
+      };
+    });
+  return rounded;
+}
+
+/** Scale, round to real-world portions, then re-scale and re-round once so
+ * the final totals still land on the version's targets. */
+function demoScaledVariant(
+  base: MealPlanVariant,
+  targets: DemoMacroTargets,
+): MealPlanVariant {
+  return roundVariantPortions(
+    scaleVariantToTargets(
+      roundVariantPortions(scaleVariantToTargets(base, targets)),
+      targets,
+    ),
+  );
+}
+
+/** Carb-cycled schedule: High on lower-body days (Mon/Thu), Medium on upper
+ * days (Tue/Sat), Low on rest days (Wed/Fri/Sun). */
+const DEMO_PLAN_SCHEDULE = {
+  mode: "weekly",
+  days: {
+    1: "high",
+    2: "medium",
+    3: "low",
+    4: "high",
+    5: "low",
+    6: "medium",
+    7: "low",
+  },
+} as const;
+
+/** Replace the demo plan's content with the carb-cycled variants for one
+ * version's targets, keeping the plan's own id/name/startDate. */
+function buildDemoMealPlanContent(
+  plan: MealPlan,
+  targets: Record<"high" | "medium" | "low", DemoMacroTargets>,
+): MealPlan {
+  const variants = DEMO_VARIANT_BASES.map((base) =>
+    demoScaledVariant(base, targets[base.id as "high" | "medium" | "low"]),
+  );
+  return {
+    ...plan,
+    variants,
+    activeVariantId: variants[0]?.id ?? plan.activeVariantId,
+    schedule: { mode: "weekly", days: { ...DEMO_PLAN_SCHEDULE.days } },
+  };
+}
+
+function answerFor(question: Question, date: string): string {
   switch (question.type) {
     case "Rating":
       return "8 / 10 — energy held up even on the busy days";
@@ -419,7 +639,7 @@ function answerFor(question: Question): string {
         ? "Hit all four sessions and kept steps above target every weekday."
         : "Solid week overall — training felt strong and the evening routine stuck.";
     case "Visual upload":
-      return "Uploaded check-in photos";
+      return `Uploaded front and side photos for ${date}`;
     case "Choice": {
       const [first] = question.options.split(/[,;]/).map((s) => s.trim());
       return first || "Yes";
@@ -445,7 +665,7 @@ function demoSubmission(
     type: "Full",
     answers: questions.map((q) => ({
       question: q.label,
-      answer: answerFor(q),
+      answer: answerFor(q, date),
     })),
     metrics: ["weight", "calories", "sleep", "habits"],
     visuals: [`Front · ${date}`, `Side · ${date}`],
@@ -517,22 +737,20 @@ export function adoptAthleteDataDemo(
       const lifecycle = plans.nutrition.mealPlan;
       const content = lifecycle.active?.content;
       if (lifecycle.active && content?.name === DEMO_MEAL_PLAN_NAME) {
-        const totals = content.variants[0]
-          ? calculateVariantNutrients(content.variants[0], planFoodMap)
-          : undefined;
-        if (totals && totals.calories < 1200)
-          lifecycle.active = {
-            ...lifecycle.active,
-            content: scaleMealPlanToTargets(content),
-          };
+        // Rebuild the demo plan as a High/Medium/Low carb-cycled prep plan.
+        lifecycle.active = {
+          ...lifecycle.active,
+          content: {
+            ...buildDemoMealPlanContent(content, DEMO_VERSION_TARGETS.active),
+            name: "Contest prep · Block 2",
+          },
+        };
         // Demo plan history: earlier versions step the targets down over
         // the prep so past weeks show what the plan said then. Same
-        // variant labels, so the timeline slots keep matching.
+        // variant labels, so the timeline slots keep matching. Demo-owned
+        // versions are replaced; coach-made versions are left alone.
         const activePlan = lifecycle.active;
-        if (
-          activePlan &&
-          !lifecycle.history.some((v) => v.id.startsWith(DEMO_PLAN_HISTORY_ID))
-        ) {
+        if (activePlan) {
           const coachStart = mondayOf(
             client.coachingSince ?? addLocalDays(today, -56),
           );
@@ -540,31 +758,37 @@ export function adoptAthleteDataDemo(
           const activeStart = activePlan.content.startDate;
           const seedVersion = (
             id: string,
+            name: string,
             startDate: string,
-            targets: { protein: number; carbs: number; fat: number },
+            targets: Record<"high" | "medium" | "low", DemoMacroTargets>,
             archivedOn: string,
           ) => ({
             id,
             activatedAt: `${startDate}T08:00:00Z`,
             archivedOn,
             content: {
-              ...scaleMealPlanToTargets(activePlan.content, targets),
+              ...buildDemoMealPlanContent(activePlan.content, targets),
               id: `${activePlan.content.id}-${id}`,
+              name,
               startDate,
             },
           });
           lifecycle.history = [
-            ...lifecycle.history,
+            ...lifecycle.history.filter(
+              (v) => !v.id.startsWith(DEMO_PLAN_HISTORY_ID),
+            ),
             seedVersion(
               `${DEMO_PLAN_HISTORY_ID}-a`,
+              "Pre-prep · Maintenance",
               coachStart,
-              DEMO_HISTORY_TARGETS_A,
+              DEMO_VERSION_TARGETS.a,
               mid,
             ),
             seedVersion(
               `${DEMO_PLAN_HISTORY_ID}-b`,
+              "Contest prep · Block 1",
               mid,
-              DEMO_HISTORY_TARGETS_B,
+              DEMO_VERSION_TARGETS.b,
               activeStart,
             ),
           ].sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
@@ -614,8 +838,17 @@ export function adoptAthleteDataDemo(
         `${today}T08:00:00Z`,
       );
       temporary.id = DEMO_TEMP_ID;
-      if (source === "mealPlan")
-        temporary.plan = scaleRefeedPlan(temporary.plan as MealPlan);
+      if (source === "mealPlan") {
+        const temporaryPlan = temporary.plan as MealPlan;
+        // The demo refeed is a single-variant plan: the same day applies
+        // across the whole range.
+        temporary.plan = {
+          ...temporaryPlan,
+          variants: [demoScaledVariant(DEMO_REFEED_BASE, DEMO_REFEED_TARGETS)],
+          activeVariantId: "refeed",
+          schedule: { mode: "manual", selectedVariantId: "refeed" },
+        };
+      }
       plans = upsertTemporaryNutrition(plans, temporary);
     }
     const training = plans.training.active;

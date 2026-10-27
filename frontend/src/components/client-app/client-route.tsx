@@ -1,100 +1,59 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import {
-  type Appearance,
-  themeVariables,
-  type WorkspaceAppearance,
-} from "@/lib/ethereal-appearance";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { coachThemeStyle } from "../coach/coach-theme";
-import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
-import { Empty } from "../coach/ui";
+import { Button, Empty } from "../coach/ui";
 import { Status } from "../vari8/components";
-import { ClientApp } from "./client-app";
+import { ClientDesktop } from "./desktop/desktop";
+import { MobileApp } from "./mobile/mobile-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
-/**
- * A signed-in client, resolved server-side: identity, workspace brand and
- * the coach's variant come from the session and the client's active
- * assignment, never from the local demo store.
- */
-export type ClientSession = {
-  clientName: string;
-  clientInitials: string;
-  workspaceName: string;
-  configuration: Variant;
-  client: CoachClient;
-  appearance?: WorkspaceAppearance;
-};
-
-export function ClientRoute({ session }: { session?: ClientSession }) {
+export function ClientRoute() {
   return (
     <CoachProvider>
-      <ClientRouteInner session={session} />
+      <ClientRouteInner />
     </CoachProvider>
   );
 }
 
-function ClientRouteInner({ session }: { session?: ClientSession }) {
+function ClientRouteInner() {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
+  const router = useRouter();
   const clientId = params.get("client") ?? "";
-  const demoClient = clientId
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 900px)");
+    const apply = () => setWide(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const viewPhone = params.get("view") === "phone";
+  const togglePhone = () => {
+    const q = new URLSearchParams(params.toString());
+    if (viewPhone) q.delete("view");
+    else q.set("view", "phone");
+    router.replace(`/client?${q.toString()}`);
+  };
+  const client = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
-  const client = session?.client ?? demoClient;
-  const configuration =
-    session?.configuration ??
-    (demoClient?.assignment
-      ? templateSetup(
-          demoClient.assignment.snapshot,
-          demoClient.assignment.variantId,
-        )
-      : undefined);
-  const appearance: Appearance = {
-    mode: session?.appearance?.mode ?? state.preferences.mode,
-    accent: session?.appearance?.accent ?? state.preferences.accent,
-    font: session?.appearance?.font ?? "sans",
-    density: session?.appearance?.density ?? "comfortable",
-    logoMediaId: session?.appearance?.logoMediaId ?? null,
-  };
-  const logoUrl = state.preferences.logo?.dataUrl ?? null;
+  const configuration = client?.assignment
+    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
+    : undefined;
   return (
     <div
-      className={`coach-root v8-theme client-app-route${appearance.density === "compact" ? " eg-density-compact" : ""}`}
-      data-mode={appearance.mode}
-      style={{
-        ...themeVariables(appearance),
-        ...coachThemeStyle({
-          ...state.preferences,
-          mode: appearance.mode,
-          accent: appearance.accent,
-        }),
-      }}
+      className="coach-root v8-theme client-app-route"
+      data-mode={state.preferences.mode}
+      style={coachThemeStyle(state.preferences)}
     >
-      {session && client && configuration ? (
-        <>
-          <header className="client-app-topbar">
-            <span className="client-app-avatar" aria-hidden="true">
-              {session.clientInitials}
-            </span>
-            <strong>{session.clientName}</strong>
-            <span className="client-app-brand" title={session.workspaceName}>
-              {session.workspaceName}
-            </span>
-          </header>
-          <ClientApp
-            configuration={configuration}
-            client={client}
-            context="standalone"
-            brand={session.workspaceName}
-          />
-        </>
-      ) : !hydrated ? (
+      {!hydrated ? (
         <div className="client-app-loading" role="status">
           Loading demo…
         </div>
@@ -116,7 +75,10 @@ function ClientRouteInner({ session }: { session?: ClientSession }) {
         </main>
       ) : (
         <>
-          <header className="client-app-topbar">
+          <header
+            className="client-app-topbar"
+            style={{ display: wide ? "flex" : "none" }}
+          >
             <span className="client-app-avatar" aria-hidden="true">
               {client.name
                 .split(/\s+/)
@@ -128,15 +90,14 @@ function ClientRouteInner({ session }: { session?: ClientSession }) {
             </span>
             <strong>{client.name}</strong>
             <Status>Local demo</Status>
+            <Button variant="secondary" onClick={togglePhone}>
+              {viewPhone ? "Desktop view" : "Phone view"}
+            </Button>
             <Link
               className="client-app-coach-link"
               aria-label="Coach workspace"
               href={`/coach?section=clients&client=${client.id}`}
             >
-              {logoUrl ? (
-                // biome-ignore lint/performance/noImgElement: workspace logo is a dynamic signed url
-                <img className="client-app-logo" src={logoUrl} alt="" />
-              ) : null}
               <span className="client-app-coach-link__full">
                 Coach workspace
               </span>
@@ -145,11 +106,26 @@ function ClientRouteInner({ session }: { session?: ClientSession }) {
               </span>
             </Link>
           </header>
-          <ClientApp
-            configuration={configuration}
-            client={client}
-            context="standalone"
-          />
+          {!wide || viewPhone ? (
+            wide ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "calc(100vh - 60px)",
+                }}
+              >
+                <div className="cm-frame">
+                  <MobileApp client={client} />
+                </div>
+              </div>
+            ) : (
+              <MobileApp client={client} />
+            )
+          ) : (
+            <ClientDesktop client={client} />
+          )}
         </>
       )}
     </div>

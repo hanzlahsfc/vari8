@@ -41,17 +41,6 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
-  /** Server workspace binding when embedded in the app; unset standalone. */
-  workspaceId?: string;
-  /** W2-A3: the client's backend progress photos as compare columns.
-   *  The standalone app has no backend, so it always resolves empty. */
-  physiquePhotosFor: (clientName: string) => Promise<
-    {
-      date: string;
-      submissionId?: string;
-      photos: { pose: string; src: string }[];
-    }[]
-  >;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -61,17 +50,18 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
+  for (const key of [
+    "client",
+    "editor",
+    "review",
+    "plan",
+    "module",
+    "tab",
+  ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
-export function CoachProvider({
-  workspaceId,
-  children,
-}: {
-  workspaceId?: string;
-  children: ReactNode;
-}) {
+export function CoachProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<CoachState>(() =>
@@ -97,6 +87,7 @@ export function CoachProvider({
     editor: params.get("editor") ?? undefined,
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
+    module: params.get("module") ?? undefined,
     tab: params.get("tab") ?? undefined,
   };
   useEffect(() => {
@@ -165,7 +156,6 @@ export function CoachProvider({
     (text: string, undo?: () => void) => setNotice({ text, undo }),
     [],
   );
-  const physiquePhotosFor = useCallback(async () => [], []);
   const attach = useCallback((item: Media, blob: Blob) => {
     const url = URL.createObjectURL(blob);
     urls.current.add(url);
@@ -192,8 +182,6 @@ export function CoachProvider({
         dismiss: () => setNotice(null),
         media,
         attach,
-        workspaceId,
-        physiquePhotosFor,
       }}
     >
       {children}

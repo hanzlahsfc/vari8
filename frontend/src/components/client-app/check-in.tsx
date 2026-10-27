@@ -76,83 +76,6 @@ function choiceOptions(question: Question) {
   return Array.from({ length: count }, (_, i) => String(i + 1));
 }
 
-export type CheckInSummaryRow = { label: string; value: string | null };
-
-/** Display labels for the variant `summaries` keys. */
-const SUMMARY_LABELS: Record<string, string> = {
-  weight: "Weight",
-  calories: "Calories",
-  sleep: "Sleep",
-  steps: "Steps",
-  water: "Water",
-  habits: "Habits",
-};
-
-export function summaryLabel(key: string): string {
-  return SUMMARY_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
-}
-
-/**
- * The tracker-summary embed: one row per configured metric with the
- * client's own logged value. A metric with nothing logged still renders
- * so the configured set stays visible.
- */
-export function CheckInSummary({
-  title,
-  rows,
-}: {
-  title: string;
-  rows: CheckInSummaryRow[];
-}) {
-  if (rows.length === 0) return null;
-  return (
-    <div className="ca-checkin-summary">
-      <h3>{title}</h3>
-      <dl className="ca-checkin-summary-grid">
-        {rows.map((row) => (
-          <div key={row.label}>
-            <dt>{row.label}</dt>
-            <dd data-missing={row.value === null ? "" : undefined}>
-              {row.value ?? "Not logged"}
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  );
-}
-
-/** Latest logged value for one configured summary key in the demo model. */
-function demoSummaryValue(
-  key: string,
-  client: CoachClient,
-  today: string,
-): string | null {
-  if (key === "habits") {
-    if (client.habits.length === 0) return null;
-    const done = client.habitLog?.[today]?.length ?? 0;
-    return `${done} of ${client.habits.length} today`;
-  }
-  const latest = client.entries.at(-1);
-  if (!latest) return null;
-  if (key === "weight") return `${latest.weight} kg`;
-  if (key === "sleep") return `${latest.sleep} h`;
-  if (key === "steps") return `${latest.steps.toLocaleString()} steps`;
-  if (key === "calories") return `${latest.calories} kcal`;
-  return null;
-}
-
-export function summaryRows(
-  configuration: Variant,
-  client: CoachClient,
-  today: string,
-): CheckInSummaryRow[] {
-  return configuration.summaries.map((key) => ({
-    label: summaryLabel(key),
-    value: demoSummaryValue(key, client, today),
-  }));
-}
-
 export function CheckInForm({
   configuration,
   client,
@@ -329,7 +252,7 @@ export function CheckInForm({
                 </div>
                 {missing(q) && (
                   <span className="ca-photo-error">
-                    Required - add each pose
+                    Required — add each pose
                   </span>
                 )}
               </div>
@@ -349,12 +272,6 @@ export function CheckInForm({
         ))}
         {configuration.questions.length === 0 && (
           <Empty title="No check-in questions configured" />
-        )}
-        {configuration.summaries.length > 0 && (
-          <CheckInSummary
-            title="This week in your tracker"
-            rows={summaryRows(configuration, client, today)}
-          />
         )}
         {attempted && !valid && (
           <p className="ca-photo-error">Please answer the required fields.</p>

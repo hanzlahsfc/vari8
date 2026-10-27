@@ -281,7 +281,6 @@ export function WidgetContent(props: ContentProps) {
           "CU10",
           "CU17",
           "CU18",
-          "CU19",
         ].includes(props.widget.kind) ? (
         <CoachingWidgetContent {...adaptiveProps} />
       ) : (

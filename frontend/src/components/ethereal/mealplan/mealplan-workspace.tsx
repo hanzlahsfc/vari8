@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   useEffect,
@@ -27,9 +27,7 @@ import {
 } from "@/components/vari8/components";
 import { DatePicker, TimePicker } from "@/components/vari8/inputs";
 import foodSource from "@/data/food-database.json";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import { createInitialClients } from "../clients/model";
-import { assignSavedMealToClient } from "./assign-saved-meal";
 import { ClientPlanPreview } from "./client-plan-preview";
 import {
   addMealToVariant,
@@ -44,7 +42,6 @@ import {
   type Meal,
   type MealPlan,
   type MealPlanVariant,
-  type ReusableMeal,
   validateMealPlan,
 } from "./model";
 import { PlanOverview } from "./plan-overview";
@@ -142,7 +139,7 @@ function TooltipIconButton({
   );
 }
 
-export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
+export function MealplanWorkspace() {
   const reduceMotion = useReducedMotion();
   const clients = useMemo(
     () => createInitialClients().filter((client) => !client.archived),
@@ -215,19 +212,6 @@ export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
     [query],
   );
   const selectedClient = clients.find((client) => client.id === clientId);
-
-  async function assignSavedMeal(meal: ReusableMeal): Promise<boolean> {
-    if (!workspaceId || !selectedClient) return false;
-    const sortOrder = plan?.reusableMeals.findIndex(
-      (entry) => entry.id === meal.id,
-    );
-    return assignSavedMealToClient(
-      workspaceId,
-      selectedClient.name,
-      meal,
-      sortOrder !== undefined && sortOrder >= 0 ? sortOrder : undefined,
-    );
-  }
 
   function update(next: MealPlan) {
     setPlans((current) => ({ ...current, [clientId]: next }));
@@ -375,13 +359,15 @@ export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
                 variantId: step.variantId === id ? active.id : step.variantId,
               })),
             }
-          : {
-              mode: "manual",
-              selectedVariantId:
-                plan.schedule.selectedVariantId === id
-                  ? active.id
-                  : plan.schedule.selectedVariantId,
-            };
+          : plan.schedule.mode === "manual"
+            ? {
+                mode: "manual",
+                selectedVariantId:
+                  plan.schedule.selectedVariantId === id
+                    ? active.id
+                    : plan.schedule.selectedVariantId,
+              }
+            : plan.schedule;
     update({
       ...plan,
       variants,
@@ -521,7 +507,6 @@ export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
             foodMap={foodMap}
             clientName={selectedClient?.name ?? "Client"}
             onChange={(reusableMeals) => update({ ...plan, reusableMeals })}
-            onAssign={workspaceId ? assignSavedMeal : undefined}
           />
         </div>
       )}

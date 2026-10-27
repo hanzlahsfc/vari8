@@ -64,6 +64,26 @@ const { trackerOverviewIds } = await import(asModule(overviewSource));
 const configuration = () =>
   structuredClone(m.seedState().templates[0].variants[0]);
 
+test("nutrition and body measurement fields are selectable once under meaningful categories", () => {
+  assert.equal(
+    new Set(m.ALL_PARAMETERS.map((p) => p.id)).size,
+    m.ALL_PARAMETERS.length,
+  );
+  assert.deepEqual(m.PARAMETERS.find((p) => p.id === "calories").units, [
+    "kcal",
+    "kJ",
+  ]);
+  assert.equal(
+    m.PARAMETERS.find((p) => p.id === "calories").group,
+    "Nutrition",
+  );
+  assert.equal(m.PARAMETERS.find((p) => p.id === "protein").group, "Nutrition");
+  assert.equal(
+    m.PARAMETERS.find((p) => p.id === "waist").group,
+    "Weight basics",
+  );
+});
+
 test("daily overview preserves legacy summaries without changing check-in configuration", () => {
   const config = configuration();
   config.fields = [
@@ -77,6 +97,39 @@ test("daily overview preserves legacy summaries without changing check-in config
   assert.deepEqual(config, before);
   config.summaries = [];
   assert.deepEqual(trackerOverviewIds(config), ["weight", "sleep", "steps"]);
+});
+
+test("explicit overview supports empty, ordering, ratings and sanitizes removed, hidden, duplicate fields", () => {
+  const config = configuration();
+  config.fields = [
+    "weight",
+    "sleep",
+    "steps",
+    "energy",
+    "water",
+    "pms-severity",
+    "daily-note",
+  ].map((id) => ({ id, unit: "" }));
+  config.cycleTrackingEnabled = false;
+  config.trackerHighlights = [];
+  assert.deepEqual(trackerOverviewIds(config), []);
+  config.trackerHighlights = [
+    "removed",
+    "daily-note",
+    "pms-severity",
+    "energy",
+    "energy",
+    "water",
+    "steps",
+    "sleep",
+    "weight",
+  ];
+  assert.deepEqual(trackerOverviewIds(config), [
+    "energy",
+    "water",
+    "steps",
+    "sleep",
+  ]);
 });
 
 test("overview settings survive persistence and isolated assignment snapshots", () => {

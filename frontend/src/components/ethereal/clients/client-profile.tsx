@@ -11,7 +11,7 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
 import { Input, Select } from "@/components/vari8/components";
@@ -23,7 +23,6 @@ import {
   type WorkspaceClient,
 } from "./model";
 import "./client-profile.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 const PROFILE_TODAY = new Date(Date.UTC(2026, 9, 5));
 const CHECK_IN_DAYS = [

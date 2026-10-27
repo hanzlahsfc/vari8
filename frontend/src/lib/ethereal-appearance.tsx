@@ -13,23 +13,19 @@ import {
 import { ThemeScope } from "@/components/vari8/theme";
 import { vari8Theme } from "./vari8-theme";
 
-import {
-  type Appearance,
-  type AppearanceFont,
-  type AppearanceMode,
-  mergeWorkspaceAppearance,
-  normalizeHex,
-  type WorkspaceAppearance,
-} from "./workspace-appearance";
+export type AppearanceMode = "light" | "dark";
+export type AppearanceFont =
+  | "sans"
+  | "serif"
+  | "condensed"
+  | "mono"
+  | "rounded";
 
-export type {
-  Appearance,
-  AppearanceDensity,
-  AppearanceFont,
-  AppearanceMode,
-  WorkspaceAppearance,
-} from "./workspace-appearance";
-export { normalizeHex } from "./workspace-appearance";
+export type Appearance = {
+  mode: AppearanceMode;
+  accent: string;
+  font: AppearanceFont;
+};
 
 export const fontOptions: {
   id: AppearanceFont;
@@ -73,14 +69,11 @@ export const defaultAppearance: Appearance = {
   mode: "dark",
   accent: "#EB91B8",
   font: "sans",
-  density: "comfortable",
-  logoMediaId: null,
 };
 
 const STORAGE_KEY = "coaching-ethereal-appearance-v1";
 const fontIds = new Set<AppearanceFont>(fontOptions.map(({ id }) => id));
 const modes = new Set<AppearanceMode>(["light", "dark"]);
-const densities = new Set(["comfortable", "compact"]);
 
 type AppearanceContextValue = {
   appearance: Appearance;
@@ -117,64 +110,48 @@ function readStoredAppearance(): Appearance | null {
       font: fontIds.has(record.font as AppearanceFont)
         ? (record.font as AppearanceFont)
         : defaultAppearance.font,
-      density: densities.has(record.density as string)
-        ? (record.density as Appearance["density"])
-        : defaultAppearance.density,
-      logoMediaId:
-        typeof record.logoMediaId === "string" && record.logoMediaId
-          ? record.logoMediaId
-          : null,
     };
   } catch {
     return null;
   }
 }
 
-export function AppearanceProvider({
-  children,
-  workspace,
-}: {
-  children: ReactNode;
-  /** Workspace-resolved appearance; each set field wins over the local store. */
-  workspace?: WorkspaceAppearance | null;
-}) {
-  const [stored, setStored] = useState(defaultAppearance);
+export function AppearanceProvider({ children }: { children: ReactNode }) {
+  const [appearance, setAppearance] = useState(defaultAppearance);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const local = readStoredAppearance();
-    if (local) setStored(local);
+    const stored = readStoredAppearance();
+    if (stored) setAppearance(stored);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appearance));
     } catch {
       // Keep appearance usable when browser storage is unavailable.
     }
-  }, [stored, hydrated]);
-
-  const appearance = useMemo(
-    () => mergeWorkspaceAppearance(stored, workspace),
-    [stored, workspace],
-  );
+  }, [appearance, hydrated]);
 
   const setMode = useCallback((mode: AppearanceMode) => {
-    if (modes.has(mode)) setStored((current) => ({ ...current, mode }));
+    if (modes.has(mode)) setAppearance((current) => ({ ...current, mode }));
   }, []);
 
   const setAccent = useCallback((value: string) => {
     const accent = normalizeHex(value);
-    if (accent) setStored((current) => ({ ...current, accent }));
+    if (accent) setAppearance((current) => ({ ...current, accent }));
   }, []);
 
   const setFont = useCallback((font: AppearanceFont) => {
-    if (fontIds.has(font)) setStored((current) => ({ ...current, font }));
+    if (fontIds.has(font)) setAppearance((current) => ({ ...current, font }));
   }, []);
 
-  const resetAppearance = useCallback(() => setStored(defaultAppearance), []);
+  const resetAppearance = useCallback(
+    () => setAppearance(defaultAppearance),
+    [],
+  );
 
   const value = useMemo(
     () => ({ appearance, setMode, setAccent, setFont, resetAppearance }),
@@ -186,13 +163,21 @@ export function AppearanceProvider({
       <ThemeScope
         mode={appearance.mode}
         accent={appearance.accent}
-        className={`appearance-root eg-root${appearance.density === "compact" ? " eg-density-compact" : ""}`}
+        className="appearance-root eg-root"
         style={themeVariables(appearance)}
       >
         {children}
       </ThemeScope>
     </AppearanceContext.Provider>
   );
+}
+
+export function normalizeHex(value: string): string | null {
+  const raw = value.trim().replace(/^#/, "");
+  if (/^[\da-fA-F]{3}$/.test(raw)) {
+    return `#${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`;
+  }
+  return /^[\da-fA-F]{6}$/.test(raw) ? `#${raw}` : null;
 }
 
 function relativeLuminance(hex: string): number {
@@ -280,21 +265,7 @@ function contrastSafe(
     .color;
 }
 
-/**
- * The fields the theme variables consume; `density` is optional so the coach
- * theme path (which has no density input) keeps its call signature.
- */
-export type AppearanceThemeInput = {
-  mode: AppearanceMode;
-  accent: string;
-  font: AppearanceFont;
-  density?: Appearance["density"];
-};
-
-export function themeVariables(
-  appearance: AppearanceThemeInput,
-): CSSProperties {
-  const compact = appearance.density === "compact";
+export function themeVariables(appearance: Appearance): CSSProperties {
   const accent = normalizeHex(appearance.accent) ?? defaultAppearance.accent;
   const font =
     fontOptions.find((option) => option.id === appearance.font) ??
@@ -334,8 +305,5 @@ export function themeVariables(
     "--nutrition-macro-carbs": macroColors[1],
     "--nutrition-macro-fat": macroColors[2],
     "--ring": ring,
-    "--eg-density-topbar-block": compact ? "42px" : "52px",
-    "--eg-density-gap": compact ? "8px" : "10px",
-    "--eg-density-pad-x": compact ? "12px" : "16px",
   } as CSSProperties;
 }

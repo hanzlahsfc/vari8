@@ -26,6 +26,17 @@ const model = await import(
   `data:text/javascript;base64,${Buffer.from(executableSource).toString("base64")}`
 );
 
+const cleanClient = () => ({
+  ...model.createInitialClients().find((client) => client.id === "client-003"),
+  checkInStatus: "on track",
+  unreadCount: 0,
+  overdueTaskCount: 0,
+  trainingFlags: 0,
+  clientTasks: [],
+  coachTasks: [],
+  checkIns: [],
+});
+
 test("each client collection is a deep independent copy of the fixtures", () => {
   const first = model.createInitialClients();
   first[0].internalNotes[0].text = "Changed in this view";
@@ -51,4 +62,77 @@ test("overdue task totals match each client's actual task statuses", () => {
       client.name,
     );
   }
+});
+
+test("open and overdue client tasks need attention even with clear roster counters", () => {
+  const client = cleanClient();
+  client.clientTasks = [
+    { id: "pending", title: "Send log", dueDate: "2026-10-06", status: "open" },
+  ];
+
+  assert.equal(model.needsAttention(client), true);
+  assert.equal(model.attentionCount(client), 1);
+
+  client.clientTasks.push({
+    id: "late",
+    title: "Upload photos",
+    dueDate: "2026-10-04",
+    status: "overdue",
+  });
+  assert.equal(model.attentionCount(client), 2);
+});
+
+test("awaiting check-in history is the source of truth instead of a stale status label", () => {
+  const awaiting = cleanClient();
+  awaiting.checkInStatus = "on track";
+  awaiting.checkIns = [
+    {
+      id: "pending",
+      date: "2026-10-05",
+      status: "awaiting feedback",
+      summary: "Review",
+      feedback: "",
+    },
+  ];
+  assert.equal(model.needsAttention(awaiting), true);
+  assert.equal(model.attentionCount(awaiting), 1);
+  assert.equal(model.statusLabel(awaiting), "Awaiting feedback");
+
+  const stale = cleanClient();
+  stale.checkInStatus = "awaiting feedback";
+  stale.checkIns = [
+    {
+      id: "sent",
+      date: "2026-10-02",
+      status: "feedback sent",
+      summary: "Reviewed",
+      feedback: "Done",
+    },
+  ];
+  assert.equal(model.needsAttention(stale), false);
+  assert.equal(model.attentionCount(stale), 0);
+  assert.equal(model.statusLabel(stale), "On track");
+});
+
+test("completed client tasks and incomplete coach tasks do not create attention", () => {
+  const client = cleanClient();
+  client.clientTasks = [
+    {
+      id: "done",
+      title: "Log meals",
+      dueDate: "2026-10-04",
+      status: "complete",
+    },
+  ];
+  client.coachTasks = [{ id: "coach", title: "Review plan", complete: false }];
+
+  assert.equal(model.needsAttention(client), false);
+  assert.equal(model.attentionCount(client), 0);
+});
+
+test("client dates format consistently and malformed dates remain unchanged", () => {
+  assert.equal(model.formatClientDate("2026-10-05"), "5 Oct");
+  assert.equal(model.formatClientDate("2026-10-05T08:42"), "5 Oct");
+  assert.equal(model.formatClientDate("2026-02-30"), "2026-02-30");
+  assert.equal(model.formatClientDate("not-a-date"), "not-a-date");
 });

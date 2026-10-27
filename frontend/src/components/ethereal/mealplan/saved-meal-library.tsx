@@ -1,17 +1,8 @@
 "use client";
 
 import { Dialog } from "@base-ui/react/dialog";
-import {
-  BookOpen,
-  Copy,
-  Pencil,
-  Search,
-  Send,
-  Trash2,
-  Undo2,
-  X,
-} from "lucide-react";
-import { motion } from "motion/react";
+import { BookOpen, Copy, Pencil, Search, Trash2, Undo2, X } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   Button,
@@ -19,7 +10,6 @@ import {
   Input,
   Select,
 } from "@/components/vari8/components";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   calculateMealNutrients,
   calculatePortionNutrients,
@@ -38,13 +28,11 @@ export function SavedMealLibrary({
   foodMap,
   clientName,
   onChange,
-  onAssign,
 }: {
   meals: ReusableMeal[];
   foodMap: Map<string, Food>;
   clientName: string;
   onChange: (meals: ReusableMeal[]) => void;
-  onAssign?: (meal: ReusableMeal) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -127,16 +115,6 @@ export function SavedMealLibrary({
     select(deleted.meal.id);
     setMessage(`“${deleted.meal.name}” restored.`);
     setDeleted(null);
-  }
-
-  async function assign() {
-    if (!selected || !onAssign) return;
-    const ok = await onAssign(selected).catch(() => false);
-    setMessage(
-      ok
-        ? `“${selected.name}” assigned to ${clientName}.`
-        : `“${selected.name}” could not be assigned to ${clientName}.`,
-    );
   }
 
   return (
@@ -397,16 +375,6 @@ export function SavedMealLibrary({
                           >
                             <Copy size={13} /> Duplicate
                           </Button>
-                          {onAssign && (
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="sm"
-                              onClick={assign}
-                            >
-                              <Send size={13} /> Assign to {clientName}
-                            </Button>
-                          )}
                           <Button
                             type="button"
                             variant="destructive"
