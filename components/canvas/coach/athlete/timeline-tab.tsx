@@ -125,7 +125,7 @@ type Week = {
   days: string[];
 };
 
-function enumerateWeeks(
+export function enumerateWeeks(
   client: CoachClient,
   ranges: ClientPhaseRange[],
   today: string,

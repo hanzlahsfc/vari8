@@ -816,16 +816,19 @@ export function CheckInTab({
   configuration,
   client,
   workspaceId,
+  clientProfileId,
 }: {
   configuration: Variant;
   client: CoachClient;
   workspaceId?: string;
+  clientProfileId?: string;
 }) {
   return (
     <CheckInForm
       configuration={configuration}
       client={client}
       workspaceId={workspaceId}
+      clientProfileId={clientProfileId}
     />
   );
 }

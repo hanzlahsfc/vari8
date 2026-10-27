@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { coachThemeStyle } from "../coach/coach-theme";
+import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
 import { Empty } from "../coach/ui";
@@ -11,31 +12,70 @@ import { ClientApp } from "./client-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
-export function ClientRoute() {
+/**
+ * A signed-in client, resolved server-side: identity, workspace brand and
+ * the coach's variant come from the session and the client's active
+ * assignment, never from the local demo store.
+ */
+export type ClientSession = {
+  clientName: string;
+  clientInitials: string;
+  workspaceName: string;
+  configuration: Variant;
+  client: CoachClient;
+  appearance?: { mode?: "light" | "dark"; accent?: string };
+};
+
+export function ClientRoute({ session }: { session?: ClientSession }) {
   return (
     <CoachProvider>
-      <ClientRouteInner />
+      <ClientRouteInner session={session} />
     </CoachProvider>
   );
 }
 
-function ClientRouteInner() {
+function ClientRouteInner({ session }: { session?: ClientSession }) {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
   const clientId = params.get("client") ?? "";
-  const client = clientId
+  const demoClient = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
-  const configuration = client?.assignment
-    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
-    : undefined;
+  const client = session?.client ?? demoClient;
+  const configuration =
+    session?.configuration ??
+    (demoClient?.assignment
+      ? templateSetup(
+          demoClient.assignment.snapshot,
+          demoClient.assignment.variantId,
+        )
+      : undefined);
+  const preferences = { ...state.preferences, ...session?.appearance };
   return (
     <div
       className="coach-root v8-theme client-app-route"
-      data-mode={state.preferences.mode}
-      style={coachThemeStyle(state.preferences)}
+      data-mode={preferences.mode}
+      style={coachThemeStyle(preferences)}
     >
-      {!hydrated ? (
+      {session && client && configuration ? (
+        <>
+          <header className="client-app-topbar">
+            <span className="client-app-avatar" aria-hidden="true">
+              {session.clientInitials}
+            </span>
+            <strong>{session.clientName}</strong>
+            <span className="client-app-brand" title={session.workspaceName}>
+              {session.workspaceName}
+            </span>
+          </header>
+          <ClientApp
+            configuration={configuration}
+            client={client}
+            context="standalone"
+            brand={session.workspaceName}
+          />
+        </>
+      ) : !hydrated ? (
         <div className="client-app-loading" role="status">
           Loading demo…
         </div>

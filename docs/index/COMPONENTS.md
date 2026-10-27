@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 170 components in 90 files.
+Counts: 174 components in 91 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -29,6 +29,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `AthleteOverview` | `frontend/src/components/coach/athlete/overview.tsx` | /coach |
 | `AthleteProfileHeader` | `frontend/src/components/coach/athlete/overview.tsx` | /coach |
 | `AthleteTimelineTab` | `frontend/src/components/coach/athlete/timeline-tab.tsx` | /coach |
+| `AthleteTrackerTab` | `frontend/src/components/coach/athlete/tracker-tab.tsx` | /coach |
 | `Avatar` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `BuilderGallery` | `frontend/src/components/coach/builder/gallery.tsx` | /client, /coach |
 | `Button` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
@@ -36,12 +37,14 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `ChartPeriodControl` | `frontend/src/components/coach/builder/chart-period-control.tsx` | /client, /coach |
 | `CheckInForm` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
+| `CheckInSummary` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
 | `CheckInTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `CheckInsWorkspace` | `frontend/src/components/coach/check-ins.tsx` | /coach |
 | `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `ClientApp` | `frontend/src/components/client-app/client-app.tsx` | /client, /coach |
 | `ClientGoalsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientHabitsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
+| `ClientMediaPanel` | `frontend/src/components/coach/media.tsx` | /coach |
 | `ClientPhasePlanEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientPlanPreview` | `frontend/src/components/coach/client-plan-preview.tsx` | /client, /coach |
 | `ClientPlansSummary` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
@@ -79,6 +82,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `IndividualPlanWorkspace` | `frontend/src/components/coach/plans/workspace.tsx` | /client, /coach |
 | `Input` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `MediaCard` | `frontend/src/components/coach/media.tsx` | /coach |
+| `MediaLibrary` | `frontend/src/components/coach/media.tsx` | /coach |
 | `MessagesWorkspace` | `frontend/src/components/coach/messages.tsx` | /coach |
 | `Modal` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `MonthPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |

@@ -48,25 +48,7 @@ function asTrackerParameter(parameter: Parameter): TrackerParameter {
     unit: parameter.units[0] ?? "",
     kind: isRating ? "rating" : "number",
     summary: parameter.inputType ? "latest" : "average",
-    decimals:
-      parameter.id === "basal-body-temperature"
-        ? 2
-        : parameter.id === "salt-intake" || parameter.id === "sodium-intake"
-          ? 1
-          : parameter.units.some((unit) =>
-                [
-                  "steps",
-                  "count",
-                  "sessions",
-                  "minutes",
-                  "mg",
-                  "g",
-                  "bpm",
-                  "breaths/min",
-                ].includes(unit),
-              )
-            ? 0
-            : 1,
+    decimals: defaultDecimals(parameter),
     min: isRating ? 1 : 0,
     max: isRating ? 10 : 100000,
   };
@@ -82,6 +64,49 @@ function asTrackerParameter(parameter: Parameter): TrackerParameter {
 }
 
 const ratingUnits = new Set(["1–10", "1–5", "Word labels"]);
+
+export function defaultDecimals(parameter: Parameter): 0 | 1 | 2 {
+  if (parameter.id === "basal-body-temperature") return 2;
+  if (parameter.id === "salt-intake" || parameter.id === "sodium-intake")
+    return 1;
+  return parameter.units.some((unit) =>
+    [
+      "steps",
+      "count",
+      "sessions",
+      "minutes",
+      "mg",
+      "g",
+      "bpm",
+      "breaths/min",
+      "kcal",
+      "kJ",
+    ].includes(unit),
+  )
+    ? 0
+    : 1;
+}
+
+export function defaultSummary(
+  parameter: Parameter,
+): "avg" | "sum" | "count" | "none" {
+  if (parameter.inputType === "text") return "count";
+  if (
+    parameter.inputType &&
+    [
+      "choice",
+      "multi-choice",
+      "time",
+      "blood-pressure",
+      "location-rating",
+      "period-start",
+    ].includes(parameter.inputType)
+  )
+    return "none";
+  if (parameter.units.some((u) => u === "minutes" || u === "sessions"))
+    return "sum";
+  return "avg";
+}
 
 // Legacy fields remain available to render persisted templates and dashboards. The
 // coach-facing option picker uses PARAMETERS, which contains only the visible catalog.

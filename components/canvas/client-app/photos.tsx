@@ -15,7 +15,11 @@ import {
   type ProgressPhotoEntryWire,
   uploadOwnProgressPhoto,
 } from "../data/progress-photos";
-import { fetchOwnMediaDownload } from "../data/media";
+import {
+  type AssignedMediaItemWire,
+  fetchOwnMediaDownload,
+  listAssignedMedia,
+} from "../data/media";
 import { formatDate } from "../coach/model";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { DateField, Empty } from "../coach/ui";
@@ -201,6 +205,69 @@ export function ClientPhotos({
           </div>
         )}
       </div>
+      <SharedMedia workspaceId={workspaceId} />
     </section>
+  );
+}
+
+// T6 (R8): media the coach assigned to this client. The list is own scope;
+// each item opens through the same download mint the gallery uses, which
+// the service now also grants via media_assignment.
+function SharedMedia({ workspaceId }: { workspaceId: string }) {
+  const [items, setItems] = useState<AssignedMediaItemWire[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    let live = true;
+    void listAssignedMedia(workspaceId)
+      .then(({ items: next }) => {
+        if (live) setItems(next);
+      })
+      .catch(() => {
+        if (live) setFailed(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, [workspaceId]);
+
+  const open = (item: AssignedMediaItemWire) =>
+    void fetchOwnMediaDownload(workspaceId, item.mediaObjectId)
+      .then(({ download }) => window.open(download.url, "_blank"))
+      .catch(() => setStatus("That file could not be opened."));
+
+  return (
+    <div className="ca-shared-media">
+      <h2>Shared by your coach</h2>
+      {status && <p className="ca-photo-error">{status}</p>}
+      {failed ? (
+        <Empty title="Shared media could not be loaded">
+          Check your connection and reload the page.
+        </Empty>
+      ) : items === null ? (
+        <div className="client-app-loading" role="status">
+          Loading shared media…
+        </div>
+      ) : items.length === 0 ? (
+        <Empty title="Nothing shared yet">
+          Files your coach shares with you appear here.
+        </Empty>
+      ) : (
+        <ul className="ca-shared-media-list">
+          {items.map((item) => (
+            <li className="ca-shared-media-row" key={item.mediaObjectId}>
+              <span>
+                {item.fileName}
+                <small>{item.kind.toLowerCase()}</small>
+              </span>
+              <button type="button" onClick={() => open(item)}>
+                Open
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
