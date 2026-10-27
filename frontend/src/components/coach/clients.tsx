@@ -19,6 +19,7 @@ import { FormGrid, Toolbar } from "../vari8/layouts";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
 import { AthleteTrackerTab } from "./athlete/tracker-tab";
+import { ClientMediaPanel } from "./media";
 import {
   addDays,
   assignTemplate,
@@ -29,7 +30,6 @@ import {
   uid,
   unreadCount,
 } from "./model";
-import { ClientMediaPanel } from "./media";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";

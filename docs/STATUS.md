@@ -2,7 +2,7 @@
 
 - Scope implemented on top of merge tip `01c66b0`:
   - `components/canvas/client-app/photos.tsx` rewritten: shared
-    presentational `PhotoGallery` plus live wrapper — pose select on
+    presentational `PhotoGallery` plus live wrapper: pose select on
     upload encoded as `{pose} · {date}` in the minted media fileName,
     pose parsed back with `"Photo"` fallback, compare mode driven by
     `compareProgressPhotos`, delete via `deleteProgressPhoto`,
