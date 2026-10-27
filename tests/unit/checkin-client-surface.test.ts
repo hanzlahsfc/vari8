@@ -1,4 +1,4 @@
-// w2-c6 — client check-in surface helpers: schedule status chips, per-pose
+// w2-c6 - client check-in surface helpers: schedule status chips, per-pose
 // VISUAL media mapping, tracker-summary rows from the own daily-entries
 // surface, and submitted-answer display values.
 
