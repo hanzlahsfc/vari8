@@ -1,7 +1,7 @@
 "use client";
 
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { AnimatePresence, motion } from "motion/react";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import {
   type FormEvent,
   useEffect,
@@ -98,6 +98,7 @@ const browseDescriptions: Record<WidgetKind, string> = {
   CU10: "See the current phase and coaching week.",
   CU17: "Add a clear divider between dashboard sections.",
   CU18: "Share an update with an optional resource link.",
+  CU19: "See which clients need attention and why.",
 };
 
 function contentDefaults(kind: "CU17" | "CU18"): DashboardContentSettings {

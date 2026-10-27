@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { attentionSignalsFrom, buildTriageRows } from "@/lib/canvas/attention";
 import {
   addDays,
   type CoachClient,
@@ -14,6 +15,7 @@ import { useCoach } from "../store";
 import { DashboardBuilder } from "./dashboard-builder";
 import { initialRecords, type SourceRecords } from "./model";
 import { createDashboardDraft, type DashboardDraft } from "./schema";
+import { useAttentionRows } from "./triage-content";
 import { WidgetContent } from "./widget-content";
 import "./coach-dashboard.css";
 
@@ -154,6 +156,15 @@ export function recordsForCoach(
           excerpt: m.text,
           unread: !m.read,
         }));
+      // W2-T5: store-derived triage fallback. The workspace attention
+      // route overrides it wherever a real workspace is bound.
+      r.triage = buildTriageRows(
+        state.clients.map((item) => ({
+          clientId: item.id,
+          name: item.name,
+          ...attentionSignalsFrom(item),
+        })),
+      );
     }
     r.tasks = client.clientTasks.map((t) => ({
       id: t.id,
@@ -217,12 +228,14 @@ export function CoachDashboardEditor({
   variant: Variant;
   onChange: (draft: DashboardDraft) => void;
 }) {
-  const { state } = useCoach();
+  const { state, workspaceId } = useCoach();
+  const remoteTriage = useAttentionRows(workspaceId);
   const sample = state.clients[0];
-  const records = useMemo(
-    () => recordsForCoach(variant, sample, state),
-    [variant, sample, state],
-  );
+  const records = useMemo(() => {
+    const next = recordsForCoach(variant, sample, state);
+    if (remoteTriage) next.triage = remoteTriage;
+    return next;
+  }, [variant, sample, state, remoteTriage]);
   const fallback = useMemo(createDashboardDraft, []);
   return (
     <DashboardBuilder
@@ -241,14 +254,17 @@ export function CoachDashboardPreview({
   client?: CoachClient;
 }) {
   const [detail, setDetail] = useState("");
-  const { state } = useCoach();
+  const { state, workspaceId } = useCoach();
+  const remoteTriage = useAttentionRows(workspaceId);
   const athlete = client ?? state.clients[0];
   const [records, setRecords] = useState(() =>
     recordsForCoach(variant, athlete, state),
   );
   useEffect(() => {
-    setRecords(recordsForCoach(variant, athlete, state));
-  }, [variant, athlete, state]);
+    const next = recordsForCoach(variant, athlete, state);
+    if (remoteTriage) next.triage = remoteTriage;
+    setRecords(next);
+  }, [variant, athlete, state, remoteTriage]);
   const dashboard = bindDashboardUnits(
     variant.dashboard ?? createDashboardDraft(),
     variant,

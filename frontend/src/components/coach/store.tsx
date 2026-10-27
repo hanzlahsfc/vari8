@@ -41,6 +41,8 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
+  /** Server workspace binding when embedded in the app; unset standalone. */
+  workspaceId?: string;
   /** W2-A3: the client's backend progress photos as compare columns.
    *  The standalone app has no backend, so it always resolves empty. */
   physiquePhotosFor: (clientName: string) => Promise<
@@ -63,7 +65,13 @@ export function routeUrl(route: Route) {
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
-export function CoachProvider({ children }: { children: ReactNode }) {
+export function CoachProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId?: string;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<CoachState>(() =>
@@ -184,6 +192,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         dismiss: () => setNotice(null),
         media,
         attach,
+        workspaceId,
         physiquePhotosFor,
       }}
     >
