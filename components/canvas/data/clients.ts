@@ -2,10 +2,10 @@
 // coach state and the ethereal client-workspace draft key.
 //
 // W2-A1: the client-detail fields (phases, internalNotes, generalNotes,
-// weekNotes, plus the pin flag on internalNotes) are served by
-// /api/v1 - the functions below are the only read/write path for them and
-// the local slice no longer persists them. The rest of the client core
-// still persists locally for the roster and the other domain slices.
+// weekNotes, plus the pin flag on internalNotes) also sync through
+// /api/v1 via the functions below. The local slice still persists them so
+// the seam keeps its full-state round-trip: the local copy is the cache and
+// first paint, the remote reads overwrite it once they land.
 
 import type { CoachClient } from "../coach/model";
 import type { WorkspaceClient } from "../ethereal/clients/model";
@@ -24,10 +24,7 @@ export type ClientCore = Omit<
  * The roster slice: every client core. `assignment` is owned by the templates
  * slice, `schedules` by checkins, `plans` by nutrition, training and tracker,
  * `entries` by tracker, and `habits`/`retiredHabits` by habits - each merge
- * folds its own data back onto these cores, in registry order. `phases`,
- * `internalNotes`, `generalNotes` and `weekNotes` are remote (W2-A1): the
- * extract drops them so storage never carries a stale copy, while merge
- * still accepts legacy slices that contain them.
+ * folds its own data back onto these cores, in registry order.
  */
 export const clientsSlice: CoachSlice = {
   key: CLIENTS_KEY,
@@ -40,21 +37,13 @@ export const clientsSlice: CoachSlice = {
       delete core.entries;
       delete core.habits;
       delete core.retiredHabits;
-      delete core.phases;
-      delete core.internalNotes;
-      delete core.generalNotes;
-      delete core.weekNotes;
       return core;
     }),
   merge: (slice, state) => {
     if (!Array.isArray(slice)) throw new Error("Invalid clients slice");
     // Cores stay incomplete until the per-domain merges run; isCoachState is
     // the gate before the assembled state is used.
-    state.clients = (slice as Partial<CoachClient>[]).map((client) => ({
-      internalNotes: [],
-      generalNotes: [],
-      ...client,
-    })) as CoachClient[];
+    state.clients = slice as CoachClient[];
   },
 };
 

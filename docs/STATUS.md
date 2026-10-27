@@ -1,3 +1,36 @@
+## 2026-10-27 - w2-a4 repair 1: localStorage seam and lazy client-detail fetch
+
+- Round 1 repair of stage w2-a4 on branch `w2/a4` (base commit
+  `e6a8e80`). Two branch-introduced defects fixed.
+- Defect (a), lost persisted data: `components/canvas/data/messages.ts`,
+  `notes.ts` and `clients.ts` had switched `extract` to drop the
+  remote-owned fields (`messages`, `drafts`, `coachNotes`, `coachTodos`,
+  and the client detail fields `internalNotes`, `generalNotes`,
+  `phases`, `weekNotes`), so write-then-read round-trips returned empty
+  values. All three slices persist the full local copy again; the
+  `/api/v1` reads stay authoritative and overwrite on hydration.
+- Defect (b), wasted fetch: in `components/canvas/coach/store.tsx` the
+  W2-A1 client-detail bundle fetch fired unconditionally on every
+  provider mount. It is now lazy on the surfaces that consume it
+  (sections `clients` and `notes`). That removes a wasted staff read
+  plus an unrelated `Client details could not be loaded.` banner on
+  other screens, and stops the mount fetch from displacing the roster
+  resolver's first request.
+- Gates on this worktree, real exit codes: `npm run test` 0 (117 files,
+  1382 tests passed); `npm run lint` 0 with 0 errors and 88 warnings,
+  all pre-existing; `npm run typecheck` 0; `npx prettier --check` on the
+  four source files 0 (`docs/STATUS.md` exits 1 identically at base
+  `e6a8e80`, inherited; the added entry itself is prettier-clean);
+  `npm run index` 0 with no regeneration diff; `npm run index:check` 0;
+  owned-lines dash gate prints 0 added violations.
+- `npm run build` 0. The inherited `_global-error` prerender TypeError
+  from the round-1 verdict did not reproduce in this environment (Node
+  v26.12.0, Next.js 16.3.8 webpack). Recorded as observed, no toolchain
+  fix attempted.
+- `frontend/` untouched, so `cd frontend && npm run lint` was not run.
+  Client to-do cancel versus soft-delete semantics untouched.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR1/`.
+
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
 - Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`

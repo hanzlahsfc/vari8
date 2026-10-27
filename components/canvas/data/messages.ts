@@ -1,10 +1,10 @@
 // Messages domain provider (PR-W0). Owns the own-thread remote calls the
 // client messages screen reads and writes through.
 //
-// W2-A4: the coach-side messages and composer drafts are remote through the
-// staff conversation routes below, so the slice persists neither - extract
-// writes an empty envelope and merge only restores a legacy envelope that
-// still carries them (guarded, both keys are required by the state guard).
+// W2-A4: the coach-side messages and composer drafts also sync through the
+// staff conversation routes below. The slice still persists both so the
+// localStorage seam keeps its full-state round-trip: the local copy is the
+// cache and first paint, the remote reads overwrite it once they land.
 
 import type { Media, Message } from "../coach/model";
 import { apiFetch } from "./http";
@@ -22,17 +22,16 @@ type MessagesData = {
 
 export const messagesSlice: CoachSlice = {
   key: MESSAGES_KEY,
-  // Remote-owned (W2-A4): the conversations routes serve both collections.
-  extract: () => ({}),
+  extract: (state): MessagesData => ({
+    messages: state.messages,
+    drafts: state.drafts,
+  }),
   merge: (slice, state) => {
     if (!slice || typeof slice !== "object")
       throw new Error("Invalid messages slice");
     const data = slice as Partial<MessagesData>;
-    // A legacy envelope still carries both; an empty envelope restores the
-    // empty shape the state guard requires.
-    state.messages = Array.isArray(data.messages) ? data.messages : [];
-    state.drafts =
-      data.drafts && typeof data.drafts === "object" ? data.drafts : {};
+    state.messages = data.messages as MessagesData["messages"];
+    state.drafts = data.drafts as MessagesData["drafts"];
   },
 };
 

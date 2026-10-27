@@ -3,11 +3,11 @@
 // stay on the client record in the clients slice: they are profile data and
 // ruling O13 keeps their visibility split on the record.
 //
-// W2-A1: the workspace coachNotes list is served by /api/v1 through the
-// functions below. W2-A4: the coach to-dos are served by the coach-tasks
-// routes, so the slice persists neither list - a legacy stored envelope that
-// still carries them keeps merging so nothing is lost before the first
-// remote read.
+// W2-A1: the workspace coachNotes list also syncs through /api/v1 via the
+// functions below. W2-A4: the coach to-dos sync through the coach-tasks
+// routes. The slice still persists both lists so the localStorage seam keeps
+// its full-state round-trip: the local copy is the cache and first paint,
+// the remote reads overwrite it once they land.
 
 import type { CoachState } from "../coach/model";
 import { apiFetch } from "./http";
@@ -22,14 +22,16 @@ type NotesData = {
 
 export const notesSlice: CoachSlice = {
   key: NOTES_KEY,
-  // Both lists are remote-owned; nothing is persisted any more.
-  extract: () => ({}),
+  extract: (state): NotesData => ({
+    coachNotes: state.coachNotes,
+    coachTodos: state.coachTodos,
+  }),
   merge: (slice, state) => {
     if (!slice || typeof slice !== "object")
       throw new Error("Invalid notes slice");
     const data = slice as Partial<NotesData>;
-    if (data.coachNotes) state.coachNotes = data.coachNotes;
-    if (Array.isArray(data.coachTodos)) state.coachTodos = data.coachTodos;
+    state.coachNotes = data.coachNotes;
+    state.coachTodos = data.coachTodos;
   },
 };
 
