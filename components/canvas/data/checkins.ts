@@ -735,3 +735,133 @@ export function submitOwnCheckIn(
     { method: "POST", body: { answersJson } },
   );
 }
+
+// ---------------------------------------------------------------------------
+// Card w2-c6: the client check-in schedule + summary embed helpers. The list
+// is the bounded staff-calendar route run under the caller's own scope; the
+// summary rows come from the own daily-entries surface because the
+// submission tracker-context read is staff-gated.
+// ---------------------------------------------------------------------------
+
+/**
+ * Own schedule row - mirrors `OwnCheckInInstanceItem` from
+ * lib/checkin/instances. The /api/v1 instances list route denies client
+ * callers (measured 403 on the lane), so the schedule comes from the
+ * own-scope `readOwnCheckInCalendarAction` server action instead.
+ */
+export type OwnCheckInInstanceListItemWire = {
+  instanceId: string;
+  formName: string;
+  dueAt: string;
+  state: string;
+  late: boolean;
+  submittedAt: string | null;
+};
+
+/** Status chip key for one schedule row, derived from the wire state. */
+export function checkInScheduleStatus(item: {
+  state: string;
+  late: boolean;
+}): "overdue" | "scheduled" | "submitted" | "cancelled" {
+  if (item.state === "CANCELLED") return "cancelled";
+  if (item.state === "SUBMITTED" || item.state === "REVIEWED")
+    return "submitted";
+  return item.late ? "overdue" : "scheduled";
+}
+
+/** Chip label shown next to a schedule row. */
+export function checkInScheduleLabel(status: string): string {
+  if (status === "overdue") return "Overdue";
+  if (status === "scheduled") return "Scheduled";
+  if (status === "submitted") return "Submitted";
+  return "Cancelled";
+}
+
+/**
+ * Poses for a visual-upload field: the wire `options` labels when the
+ * definition carries them, else the standard five.
+ */
+export function posesForVisualField(
+  field: { options?: { optionId: string; label: string }[] },
+  defaultPoses: readonly string[],
+): string[] {
+  const labels = (field.options ?? []).map((option) => option.label);
+  return labels.length > 0 ? labels : [...defaultPoses];
+}
+
+/**
+ * VISUAL answer value: the pose slots mapped onto a mediaIds array in pose
+ * order, so index i belongs to pose i of the filled slots.
+ */
+export function mediaIdsForPoses(
+  poses: readonly string[],
+  mediaByPose: Record<string, string | undefined>,
+): string[] {
+  return poses
+    .map((pose) => mediaByPose[pose])
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
+/**
+ * Tracker-summary rows for one check-in date from the caller's own
+ * daily-entries surface: the logged values for that date, else the surface
+ * items' current values. Empty on every non-ready state so the embed hides.
+ */
+export function summaryRowsFromSurface(
+  surface: {
+    state: string;
+    sections?: { items: { label: string; current: string; unit: string | null }[] }[];
+    history?: {
+      entryDate: string;
+      values: { label: string; display: string }[];
+    }[];
+  },
+  entryDate: string,
+): { label: string; value: string | null }[] {
+  if (surface.state !== "ready") return [];
+  const logged = (surface.history ?? []).find(
+    (entry) => entry.entryDate === entryDate,
+  );
+  if (logged && logged.values.length > 0)
+    return logged.values.map((value) => ({
+      label: value.label,
+      value: value.display,
+    }));
+  const rows = (surface.sections ?? [])
+    .flatMap((section) => section.items)
+    .filter((item) => item.current.trim().length > 0)
+    .map((item) => ({
+      label: item.label,
+      value: `${item.current}${item.unit ? ` ${item.unit}` : ""}`,
+    }));
+  return rows;
+}
+
+/** Display value for one submitted answer joined to its field. */
+export function submittedAnswerDisplay(
+  field: { kind: string; options?: { optionId: string; label: string }[] },
+  answer: {
+    valueText: string | null;
+    valueNumeric: string | null;
+    valueDate: string | null;
+    valueOptionIds: string[] | null;
+    valueRating: number | null;
+    mediaIds: string[];
+  },
+): string | null {
+  if (answer.mediaIds.length > 0)
+    return `${answer.mediaIds.length} photo${answer.mediaIds.length === 1 ? "" : "s"}`;
+  if (answer.valueRating !== null) return String(answer.valueRating);
+  if (answer.valueOptionIds && answer.valueOptionIds.length > 0)
+    return answer.valueOptionIds
+      .map(
+        (id) =>
+          field.options?.find((option) => option.optionId === id)?.label ?? id,
+      )
+      .join(", ");
+  if (answer.valueNumeric !== null) return answer.valueNumeric;
+  if (answer.valueDate !== null) return answer.valueDate;
+  if (answer.valueText !== null && answer.valueText.trim().length > 0)
+    return answer.valueText;
+  return null;
+}
