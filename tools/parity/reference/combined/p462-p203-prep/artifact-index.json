@@ -960,8 +960,8 @@
     },
     {
       "path": "receipts/source-compatibility.json",
-      "sha256": "f08bc2fde345369faab260a68898863de4a1581263c9bbf6221821d50396eb6b",
-      "sizeBytes": 24256
+      "sha256": "265e916656bf76d5806a4702ae5d22e21eb828d9c054389da0ffcfc38f0d6039",
+      "sizeBytes": 24323
     },
     {
       "path": "receipts/strict.json",
