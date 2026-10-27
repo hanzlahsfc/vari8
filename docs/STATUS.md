@@ -24,6 +24,38 @@
   JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
   with pg_database absence proof and `app_fp_w2t7%` census saved.
 
+## 2026-10-27 - W2T7 preview conflict repair: w2/t6 merge line `c9440dc` merged into `w2/t7`
+
+- Preview rebuild skipped w2-t7 on conflicts against the merged stage
+  set carried by verified w2/t6 tip `c9440dc` (t6 media work plus the
+  c6 and c7 client-app lines). Absorbed into stage tip `fc563aa` as
+  `--no-ff` merge `f120ebc`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree fc563aa c9440dc`
+  -> tree `7ed11a08a92803fba8b52012871bfb270967ccae`; conflict list
+  `docs/STATUS.md` and generated
+  `docs/index/{DATA-MODEL,ROUTES,SYMBOLS}.md`. Both `client-app.css`
+  twins and `db/schema.prisma` auto-merged clean.
+- Resolutions: `docs/STATUS.md` union, all 2026-10-28 entries above all
+  2026-10-27 entries above all 2026-10-26, ours-new then theirs-new
+  within a date. Index docs took theirs, then `npm run index`
+  regenerated them on the merged tree; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (85 canvas-only + 29
+  frontend-only lines). Hunk count moved 6 -> 4 because surrounding
+  merged lines shifted hunk boundaries; the differing line set did
+  not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 310
+  files), `npx vitest run` 0 (123 files, 1437 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+  index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
 ## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
 
 - Verdict on 59080f8, Finding 1 (blocking): the assign roster built
