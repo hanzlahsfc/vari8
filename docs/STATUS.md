@@ -192,6 +192,39 @@
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
 
+## 2026-10-27 - w2-fe2 merge resolution: absorbed w2/a3, preview line product-clean
+
+- Merge-resolution card after preview rebuild 20261027T054901Z hit a real
+  product conflict merging the fe2 READY tip 2df2d82 against the merged
+  stage set. Goal: absorb conflicting verified stages into w2/fe2 so the
+  preview merge line is clean end to end. No feature work.
+- Step 1: probed w2/a3 0e91798 with `git merge-tree --write-tree`
+  (tree 21500021c68d23467823eb63ad01eaf19d2bed9f): one conflict,
+  `components/canvas/coach/store.tsx` import region. Merged as --no-ff
+  commit 5cea742. Resolution kept both sides: fe2's tracker and
+  training-logs import blocks plus a3's `addLocalDays` in the
+  `./targets/model` import; a3's new code uses `addLocalDays` at the
+  hydrated range fetch. All other files auto-merged.
+- Step 2 probes against the new HEAD: w2/c1 788714b clean
+  (tree e0746aea0a3c0fadaa22a7c71702473a7ced5e26); w2/c2 4ca38da
+  docs-only (b0d1e51841eb67f099c24ef780270d0e8499e9bc); w2/t3 a461e00
+  docs-only (14553f76d2495aa242f31e254396ad181939dd2e); w2/t4 33a3cab
+  docs-only (55ea9b2572d82bc337b307d87fc74ed65378f83e); w2/t5 5c8dae8
+  docs-only (0509bdc651ff853a2de5bff82c8d86515ec34e31) with
+  `db/schema.prisma` and the frontend twin store auto-merging clean once
+  a3 was absorbed; w2/t6 da34672 docs-only
+  (fc6f8ddcb32f846d47c62630dc6bd1fd76158991). No tip showed a non-docs
+  conflict, so per the card rule no further stage was merged. A
+  supplementary t5-on-t6 probe (71910a6b878f5781f99988fc088c505397b7e263)
+  also auto-merged schema.prisma, so the later preview merges stay
+  product-clean regardless of order.
+- Gates on the merged tip: `npx prisma validate` 0 (DATABASE_URL
+  placeholder; no .env in this worktree), typecheck 0, lint 0 (93
+  warnings, unchanged), frontend lint 0, `npx vitest run` 0 (118 files,
+  1398 tests), `npm run index` regenerated with no diff, index:check 0,
+  `npm run build` 0, dash gate prints 0, worktree clean.
+- Evidence: NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE-2/W2FE2/.
+
 ## 2026-10-27 - w2-fe2 repair 2: tracker hydration scoped to the Tracker tab, logging test env isolation
 
 - Verdict `VERDICT-6069da5.md` blocked on B2 (the W2-FE2 tracker hydration
