@@ -2,12 +2,19 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { coachThemeStyle } from "../coach/coach-theme";
 import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
 import { Empty } from "../coach/ui";
 import { Status } from "../vari8/components";
+import {
+  type Appearance,
+  themeVariables,
+  type WorkspaceAppearance,
+} from "@/lib/canvas/ethereal-appearance";
+import { fetchWorkspaceAppearance } from "../data/appearance";
 import { ClientApp } from "./client-app";
 import "../coach/coach.css";
 import "./client-app.css";
@@ -23,7 +30,7 @@ export type ClientSession = {
   workspaceName: string;
   configuration: Variant;
   client: CoachClient;
-  appearance?: { mode?: "light" | "dark"; accent?: string };
+  appearance?: WorkspaceAppearance;
 };
 
 export function ClientRoute({
@@ -62,12 +69,62 @@ function ClientRouteInner({
           demoClient.assignment.variantId,
         )
       : undefined);
-  const preferences = { ...state.preferences, ...session?.appearance };
+  const [remoteAppearance, setRemoteAppearance] =
+    useState<WorkspaceAppearance | null>(null);
+  const [remoteLogoUrl, setRemoteLogoUrl] = useState<string | null>(null);
+
+  // Card w2-c2: the signed-in client's own workspace appearance through the
+  // one client-scoped GET. `logoUrl` arrives already minted server-side: a
+  // client can never mint a workspace logo through the media GET itself
+  // (own profile prefix only). A failed read leaves both null and every
+  // field falls back to the local store below.
+  useEffect(() => {
+    if (!own?.workspaceId) return;
+    let live = true;
+    fetchWorkspaceAppearance(own.workspaceId)
+      .then((wire) => {
+        if (!live) return;
+        setRemoteAppearance(wire.appearance);
+        setRemoteLogoUrl(wire.logoUrl);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [own?.workspaceId]);
+
+  const appearance: Appearance = {
+    mode:
+      remoteAppearance?.mode ??
+      session?.appearance?.mode ??
+      state.preferences.mode,
+    accent:
+      remoteAppearance?.accent ??
+      session?.appearance?.accent ??
+      state.preferences.accent,
+    font: remoteAppearance?.font ?? session?.appearance?.font ?? "sans",
+    density:
+      remoteAppearance?.density ??
+      session?.appearance?.density ??
+      "comfortable",
+    logoMediaId:
+      remoteAppearance?.logoMediaId ?? session?.appearance?.logoMediaId ?? null,
+  };
+  const logoUrl = remoteAppearance?.logoMediaId
+    ? remoteLogoUrl
+    : (state.preferences.logo?.dataUrl ?? null);
   return (
     <div
-      className="coach-root v8-theme client-app-route"
-      data-mode={preferences.mode}
-      style={coachThemeStyle(preferences)}
+      className={`coach-root v8-theme client-app-route${appearance.density === "compact" ? " eg-density-compact" : ""}`}
+      data-mode={appearance.mode}
+      style={{
+        ...themeVariables(appearance),
+        ...coachThemeStyle({
+          ...state.preferences,
+          mode: appearance.mode,
+          accent: appearance.accent,
+        }),
+      }}
     >
       {session && client && configuration ? (
         <>
@@ -129,6 +186,10 @@ function ClientRouteInner({
               aria-label="Coach workspace"
               href={`/coach?section=clients&client=${client.id}`}
             >
+              {logoUrl ? (
+                // biome-ignore lint/performance/noImgElement: workspace logo is a dynamic signed url
+                <img className="client-app-logo" src={logoUrl} alt="" />
+              ) : null}
               <span className="client-app-coach-link__full">
                 Coach workspace
               </span>
