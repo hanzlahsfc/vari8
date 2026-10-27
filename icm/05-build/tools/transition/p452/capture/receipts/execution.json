@@ -3,7 +3,10 @@
   "commands": [
     {
       "cwd": ".",
-      "argv": ["node", "tools/parity/run.mjs"],
+      "argv": [
+        "node",
+        "tools/parity/run.mjs"
+      ],
       "env": {
         "PARITY_COMPARER": "reference",
         "PARITY_REFERENCE_DIR": "tools/parity/reference/proposed",
@@ -243,7 +246,9 @@
       "fullPage": true,
       "animations": "disabled",
       "caret": "hide",
-      "launchArgs": ["--disable-partial-raster"],
+      "launchArgs": [
+        "--disable-partial-raster"
+      ],
       "storageSeed": {},
       "randomSeed": "0x2545f491",
       "settle": "networkidle; fonts.ready; DOM quiet 400ms / 3000ms cap"

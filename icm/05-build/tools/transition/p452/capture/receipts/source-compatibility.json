@@ -1,0 +1,43 @@
+{
+  "kind": "combined-source-compatibility-v1",
+  "capture": {
+    "sha": "d677df410a5956dca583ad73d1a1372ccfbb6420",
+    "tree": "193d0574e2e514a495d2f30394a3d30734b13d1d",
+    "frontendTree": "54a005db99a29f59cdcbed8ebafce1c796ed3300",
+    "dirtyTracked": "",
+    "untracked": "",
+    "rootLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "appLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "pathspec": [
+      "app/**",
+      "components/**",
+      "db/**",
+      "frontend/**",
+      "icm/04-briefing/**",
+      "lib/**",
+      "public/**",
+      "scripts/**",
+      "tests/**",
+      "themes/**",
+      "tools/parity/** excluding tools/parity/out/** and tools/parity/reference/combined/**",
+      "tools/local-tls-proxy.mjs",
+      "auth.ts",
+      "package.json",
+      "package-lock.json",
+      "next.config.*",
+      "playwright.config.*",
+      "tsconfig*.json",
+      "vitest*.config.*",
+      "eslint.config.*",
+      "postcss.config.*",
+      "middleware.ts",
+      "instrumentation.ts"
+    ],
+    "materialTreeSha256": "749a56588cb589b4a2bf8cb33fe46e3bd1a5b74ba5e465bc46e2dcedc85baff6"
+  },
+  "authority": "Git review of the listed commits/paths; package hashes bind checked-out inputs but do not prevent a coordinated rewrite of code and manifests",
+  "postCapturePaths": [
+    "../../../tmp/p452-package/artifact-index.json",
+    "../../../tmp/p452-package/receipts/source-compatibility.json"
+  ]
+}

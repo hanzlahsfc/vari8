@@ -1,4 +1,5 @@
-40f8830e0873243e2bd807264bc9051ba97e74106a15b1c6f9457a5e6f975595  ./capture/combined-provenance.json
+fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c  ./capture/adapter/d32-capture-adapter.mjs
+354003d3ea55fa4e879a422378cc9a6c036b2d083d1c54f4e32ee81381a426b3  ./capture/artifact-index.json
 cd46480244b01c3462902ca79814583f5efa3b22bb3de7edb7459298c2fcf215  ./capture/current/1440/s01-profile-checkins.geom.json.gz
 afc6fcb806a3e494f9746a650d458217b91e05d80d19a5a90ff9bc41bc29b9ce  ./capture/current/1440/s01-profile-checkins.png
 732acf44ccba2daa8ccc8195df877361cd9bc95450388fc22824ba6ec3121496  ./capture/current/1440/s01-profile-notes.geom.json.gz
@@ -232,12 +233,13 @@ ebdd28ce768f5e73426a9a715fdf5fc360e6e93eceba9b604c2a06803b11c919  ./capture/curr
 19301e7dd45e4a33e1f9a0526e8e675e45f6269a224f4e60590dc7ce8462e238  ./capture/current/390/s11-preferences.png
 2ca1278380e26f80ff37746ad21deec0626a448e5aabc23e11798b8e718dbcaa  ./capture/current/390/s11-preferences.s236-0-0.png
 5c9f360016f15cbb72839e8140dc966b73a25c734cf4a7820d74633b3997f795  ./capture/current/390/s11-preferences.s236-0-297.png
-e4e3f3f552e00b92c96ea351710a0990ff75058bb8298a77f05d170c45308606  ./capture/current/manifest.json
-fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c  ./capture/d32-capture-adapter.mjs
-2ab1dce3b64a21376af8b7ba70b81f24677cfcd1a3f7d0a1c810608e4085e370  ./capture/execution-receipt.json
-b0f22c6a4800139237d88c81b6ef53127e72783a964344e6686de2c7aa39213e  ./capture/proposed-canonical.json
-5dfb38cb5461854ba3df560b106487fe7975e0f68b77cadc6a2a510d5d44ee32  ./capture/proposed-strict.json
-4a89c9f4f565bbcde7047dc18e44bff820b2aaab694018a2fb10eaf34bb524e7  ./capture/server.log
+110b9f41bf8208c8624b5a68774a0304ecb369ded38960c631394a8aea8fa83d  ./capture/current/manifest.json
+f92a5d30bb951a5068cd4bd9bb732466ab1fc99110008ec650bb87fb139aeaca  ./capture/receipts/canonical.json
+6835b5316866f51f77e9deee872d6fc600ac576e03aea1bb7e5a4ec0aeee6914  ./capture/receipts/combined-provenance.json
+7494f2995868dd921768b3ea50d7d3c3fcbccabbceb61d933a833a928b634b5a  ./capture/receipts/execution.json
+4a89c9f4f565bbcde7047dc18e44bff820b2aaab694018a2fb10eaf34bb524e7  ./capture/receipts/server.log
+d3d77dce007c8c10bf0a0911fed08a50f399741c3658fea342e36c2915529bde  ./capture/receipts/source-compatibility.json
+cef4510d28f1f31c944d7c3a289657ec22b2f2171287c9f0dfcce801e3d57286  ./capture/receipts/strict.json
 40f8830e0873243e2bd807264bc9051ba97e74106a15b1c6f9457a5e6f975595  ./combined-provenance.json
 2ab1dce3b64a21376af8b7ba70b81f24677cfcd1a3f7d0a1c810608e4085e370  ./execution-receipt.json
 e4e3f3f552e00b92c96ea351710a0990ff75058bb8298a77f05d170c45308606  ./manifest.json

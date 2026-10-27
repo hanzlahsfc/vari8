@@ -1,8 +1,8 @@
 {
-  "strict": false,
+  "strict": true,
   "total": 70,
-  "passed": 70,
-  "failed": 0,
+  "passed": 68,
+  "failed": 2,
   "results": [
     {
       "id": "s01-roster@390",
@@ -12,10 +12,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1403,
+        "budget": 0,
         "sizes": [
-          [762, 1842],
-          [762, 1842]
+          [
+            762,
+            1842
+          ],
+          [
+            762,
+            1842
+          ]
         ],
         "sizeEqual": true
       },
@@ -31,10 +37,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 429,
+          "budget": 0,
           "sizes": [
-            [312, 1377],
-            [312, 1377]
+            [
+              312,
+              1377
+            ],
+            [
+              312,
+              1377
+            ]
           ],
           "sizeEqual": true
         },
@@ -42,10 +54,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 429,
+          "budget": 0,
           "sizes": [
-            [312, 1377],
-            [312, 1377]
+            [
+              312,
+              1377
+            ],
+            [
+              312,
+              1377
+            ]
           ],
           "sizeEqual": true
         },
@@ -53,10 +71,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 429,
+          "budget": 0,
           "sizes": [
-            [312, 1377],
-            [312, 1377]
+            [
+              312,
+              1377
+            ],
+            [
+              312,
+              1377
+            ]
           ],
           "sizeEqual": true
         }
@@ -71,10 +95,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 725,
+        "budget": 0,
         "sizes": [
-          [390, 1859],
-          [390, 1859]
+          [
+            390,
+            1859
+          ],
+          [
+            390,
+            1859
+          ]
         ],
         "sizeEqual": true
       },
@@ -90,10 +120,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -101,10 +137,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -119,10 +161,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 540,
+        "budget": 0,
         "sizes": [
-          [390, 1386],
-          [390, 1386]
+          [
+            390,
+            1386
+          ],
+          [
+            390,
+            1386
+          ]
         ],
         "sizeEqual": true
       },
@@ -138,10 +186,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -149,10 +203,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -167,10 +227,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 382,
+        "budget": 0,
         "sizes": [
-          [390, 982],
-          [390, 982]
+          [
+            390,
+            982
+          ],
+          [
+            390,
+            982
+          ]
         ],
         "sizeEqual": true
       },
@@ -186,10 +252,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -197,10 +269,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -215,10 +293,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 590,
+        "budget": 0,
         "sizes": [
-          [390, 1515],
-          [390, 1515]
+          [
+            390,
+            1515
+          ],
+          [
+            390,
+            1515
+          ]
         ],
         "sizeEqual": true
       },
@@ -234,10 +318,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -245,10 +335,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -263,10 +359,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 349,
+        "budget": 0,
         "sizes": [
-          [390, 896],
-          [390, 896]
+          [
+            390,
+            896
+          ],
+          [
+            390,
+            896
+          ]
         ],
         "sizeEqual": true
       },
@@ -282,10 +384,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -293,10 +401,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -311,10 +425,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 329,
+        "budget": 0,
         "sizes": [
-          [390, 844],
-          [390, 844]
+          [
+            390,
+            844
+          ],
+          [
+            390,
+            844
+          ]
         ],
         "sizeEqual": true
       },
@@ -330,10 +450,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 177,
+          "budget": 0,
           "sizes": [
-            [390, 454],
-            [390, 454]
+            [
+              390,
+              454
+            ],
+            [
+              390,
+              454
+            ]
           ],
           "sizeEqual": true
         },
@@ -341,10 +467,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 177,
+          "budget": 0,
           "sizes": [
-            [390, 454],
-            [390, 454]
+            [
+              390,
+              454
+            ],
+            [
+              390,
+              454
+            ]
           ],
           "sizeEqual": true
         },
@@ -352,10 +484,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 177,
+          "budget": 0,
           "sizes": [
-            [390, 454],
-            [390, 454]
+            [
+              390,
+              454
+            ],
+            [
+              390,
+              454
+            ]
           ],
           "sizeEqual": true
         }
@@ -370,10 +508,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 329,
+        "budget": 0,
         "sizes": [
-          [390, 844],
-          [390, 844]
+          [
+            390,
+            844
+          ],
+          [
+            390,
+            844
+          ]
         ],
         "sizeEqual": true
       },
@@ -395,10 +539,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 329,
+        "budget": 0,
         "sizes": [
-          [390, 844],
-          [390, 844]
+          [
+            390,
+            844
+          ],
+          [
+            390,
+            844
+          ]
         ],
         "sizeEqual": true
       },
@@ -420,10 +570,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1511,
+        "budget": 0,
         "sizes": [
-          [390, 3875],
-          [390, 3875]
+          [
+            390,
+            3875
+          ],
+          [
+            390,
+            3875
+          ]
         ],
         "sizeEqual": true
       },
@@ -445,10 +601,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 953,
+        "budget": 0,
         "sizes": [
-          [390, 2446],
-          [390, 2446]
+          [
+            390,
+            2446
+          ],
+          [
+            390,
+            2446
+          ]
         ],
         "sizeEqual": true
       },
@@ -470,10 +632,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 953,
+        "budget": 0,
         "sizes": [
-          [390, 2446],
-          [390, 2446]
+          [
+            390,
+            2446
+          ],
+          [
+            390,
+            2446
+          ]
         ],
         "sizeEqual": true
       },
@@ -489,16 +657,24 @@
     },
     {
       "id": "s03-checkin-review@390",
-      "pass": true,
-      "problems": [],
+      "pass": false,
+      "problems": [
+        "pixels exceed budget"
+      ],
       "pixels": {
-        "pass": true,
-        "changed": 624,
+        "pass": false,
+        "changed": 2795,
         "raw": 2795,
-        "budget": 1208,
+        "budget": 0,
         "sizes": [
-          [390, 3098],
-          [390, 3098]
+          [
+            390,
+            3098
+          ],
+          [
+            390,
+            3098
+          ]
         ],
         "sizeEqual": true
       },
@@ -510,7 +686,9 @@
         "semantics": []
       },
       "scrolls": [],
-      "ruled": ["S03-18 real video feedback copy and width (Prompt 417)"]
+      "ruled": [
+        "S03-18 real video feedback copy and width (Prompt 417)"
+      ]
     },
     {
       "id": "s04-habit-editor@390",
@@ -520,10 +698,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 451,
+        "budget": 0,
         "sizes": [
-          [430, 1051],
-          [430, 1051]
+          [
+            430,
+            1051
+          ],
+          [
+            430,
+            1051
+          ]
         ],
         "sizeEqual": true
       },
@@ -545,10 +729,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 364,
+        "budget": 0,
         "sizes": [
-          [390, 934],
-          [390, 934]
+          [
+            390,
+            934
+          ],
+          [
+            390,
+            934
+          ]
         ],
         "sizeEqual": true
       },
@@ -564,10 +754,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         },
@@ -575,10 +771,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         }
@@ -593,10 +795,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 567,
+        "budget": 0,
         "sizes": [
-          [390, 1454],
-          [390, 1454]
+          [
+            390,
+            1454
+          ],
+          [
+            390,
+            1454
+          ]
         ],
         "sizeEqual": true
       },
@@ -618,10 +826,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 437,
+        "budget": 0,
         "sizes": [
-          [390, 1121],
-          [390, 1121]
+          [
+            390,
+            1121
+          ],
+          [
+            390,
+            1121
+          ]
         ],
         "sizeEqual": true
       },
@@ -637,10 +851,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         },
@@ -648,10 +868,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         }
@@ -666,10 +892,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 768,
+        "budget": 0,
         "sizes": [
-          [390, 1971],
-          [390, 1971]
+          [
+            390,
+            1971
+          ],
+          [
+            390,
+            1971
+          ]
         ],
         "sizeEqual": true
       },
@@ -685,10 +917,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         },
@@ -696,10 +934,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         }
@@ -714,10 +958,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 590,
+        "budget": 0,
         "sizes": [
-          [390, 1513],
-          [390, 1513]
+          [
+            390,
+            1513
+          ],
+          [
+            390,
+            1513
+          ]
         ],
         "sizeEqual": true
       },
@@ -733,10 +983,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -744,10 +1000,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -762,10 +1024,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 786,
+        "budget": 0,
         "sizes": [
-          [390, 2017],
-          [390, 2017]
+          [
+            390,
+            2017
+          ],
+          [
+            390,
+            2017
+          ]
         ],
         "sizeEqual": true
       },
@@ -787,10 +1055,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 329,
+        "budget": 0,
         "sizes": [
-          [390, 844],
-          [390, 844]
+          [
+            390,
+            844
+          ],
+          [
+            390,
+            844
+          ]
         ],
         "sizeEqual": true
       },
@@ -806,10 +1080,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         },
@@ -817,10 +1097,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         }
@@ -835,10 +1121,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 569,
+        "budget": 0,
         "sizes": [
-          [390, 1460],
-          [390, 1460]
+          [
+            390,
+            1460
+          ],
+          [
+            390,
+            1460
+          ]
         ],
         "sizeEqual": true
       },
@@ -860,10 +1152,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1048,
+        "budget": 0,
         "sizes": [
-          [390, 2688],
-          [390, 2688]
+          [
+            390,
+            2688
+          ],
+          [
+            390,
+            2688
+          ]
         ],
         "sizeEqual": true
       },
@@ -879,10 +1177,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 28,
+          "budget": 0,
           "sizes": [
-            [330, 86],
-            [330, 86]
+            [
+              330,
+              86
+            ],
+            [
+              330,
+              86
+            ]
           ],
           "sizeEqual": true
         },
@@ -890,10 +1194,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 28,
+          "budget": 0,
           "sizes": [
-            [330, 86],
-            [330, 86]
+            [
+              330,
+              86
+            ],
+            [
+              330,
+              86
+            ]
           ],
           "sizeEqual": true
         },
@@ -901,10 +1211,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 28,
+          "budget": 0,
           "sizes": [
-            [330, 86],
-            [330, 86]
+            [
+              330,
+              86
+            ],
+            [
+              330,
+              86
+            ]
           ],
           "sizeEqual": true
         }
@@ -919,10 +1235,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 466,
+        "budget": 0,
         "sizes": [
-          [390, 1196],
-          [390, 1196]
+          [
+            390,
+            1196
+          ],
+          [
+            390,
+            1196
+          ]
         ],
         "sizeEqual": true
       },
@@ -938,10 +1260,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [336, 48],
-            [336, 48]
+            [
+              336,
+              48
+            ],
+            [
+              336,
+              48
+            ]
           ],
           "sizeEqual": true
         },
@@ -949,10 +1277,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [336, 48],
-            [336, 48]
+            [
+              336,
+              48
+            ],
+            [
+              336,
+              48
+            ]
           ],
           "sizeEqual": true
         }
@@ -967,10 +1301,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 466,
+        "budget": 0,
         "sizes": [
-          [390, 1196],
-          [390, 1196]
+          [
+            390,
+            1196
+          ],
+          [
+            390,
+            1196
+          ]
         ],
         "sizeEqual": true
       },
@@ -986,10 +1326,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [336, 48],
-            [336, 48]
+            [
+              336,
+              48
+            ],
+            [
+              336,
+              48
+            ]
           ],
           "sizeEqual": true
         },
@@ -997,10 +1343,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [336, 48],
-            [336, 48]
+            [
+              336,
+              48
+            ],
+            [
+              336,
+              48
+            ]
           ],
           "sizeEqual": true
         },
@@ -1008,10 +1360,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1019,10 +1377,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1030,10 +1394,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1041,10 +1411,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1052,10 +1428,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1063,10 +1445,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1074,10 +1462,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1085,10 +1479,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1096,10 +1496,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1107,10 +1513,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         },
@@ -1118,10 +1530,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 253,
+          "budget": 0,
           "sizes": [
-            [390, 650],
-            [390, 650]
+            [
+              390,
+              650
+            ],
+            [
+              390,
+              650
+            ]
           ],
           "sizeEqual": true
         }
@@ -1136,10 +1554,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 776,
+        "budget": 0,
         "sizes": [
-          [390, 1990],
-          [390, 1990]
+          [
+            390,
+            1990
+          ],
+          [
+            390,
+            1990
+          ]
         ],
         "sizeEqual": true
       },
@@ -1155,10 +1579,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         },
@@ -1166,10 +1596,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 17,
+          "budget": 0,
           "sizes": [
-            [358, 50],
-            [358, 50]
+            [
+              358,
+              50
+            ],
+            [
+              358,
+              50
+            ]
           ],
           "sizeEqual": true
         }
@@ -1184,10 +1620,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 567,
+        "budget": 0,
         "sizes": [
-          [390, 1454],
-          [390, 1454]
+          [
+            390,
+            1454
+          ],
+          [
+            390,
+            1454
+          ]
         ],
         "sizeEqual": true
       },
@@ -1203,10 +1645,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1214,10 +1662,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1225,10 +1679,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1236,10 +1696,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -1254,10 +1720,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 567,
+        "budget": 0,
         "sizes": [
-          [390, 1454],
-          [390, 1454]
+          [
+            390,
+            1454
+          ],
+          [
+            390,
+            1454
+          ]
         ],
         "sizeEqual": true
       },
@@ -1273,10 +1745,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1284,10 +1762,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1295,10 +1779,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1306,10 +1796,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1317,10 +1813,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -1335,10 +1837,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 567,
+        "budget": 0,
         "sizes": [
-          [390, 1454],
-          [390, 1454]
+          [
+            390,
+            1454
+          ],
+          [
+            390,
+            1454
+          ]
         ],
         "sizeEqual": true
       },
@@ -1354,10 +1862,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1365,10 +1879,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1376,10 +1896,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1387,10 +1913,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -1405,10 +1937,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 768,
+        "budget": 0,
         "sizes": [
-          [390, 1970],
-          [390, 1970]
+          [
+            390,
+            1970
+          ],
+          [
+            390,
+            1970
+          ]
         ],
         "sizeEqual": true
       },
@@ -1430,10 +1968,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1724,
+        "budget": 0,
         "sizes": [
-          [390, 4422],
-          [390, 4422]
+          [
+            390,
+            4422
+          ],
+          [
+            390,
+            4422
+          ]
         ],
         "sizeEqual": true
       },
@@ -1455,10 +1999,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 2293,
+        "budget": 0,
         "sizes": [
-          [390, 5880],
-          [390, 5880]
+          [
+            390,
+            5880
+          ],
+          [
+            390,
+            5880
+          ]
         ],
         "sizeEqual": true
       },
@@ -1480,10 +2030,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1115,
+        "budget": 0,
         "sizes": [
-          [390, 2861],
-          [390, 2861]
+          [
+            390,
+            2861
+          ],
+          [
+            390,
+            2861
+          ]
         ],
         "sizeEqual": true
       },
@@ -1505,10 +2061,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 567,
+        "budget": 0,
         "sizes": [
-          [390, 1454],
-          [390, 1454]
+          [
+            390,
+            1454
+          ],
+          [
+            390,
+            1454
+          ]
         ],
         "sizeEqual": true
       },
@@ -1524,10 +2086,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 288,
+          "budget": 0,
           "sizes": [
-            [354, 814],
-            [354, 814]
+            [
+              354,
+              814
+            ],
+            [
+              354,
+              814
+            ]
           ],
           "sizeEqual": true
         },
@@ -1535,15 +2103,23 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 288,
+          "budget": 0,
           "sizes": [
-            [354, 814],
-            [354, 814]
+            [
+              354,
+              814
+            ],
+            [
+              354,
+              814
+            ]
           ],
           "sizeEqual": true
         }
       ],
-      "ruled": ["S11-03 sign-out in the preferences dialog"]
+      "ruled": [
+        "S11-03 sign-out in the preferences dialog"
+      ]
     },
     {
       "id": "s11-client-preview@390",
@@ -1553,10 +2129,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 751,
+        "budget": 0,
         "sizes": [
-          [390, 1926],
-          [390, 1926]
+          [
+            390,
+            1926
+          ],
+          [
+            390,
+            1926
+          ]
         ],
         "sizeEqual": true
       },
@@ -1572,10 +2154,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1583,10 +2171,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [358, 52],
-            [358, 52]
+            [
+              358,
+              52
+            ],
+            [
+              358,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1594,10 +2188,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1605,10 +2205,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 290,
+          "budget": 0,
           "sizes": [
-            [358, 812],
-            [358, 812]
+            [
+              358,
+              812
+            ],
+            [
+              358,
+              812
+            ]
           ],
           "sizeEqual": true
         },
@@ -1616,10 +2222,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         },
@@ -1627,10 +2239,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 16,
+          "budget": 0,
           "sizes": [
-            [318, 52],
-            [318, 52]
+            [
+              318,
+              52
+            ],
+            [
+              318,
+              52
+            ]
           ],
           "sizeEqual": true
         }
@@ -1645,10 +2263,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 2354,
+        "budget": 0,
         "sizes": [
-          [1440, 1635],
-          [1440, 1635]
+          [
+            1440,
+            1635
+          ],
+          [
+            1440,
+            1635
+          ]
         ],
         "sizeEqual": true
       },
@@ -1673,10 +2297,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1545,
+        "budget": 0,
         "sizes": [
-          [1440, 1073],
-          [1440, 1073]
+          [
+            1440,
+            1073
+          ],
+          [
+            1440,
+            1073
+          ]
         ],
         "sizeEqual": true
       },
@@ -1701,10 +2331,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1398,
+        "budget": 0,
         "sizes": [
-          [1440, 971],
-          [1440, 971]
+          [
+            1440,
+            971
+          ],
+          [
+            1440,
+            971
+          ]
         ],
         "sizeEqual": true
       },
@@ -1729,10 +2365,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -1757,10 +2399,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1621,
+        "budget": 0,
         "sizes": [
-          [1440, 1126],
-          [1440, 1126]
+          [
+            1440,
+            1126
+          ],
+          [
+            1440,
+            1126
+          ]
         ],
         "sizeEqual": true
       },
@@ -1785,10 +2433,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -1813,10 +2467,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -1832,10 +2492,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1843,10 +2509,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1854,10 +2526,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         }
@@ -1875,10 +2553,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -1894,10 +2578,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1905,10 +2595,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1916,10 +2612,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         }
@@ -1937,10 +2639,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -1956,10 +2664,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1967,10 +2681,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         },
@@ -1978,10 +2698,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 167,
+          "budget": 0,
           "sizes": [
-            [304, 552],
-            [304, 552]
+            [
+              304,
+              552
+            ],
+            [
+              304,
+              552
+            ]
           ],
           "sizeEqual": true
         }
@@ -1999,10 +2725,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 3385,
+        "budget": 0,
         "sizes": [
-          [1440, 2351],
-          [1440, 2351]
+          [
+            1440,
+            2351
+          ],
+          [
+            1440,
+            2351
+          ]
         ],
         "sizeEqual": true
       },
@@ -2027,10 +2759,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1392,
+        "budget": 0,
         "sizes": [
-          [1440, 967],
-          [1440, 967]
+          [
+            1440,
+            967
+          ],
+          [
+            1440,
+            967
+          ]
         ],
         "sizeEqual": true
       },
@@ -2055,10 +2793,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1392,
+        "budget": 0,
         "sizes": [
-          [1440, 967],
-          [1440, 967]
+          [
+            1440,
+            967
+          ],
+          [
+            1440,
+            967
+          ]
         ],
         "sizeEqual": true
       },
@@ -2077,16 +2821,24 @@
     },
     {
       "id": "s03-checkin-review@1440",
-      "pass": true,
-      "problems": [],
+      "pass": false,
+      "problems": [
+        "pixels exceed budget"
+      ],
       "pixels": {
-        "pass": true,
-        "changed": 625,
+        "pass": false,
+        "changed": 2797,
         "raw": 2797,
-        "budget": 3108,
+        "budget": 0,
         "sizes": [
-          [1440, 2159],
-          [1440, 2159]
+          [
+            1440,
+            2159
+          ],
+          [
+            1440,
+            2159
+          ]
         ],
         "sizeEqual": true
       },
@@ -2112,10 +2864,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1401,
+        "budget": 0,
         "sizes": [
-          [1440, 973],
-          [1440, 973]
+          [
+            1440,
+            973
+          ],
+          [
+            1440,
+            973
+          ]
         ],
         "sizeEqual": true
       },
@@ -2140,10 +2898,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2168,10 +2932,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2196,10 +2966,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1346,
+        "budget": 0,
         "sizes": [
-          [1440, 935],
-          [1440, 935]
+          [
+            1440,
+            935
+          ],
+          [
+            1440,
+            935
+          ]
         ],
         "sizeEqual": true
       },
@@ -2224,10 +3000,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 2000,
+        "budget": 0,
         "sizes": [
-          [1440, 1389],
-          [1440, 1389]
+          [
+            1440,
+            1389
+          ],
+          [
+            1440,
+            1389
+          ]
         ],
         "sizeEqual": true
       },
@@ -2252,10 +3034,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1376,
+        "budget": 0,
         "sizes": [
-          [1440, 956],
-          [1440, 956]
+          [
+            1440,
+            956
+          ],
+          [
+            1440,
+            956
+          ]
         ],
         "sizeEqual": true
       },
@@ -2280,10 +3068,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 2004,
+        "budget": 0,
         "sizes": [
-          [1440, 1392],
-          [1440, 1392]
+          [
+            1440,
+            1392
+          ],
+          [
+            1440,
+            1392
+          ]
         ],
         "sizeEqual": true
       },
@@ -2308,10 +3102,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2336,10 +3136,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1465,
+        "budget": 0,
         "sizes": [
-          [1440, 1018],
-          [1440, 1018]
+          [
+            1440,
+            1018
+          ],
+          [
+            1440,
+            1018
+          ]
         ],
         "sizeEqual": true
       },
@@ -2364,10 +3170,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 2440,
+        "budget": 0,
         "sizes": [
-          [1440, 1695],
-          [1440, 1695]
+          [
+            1440,
+            1695
+          ],
+          [
+            1440,
+            1695
+          ]
         ],
         "sizeEqual": true
       },
@@ -2383,10 +3195,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [216, 86],
-            [216, 86]
+            [
+              216,
+              86
+            ],
+            [
+              216,
+              86
+            ]
           ],
           "sizeEqual": true
         },
@@ -2394,10 +3212,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [216, 86],
-            [216, 86]
+            [
+              216,
+              86
+            ],
+            [
+              216,
+              86
+            ]
           ],
           "sizeEqual": true
         },
@@ -2405,10 +3229,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 18,
+          "budget": 0,
           "sizes": [
-            [216, 86],
-            [216, 86]
+            [
+              216,
+              86
+            ],
+            [
+              216,
+              86
+            ]
           ],
           "sizeEqual": true
         }
@@ -2426,10 +3256,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1471,
+        "budget": 0,
         "sizes": [
-          [1440, 1022],
-          [1440, 1022]
+          [
+            1440,
+            1022
+          ],
+          [
+            1440,
+            1022
+          ]
         ],
         "sizeEqual": true
       },
@@ -2451,10 +3287,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1471,
+        "budget": 0,
         "sizes": [
-          [1440, 1022],
-          [1440, 1022]
+          [
+            1440,
+            1022
+          ],
+          [
+            1440,
+            1022
+          ]
         ],
         "sizeEqual": true
       },
@@ -2470,10 +3312,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         },
@@ -2481,10 +3329,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         },
@@ -2492,10 +3346,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         },
@@ -2503,10 +3363,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         },
@@ -2514,10 +3380,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         },
@@ -2525,10 +3397,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 918,
+          "budget": 0,
           "sizes": [
-            [1390, 661],
-            [1390, 661]
+            [
+              1390,
+              661
+            ],
+            [
+              1390,
+              661
+            ]
           ],
           "sizeEqual": true
         }
@@ -2543,10 +3421,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1704,
+        "budget": 0,
         "sizes": [
-          [1440, 1184],
-          [1440, 1184]
+          [
+            1440,
+            1184
+          ],
+          [
+            1440,
+            1184
+          ]
         ],
         "sizeEqual": true
       },
@@ -2571,10 +3455,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2590,10 +3480,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         },
@@ -2601,10 +3497,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         }
@@ -2622,10 +3524,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2641,10 +3549,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         },
@@ -2652,10 +3566,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         }
@@ -2673,10 +3593,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2701,10 +3627,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1738,
+        "budget": 0,
         "sizes": [
-          [1440, 1207],
-          [1440, 1207]
+          [
+            1440,
+            1207
+          ],
+          [
+            1440,
+            1207
+          ]
         ],
         "sizeEqual": true
       },
@@ -2726,10 +3658,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 3516,
+        "budget": 0,
         "sizes": [
-          [1440, 2442],
-          [1440, 2442]
+          [
+            1440,
+            2442
+          ],
+          [
+            1440,
+            2442
+          ]
         ],
         "sizeEqual": true
       },
@@ -2751,10 +3689,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 4590,
+        "budget": 0,
         "sizes": [
-          [1440, 3188],
-          [1440, 3188]
+          [
+            1440,
+            3188
+          ],
+          [
+            1440,
+            3188
+          ]
         ],
         "sizeEqual": true
       },
@@ -2776,10 +3720,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 3186,
+        "budget": 0,
         "sizes": [
-          [1440, 2213],
-          [1440, 2213]
+          [
+            1440,
+            2213
+          ],
+          [
+            1440,
+            2213
+          ]
         ],
         "sizeEqual": true
       },
@@ -2801,10 +3751,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1296,
+        "budget": 0,
         "sizes": [
-          [1440, 900],
-          [1440, 900]
+          [
+            1440,
+            900
+          ],
+          [
+            1440,
+            900
+          ]
         ],
         "sizeEqual": true
       },
@@ -2820,10 +3776,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 433,
+          "budget": 0,
           "sizes": [
-            [510, 850],
-            [510, 850]
+            [
+              510,
+              850
+            ],
+            [
+              510,
+              850
+            ]
           ],
           "sizeEqual": true
         },
@@ -2831,10 +3793,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 433,
+          "budget": 0,
           "sizes": [
-            [510, 850],
-            [510, 850]
+            [
+              510,
+              850
+            ],
+            [
+              510,
+              850
+            ]
           ],
           "sizeEqual": true
         }
@@ -2853,10 +3821,16 @@
         "pass": true,
         "changed": 0,
         "raw": 0,
-        "budget": 1545,
+        "budget": 0,
         "sizes": [
-          [1440, 1073],
-          [1440, 1073]
+          [
+            1440,
+            1073
+          ],
+          [
+            1440,
+            1073
+          ]
         ],
         "sizeEqual": true
       },
@@ -2872,10 +3846,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         },
@@ -2883,10 +3863,16 @@
           "pass": true,
           "changed": 0,
           "raw": 0,
-          "budget": 1222,
+          "budget": 0,
           "sizes": [
-            [1408, 868],
-            [1408, 868]
+            [
+              1408,
+              868
+            ],
+            [
+              1408,
+              868
+            ]
           ],
           "sizeEqual": true
         }
