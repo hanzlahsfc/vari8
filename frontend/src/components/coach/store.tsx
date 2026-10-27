@@ -50,7 +50,14 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
+  for (const key of [
+    "client",
+    "editor",
+    "review",
+    "plan",
+    "module",
+    "tab",
+  ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
@@ -80,6 +87,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     editor: params.get("editor") ?? undefined,
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
+    module: params.get("module") ?? undefined,
     tab: params.get("tab") ?? undefined,
   };
   useEffect(() => {

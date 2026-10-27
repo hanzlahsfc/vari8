@@ -713,7 +713,8 @@ export function TimePicker({
   size = "md",
   hourFormat = "24",
   id,
-}: SharedFieldProps & { hourFormat?: "12" | "24" }) {
+  emptyLabel,
+}: SharedFieldProps & { hourFormat?: "12" | "24"; emptyLabel?: string }) {
   const generatedId = useId();
   const fieldId = id ?? generatedId;
   const { container, setRoot } = usePortalContainer();
@@ -725,7 +726,7 @@ export function TimePicker({
     ? hourFormat === "12"
       ? `${formatHour(parsedValue.hour)}:${parsedValue.minute} ${Number(parsedValue.hour) >= 12 ? "PM" : "AM"}`
       : value
-    : "Choose time";
+    : (emptyLabel ?? "Choose time");
   const [hourValue, setHourValue] = useState(initialTime.hour);
   const [hourDraft, setHourDraft] = useState(
     hourFormat === "12"
@@ -880,9 +881,6 @@ export function TimePicker({
               <div className="v8-time-header">
                 <div>
                   <Popover.Title className="v8-time-title">Time</Popover.Title>
-                  <p>
-                    {hourFormat === "12" ? "12-hour clock" : "24-hour clock"}
-                  </p>
                 </div>
                 <button
                   type="button"
@@ -1003,6 +1001,18 @@ export function TimePicker({
               <div className="v8-time-presets">
                 <span>Common times</span>
                 <div>
+                  <button
+                    type="button"
+                    className="v8-time-preset"
+                    aria-pressed={!parsedValue}
+                    onClick={(event) => {
+                      onValueChange("");
+                      setShowTimeError(false);
+                      close(event.nativeEvent);
+                    }}
+                  >
+                    No specific time
+                  </button>
                   {["07:00", "08:00", "12:00", "18:00", "20:00"].map(
                     (preset) => {
                       const presetHour = preset.slice(0, 2);
@@ -1041,18 +1051,6 @@ export function TimePicker({
                 </div>
               </div>
               <div className="v8-time-footer">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="v8-time-clear"
-                  onClick={(event) => {
-                    onValueChange("");
-                    setShowTimeError(false);
-                    close(event.nativeEvent);
-                  }}
-                >
-                  Clear
-                </Button>
                 <Button
                   size="sm"
                   variant="ghost"

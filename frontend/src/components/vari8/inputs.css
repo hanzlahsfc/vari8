@@ -372,8 +372,7 @@
 .v8-theme .v8-calendar-header .v8-calendar-nav:hover {
   background: var(--v8-surface-interactive);
 }
-.v8-theme .v8-calendar-header .v8-calendar-nav:focus-visible,
-.v8-theme .v8-time-close:focus-visible {
+.v8-theme .v8-calendar-header .v8-calendar-nav:focus-visible {
   outline: 2px solid var(--v8-focus);
   outline-offset: 2px;
 }
@@ -498,32 +497,36 @@
   align-items: center;
   appearance: none;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--v8-radius-pill);
-  color: var(--v8-text);
+  color: var(--v8-text-secondary);
   cursor: pointer;
   display: inline-flex;
-  font-size: 20px;
-  height: 40px;
+  font-size: 15px;
+  height: 28px;
   justify-content: center;
   line-height: 1;
+  outline: none;
   padding: 0;
-  width: 40px;
+  width: 28px;
 }
-.v8-theme .v8-time-close:hover {
+.v8-theme .v8-time-close:hover,
+.v8-theme .v8-time-close:focus-visible {
   background: var(--v8-surface-interactive);
+  color: var(--v8-text);
+  outline: none;
 }
 .v8-theme .v8-time-columns {
   align-items: end;
   display: grid;
-  gap: 10px;
-  grid-template-columns: minmax(0, 84px) auto minmax(0, 84px);
+  gap: 6px;
+  grid-template-columns: minmax(0, 72px) auto minmax(0, 72px);
   justify-content: center;
   padding: 0 4px 12px;
 }
 
 .v8-theme .v8-time-popup[data-hour-format="12"] .v8-time-columns {
-  grid-template-columns: minmax(0, 76px) auto minmax(0, 76px) auto;
+  grid-template-columns: minmax(0, 72px) auto minmax(0, 72px) auto;
 }
 
 .v8-theme .v8-time-period {
@@ -556,10 +559,10 @@
   box-sizing: border-box;
   color: var(--v8-text);
   font: inherit;
-  font-size: 24px;
+  font-size: 22px;
   font-variant-numeric: tabular-nums;
   font-weight: var(--v8-font-weight-semibold);
-  height: 52px;
+  height: 48px;
   padding: 0 6px;
   text-align: center;
   width: 100%;
@@ -573,10 +576,15 @@
   border-color: var(--v8-danger);
 }
 .v8-theme .v8-time-separator {
-  align-self: center;
+  align-self: end;
+  align-items: center;
   color: var(--v8-text-secondary);
-  font-size: 20px;
-  padding-top: 12px;
+  display: flex;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--v8-font-weight-semibold);
+  height: 48px;
+  justify-content: center;
 }
 .v8-theme .v8-time-error {
   color: var(--v8-danger);
@@ -614,8 +622,9 @@
   background: var(--v8-surface-interactive);
 }
 .v8-theme .v8-time-preset[aria-pressed="true"] {
-  background: var(--v8-accent-subtle);
-  color: var(--v8-accent-text);
+  background: var(--v8-accent-primary);
+  border-color: var(--v8-accent-primary);
+  color: var(--v8-on-accent);
 }
 .v8-theme .v8-time-preset:focus-visible {
   outline: 2px solid var(--v8-focus);
@@ -774,4 +783,11 @@
     min-height: 48px;
     min-block-size: 48px;
   }
+}
+
+.coach-root .v8-time-popup .v8-time-field input {
+  font-size: 22px;
+  font-weight: var(--v8-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  height: 48px;
 }

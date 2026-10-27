@@ -44,6 +44,27 @@ export function createTemporaryNutrition(
   };
 }
 
+/** Split temporary plans into current (active today or upcoming, sorted by
+ *  start) and past (finished before today, sorted by end newest first). */
+export function splitTemporaryNutrition(
+  list: TemporaryNutrition[],
+  today: string,
+): { current: TemporaryNutrition[]; past: TemporaryNutrition[] } {
+  const active = list.filter((t) => t.startDate <= today && today <= t.endDate);
+  const upcoming = list
+    .filter((t) => t.startDate > today)
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+  const past = list
+    .filter((t) => t.endDate < today)
+    .sort((a, b) => b.endDate.localeCompare(a.endDate));
+  return {
+    current: [...active, ...upcoming].sort((a, b) =>
+      a.startDate.localeCompare(b.startDate),
+    ),
+    past,
+  };
+}
+
 export function upsertTemporaryNutrition(
   plans: ClientPlans,
   temporary: TemporaryNutrition,
@@ -94,4 +115,47 @@ export function temporaryNutritionForDate(
     if (!best || t.createdAt > best.createdAt) best = t;
   }
   return best;
+}
+
+/** Legacy temporary plans copied the whole active plan, so they can carry
+ * several variants the coach never meant to override. A temporary plan is a
+ * single day plan applied to every day of its range — reduce it to the one
+ * variant its schedule selects (manual `selectedVariantId`), else the first,
+ * and lock the schedule to manual. IIFYM plans get the same one-option cut. */
+export function normalizeTemporaryNutrition(
+  t: TemporaryNutrition,
+): TemporaryNutrition {
+  if (t.source === "iifym") {
+    const p = t.plan as IifymPlan;
+    if (p.options.length <= 1) return t;
+    const id =
+      p.schedule.mode === "manual"
+        ? p.schedule.selectedVariantId
+        : p.options[0]?.id;
+    const opt = p.options.find((o) => o.id === id) ?? p.options[0];
+    return {
+      ...t,
+      plan: {
+        ...p,
+        options: opt ? [opt] : [],
+        schedule: { mode: "manual", selectedVariantId: opt?.id ?? "" },
+      },
+    };
+  }
+  const p = t.plan as MealPlan;
+  if (p.variants.length <= 1) return t;
+  const id =
+    p.schedule.mode === "manual"
+      ? p.schedule.selectedVariantId
+      : (p.activeVariantId ?? p.variants[0]?.id);
+  const v = p.variants.find((x) => x.id === id) ?? p.variants[0];
+  return {
+    ...t,
+    plan: {
+      ...p,
+      variants: v ? [v] : [],
+      activeVariantId: v?.id ?? "",
+      schedule: { mode: "manual", selectedVariantId: v?.id ?? "" },
+    },
+  };
 }

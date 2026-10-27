@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { coachThemeStyle } from "../coach/coach-theme";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
-import { Empty } from "../coach/ui";
+import { Button, Empty } from "../coach/ui";
 import { Status } from "../vari8/components";
-import { ClientApp } from "./client-app";
+import { ClientDesktop } from "./desktop/desktop";
+import { MobileApp } from "./mobile/mobile-app";
 import "../coach/coach.css";
 import "./client-app.css";
 
@@ -22,7 +24,23 @@ export function ClientRoute() {
 function ClientRouteInner() {
   const { state, hydrated } = useCoach();
   const params = useSearchParams();
+  const router = useRouter();
   const clientId = params.get("client") ?? "";
+  const [wide, setWide] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 900px)");
+    const apply = () => setWide(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  const viewPhone = params.get("view") === "phone";
+  const togglePhone = () => {
+    const q = new URLSearchParams(params.toString());
+    if (viewPhone) q.delete("view");
+    else q.set("view", "phone");
+    router.replace(`/client?${q.toString()}`);
+  };
   const client = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
@@ -57,7 +75,10 @@ function ClientRouteInner() {
         </main>
       ) : (
         <>
-          <header className="client-app-topbar">
+          <header
+            className="client-app-topbar"
+            style={{ display: wide ? "flex" : "none" }}
+          >
             <span className="client-app-avatar" aria-hidden="true">
               {client.name
                 .split(/\s+/)
@@ -69,6 +90,9 @@ function ClientRouteInner() {
             </span>
             <strong>{client.name}</strong>
             <Status>Local demo</Status>
+            <Button variant="secondary" onClick={togglePhone}>
+              {viewPhone ? "Desktop view" : "Phone view"}
+            </Button>
             <Link
               className="client-app-coach-link"
               aria-label="Coach workspace"
@@ -82,11 +106,26 @@ function ClientRouteInner() {
               </span>
             </Link>
           </header>
-          <ClientApp
-            configuration={configuration}
-            client={client}
-            context="standalone"
-          />
+          {!wide || viewPhone ? (
+            wide ? (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  minHeight: "calc(100vh - 60px)",
+                }}
+              >
+                <div className="cm-frame">
+                  <MobileApp client={client} />
+                </div>
+              </div>
+            ) : (
+              <MobileApp client={client} />
+            )
+          ) : (
+            <ClientDesktop client={client} />
+          )}
         </>
       )}
     </div>

@@ -68,6 +68,7 @@ export type Route = {
   editor?: string;
   review?: string;
   plan?: string;
+  module?: string;
   tab?: string;
 };
 export type Parameter = {
@@ -777,7 +778,7 @@ export type CoachState = {
     clientAppDemo?: 1;
     trainingLogDemo?: 1;
     athleteProfileDemo?: 1;
-    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
   };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
@@ -1794,7 +1795,7 @@ export function isCoachState(v: unknown): v is CoachState {
           clientAppDemo: opt(one([1])),
           trainingLogDemo: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
-          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9])),
+          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])),
         }),
       ),
       exerciseLibrary: opt(
