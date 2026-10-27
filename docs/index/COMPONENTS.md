@@ -29,6 +29,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `AthleteOverview` | `frontend/src/components/coach/athlete/overview.tsx` | /coach |
 | `AthleteProfileHeader` | `frontend/src/components/coach/athlete/overview.tsx` | /coach |
 | `AthleteTimelineTab` | `frontend/src/components/coach/athlete/timeline-tab.tsx` | /coach |
+| `AthleteTrackerTab` | `frontend/src/components/coach/athlete/tracker-tab.tsx` | /coach |
 | `Avatar` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `BuilderGallery` | `frontend/src/components/coach/builder/gallery.tsx` | /client, /coach |
 | `Button` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
