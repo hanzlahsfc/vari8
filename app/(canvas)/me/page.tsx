@@ -3,6 +3,7 @@ import { Suspense } from "react";
 
 import { ClientRoute } from "@/components/canvas/client-app/client-route";
 import type { CoachClient, Variant } from "@/components/canvas/coach/model";
+import { AppearanceProvider } from "@/lib/canvas/ethereal-appearance";
 import { prisma } from "@/lib/db";
 
 import { readClientWorkspaceAppearance } from "./appearance";
@@ -106,18 +107,20 @@ export default async function MePage() {
   } as unknown as CoachClient;
 
   return (
-    <Suspense>
-      <ClientRoute
-        own={{ workspaceId: workspace.id, clientProfileId }}
-        session={{
-          clientName: viewer.name,
-          clientInitials: viewer.initials,
-          workspaceName: workspace.name,
-          configuration,
-          client,
-          appearance: workspaceAppearance ?? undefined,
-        }}
-      />
-    </Suspense>
+    <AppearanceProvider workspace={workspaceAppearance}>
+      <Suspense>
+        <ClientRoute
+          own={{ workspaceId: workspace.id, clientProfileId }}
+          session={{
+            clientName: viewer.name,
+            clientInitials: viewer.initials,
+            workspaceName: workspace.name,
+            configuration,
+            client,
+            appearance: workspaceAppearance ?? undefined,
+          }}
+        />
+      </Suspense>
+    </AppearanceProvider>
   );
 }
