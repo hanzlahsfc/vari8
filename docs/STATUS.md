@@ -56,6 +56,25 @@
 - Held per card: client-visible phase display (no client-readable
   phase route exists on the a1 tip; staff-only `notes.write` reads
   only) - recorded as a finding for the A lane.
+- Repair round 1 (verifier verdict on `2de07c6`): B1 fixed - the two
+  en dashes and one em dash in `nutrition-targets.tsx` are ASCII in
+  both twins (visible IIFYM range now renders `50-60 g`; twin diff
+  still 0 lines). B2 fixed at the same root as w2/a4 `54c4d66`,
+  re-implemented for this lineage (the a4 patch does not apply
+  cleanly): `clients.ts` persists the full client core again,
+  `notes.ts` persists `coachNotes` plus `coachTodos`, and `store.tsx`
+  fetches the client-detail bundle lazily on the `clients` and
+  `notes` sections only. `messages.ts` already carried the full
+  extract on this branch and was left unchanged. B3 and B4 are
+  owner-parked and untouched. REPORT.md written at
+  `Vari8-evidence/FULL-PACKAGE-2/W2C4/REPORT.md`.
+- Repair gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+  tests/unit/coach-store-roster.test.tsx` exit 0 (12/12); `npm run
+  test` exit 0 (1393/1393); `npm run lint` exit 0 (89 inherited
+  warnings); `npm run typecheck` exit 0; `cd frontend && npm run
+  lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
+  0 (U+2013 and U+2014); twin parity diff 0 lines. `npm run index`
+  not required (no tracked file added, renamed or deleted).
 
 ## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
 

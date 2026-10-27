@@ -621,9 +621,13 @@ export function CoachProvider({
   // detail bundle once and fold it into the matched client records. The
   // roster-wide reseed stays in coach/model.ts (out of this lane's
   // ownership); matching is by name, the same key the roster map uses.
+  // The fetch is lazy on the surfaces that consume it (clients and notes):
+  // firing it on every mount spends a staff read on screens that never
+  // render the bundle and surfaces an unrelated error banner when it fails.
   useEffect(() => {
     const sync = detailSync.current;
     if (!hydrated || demo || !workspaceId || preserveRaw.current) return;
+    if (route.section !== "clients" && route.section !== "notes") return;
     if (sync.loaded || sync.loading) return;
     sync.loading = true;
     let cancelled = false;
@@ -664,7 +668,7 @@ export function CoachProvider({
     return () => {
       cancelled = true;
     };
-  }, [hydrated, demo, workspaceId]);
+  }, [hydrated, demo, workspaceId, route.section]);
   // W2-A1 write-back: any local change to the owned fields of a matched
   // client, or to the workspace note list, PUTs the reconciled collection.
   // Edits to clients that never matched a backend profile stay local.
