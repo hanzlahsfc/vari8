@@ -83,7 +83,7 @@ One section is one PR, one issue and one kanban card triple (build, verify, merg
 | Wiring     | PR-W1, PR-MEDIA, PR-MSG, PR-W0, PR-W2, PR-W3, PR-W4, PR-W5, PR-W6, PR-W7, PR-W8, PR-W9, PR-W10 |
 | Model      | PR-M0, PR-M1, PR-M2, PR-M3, PR-M4, PR-M5, PR-M6, PR-M7, PR-M8, PR-M9                           |
 | Reduction  | PR-R0, PR-R1, PR-R2, PR-R3                                                                     |
-| Service    | PR-SV1, PR-SV2, PR-SV3, PR-SV4                                                                 |
+| Service    | PR-SV1, PR-SV2, PR-SV3, PR-SV4, PR-SUPP                                                        |
 | Index      | PR-X1, PR-X2                                                                                   |
 | Docs       | PR-D1                                                                                          |
 | Mobile     | PR-31                                                                                          |
@@ -2298,6 +2298,59 @@ The dependency graph, the wave timeline and the 05:00 checkpoint live in `icm/05
 - [ ] Every verifier card records PASS at the exact head SHA.
 - [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
 
+## Supplement plan per client (PR-SUPP)
+
+**Depends on.** PR-M1.
+
+**Card.** `pr-supp-plan` (build), `pr-supp-plan-verify`, `pr-supp-plan-secverify`, `pr-supp-plan-merge`. Builder Devin swe-2-max via yamato, gear kakashi. Estimate 60 minutes.
+
+**Files.**
+
+- [ ] Edit `db/schema.prisma`, `db/migrations/<timestamp>_supplement_plan/**`, `lib/supplements/{model,gate,service,boundary}.ts`, lib/audit.ts (resource type), lib/auth/rbac.ts (resource cell), lib/consent.ts (parked registry), `app/workspace/[workspaceId]/clients/[clientProfileId]/supplements/actions.ts`, `.env.example`, `tests/unit/supplements-plan.test.ts`, `tests/integration/supplements-plan.test.ts`.
+- [ ] May edit `db/` as a D34 schema writer.
+- [ ] Write `icm/05-build/reports/pr-supp-plan.md` with commands and exit codes.
+
+**Build.**
+
+- [ ] Contract source: `frontend/docs/supplements-frontend-execution-brief.md` and `frontend/src/components/coach/supplements/{model,draft,editor,plan-view}.ts(x)` on FRONTEND 51fa6a2 (PR #151; beta sync is PR #160, unmerged at card creation).
+- [ ] One saved supplement plan per client; the coach edits name and ordered items with explicit Save/Cancel; the client reads the saved plan only. No draft/active/history lifecycle, no dates, weekdays, cycles or pause states.
+- [ ] Each item embeds the product snapshot (brand, name, reference quantity/unit, declared amount/unit, URL) plus quantity, dose unit, free-text timing and notes, and status in {must-have, optional, none}. Snapshots stay readable when the catalogue later changes; there is no backend-managed catalogue.
+- [ ] Validation mirrors the frontend model: positive finite quantity, catalogue-compatible dose unit, safe http(s) product URL (hostname, no credentials), exact status union, unknown keys rejected. Missing composition stays null; never persist derived dosage; no check-off, adherence, dose logic or PED/HRT behavior.
+- [ ] One `supplement_plan` + `supplement_plan_item` migration pair with hand-authored down.sql, composite same-workspace coherence FKs in raw SQL (Prisma cannot express them), expected-revision CAS under advisory lock and serializable transaction, re-resolved authorization inside the transaction.
+- [ ] Access reuses the closed `plan.read`/`plan.write` capability cells exactly as `mealPlans`; no new capability, no broadened permission. Client reads own; unassigned staff and foreign workspace/client are non-disclosing.
+- [ ] Actions follow the established order: feature gate `ENABLE_SUPPLEMENT_PLAN`, session, bounded input validation, service boundary, `revalidatePath`. Closed safe errors; `supplement_plan` audit resource with structural metadata only (no payload bodies).
+
+**You see.**
+
+- [ ] A coach saves a named plan with ordered items and the client reads exactly the saved data; a second stale save fails without writes; a foreign workspace or client sees the same not-found as an absent plan.
+
+**Verify, unit.**
+
+- [ ] Literal validation cases (quantities, units, URLs, statuses, unknown keys, null versus zero composition) and integration cases for ordering, CAS, role matrix, audit and flag-off, each failing when the guard breaks.
+
+**Verify, live.**
+
+- [ ] `icm/05-build/tools/verify-local.sh` exits 0 at the verify head (format, typecheck, lint, unit, integration when `db/`, `lib/` or `app/api/` changed, build, schema guard, e2e flow specs).
+- [ ] Live receipt at 1440 and 390 as owner, coach, client of the same workspace, staff of a foreign workspace, signed out; unauthorized direct requests fail closed. Screenshots `<role>-<width>.png`.
+- [ ] Keyboard-only pass of the changed interaction: focus order and accessible names.
+
+**Verify, parity.**
+
+- [ ] No screen changes. Once PR-01 has landed, the regression parity run in `verify-local.sh` stays green.
+
+**Matrix rows closed.**
+
+- [ ] 0 rows: none.
+
+**Review gate.**
+
+- [ ] Parity report and screenshots attached for Marcel's asynchronous review; a screen he rejects reopens this PR.
+
+**Merge.**
+
+- [ ] Every verifier card records PASS at the exact head SHA.
+- [ ] The merge card integrates into `Vari8-Beta` and logs the SHA on the blackboard.
+
 ## Close the program
 
 - [ ] Every PR has a merged SHA on `Vari8-Beta` and a PASS verdict at that head.
@@ -2362,6 +2415,6 @@ Parked matrix rows:
 
 ## Appendix D. Self-check
 
-- PR sections: 44, each with Depends on, Files, Build, You see, Verify unit, live and parity, Matrix rows, Review gate and Merge.
+- PR sections: 45, each with Depends on, Files, Build, You see, Verify unit, live and parity, Matrix rows, Review gate and Merge.
 - Matrix rows mapped: 338 of 338. Unmapped ledger rows: 0.
 - Cycle check and timeline: `python3 icm/05-build/tools/program.py` exit 0 (see PROGRAM.md self-check).

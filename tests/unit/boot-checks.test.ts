@@ -140,6 +140,7 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
   const KEYS = [
     "NODE_ENV",
     "NEXT_PHASE",
+    "APP_ENV",
     "BETTER_AUTH_URL",
     "AUTH_URL",
     "BETTER_AUTH_SECRET",
@@ -197,6 +198,71 @@ describe("assertAuthSecretConfigured — production refuses an http: auth origin
 
   it("accepts an unset origin — Better Auth derives it per request", () => {
     stub({ ...PROD });
+    expect(() => assertAuthSecretConfigured()).not.toThrow();
+  });
+
+  it("APP_ENV=test does not exempt the production http: refusal", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "test",
+      BETTER_AUTH_URL: "http://127.0.0.1:3000",
+      AUTH_URL: "http://127.0.0.1:3000",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
+  });
+
+  it("APP_ENV=development does not exempt the production http: refusal", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "development",
+      BETTER_AUTH_URL: "http://app.internal.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
+  });
+
+  it("APP_ENV=production does not exempt the production http: refusal", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "production",
+      BETTER_AUTH_URL: "http://app.internal.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /Refusing to start: BETTER_AUTH_URL is an http: origin/,
+    );
+  });
+
+  it("APP_ENV=test does not exempt the secret or alias-refusals", () => {
+    stub({ NODE_ENV: "production", APP_ENV: "test" });
+    expect(() => assertAuthSecretConfigured()).toThrow(/BETTER_AUTH_SECRET/);
+    stub({
+      NODE_ENV: "production",
+      APP_ENV: "test",
+      BETTER_AUTH_SECRET: "short",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(/BETTER_AUTH_SECRET/);
+    stub({
+      NODE_ENV: "production",
+      APP_ENV: "test",
+      BETTER_AUTH_SECRET: "x".repeat(40),
+      BETTER_AUTH_URL: "https://a.example",
+      AUTH_URL: "https://b.example",
+    });
+    expect(() => assertAuthSecretConfigured()).toThrow(
+      /BETTER_AUTH_URL and AUTH_URL/,
+    );
+  });
+
+  it("accepts a fully valid config under APP_ENV=test", () => {
+    stub({
+      ...PROD,
+      APP_ENV: "test",
+      BETTER_AUTH_URL: "https://127.0.0.1:3833",
+      AUTH_URL: "https://127.0.0.1:3833",
+    });
     expect(() => assertAuthSecretConfigured()).not.toThrow();
   });
 

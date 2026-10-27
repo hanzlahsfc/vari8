@@ -59,6 +59,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     throw new Error(
       `workspace ${WORKSPACE_SLUG} missing; run 00-workspace.seed.ts first`,
     );
+  const coachMember = await prisma.workspaceMember.findFirst({
+    where: { workspaceId: workspace.id, role: "COACH", status: "ACTIVE" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
 
   let written = 0;
   const clients = canvasClients();
@@ -76,16 +81,37 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       where: { workspaceId: workspace.id, name: client.name },
       select: { id: true },
     });
-    if (existing) {
-      await prisma.clientProfile.update({
-        where: { id: existing.id },
-        data,
+    const profile = existing
+      ? await prisma.clientProfile.update({
+          where: { id: existing.id },
+          data,
+          select: { id: true },
+        })
+      : await prisma.clientProfile.create({
+          data: { workspaceId: workspace.id, name: client.name, ...data },
+          select: { id: true },
+        });
+    // CHECKIN-ENABLE — the canvas demo is a single-coach workspace: staff
+    // check-in scheduling/review reads require a coherent ACTIVE
+    // client_assignment, so every canvas client is linked to the seeded
+    // COACH member as PRIMARY. Idempotent on the (profile, member) key.
+    if (coachMember)
+      await prisma.clientAssignment.upsert({
+        where: {
+          clientProfileId_coachMemberId: {
+            clientProfileId: profile.id,
+            coachMemberId: coachMember.id,
+          },
+        },
+        update: { status: "ACTIVE" },
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          coachMemberId: coachMember.id,
+          role: "PRIMARY",
+          status: "ACTIVE",
+        },
       });
-    } else {
-      await prisma.clientProfile.create({
-        data: { workspaceId: workspace.id, name: client.name, ...data },
-      });
-    }
     written += 1;
   }
   console.log(
