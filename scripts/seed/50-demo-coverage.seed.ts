@@ -41,6 +41,7 @@ import type { SeedContext } from "./index";
 const WORKSPACE_SLUG = "canvas-demo";
 const TIMEZONE = "Europe/Vienna";
 const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00 — documented schedule default
+const SEED_CLIENT_PROFILE_NAME = "Amara Lewis";
 
 const FIXTURE = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -145,17 +146,45 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     throw new Error(
       "50-demo-coverage: SEED_DEMO_CLIENT_PASSWORD or SEED_CLIENT_PASSWORD required",
     );
+  // The demo-export Amara Lewis row (client-007) resolves to the seeded
+  // sign-in client so a full reseed leaves SEED_CLIENT_EMAIL owning a
+  // client_profile: sign-in reaches /me and getClientViewer is non-null.
+  const seedClientEmail = process.env.SEED_CLIENT_EMAIL;
+  if (!seedClientEmail)
+    throw new Error("50-demo-coverage: SEED_CLIENT_EMAIL required");
+  const seedClient = await prisma.user.findUniqueOrThrow({
+    where: { email: seedClientEmail },
+    select: { id: true },
+  });
+  const seedClientPassword = process.env.SEED_CLIENT_PASSWORD ?? password;
 
-  // ── Accounts: every demo client gets a credential login; client-001 keeps
-  // the default-profile client account (its profile is already linked).
+  // ── Accounts: every client_profile link the seed leaves in canvas-demo
+  // resolves to a user holding a Better Auth credential (the same
+  // `providerId="credential"` shape `00-workspace.seed.ts` writes), so all
+  // fifteen linked demo clients can sign in. The Amara Lewis row resolves
+  // to the SEED_CLIENT account instead of a fixture-email user; other rows
+  // reuse the pre-linked user (33-checkins demo users) or create a
+  // fixture-email user when the profile is unlinked.
   const users = new Map<string, string>(); // clientId -> userId
   const members = new Map<string, string>(); // clientId -> memberId
   for (const { meta, data } of clients) {
     const profile = await prisma.clientProfile.findFirstOrThrow({
       where: { workspaceId: workspace.id, name: data.name },
     });
+    const isSeedClientRow = data.name === SEED_CLIENT_PROFILE_NAME;
     let userId = profile.userId;
-    if (!userId) {
+    if (isSeedClientRow) {
+      userId = seedClient.id;
+      if (profile.userId !== userId)
+        await prisma.clientProfile.update({
+          where: { id: profile.id },
+          data: { userId },
+        });
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name: data.name },
+      });
+    } else if (!userId) {
       const email = String(data.email ?? `${slug(data.name)}@demo.invalid`);
       const user = await prisma.user.upsert({
         where: { email },
@@ -163,24 +192,26 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         create: { email, name: data.name, status: "ACTIVE" },
       });
       userId = user.id;
-      const hash = await hashPassword(password);
-      await prisma.account.upsert({
-        where: {
-          providerId_accountId: { providerId: "credential", accountId: userId },
-        },
-        update: {},
-        create: {
-          userId,
-          accountId: userId,
-          providerId: "credential",
-          password: hash,
-        },
-      });
       await prisma.clientProfile.update({
         where: { id: profile.id },
         data: { userId },
       });
     }
+    const hash = await hashPassword(
+      isSeedClientRow ? seedClientPassword : password,
+    );
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: { providerId: "credential", accountId: userId },
+      },
+      update: { password: hash },
+      create: {
+        userId,
+        accountId: userId,
+        providerId: "credential",
+        password: hash,
+      },
+    });
     const member = await prisma.workspaceMember.upsert({
       where: {
         workspaceId_userId: { workspaceId: workspace.id, userId },
