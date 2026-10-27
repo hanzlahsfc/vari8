@@ -19,14 +19,14 @@ import { describe, expect, it } from "vitest";
 // ── RBAC capability split already pinned (no matrix change) ─────────────
 
 describe("P-025-C — checkinsCoachReviews capability split", () => {
-  it("staff detail read = ws/assigned; mark = assigned only", async () => {
+  it("staff detail read = ws/ws; mark = assigned only", async () => {
     const { resolveScope } = await import("../../lib/auth/rbac");
-    // Read: owner workspace, coach/assistant assigned.
+    // Read: owner + coach workspace (D10/D22), assistant assigned.
     expect(
       resolveScope("checkinsCoachReviews", "read", "WORKSPACE_OWNER"),
     ).toBe("workspace");
     expect(resolveScope("checkinsCoachReviews", "read", "COACH")).toBe(
-      "assigned",
+      "workspace",
     );
     expect(
       resolveScope("checkinsCoachReviews", "read", "ASSISTANT_COACH"),

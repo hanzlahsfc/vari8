@@ -59,11 +59,11 @@ Every cell is written `read / write`; `—/—` means both denied.
 | client invitations        | — / —         | — / ws  | — / ws      | — / —     | — / —   | — / —     |
 | client assignments        | — / —         | ws / ws | — / —       | — / —     | — / —   | — / —     |
 | client profiles           | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | own / own |
-| daily tracking            | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
-| meal plans                | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / —   |
+| daily tracking            | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / own |
+| meal plans                | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / —   |
 | training plans & logs     | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
-| check-in instances        | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | own / —   |
-| check-ins & coach reviews | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
+| check-in instances        | — / —         | ws / ws | ws / asg †  | asg / —   | — / —   | own / —   |
+| check-ins & coach reviews | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / own |
 | cycle data                | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
 | bloodwork                 | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
 | PED/HRT data              | — / —         | — / —   | — / — ⚠     | — / —     | — / —   | — / —     |
@@ -78,6 +78,12 @@ Every cell is written `read / write`; `—/—` means both denied.
 
 Legend / decisions:
 
+- † **Coach reads are workspace-wide on the plan + client-data resources**
+  (D10 answer 3 / D22, owner ruling 2026-10-27): staff hold the same data
+  capabilities over every client of their workspace, so `dailyTracking`,
+  `mealPlans`, `checkinInstances` and `checkinsCoachReviews` reads are `ws`
+  for COACH without an ACTIVE `ClientAssignment`. Writes stay `asg` per
+  decision #111; assistant reads stay `asg` with writes denied.
 - **Support is denied by default** to all client data. Any support access requires an explicit,
   separately-authorized grant (`TODO(human)`).
 - ⚠ **Owner and assistant access to cycle/bloodwork is TODO(human).** Default is denied; only an
@@ -120,8 +126,9 @@ Legend / decisions:
 - **Assistant write scope is TODO(human).** Default: read assigned, write denied.
 - **Check-In resources** (P-025-A/P-025-B, decisions #92–#97): three
   closed resources — `checkinFormDefinitions` (staff-managed forms only),
-  `checkinInstances` (one-off schedule/cancel: owner ws/ws, coach asg/asg,
-  assistant asg/— read-only, client own/—), and `checkinsCoachReviews`
+  `checkinInstances` (one-off schedule/cancel: owner ws/ws, coach ws/asg
+  after the D10/D22 read widening, assistant `asg` read-only, client `own`
+  read-only), and `checkinsCoachReviews`
   (client submission/history own/own; staff review write deferred to
   P-025-C). SUPPORT and CLIENT writes are denied; **all three resources
   are in the platform-admin denied set** — a PLATFORM_ADMIN is denied even

@@ -136,7 +136,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   dailyTracking: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "denied"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
@@ -151,7 +153,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   mealPlans: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "denied"),
@@ -174,7 +178,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   checkinInstances: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "workspace"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "denied"),
@@ -185,7 +191,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   checkinsCoachReviews: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
