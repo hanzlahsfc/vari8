@@ -82,8 +82,11 @@ describe.skipIf(!enabled)("S1-B authorization (real PostgreSQL)", () => {
     });
   }
   const s = (id: string) => ({ user: { id } }) as never;
+  // D10/D22 widened the COACH read cell on dailyTracking to workspace;
+  // clientProfiles keeps COACH assigned scope, so it remains the fixture
+  // resource for the assigned-scope cases below.
   const req = (over: object) =>
-    ({ resource: "dailyTracking", action: "read", ...over }) as never;
+    ({ resource: "clientProfiles", action: "read", ...over }) as never;
   async function reason(p: Promise<unknown>): Promise<string | undefined> {
     try {
       await p;

@@ -1,3 +1,69 @@
+## 2026-10-27 - w2/coach-reads: COACH read scope widened to workspace on plan and client data resources
+
+- Owner ruling 2026-10-27 (w2-c7 verdict F2): the seeded coach 403s on
+  the IIFYM and check-in read routes were an authorization gap, not
+  intended behavior. `lib/auth/roles.ts` already grants COACH workspace
+  scope on `plan.read` and `clientData.read` (D10/D15); `lib/auth/rbac.ts`
+  disagreed with `assigned` read cells, so `authorize()` denied a coach
+  holding zero ACTIVE `ClientAssignment` rows.
+- `lib/auth/rbac.ts`: COACH read cell widened `assigned` to `workspace`
+  on `dailyTracking`, `mealPlans`, `checkinInstances` and
+  `checkinsCoachReviews` (each cell carries the D10/D22 comment). Every
+  write cell stays `assigned` per decision #111; cycleData, bloodwork,
+  pedHrt, coachNotes, clientNotes, privateMediaFiles, exportsErasure,
+  onboardingSubmissionReviews, onboardingAssignments, clientSetups,
+  clientAssignments and all admin resources untouched. No service change
+  needed: the services already branch on `grantedScope` and skip the
+  assignment lock at `workspace`; the workspace bound still lands at the
+  service profile lookup (`id` + `workspace_id`), so foreign workspaces
+  stay denied.
+- Tests re-aimed to the decided contract:
+  `tests/unit/rbac.test.ts` mirror table (four cells),
+  `tests/unit/guard.test.ts` (assigned-scope cases re-pointed at
+  `clientProfiles`; new cases assert COACH workspace read without an
+  assignment, no assignment lookup on the read path, writes still
+  assigned, non-member denied), `tests/unit/checkin-review.test.ts`,
+  `tests/integration/s1-b-authorization.test.ts` (fixture resource
+  `dailyTracking` to `clientProfiles`), `checkin-overview-i1` (queue
+  lists workspace rows, `canReview` stays per-row assignment-derived),
+  `p025d6-checkin-tracker-context`, `p022-staff-daily-review`
+  (unassigned list read; lock races re-aimed at the assistant fixture),
+  `p025c-checkin-review` (unassigned coach detail read; denied loop
+  keeps support, dual-role admin, platform-only, client),
+  `p025d2-checkin-calendar` (unassigned coach lists the calendar;
+  inactive member still fails closed), `mealplan-i1` (foreign read now
+  asserts the non-disclosing domain denial `plan_not_accessible`).
+- `docs/security/authorization-model.md` is hand-maintained for this
+  matrix (no generator covers `rbac.ts`); the four COACH cells were
+  patched by hand to `ws / asg` with a footnote citing the ruling.
+- Gates: `npx vitest run tests/unit` exit 0 (120 files, 1410 tests);
+  `npx vitest run --config vitest.integration.config.ts` on the seven
+  touched integration files exit 0 (134 + 13 tests) against disposable
+  `app_fp_w2coachr_it`; `npm run lint` exit 0 (91 warnings, 0 errors);
+  `npm run typecheck` exit 0; `npm run index` exit 0;
+  `npm run index:check` exit 0; `npm run build` exit 0. Dash gate on
+  owned diff lines: 0.
+- Lane `app_fp_w2coachr` on a disposable loopback cluster:
+  `prisma migrate deploy` exit 0, real seed exit 0 (canvas-demo plus
+  seed-second-workspace). Production `next start` on 5601 behind a
+  loopback TLS front on 5600, `APP_ENV=development` with
+  `ENABLE_CHECK_INS=1`, `ENABLE_IIFYM_PLANS=1`, `ENABLE_DAILY_ENTRY=1`
+  (the flag gates fail closed as `not_available` /
+  `plan_not_accessible` without them, independent of authorization).
+- Live proof (Playwright, `https://127.0.0.1:5600`, 1440 px): signed in
+  as the seeded coach, opened Amara Lewis after her assignment to the
+  coach was set REMOVED to recreate the defect condition. GET
+  `clients/{cp}/iifym-plans` 200, `checkins/schedule-rules` 200,
+  `checkins/instances` 200, `checkins/submissions` 200,
+  `clients/{cp}/daily-entries/history` 200, real payloads captured
+  (`plan/versions`, `items` lists). Second client Chloe Park: all four
+  GETs 200. Deny side intact: client user on another profile 403,
+  anonymous 401 on all five, coach on seed-second-workspace 403 on all
+  four surfaces. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2-COACHREADS/` (`live-capture.json`,
+  `live-probes.json`, two 1440 px screenshots, database teardown
+  listing).
+
 ## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
 
 - Client check-in surface wired: `components/canvas/data/checkins.ts`

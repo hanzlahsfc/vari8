@@ -533,14 +533,14 @@ describe.skipIf(!enabled)("P-025-D6 tracker context (real PG)", () => {
     expect(await audits(s.w.id)).toHaveLength(0);
   });
 
-  it("ended assignment denies the assigned coach", async () => {
+  it("ended assignment still reads (D10/D22: COACH read is workspace scope)", async () => {
     const s = await setup();
     await prisma.clientAssignment.updateMany({
       where: { coachMemberId: s.coachMember.id },
       data: { status: "REMOVED" },
     });
-    await expect(read(s, s.coach)).rejects.toBeInstanceOf(AccessDeniedError);
-    expect(await audits(s.w.id)).toHaveLength(0);
+    const r = await read(s, s.coach);
+    expect(r.values.map((v) => v.display)).toContain("80");
   });
 
   it("Check-In allowed + dailyTracking denied fails closed (injected asymmetry)", async () => {
@@ -750,15 +750,16 @@ describe.skipIf(!enabled)("P-025-D6 tracker context (real PG)", () => {
     expect(await audits(s.w.id)).toHaveLength(1);
   });
 
-  it("assignment removal racing the reveal fails closed when removal wins", async () => {
+  it("assignment removal before the reveal no longer denies the read (D10/D22)", async () => {
     const s = await setup();
-    // Deterministic: end the assignment inside a tx while D6 runs —
-    // whichever commits first decides; removal-first must deny.
+    // Reads no longer route through the assignment row for COACH on these
+    // resources; a removal committed first cannot deny a workspace read.
     await prisma.clientAssignment.updateMany({
       where: { coachMemberId: s.coachMember.id },
       data: { status: "REMOVED" },
     });
-    await expect(read(s, s.coach)).rejects.toBeInstanceOf(AccessDeniedError);
+    const r = await read(s, s.coach);
+    expect(r.values.map((v) => v.display)).toContain("80");
   });
 
   // ── Advisory lock order + deterministic lock probes (P2-1 repair) ──
