@@ -1,3 +1,37 @@
+## 2026-10-27 - w2-t8 repair 4: failed uploads block the send instead of dropping the attachment on `w2/t8`
+
+- B1 root cause: a composer attachment whose background upload settled
+  without a media_object stamp kept its session blob in `media`, so the
+  send guard's restored-draft check (`!a.mediaObjectId && !a.demo &&
+  !media[a.id]`) passed and the message appended locally with no server
+  attachment and no notice. The canvas twin now keeps a `failedUploads`
+  ref beside `pendingUploads`: the attach handler records the id when a
+  workspace upload settles without the stamp, and `send()` refuses any
+  draft containing a failed id with "Attachment upload failed. Remove it
+  and reattach to send it." until the item is removed or reattached.
+  The mark is written only when `workspaceId` existed, so the
+  no-workspace preview keeps its local-append path, and the frontend
+  twin is untouched (its attach is synchronous and cannot fail).
+- Probe: `tests/unit/coach-messages-restored-draft.dom.test.tsx` mounts
+  the real canvas CoachProvider + MessagesWorkspace, forces
+  `uploadCanvasMedia` to resolve false, attaches a file, types text and
+  clicks Send. On the tip product file the send falls through with no
+  toast; on this tip the send is refused with the failed copy and the
+  draft keeps its attachment. Red proof: a scratch worktree at the
+  repair commit with only `components/canvas/coach/messages.tsx`
+  restored from 35296eb ran 1 failed / 3 passed; the same file is green
+  4/4 on this tip. Logs under the evidence dir.
+- Gates on this tip: `npx vitest run` on the touched file 4 passed, exit
+  0; full `npx vitest run` 124 files / 1441 tests all passed, exit 0
+  (one earlier run under parallel gate load timed out once in
+  `tests/unit/system-index.test.ts` F2, which passes 18/18 standalone
+  and is unrelated to this change; the inherited logging.test.ts env
+  pair was not observed this round); `npm run typecheck` exit 0; `npm
+  run lint` exit 0 (92 warnings, 0 errors, one pre-existing warning on
+  messages.tsx:198); `npm run index` produced no diff and `npm run
+  index:check` exit 0; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
 ## 2026-10-27 - w2-t8 repair 3: restored-draft attachments no longer wedge the send on `w2/t8`
 
 - B1 root cause: the send guard read "no session blob" as "upload still
