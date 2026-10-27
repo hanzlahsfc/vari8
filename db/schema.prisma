@@ -342,6 +342,8 @@ model Workspace {
   mediaObjects            MediaObject[]
   coachNotes              CoachNote[]
   coachTasks              CoachTask[]
+  clientPhases            ClientPhase[]
+  clientWeekNotes         ClientWeekNote[]
   trackerComments         TrackerComment[]
   clientGoals             ClientGoal[]
   savedMeals              SavedMeal[]
@@ -439,6 +441,7 @@ model WorkspaceMember {
 
   // PR-M0 (schema v2) member provenance relations.
   coachNotesAuthored          CoachNote[]           @relation("CoachNoteAuthor")
+  clientWeekNotesAuthored     ClientWeekNote[]      @relation("ClientWeekNoteAuthor")
   coachTasksCreated           CoachTask[]           @relation("CoachTaskCreator")
   coachTasksCompleted         CoachTask[]           @relation("CoachTaskCompleter")
   trackerCommentsAuthored     TrackerComment[]      @relation("TrackerCommentAuthor")
@@ -547,6 +550,8 @@ model ClientProfile {
   // PR-M0 (schema v2) client-scoped records.
   coachNotes        CoachNote[]        @relation("CoachNoteClient")
   coachTasks        CoachTask[]        @relation("CoachTaskClient")
+  clientPhases      ClientPhase[]      @relation("ClientPhaseClient")
+  clientWeekNotes   ClientWeekNote[]   @relation("ClientWeekNoteClient")
   trackerComments   TrackerComment[]   @relation("TrackerCommentClient")
   clientGoals       ClientGoal[]       @relation("ClientGoalClient")
   activityTargets   ActivityTarget[]   @relation("ActivityTargetClient")
@@ -2362,6 +2367,9 @@ model CoachNote {
   visibility      CoachNoteVisibility @default(PRIVATE)
   body            String
   authorMemberId  String              @map("author_member_id")
+  // W2-A1: pin-to-overview flag on PRIVATE client notes. The demo seed
+  // previously encoded it as a "[pinned] " body prefix.
+  pinned          Boolean             @default(false)
   revision        Int                 @default(1)
   deletedAt       DateTime?           @map("deleted_at") @db.Timestamptz(6)
   restoreUntil    DateTime?           @map("restore_until") @db.Timestamptz(6)
@@ -2375,6 +2383,51 @@ model CoachNote {
   @@unique([id, workspaceId])
   @@index([workspaceId, clientProfileId])
   @@map("coach_note")
+}
+
+// W2-A1: the coach's named phases for a client (prep, recovery, ...). The
+// canvas orders them by startDate and rewrites later starts back-to-back;
+// the row stores the phase core only. Same-workspace coherence for the
+// client link is the composite FK added in the migration's raw SQL.
+model ClientPhase {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  name            String
+  startDate       DateTime @map("start_date") @db.Date
+  durationWeeks   Int      @map("duration_weeks")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile @relation("ClientPhaseClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId])
+  @@map("client_phase")
+}
+
+// W2-A1: one coach note per (client, timeline week). The canvas weekNotes
+// map keys weeks by their Monday ISO date; week_start stores that declared
+// local date. Same-workspace coherence FKs are raw SQL in the migration.
+model ClientWeekNote {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  weekStart       DateTime @map("week_start") @db.Date
+  body            String
+  authorMemberId  String   @map("author_member_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile   @relation("ClientWeekNoteClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  authorMember  WorkspaceMember @relation("ClientWeekNoteAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([clientProfileId, weekStart])
+  @@unique([id, workspaceId])
+  @@index([workspaceId, clientProfileId])
+  @@map("client_week_note")
 }
 
 // D26: staff task; null client = workspace-level task. Completion
