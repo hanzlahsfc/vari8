@@ -4,7 +4,7 @@
   "artifacts": [
     {
       "path": "adapter/d32-capture-adapter.mjs",
-      "sha256": "3e27062090a0fe5b2ad533b0ef45ac7743fcb8bd53f0464ffb7a1c548da15352"
+      "sha256": "fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c"
     },
     {
       "path": "current/1440/s01-profile-checkins.geom.json.gz",
@@ -956,7 +956,7 @@
     },
     {
       "path": "receipts/server.log",
-      "sha256": "4a89c9f4f565bbcde7047dc18e44bff820b2aaab694018a2fb10eaf34bb524e7"
+      "sha256": "69e907dad2f55f948487cbe2e788e18120d69e5d70460f110aa0a6ce4206d436"
     },
     {
       "path": "receipts/source-compatibility.json",

@@ -49,6 +49,11 @@ icm/05-build/tools/transition/p452/capture/receipts/canonical.json
 icm/05-build/tools/transition/p452/capture/receipts/combined-provenance.json
 icm/05-build/tools/transition/p452/capture/receipts/execution.json
 icm/05-build/tools/transition/p452/capture/receipts/strict.json
+# Executed-evidence adapter: the bytes that ran the p452 capture (sha256
+# fd6a9a99, recorded as adapterSha256 in four execution receipts). Kept as
+# original executed bytes, not the formatted derivative — the derivative is
+# maintained tooling and lives in the runbook toolchain history, not here.
+icm/05-build/tools/transition/p452/capture/adapter/d32-capture-adapter.mjs
 
 # Independent frontend project uses Biome.
 frontend/

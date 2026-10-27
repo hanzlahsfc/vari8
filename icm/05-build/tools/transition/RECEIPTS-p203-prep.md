@@ -126,6 +126,30 @@ state under . Fresh locked validation/gates still required.
 - `git diff --check` base→head: 8 trailing-whitespace warnings, all in pinned
   p452 evidence logs introduced by earlier branch commits — this delta adds 0.
 
+## P472 — whitespace closure + adapter provenance correction
+
+- `git diff --check d1c40810..HEAD` exited 2 with 4 findings
+  (`capture/receipts/server.log` ×3 lines, `prep.log` ×1) — all in pinned
+  evidence logs. Corrected WITHOUT exemptions: original raw bytes preserved in
+  `p452/raw-logs.tar` (sha256 `47321dd0…fe0b`, added to artifact-sha256.txt);
+  in-place files are now labeled NORMALIZED copies (first-line label names the
+  archive) with trailing whitespace stripped. Pins updated consistently:
+  server.log 4a89c9f4→69e907da, prep.log 3b88ec21→d1d500e9, artifact-index.json
+  entry updated, its own pin re-recorded. `shasum -a 256 -c` → 249/249 OK.
+- Adapter provenance corrected: P471 formatted `d32-capture-adapter.mjs`, but
+  the receipts that executed it pin `adapterSha256 fd6a9a99` in FOUR
+  hash-pinned execution receipts — the formatted derivative (3e270620) was
+  never executed. Restored the original executed bytes at the executed path
+  and reverted artifact-index/sha256 records to their captured state
+  (fd6a9a99 adapter, 354003d3 index); the package verifies byte-identical to
+  its original capture. The adapter is now an exact pinned-evidence entry in
+  .prettierignore (executed evidence, not exempted tooling — the formatted
+  derivative exists only in history at b4428f8). No receipt was rewritten to
+  imply the formatted bytes ran.
+- `verifyPackage(capture)` (identity.mjs) → 242 files / 241 indexed, no
+  unindexed extras, no missing entries — the applicable package verifier,
+  not just shasum.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.
