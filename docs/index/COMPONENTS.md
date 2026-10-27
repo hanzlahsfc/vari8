@@ -37,6 +37,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
 | `ChartPeriodControl` | `frontend/src/components/coach/builder/chart-period-control.tsx` | /client, /coach |
 | `CheckInForm` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
+| `CheckInSummary` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
 | `CheckInTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `CheckInsWorkspace` | `frontend/src/components/coach/check-ins.tsx` | /coach |
 | `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |

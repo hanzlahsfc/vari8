@@ -423,6 +423,53 @@
   independent review by a different model family still pending (not
   requested per instruction).
 
+## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
+
+- Client check-in surface wired: `components/canvas/data/checkins.ts`
+  (+130: schedule status chips, per-pose VISUAL media mapping,
+  tracker-summary rows, submitted-answer display) consumed by
+  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
+  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
+  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
+  + `client-app.css` kept in parity for shared blocks. Product
+  onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+  panel + page, `app/globals.css`). Helpers covered by
+  `tests/unit/checkin-client-surface.test.ts` (16 tests).
+- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
+  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
+  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
+  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
+  (304 files; first attempt before install exited 127),
+  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
+  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
+  en/em count 0 after repair (was 1, a comment em dash, fixed here).
+- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
+  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
+  feedback), dropped at teardown (`pg_database` count 0).
+  Production build served behind a loopback TLS front; surfaces
+  required APP_ENV=development with ENABLE_CHECK_INS=1 and
+  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
+  coach check-ins page without them).
+- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
+  sign-in, schedule a check-in, client /me Check-ins list (seeded
+  Submitted, Overdue, Scheduled items), fill form with five pose
+  slots plus tracker summary, submit (readback: Submitted,
+  awaiting coach review; media rows verified in DB), seeded
+  Oct-18 reviewed and Oct-24 awaiting-review details, product
+  onboarding empty state, required-field message on empty submit
+  at 390. Horizontal overflow 0 on every checked view.
+- Own-scope probes (client session): GET instances/[own] 200,
+  [foreign] 403 not_available, instances/next 200, instances list
+  by clientProfileId 403 denied (own and foreign), submissions
+  list 403 denied, submissions tracker-context 403 denied,
+  daily-entries 200, foreign progress-photos POST 403. Lily
+  lane-only credential returned a disjoint next instance and 403
+  on a foreign instance.
+- Repair round 1: replaced an em dash in the test file header
+  comment (B1) and added this STATUS entry (B2), verdict
+  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
+
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
 - Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`

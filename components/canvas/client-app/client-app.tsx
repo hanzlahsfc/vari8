@@ -418,6 +418,7 @@ export function ClientApp({
                 configuration={configuration}
                 client={client}
                 workspaceId={own?.workspaceId}
+                clientProfileId={own?.clientProfileId}
               />
             )}
             {active === "photos" && own && (

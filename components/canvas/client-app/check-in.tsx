@@ -8,14 +8,26 @@
 import { Camera, Check, ChevronDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
+  listOwnCheckInFeedbackAction,
+  readOwnCheckInCalendarAction,
+} from "@/app/(tracker)/workspace/[workspaceId]/check-ins/actions";
+import {
+  checkInScheduleLabel,
+  checkInScheduleStatus,
   fetchOwnCheckInInstance,
-  fetchOwnNextCheckIn,
+  mediaIdsForPoses,
   type OwnCheckInInstanceDetailWire,
+  type OwnCheckInInstanceListItemWire,
+  posesForVisualField,
   submitOwnCheckIn,
+  submittedAnswerDisplay,
+  summaryRowsFromSurface,
 } from "../data/checkins";
 import { ApiClientError } from "../data/http";
-import { uploadOwnMedia } from "../data/media";
-import { questionPoses } from "../coach/check-ins/photos";
+import { fetchMediaDownload } from "../data/media";
+import { uploadOwnProgressPhoto } from "../data/progress-photos";
+import { fetchDailyEntrySurface } from "../data/tracker";
+import { DEFAULT_POSES, questionPoses } from "../coach/check-ins/photos";
 import {
   addDays,
   type CoachClient,
@@ -84,18 +96,103 @@ function choiceOptions(question: Question) {
   return Array.from({ length: count }, (_, i) => String(i + 1));
 }
 
+export type CheckInSummaryRow = { label: string; value: string | null };
+
+/** Display labels for the variant `summaries` keys. */
+const SUMMARY_LABELS: Record<string, string> = {
+  weight: "Weight",
+  calories: "Calories",
+  sleep: "Sleep",
+  steps: "Steps",
+  water: "Water",
+  habits: "Habits",
+};
+
+export function summaryLabel(key: string): string {
+  return SUMMARY_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+/**
+ * The tracker-summary embed: one row per configured metric with the
+ * client's own logged value. A metric with nothing logged still renders
+ * so the configured set stays visible.
+ */
+export function CheckInSummary({
+  title,
+  rows,
+}: {
+  title: string;
+  rows: CheckInSummaryRow[];
+}) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="ca-checkin-summary">
+      <h3>{title}</h3>
+      <dl className="ca-checkin-summary-grid">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <dt>{row.label}</dt>
+            <dd data-missing={row.value === null ? "" : undefined}>
+              {row.value ?? "Not logged"}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** Latest logged value for one configured summary key in the demo model. */
+function demoSummaryValue(
+  key: string,
+  client: CoachClient,
+  today: string,
+): string | null {
+  if (key === "habits") {
+    if (client.habits.length === 0) return null;
+    const done = client.habitLog?.[today]?.length ?? 0;
+    return `${done} of ${client.habits.length} today`;
+  }
+  const latest = client.entries.at(-1);
+  if (!latest) return null;
+  if (key === "weight") return `${latest.weight} kg`;
+  if (key === "sleep") return `${latest.sleep} h`;
+  if (key === "steps") return `${latest.steps.toLocaleString()} steps`;
+  if (key === "calories") return `${latest.calories} kcal`;
+  return null;
+}
+
+export function summaryRows(
+  configuration: Variant,
+  client: CoachClient,
+  today: string,
+): CheckInSummaryRow[] {
+  return configuration.summaries.map((key) => ({
+    label: summaryLabel(key),
+    value: demoSummaryValue(key, client, today),
+  }));
+}
+
 export function CheckInForm({
   configuration,
   client,
   workspaceId,
+  clientProfileId,
 }: {
   configuration: Variant;
   client: CoachClient;
   workspaceId?: string;
+  clientProfileId?: string;
 }) {
   // Card 05b: a real workspace binds the form to the own check-in routes;
   // without one the canvas demo keeps the localStorage submissions path.
-  if (workspaceId) return <RemoteCheckInForm workspaceId={workspaceId} />;
+  if (workspaceId && clientProfileId)
+    return (
+      <RemoteCheckInForm
+        workspaceId={workspaceId}
+        clientProfileId={clientProfileId}
+      />
+    );
   return <LocalCheckInForm configuration={configuration} client={client} />;
 }
 
@@ -275,7 +372,7 @@ function LocalCheckInForm({
                 </div>
                 {missing(q) && (
                   <span className="ca-photo-error">
-                    Required — add each pose
+                    Required - add each pose
                   </span>
                 )}
               </div>
@@ -295,6 +392,12 @@ function LocalCheckInForm({
         ))}
         {configuration.questions.length === 0 && (
           <Empty title="No check-in questions configured" />
+        )}
+        {configuration.summaries.length > 0 && (
+          <CheckInSummary
+            title="This week in your tracker"
+            rows={summaryRows(configuration, client, today)}
+          />
         )}
         {attempted && !valid && (
           <p className="ca-photo-error">Please answer the required fields.</p>
@@ -375,35 +478,132 @@ function answerPresent(value: unknown): boolean {
   return true;
 }
 
-export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
+function RemoteMediaThumb({
+  workspaceId,
+  mediaId,
+  poseLabel,
+}: {
+  workspaceId: string;
+  mediaId: string;
+  poseLabel: string;
+}) {
+  const [url, setUrl] = useState<string | null>(null);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only mint keyed by media id.
+  useEffect(() => {
+    let live = true;
+    fetchMediaDownload(workspaceId, mediaId)
+      .then((wire) => {
+        if (live) setUrl(wire.download.url);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, mediaId]);
+  if (!url)
+    return <span className="ca-photo-empty" aria-label={poseLabel} />;
+  // biome-ignore lint/performance/noImgElement: remote media previews are signed urls
+  return <img src={url} alt={poseLabel} />;
+}
+
+type RemotePhase = "loading" | "ready" | "submitting" | "error";
+
+export function RemoteCheckInForm({
+  workspaceId,
+  clientProfileId,
+}: {
+  workspaceId: string;
+  clientProfileId: string;
+}) {
+  const [items, setItems] = useState<OwnCheckInInstanceListItemWire[] | null>(
+    null,
+  );
+  const [listPhase, setListPhase] = useState<"loading" | "error" | "ready">(
+    "loading",
+  );
   const [detail, setDetail] = useState<OwnCheckInInstanceDetailWire | null>(
     null,
   );
-  const [phase, setPhase] = useState<
-    "loading" | "empty" | "ready" | "submitting" | "done" | "error"
-  >("loading");
+  const [detailPhase, setDetailPhase] = useState<RemotePhase>("loading");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
+  const [poseMedia, setPoseMedia] = useState<
+    Record<string, Record<string, string>>
+  >({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
   const [attempted, setAttempted] = useState(false);
   const [status, setStatus] = useState("");
+  const [summary, setSummary] = useState<CheckInSummaryRow[]>([]);
+  const [feedback, setFeedback] = useState<
+    { id: string; sentAt: string; byName: string; body: string }[]
+  >([]);
+  const [feedbackCursor, setFeedbackCursor] = useState<string | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  const loadSummary = async (entryDate: string) => {
+    try {
+      const surface = await fetchDailyEntrySurface(workspaceId, entryDate);
+      setSummary(summaryRowsFromSurface(surface, entryDate));
+    } catch {
+      setSummary([]);
+    }
+  };
+
+  const openInstance = async (instanceId: string) => {
+    setSelectedId(instanceId);
+    setDetailPhase("loading");
+    setAnswers({});
+    setPoseMedia({});
+    setAttempted(false);
+    setStatus("");
+    try {
+      const instance = await fetchOwnCheckInInstance(workspaceId, instanceId);
+      setDetail(instance);
+      setFeedback(instance.feedback ?? []);
+      setFeedbackCursor(instance.feedbackNextCursor);
+      setDetailPhase("ready");
+      void loadSummary(instance.dueAt.slice(0, 10));
+    } catch {
+      setDetail(null);
+      setDetailPhase("error");
+    }
+  };
+
+  const loadMoreFeedback = async () => {
+    if (!detail || feedbackCursor === null) return;
+    setFeedbackLoading(true);
+    const result = await listOwnCheckInFeedbackAction(
+      { workspaceId, instanceId: detail.instanceId },
+      { cursor: feedbackCursor },
+    );
+    setFeedbackLoading(false);
+    if (result.status !== "ok") return;
+    setFeedback((current) => [...current, ...result.items]);
+    setFeedbackCursor(result.nextCursor);
+  };
 
   const load = async () => {
-    try {
-      const { next } = await fetchOwnNextCheckIn(workspaceId);
-      if (!next) {
-        setDetail(null);
-        setPhase("empty");
-        return;
-      }
-      const instance = await fetchOwnCheckInInstance(
-        workspaceId,
-        next.instanceId,
-      );
-      setDetail(instance);
-      setPhase(instance.submittedAt ? "done" : "ready");
-    } catch {
-      setPhase("error");
+    const to = new Date();
+    const from = new Date(to.getTime() - 42 * 24 * 60 * 60 * 1000);
+    const until = new Date(to.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const result = await readOwnCheckInCalendarAction(
+      { workspaceId },
+      { from: from.toISOString(), to: until.toISOString() },
+    );
+    if (result.status === "error") {
+      setListPhase("error");
+      setDetailPhase("error");
+      return;
     }
+    const sorted = [...(result.status === "ok" ? result.items : [])].sort(
+      (a, b) => a.dueAt.localeCompare(b.dueAt),
+    );
+    setItems(sorted);
+    setListPhase("ready");
+    const next =
+      sorted.find((item) => item.state === "SCHEDULED") ?? sorted.at(-1) ?? null;
+    if (next) await openInstance(next.instanceId);
+    else setDetailPhase("ready");
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only load keyed by workspace.
@@ -411,7 +611,7 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- remote load resolves after awaits.
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [workspaceId, clientProfileId]);
 
   const setAnswer = (fieldId: string, value: unknown) =>
     setAnswers((current) => ({ ...current, [fieldId]: value }));
@@ -419,30 +619,43 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
   const fields = [...(detail?.definition.fields ?? [])].sort(
     (first, second) => first.order - second.order,
   );
-  const fieldValid = (fieldId: string, required: boolean) =>
-    !required || answerPresent(answers[fieldId]);
-  const valid = fields.every((field) =>
-    fieldValid(field.fieldId, field.required),
-  );
 
-  const addMedia = async (fieldId: string, file: File) => {
-    setUploading((current) => ({ ...current, [fieldId]: true }));
+  const visualValid = (field: (typeof fields)[number]) => {
+    if (!field.required) return true;
+    const poses = posesForVisualField(field, DEFAULT_POSES);
+    const media = poseMedia[field.fieldId] ?? {};
+    return poses.every((pose) => media[pose]);
+  };
+  const fieldValid = (
+    field: (typeof fields)[number],
+  ): boolean => {
+    if (!field.required) return true;
+    if (field.kind === "visual") return visualValid(field);
+    return answerPresent(answers[field.fieldId]);
+  };
+  const valid = fields.every((field) => fieldValid(field));
+
+  const uploadSlot = async (fieldId: string, pose: string, file: File) => {
+    setUploading((current) => ({ ...current, [`${fieldId}:${pose}`]: true }));
     try {
-      const mediaId = await uploadOwnMedia(
+      const entry = await uploadOwnProgressPhoto(
         workspaceId,
+        clientProfileId,
         file,
-        file.name,
-        file.type,
+        detail?.dueAt.slice(0, 10),
       );
-      setAnswers((current) => ({
+      setPoseMedia((current) => ({
         ...current,
-        [fieldId]: [...((current[fieldId] as string[]) ?? []), mediaId],
+        [fieldId]: { ...(current[fieldId] ?? {}), [pose]: entry.mediaObjectId },
       }));
       setStatus("");
     } catch {
       setStatus("That photo could not be uploaded. Try again.");
     } finally {
-      setUploading((current) => ({ ...current, [fieldId]: false }));
+      setUploading((current) => ({
+        ...current,
+        [`${fieldId}:${pose}`]: false,
+      }));
     }
   };
 
@@ -450,7 +663,7 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
     if (!detail) return;
     setAttempted(true);
     if (!valid) return;
-    setPhase("submitting");
+    setDetailPhase("submitting");
     const payload = fields.map((field) => {
       const value = answers[field.fieldId];
       if (field.kind === "rating")
@@ -463,7 +676,15 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
           fieldId: field.fieldId,
           value: answerPresent(value) ? String(value).trim() : null,
         };
-      if (field.kind === "multiChoice" || field.kind === "visual")
+      if (field.kind === "visual")
+        return {
+          fieldId: field.fieldId,
+          value: mediaIdsForPoses(
+            posesForVisualField(field, DEFAULT_POSES),
+            poseMedia[field.fieldId] ?? {},
+          ),
+        };
+      if (field.kind === "multiChoice")
         return {
           fieldId: field.fieldId,
           value: Array.isArray(value) && value.length > 0 ? value : null,
@@ -486,18 +707,33 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
         detail.instanceId,
       );
       setDetail(fresh);
-      setPhase("done");
+      setFeedback(fresh.feedback ?? []);
+      setFeedbackCursor(fresh.feedbackNextCursor);
+      setDetailPhase("ready");
+      setItems((current) =>
+        current === null
+          ? current
+          : current.map((item) =>
+              item.instanceId === detail.instanceId
+                ? {
+                    ...item,
+                    state: "SUBMITTED",
+                    submittedAt: fresh.submittedAt,
+                  }
+                : item,
+            ),
+      );
     } catch (error) {
       setStatus(
         error instanceof ApiClientError && error.code === "already_submitted"
           ? "This check-in was already submitted."
           : "The check-in could not be sent. Try again.",
       );
-      setPhase("ready");
+      setDetailPhase("ready");
     }
   };
 
-  if (phase === "loading")
+  if (listPhase === "loading")
     return (
       <section className="cd-preview-section" aria-label="Check-in">
         <div className="client-app-loading" role="status">
@@ -505,13 +741,7 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
         </div>
       </section>
     );
-  if (phase === "empty")
-    return (
-      <section className="cd-preview-section" aria-label="Check-in">
-        <Empty title="No check-in is due right now" />
-      </section>
-    );
-  if (phase === "error")
+  if (listPhase === "error")
     return (
       <section className="cd-preview-section" aria-label="Check-in">
         <Empty title="Your check-in could not be loaded">
@@ -519,236 +749,372 @@ export function RemoteCheckInForm({ workspaceId }: { workspaceId: string }) {
         </Empty>
       </section>
     );
-  if (!detail) return null;
-
-  if (phase === "done")
+  if (items !== null && items.length === 0)
     return (
       <section className="cd-preview-section" aria-label="Check-in">
-        <div className="ca-checkin-done">
-          <Check size={20} aria-hidden="true" />
-          <div>
-            <h2>Check-in sent</h2>
-            <p className="cd-muted">
-              Your coach will review it and send feedback.
-            </p>
-          </div>
-        </div>
-        {status && <p className="ca-photo-error">{status}</p>}
-        {detail.feedback && detail.feedback.length > 0 && (
-          <div className="ca-checkin-history">
-            <h3>Coach feedback</h3>
-            {detail.feedback.map((item) => (
-              <div className="ca-checkin-item" key={item.id}>
-                <div className="ca-checkin-item-head">
-                  <b>{item.byName}</b>
-                  <span className="ca-checkin-status" data-status="done">
-                    Feedback received
-                  </span>
-                </div>
-                <p>{item.body}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        <Empty title="No check-ins scheduled">
+          Your coach has not scheduled a check-in yet.
+        </Empty>
       </section>
     );
 
+  const submitted = detail !== null && detail.submittedAt !== null;
+  const feedbackCount = feedback.length;
+
   return (
-    <section className="cd-preview-section" aria-label="Check-in form">
-      <h2>{detail.definition.title || detail.formName}</h2>
-      <p className="cd-muted">
-        Answer your coach&apos;s questions
-        {detail.late ? " — this check-in is overdue." : "."}
-      </p>
-      <div className="ca-checkin-form">
-        {fields.map((field) => {
-          const required = field.required;
-          const missing = attempted && !fieldValid(field.fieldId, required);
-          const label = `${field.label}${required ? " *" : " · optional"}`;
-          return (
-            <div className="ca-checkin-field" key={field.fieldId}>
-              {field.kind === "longText" ? (
-                <TextArea
-                  label={label}
-                  rows={3}
-                  value={(answers[field.fieldId] as string) ?? ""}
-                  error={missing ? "Required" : undefined}
-                  onChange={(event) =>
-                    setAnswer(field.fieldId, event.target.value)
-                  }
-                />
-              ) : field.kind === "singleChoice" ? (
-                <Select
-                  label={label}
-                  value={(answers[field.fieldId] as string) ?? ""}
-                  error={missing ? "Required" : undefined}
-                  options={[
-                    { value: "", label: "Choose an answer" },
-                    ...(field.options ?? []).map((option) => ({
-                      value: option.optionId,
-                      label: option.label,
-                    })),
-                  ]}
-                  onValueChange={(value) => setAnswer(field.fieldId, value)}
-                />
-              ) : field.kind === "multiChoice" ? (
-                <div className="ca-photo-question">
-                  <span className="ca-photo-question-label">{label}</span>
-                  {(field.options ?? []).map((option) => {
-                    const selected = (answers[field.fieldId] as string[]) ?? [];
-                    return (
-                      <Checkbox
-                        key={option.optionId}
-                        label={option.label}
-                        checked={selected.includes(option.optionId)}
-                        onCheckedChange={(checked) =>
-                          setAnswer(
-                            field.fieldId,
-                            checked
-                              ? [...selected, option.optionId]
-                              : selected.filter(
-                                  (item) => item !== option.optionId,
-                                ),
-                          )
-                        }
-                      />
-                    );
-                  })}
-                  {missing && (
-                    <span className="ca-photo-error">Required</span>
-                  )}
-                </div>
-              ) : field.kind === "rating" ? (
-                <Select
-                  label={label}
-                  value={
-                    answerPresent(answers[field.fieldId])
-                      ? String(answers[field.fieldId])
-                      : ""
-                  }
-                  error={missing ? "Required" : undefined}
-                  options={[
-                    { value: "", label: "Choose a rating" },
-                    ...ratingWireOptions(field),
-                  ]}
-                  onValueChange={(value) =>
-                    setAnswer(field.fieldId, value ? Number(value) : null)
-                  }
-                />
-              ) : field.kind === "visual" ? (
-                <div className="ca-photo-question">
-                  <span className="ca-photo-question-label">{label}</span>
-                  <div className="ca-photo-grid">
-                    {((answers[field.fieldId] as string[]) ?? []).map(
-                      (mediaId, index) => (
-                        <div className="ca-photo-tile" key={mediaId}>
-                          <span className="ca-photo-empty">
-                            <Check size={20} aria-hidden="true" />
-                            <b>Photo {index + 1}</b>
-                          </span>
-                          <button
-                            type="button"
-                            className="ca-photo-remove"
-                            aria-label={`Remove photo ${index + 1}`}
-                            onClick={() =>
-                              setAnswer(
-                                field.fieldId,
-                                (
-                                  (answers[field.fieldId] as string[]) ?? []
-                                ).filter((item) => item !== mediaId),
-                              )
-                            }
-                          >
-                            <X size={14} aria-hidden="true" />
-                          </button>
-                        </div>
-                      ),
-                    )}
-                    <div className="ca-photo-tile">
-                      <label className="ca-photo-pick">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          hidden
-                          disabled={uploading[field.fieldId]}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0];
-                            event.target.value = "";
-                            if (file) void addMedia(field.fieldId, file);
-                          }}
+    <section className="cd-preview-section" aria-label="Check-in">
+      <h2>Check-In</h2>
+      {items !== null && items.length > 0 && (
+        <div className="ca-checkin-schedule" aria-label="Check-in schedule">
+          {(items ?? []).map((item) => {
+            const chip = checkInScheduleStatus(item);
+            return (
+              <button
+                type="button"
+                className="ca-checkin-row"
+                key={item.instanceId}
+                aria-current={selectedId === item.instanceId}
+                onClick={() => void openInstance(item.instanceId)}
+              >
+                <span className="ca-checkin-row-label">
+                  <b>{item.formName}</b>
+                  <small>
+                    Due{" "}
+                    {formatDate(item.dueAt.slice(0, 10), {
+                      weekday: "short",
+                      day: "numeric",
+                      month: "short",
+                    })}
+                  </small>
+                </span>
+                <span className="ca-checkin-status" data-status={chip}>
+                  {checkInScheduleLabel(chip)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {detailPhase === "loading" && (
+        <div className="client-app-loading" role="status">
+          Loading your check-in…
+        </div>
+      )}
+      {detailPhase === "error" && (
+        <Empty title="This check-in could not be loaded">
+          Pick another date from your schedule.
+        </Empty>
+      )}
+      {detail !== null && detailPhase !== "loading" && submitted && (
+        <>
+          <div className="ca-checkin-done">
+            <Check size={20} aria-hidden="true" />
+            <div>
+              <h2>{detail.definition.title || detail.formName}</h2>
+              <p className="cd-muted">
+                Submitted{" "}
+                {formatDate((detail.submittedAt ?? "").slice(0, 10), {
+                  weekday: "short",
+                  day: "numeric",
+                  month: "short",
+                })}
+                {detail.late ? " · late" : ""}
+              </p>
+            </div>
+            <span
+              className="ca-checkin-status"
+              data-status={feedbackCount > 0 ? "done" : "waiting"}
+            >
+              {feedbackCount > 0 ? "Reviewed" : "Awaiting coach review"}
+            </span>
+          </div>
+          <dl className="ca-checkin-answers">
+            {fields.map((field) => {
+              const answer = detail.submittedAnswers?.find(
+                (item) => item.fieldId === field.fieldId,
+              );
+              const display = answer
+                ? submittedAnswerDisplay(field, answer)
+                : null;
+              return (
+                <div className="ca-checkin-answer" key={field.fieldId}>
+                  <dt>{field.label}</dt>
+                  <dd data-missing={display === null ? "" : undefined}>
+                    {display ?? "No answer"}
+                  </dd>
+                  {answer !== undefined && answer.mediaIds.length > 0 && (
+                    <div className="ca-checkin-media">
+                      {answer.mediaIds.map((mediaId, index) => (
+                        <RemoteMediaThumb
+                          key={mediaId}
+                          workspaceId={workspaceId}
+                          mediaId={mediaId}
+                          poseLabel={`Photo ${index + 1}`}
                         />
-                        <span className="ca-photo-empty">
-                          <Camera size={20} aria-hidden="true" />
-                          <b>
-                            {uploading[field.fieldId]
-                              ? "Uploading…"
-                              : "Add photo"}
-                          </b>
-                        </span>
-                      </label>
+                      ))}
                     </div>
-                  </div>
-                  {missing && (
-                    <span className="ca-photo-error">
-                      Required — add at least one photo
-                    </span>
                   )}
                 </div>
-              ) : field.kind === "date" ? (
-                <Input
-                  label={label}
-                  type="date"
-                  value={(answers[field.fieldId] as string) ?? ""}
-                  error={missing ? "Required" : undefined}
-                  onChange={(event) =>
-                    setAnswer(field.fieldId, event.target.value)
-                  }
-                />
-              ) : field.kind === "number" ? (
-                <Input
-                  label={label}
-                  type="number"
-                  inputMode="decimal"
-                  value={(answers[field.fieldId] as string) ?? ""}
-                  error={missing ? "Required" : undefined}
-                  onChange={(event) =>
-                    setAnswer(field.fieldId, event.target.value)
-                  }
-                />
-              ) : (
-                <Input
-                  label={label}
-                  type="text"
-                  value={(answers[field.fieldId] as string) ?? ""}
-                  error={missing ? "Required" : undefined}
-                  onChange={(event) =>
-                    setAnswer(field.fieldId, event.target.value)
-                  }
-                />
-              )}
-              {field.helpText && (
-                <small className="ct-field-help">{field.helpText}</small>
+              );
+            })}
+          </dl>
+          <CheckInSummary title="Your tracker that week" rows={summary} />
+          {feedbackCount > 0 && (
+            <div className="ca-checkin-history">
+              <h3>Coach feedback</h3>
+              {feedback.map((item) => (
+                <div className="ca-checkin-item" key={item.id}>
+                  <div className="ca-checkin-item-head">
+                    <b>{item.byName}</b>
+                    <span className="ca-checkin-status" data-status="done">
+                      {formatDate(item.sentAt.slice(0, 10), {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                  </div>
+                  <p>{item.body}</p>
+                </div>
+              ))}
+              {feedbackCursor !== null && (
+                <Button
+                  className="ca-checkin-back"
+                  disabled={feedbackLoading}
+                  onClick={() => void loadMoreFeedback()}
+                >
+                  {feedbackLoading ? "Loading…" : "Show earlier feedback"}
+                </Button>
               )}
             </div>
-          );
-        })}
-        {fields.length === 0 && (
-          <Empty title="This check-in has no questions" />
-        )}
-        {attempted && !valid && (
-          <p className="ca-photo-error">Please answer the required fields.</p>
-        )}
-        {status && <p className="ca-photo-error">{status}</p>}
-        <Button
-          primary
-          className="ca-checkin-submit"
-          disabled={phase === "submitting"}
-          onClick={() => void submit()}
-        >
-          {phase === "submitting" ? "Sending…" : "Submit check-in"}
-        </Button>
-      </div>
+          )}
+          {feedbackCount === 0 && (
+            <p className="cd-muted">
+              Your coach will review this check-in and send feedback.
+            </p>
+          )}
+        </>
+      )}
+      {detail !== null && detailPhase !== "loading" && !submitted && (
+        <>
+          <p className="cd-muted">
+            Answer your coach&apos;s questions
+            {detail.late ? " - this check-in is overdue." : "."}
+          </p>
+          <div className="ca-checkin-form">
+            {fields.map((field) => {
+              const required = field.required;
+              const missing = attempted && !fieldValid(field);
+              const label = `${field.label}${required ? " *" : " · optional"}`;
+              return (
+                <div className="ca-checkin-field" key={field.fieldId}>
+                  {field.kind === "longText" ? (
+                    <TextArea
+                      label={label}
+                      rows={3}
+                      value={(answers[field.fieldId] as string) ?? ""}
+                      error={missing ? "Required" : undefined}
+                      onChange={(event) =>
+                        setAnswer(field.fieldId, event.target.value)
+                      }
+                    />
+                  ) : field.kind === "singleChoice" ? (
+                    <Select
+                      label={label}
+                      value={(answers[field.fieldId] as string) ?? ""}
+                      error={missing ? "Required" : undefined}
+                      options={[
+                        { value: "", label: "Choose an answer" },
+                        ...(field.options ?? []).map((option) => ({
+                          value: option.optionId,
+                          label: option.label,
+                        })),
+                      ]}
+                      onValueChange={(value) => setAnswer(field.fieldId, value)}
+                    />
+                  ) : field.kind === "multiChoice" ? (
+                    <div className="ca-photo-question">
+                      <span className="ca-photo-question-label">{label}</span>
+                      {(field.options ?? []).map((option) => {
+                        const selected =
+                          (answers[field.fieldId] as string[]) ?? [];
+                        return (
+                          <Checkbox
+                            key={option.optionId}
+                            label={option.label}
+                            checked={selected.includes(option.optionId)}
+                            onCheckedChange={(checked) =>
+                              setAnswer(
+                                field.fieldId,
+                                checked
+                                  ? [...selected, option.optionId]
+                                  : selected.filter(
+                                      (item) => item !== option.optionId,
+                                    ),
+                              )
+                            }
+                          />
+                        );
+                      })}
+                      {missing && (
+                        <span className="ca-photo-error">Required</span>
+                      )}
+                    </div>
+                  ) : field.kind === "rating" ? (
+                    <Select
+                      label={label}
+                      value={
+                        answerPresent(answers[field.fieldId])
+                          ? String(answers[field.fieldId])
+                          : ""
+                      }
+                      error={missing ? "Required" : undefined}
+                      options={[
+                        { value: "", label: "Choose a rating" },
+                        ...ratingWireOptions(field),
+                      ]}
+                      onValueChange={(value) =>
+                        setAnswer(field.fieldId, value ? Number(value) : null)
+                      }
+                    />
+                  ) : field.kind === "visual" ? (
+                    <div className="ca-photo-question">
+                      <span className="ca-photo-question-label">{label}</span>
+                      <div className="ca-photo-grid">
+                        {posesForVisualField(field, DEFAULT_POSES).map(
+                          (pose) => {
+                            const mediaId =
+                              poseMedia[field.fieldId]?.[pose] ?? null;
+                            const busy =
+                              uploading[`${field.fieldId}:${pose}`] === true;
+                            return (
+                              <div className="ca-photo-tile" key={pose}>
+                                <label className="ca-photo-pick">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    hidden
+                                    disabled={busy}
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0];
+                                      event.target.value = "";
+                                      if (file)
+                                        void uploadSlot(
+                                          field.fieldId,
+                                          pose,
+                                          file,
+                                        );
+                                    }}
+                                  />
+                                  <span className="ca-photo-empty">
+                                    {mediaId ? (
+                                      <Check size={20} aria-hidden="true" />
+                                    ) : (
+                                      <Camera size={20} aria-hidden="true" />
+                                    )}
+                                    <b>
+                                      {busy
+                                        ? "Uploading…"
+                                        : mediaId
+                                          ? `${pose} added`
+                                          : pose}
+                                    </b>
+                                  </span>
+                                </label>
+                                {mediaId ? (
+                                  <button
+                                    type="button"
+                                    className="ca-photo-remove"
+                                    aria-label={`Remove ${pose} photo`}
+                                    onClick={() =>
+                                      setPoseMedia((current) => {
+                                        const next = {
+                                          ...(current[field.fieldId] ?? {}),
+                                        };
+                                        delete next[pose];
+                                        return {
+                                          ...current,
+                                          [field.fieldId]: next,
+                                        };
+                                      })
+                                    }
+                                  >
+                                    <X size={14} aria-hidden="true" />
+                                  </button>
+                                ) : null}
+                              </div>
+                            );
+                          },
+                        )}
+                      </div>
+                      {missing && (
+                        <span className="ca-photo-error">
+                          Required - add each pose
+                        </span>
+                      )}
+                    </div>
+                  ) : field.kind === "date" ? (
+                    <Input
+                      label={label}
+                      type="date"
+                      value={(answers[field.fieldId] as string) ?? ""}
+                      error={missing ? "Required" : undefined}
+                      onChange={(event) =>
+                        setAnswer(field.fieldId, event.target.value)
+                      }
+                    />
+                  ) : field.kind === "number" ? (
+                    <Input
+                      label={label}
+                      type="number"
+                      inputMode="decimal"
+                      value={(answers[field.fieldId] as string) ?? ""}
+                      error={missing ? "Required" : undefined}
+                      onChange={(event) =>
+                        setAnswer(field.fieldId, event.target.value)
+                      }
+                    />
+                  ) : (
+                    <Input
+                      label={label}
+                      type="text"
+                      value={(answers[field.fieldId] as string) ?? ""}
+                      error={missing ? "Required" : undefined}
+                      onChange={(event) =>
+                        setAnswer(field.fieldId, event.target.value)
+                      }
+                    />
+                  )}
+                  {field.helpText && (
+                    <small className="ct-field-help">{field.helpText}</small>
+                  )}
+                </div>
+              );
+            })}
+            {fields.length === 0 && (
+              <Empty title="This check-in has no questions" />
+            )}
+            <CheckInSummary
+              title="This week in your tracker"
+              rows={summary}
+            />
+            {attempted && !valid && (
+              <p className="ca-photo-error">
+                Please answer the required fields.
+              </p>
+            )}
+            {status && <p className="ca-photo-error">{status}</p>}
+            <Button
+              primary
+              className="ca-checkin-submit"
+              disabled={detailPhase === "submitting"}
+              onClick={() => void submit()}
+            >
+              {detailPhase === "submitting" ? "Sending…" : "Submit check-in"}
+            </Button>
+          </div>
+        </>
+      )}
     </section>
   );
 }
