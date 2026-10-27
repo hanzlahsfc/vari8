@@ -1,10 +1,16 @@
 "use client";
 
 import { ArrowUpRight, Bell, Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Checkbox, SegmentedControl, Tabs } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
 import { Section } from "../vari8/layouts";
+import {
+  createCoachTask,
+  deleteCoachTask,
+  fetchCoachTasks,
+  setCoachTaskCompleted,
+} from "../data/notes";
 import { type CoachState, uid } from "./model";
 import { useCoach } from "./store";
 import {
@@ -39,7 +45,15 @@ function parsePriority(value: string): NonNullable<Item["priority"]> {
 }
 
 export function NotesWorkspace() {
-  const { state, setState, navigate, toast } = useCoach();
+  const {
+    state,
+    setState,
+    navigate,
+    toast,
+    hydrated,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const [search, setSearch] = useState("");
   const [scope, setScope] = useState("all");
   const [status, setStatus] = useState("Open");
@@ -51,6 +65,61 @@ export function NotesWorkspace() {
   const [reminderAt, setReminderAt] = useState("");
   const [todoNotes, setTodoNotes] = useState("");
   const [priority, setPriority] = useState<Item["priority"]>("normal");
+  // W2-A4: the workspace to-do list is remote (coach-tasks routes). The first
+  // read wins over the local seed and over any legacy stored rows. Only the
+  // workspace rows list here: a client-destined to-do belongs to that
+  // client's profile, so the read carries no clientProfileId.
+  const todosLoaded = useRef(false);
+  useEffect(() => {
+    if (!hydrated || !workspaceId || todosLoaded.current) return;
+    todosLoaded.current = true;
+    fetchCoachTasks(workspaceId)
+      .then((todos) => setState((s) => ({ ...s, coachTodos: todos })))
+      .catch(() => {
+        todosLoaded.current = false;
+      });
+  }, [hydrated, workspaceId, setState]);
+  /** Canvas client id -> the backend profile id the routes key on. */
+  const profileIdFor = (canvasId?: string) => {
+    const client = state.clients.find((c) => c.id === canvasId);
+    return client ? clientProfileIdFor(client.name) : Promise.resolve(null);
+  };
+  /** POST a new to-do, then swap the optimistic row for the returned view. */
+  const createTodo = (item: Item) => {
+    setState((s) => change(s, "todo", item, "save"));
+    if (!workspaceId) return;
+    void (async () => {
+      try {
+        const clientProfileId = await profileIdFor(item.clientId);
+        const todo = await createCoachTask(
+          workspaceId,
+          item.text,
+          clientProfileId ?? undefined,
+        );
+        // The optimistic row landed in the workspace list or on the client
+        // record; swap its local id for the server one either way so the
+        // completion and delete calls address the real row.
+        setState((s) => ({
+          ...s,
+          coachTodos: (s.coachTodos ?? []).map((t) =>
+            t.id === item.id ? { ...t, id: todo.id, revision: todo.revision } : t,
+          ),
+          clients: s.clients.map((c) =>
+            c.id !== item.clientId
+              ? c
+              : {
+                  ...c,
+                  coachTasks: c.coachTasks.map((t) =>
+                    t.id === item.id ? { ...t, id: todo.id } : t,
+                  ),
+                },
+          ),
+        }));
+      } catch {
+        toast("To-do could not be saved.");
+      }
+    })();
+  };
   const clients = state.clients.filter((c) => !c.archived);
   const notes: Item[] = [
     ...(state.coachNotes ?? []).map((n) => ({ ...n, owner: "Workspace" })),
@@ -205,6 +274,15 @@ export function NotesWorkspace() {
   };
   const remove = (kind: Editor["kind"], item: Item) => {
     setState((s) => change(s, kind, item, "delete"));
+    if (kind === "todo" && workspaceId) {
+      // The server soft deletes and there is no restore route, so this drop
+      // carries no undo.
+      deleteCoachTask(workspaceId, item.id).catch(() =>
+        toast("To-do could not be removed."),
+      );
+      toast("To-do removed.");
+      return;
+    }
     toast(`${kind === "note" ? "Note" : "To-do"} removed.`, () =>
       setState((s) => change(s, kind, item, "save")),
     );
@@ -298,9 +376,15 @@ export function NotesWorkspace() {
                             label={t.text}
                             className={`cd-notes-todo-checkbox ${t.complete ? "is-complete" : ""}`}
                             checked={Boolean(t.complete)}
-                            onCheckedChange={() =>
-                              setState((s) => change(s, "todo", t, "toggle"))
-                            }
+                            onCheckedChange={() => {
+                              setState((s) => change(s, "todo", t, "toggle"));
+                              if (!workspaceId) return;
+                              setCoachTaskCompleted(
+                                workspaceId,
+                                t.id,
+                                !t.complete,
+                              ).catch(() => toast("To-do could not be saved."));
+                            }}
                           />
                           {t.notes && (
                             <p className="cd-notes-text cd-todo-notes">
@@ -444,7 +528,11 @@ export function NotesWorkspace() {
                 item.clientId =
                   destination === "workspace" ? undefined : destination;
               }
-              setState((s) => change(s, editor.kind, item, "save"));
+              // ponytail: coach-tasks exposes no title edit, so editing an
+              // existing to-do stays a local paint until the next read. Add a
+              // title PATCH once the route carries one.
+              if (editor.kind === "todo" && !editor.item) createTodo(item);
+              else setState((s) => change(s, editor.kind, item, "save"));
               setEditor(null);
               toast(`${editor.kind === "note" ? "Note" : "To-do"} saved.`);
             }}
