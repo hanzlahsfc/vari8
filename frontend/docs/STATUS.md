@@ -1,5 +1,27 @@
 # Frontend status
 
+## 2026-10-27 — client app + coach Plans/Nutrition redesign + meal-plan editor — verified locally
+
+- Client app (`/client`): a polished phone-width client across Home,
+  Messages, check-ins, Tracker, Plans, Training, Session, Logbook, Meal plan,
+  Supplements, Activity, Overview and Timeline — privacy-filtered against the
+  client-facing view, persisted local state, responsive desktop/phone.
+- Coach Plans → Nutrition: a two-card layout (Active plan with an aligned
+  Day-type macro table + upcoming temporary plans, collapsible Previous
+  plans), temporary plans keep their "Temporary" chip and move to Previous
+  once their end date passes (`splitTemporaryNutrition`), and a "Start from"
+  Blank / Copy-of-current radio choice in the temporary editor.
+- Meal-plan editor: Motion `Reorder` meal dragging, food-search single focus
+  ring, alternative portions that scale with the main quantity, a compact
+  time picker (Hour/Minute fields, common-time chips, "No specific time"
+  → "Any time"), and a "Use a schedule" toggle whose off state is the
+  client-chooses flexible mode (no more ambiguous multi-option manual).
+- Demo rev 11: carb-cycling prep variants + temporary refeed; export
+  regenerated (byte-identical, `npm run export:demo`).
+- `npm run check` in `frontend/`: typecheck, lint `--error-on-warnings`,
+  tests and build — all pass.
+
+
 ## 2026-10-26 — coach Tracker tab + template field formatting — verified locally
 
 - Coach Tracker tab (`/coach` → athlete → Tracker): template-driven columns

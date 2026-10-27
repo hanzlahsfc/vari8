@@ -48,6 +48,7 @@ import {
   ClientHabitsEditor,
   ClientPlansSummary,
 } from "./setup-ui";
+import { TemporaryPlanEditor } from "./temporary-editor";
 import { TrainingEditor, TrainingPrescription } from "./training/editor";
 import {
   emptyClientPlans,
@@ -172,6 +173,21 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
         ? { section: "check-ins", review: route.review }
         : { section: "clients", client: client.id, tab: "Plans" },
     );
+  // Full-page temporary plan editor: `temporary:new`,
+  // `temporary:new@YYYY-MM-DD` (prefilled start) or `temporary:<id>`.
+  if (route.plan?.startsWith("temporary:")) {
+    const spec = route.plan.slice("temporary:".length);
+    const at = spec.indexOf("@");
+    const id = at === -1 ? spec : spec.slice(0, at);
+    const start = at === -1 ? undefined : spec.slice(at + 1);
+    return (
+      <TemporaryPlanEditor
+        client={client}
+        existingId={id === "new" ? undefined : id}
+        initialStartDate={start}
+      />
+    );
+  }
   if (!setup)
     return (
       <>

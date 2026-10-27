@@ -340,7 +340,15 @@ const open = (
   navigate: ReturnType<typeof useCoach>["navigate"],
   clientId: string,
   route: { tab?: string; plan?: string },
-) => navigate({ section: "clients", client: clientId, ...route });
+) =>
+  navigate({
+    section: "clients",
+    client: clientId,
+    tab: route.tab,
+    ...(route.tab === "Plans" && route.plan
+      ? { module: route.plan }
+      : { plan: route.plan }),
+  });
 
 // ─── Accuracy (targets vs tracked actuals) ──────────────────────────
 
@@ -861,7 +869,7 @@ function NutritionCard({
       )}
       {temp && (
         <div className="ap-nt-temp">
-          <span className="ap-nt-temp-kind">{kindLabel(temp.kind)}</span>
+          <span className="ap-nt-temp-kind">{temp.label}</span>
           <span className="ap-nt-temp-text">
             {temp.label} ·{" "}
             {formatDate(temp.startDate, { day: "numeric", month: "short" })} –{" "}
@@ -881,13 +889,6 @@ function NutritionCard({
     </Surface>
   );
 }
-
-const kindLabel = (kind: "refeed" | "diet-break" | "custom") =>
-  kind === "refeed"
-    ? "Refeed"
-    : kind === "diet-break"
-      ? "Diet break"
-      : "Custom";
 
 type MiniBar = {
   label: string;
@@ -1381,7 +1382,7 @@ function PhysiqueCard({
   client: CoachClient;
   state: CoachState;
   onOpenReview: (submissionId: string) => void;
-  onOpenTemplate: () => void;
+  onOpenTemplate?: () => void;
 }) {
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id && s.photos?.length)
@@ -1580,63 +1581,77 @@ function TrainingCard({
 
 // ─── Overview ───────────────────────────────────────────────────────
 
-export function AthleteOverview({ client }: { client: CoachClient }) {
+export function AthleteOverview({
+  client,
+  viewer = "coach",
+  onOpen,
+}: {
+  client: CoachClient;
+  viewer?: "coach" | "client";
+  onOpen?: (tab: string, plan?: string) => void;
+}) {
   const { state, navigate } = useCoach();
   const today = localToday();
+  const go = (tab: string, plan?: string) =>
+    onOpen ? onOpen(tab, plan) : open(navigate, client.id, { tab, plan });
   const openReview = (submissionId: string) =>
-    navigate({ section: "check-ins", review: submissionId, client: client.id });
+    onOpen
+      ? onOpen("Check-ins")
+      : navigate({
+          section: "check-ins",
+          review: submissionId,
+          client: client.id,
+        });
   return (
     <div className="ap-grid">
       <PhaseProgressCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <CheckinCard
         client={client}
         state={state}
         today={today}
-        onOpenTab={() => open(navigate, client.id, { tab: "Check-ins" })}
+        onOpenTab={() => go("Check-ins")}
         onOpenReview={openReview}
       />
-      <PinnedNotesCard
-        client={client}
-        onOpen={() => open(navigate, client.id, { tab: "Notes & tasks" })}
-      />
+      {viewer === "coach" && (
+        <PinnedNotesCard client={client} onOpen={() => go("Notes & tasks")} />
+      )}
       <NutritionCard
         client={client}
         today={today}
-        onOpen={() =>
-          open(navigate, client.id, { tab: "Plans", plan: "nutrition" })
-        }
+        onOpen={() => go("Plans", "nutrition")}
       />
       <CalorieCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <BodyweightCard
         client={client}
         today={today}
-        onOpen={() => open(navigate, client.id, { tab: "Timeline" })}
+        onOpen={() => go("Timeline")}
       />
       <ExpenditureCard
         client={client}
         today={today}
-        onOpen={() =>
-          open(navigate, client.id, { tab: "Plans", plan: "activity-targets" })
-        }
+        onOpen={() => go("Plans", "activity-targets")}
       />
       <PhysiqueCard
         client={client}
         state={state}
         onOpenReview={openReview}
-        onOpenTemplate={() =>
-          client.assignment &&
-          navigate({
-            section: "templates",
-            editor: client.assignment.templateId,
-          })
+        onOpenTemplate={
+          viewer === "coach"
+            ? () =>
+                client.assignment &&
+                navigate({
+                  section: "templates",
+                  editor: client.assignment.templateId,
+                })
+            : undefined
         }
       />
       <TrainingCard

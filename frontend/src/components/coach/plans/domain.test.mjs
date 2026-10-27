@@ -247,6 +247,46 @@ test("activation validates week bounds and resolves all authored week overrides"
   );
 });
 
+test("a flexible schedule prescribes no option; new plans default to it", () => {
+  const optionIds = ["day", "rest"];
+  assert.equal(
+    scheduledOption({ mode: "flexible" }, optionIds, "2026-03-29"),
+    undefined,
+  );
+  // New meal + IIFYM plans start with no prescribed option (client chooses).
+  assert.equal(
+    emptyMealPlan("client-a", "2026-03-29").schedule.mode,
+    "flexible",
+  );
+  assert.equal(
+    emptyIifymPlan("client-a", "2026-03-29").schedule.mode,
+    "flexible",
+  );
+  // Weekly + manual schedules still resolve their option.
+  const weekly = {
+    mode: "weekly",
+    days: {
+      1: "day",
+      2: "day",
+      3: "day",
+      4: "day",
+      5: "day",
+      6: "rest",
+      7: "rest",
+    },
+  };
+  assert.equal(scheduledOption(weekly, optionIds, "2026-03-30"), "day"); // Monday
+  assert.equal(scheduledOption(weekly, optionIds, "2026-03-29"), "rest"); // Sunday
+  assert.equal(
+    scheduledOption(
+      { mode: "manual", selectedVariantId: "rest" },
+      optionIds,
+      "2026-03-29",
+    ),
+    "rest",
+  );
+});
+
 test("unknown schedule references are rejected and cycle scheduling survives DST boundaries", () => {
   const optionIds = ["day", "rest"];
   assert.equal(
