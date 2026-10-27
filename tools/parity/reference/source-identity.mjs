@@ -154,7 +154,10 @@ export function assertCleanMaterialCheckout(root) {
 export function assertPostCaptureDelta(root, compatibility) {
   const expected = [...(compatibility?.postCapturePaths ?? [])].sort();
   const actual = changedPathsSince(root, compatibility?.capture?.sha);
-  if (!expected.length || JSON.stringify(actual) !== JSON.stringify(expected))
+  // Identity model: a bare capture commit (HEAD == capture.sha) has a valid
+  // zero-delta state by identity — both lists empty. A descendant must record
+  // exactly the paths it adds. Mismatch (forged or missing paths) refuses.
+  if (JSON.stringify(actual) !== JSON.stringify(expected))
     throw new Error(
       `post-capture delta differs; expected explicit receipt paths, got ${JSON.stringify(actual)}`,
     );
