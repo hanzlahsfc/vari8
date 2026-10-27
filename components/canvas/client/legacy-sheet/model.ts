@@ -1534,5 +1534,5 @@ export function rowHeightPx(tab: SheetTab, row: number): number {
   if (g?.rowPx[row] != null) return g.rowPx[row];
   const pt = tab.rowHeights[row];
   if (pt == null) return 21;
-  return Math.max(6, Math.round(pt * 4 / 3));
+  return Math.max(6, Math.round((pt * 4) / 3));
 }
