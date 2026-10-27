@@ -27,6 +27,8 @@ head-pinned merge, post-merge parent/tree/audit checks, baseline boundary.
 ## #203 preparation — exact commands (already executed; transcript `p452/prep.log`)
 
 ```bash
+set -euo pipefail
+
 # variables — all defined; secrets from env only (POSTGRES_PASSWORD, BETTER_AUTH_SECRET)
 REPO=hanzlahsfc/vari8
 HEADSHA=90c16bee63e2609ebc4f09e91459332390562464   # pinned #203 head
@@ -81,6 +83,7 @@ git -C "$WT" merge -q --no-ff --no-edit -m "test merge transition p203" "$BASETI
 # both inputs must be ancestors of the merge result
 git -C "$WT" merge-base --is-ancestor "$HEADSHA" HEAD || exit 4
 git -C "$WT" merge-base --is-ancestor "$BASETIP" HEAD || exit 4
+TMERGE=$(git -C "$WT" rev-parse HEAD)            # the test-merge commit itself
 MERGETREE=$(git -C "$WT" rev-parse 'HEAD^{tree}')
 git -C "$WT" diff --stat "$BASETIP" HEAD -- app lib db | head -20   # #203 changes present
 
@@ -113,7 +116,8 @@ $NODE ./node_modules/.bin/next build
 # reviewed tooling overlay — pinned bundle grafted as a temp task-owned commit.
 # The #203 merge tree lacks tools/parity/reference; the overlay supplies gate tools only.
 # Verify: git diff HEAD~1 HEAD -- ':!tools/parity' must be EMPTY (no app/product/auth change).
-git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH"     # must equal $BUNDLE_TREE
+[[ "$(git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH")" == "$BUNDLE_TREE" ]] \
+  || { echo "bundle tree mismatch at $BUNDLE_COMMIT:$BUNDLE_PATH — unauthorized tooling"; exit 4; }
 mkdir -p "$WT/tools"
 task_owned "$SCRATCH/overlay/tools" || { echo "overlay target not task-owned — refusing"; exit 4; }
 rm -rf "$SCRATCH/overlay/tools"
@@ -145,11 +149,11 @@ git rev-parse "HEAD:$BUNDLE_PATH/baseline"
 # these, never shell state from a previous run) + integrity sidecar
 PREP_FILE="$STATE/p203-prep.json"
 jq -n --arg head "$HEADSHA" --arg base "$BASE" --arg baseTip "$BASETIP" \
-  --arg mergeTree "$MERGETREE" --arg runId "$RUN_ID" \
+  --arg testMergeCommit "$TMERGE" --arg mergeTree "$MERGETREE" --arg runId "$RUN_ID" \
   --arg bundleCommit "$BUNDLE_COMMIT" --arg bundlePath "$BUNDLE_PATH" --arg bundleTree "$BUNDLE_TREE" \
   --argjson canonical "$CANON_N" --argjson strict "$STRICT_N" \
   '{schema:"transition-prep-v2", pr:203, head:$head, base:$base, baseTip:$baseTip,
-    mergeTree:$mergeTree,
+    testMergeCommit:$testMergeCommit, mergeTree:$mergeTree,
     toolBundle:{commit:$bundleCommit, path:$bundlePath, tree:$bundleTree},
     gates:{runId:$runId,
            canonical:{expected:70, observed:$canonical},
@@ -167,6 +171,8 @@ invocation is a NEW lock-held block that reacquires the lock, revalidates refs
 and repeats required preparation/gates; stale preparation is never permission.
 
 ```bash
+set -euo pipefail
+
 # task-owned scratch — REQUIRED; must carry the sentinel preparation created.
 # A missing/foreign/symlinked destination refuses before anything is touched.
 SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch used by preparation}"
@@ -199,13 +205,14 @@ PREP_FILE="$STATE/p203-prep.json"
 [[ "$(shasum -a 256 "$PREP_FILE" | cut -d' ' -f1)" == "$(cut -d' ' -f1 "$PREP_FILE.sha256")" ]] \
   || { echo "receipt digest mismatch — tampered; re-run preparation"; exit 4; }
 PREP="$(jq -c '
-  if (keys | sort) != ["base","baseTip","gates","head","mergeTree","pr","schema","toolBundle"]
+  if (keys | sort) != ["base","baseTip","gates","head","mergeTree","pr","schema","testMergeCommit","toolBundle"]
     then error("receipt fields") else . end
   | if .schema != "transition-prep-v2" or .pr != 203 or .base != "Vari8-Beta"
     then error("receipt identity") else . end
   | if (.head | test("^[0-9a-f]{40}$") | not)
        or (.baseTip | test("^[0-9a-f]{40}$") | not)
        or (.mergeTree | test("^[0-9a-f]{40}$") | not)
+       or (.testMergeCommit | test("^[0-9a-f]{40}$") | not)
     then error("receipt shas") else . end
   | if (.toolBundle.commit | test("^[0-9a-f]{40}$") | not)
        or (.toolBundle.tree | test("^[0-9a-f]{40}$") | not)
@@ -220,7 +227,7 @@ HEADSHA=$(jq -r .head <<<"$PREP"); BASE=$(jq -r .base <<<"$PREP")
 BASETIP=$(jq -r .baseTip <<<"$PREP"); MERGETREE=$(jq -r .mergeTree <<<"$PREP")
 BUNDLE_COMMIT=$(jq -r .toolBundle.commit <<<"$PREP")
 BUNDLE_PATH=$(jq -r .toolBundle.path <<<"$PREP"); BUNDLE_TREE=$(jq -r .toolBundle.tree <<<"$PREP")
-RUN_ID=$(jq -r .gates.runId <<<"$PREP")
+RUN_ID=$(jq -r .gates.runId <<<"$PREP"); TMC=$(jq -r .testMergeCommit <<<"$PREP")
 
 # live revalidation under the fresh lock — receipt identities must still hold
 J=$(gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft)
@@ -228,6 +235,28 @@ J=$(gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft)
 [[ "$(jq -r .baseRefName <<<"$J")" == "$BASE" ]] || { echo "base retargeted — re-review"; exit 4; }
 [[ "$(jq -r .state <<<"$J")" == "OPEN" ]] || { echo "PR not OPEN"; exit 4; }
 [[ "$(git rev-parse "origin/$BASE")" == "$BASETIP" ]] || { echo "base moved — stale receipt"; exit 4; }
+
+# resolve the recorded test-merge commit: it must exist, its tree must equal
+# the recorded mergeTree, and the approved head+base must both be its ancestors
+git cat-file -e "$TMC" \
+  || { echo "recorded test-merge commit $TMC missing — re-run preparation"; exit 4; }
+[[ "$(git rev-parse "$TMC^{tree}")" == "$MERGETREE" ]] \
+  || { echo "recorded test-merge commit/tree mismatch"; exit 4; }
+git merge-base --is-ancestor "$HEADSHA" "$TMC" \
+  || { echo "approved head is not an ancestor of the recorded test merge"; exit 4; }
+git merge-base --is-ancestor "$BASETIP" "$TMC" \
+  || { echo "approved base is not an ancestor of the recorded test merge"; exit 4; }
+
+# recorded tool bundle must equal the authorized manifest identity AND resolve
+# to the recorded tree at the recorded commit/path — a forged tree refuses here,
+# before any fresh gate or merge
+BUNDLE_MANIFEST=icm/05-build/tools/transition/p203-p207.json
+[[ "$BUNDLE_COMMIT" == "$(jq -r '.gates.combined.bundle.commit' "$BUNDLE_MANIFEST")" \
+   && "$BUNDLE_PATH" == "$(jq -r '.gates.combined.bundle.path' "$BUNDLE_MANIFEST")" \
+   && "$BUNDLE_TREE" == "$(jq -r '.gates.combined.bundle.treeSha' "$BUNDLE_MANIFEST")" ]] \
+  || { echo "recorded bundle identity != authorized manifest"; exit 4; }
+[[ "$(git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH")" == "$BUNDLE_TREE" ]] \
+  || { echo "bundle tree does not resolve at $BUNDLE_COMMIT:$BUNDLE_PATH"; exit 4; }
 
 # fresh locked preparation repeats — a persisted receipt is never permission.
 # disposable DB (refuse existing, task-owned)
@@ -254,7 +283,6 @@ npm run test
 $NODE ./node_modules/.bin/next build
 
 # reviewed tooling overlay — same pinned graft as preparation
-git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH"     # must equal $BUNDLE_TREE
 mkdir -p "$MWT/tools" "$SCRATCH/overlay-merge"
 task_owned "$SCRATCH/overlay-merge/tools" || { echo "overlay target not task-owned — refusing"; exit 4; }
 rm -rf "$SCRATCH/overlay-merge/tools"
@@ -294,6 +322,8 @@ git rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"   # must equal the BEFORE has
 2. **#206 — concrete procedure** (fresh lock, no force-push):
 
 ```bash
+set -euo pipefail
+
 SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch}"
 SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
 [[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch"; exit 4; }
@@ -320,6 +350,8 @@ echo "changed head $H206 — fresh review/revalidation REQUIRED before proceedin
 3. **#207 — concrete procedure** (fresh lock, no force-push):
 
 ```bash
+set -euo pipefail
+
 SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch}"
 SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
 [[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch"; exit 4; }

@@ -53,6 +53,7 @@ const SHAS = {
   tree: "6fd7353e4734632c49c6d9e28427dd2c5c8a1556",
   bundle: "f457065f61753245b6853ac3ddb3236deb00c8bd",
   merge: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  tmc: "aa90aa90aa90aa90aa90aa90aa90aa90aa90aa90", // the persisted test-merge commit
   // derived heads — what `gh pr view` reports AFTER the forward-update push
   d206: "d206".repeat(10),
   d207: "d207".repeat(10),
@@ -87,22 +88,33 @@ if [[ "$1" == pr && "$2" == ready ]]; then exit 0; fi
 if [[ "$1" == pr && "$2" == edit ]]; then echo "gh pr edit $*" >> "$FIX/state/called"; exit 0; fi
 exit 0`,
   );
-  // git stub — worktree add lays down a fixture bundle layout inside the
-  // (task-owned) scratch worktree; rev-parse answers from GIT_* env
+  // git stub — real object semantics: rev-parse resolves trees from the
+  // GIT_TREES map (unknown commits fail), cat-file -e checks GIT_OBJECTS,
+  // merge-base --is-ancestor honors the GIT_ANCESTORS pair set; worktree add
+  // lays down a fixture bundle layout inside the task-owned scratch
   sh(
     "git",
     `echo "git $*" >> "$FIX/state/called"
+[[ -n "\${FAIL_GIT:-}" && "$*" == *"$FAIL_GIT"* ]] && exit 1
+last=""; for a in "$@"; do last="$a"; done
 case "$*" in
-  *rev-parse*'HEAD^{tree}'*) echo "$GIT_TREE";;
-  *rev-parse*'HEAD^1'*) echo "$GIT_BASETIP";;
-  *rev-parse*'HEAD^2'*) echo "$GH_HEAD";;
-  *rev-parse*'^1'*) echo "$GIT_P1";;
-  *rev-parse*'^2'*) echo "$GIT_P2";;
-  *rev-parse*'^{tree}'*) echo "$GIT_TREE";;
-  *rev-parse*"origin"*) echo "$GIT_BASETIP";;
-  *rev-parse*HEAD) echo "$GH_HEAD";;
-  *worktree*add*) mkdir -p "$3/tools/parity/reference" "$3/tools/parity/baseline"
-    : > "$3/tools/parity/run.mjs"; exit 0;;
+  *rev-parse*^{tree}*)
+    sha="\${last%%^*}"
+    for kv in \$GIT_TREES; do [[ "\${kv%%:*}" == "\$sha" ]] && { echo "\${kv##*:}"; exit 0; }; done
+    exit 1;;
+  *rev-parse*^1*) echo "\$GIT_P1";;
+  *rev-parse*^2*) echo "\$GIT_P2";;
+  *rev-parse*origin*) echo "\$GIT_BASETIP";;
+  *rev-parse*':'*) echo "\$GIT_BUNDLE_TREE";;
+  *rev-parse*HEAD*) echo "\$GIT_TMC";;
+  *cat-file*-e*)
+    for s in \$GIT_OBJECTS; do [[ "\$s" == "\$last" ]] && exit 0; done; exit 1;;
+  *merge-base*--is-ancestor*)
+    anc=""; prev=""; for a in "$@"; do anc="$prev"; prev="$a"; done
+    for kv in \$GIT_ANCESTORS; do [[ "\$kv" == "\$anc:\$prev" ]] && exit 0; done
+    exit 1;;
+  *worktree*add*) mkdir -p "\$3/tools/parity/reference" "\$3/tools/parity/baseline"
+    : > "\$3/tools/parity/run.mjs"; exit 0;;
   *worktree*) exit 0;;
   *) exit 0;; esac`,
   );
@@ -111,6 +123,7 @@ case "$*" in
   sh(
     "npx",
     `echo "npx $*" >> "$FIX/state/called"
+[[ -n "\${FAIL_NPX:-}" && "$*" == *"$FAIL_NPX"* && -n "\${PARITY_OUT_DIR:-}" ]] && exit 1
 if [[ "$*" == *run.mjs* && -n "\${PARITY_OUT_DIR:-}" ]]; then
   mkdir -p "$PARITY_OUT_DIR"
   printf '{"strict":false,"total":70,"passed":%s,"failed":0}\\n' "\${GATE_CANON:-70}" > "$PARITY_OUT_DIR/proposed-canonical.json"
@@ -122,13 +135,20 @@ exit 0`,
   sh(
     "tar",
     `echo "tar $*" >> "$FIX/state/called"
+[[ -n "\${FAIL_TAR:-}" && "$*" == *"$FAIL_TAR"* ]] && exit 1
 c=""; prev=""; for a in "$@"; do [[ "$prev" == -C ]] && c="$a"; prev="$a"; done
 [[ -n "$c" ]] && mkdir -p "$c/tools/parity/reference" "$c/tools/parity/baseline" && : > "$c/tools/parity/run.mjs"
 exit 0`,
   );
   sh("flock", `echo "flock $*" >> "$FIX/state/called"; exit 0`);
-  for (const b of ["psql", "createdb", "dropdb", "npm", "openssl"])
+  for (const b of ["psql", "createdb", "dropdb", "openssl"])
     sh(b, `echo "${b} $*" >> "$FIX/state/called"; exit 0`);
+  sh(
+    "npm",
+    `echo "npm $*" >> "$FIX/state/called"
+[[ -n "\${FAIL_NPM:-}" && "$*" == *"$FAIL_NPM"* ]] && exit 1
+exit 0`,
+  );
   return {
     dir,
     bin,
@@ -156,7 +176,11 @@ function blockEnv(
     GH_DRAFT: "true",
     GH_MERGE: SHAS.merge,
     GIT_BASETIP: SHAS.base,
-    GIT_TREE: SHAS.tree,
+    GIT_TMC: SHAS.tmc,
+    GIT_BUNDLE_TREE: SHAS.bundle,
+    GIT_TREES: `HEAD:${SHAS.tree} ${SHAS.tmc}:${SHAS.tree} ${SHAS.merge}:${SHAS.tree}`,
+    GIT_OBJECTS: SHAS.tmc,
+    GIT_ANCESTORS: `${SHAS.h203}:HEAD ${SHAS.base}:HEAD ${SHAS.h203}:${SHAS.tmc} ${SHAS.base}:${SHAS.tmc}`,
     GIT_P1: SHAS.base,
     GIT_P2: SHAS.h203,
     BUNDLE_PATH: "tools/parity",
@@ -166,8 +190,11 @@ function blockEnv(
   };
 }
 
+// extracted blocks execute VERBATIM — every fence carries its own
+// `set -euo pipefail`; the fixture must not inject shell behavior the
+// published text does not have
 function runSrc(src: string, env: Record<string, string>) {
-  return spawnSync("bash", ["-c", `set -euo pipefail\n${src}`], {
+  return spawnSync("bash", ["-c", src], {
     env: { ...process.env, ...env },
     encoding: "utf8",
   });
@@ -274,6 +301,7 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       head: SHAS.h203,
       base: "Vari8-Beta",
       baseTip: SHAS.base,
+      testMergeCommit: SHAS.tmc,
       mergeTree: SHAS.tree,
       toolBundle: {
         commit: SHAS.h207,
@@ -386,9 +414,10 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     expect(called.indexOf("flock -x")).toBeLessThan(
       called.indexOf("gh pr merge 203"),
     );
-    // fresh gates re-ran before the merge: second worktree + fresh capture
+    // fresh gates re-ran before the merge: own worktree + ancestor checks for
+    // both the recorded-commit binding and the fresh test merge
     expect(called.match(/worktree add/g)).toHaveLength(1);
-    expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(2);
+    expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(4);
   });
 
   const MERGE_NEGATIVES: Array<{
@@ -396,6 +425,7 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     act?: (f: ReturnType<typeof fixtures>) => void;
     env?: Record<string, string>;
     want?: RegExp;
+    beforeGates?: boolean;
   }> = [
     {
       name: "missing receipt file",
@@ -439,14 +469,14 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       want: /base moved/,
     },
     {
-      name: "forged mergeTree — fresh test-merge disproves it before merge",
+      name: "forged mergeTree — recorded commit/tree binding disproves it",
       act: (f) =>
         forge(
           f,
           (j) =>
             void ((j as Record<string, string>).mergeTree = "f".repeat(40)),
         ),
-      want: /test-merge tree != receipt/,
+      want: /commit\/tree mismatch/,
     },
     {
       name: "extra field refuses",
@@ -470,6 +500,49 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       want: /invalid prep receipt/,
     },
     {
+      name: "recorded test-merge commit missing from the object store",
+      act: (f) =>
+        forge(f, (j) => {
+          (j as Record<string, string>).testMergeCommit = "b".repeat(40);
+        }),
+      want: /test-merge commit.*missing/,
+    },
+    {
+      name: "recorded commit resolves to a different tree (wrong commit/tree pair)",
+      act: (f) =>
+        forge(f, (j) => {
+          (j as Record<string, string>).testMergeCommit = "c".repeat(40);
+        }),
+      env: {
+        GIT_OBJECTS: `${SHAS.tmc} ${"c".repeat(40)}`,
+        GIT_ANCESTORS: `${SHAS.h203}:HEAD ${SHAS.base}:HEAD ${SHAS.h203}:${"c".repeat(40)} ${SHAS.base}:${"c".repeat(40)}`,
+        GIT_TREES: `HEAD:${SHAS.tree} ${SHAS.tmc}:${SHAS.tree} ${SHAS.merge}:${SHAS.tree} ${"c".repeat(40)}:${"f".repeat(40)}`,
+      },
+      want: /commit\/tree mismatch/,
+    },
+    {
+      name: "unrelated commit — approved head/base are not its ancestors",
+      act: (f) =>
+        forge(f, (j) => {
+          (j as Record<string, string>).testMergeCommit = "d".repeat(40);
+        }),
+      env: {
+        GIT_OBJECTS: `${SHAS.tmc} ${"d".repeat(40)}`,
+        // d… exists and its tree matches, but no ancestor pairs are recorded
+        GIT_TREES: `HEAD:${SHAS.tree} ${SHAS.tmc}:${SHAS.tree} ${SHAS.merge}:${SHAS.tree} ${"d".repeat(40)}:${SHAS.tree}`,
+      },
+      want: /not an ancestor/,
+    },
+    {
+      name: "forged bundle tree (recomputed digest) — refuses before gates or merge",
+      act: (f) =>
+        forge(f, (j) => {
+          (j.toolBundle as { tree: string }).tree = "d".repeat(40);
+        }),
+      want: /authorized manifest/,
+      beforeGates: true,
+    },
+    {
       name: "moved base — live revalidation refuses the untampered receipt",
       env: { GIT_BASETIP: "9".repeat(40) },
       want: /base moved/,
@@ -486,6 +559,65 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       expect(r.status).not.toBe(0);
       if (c.want) expect(r.stderr + r.stdout).toMatch(c.want);
       expect(called).not.toContain("gh pr merge");
+      if (c.beforeGates) expect(called).not.toContain("npm ci");
+    });
+  }
+
+  // the published fences carry set -euo pipefail — the fixture injects nothing;
+  // failures in fast gates, the combined capture and piped commands must die
+  // before receipt issuance (prep) or the merge command (merge block)
+  const PROPAGATION: Array<{
+    name: string;
+    env: Record<string, string>;
+    target: "prep" | "merge";
+  }> = [
+    {
+      name: "fast gate (npm run test) — prep",
+      env: { FAIL_NPM: "run test" },
+      target: "prep",
+    },
+    {
+      name: "combined capture (npx run.mjs) — prep",
+      env: { FAIL_NPX: "run.mjs" },
+      target: "prep",
+    },
+    {
+      name: "piped command (git archive | tar) — prep",
+      env: { FAIL_TAR: "-x" },
+      target: "prep",
+    },
+    {
+      name: "fast gate (npm run test) — merge",
+      env: { FAIL_NPM: "run test" },
+      target: "merge",
+    },
+    {
+      name: "combined capture (npx run.mjs) — merge",
+      env: { FAIL_NPX: "run.mjs" },
+      target: "merge",
+    },
+    {
+      name: "piped command (git archive | tar) — merge",
+      env: { FAIL_TAR: "-x" },
+      target: "merge",
+    },
+  ];
+
+  for (const p of PROPAGATION) {
+    it(`published set -euo pipefail propagates: ${p.name}`, () => {
+      const f = fixtures();
+      if (p.target === "prep") {
+        const { r, called } = runPrep(f, p.env);
+        expect(r.status).not.toBe(0);
+        expect(existsSync(receiptPath(f))).toBe(false); // died before issuance
+        expect(called).not.toContain("gh pr merge");
+      } else {
+        expect(runPrep(f).r.status).toBe(0);
+        clearCalled(f);
+        const { r, called } = runBlock(f, "REACQUIRE", p.env);
+        expect(r.status).not.toBe(0);
+        expect(called).not.toContain("gh pr merge");
+      }
     });
   }
 

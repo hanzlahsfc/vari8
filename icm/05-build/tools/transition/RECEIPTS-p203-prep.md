@@ -150,6 +150,33 @@ state under . Fresh locked validation/gates still required.
   unindexed extras, no missing entries — the applicable package verifier,
   not just shasum.
 
+## P474 — published shell semantics + full receipt identity binding
+
+- `set -euo pipefail` now lives INSIDE every independently executable fence
+  (prep, merge, #206, #207). The fixture prepends nothing — extracted blocks
+  run verbatim. Six propagation negatives prove the published semantics: fast
+  gate (`npm run test`), combined capture (`npx run.mjs`) and piped command
+  (`git archive | tar`) failures die before receipt issuance (prep) and
+  before `gh pr merge` (merge block).
+- Receipt now records `testMergeCommit` (the actual local test-merge commit)
+  alongside `mergeTree`. The merge block resolves it (`cat-file -e`), asserts
+  `rev-parse TMC^{tree} == mergeTree`, and proves the approved head AND base
+  are ancestors — all after live revalidation, before fresh gates. Negatives:
+  missing object, wrong commit/tree pair, unrelated commit — all refuse before
+  `gh pr merge`; forged mergeTree is disproved by the commit/tree binding.
+- Tool bundle bound for real: receipt `toolBundle` must equal the authorized
+  `p203-p207.json` manifest identity (commit/path/treeSha) AND
+  `git rev-parse "${commit}:${path}"` must resolve to the recorded tree.
+  A forged tree with a recomputed digest refuses before gate execution or
+  merge. The same resolution assertion now guards the prep-side overlay graft.
+- `runSrc` executes extracted text with no injected `set` line; git stub gained
+  real object semantics (GIT_TREES map, GIT_OBJECTS, GIT_ANCESTORS pairs) —
+  refusal coverage is semantic, not "a command ran".
+- Incidental race fixed: `integrate-transition.sh` writes `STATE_DIR` at
+  repo-root `_transition/`; its test removed residue only before each run, so
+  `system-index` occasionally scanned while the dir existed. The test now
+  removes it immediately after every run (post-spawnSync); full suite green.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.

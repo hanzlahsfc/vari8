@@ -203,6 +203,9 @@ function run(
     },
     encoding: "utf8",
   });
+  // remove the executor's incidental state dir immediately — the repo index
+  // scan (system-index.test.ts) races it under parallel workers
+  rmSync(path.join(ROOT, "_transition"), { recursive: true, force: true });
   const called = existsSync(path.join(f.state, "called"))
     ? readFileSync(path.join(f.state, "called"), "utf8")
     : "";
