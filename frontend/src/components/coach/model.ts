@@ -727,6 +727,10 @@ export type Media = {
   type: string;
   size: number;
   demo?: "voice" | "video";
+  /** W2-T8 local demo: this preview has no media-object store; the twin
+   * send reads the same optional field the canvas upload stamps via
+   * /api/v1/media. */
+  mediaObjectId?: string;
 };
 export type Message = {
   id: string;

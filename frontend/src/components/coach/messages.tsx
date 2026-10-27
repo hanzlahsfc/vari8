@@ -40,7 +40,7 @@ const SNIPPETS = [
   "Let’s keep things simple: consistency first, then we’ll build from here.",
 ];
 export function MessagesWorkspace() {
-  const { state, setState, route, navigate, attach, toast } = useCoach();
+  const { state, setState, route, navigate, attach, media, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [threadSearch, setThreadSearch] = useState("");
@@ -138,27 +138,62 @@ export function MessagesWorkspace() {
   const send = () => {
     if (!client || (!draft.text.trim() && !draft.attachments.length && !link))
       return;
-    const m: Message = {
-      id: uid("message"),
-      clientId: client.id,
-      text: draft.text.trim(),
-      from: "coach",
-      date: new Date().toISOString(),
-      read: true,
-      priority: false,
-      attachments: draft.attachments,
-      link,
-      local: true,
-    };
+    const text = draft.text.trim();
+    const attachments = draft.attachments;
+    const sentLink = link;
+    const canvasId = client.id;
+    // W2-T8 local demo: this preview has no media_object store, so the
+    // blob attach is its upload. A draft item missing its stamp, its demo
+    // media and its session bytes (a draft restored after reload) is the
+    // in-flight case, and the send waits instead of silently dropping the
+    // file.
+    if (attachments.some((a) => !a.mediaObjectId && !a.demo && !media[a.id])) {
+      toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    const appendLocal = () =>
+      setState((s) => ({
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("message"),
+            clientId: canvasId,
+            text,
+            from: "coach",
+            date: new Date().toISOString(),
+            read: true,
+            priority: false,
+            attachments,
+            link: sentLink,
+            local: true,
+          },
+        ],
+      }));
     setState((s) => ({
       ...s,
-      messages: [...s.messages, m],
-      drafts: { ...s.drafts, [client.id]: { text: "", attachments: [] } },
+      drafts: { ...s.drafts, [canvasId]: { text: "", attachments: [] } },
     }));
     setLink(undefined);
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
+    // W2-T8 local demo: mediaObjectIds is computed exactly like the canvas
+    // send computes it for the wire call. This preview has no send route,
+    // so both branches below land the local row.
+    const mediaObjectIds = attachments
+      .map((a) => a.mediaObjectId)
+      .filter((id): id is string => Boolean(id));
+    if (
+      mediaObjectIds.length !== attachments.length ||
+      (!text && mediaObjectIds.length === 0)
+    ) {
+      appendLocal();
+      return;
+    }
+    // Local demo: the canvas send posts the stamped ids here and lands the
+    // returned wire row; this preview lands the same local row instead.
+    appendLocal();
   };
   const flag = (m: Message) => {
     if (!client || (!client.priorityMessages && !m.priority)) return;

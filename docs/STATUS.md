@@ -1,3 +1,31 @@
+## 2026-10-27 - w2-t8 repair 1: frontend send carries the attach flow in local-demo idiom on `w2/t8`
+
+- Verdict repair on the T8 tip: the attach flow had reached only the
+  canvas twin; the frontend send still used the pre-A4 local append.
+  The frontend send now mirrors the canvas structure in this preview's
+  own idiom: an in-flight guard that treats a draft item missing its
+  stamp, demo media and session blob (a draft restored after reload)
+  as still uploading; `mediaObjectIds` computed off each attachment;
+  and the local fallback keyed on `mediaObjectIds.length` the way the
+  canvas send keys its wire fallback. `Media` gains the optional
+  `mediaObjectId` field so the twin sends read one shape.
+- Remaining twin deltas are the named pre-existing ones plus the
+  intended local-demo split: the `../data/messages` wire imports, the
+  `uploadCanvasMedia` import and file-input block, the useCoach
+  destructuring (canvas reads `hydrated`/`workspaceId`/
+  `clientProfileIdFor`, frontend reads `media`), the W2-A4 remote-sync
+  effects, the canvas remote-send branch, voice-note copy, and the
+  `clientName` prop on the legacy recorder.
+- Gates on the repaired tip: `cd frontend && npm run lint` 0;
+  `cd frontend && npm run typecheck` 1 with only the inherited
+  `dialog.tsx:109` `labelHidden` TS2322; `npm run typecheck` 0;
+  `npm run lint` 0 (92 warnings, 0 errors); `npx vitest run` 1436/1437
+  (single failure a 5s timeout in `system-index.test.ts` F2 that
+  passes standalone; env flake); `npm run index:check` 0; dash gate
+  adds 0 U+2013/U+2014 lines on this repair (57 exist in earlier
+  commits of the 113d788..HEAD range).
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
 ## 2026-10-27 - w2-t8: message attachments and read state on `w2/t8`
 
 - Upload-then-link attachments on the messages wire: `POST /messages`
