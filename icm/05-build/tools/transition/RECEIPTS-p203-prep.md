@@ -41,6 +41,22 @@
 missing/extra fields refuse; later vars (BASETIP/MERGETREE) assign only from validated
 state under . Fresh locked validation/gates still required.
 
+## P467/P468 — extracted-block acceptance suite repaired
+
+- Defect found by the suite: #207 step was prose-only (no executable fence), and the
+  prep block hardcoded scratch paths (`/tmp/p452-wt`, `/tmp/p452/state`) that collide
+  with the real p452 worktree on this host — fixture execution deleted+restored it.
+  Fixed: #207 given the same concrete fenced block as #206 (fresh lock, retarget,
+  forward update, derived-head review stop); prep scratch vars made env-overridable
+  (`${VAR:-default}`), identical for the operator.
+- `runbook-all-blocks.test.ts` (8/8): literal blocks executed unchanged under stubs —
+  #203 prep runs to the test-merge+ancestor checkpoint and persists a strict-validated
+  receipt; #206 and #207 each reach their changed-head checkpoint (retarget +
+  merge-base-in + push, head re-read live) with NO `gh pr merge` on derived heads; both
+  stop at "not merged" when the prerequisite PR is OPEN; merge block refuses missing
+  and stale-base receipts; at the simulated checkpoint `flock -x` precedes `gh pr merge`.
+- `runbook-prep-block.test.ts` 2/2 unchanged.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.

@@ -1,5 +1,11 @@
-import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
@@ -34,75 +40,203 @@ const SHAS = {
   tree: "6fd7353e4734632c49c6d9e28427dd2c5c8a1556",
   bundle: "f457065f61753245b6853ac3ddb3236deb00c8bd",
   merge: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  // derived heads — what `gh pr view` reports AFTER the forward-update push
+  d206: "d206".repeat(10),
+  d207: "d207".repeat(10),
 };
 
-function fixtures(over: Record<string, string> = {}) {
+// receipt in the schema the runbook's jq -n writes: base is the base-tip sha
+function receipt(base: string) {
+  return {
+    schema: "transition-prep-v1",
+    pr: 203,
+    head: SHAS.h203,
+    base,
+    mergeCommit: SHAS.h203,
+    mergeTree: SHAS.tree,
+    toolBundle: SHAS.bundle,
+    gates: { canonical: "70", strict: "68" },
+  };
+}
+
+function fixtures() {
   const dir = mkdtempSync(path.join(os.tmpdir(), "rbk-"));
   const bin = path.join(dir, "bin");
   const st = path.join(dir, "state");
   mkdirSync(bin, { recursive: true });
   mkdirSync(st);
   writeFileSync(path.join(st, "called"), "");
-  const fx = {
-    pr_head: SHAS.h203, pr_base: "Vari8-Beta", pr_state: "OPEN", pr_draft: "true",
-    merged: "", git_basetip: SHAS.base, git_tree: SHAS.tree,
-    receipt: "", ...over,
-  };
   const sh = (n: string, b: string) => {
     writeFileSync(path.join(bin, n), `#!/usr/bin/env bash\n${b}`);
     chmodSync(path.join(bin, n), 0o755);
   };
-  sh("gh", `echo "gh $*" >> "$FIX/state/called"
+  // gh stub — honors the --jq selectors the runbook actually uses so receipt
+  // checks see a real MERGED/OPEN world, not just "a command ran"
+  sh(
+    "gh",
+    `echo "gh $*" >> "$FIX/state/called"
 if [[ "$2" == view ]]; then
+  if [[ "$*" == *'state=="MERGED"'* ]]; then
+    [[ "$GH_STATE" == MERGED ]] && printf '%s' "$GH_MERGE"; exit 0
+  fi
+  if [[ "$*" == *'.mergeCommit.oid'* ]]; then printf '%s' "$GH_MERGE"; exit 0; fi
+  if [[ "$*" == *'.headRefOid'* ]]; then printf '%s' "$GH_HEAD"; exit 0; fi
   printf '{"headRefOid":"%s","baseRefName":"%s","state":"%s","isDraft":%s,"mergeCommit":{"oid":"%s"}}' "$GH_HEAD" "$GH_BASE" "$GH_STATE" "$GH_DRAFT" "$GH_MERGE"; exit 0; fi
 if [[ "$1" == pr && "$2" == merge ]]; then echo "gh pr merge" >> "$FIX/state/called"; exit 0; fi
 if [[ "$1" == pr && "$2" == ready ]]; then exit 0; fi
 if [[ "$1" == pr && "$2" == edit ]]; then echo "gh pr edit $*" >> "$FIX/state/called"; exit 0; fi
-exit 0`);
-  sh("git", `echo "git $*" >> "$FIX/state/called"
+exit 0`,
+  );
+  sh(
+    "git",
+    `echo "git $*" >> "$FIX/state/called"
 case "$*" in
   *rev-parse*'HEAD^{tree}'*) echo "$GIT_TREE";;
   *rev-parse*'HEAD^1'*) echo "$GIT_BASETIP";;
   *rev-parse*'HEAD^2'*) echo "$GH_HEAD";;
+  *rev-parse*'^1'*) echo "$GIT_P1";;
+  *rev-parse*'^2'*) echo "$GIT_P2";;
+  *rev-parse*'^{tree}'*) echo "$GIT_TREE";;
   *rev-parse*"origin"*) echo "$GIT_BASETIP";;
   *rev-parse*HEAD) echo "$GH_HEAD";;
+  *worktree*add*) mkdir -p "$3/$BUNDLE_PATH/reference" "$3/$BUNDLE_PATH/baseline"
+    : > "$3/$BUNDLE_PATH/run.mjs"; exit 0;;
   *worktree*) exit 0;;
-  *) exit 0;; esac`);
+  *) exit 0;; esac`,
+  );
   sh("flock", `echo "flock $*" >> "$FIX/state/called"; exit 0`);
-  for (const b of ["psql","createdb","dropdb","npm","npx","openssl","shasum","cmp","cp","mv"])
+  for (const b of [
+    "psql",
+    "createdb",
+    "dropdb",
+    "npm",
+    "npx",
+    "openssl",
+    "shasum",
+    "cmp",
+    "cp",
+    "mv",
+    "rm",
+    "tar",
+  ])
     sh(b, `echo "${b} $*" >> "$FIX/state/called"; exit 0`);
-  return { dir, bin, st, called: () => readFileSync(path.join(st, "called"), "utf8") };
+  return {
+    dir,
+    bin,
+    st,
+    called: () => readFileSync(path.join(st, "called"), "utf8"),
+  };
 }
 
-function runBlock(marker: string, extra: Record<string, string> = {}) {
+function runBlock(
+  marker: string,
+  extra: Record<string, string> = {},
+  inside = false,
+) {
   const f = fixtures();
   const vars = {
-    REPO: "fx/fx", HEADSHA: SHAS.h203, HEAD: SHAS.h203, BASE: "Vari8-Beta",
-    WT: path.join(f.dir, "wt"), STATE: f.st, DB: "app_x", PR: "203",
-    BUNDLE_PATH: "tools/parity", BUNDLE_TREE: SHAS.bundle, BUNDLE_COMMIT: SHAS.h207,
-    CANON_N: "70", STRICT_N: "68", MERGETREE: SHAS.tree, BASETIP: SHAS.base,
-    MERGE_SHA: SHAS.merge, POSTGRES_PASSWORD: "x", BETTER_AUTH_SECRET: "y",
-    NODE: "node", PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir,
-    GH_HEAD: SHAS.h203, GH_BASE: "Vari8-Beta", GH_STATE: "OPEN", GH_DRAFT: "true",
-    GH_MERGE: SHAS.merge, GIT_BASETIP: SHAS.base, GIT_TREE: SHAS.tree,
+    REPO: "fx/fx",
+    HEADSHA: SHAS.h203,
+    HEAD: SHAS.h203,
+    BASE: "Vari8-Beta",
+    WT: path.join(f.dir, "wt"),
+    STATE: f.st,
+    DB: "app_x",
+    PR: "203",
+    BUNDLE_PATH: "tools/parity",
+    BUNDLE_TREE: SHAS.bundle,
+    BUNDLE_COMMIT: SHAS.h207,
+    CANON_N: "70",
+    STRICT_N: "68",
+    MERGETREE: SHAS.tree,
+    BASETIP: SHAS.base,
+    MERGE_SHA: SHAS.merge,
+    POSTGRES_PASSWORD: "x",
+    BETTER_AUTH_SECRET: "y",
+    NODE: "node",
+    PATH: `${f.bin}:${process.env.PATH}`,
+    FIX: f.dir,
+    GH_HEAD: SHAS.h203,
+    GH_BASE: "Vari8-Beta",
+    GH_STATE: "OPEN",
+    GH_DRAFT: "true",
+    GH_MERGE: SHAS.merge,
+    GIT_BASETIP: SHAS.base,
+    GIT_TREE: SHAS.tree,
+    GIT_P1: SHAS.base,
+    GIT_P2: SHAS.h203,
     ...extra,
   };
-  const src = `set -euo pipefail\n${block(marker)}`;
-  const r = spawnSync("bash", ["-c", src], { env: { ...process.env, ...vars }, encoding: "utf8" });
-  return { r, called: f.called() };
+  const src = `set -euo pipefail\n${block(marker, inside)}`;
+  const r = spawnSync("bash", ["-c", src], {
+    env: { ...process.env, ...vars },
+    encoding: "utf8",
+  });
+  return { r, st: f.st, wt: vars.WT, called: f.called() };
 }
 
-describe(`runbook blocks ${RBHASH}`, () => {
-  it("#203 prep block reaches preparation checkpoint, no merge", () => {
-    const { r, called } = runBlock("# #203 changes present") || runBlock("git worktree add");
+// stacked stages — each retargets onto Vari8-Beta after its prerequisite merges
+const STAGES = [
+  {
+    n: 206,
+    prev: 203,
+    marker: "gh pr edit 206",
+    branch: "beta/visual-reference-establishment",
+    derived: SHAS.d206,
+  },
+  {
+    n: 207,
+    prev: 206,
+    marker: "gh pr edit 207",
+    branch: "beta/p203-p206-combined-verification",
+    derived: SHAS.d207,
+  },
+] as const;
+
+// stub-process spawns make the literal blocks take a few seconds
+const T = 30_000;
+
+describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
+  it("#203 prep block runs to completion under lock — test merge, ancestors, receipt persisted", () => {
+    const { r, st, wt, called } = runBlock("# #203 changes present", {}, true);
+    expect(r.status).toBe(0);
+    const iF = called.indexOf("flock -x");
+    const iW = called.indexOf("worktree add");
+    const iM = called.indexOf("merge -q --no-ff");
+    expect(iF).toBeGreaterThan(-1);
+    expect(iF).toBeLessThan(iW);
+    expect(iW).toBeLessThan(iM);
+    expect(called).toContain(`worktree add ${wt} --detach ${SHAS.h203}`);
+    expect(called).toContain(
+      "merge -q --no-ff --no-edit -m test merge transition p203",
+    );
+    expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(2);
+    expect(called).toContain("createdb"); // disposable-DB probe passed
     expect(called).not.toContain("gh pr merge");
+    // the dirty-state probe wrote into the fixture worktree, not a real one
+    expect(
+      readFileSync(path.join(wt, "tools/parity/run.mjs"), "utf8"),
+    ).toContain("dirty");
+    // strict-validated receipt persisted under the fixture state dir
+    const prep = JSON.parse(
+      readFileSync(path.join(st, "p203-prep.json"), "utf8"),
+    );
+    expect(prep.head).toBe(SHAS.h203);
+    expect(prep.base).toBe(SHAS.base);
+    expect(prep.mergeTree).toBe(SHAS.tree);
   });
 
   it("merge block refuses when receipts are missing", () => {
     const f = fixtures();
     const src = `set -euo pipefail\nSTATE=${f.st}\n` + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
-      env: { ...process.env, PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir, STATE: f.st, REPO: "x" },
+      env: {
+        ...process.env,
+        PATH: `${f.bin}:${process.env.PATH}`,
+        FIX: f.dir,
+        STATE: f.st,
+        REPO: "x",
+      },
       encoding: "utf8",
     });
     expect(r.status).not.toBe(0);
@@ -111,44 +245,112 @@ describe(`runbook blocks ${RBHASH}`, () => {
 
   it("merge block refuses a stale receipt base", () => {
     const f = fixtures();
-    writeFileSync(path.join(f.st, "p203-prep.json"), JSON.stringify({
-      schema: "transition-prep-v1", pr: 203, head: SHAS.h203, base: "Vari8-Beta",
-      baseTip: "0".repeat(40), mergeCommit: SHAS.h203, mergeTree: SHAS.tree,
-      toolBundle: SHAS.bundle, gates: { canonical: "70", strict: "68" } }));
-    const src = `set -euo pipefail\nSTATE=${f.st}\nREPO=x\n` + block("REACQUIRE", true);
+    writeFileSync(
+      path.join(f.st, "p203-prep.json"),
+      JSON.stringify(receipt("0".repeat(40))),
+    );
+    const src =
+      `set -euo pipefail\nSTATE=${f.st}\nREPO=x\n` + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
-      env: { ...process.env, PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir, STATE: f.st, REPO: "x",
-        GH_HEAD: SHAS.h203, GH_BASE: "Vari8-Beta", GH_STATE: "OPEN", GH_DRAFT: "true", GH_MERGE: SHAS.merge,
-        GIT_BASETIP: SHAS.base, GIT_TREE: SHAS.tree, HEADSHA: SHAS.h203 },
+      env: {
+        ...process.env,
+        PATH: `${f.bin}:${process.env.PATH}`,
+        FIX: f.dir,
+        STATE: f.st,
+        REPO: "x",
+        GH_HEAD: SHAS.h203,
+        GH_BASE: "Vari8-Beta",
+        GH_STATE: "OPEN",
+        GH_DRAFT: "true",
+        GH_MERGE: SHAS.merge,
+        GIT_BASETIP: SHAS.base,
+        GIT_TREE: SHAS.tree,
+        HEADSHA: SHAS.h203,
+      },
       encoding: "utf8",
     });
     expect(r.status).not.toBe(0);
     expect(f.called()).not.toContain("gh pr merge");
   });
 
-  it("#206/#207 blocks contain concrete retarget+update commands", () => {
-    const b206 = block("gh pr edit 206", true);
-    const b207 = block("gh pr edit 207", true);
-    expect(b206).toContain("gh pr edit 206");
-    expect(b206).not.toContain("force-push");
-    expect(b207).toContain("gh pr edit 207");
-    expect(b207).not.toContain("force-push");
-  });
-
-  it("lock invocation recorded at merge checkpoint", () => {
+  it("merge checkpoint holds the lock before merging and verifies parents/tree", () => {
     const f = fixtures();
-    writeFileSync(path.join(f.st, "p203-prep.json"), JSON.stringify({
-      schema: "transition-prep-v1", pr: 203, head: SHAS.h203, base: "Vari8-Beta",
-      baseTip: SHAS.base, mergeCommit: SHAS.h203, mergeTree: SHAS.tree,
-      toolBundle: SHAS.bundle, gates: { canonical: "70", strict: "68" } }));
+    writeFileSync(
+      path.join(f.st, "p203-prep.json"),
+      JSON.stringify(receipt(SHAS.base)),
+    );
     const src = `set -euo pipefail\n` + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
-      env: { ...process.env, PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir, STATE: f.st, REPO: "x",
-        HEADSHA: SHAS.h203, HEAD: SHAS.h203, BASE: "Vari8-Beta", BASETIP: SHAS.base, MERGETREE: SHAS.tree,
-        GH_HEAD: SHAS.h203, GH_BASE: "Vari8-Beta", GH_STATE: "OPEN", GH_DRAFT: "true", GH_MERGE: SHAS.merge,
-        GIT_BASETIP: SHAS.base, GIT_TREE: SHAS.tree, BUNDLE_PATH: "tools/parity" },
+      env: {
+        ...process.env,
+        PATH: `${f.bin}:${process.env.PATH}`,
+        FIX: f.dir,
+        STATE: f.st,
+        REPO: "x",
+        HEADSHA: SHAS.h203,
+        HEAD: SHAS.h203,
+        BASE: "Vari8-Beta",
+        BASETIP: SHAS.base,
+        MERGETREE: SHAS.tree,
+        GH_HEAD: SHAS.h203,
+        GH_BASE: "Vari8-Beta",
+        GH_STATE: "OPEN",
+        GH_DRAFT: "true",
+        GH_MERGE: SHAS.merge,
+        GIT_BASETIP: SHAS.base,
+        GIT_TREE: SHAS.tree,
+        GIT_P1: SHAS.base,
+        GIT_P2: SHAS.h203,
+        BUNDLE_PATH: "tools/parity",
+      },
       encoding: "utf8",
     });
-    expect(f.called()).toContain("flock -x");
+    const called = f.called();
+    expect(r.status).toBe(0);
+    expect(called).toContain("gh pr ready 203");
+    expect(called).toContain("gh pr merge 203");
+    // lock ownership: the exclusive flock precedes every merge action
+    expect(called.indexOf("flock -x")).toBeGreaterThan(-1);
+    expect(called.indexOf("flock -x")).toBeLessThan(
+      called.indexOf("gh pr merge 203"),
+    );
   });
+
+  for (const s of STAGES) {
+    it(`#${s.n} block reaches the changed-head checkpoint — retarget + forward update, no merge`, () => {
+      const { r, called } = runBlock(
+        s.marker,
+        { GH_STATE: "MERGED", GH_HEAD: s.derived },
+        true,
+      );
+      expect(r.status).toBe(0);
+      // prerequisite check ran live under the fresh lock, then the retarget
+      expect(called).toContain(`gh pr view ${s.prev}`);
+      expect(called.indexOf("flock -x")).toBeGreaterThan(-1);
+      expect(called.indexOf("flock -x")).toBeLessThan(
+        called.indexOf(`gh pr edit ${s.n}`),
+      );
+      expect(called).toContain(`gh pr edit ${s.n} -R fx/fx -B Vari8-Beta`);
+      // forward update of the PR branch — merge base in, no force-push
+      expect(called).toContain("git pull --ff-only");
+      expect(called).toContain("git merge --no-edit origin/Vari8-Beta");
+      expect(called).toContain(`git push origin ${s.branch}`);
+      expect(called).not.toMatch(/git push[^\n]*(-f |--force)/);
+      // derived head re-read live and stopped for review — not pre-authorized
+      expect(called).toContain(`gh pr view ${s.n}`);
+      expect(r.stdout).toContain(`changed head ${s.derived}`);
+      expect(r.stdout).toContain("review/revalidation REQUIRED");
+      expect(called).not.toContain("gh pr merge");
+    });
+
+    it(`#${s.n} block stops when #${s.prev} is not merged — no retarget, no push, no merge`, () => {
+      const { r, called } = runBlock(s.marker, { GH_STATE: "OPEN" }, true);
+      expect(r.status).toBe(4);
+      expect(r.stdout).toContain(`#${s.prev} not merged`);
+      expect(called).toContain("flock -x");
+      expect(called).not.toContain("gh pr edit");
+      expect(called).not.toContain("git push");
+      expect(called).not.toContain("gh pr merge");
+    });
+  }
 });

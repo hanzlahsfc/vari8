@@ -32,7 +32,7 @@ REPO=hanzlahsfc/vari8
 HEADSHA=90c16bee63e2609ebc4f09e91459332390562464   # pinned #203 head
 BASE=Vari8-Beta
 HEAD="$HEADSHA"
-WT=/tmp/p452-wt; STATE=/tmp/p452/state; DB=app_p452; PORT=58152
+WT=${WT:-/tmp/p452-wt}; STATE=${STATE:-/tmp/p452/state}; DB=${DB:-app_p452}; PORT=${PORT:-58152}
 BUNDLE_COMMIT=04902f1dc3d317e0959ae533f2f4c479a8fc55f9
 BUNDLE_PATH=tools/parity
 BUNDLE_TREE=f457065f61753245b6853ac3ddb3236deb00c8bd
@@ -163,11 +163,26 @@ echo "changed head $H206 — fresh review/revalidation REQUIRED before proceedin
 # parents must be [new base tip, $H206]; tree must equal the #206 test-merge tree.
 ```
 
-3. **#207 — concrete procedure**: derive `MERGED_206` (required non-empty),
-   `gh pr edit 207 -R "$REPO" -B Vari8-Beta`, forward-update
-   `beta/p203-p206-combined-verification` by merging the new base into it (no force-push),
-   push, review/revalidate the new head, run the full locked preparation. Its tools live
-   in the branch, so the combined capture runs without the overlay graft.
+3. **#207 — concrete procedure** (fresh lock, no force-push):
+
+```bash
+exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
+MERGED_206=$(gh pr view 206 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
+[[ -n "$MERGED_206" ]] || { echo "#206 not merged — stop"; exit 4; }
+git fetch -q origin; git rev-parse "origin/Vari8-Beta"  # new base tip (contains 206)
+gh pr edit 207 -R "$REPO" -B Vari8-Beta                 # explicit authorized retarget
+# normal forward update of the PR branch — merge the new base INTO it (no force-push):
+git checkout -q beta/p203-p206-combined-verification && git pull --ff-only
+git merge --no-edit origin/Vari8-Beta || { echo "conflict — manual review"; exit 3; }
+git push origin beta/p203-p206-combined-verification
+H207=$(gh pr view 207 -R "$REPO" --json headRefOid --jq .headRefOid)   # DERIVED new head
+echo "changed head $H207 — fresh review/revalidation REQUIRED before proceeding"
+# then the full locked preparation sequence repeats for $H207 — tools live in
+# the branch, so the combined capture runs WITHOUT the overlay graft
+# merge (only after reviewed head): gh pr merge 207 --merge --match-head-commit "$H207"
+# parents must be [new base tip, $H207]; tree must equal the #207 test-merge tree.
+```
+
 4. **Baseline activation:** separately approved later step; not authorized here.
 
 ## Stop conditions / residual race
