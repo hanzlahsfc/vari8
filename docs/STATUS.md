@@ -50,6 +50,9 @@
   `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
   277/277; no new en/em dashes in added lines. Known pre-existing
   frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+- Lane teardown: `DROP DATABASE app_fp_w2c7r2` executed;
+  `pg_database` count for `app_fp_w2c7%` is 0; prod server :5177 and
+  TLS front :5178 stopped. Work committed as `d4a8659`, tree clean.
 
 ## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
 
