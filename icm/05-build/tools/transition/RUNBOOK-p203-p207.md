@@ -53,6 +53,7 @@ if [[ -e "$SCRATCH" ]]; then
 else
   mkdir -p "$SCRATCH" && echo "$SCRATCH" > "$SCRATCH/.task-owned"
 fi
+. icm/05-build/tools/paths.sh   # canonical LOCKS — before WT (paths.sh sets WT)
 WT="$SCRATCH/wt"; STATE="$SCRATCH/state"; DB=app_p203
 [[ ! -e "$WT" ]] || { echo "WT $WT already exists — refusing to reuse"; exit 4; }
 mkdir -p "$STATE" "$SCRATCH/overlay"
@@ -66,11 +67,11 @@ task_owned() {
     && grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" >/dev/null
 }
 
-# lock (real shared flock, held continuously through this step's
-# revalidation, gates and merge — a later step acquires a fresh lock; prior
-# invocations' locks/receipts never carry over)
-exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9
-trap 'flock -u 9 2>/dev/null; exec 9>&-; dropdb -h 127.0.0.1 -p 5434 -U app --if-exists "$DB" 2>/dev/null' EXIT
+# lock — the REAL shared repository-wide integration lock (same file every
+# task contends on; per-scratch paths would serialize nothing). LOCKS comes
+# from the canonical paths.sh derivation ($VARI8_WORKTREES or program-config).
+mkdir -p "$LOCKS"; exec 9>"$LOCKS/Vari8-Beta.lock"; flock -x 9
+trap 'flock -u 9 2>/dev/null; exec 9>&-; [[ "${DB_CREATED:-}" == 1 ]] && docker exec "$DB_CONTAINER" dropdb -U app --if-exists "$DB" 2>/dev/null; true' EXIT
 
 # isolated worktree FIRST — at the pinned PR head; no `git -C $WT` before this
 git worktree add "$WT" --detach "$HEADSHA"
@@ -92,15 +93,29 @@ git -C "$WT" rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"
 git -C "$WT" rev-parse -q --verify "origin/$BASE:$BUNDLE_PATH/reference/active" \
   || echo "no active reference on base"
 
-# disposable DB (refuse existing, task-owned)
-psql -h 127.0.0.1 -p 5434 -U app -d postgres -lqt | grep -qw "$DB" && exit 2
-createdb -h 127.0.0.1 -p 5434 -U app "$DB"
-export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:5434/$DB?schema=public"
+# disposable task DB — verified container (app-db-1, postgres:16-alpine).
+# Admin inside the container; host port resolved from its published mapping —
+# never hardcoded. A pre-existing DB refuses; ONLY a DB this invocation
+# created is dropped on exit (refusals/failures leave foreign DBs untouched).
+DB_CONTAINER="${DB_CONTAINER:-app-db-1}"
+DB=app_p203
+docker inspect "$DB_CONTAINER" --format '{{.State.Running}}' 2>/dev/null | grep -q true \
+  || { echo "db container '$DB_CONTAINER' not running"; exit 2; }
+DB_PORT=$(docker inspect "$DB_CONTAINER" --format '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}')
+if docker exec "$DB_CONTAINER" psql -U app -d postgres -lqt 2>/dev/null | grep -qw "$DB"; then
+  echo "database $DB exists — not this task's, refusing"; exit 2
+fi
+docker exec "$DB_CONTAINER" createdb -U app "$DB" && DB_CREATED=1
+export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:${DB_PORT}/${DB}?schema=public"
 
-# dirty-state refusal probe — task-owned backup + byte-identical restore
+# dirty-state refusal probe — the runner MUST refuse (expected failure is
+# explicit, not a set -e abort); file restored byte-identically before gates
 cp "$WT/$BUNDLE_PATH/run.mjs" "$STATE/run.mjs.bak"
 echo dirty >> "$WT/$BUNDLE_PATH/run.mjs"
-(cd "$WT" && $NODE $BUNDLE_PATH/run.mjs)      # must refuse
+if (cd "$WT" && $NODE $BUNDLE_PATH/run.mjs); then
+  echo "dirty state ACCEPTED — runner refusal gate broken"; exit 5
+fi
+echo "dirty-state refusal confirmed"
 cmp -s "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs" || cp "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs"
 shasum -a 256 "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs"   # byte-identical proof
 
@@ -192,8 +207,9 @@ task_owned() {
     && grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" >/dev/null
 }
 
-exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
-trap 'flock -u 9 2>/dev/null; exec 9>&-; dropdb -h 127.0.0.1 -p 5434 -U app --if-exists "$DB" 2>/dev/null' EXIT
+. icm/05-build/tools/paths.sh   # canonical shared LOCKS=$WT/.locks
+mkdir -p "$LOCKS"; exec 9>"$LOCKS/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
+trap 'flock -u 9 2>/dev/null; exec 9>&-; [[ "${DB_CREATED:-}" == 1 ]] && docker exec "$DB_CONTAINER" dropdb -U app --if-exists "$DB" 2>/dev/null; true' EXIT
 git fetch -q origin
 
 # reload + validate the persisted receipt — integrity sidecar first, then the
@@ -259,10 +275,17 @@ BUNDLE_MANIFEST=icm/05-build/tools/transition/p203-p207.json
   || { echo "bundle tree does not resolve at $BUNDLE_COMMIT:$BUNDLE_PATH"; exit 4; }
 
 # fresh locked preparation repeats — a persisted receipt is never permission.
-# disposable DB (refuse existing, task-owned)
-psql -h 127.0.0.1 -p 5434 -U app -d postgres -lqt | grep -qw "$DB" && exit 2
-createdb -h 127.0.0.1 -p 5434 -U app "$DB"
-export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:5434/$DB?schema=public"
+# disposable task DB — same verified-container pattern as preparation:
+# refuse pre-existing, drop only if THIS invocation created it
+DB_CONTAINER="${DB_CONTAINER:-app-db-1}"; DB=app_p203
+docker inspect "$DB_CONTAINER" --format '{{.State.Running}}' 2>/dev/null | grep -q true \
+  || { echo "db container '$DB_CONTAINER' not running"; exit 2; }
+DB_PORT=$(docker inspect "$DB_CONTAINER" --format '{{(index (index .NetworkSettings.Ports "5432/tcp") 0).HostPort}}')
+if docker exec "$DB_CONTAINER" psql -U app -d postgres -lqt 2>/dev/null | grep -qw "$DB"; then
+  echo "database $DB exists — not this task's, refusing"; exit 2
+fi
+docker exec "$DB_CONTAINER" createdb -U app "$DB" && DB_CREATED=1
+export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:${DB_PORT}/${DB}?schema=public"
 
 # isolated test merge at the receipt-pinned head over the live base
 git worktree add "$MWT" --detach "$HEADSHA"
@@ -331,7 +354,8 @@ grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
   || { echo "no task-owned scratch — refusing"; exit 4; }
 STATE="$SCRATCH/state"; mkdir -p "$STATE"
 REPO=hanzlahsfc/vari8
-exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
+. icm/05-build/tools/paths.sh; mkdir -p "$LOCKS"
+exec 9>"$LOCKS/Vari8-Beta.lock"; flock -x 9          # reacquire — shared lock
 MERGED_203=$(gh pr view 203 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
 [[ -n "$MERGED_203" ]] || { echo "#203 not merged — stop"; exit 4; }
 git fetch -q origin; git rev-parse "origin/Vari8-Beta"  # new base tip (contains 203)
@@ -359,7 +383,8 @@ grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
   || { echo "no task-owned scratch — refusing"; exit 4; }
 STATE="$SCRATCH/state"; mkdir -p "$STATE"
 REPO=hanzlahsfc/vari8
-exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
+. icm/05-build/tools/paths.sh; mkdir -p "$LOCKS"
+exec 9>"$LOCKS/Vari8-Beta.lock"; flock -x 9          # reacquire — shared lock
 MERGED_206=$(gh pr view 206 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
 [[ -n "$MERGED_206" ]] || { echo "#206 not merged — stop"; exit 4; }
 git fetch -q origin; git rev-parse "origin/Vari8-Beta"  # new base tip (contains 206)

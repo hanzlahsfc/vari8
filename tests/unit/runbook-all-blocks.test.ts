@@ -118,12 +118,16 @@ case "$*" in
   *worktree*) exit 0;;
   *) exit 0;; esac`,
   );
-  // npx stub — the parity runner writes the gate receipts the runbook parses
-  // (real files inside the fixture worktree, counts controllable via GATE_*)
+  // npx stub — the parity runner refuses on dirty tooling (expected-failure
+  // path) and writes gate receipts the runbook parses (real files, GATE_*)
   sh(
     "npx",
     `echo "npx $*" >> "$FIX/state/called"
 [[ -n "\${FAIL_NPX:-}" && "$*" == *"$FAIL_NPX"* && -n "\${PARITY_OUT_DIR:-}" ]] && exit 1
+if [[ "$*" == *run.mjs* && -z "\${PARITY_OUT_DIR:-}" ]]; then
+  grep -q dirty "\$BUNDLE_PATH/run.mjs" 2>/dev/null && exit 4   # refusal gate
+  exit 0
+fi
 if [[ "$*" == *run.mjs* && -n "\${PARITY_OUT_DIR:-}" ]]; then
   mkdir -p "$PARITY_OUT_DIR"
   printf '{"strict":false,"total":70,"passed":%s,"failed":0}\\n' "\${GATE_CANON:-70}" > "$PARITY_OUT_DIR/proposed-canonical.json"
@@ -140,9 +144,27 @@ c=""; prev=""; for a in "$@"; do [[ "$prev" == -C ]] && c="$a"; prev="$a"; done
 [[ -n "$c" ]] && mkdir -p "$c/tools/parity/reference" "$c/tools/parity/baseline" && : > "$c/tools/parity/run.mjs"
 exit 0`,
   );
+  // docker stub — inspect answers running + published port; exec psql lists
+  // fixture DBs; createdb/dropdb record the call and mutate the DB list so
+  // creation-tracking refusals are observable
+  sh(
+    "docker",
+    `echo "docker $*" >> "$FIX/state/called"
+if [[ "$1" == inspect ]]; then
+  [[ "$*" == *State.Running* ]] && { echo true; exit 0; }
+  [[ "$*" == *HostPort* || "$*" == *Ports* ]] && { echo "5433"; exit 0; }
+  exit 0; fi
+if [[ "$1" == exec ]]; then
+  if [[ "$*" == *psql*"-lqt"* ]]; then cat "$FIX/state/dbs" 2>/dev/null; exit 0; fi
+  if [[ "$*" == *createdb* ]]; then echo "$6" >> "$FIX/state/dbs"; exit 0; fi
+  if [[ "$*" == *dropdb* ]]; then
+    last=""; for a in "$@"; do last="$a"; done
+    sed -i '' "/^\${last}$/d" "$FIX/state/dbs" 2>/dev/null; exit 0; fi; fi
+exit 0`,
+  );
+  writeFileSync(path.join(st, "dbs"), "");
   sh("flock", `echo "flock $*" >> "$FIX/state/called"; exit 0`);
-  for (const b of ["psql", "createdb", "dropdb", "openssl"])
-    sh(b, `echo "${b} $*" >> "$FIX/state/called"; exit 0`);
+  sh("openssl", `echo "deadbeefdeadbeefdeadbeefdeadbeef"`);
   sh(
     "npm",
     `echo "npm $*" >> "$FIX/state/called"
@@ -186,6 +208,7 @@ function blockEnv(
     BUNDLE_PATH: "tools/parity",
     GATE_CANON: "70",
     GATE_STRICT: "68",
+    VARI8_WORKTREES: path.join(f.dir, "worktrees"),
     ...extra,
   };
 }
@@ -211,7 +234,7 @@ function runBlock(
 
 // the runbook's own scratch prelude (SCRATCH requirement → task_owned def) —
 // executed verbatim to produce an owned scratch for the merge/stage blocks
-const PRELUDE = slice('SCRATCH="${SCRATCH:?', "# lock (real shared flock");
+const PRELUDE = slice('SCRATCH="${SCRATCH:?', ". icm/05-build/tools/paths.sh");
 function prepScratch(
   f: ReturnType<typeof fixtures>,
   extra: Record<string, string> = {},
@@ -286,6 +309,7 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     expect(iW).toBeLessThan(iM);
     expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(2);
     expect(called).toContain("createdb"); // disposable-DB probe passed
+    expect(r.stdout).toContain("dirty-state refusal confirmed"); // expected negative handled
     expect(called).not.toContain("gh pr merge");
     // the dirty-state probe restored run.mjs byte-identically (real cp/cmp/shasum)
     const wt = path.join(canonScratch(f), "wt");
@@ -315,6 +339,44 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       },
     });
     expect(existsSync(`${receiptPath(f)}.sha256`)).toBe(true);
+  });
+
+  it("two invocations with different scratch roots contend on the SAME shared lock", () => {
+    const f = fixtures();
+    const lockPath = path.join(f.dir, "worktrees", ".locks", "Vari8-Beta.lock");
+    const a = runPrep(f);
+    expect(a.r.status).toBe(0);
+    const b = runBlock(f, "# #203 changes present", {
+      SCRATCH: path.join(f.dir, "scratch2"),
+    });
+    expect(b.r.status).toBe(0);
+    // the lock file lives at the canonical shared path — NOT per-scratch
+    expect(existsSync(lockPath)).toBe(true);
+    expect(
+      existsSync(path.join(canonScratch(f), "state", "Vari8-Beta.lock")),
+    ).toBe(false);
+    expect(
+      existsSync(path.join(f.dir, "scratch2", "state", "Vari8-Beta.lock")),
+    ).toBe(false);
+    expect(f.called().match(/flock -x/g)).toHaveLength(2);
+  });
+
+  it("existing-DB refusal drops NOTHING — pre-existing database untouched", () => {
+    const f = fixtures();
+    writeFileSync(path.join(f.st, "dbs"), "app_p203\n"); // pre-existing, not ours
+    const { r, called } = runPrep(f);
+    expect(r.status).toBe(2);
+    expect(r.stdout + r.stderr).toContain("not this task's");
+    expect(called).not.toContain("dropdb"); // trap dropped nothing — no creation
+    expect(readFileSync(path.join(f.st, "dbs"), "utf8")).toBe("app_p203\n");
+  });
+
+  it("an invocation-created DB is dropped on exit — ownership tracked", () => {
+    const f = fixtures();
+    const { r, called } = runPrep(f);
+    expect(r.status).toBe(0);
+    expect(called).toContain("docker exec app-db-1 createdb");
+    expect(called).toContain("docker exec app-db-1 dropdb"); // own DB cleaned
   });
 
   it("prep writes no receipt and refuses when the combined gate is red", () => {
@@ -378,7 +440,7 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     const foreign = path.join(f.dir, "elsewhere");
     mkdirSync(foreign);
     symlinkSync(foreign, path.join(s, "alias"));
-    const taskOwned = slice("task_owned() {", "# lock (real shared flock");
+    const taskOwned = slice("task_owned() {", "# lock — the REAL shared");
     const check = (target: string) =>
       spawnSync("bash", [
         "-c",

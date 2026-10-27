@@ -209,3 +209,27 @@ state under . Fresh locked validation/gates still required.
   bare capture commit `d677df4` yields `[]` by definition. Reported plainly, not bypassed.
 - Earlier failures (missing `server.log`/`prep.log` due to gitignore) corrected via
   force-add; raw `server.log` preserved as committed bytes.
+
+## P479 — real shared lock, DB ownership, published-shell dirty probe
+
+- Lock defect: `$STATE/Vari8-Beta.lock` differed per scratch root — not shared.
+  Now every block sources `icm/05-build/tools/paths.sh` (canonical
+  `LOCKS=$WT/.locks` — same file all tasks contend on; `paths.sh` sourced
+  before `WT=` so its `WT` cannot clobber the block's worktree var).
+  Regression: two invocations with different SCRATCH roots create+lock the
+  SAME `.locks/Vari8-Beta.lock`; none under per-scratch state.
+- DB defect: EXIT trap dropped `app_p203` even when the refuse-existing check
+  fired — could destroy a pre-existing/foreign DB. Now `DB_CREATED=1` set
+  only after this invocation's `docker exec createdb` succeeds; the trap drops
+  only then. Verified container `app-db-1` (postgres:16-alpine,
+  127.0.0.1:5433→5432); admin via `docker exec`; published port resolved via
+  `docker inspect` — no hardcoded 5434, password env-only. Regression:
+  pre-existing `app_p203` → exit 2, zero dropdb calls; owned DB dropped.
+- Dirty probe defect: `(cd $WT && run.mjs)` under set -e either silently
+  passed (stub) or aborted on real refusal. Now wrapped in `if` — expected
+  refusal is explicit (`exit 5` only if ACCEPTED), then byte-identical
+  restore proven; stdout records "dirty-state refusal confirmed".
+- Authorization disposition: comment 6453235842 verified real
+  (user `hanzlahsfc`) and honestly self-described as orchestrator-recorded —
+  NOT the manifest-required manually-human-posted record. Integration stays
+  BLOCKED on `mergeAuthorization.pendingInput`; no bypass performed.
