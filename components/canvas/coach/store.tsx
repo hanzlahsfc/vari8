@@ -47,6 +47,13 @@ import {
   type TrainingDraftWire,
 } from "../data/training";
 import {
+  clientDetailKey,
+  fetchClientDetailBundle,
+  mergeRemoteDetail,
+  putClientDetail,
+} from "../data/clients";
+import { putWorkspaceCoachNotes } from "../data/notes";
+import {
   adoptCanvasDemos,
   type CoachState,
   isCoachState,
@@ -552,6 +559,17 @@ export function CoachProvider({
   const [notice, setNotice] = useState<Store["notice"]>(null);
   const [media, setMedia] = useState<Record<string, string>>({});
   const preserveRaw = useRef(false);
+  // W2-A1: the client-detail domain (phases, internalNotes, generalNotes,
+  // weekNotes, the note pin flag) plus the workspace note list are remote.
+  // This ref tracks, per canvas client id, the backend profile id and the
+  // last synced content key so local edits reconcile back to the server
+  // exactly once per change.
+  const detailSync = useRef<{
+    loaded: boolean;
+    loading: boolean;
+    clients: Map<string, { clientProfileId: string; key: string }>;
+    notesKey: string | null;
+  }>({ loaded: false, loading: false, clients: new Map(), notesKey: null });
   const urls = useRef(new Set<string>());
   const guard = useRef<((route: Route) => boolean) | null>(null);
   const section = params.get("section");
@@ -606,6 +624,81 @@ export function CoachProvider({
       setStorageOk(false);
     }
   }, [state, hydrated]);
+  // W2-A1 hydration: after the seed + local merge, fetch the workspace
+  // detail bundle once and fold it into the matched client records. The
+  // roster-wide reseed stays in coach/model.ts (out of this lane's
+  // ownership); matching is by name, the same key the roster map uses.
+  useEffect(() => {
+    const sync = detailSync.current;
+    if (!hydrated || demo || !workspaceId || preserveRaw.current) return;
+    if (sync.loaded || sync.loading) return;
+    sync.loading = true;
+    let cancelled = false;
+    fetchClientDetailBundle(workspaceId)
+      .then((bundle) => {
+        if (cancelled) return;
+        const matched = new Map<string, (typeof bundle.clients)[number]>();
+        setState((s) => ({
+          ...s,
+          coachNotes: bundle.workspaceNotes.map((n) => ({
+            id: n.id,
+            text: n.text,
+          })),
+          clients: s.clients.map((c) => {
+            const detail = bundle.clients.find((d) => d.name === c.name);
+            if (!detail) return c;
+            matched.set(c.id, detail);
+            return mergeRemoteDetail(c, detail);
+          }),
+        }));
+        for (const [clientId, detail] of matched) {
+          sync.clients.set(clientId, {
+            clientProfileId: detail.clientProfileId,
+            key: clientDetailKey(detail),
+          });
+        }
+        sync.notesKey = JSON.stringify(
+          bundle.workspaceNotes.map((n) => ({ id: n.id, text: n.text })),
+        );
+        sync.loaded = true;
+        sync.loading = false;
+      })
+      .catch(() => {
+        if (cancelled) return;
+        sync.loading = false;
+        setNotice({ text: "Client details could not be loaded." });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, demo, workspaceId]);
+  // W2-A1 write-back: any local change to the owned fields of a matched
+  // client, or to the workspace note list, PUTs the reconciled collection.
+  // Edits to clients that never matched a backend profile stay local.
+  useEffect(() => {
+    const sync = detailSync.current;
+    if (!hydrated || demo || !workspaceId || !sync.loaded) return;
+    for (const c of state.clients) {
+      const rec = sync.clients.get(c.id);
+      if (!rec) continue;
+      const key = clientDetailKey(c);
+      if (key === rec.key) continue;
+      rec.key = key;
+      putClientDetail(workspaceId, rec.clientProfileId, c).catch(() => {
+        rec.key = "";
+        setNotice({ text: "Client changes could not be saved." });
+      });
+    }
+    const notes = state.coachNotes ?? [];
+    const notesKey = JSON.stringify(notes);
+    if (sync.notesKey !== null && sync.notesKey !== notesKey) {
+      sync.notesKey = notesKey;
+      putWorkspaceCoachNotes(workspaceId, notes).catch(() => {
+        sync.notesKey = "";
+        setNotice({ text: "Note changes could not be saved." });
+      });
+    }
+  }, [state, hydrated, demo, workspaceId]);
   useEffect(() => {
     const all = urls.current;
     return () => {
