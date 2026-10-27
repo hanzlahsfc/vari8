@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 59 backend pages, 48 API routes, 14 layouts, 6 canvas pages.
+Counts: 60 backend pages, 81 API routes, 14 layouts, 7 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -19,6 +19,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/` | `app/(canvas)/page.tsx` | server | requireSessionUser |
 | `/client` | `app/(canvas)/client/page.tsx` | server | auth |
 | `/coach` | `app/(canvas)/coach/page.tsx` | server | requireCanvasAccess |
+| `/coach/dashboard` | `app/(canvas)/coach/dashboard/page.tsx` | server | requireCanvasAccess |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
 | `/ethereal` | `app/(canvas)/ethereal/page.tsx` | server | requireCanvasAccess |
 | `/invite` | `app/invite/page.tsx` | server | auth |
@@ -82,9 +83,20 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
 | `/api/v1/auth/refresh` | `app/api/v1/auth/refresh/route.ts` | POST | none detected |
+| `/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series` | `app/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series/route.ts` | - | none detected |
+| `/api/v1/invite/lookup` | `app/api/v1/invite/lookup/route.ts` | POST | none detected |
 | `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]/assignments` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/[clientProfileId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/[clientProfileId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/assigned` | `app/api/v1/media/[workspaceId]/assigned/route.ts` | - | none detected |
 | `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
+| `/api/v1/saved-meals/[workspaceId]` | `app/api/v1/saved-meals/[workspaceId]/route.ts` | - | none detected |
+| `/api/v1/saved-meals/[workspaceId]/[savedMealId]` | `app/api/v1/saved-meals/[workspaceId]/[savedMealId]/route.ts` | - | none detected |
+| `/api/v1/saved-meals/[workspaceId]/[savedMealId]/assignments` | `app/api/v1/saved-meals/[workspaceId]/[savedMealId]/assignments/route.ts` | - | none detected |
+| `/api/v1/saved-meals/[workspaceId]/assigned` | `app/api/v1/saved-meals/[workspaceId]/assigned/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/appearance` | `app/api/v1/workspaces/[workspaceId]/appearance/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/attention` | `app/api/v1/workspaces/[workspaceId]/attention/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel/route.ts` | - | none detected |
@@ -99,23 +111,45 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/feedback` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/feedback/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/review/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context` | `app/api/v1/workspaces/[workspaceId]/checkins/submissions/[submissionId]/tracker-context/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/client-detail` | `app/api/v1/workspaces/[workspaceId]/client-detail/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/values` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/values/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/publish/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/[entryId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/[entryId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/publish/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/versions/[versionId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/versions/[versionId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks/[coachTaskId]` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/[coachTaskId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/conversations` | `app/api/v1/workspaces/[workspaceId]/conversations/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]` | `app/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]/draft` | `app/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]/draft/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]/read` | `app/api/v1/workspaces/[workspaceId]/conversations/[clientProfileId]/read/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/daily-entries` | `app/api/v1/workspaces/[workspaceId]/daily-entries/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/daily-entries/[entryDate]` | `app/api/v1/workspaces/[workspaceId]/daily-entries/[entryDate]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/exercise-library` | `app/api/v1/workspaces/[workspaceId]/exercise-library/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/first-run` | `app/api/v1/workspaces/[workspaceId]/first-run/route.ts` | GET | none detected |
 | `/api/v1/workspaces/[workspaceId]/iifym-plans` | `app/api/v1/workspaces/[workspaceId]/iifym-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/messages` | `app/api/v1/workspaces/[workspaceId]/messages/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes` | `app/api/v1/workspaces/[workspaceId]/notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
@@ -160,6 +194,7 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 | `/client` | `frontend/src/app/client/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
 | `/coach/settings` | `frontend/src/app/coach/settings/page.tsx` | client | none detected |
+| `/coach/states` | `frontend/src/app/coach/states/page.tsx` | client | none detected |
 | `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 
