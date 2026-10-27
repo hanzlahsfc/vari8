@@ -42,8 +42,14 @@ export const clientsSlice: CoachSlice = {
   merge: (slice, state) => {
     if (!Array.isArray(slice)) throw new Error("Invalid clients slice");
     // Cores stay incomplete until the per-domain merges run; isCoachState is
-    // the gate before the assembled state is used.
-    state.clients = slice as CoachClient[];
+    // the gate before the assembled state is used. Envelopes stored before
+    // the detail fields joined this slice carry no note arrays, so the
+    // merge re-defaults them or the client guard rejects the whole state.
+    state.clients = (slice as Partial<CoachClient>[]).map((client) => ({
+      internalNotes: [],
+      generalNotes: [],
+      ...client,
+    })) as CoachClient[];
   },
 };
 

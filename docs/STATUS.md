@@ -75,6 +75,38 @@
   lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
   0 (U+2013 and U+2014); twin parity diff 0 lines. `npm run index`
   not required (no tracked file added, renamed or deleted).
+- Repair round 2 (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the parent `2de07c6` extract window carry
+  cores without those two fields, and `isCoachState` requires both as
+  arrays (`components/canvas/coach/model.ts:1717`), so the read failed
+  the guard and the store parked the workspace behind the preserve
+  notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Same shape as the w2/a4 `113d788` repair.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam (grep for `CoachSlice`/`merge:`/`dataDomains`/
+  `readCoachState` in `frontend/src` returns no matches), so the
+  defect exists only on the canvas side.
+- Repair-2 gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+  tests/unit/coach-store-roster.test.tsx` exit 0 (13/13); `npm run
+  test` exit 0 (1394/1394, 118/118 files); `npm run lint` exit 0 (89
+  inherited warnings); `npm run typecheck` exit 0; `npx prettier
+  --check` on the two changed files exit 0; `npm run index` and
+  `npm run index:check` exit 0; dash count on `git diff 2de07c6`
+  added lines = 0 (U+2013 and U+2014); twin parity diff on
+  `nutrition-targets.tsx` = 0 lines.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4-REPAIR2/`.
 
 ## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
 
