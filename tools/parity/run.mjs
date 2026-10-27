@@ -3,6 +3,12 @@
 // (captured from frontend/), writes tools/parity/out/report.html, then stops the server. Exit code: 0 match, 1 change or capture failure,
 // 2 refused (bad env, port taken, or the listener is not the server this run started). Nothing is compared on 2.
 // PARITY_PORT pins the port (refused if taken). PARITY_URL compares a server you run yourself (not checked).
+// Production auth refuses an http: auth origin (lib/auth/server.ts BOOT-CHECKS), so a spawned root-app
+// production server is served through an in-process TLS front: next stays plain http on a private inner
+// port, the front answers https://localhost:<port> with a self-signed certificate and that is the
+// BETTER_AUTH_URL the server gets. PARITY_TLS_CERT/PARITY_TLS_KEY name a PEM pair to use instead of the
+// generated one. A self-signed PARITY_URL front on a loopback host is trusted the same way (port
+// ownership is enforced separately, certificate verification is not the gate).
 // PARITY_DEV=1 uses next dev instead (debugging only; dev timing noise makes the gate flaky).
 // npm run parity -- --update-baseline   recaptures the baseline instead of comparing (needs PARITY_APP=frontend).
 // PARITY_APP=frontend serves frontend/ (no session) instead of the root app; the baseline comes from there.
@@ -12,10 +18,16 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { openSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { request as httpRequest } from "node:http";
+import { createServer as createTlsServer } from "node:https";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { captureAll, INDEX_PATH } from "./capture.mjs";
+import {
+  captureAll,
+  INDEX_PATH,
+  insecureLoopbackDispatcher,
+} from "./capture.mjs";
 import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -33,7 +45,7 @@ const DEV = process.env.PARITY_DEV === "1";
 class Refuse extends Error {}
 
 // Signs in to the root app through Better Auth and returns the session cookies for the capture contexts.
-async function signInCookies(baseUrl) {
+async function signInCookies(baseUrl, init = {}) {
   const email = process.env.PARITY_USER_EMAIL ?? "owner@vari8.test";
   let password = process.env.PARITY_USER_PASSWORD;
   if (!password) {
@@ -60,6 +72,7 @@ async function signInCookies(baseUrl) {
     method: "POST",
     headers: { "content-type": "application/json", origin: baseUrl },
     body: JSON.stringify({ email, password }),
+    ...init,
   });
   const set = res.headers.getSetCookie();
   if (!res.ok || set.length === 0)
@@ -94,13 +107,73 @@ const bind = (port) =>
     });
   });
 
-async function waitForHttp(url, server, ms = 180000) {
+// PEM pair for the TLS front: PARITY_TLS_CERT/PARITY_TLS_KEY when both are set, else a
+// self-signed localhost certificate generated into out/ for this run.
+async function tlsMaterial() {
+  const certPath = process.env.PARITY_TLS_CERT;
+  const keyPath = process.env.PARITY_TLS_KEY;
+  if (certPath && keyPath)
+    return { cert: await readFile(certPath), key: await readFile(keyPath) };
+  if (certPath || keyPath)
+    throw new Refuse("PARITY_TLS_CERT and PARITY_TLS_KEY must be set together");
+  const cert = path.join(OUT, "parity-cert.pem");
+  const key = path.join(OUT, "parity-key.pem");
+  const gen = spawnSync(
+    "openssl",
+    [
+      "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "2",
+      "-subj", "/CN=localhost",
+      "-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1",
+      "-keyout", key, "-out", cert,
+    ],
+    { encoding: "utf8" },
+  );
+  if (gen.status !== 0)
+    throw new Refuse(
+      `self-signed certificate generation failed: ${(gen.stderr || "").trim().split("\n").pop()}`,
+    );
+  return { cert: await readFile(cert), key: await readFile(key) };
+}
+
+// https :tlsPort -> http :innerPort. Preserves the Host header (a rewritten Host made
+// Next abort server actions in w2-t5) and marks the forwarded scheme for the app.
+async function startTlsFront(tlsPort, innerPort) {
+  const { cert, key } = await tlsMaterial();
+  const front = createTlsServer({ cert, key }, (req, res) => {
+    const headers = { ...req.headers, "x-forwarded-proto": "https" };
+    const up = httpRequest(
+      {
+        host: "127.0.0.1",
+        port: innerPort,
+        method: req.method,
+        path: req.url,
+        headers,
+      },
+      (ur) => {
+        res.writeHead(ur.statusCode ?? 502, ur.headers);
+        ur.pipe(res);
+      },
+    );
+    up.on("error", (e) => {
+      res.writeHead(502);
+      res.end(`upstream ${e.code ?? "error"}`);
+    });
+    req.pipe(up);
+  });
+  await new Promise((ok, no) => {
+    front.once("error", no);
+    front.listen(tlsPort, "127.0.0.1", ok);
+  });
+  return front;
+}
+
+async function waitForHttp(url, server, ms = 180000, init = {}) {
   const t0 = Date.now();
   for (;;) {
     if (server.exitCode !== null || server.signalCode !== null)
       throw new Refuse(`server exited before answering; see ${LOG}`);
     try {
-      if ((await fetch(url)).ok) return;
+      if ((await fetch(url, init)).ok) return;
     } catch {}
     if (Date.now() - t0 > ms)
       throw new Refuse(`server did not answer at ${url} within ${ms / 1000} s`);
@@ -154,7 +227,9 @@ try {
 await mkdir(OUT, { recursive: true });
 let baseUrl = process.env.PARITY_URL;
 let server = null;
+let tls = null;
 let port = null;
+let innerPort = null;
 // Next dev and build append to AGENTS.md in the app they run in. Snapshot and restore so the tree stays untouched.
 const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
@@ -176,15 +251,24 @@ try {
         `port ${pinned} is in use; PARITY_PORT must name a free port. Nothing was compared.`,
       );
     port = pinned ?? (await bind(0));
-    baseUrl = `http://127.0.0.1:${port}`;
     // Production build by default: dev mode (HMR, overlay, on-demand compile) adds timing noise.
     // PARITY_DEV=1 falls back to next dev for debugging only.
+    // The root app's production server needs an https auth origin: next keeps plain http on
+    // a private inner port and a TLS front answers https on the port this run picked.
+    const tlsFront = ROOT_APP && !DEV;
+    innerPort = tlsFront ? await bind(0) : null;
+    baseUrl = tlsFront
+      ? `https://localhost:${port}`
+      : `http://127.0.0.1:${port}`;
     const logFd = openSync(LOG, "w");
     const stdio = ["ignore", logFd, logFd];
     // Better Auth trusts its own base URL only, so the root app must be told the address this run serves.
-    const env = ROOT_APP
-      ? { ...process.env, BETTER_AUTH_URL: baseUrl, AUTH_URL: baseUrl }
-      : process.env;
+    // NODE_ENV is forced so a sourced lane env (NODE_ENV=development) cannot poison the production build.
+    const env = {
+      ...process.env,
+      NODE_ENV: DEV ? "development" : "production",
+      ...(ROOT_APP ? { BETTER_AUTH_URL: baseUrl, AUTH_URL: baseUrl } : {}),
+    };
     if (DEV) {
       server = spawn(
         "npx",
@@ -211,12 +295,31 @@ try {
         );
       server = spawn(
         "npx",
-        ["next", "start", "--hostname", "127.0.0.1", "--port", String(port)],
+        [
+          "next",
+          "start",
+          "--hostname",
+          "127.0.0.1",
+          "--port",
+          String(innerPort ?? port),
+        ],
         { cwd: APP, env, detached: true, stdio },
       );
+      if (tlsFront) tls = await startTlsFront(port, innerPort);
     }
-    await waitForHttp(`${baseUrl}/coach`, server);
-    if (!ownsPort(port, server.pid))
+    const dispatcher = await insecureLoopbackDispatcher(baseUrl);
+    const init = dispatcher ? { dispatcher } : {};
+    await waitForHttp(`${baseUrl}/coach`, server, 180000, init);
+    // The spawned server must own its port; the TLS front is this process, checked by pgid.
+    const myPgid = spawnSync(
+      "ps",
+      ["-o", "pgid=", "-p", String(process.pid)],
+      { encoding: "utf8" },
+    ).stdout.trim();
+    if (
+      !ownsPort(innerPort ?? port, server.pid) ||
+      (tls && !ownsPort(port, myPgid))
+    )
       throw new Refuse(
         `port ${port} answers from a process this run did not start. Refusing to compare it.`,
       );
@@ -224,8 +327,20 @@ try {
   // Re-checked by captureAll before every capture, before a retry, and once after the last
   // capture: a port that answers means nothing if this run's server died and another process
   // took it. null for PARITY_URL runs, where no spawned server exists to own the port.
-  const serverMine = server ? () => ownsPort(port, server.pid) : null;
-  const cookies = ROOT_APP ? await signInCookies(baseUrl) : [];
+  const serverMine = server
+    ? () =>
+        ownsPort(innerPort ?? port, server.pid) &&
+        (!tls ||
+          ownsPort(
+            port,
+            spawnSync("ps", ["-o", "pgid=", "-p", String(process.pid)], {
+              encoding: "utf8",
+            }).stdout.trim(),
+          ))
+    : null;
+  const dispatcher = baseUrl ? await insecureLoopbackDispatcher(baseUrl) : null;
+  const fetchInit = dispatcher ? { dispatcher } : {};
+  const cookies = ROOT_APP ? await signInCookies(baseUrl, fetchInit) : [];
   if (update) {
     // Capture into a temp dir; the committed baseline is replaced only when every shot captured.
     const tmp = path.join(OUT, "baseline.tmp");
@@ -276,6 +391,7 @@ try {
       process.kill(-server.pid, "SIGTERM");
     } catch {}
   }
+  tls?.close();
   const now = await readFile(agentsPath, "utf8").catch(() => null);
   if (now !== null && now !== agentsBefore)
     await writeFile(agentsPath, agentsBefore);
