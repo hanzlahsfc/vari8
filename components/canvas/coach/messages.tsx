@@ -55,6 +55,7 @@ export function MessagesWorkspace() {
     route,
     navigate,
     attach,
+    media,
     toast,
     hydrated,
     workspaceId,
@@ -78,6 +79,7 @@ export function MessagesWorkspace() {
   const positions = useRef<Record<string, number>>({});
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
+  const pendingUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -234,14 +236,29 @@ export function MessagesWorkspace() {
     const attachments = draft.attachments;
     const sentLink = link;
     const canvasId = client.id;
-    // W2-T8: attachments ride the wire once their media_object ids exist. A
-    // send while an upload is still in flight waits (the draft stays put)
-    // instead of silently dropping the file onto a local-only message.
+    // W2-T8: attachments ride the wire once their media_object ids exist.
+    // "In-flight" means an upload actually pending, tracked in
+    // pendingUploads by the attach handler - not a missing session blob.
+    // A draft item missing its stamp, demo flag and session bytes is a
+    // draft restored after reload whose blob is gone for good, so the
+    // send keeps it and says what recovers it instead of promising a
+    // retry that cannot land.
     if (
       workspaceId &&
-      attachments.some((a) => !a.mediaObjectId && !a.demo)
+      attachments.some((a) => pendingUploads.current.has(a.id))
     ) {
       toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    if (
+      workspaceId &&
+      attachments.some(
+        (a) => !a.mediaObjectId && !a.demo && !media[a.id],
+      )
+    ) {
+      toast(
+        "Attachment kept as metadata after reload - reattach it to send it, or remove it.",
+      );
       return;
     }
     const appendLocal = () =>
@@ -858,14 +875,19 @@ export function MessagesWorkspace() {
                       items.push(item);
                       // PR-MEDIA: real upload in the background; the item
                       // stays local-previewable meanwhile (S02-08).
+                      pendingUploads.current.add(item.id);
                       void (async () => {
-                        const profileId = client
-                          ? await clientProfileIdFor(client.name)
-                          : null;
-                        await uploadCanvasMedia(item, f, {
-                          workspaceId,
-                          clientProfileId: profileId ?? undefined,
-                        });
+                        try {
+                          const profileId = client
+                            ? await clientProfileIdFor(client.name)
+                            : null;
+                          await uploadCanvasMedia(item, f, {
+                            workspaceId,
+                            clientProfileId: profileId ?? undefined,
+                          });
+                        } finally {
+                          pendingUploads.current.delete(item.id);
+                        }
                       })();
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });

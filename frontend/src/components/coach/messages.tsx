@@ -59,6 +59,7 @@ export function MessagesWorkspace() {
   const positions = useRef<Record<string, number>>({});
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
+  const pendingUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -143,12 +144,19 @@ export function MessagesWorkspace() {
     const sentLink = link;
     const canvasId = client.id;
     // W2-T8 local demo: this preview has no media_object store, so the
-    // blob attach is its upload. A draft item missing its stamp, its demo
-    // media and its session bytes (a draft restored after reload) is the
-    // in-flight case, and the send waits instead of silently dropping the
-    // file.
-    if (attachments.some((a) => !a.mediaObjectId && !a.demo && !media[a.id])) {
+    // blob attach is its upload and pendingUploads is empty by the time a
+    // send runs. A draft item missing its stamp, demo flag and session
+    // bytes is not in flight: it is a draft restored after reload whose
+    // blob is gone for good, so the send keeps it and says what recovers
+    // it instead of promising a retry that cannot land.
+    if (attachments.some((a) => pendingUploads.current.has(a.id))) {
       toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    if (attachments.some((a) => !a.mediaObjectId && !a.demo && !media[a.id])) {
+      toast(
+        "Attachment kept as metadata after reload - reattach it to send it, or remove it.",
+      );
       return;
     }
     const appendLocal = () =>
@@ -178,21 +186,9 @@ export function MessagesWorkspace() {
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
-    // W2-T8 local demo: mediaObjectIds is computed exactly like the canvas
-    // send computes it for the wire call. This preview has no send route,
-    // so both branches below land the local row.
-    const mediaObjectIds = attachments
-      .map((a) => a.mediaObjectId)
-      .filter((id): id is string => Boolean(id));
-    if (
-      mediaObjectIds.length !== attachments.length ||
-      (!text && mediaObjectIds.length === 0)
-    ) {
-      appendLocal();
-      return;
-    }
-    // Local demo: the canvas send posts the stamped ids here and lands the
-    // returned wire row; this preview lands the same local row instead.
+    // W2-T8 local demo: the canvas send POSTs the stamped media_object ids
+    // here and lands the returned wire row. This preview has no send route,
+    // so the same local row lands either way.
     appendLocal();
   };
   const flag = (m: Message) => {
@@ -730,7 +726,9 @@ export function MessagesWorkspace() {
                         type: f.type || "application/octet-stream",
                         size: f.size,
                       };
+                      pendingUploads.current.add(item.id);
                       attach(item, f);
+                      pendingUploads.current.delete(item.id);
                       items.push(item);
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });

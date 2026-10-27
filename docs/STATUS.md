@@ -1,3 +1,49 @@
+## 2026-10-27 - w2-t8 repair 3: restored-draft attachments no longer wedge the send on `w2/t8`
+
+- B1 root cause: the send guard read "no session blob" as "upload still
+  in flight", so a file attached to a draft and restored after reload
+  (its blob URL dead) was blocked by a toast promising a retry that
+  could never land. Both twins now classify send-time attachments in
+  three buckets: an id in `pendingUploads` (a ref populated while an
+  attach/upload is actually running) still waits on the "still
+  uploading" toast; an item missing stamp, demo flag and session blob
+  but not pending is a restored draft, which stays in the draft while
+  the send returns the honest copy "Attachment kept as metadata after
+  reload - reattach it to send it, or remove it."; reattaching through
+  the card's existing control restores the blob and the send proceeds.
+  The canvas twin gates both branches on `workspaceId` so the
+  no-workspace demo embed keeps the old local-append behavior.
+- I1 taken: the ceremonial frontend `mediaObjectIds` branch (both arms
+  called `appendLocal` identically) is collapsed to one `appendLocal()`
+  with a comment naming the canvas wire step it mirrors.
+- I2 corrected baseline per the verifier's re-measurement: `npm run
+  test` at decd41a is 123 files / 1437 tests, all passed, exit 0 (the
+  repair-1 entry's 1436/1437 timeout did not reproduce); `cd frontend &&
+  npm run typecheck` exits nonzero with exactly one inherited TS2322 at
+  `src/components/client/legacy-sheet/dialog.tsx(109,15)` (the file has
+  since moved out of `components/ui/`; this repair does not touch it).
+- I3: `npm run index:check` run twice on this tip; both exits 0.
+- B1 proof: `tests/unit/coach-messages-restored-draft.dom.test.tsx`
+  mounts the real CoachProvider + MessagesWorkspace of each twin, seeds
+  each persistence seam with a restored file draft and clicks Send. On
+  decd41a product code both restored-draft assertions fail on the "still
+  uploading" toast; on this tip all 3 tests pass. Twin-resolution in
+  vitest.config lets the frontend app mount under jsdom (its "@/*"
+  imports resolve to frontend/src and its react/next dedupe onto the
+  root copies); the test file is excluded from the root tsc program
+  because it legitimately spans two apps.
+- Live proof: real-browser attach -> reload -> send in the frontend
+  preview (no login wall; the workspace renders directly) at 1440x900
+  and 390x844: the send surfaces the honest copy on both widths, the
+  item is kept in the draft, and reattaching through the card then
+  sending lands the message. Screenshots and live-verify.json under the
+  evidence dir.
+- Gates on this tip: `npm run typecheck` 0; `npm run lint` 0 (92
+  warnings, 0 errors); `cd frontend && npm run lint` 0; `npx vitest run`
+  124 files / 1440 tests, all passed, 0; `npm run build` 0; `npm run
+  index:check` 0 on both runs; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
 ## 2026-10-27 - w2-t8 repair 1: frontend send carries the attach flow in local-demo idiom on `w2/t8`
 
 - Verdict repair on the T8 tip: the attach flow had reached only the
