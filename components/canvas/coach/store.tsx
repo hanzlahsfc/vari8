@@ -797,16 +797,26 @@ export function CoachProvider({
    *
    * Signed-in (non-demo) path: the Tracker tab's values, texts and coach
    * notes come from the server, not the local draft slice. One effect
-   * hydrates `client.tracking` and the client's session logs; a second
-   * debounced effect diffs the `note:*`/`coach-note` text keys against
-   * the last synced baseline and PUTs/DELETEs the tracker-notes route.
+   * hydrates `client.tracking` and the client's session logs; it runs
+   * only while the viewed client's route is on the Tracker tab so the
+   * profile overview and onboarding surfaces never fetch tracker data.
+   * A second debounced effect diffs the `note:*`/`coach-note` text keys
+   * against the last synced baseline and PUTs/DELETEs the tracker-notes
+   * route once hydration has armed it.
    * ------------------------------------------------------------------ */
   const trackingHydrated = useRef(new Set<string>());
   const trackingNotesSynced = useRef(new Map<string, Record<string, string>>());
   const trackingParamKeys = useRef(new Map<string, Record<string, string>>());
   const noteSyncChain = useRef(new Map<string, Promise<void>>());
   useEffect(() => {
-    if (!hydrated || !workspaceId || demo || !route.client) return;
+    if (
+      !hydrated ||
+      !workspaceId ||
+      demo ||
+      !route.client ||
+      route.tab !== "Tracker"
+    )
+      return;
     const clientId = route.client;
     if (trackingHydrated.current.has(clientId)) return;
     let cancelled = false;
@@ -862,7 +872,14 @@ export function CoachProvider({
     return () => {
       cancelled = true;
     };
-  }, [hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+  }, [
+    hydrated,
+    workspaceId,
+    demo,
+    route.client,
+    route.tab,
+    clientProfileIdFor,
+  ]);
 
   useEffect(() => {
     if (!hydrated || !workspaceId || demo || !route.client) return;

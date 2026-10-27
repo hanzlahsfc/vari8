@@ -1,3 +1,42 @@
+## 2026-10-27 - w2-fe2 repair 2: tracker hydration scoped to the Tracker tab, logging test env isolation
+
+- Verdict `VERDICT-6069da5.md` blocked on B2 (the W2-FE2 tracker hydration
+  effect fired for every signed-in client route, not only the Tracker tab)
+  and B3 (inherited red: two logging.test.ts media/object tests, expected
+  500, got 403 in the full suite under the lane env).
+- B2 repair: `components/canvas/coach/store.tsx` hydration effect now
+  returns early unless `route.tab === "Tracker"`; `route.tab` added to its
+  dependency array. On the profile overview and onboarding screens no
+  tracker values or training-log fetch fires. The note-sync effect keeps
+  its `trackingHydrated` gate, so it stays inert until the Tracker tab has
+  hydrated once and keeps pending note writes alive across tab navigation.
+  The frontend twin `frontend/src/components/coach/store.tsx` holds only
+  local-storage hydration: no server fetch exists there to scope, so the
+  alias rewrite remains the only twin delta.
+- B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
+  stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
+  over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
+  so the route verified signed URLs against the wrong secret and answered
+  403. Full suite reproduction: standalone logging.test.ts red under the
+  lane env before the stub, green after. Product code unchanged.
+- Live proof on a lane dev server (seeded coach, 1440 and 390): the
+  profile overview fires 0 tracker values or training-logs GETs before
+  the Tracker tab opens; opening Tracker fires values 200 and
+  training-logs GET 200 once, note markers and the week matrix render.
+  Reference spot check on the unrepaired tree measured 1 values GET on
+  the same overview.
+- Parity on the production build through the fixed runner: 74/74 screens
+  captured, exit 1 with 63 problems. The four s01 lines returned exactly
+  to base values (s01-profile-overview 10723 px geom 5/2/12 at 1440 and
+  297827 px geom 5/2/218 at 390; s01-profile-onboarding 2186 and 193294
+  px with the same geoms). All other FAIL lines are byte-identical to the
+  reviewed tip run except s07-exercise-library and s11-client-preview,
+  which are capture-variable and now match the base and pre-stage
+  measurements instead.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), frontend
+  lint 0, index:check 0, vitest run 0 (117 files, 1396 tests under the
+  lane env), dash gate 0.
+
 ## 2026-10-27 - w2-fe2 repair 1: parity runner https origin, s07 recipe fix, baseline refresh
 
 - Verdict `VERDICT-f16be09db2e9e5f192c245769257f76975a6538c.md` blocked on
