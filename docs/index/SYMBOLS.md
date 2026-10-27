@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 161 modules with exports, 1597 exported symbols.
+Counts: 161 modules with exports, 1598 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -97,6 +97,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
 - `export function reportV1Failure(request: Request, requestId: string, error: unknown): Response`
 - `export function requestIdFor(request: Request): string`
+- `export async function requireOwnClientProfile(viewer: ApiViewer, workspace: ApiWorkspaceContext, clientProfileId: string): Promise<void>`
 
 ## `lib/audit.ts`
 

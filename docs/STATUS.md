@@ -107,6 +107,41 @@
   added lines = 0 (U+2013 and U+2014); twin parity diff on
   `nutrition-targets.tsx` = 0 lines.
 - Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4-REPAIR2/`.
+- Repair round 3 (owner-ruled defect B3 on `0b38af5`): the two
+  `clients/[id]/*` GETs whose `plan.read` scope resolves "own" now bind
+  the path `clientProfileId` to the caller's own client profile. New
+  exported helper `requireOwnClientProfile` in `lib/api/v1.ts` resolves
+  the caller's profile by `{ workspaceId, userId }` and throws
+  `ApiError(403, "forbidden")` when the caller has no own profile or the
+  path id is foreign, before any domain read; staff scope is a no-op so
+  coach reads stay bound to the path id inside the services. Refusal
+  status 403 on both routes, matching the progress-photos own-scope
+  convention and each route's closed denied mapping.
+- New route-level cases with real sign-in and real Request objects
+  through the exported handlers on lane DB `app_fp_w2c4r4`: "route GET:
+  a client requesting a foreign clientProfileId is refused before any
+  read" and "route GET: a client reading its own path id gets its
+  saved plan" in `tests/integration/supplements-plan.test.ts`; "a
+  client requesting a foreign clientProfileId is refused before any
+  read", "a client reading its own path id gets its versions (own
+  200)" and "an assigned coach reading a roster client keeps 200 with
+  that client's versions" in new
+  `tests/integration/activity-targets.test.ts`. Both negative cases
+  were red at `0b38af5` (expected 403, got 200 with the caller's own
+  rows) and green after the fix.
+- Repair-3 gates: touched files under `vitest.integration.config.ts`
+  exit 0 (19/19); full integration suite exit 0 (991/991, 74 files,
+  with the documented domain dev flags
+  ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS exported;
+  the same suite without them shows 4 inherited flag-gate reds in
+  `api-v1-plans.test.ts`, identical at `0b38af5` on the same lane DB);
+  `npx vitest run` exit 0 (1394/1394) after `npm run index`
+  regenerated `docs/index/SYMBOLS.md` for the new export; `npm run
+  typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
+  `npm run index:check` exit 0; dash count on `git diff 0b38af5..HEAD`
+  added lines = 0. Lane DB `app_fp_w2c4r4` dropped, absence proven by
+  a pg_database query saved in evidence.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4/` (repair-3 files).
 
 ## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
 
