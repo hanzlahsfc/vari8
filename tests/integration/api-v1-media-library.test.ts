@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 
 import { PrismaClient } from "@prisma/client";
@@ -498,6 +498,91 @@ describe.skipIf(!enabled)(
       expect((await getAssigned(wsA.id, null)).status).toBe(401);
       expect((await postAssign(wsA.id, mediaId, null, "x")).status).toBe(401);
       expect((await deleteMedia(wsA.id, mediaId, null)).status).toBe(401);
+    });
+
+    it("backfills the owner onto pre-T6 client-keyed rows so the ownership filter classifies them", async () => {
+      const ws = await workspace();
+      const foreign = await workspace();
+      const coach = await member(ws.id, "COACH");
+      const token = await signInToken(coach.email);
+      const client = await prisma.clientProfile.create({
+        data: { workspaceId: ws.id, name: "Anna" },
+      });
+      const foreignClient = await prisma.clientProfile.create({
+        data: { workspaceId: foreign.id, name: "Foreign" },
+      });
+
+      // Rows written before T6 carried the owner only in the storage key;
+      // client_profile_id did not exist yet.
+      const legacy = async (storageKey: string, fileName: string) =>
+        prisma.mediaObject.create({
+          data: {
+            workspaceId: ws.id,
+            kind: "IMAGE",
+            storageKey,
+            fileName,
+            contentType: "image/png",
+            byteSize: BigInt(4),
+            uploadedByUserId: coach.user.id,
+          },
+        });
+      const own = await legacy(
+        `workspace/${ws.id}/client/${client.id}/legacy-photo`,
+        "legacy.png",
+      );
+      const libraryRow = await legacy(
+        `workspace/${ws.id}/client/library/legacy-plan`,
+        "plan.png",
+      );
+      const dangling = await legacy(
+        `workspace/${ws.id}/client/${foreignClient.id}/foreign-photo`,
+        "foreign.png",
+      );
+      expect(own.clientProfileId).toBeNull();
+
+      // Re-apply the migration's own backfill statement to these rows.
+      const migrationSql = readFileSync(
+        join(
+          import.meta.dirname,
+          "../../db/migrations/20261027000015_media_taxonomy_client_assignment/migration.sql",
+        ),
+        "utf8",
+      );
+      const backfill = migrationSql
+        .split(";")
+        .find(
+          (statement) =>
+            /\bUPDATE\b/.test(statement) &&
+            statement.includes("client_profile_id"),
+        );
+      expect(backfill).toBeTruthy();
+      await prisma.$executeRawUnsafe(backfill as string);
+
+      const rows = await prisma.mediaObject.findMany({
+        where: { workspaceId: ws.id },
+        select: { id: true, clientProfileId: true },
+      });
+      const ownerOf = (id: string) =>
+        rows.find((row) => row.id === id)?.clientProfileId;
+      expect(ownerOf(own.id)).toBe(client.id);
+      // The library pseudo-owner and a profile in another workspace stay NULL.
+      expect(ownerOf(libraryRow.id)).toBeNull();
+      expect(ownerOf(dangling.id)).toBeNull();
+
+      const clientOwned = await getLibrary(ws.id, token, "?ownership=client");
+      const clientIds = (await clientOwned.json()).items.map(
+        (item: { id: string }) => item.id,
+      );
+      expect(clientIds).toContain(own.id);
+      expect(clientIds).not.toContain(libraryRow.id);
+      expect(clientIds).not.toContain(dangling.id);
+
+      const coachLibrary = await getLibrary(ws.id, token, "?ownership=library");
+      const libraryIds = (await coachLibrary.json()).items.map(
+        (item: { id: string }) => item.id,
+      );
+      expect(libraryIds).toContain(libraryRow.id);
+      expect(libraryIds).not.toContain(own.id);
     });
   },
 );

@@ -16,6 +16,24 @@
 
 ALTER TABLE "public"."media_object" ADD COLUMN "client_profile_id" TEXT;
 
+-- Backfill (repair 1): rows that predate T6 carry the owner only in the
+-- storage key, so NULL here would misclassify every existing client
+-- upload as coach library. The key grammar is
+-- workspace/<workspaceId>/client/<clientProfileId>/<objectId>. Guarded
+-- three ways: the key must sit under a client path, the owner segment
+-- must not be the reserved `library` pseudo-owner, and the segment must
+-- resolve to a client_profile row inside the same workspace. Everything
+-- else keeps NULL and stays coach library.
+UPDATE "public"."media_object" m
+    SET "client_profile_id" = split_part(split_part(m."storage_key", '/client/', 2), '/', 1)
+    WHERE m."storage_key" LIKE 'workspace/%/client/%'
+      AND split_part(split_part(m."storage_key", '/client/', 2), '/', 1) <> 'library'
+      AND EXISTS (
+          SELECT 1 FROM "public"."client_profile" cp
+          WHERE cp."id" = split_part(split_part(m."storage_key", '/client/', 2), '/', 1)
+            AND cp."workspace_id" = m."workspace_id"
+      );
+
 -- Composite coherence FK: an owner must be a client of the same
 -- workspace. RESTRICT matches every other media_object relation.
 ALTER TABLE "public"."media_object"
