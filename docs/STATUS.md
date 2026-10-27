@@ -1,3 +1,80 @@
+## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
+
+- Verifier B1: the T6 migration added `client_profile_id` with no
+  backfill, so every pre-existing client upload (owner only in
+  `storage_key`) read NULL and was misclassified as coach library.
+  Repair adds a guarded `UPDATE` inside the same migration (after the
+  column add, before the composite FK): keys under
+  `workspace/<ws>/client/<profile>/` backfill the owner only when the
+  profile exists in the same workspace and the segment is not the
+  reserved `library` pseudo-owner; everything else stays NULL.
+- Seed companion fix: `scripts/seed/40-media.seed.ts` now writes
+  `clientProfileId` on the seeded voice note and progress photo
+  (seed runs after migrate deploy, so the migration backfill cannot
+  reach rows it creates). Library rows keep NULL.
+- New integration test (6th `it()` in
+  `tests/integration/api-v1-media-library.test.ts`) creates pre-T6
+  rows with client-path keys and NULL owner, re-executes the
+  migration's own UPDATE, and asserts `ownership=client` includes the
+  valid row while `ownership=library` keeps the library and foreign
+  rows. Test counts on this tip: integration 6/6, unit 4/4 for the
+  media files (repo unit suite 1384).
+- Verified on lane db `app_fp_w2t6r1`: `migrate deploy` 0, `seed:dev`
+  0, seeded client uploads carry the owning profile id and library
+  rows stay NULL; `down.sql` 0, second `migrate deploy` 0 and the
+  backfill re-derived the owners from storage keys.
+- Live re-proof on the lane (live-pass-r1.mjs, port 4501): coach
+  ownership chip "Client uploads" returns the 2 seeded client uploads
+  and "Library" returns only the 2 coach-owned rows at both 1440 and
+  390; assign -> 200, delete on assigned -> 409; client Photos
+  "Shared by your coach" mounts 2 items under the seeded client
+  session (`/client?demo&client=client-007`, see the reachability note
+  below). Screenshots under `Vari8-evidence/FULL-PACKAGE-2/W2T6/`.
+- Record corrections applied below: the earlier entry overstated the
+  integration count (5 original `it()` blocks, not 12; now 6) and
+  implied a frontend twin for "Shared by your coach" that does not
+  exist - `frontend/src` has no photos surface or string (only the
+  unreferenced `ca-shared-media` CSS block), an established canvas/
+  frontend divergence.
+- Lane notes: `/client` still needs `?demo` + a canvas client id to
+  mount (pre-existing `client-route.tsx` behavior, verdict I3); the
+  seeded client account owns no profile until the lane-only I4 rebind
+  is applied (pre-existing seed-ordering defect, not fixed here).
+
+## 2026-10-27 - Wave 2 T6: media taxonomy and client assignment on `w2/t6` (base `2967bb1`)
+
+- `MediaObject.clientProfileId` (NULL = coach library, set = client upload)
+  plus new `MediaAssignment` with same-workspace composite FK; one
+  migration dir `20261027000015_media_taxonomy_client_assignment`
+  (`migration.sql` + `down.sql`). Delete semantics: restrict - a live
+  assignment makes staff delete return 409 `has_assignments`.
+- New endpoints under `app/api/v1/media/`: GET list with `kind`/
+  `ownership` filters (`library.manage`), DELETE media (409 while
+  assigned), POST/DELETE `.../assignments[/:clientProfileId]`, GET
+  `.../assigned` (client own-scope only). Download auth extended so a
+  client may open media assigned to them.
+- UI: type + ownership filter chips and Assign/Unassign/Remove controls
+  in `media.tsx` (frontend authored first, identical shared block ported
+  to canvas twin); "Media" profile tab in both `clients.tsx` twins;
+  "Shared by your coach" list in `components/canvas/client-app/photos.tsx`.
+- Tests: `tests/unit/media-library.test.ts` (4), integration
+  `api-v1-media-library.test.ts` (5: filters, assign, unassign,
+  cross-client denial, 409 delete). Gates: typecheck 0, lint 0
+  (89 warnings, baseline parity), prettier on touched files 0,
+  `index`/`index:check` 0, `cd frontend && npm run lint` 0, vitest unit
+  4/4 + integration 5/5 on lane DB, `build` 0, `migrate deploy` 0 on
+  `app_fp_w2t6`, `seed:dev` 0.
+- Live pass on prod server :4517 at 1440+390: coach filter Images
+  20->19 rows, assign POST 200 ("Assigned to Amara Lewis."), delete on
+  assigned item 409 ("Unassign this item before removing it."); client
+  `amara.lewis@example.com` via `/me/login` then `/client?client=client-007`
+  Photos shows "Shared by your coach" with 4 items;
+  `GET .../assigned` 200 items=4. Screenshots under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/`.
+- Note: `/client` renders sections from the canvas-local client config
+  (`?client=<canvas-id>`); the remote `own` binding only enables the
+  Photos section. `/me` is a separate surface and does not mount it.
+
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
 - Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
