@@ -1,3 +1,54 @@
+## 2026-10-27 - w2-t7 option-a: studio Assign wired to the real saved-meals API on `w2/t7`
+
+- Owner ruling 2026-10-27 item 6, option (a) of the round-1 verdict:
+  `MealplanWorkspace` now supplies `onAssign`; the Assign button is
+  live only where a real workspace context exists.
+- New twin-shared module `assign-saved-meal.ts` (frontend and canvas
+  twins byte-identical): roster name -> clientProfileId map fetched
+  once per workspace from `GET /api/v1/workspaces/:id/clients?limit=100`
+  (success cached, failure retried, null on miss), PUT upsert under the
+  studio `ReusableMeal.id`, POST assignments; resolves true only on a
+  2xx POST and false on every miss so the existing honest failure copy
+  shows.
+- `mealplan-workspace.tsx` (both twins): optional `workspaceId` prop,
+  `assignSavedMeal` handler resolves the selected studio client name
+  and passes `onAssign={workspaceId ? assignSavedMeal : undefined}`;
+  the demo read path `plan.reusableMeals` is untouched and the assign
+  write is the only new traffic.
+- `coaching-app.tsx` (both twins): `EtherealApp`/`ComponentStudio`
+  accept and thread `workspaceId`; `app/(canvas)/ethereal/page.tsx`
+  passes `viewer.workspace.id` from `requireCanvasAccess`. The
+  frontend preview app passes nothing and keeps the button hidden.
+- Server enforcement unchanged: `library.manage` plus workspace scope
+  stay inside the existing routes; no route, schema or migration was
+  touched.
+- Gates (exit codes): `npm run typecheck` 0; `npm run lint` 0 with 90
+  warnings (pre-existing baseline, including two setState-in-effect
+  notes on untouched effect code in this file); `npx prettier --check`
+  on all changed .ts/.tsx 0; `npx vitest run` on the 7 touched-area
+  files 0 (70 tests, including new tests/unit/mealplan-assign.test.ts
+  8/8: happy-path URLs and bodies, roster cache, no-cache-on-failure,
+  roster miss, PUT and POST non-2xx, network error, empty input);
+  `npm run build` 0; `npm run index` + `npm run index:check` 0 (no
+  generated drift); `cd frontend && npm run lint` 0 ("Checked 305
+  files"); owned-lines dash gate prints 0; twin diffs show only the
+  established port deltas.
+- Browser proof on lane DB app_fp_w2t7assign (fresh create, prisma
+  migrate deploy applied, VARI8_SEED_DEMO=1 seed, next dev on :5310,
+  real coach sign-in): PUT 200 upserted library row
+  saved-meal-0a05bbe1-d0e6-4aec-83e2-e6b45592b7c6 with
+  client_profile_id NULL; POST 200 created client-owned copy
+  cmvqorocg00028od822nnz7mw for Emma Anders
+  (cmvqoqslc000h8o2gofimp0un) with a regenerated meal.id and
+  source_saved_meal_id provenance; the 390px run produced a second
+  independent copy cmvqorprd00048od8i3nh67uw; a forced 500 on the
+  assignments POST rendered "could not be assigned" and wrote no row.
+  Query output, screenshots (assign-1440.png, assign-390.png,
+  assign-failure.png), network logs and assign-proof.mjs live under
+  Vari8-evidence/FULL-PACKAGE-2/W2T7-ASSIGN/; the database was dropped
+  WITH (FORCE) and the pg_database absence proof plus the
+  app_fp_w2t7% census were saved.
+
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
 - Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text

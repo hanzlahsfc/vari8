@@ -35,7 +35,7 @@ function pageFromHash(): StudioPage {
       : "dashboard";
 }
 
-function ComponentStudio() {
+function ComponentStudio({ workspaceId }: { workspaceId?: string }) {
   const [page, setPage] = useState<StudioPage>("dashboard");
   const [clientId, setClientId] = useState<string | null>(null);
   const content = useRef<HTMLElement>(null);
@@ -142,7 +142,7 @@ function ComponentStudio() {
       >
         {page === "dashboard" && <DashboardBuilder />}
         {page === "tracker" && <ClientTracker />}
-        {page === "mealplan" && <MealplanWorkspace />}
+        {page === "mealplan" && <MealplanWorkspace workspaceId={workspaceId} />}
         {page === "clients" && (
           <ClientsWorkspace clientId={clientId} onSelectClient={selectClient} />
         )}
@@ -172,10 +172,10 @@ function ComponentStudio() {
   );
 }
 
-export function EtherealApp() {
+export function EtherealApp({ workspaceId }: { workspaceId?: string }) {
   return (
     <AppearanceProvider>
-      <ComponentStudio />
+      <ComponentStudio workspaceId={workspaceId} />
     </AppearanceProvider>
   );
 }
