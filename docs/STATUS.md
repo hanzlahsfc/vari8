@@ -1,3 +1,30 @@
+## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
+
+- Lead amendment tick 160 extended the step-3 named resolution set by
+  exactly one file: `frontend/src/components/coach/clients.tsx`,
+  resolved by the same union rule granted for
+  `components/canvas/coach/store.tsx` (keep both sides' additions;
+  order matches the canvas twin's auto-merged order).
+- Merge 3 re-run: `git merge-tree --write-tree` on HEAD + fe2 pin
+  `2df2d8200fcc5aefc2a5d6629928e56d8f803e16` -> tree OID
+  `f29b779115485a06bee951458909bb55b5b7cc38`; conflicts exactly the
+  amended set (`store.tsx`, `frontend/.../clients.tsx`,
+  `docs/STATUS.md`, `docs/index/{COMPONENTS,DATA-MODEL,ROUTES}.md`);
+  `components/canvas/coach/clients.tsx` auto-merged. Merge commit
+  `01c66b0d01d6c25011d3f89f5ecbb488730af193`.
+- Resolutions: `store.tsx` union (fe2 tracker/training-logs imports
+  plus HEAD `addLocalDays`, both call sites live at 807/906);
+  `frontend/.../clients.tsx` union (both `AthleteTrackerTab` and
+  `ClientMediaPanel`, canvas auto-merge order: tracker-tab import
+  before the model block, media import after it); `STATUS.md`
+  hand-merged ours-new then theirs-new over a byte-identical tail;
+  index docs regenerated via `npm run index` (exit 0).
+- Merged-tip gates: first `npm run typecheck` exit 2 on stale Prisma
+  client (`trackerDayNote` missing), fixed by `npx prisma generate`;
+  re-run exit 0. `npm run build` exit 0.
+- New lane DB for this run: `app_fp_w2c7r2` (`app_fp_w2c7` was never
+  created; not reused).
+
 ## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
 
 - Card w2-c7 (client photos, training log, tracker entry polish),
