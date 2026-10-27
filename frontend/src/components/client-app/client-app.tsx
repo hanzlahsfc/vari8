@@ -3,6 +3,7 @@
 import {
   Activity,
   CalendarCheck,
+  Circle,
   ClipboardList,
   Dumbbell,
   House,
@@ -34,7 +35,9 @@ import {
 import "./client-app.css";
 import "./training-log/training-log.css";
 
-const SECTION_ICONS: Record<ClientAppSectionId, typeof House> = {
+// Icons are optional per section: the registry in sections.ts can add an id
+// the shell has never seen, and the nav must still render it.
+const SECTION_ICONS: Partial<Record<ClientAppSectionId, typeof House>> = {
   home: House,
   plans: ClipboardList,
   tracker: Activity,
@@ -61,12 +64,15 @@ export function ClientApp({
   context,
   illustrative = false,
   initialTab,
+  brand,
 }: {
   configuration: Variant;
   client: CoachClient;
   context: "standalone" | "preview";
   illustrative?: boolean;
   initialTab?: string;
+  /** Workspace name shown beside the nav mark in the desktop sidebar. */
+  brand?: string;
 }) {
   const sections = useMemo(
     () => clientAppSections(configuration, client.plans),
@@ -95,7 +101,7 @@ export function ClientApp({
     : plans?.planParts[0];
   const showTracker = sections.some((candidate) => candidate.id === "tracker");
   const navItem = (candidate: { id: ClientAppSectionId; label: string }) => {
-    const Icon = SECTION_ICONS[candidate.id];
+    const Icon = SECTION_ICONS[candidate.id] ?? Circle;
     return (
       <button
         key={candidate.id}
@@ -113,6 +119,16 @@ export function ClientApp({
     <div className="cd-client-app-shell" data-context={context}>
       <div className="cd-client-app">
         <aside className="cd-client-app-side">
+          <div className="cd-client-app-brand">
+            <span className="cd-client-app-brand-mark" aria-hidden="true">
+              infinity<span className="cd-client-app-brand-period">.</span>
+            </span>
+            {brand && (
+              <span className="cd-client-app-brand-name" title={brand}>
+                {brand}
+              </span>
+            )}
+          </div>
           <nav className="cd-client-app-nav" aria-label="Client sections">
             {sections.map(navItem)}
           </nav>
