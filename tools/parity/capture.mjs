@@ -21,6 +21,23 @@ export const TIMEZONE = "Europe/Vienna";
 // Same storage seed for every capture. Empty on purpose: the canvas seeds its demo state from code.
 export const STORAGE_SEED = {};
 
+// Self-signed TLS fronts on loopback (run.mjs spawns one for the production build, and a
+// caller-run PARITY_URL front counts the same) cannot pass certificate verification and do
+// not need to: run.mjs enforces port ownership instead. Off-loopback origins stay strict.
+export const loopbackHttps = (baseUrl) =>
+  /^https:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/.test(baseUrl);
+
+let dispatcherPromise = null;
+// A fetch dispatcher that skips certificate verification, or null for plain http and for
+// https origins outside loopback.
+export function insecureLoopbackDispatcher(baseUrl) {
+  if (!loopbackHttps(baseUrl)) return null;
+  dispatcherPromise ??= import("undici").then(
+    ({ Agent }) => new Agent({ connect: { rejectUnauthorized: false } }),
+  );
+  return dispatcherPromise;
+}
+
 const FREEZE_CSS = `
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 input,textarea,[contenteditable]{caret-color:transparent!important}
@@ -88,6 +105,13 @@ const TEMPLATE_CARD = {
 };
 const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
 const PLAN_CARD = { within: ".cp-card" };
+// Recipe labels that flip on async state: when the capture's own clicks already wrote a
+// draft for the shot's client (the debounced plan sync PUTs it), a rerun of the same
+// recipe meets "Edit plan" where a fresh seed showed "Set up plan". Both labels open the
+// same plan editor; the recipe names the fresh-seed label and the other is a fallback.
+const STEP_ALTERNATES = {
+  "s07-exercise-library": { "Set up plan": ["Edit plan"] },
+};
 export const STEP_SCOPES = {
   "s01-profile-checkins": { "Check-ins": { within: ".cd-profile-tabs" } },
   "s04-template-habits": Object.fromEntries(
@@ -114,7 +138,10 @@ export const STEP_SCOPES = {
     "Edit plan": { ...PLAN_CARD, containing: "Nutrition" },
   },
   "s07-exercise-library": {
+    // Chloe Park's page also shows a "Set up plan" action on the Supplements card; the
+    // Training card scope keeps the step to one match.
     "Set up plan": { ...PLAN_CARD, containing: "Training" },
+    "Edit plan": { ...PLAN_CARD, containing: "Training" },
   },
   "s13-supplements": {
     "Set up plan": { ...PLAN_CARD, containing: "Supplements" },
@@ -134,9 +161,9 @@ export const STEP_SCOPES = {
 export async function clickByText(
   page,
   label,
-  { fallback = false, scope = null } = {},
+  { fallback = false, scope = null, alternates = [] } = {},
 ) {
-  const tried = [label];
+  const tried = [label, ...alternates];
   if (fallback && mobileFallback(label) !== label)
     tried.push(mobileFallback(label));
   for (const target of tried) {
@@ -365,12 +392,17 @@ async function captureScrollers(page, outDir, vp, stem) {
 // Under CPU load Chromium can drop a navigation or a screenshot mid-run. One retry of the capture is allowed
 // (never of a comparison): relaunch the browser, wait for the server to answer again, then replay the same shot.
 async function waitForServer(baseUrl, ms = 60000) {
+  const dispatcher = await insecureLoopbackDispatcher(baseUrl);
   const t0 = Date.now();
   for (;;) {
     try {
       if (
-        (await fetch(`${baseUrl}/coach`, { signal: AbortSignal.timeout(5000) }))
-          .ok
+        (
+          await fetch(`${baseUrl}/coach`, {
+            signal: AbortSignal.timeout(5000),
+            ...(dispatcher ? { dispatcher } : {}),
+          })
+        ).ok
       )
         return true;
     } catch {}
@@ -440,21 +472,26 @@ export async function captureAll({
               break;
             }
           }
-          const ctx = await browser.newContext({
-            viewport: VIEWPORTS[vp],
-            deviceScaleFactor: 1,
-            timezoneId: TIMEZONE,
-            locale: "en-US",
-            colorScheme: "light",
-            reducedMotion: "reduce",
-            serviceWorkers: "block",
-          });
-          if (cookies?.length) await ctx.addCookies(cookies);
-          await ctx.addInitScript(initScript(STORAGE_SEED));
-          const page = await ctx.newPage();
-          const pageErrors = [];
-          page.on("pageerror", (e) => pageErrors.push(e.message));
+          // Context and page creation sit inside the same try as the capture: a protocol
+          // error at newContext (w2-fe2 saw Browser.setDownloadBehavior lose its context)
+          // becomes a retried shot failure instead of an uncaught crash that skips compare.
+          let ctx = null;
           try {
+            ctx = await browser.newContext({
+              viewport: VIEWPORTS[vp],
+              deviceScaleFactor: 1,
+              timezoneId: TIMEZONE,
+              locale: "en-US",
+              colorScheme: "light",
+              reducedMotion: "reduce",
+              serviceWorkers: "block",
+              ignoreHTTPSErrors: loopbackHttps(baseUrl),
+            });
+            if (cookies?.length) await ctx.addCookies(cookies);
+            await ctx.addInitScript(initScript(STORAGE_SEED));
+            const page = await ctx.newPage();
+            const pageErrors = [];
+            page.on("pageerror", (e) => pageErrors.push(e.message));
             await page.clock.setFixedTime(new Date(FIXED_NOW));
             await page.goto(baseUrl + shot.route, {
               waitUntil: "domcontentloaded",
@@ -468,6 +505,7 @@ export async function captureAll({
                 await clickByText(page, label, {
                   fallback: vp === "390",
                   scope: STEP_SCOPES[stem]?.[label] ?? null,
+                  alternates: STEP_ALTERNATES[stem]?.[label] ?? [],
                 }),
               );
             await page.evaluate(() => window.scrollTo(0, 0));
@@ -508,7 +546,7 @@ export async function captureAll({
           } catch (err) {
             lastErr = err;
           } finally {
-            await ctx.close().catch(() => {});
+            await ctx?.close().catch(() => {});
           }
         }
         if (entry) {

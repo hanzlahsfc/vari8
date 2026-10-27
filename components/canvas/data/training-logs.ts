@@ -4,6 +4,7 @@
 // else reaches the transport.
 
 import { apiFetch } from "./http";
+import type { TrainingSessionLog } from "../coach/plans/types";
 
 /* ---- shared wire shapes (mirrors of the service return types) ---- */
 
@@ -226,4 +227,79 @@ export function fetchStaffTrainingLogs(
   return apiFetch(
     `/workspaces/${workspaceId}/clients/${clientProfileId}/training-logs${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`,
   );
+}
+
+/* ---- W2-FE2: wire -> tracker Session cell model ---- */
+
+/**
+ * Maps the staff session-log wire into the TrainingSessionLog the Tracker
+ * tab's Session column and detail dialog read. Sets arrive flat with an
+ * exerciseId back-reference; they regroup under the session's prescribed
+ * exercise order. Skipped sessions are not logs - the caller filters them.
+ */
+export function staffLogToSessionLog(
+  log: StaffSessionLogEntryWire,
+  clientId: string,
+): TrainingSessionLog {
+  const setsByExercise = new Map<string, SessionSetRowWire[]>();
+  for (const set of log.sets)
+    setsByExercise.set(set.exerciseId, [
+      ...(setsByExercise.get(set.exerciseId) ?? []),
+      set,
+    ]);
+  const exercises = log.session.exercises.map((exercise) => ({
+    exerciseId: exercise.id,
+    exerciseKey: exercise.id,
+    prescription: {
+      id: exercise.id,
+      name: exercise.name,
+      muscle: exercise.muscle,
+      instructions: exercise.instructions ?? "",
+      progression: exercise.progressionNotes ?? "",
+      libraryId: exercise.libraryItemId,
+      secondaryMuscles: exercise.secondaryMuscles,
+      generalNotes: exercise.generalNotes,
+      sets: (exercise.setRows ?? []).map((row) => ({
+        id: row.id,
+        reps: row.reps,
+        repsMax: row.repsMax,
+        tempo: row.tempo ?? "",
+        type: row.type ?? "",
+        rest: row.rest ?? "",
+        instructions: row.instructions ?? "",
+      })),
+    },
+    sets: (setsByExercise.get(exercise.id) ?? [])
+      .sort((a, b) => a.position - b.position)
+      .map((row) => ({
+        setId: row.setKey,
+        done: true,
+        weight: row.actuals.load ?? null,
+        reps: row.actuals.actualReps ?? null,
+        rpe: row.actuals.rpe ?? null,
+        rir: null,
+        note: row.actuals.note ?? "",
+        flagged: (row.actuals.flags ?? []).length > 0,
+      })),
+  }));
+  const loadUnit =
+    log.sets.find((set) => set.actuals.loadUnit)?.actuals.loadUnit === "lb"
+      ? "lb"
+      : "kg";
+  return {
+    id: log.sessionLogId,
+    clientId,
+    planId: log.programId,
+    week: log.bookedWeek,
+    occurrenceKey: log.sessionLogId,
+    sessionId: log.sessionId,
+    sessionName: log.session.name,
+    scheduledDate: log.performedDate,
+    logFields: ["weight", "reps", "rpe", "note"],
+    loadUnit,
+    exercises,
+    status: log.status === "COMPLETED" ? "finished" : "in-progress",
+    startedAt: log.completedAt ?? `${log.performedDate}T00:00:00.000Z`,
+    finishedAt: log.completedAt ?? undefined,
+  };
 }

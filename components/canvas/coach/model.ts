@@ -595,7 +595,13 @@ export const TRAINING_FIELDS = [
   "Detailed instructions",
   "Progression notes",
 ];
-export type FieldConfig = { id: string; unit: string; options?: string[] };
+export type FieldConfig = {
+  id: string;
+  unit: string;
+  options?: string[];
+  decimals?: 0 | 1 | 2;
+  summary?: "avg" | "sum" | "count" | "none";
+};
 export type Widget = {
   id: string;
   name: string;
@@ -773,7 +779,7 @@ export type CoachState = {
     clientAppDemo?: 1;
     trainingLogDemo?: 1;
     athleteProfileDemo?: 1;
-    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
   };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
@@ -1605,6 +1611,8 @@ const variantGuard = obj({
       id: one(ALL_PARAMETERS.map((p) => p.id)),
       unit: str,
       options: opt(arr(str)),
+      decimals: opt(one([0, 1, 2])),
+      summary: opt(one(["avg", "sum", "count", "none"])),
     }),
   ),
   roadmap: arr(
@@ -1803,7 +1811,7 @@ export function isCoachState(v: unknown): v is CoachState {
           clientAppDemo: opt(one([1])),
           trainingLogDemo: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
-          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8])),
+          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9])),
         }),
       ),
       exerciseLibrary: opt(
