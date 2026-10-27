@@ -20,13 +20,13 @@
 import { useEffect, useState } from "react";
 
 import { scheduledOption, targetNumber } from "../coach/plans/domain";
+import { Empty } from "../coach/ui";
 import {
   fetchOwnIifymPlan,
   type IifymPayloadWire,
-  type IifymTargetValueWire,
   type IifymTargetsWire,
+  type IifymTargetValueWire,
 } from "../data/nutrition";
-import { Empty } from "../coach/ui";
 
 const MACRO_FIELDS = [
   { id: "protein", label: "Protein" },
@@ -88,8 +88,7 @@ export function NutritionTargets({
           });
       })
       .catch(() => {
-        if (!cancelled)
-          setLoaded({ workspaceId, payload: null, error: true });
+        if (!cancelled) setLoaded({ workspaceId, payload: null, error: true });
       });
     return () => {
       cancelled = true;
@@ -134,9 +133,7 @@ export function NutritionTargets({
 
   const schedule = payload.schedule;
   const ids = payload.options.map((option) => option.id);
-  const optionId = schedule
-    ? scheduledOption(schedule, ids, date)
-    : ids[0];
+  const optionId = schedule ? scheduledOption(schedule, ids, date) : ids[0];
   const option = payload.options.find((entry) => entry.id === optionId);
 
   if (!option)
@@ -169,7 +166,11 @@ export function NutritionTargets({
           MACRO_FIELDS.map((field) => (
             <div key={field.id}>
               <dt>{field.label}</dt>
-              <dd data-missing={targets[field.id] === undefined ? true : undefined}>
+              <dd
+                data-missing={
+                  targets[field.id] === undefined ? true : undefined
+                }
+              >
                 {formatTarget(targets[field.id], "g")}
               </dd>
             </div>
@@ -177,7 +178,9 @@ export function NutritionTargets({
         ) : (
           <div>
             <dt>Calories</dt>
-            <dd data-missing={targets.calories === undefined ? true : undefined}>
+            <dd
+              data-missing={targets.calories === undefined ? true : undefined}
+            >
               {formatTarget(targets.calories, "kcal")}
             </dd>
           </div>

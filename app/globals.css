@@ -551,6 +551,12 @@
   letter-spacing: 0.04em;
 }
 
+/* w2-c4: meal-plan number+unit pairs stay unbreakable so grams and kcal
+ * cannot split across a wrap on narrow viewports. */
+.mp-token {
+  white-space: nowrap;
+}
+
 .tracker {
   display: grid;
   grid-template-columns: var(--tracker-nav-w) minmax(0, 1fr);

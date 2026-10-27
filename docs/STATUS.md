@@ -1,9 +1,68 @@
+## 2026-10-27 - w2-c4: client plans views (roadmap, nutrition, supplements, targets)
+
+- Branch `w2/c4` off `788714b` with `w2/a1` `269fd04` then `w2/a2`
+  `8403a62` merged in order (merged tip `53322dd`; generated-index
+  conflicts resolved keep-both-newest-first, `npm run index` rerun).
+- `/me` now binds the signed-in client's own rows into the shared
+  `CoachClient`/`Variant` shell server-side: tracker entries, activity
+  target versions, the published meal plan and the IIFYM plan via
+  `readOwnMealPlan`/`readOwnIifymPlan`. No client id travels through
+  the browser; every read is session-bound. No new routes (GET-only
+  surfaces reused: workspace `iifym-plans`, `nutrition-logs`,
+  `clients/[id]/supplement-plan`, `clients/[id]/activity-targets`).
+- `templateDefinitionSlots` gains `fields`, `roadmapPhases`,
+  `roadmapActivityTargets` (the canvas write schema already serialized
+  them; the read schema dropped them, hiding the roadmap metrics and
+  activity planning columns from the client shell).
+- Seed: one active IIFYM plan for Amara Lewis `client-007` inside the
+  opt-in demo coverage seed only (owner ruling 2026-10-27 item 3);
+  demo template definition now carries the roadmap/fields/activity
+  slots. Default seed output unchanged (normalized dump diff: only
+  scrypt re-hash and `updated_at` churn; the demo module is skipped
+  without `VARI8_SEED_DEMO=1`).
+- 390 meal-plan token-wrap fix: `components/mealplan/plan-version-view.tsx`
+  rounds displayed quantities/totals to one decimal and wraps each
+  value-unit pair in `.mp-token` (`white-space: nowrap` in
+  `app/globals.css`), so grams/kcal can no longer split mid-number.
+- Twin port: `frontend/src/components/client-app/nutrition-targets.tsx`
+  created from the canvas file (canvas kept; Biome import order applied
+  to both twins in lockstep, diff still byte-identical); plus
+  `frontend/src/components/data/nutrition.ts` same-origin shim.
+- Browser proof on lane DB `app_fp_w2c4` (production `next start`,
+  `APP_ENV=development`, `ENABLE_*=1`, `BETTER_AUTH_URL` unset so the
+  prod boot guard passes on http localhost): coach real login ->
+  client-setups -> assigned `seed-demo-de-tv-1` to Chloe Park (ACTIVE
+  pin created live); Amara real login at 1440 and 390 shows Plans:
+  Nutrition (meal plan TD meals + seeded IIFYM targets 160/175/50-60/
+  1835 kcal + nutrition-log form and recent days), Supplements (4
+  items), Activity targets (steps+cardio), Timeline/Roadmap (weekly
+  grid from seeded config). 19/19 probe checks pass; four 390
+  overflow probes clean; screenshots in W2C4 evidence.
+- Own-scope: foreign `clientProfileId` on the two `clients/[id]/*`
+  GETs rebounds to the caller's own rows (200 with own body, not a
+  literal 403 - route design, recorded); staff-only
+  `clients/[id]/iifym-plans` and `clients/[id]/nutrition-logs` return
+  literal 403 for a client session; workspace-level own routes proven
+  disjoint across Amara/Emma sessions.
+- Gates: typecheck 0, build 0, lint 0 (89 inherited warnings),
+  index+index:check 0, `cd frontend && npm run lint` 0, dash gate 0.
+  `npm test` exit 1: 4 inherited failures predating this card -
+  3 in `canvas-data-seam.test.ts` (a1's `clients.ts` generalNotes
+  split vs the pre-merge seam fixture, `clients.ts` byte-identical to
+  the a1 tip) and 1 in `coach-store-roster.test.tsx` (a2's
+  `clientProfileIdFor` caching vs pre-a2 test, `store.tsx` unchanged
+  from the a2 tip). `format:check` exit 1 on 56 inherited files; the
+  4 files this card touched were formatted and now pass.
+- Held per card: client-visible phase display (no client-readable
+  phase route exists on the a1 tip; staff-only `notes.write` reads
+  only) - recorded as a finding for the A lane.
+
 ## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
 
 - Branch `w2/a1` off `2967bb1`. One migration directory
   `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
   and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
-  false`, tenant-coherent FKs and indexes.
+false`, tenant-coherent FKs and indexes.
 - New service `lib/workspace/client-detail.ts`; new routes
   `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
   `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
@@ -241,7 +300,7 @@
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -291,7 +350,7 @@
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -403,7 +462,7 @@
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  + media still mintable + rows retained in db.
+  - media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe

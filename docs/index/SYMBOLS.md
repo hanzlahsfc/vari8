@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1583 exported symbols.
+Counts: 161 modules with exports, 1597 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1029,6 +1029,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { TargetStyle } from "./meal-targets"`
 - `export { TargetValue } from "./meal-targets"`
 - `export { TemplateDefinitionSlots } from "./template-slots"`
+- `export { TemplateField } from "./template-slots"`
 - `export { TemplateFieldOverride } from "./template-slots"`
 - `export { TemplateModules } from "./template-slots"`
 - `export { TemplateRoadmapRow } from "./template-slots"`
@@ -1053,6 +1054,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { targetStyle } from "./meal-targets"`
 - `export { targetValue } from "./meal-targets"`
 - `export { templateDefinitionSlots } from "./template-slots"`
+- `export { templateField } from "./template-slots"`
 - `export { templateFieldOverride } from "./template-slots"`
 - `export { templateModules } from "./template-slots"`
 - `export { templateRoadmapRow } from "./template-slots"`
@@ -1089,10 +1091,12 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/db-types/template-slots.ts`
 
 - `export type TemplateDefinitionSlots = z.infer<typeof templateDefinitionSlots>`
+- `export type TemplateField = z.infer<typeof templateField>`
 - `export type TemplateFieldOverride = z.infer<typeof templateFieldOverride>`
 - `export type TemplateModules = z.infer<typeof templateModules>`
 - `export type TemplateRoadmapRow = z.infer<typeof templateRoadmapRow>`
 - `export const templateDefinitionSlots = z.object({ modules: templateModules.optional(), summaryParameterIds: z.array(z.string()).max(4).optional(), nutritionMode: z.enum(["MEAL_PLAN", "IIFYM"]).opti...`
+- `export const templateField = z.object({ id: z.string(), unit: z.string(), options: z.array(z.string()).optional(), })`
 - `export const templateFieldOverride = z.object({ parameterId: z.string(), unit: z.string(), options: z.array(z.string()).optional(), })`
 - `export const templateModules = z.object({ views: z.array(z.string()), habits: z.boolean(), })`
 - `export const templateRoadmapRow = z.object({ source: z.string(), calculation: z.string(), comparison: z.boolean(), })`
