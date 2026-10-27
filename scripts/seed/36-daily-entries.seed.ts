@@ -50,6 +50,10 @@ const SEED_PARAMETERS: Array<{
   ratingScheme?: "SCALE_1_10" | "SCALE_1_5";
   options?: { optionId: string; label: string }[];
   validation?: { min: number; max: number };
+  /** Canvas tracker cell precision. */
+  decimals?: 0 | 1 | 2;
+  /** Canvas tracker column aggregate. */
+  summary?: "avg" | "sum" | "count" | "none";
 }> = [
   {
     id: "seed-de-param-weight",
@@ -58,6 +62,8 @@ const SEED_PARAMETERS: Array<{
     label: "Morning weight",
     unit: "kg",
     validation: { min: 30, max: 300 },
+    decimals: 1,
+    summary: "avg",
   },
   {
     id: "seed-de-param-sleep",
@@ -65,6 +71,8 @@ const SEED_PARAMETERS: Array<{
     kind: "RATING",
     label: "Sleep quality",
     ratingScheme: "SCALE_1_5",
+    decimals: 0,
+    summary: "avg",
   },
   {
     id: "seed-de-param-energy",
@@ -76,6 +84,8 @@ const SEED_PARAMETERS: Array<{
       { optionId: "seed-opt-ok", label: "Okay" },
       { optionId: "seed-opt-high", label: "High" },
     ],
+    decimals: 0,
+    summary: "none",
   },
   {
     id: "seed-de-param-steps",
@@ -83,12 +93,16 @@ const SEED_PARAMETERS: Array<{
     kind: "MEASUREMENT",
     label: "Steps",
     validation: { min: 0, max: 100000 },
+    decimals: 0,
+    summary: "sum",
   },
   {
     id: "seed-de-param-note",
     key: "p_seed_note",
     kind: "TEXT",
     label: "Daily note",
+    decimals: 0,
+    summary: "none",
   },
 ];
 
@@ -186,6 +200,8 @@ type DefinitionParameter = {
   options: { optionId: string; label: string }[];
   validation: { min: number; max: number } | null;
   dataClassification: string;
+  decimals: 0 | 1 | 2;
+  summary: "avg" | "sum" | "count" | "none";
   revision: number;
 };
 
@@ -202,6 +218,8 @@ function templateDefinition() {
       options: p.options ?? [],
       validation: p.validation ?? null,
       dataClassification: "GENERAL_HEALTH",
+      decimals: p.decimals ?? 0,
+      summary: p.summary ?? "none",
       revision: 1,
     };
   }
@@ -319,7 +337,18 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     orderBy: { createdAt: "asc" },
     select: { id: true },
   });
-  if (!clientMember || !staffMember)
+  // Coach-note authorship: the coachNotes write matrix limits the author to
+  // an assigned COACH, so fixtures must not be owner-authored.
+  const noteAuthor = await prisma.workspaceMember.findFirst({
+    where: {
+      workspaceId: workspace.id,
+      role: "COACH",
+      status: "ACTIVE",
+    },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  if (!clientMember || !staffMember || !noteAuthor)
     throw new Error("client/staff workspace members missing for the seed");
 
   // Parameter rows (raw SQL coherence FKs need real parameter_definition).
@@ -522,6 +551,74 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     created += 1;
   }
+
+  // Coach notes anchored to the first seeded entry date. Ids are fixed per
+  // profile (never date-derived) and stale rows on other dates are cleaned,
+  // so re-running on a different day leaves no orphans.
+  const firstDateIso = isoDaysAgo(WEEK_DAYS - 1);
+  const firstDate = new Date(`${firstDateIso}T00:00:00Z`);
+  // Cleanup also catches rows authored by the staff pick an older seed run
+  // used, so switching author never leaves stale-day fixtures behind.
+  const noteAuthorIds = [staffMember.id, noteAuthor.id];
+  await prisma.trackerComment.deleteMany({
+    where: {
+      clientProfileId: profile.id,
+      authorMemberId: { in: noteAuthorIds },
+      entryDate: { not: firstDate },
+    },
+  });
+  await prisma.trackerDayNote.deleteMany({
+    where: {
+      clientProfileId: profile.id,
+      authorMemberId: { in: noteAuthorIds },
+      entryDate: { not: firstDate },
+    },
+  });
+  const weightParam =
+    snapshot.find((p) => p.parameterKey === "p_seed_weight") ??
+    snapshot.find((p) => p.kind === "MEASUREMENT");
+  if (weightParam) {
+    const body =
+      "Morning weight is steady across the week. Keep the same weigh-in timing.";
+    await prisma.trackerComment.upsert({
+      where: {
+        clientProfileId_entryDate_parameterId: {
+          clientProfileId: profile.id,
+          entryDate: firstDate,
+          parameterId: weightParam.parameterId,
+        },
+      },
+      update: { body, authorMemberId: noteAuthor.id },
+      create: {
+        id: `seed-de-tc-${profile.id}`,
+        workspaceId: workspace.id,
+        clientProfileId: profile.id,
+        entryDate: firstDate,
+        parameterId: weightParam.parameterId,
+        body,
+        authorMemberId: noteAuthor.id,
+      },
+    });
+  }
+  const dayNoteBody =
+    "Week one of the demo block is logged. Review the steps average on Friday.";
+  await prisma.trackerDayNote.upsert({
+    where: {
+      clientProfileId_entryDate: {
+        clientProfileId: profile.id,
+        entryDate: firstDate,
+      },
+    },
+    update: { body: dayNoteBody, authorMemberId: noteAuthor.id },
+    create: {
+      id: `seed-de-tdn-${profile.id}`,
+      workspaceId: workspace.id,
+      clientProfileId: profile.id,
+      entryDate: firstDate,
+      body: dayNoteBody,
+      authorMemberId: noteAuthor.id,
+    },
+  });
   console.log(
     `[seed] daily entries: ${created} day(s) written, ${skipped} already current`,
   );

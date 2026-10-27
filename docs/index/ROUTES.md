@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 58 backend pages, 55 API routes, 14 layouts, 5 canvas pages.
+Counts: 58 backend pages, 57 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -101,6 +101,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/activity-targets/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/history/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/values` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/values/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/publish/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone/route.ts` | - | none detected |
@@ -113,6 +114,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/compare/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/[programId]/route.ts` | - | none detected |

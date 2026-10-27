@@ -343,6 +343,7 @@ model Workspace {
   coachNotes              CoachNote[]
   coachTasks              CoachTask[]
   trackerComments         TrackerComment[]
+  trackerDayNotes           TrackerDayNote[]
   clientGoals             ClientGoal[]
   savedMeals              SavedMeal[]
   exerciseLibraryItems    ExerciseLibraryItem[]
@@ -440,6 +441,7 @@ model WorkspaceMember {
   coachTasksCreated           CoachTask[]           @relation("CoachTaskCreator")
   coachTasksCompleted         CoachTask[]           @relation("CoachTaskCompleter")
   trackerCommentsAuthored     TrackerComment[]      @relation("TrackerCommentAuthor")
+  trackerDayNotesAuthored       TrackerDayNote[]        @relation("TrackerDayNoteAuthor")
   clientGoalsCreated          ClientGoal[]          @relation("ClientGoalCreator")
   activityTargetsCreated      ActivityTarget[]      @relation("ActivityTargetCreator")
   savedMealsCreated           SavedMeal[]           @relation("SavedMealCreator")
@@ -525,6 +527,7 @@ model ClientProfile {
   coachNotes        CoachNote[]        @relation("CoachNoteClient")
   coachTasks        CoachTask[]        @relation("CoachTaskClient")
   trackerComments   TrackerComment[]   @relation("TrackerCommentClient")
+  trackerDayNotes   TrackerDayNote[]     @relation("TrackerDayNoteClient")
   clientGoals       ClientGoal[]       @relation("ClientGoalClient")
   activityTargets   ActivityTarget[]   @relation("ActivityTargetClient")
   clientPlan        ClientPlan?        @relation("ClientPlanClient")
@@ -2400,6 +2403,28 @@ model TrackerComment {
   @@unique([clientProfileId, entryDate, parameterId])
   @@unique([id, workspaceId])
   @@map("tracker_comment")
+}
+
+// w2-fe2: one coach-authored day note per client per declared date (the
+// tab's `${date}:coach-note` slot). Mirrors tracker_comment minus the
+// parameter dimension; staff-only through the route capability.
+model TrackerDayNote {
+  id              String   @id @default(cuid())
+  workspaceId     String   @map("workspace_id")
+  clientProfileId String   @map("client_profile_id")
+  entryDate       DateTime @map("entry_date") @db.Date
+  body            String
+  authorMemberId  String   @map("author_member_id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  clientProfile ClientProfile  @relation("TrackerDayNoteClient", fields: [clientProfileId], references: [id], onDelete: Restrict)
+  authorMember  WorkspaceMember @relation("TrackerDayNoteAuthor", fields: [authorMemberId], references: [id], onDelete: Restrict)
+
+  @@unique([clientProfileId, entryDate])
+  @@unique([id, workspaceId])
+  @@map("tracker_day_note")
 }
 
 // plans/types.ts ClientGoal — many goals per field allowed; the canvas

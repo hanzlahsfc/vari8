@@ -58,6 +58,19 @@ import {
   type TrainingPlan,
 } from "./plans/types";
 import type { MealPlan } from "../ethereal/mealplan/model";
+import {
+  deleteStaffTrackerNote,
+  fetchStaffTrackerValues,
+  mergeStaffTracking,
+  putStaffTrackerNote,
+  staffNoteKeyToWire,
+  staffNoteText,
+  staffTrackerToTracking,
+} from "../data/tracker";
+import {
+  fetchStaffTrainingLogs,
+  staffLogToSessionLog,
+} from "../data/training-logs";
 import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
 
@@ -776,6 +789,142 @@ export function CoachProvider({
         }
       })();
     }, 800);
+    return () => clearTimeout(timer);
+  }, [state, hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+
+  /* ------------------------------------------------------------------
+   * W2-FE2 tracker hydration + note sync for the viewed client.
+   *
+   * Signed-in (non-demo) path: the Tracker tab's values, texts and coach
+   * notes come from the server, not the local draft slice. One effect
+   * hydrates `client.tracking` and the client's session logs; a second
+   * debounced effect diffs the `note:*`/`coach-note` text keys against
+   * the last synced baseline and PUTs/DELETEs the tracker-notes route.
+   * ------------------------------------------------------------------ */
+  const trackingHydrated = useRef(new Set<string>());
+  const trackingNotesSynced = useRef(new Map<string, Record<string, string>>());
+  const trackingParamKeys = useRef(new Map<string, Record<string, string>>());
+  const noteSyncChain = useRef(new Map<string, Promise<void>>());
+  useEffect(() => {
+    if (!hydrated || !workspaceId || demo || !route.client) return;
+    const clientId = route.client;
+    if (trackingHydrated.current.has(clientId)) return;
+    let cancelled = false;
+    void (async () => {
+      const client = stateRef.current.clients.find((c) => c.id === clientId);
+      if (!client) return;
+      try {
+        const clientProfileId = await clientProfileIdFor(client.name);
+        if (!clientProfileId || cancelled) return;
+        // Notes the user edits while the fetch is in flight must survive the
+        // merge; the delta over this snapshot is re-applied after it.
+        const beforeNotes = staffNoteText(client.tracking?.text ?? {});
+        const [values, logs] = await Promise.all([
+          fetchStaffTrackerValues(workspaceId, clientProfileId),
+          fetchStaffTrainingLogs(workspaceId, clientProfileId),
+        ]);
+        if (cancelled) return;
+        const hydration = staffTrackerToTracking(values);
+        // Arm sync only when a server baseline exists; a non-ready state
+        // (consent_missing) must not push local notes with no baseline.
+        if (hydration) {
+          trackingHydrated.current.add(clientId);
+          trackingParamKeys.current.set(clientId, hydration.parameterKeys);
+          trackingNotesSynced.current.set(clientId, hydration.noteText);
+        }
+        const remoteLogs = logs.logs
+          .filter((log) => log.status !== "SKIPPED")
+          .map((log) => staffLogToSessionLog(log, clientId));
+        const remoteLogIds = new Set(remoteLogs.map((log) => log.id));
+        setState((current) => ({
+          ...current,
+          clients: current.clients.map((c) => {
+            if (c.id !== clientId || !hydration) return c;
+            const merged = mergeStaffTracking(c.tracking, hydration);
+            const now = staffNoteText(c.tracking?.text ?? {});
+            for (const [key, body] of Object.entries(now))
+              if (beforeNotes[key] !== body) merged.text[key] = body;
+            for (const key of Object.keys(beforeNotes))
+              if (!(key in now)) delete merged.text[key];
+            return { ...c, tracking: merged };
+          }),
+          trainingLogs: [
+            ...(current.trainingLogs ?? []).filter(
+              (log) => !(log.clientId === clientId && remoteLogIds.has(log.id)),
+            ),
+            ...remoteLogs,
+          ],
+        }));
+      } catch {
+        trackingHydrated.current.delete(clientId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+
+  useEffect(() => {
+    if (!hydrated || !workspaceId || demo || !route.client) return;
+    const clientId = route.client;
+    const client = state.clients.find((c) => c.id === clientId);
+    if (!client || !trackingHydrated.current.has(clientId)) return;
+    const timer = setTimeout(() => {
+      // Serialize per client: each pass diffs the newest baseline after the
+      // previous run resolves, so overlapping debounces cannot reorder two
+      // writes to the same key.
+      const chain = noteSyncChain.current.get(clientId) ?? Promise.resolve();
+      const next = chain.then(async () => {
+        try {
+          const clientProfileId = await clientProfileIdFor(client.name);
+          if (!clientProfileId) return;
+          const baseline = trackingNotesSynced.current.get(clientId) ?? {};
+          const current = staffNoteText(
+            stateRef.current.clients.find((c) => c.id === clientId)?.tracking
+              ?.text ?? {},
+          );
+          const parameterKeys =
+            trackingParamKeys.current.get(clientId) ?? {};
+          // The baseline advances only past keys whose write resolved, so a
+          // failed note retries on the next pass instead of being dropped.
+          const synced = { ...baseline };
+          try {
+            for (const [key, body] of Object.entries(current)) {
+              if (synced[key] === body) continue;
+              const wire = staffNoteKeyToWire(key, parameterKeys);
+              if (!wire) continue;
+              await putStaffTrackerNote(workspaceId, clientProfileId, {
+                ...wire,
+                body,
+              });
+              synced[key] = body;
+            }
+            for (const key of Object.keys(baseline)) {
+              if (key in current) continue;
+              const wire = staffNoteKeyToWire(key, parameterKeys);
+              if (!wire) continue;
+              await deleteStaffTrackerNote(
+                workspaceId,
+                clientProfileId,
+                wire,
+              );
+              delete synced[key];
+            }
+          } catch {
+            trackingNotesSynced.current.set(clientId, synced);
+            setNotice({ text: "Tracker note could not be saved." });
+            return;
+          }
+          trackingNotesSynced.current.set(clientId, synced);
+        } catch {
+          setNotice({ text: "Tracker note could not be saved." });
+        }
+      });
+      noteSyncChain.current.set(
+        clientId,
+        next.catch(() => {}),
+      );
+    }, 400);
     return () => clearTimeout(timer);
   }, [state, hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
   return (

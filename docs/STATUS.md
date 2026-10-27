@@ -1,3 +1,59 @@
+## 2026-10-27 - w2-fe2: backend for the coach Tracker tab
+
+- Merge: `git merge-tree` (no ref updates) predicted one content conflict in
+  `docs/STATUS.md`; resolved keeping both entries, newest first. Merged
+  w2/a2 tip `8403a6230ee7fb97eff2ed8ed4769ade8f2db2a2` into `w2/fe2` as
+  merge commit `072eb5a9d35617fe716e7eed1d48e78ef40f6b93`. Typecheck and
+  build on the merged tip passed before feature work.
+- Schema: new `TrackerDayNote` model (one coach-authored day note per
+  client+date) beside the existing `TrackerComment` per-cell note;
+  migration `20261027000012_tracker_day_notes` with `down.sql`, deployed
+  via `prisma migrate deploy` on a fresh lane database.
+- API: `GET .../clients/:clientProfileId/daily-entries/values` returns the
+  tracker span (65 seeded days for Amara) with per-field display values,
+  cell notes, day notes and the workspace parameter list, batched (no
+  N+1); entries and both note lists are each capped at the newest 400
+  rows, capability `clientData.read`. `PUT`/`DELETE .../tracker-notes`
+  upsert and clear cell/day notes on natural keys, capability
+  `notes.write` at the route layer, with the service then applying the
+  authoritative `coachNotes` write matrix: ACTIVE `ClientAssignment`
+  required, so unassigned same-workspace coaches, owners, clients and
+  foreign members are denied (owner write is `denied` in rbac.ts D10;
+  `roles.ts` `notes.write` still says owner-workspace - open question for
+  Marcel, implementation follows rbac).
+- Canvas: `data/tracker.ts` fetchers plus the wire->tracking mapper;
+  `store.tsx` hydrates `client.tracking` and remote session logs for the
+  viewed client (reusing the w2-a2 training-log route) and debounce-syncs
+  `note:`/`coach-note` text keys to the notes route. Derived columns
+  without a server parameter keep their note local, matching pre-backend
+  behavior.
+- Seed: `36-daily-entries.seed.ts` and `50-demo-coverage.seed.ts` now set
+  field `decimals`/`summary` metadata and deterministic tracker cell/day
+  notes; two consecutive seeded dumps are byte-stable after normalizing
+  timestamps, cuids, password hashes and COPY row order
+  (`W2FE2/normalize-dump.py`).
+- Seed: a second same-workspace coach is provisioned when
+  `SEED_COACH2_EMAIL`/`SEED_COACH2_PASSWORD` are set (00-workspace) and
+  assigned at COACH scope to every canvas client (20-clients); seeded note
+  ids are profile-anchored constants and stale-date rows are cleaned, so
+  reseeding on a different calendar day leaves no orphans.
+- Verified: typecheck, lint (0 errors), build, 117 files / 1392 tests,
+  prettier clean on touched files, docs/index regenerated and
+  `index:check` green. Independent review (Claude family via
+  hermes-verify) returned REPAIR on round 1; all findings fixed and
+  re-proven. Live matrix on the lane app (APP_ENV=test, feature flags on,
+  consent gates off per D12): assigned coach GET/PUT 200, second assigned
+  coach GET 200 and sees the notes, unassigned same-workspace coach
+  GET/PUT 403, foreign-workspace coach 403, client 403, owner PUT 403,
+  anonymous 401, `2026-02-31` 400, bogus parameter key 400
+  (`W2FE2/role-matrix.txt`). Browser proof at 1440 and 2560, real login,
+  no `?demo`: UI cell note PUT 200 persists after reload, day note renders
+  server-side, 0 console errors; screenshots in
+  `Vari8-evidence/FULL-PACKAGE-2/W2FE2/shots/`.
+- Held for w2-a5 (not claimed here): template-editor persistence of
+  Decimals and Week summary, and the template-field read that drives tab
+  columns from the server.
+
 ## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
 
 - Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`

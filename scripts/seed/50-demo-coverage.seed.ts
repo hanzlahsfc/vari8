@@ -42,10 +42,7 @@ const WORKSPACE_SLUG = "canvas-demo";
 const TIMEZONE = "Europe/Vienna";
 const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00 — documented schedule default
 
-const FIXTURE = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "demo-export",
-);
+const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "demo-export");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = any;
@@ -125,13 +122,21 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     },
     orderBy: { createdAt: "asc" },
   });
+  // Coach-note authorship: tracker notes are written as an assigned-scope
+  // COACH member, never the owner (coachNotes write matrix).
+  const noteStaff = await prisma.workspaceMember.findFirstOrThrow({
+    where: {
+      workspaceId: workspace.id,
+      role: "COACH",
+      status: "ACTIVE",
+    },
+    orderBy: { createdAt: "asc" },
+  });
   // Workspace preferences -> the workspace settings columns.
   const prefs = WORKSPACE.preferences ?? {};
   const prefData: Prisma.WorkspaceUpdateInput = {
     appearanceMode:
-      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT"
-        ? "LIGHT"
-        : "DARK",
+      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT" ? "LIGHT" : "DARK",
     appearanceAccent: String(prefs.accent ?? "#EB91B8"),
     availabilityText: String(prefs.availability ?? ""),
     notificationsEnabled: prefs.notifications !== false,
@@ -151,8 +156,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
 
   const clients = INDEX.clients.map((c) => ({ meta: c, data: load(c.file) }));
-  const password = process.env.SEED_DEMO_CLIENT_PASSWORD ??
-    process.env.SEED_CLIENT_PASSWORD;
+  const password =
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? process.env.SEED_CLIENT_PASSWORD;
   if (!password)
     throw new Error(
       "50-demo-coverage: SEED_DEMO_CLIENT_PASSWORD or SEED_CLIENT_PASSWORD required",
@@ -230,7 +235,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
   // ── Check-in forms: one form + published version per canvas template,
   // fields derived from the selected variant's metric fields + questions.
-  const formByTemplate = new Map<string, { formId: string; versionId: string }>();
+  const formByTemplate = new Map<
+    string,
+    { formId: string; versionId: string }
+  >();
   for (const tpl of WORKSPACE.templates ?? []) {
     const variant =
       tpl.variants.find((v: J) => v.id === tpl.defaultVariant) ??
@@ -247,7 +255,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         order: fields.length,
       });
     for (const q of variant.questions ?? []) {
-      const kind = QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
+      const kind =
+        QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
       const field: J = {
         fieldId: `demo-q-${slug(tpl.id)}-${slug(q.id)}`,
         kind,
@@ -312,7 +321,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     const clientMemberId = members.get(cid)!;
     const clientUserId = users.get(cid)!;
-    const assigned = formByTemplate.get(data.assignment?.templateId) ??
+    const assigned =
+      formByTemplate.get(data.assignment?.templateId) ??
       [...formByTemplate.values()][0];
 
     // Priority flag + archive state (legacy strings stay unmapped).
@@ -339,8 +349,12 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       "SATURDAY",
       "SUNDAY",
     ];
-    const ruleRanges: { id: string; start: Date; end: Date | null; day: number }[] =
-      [];
+    const ruleRanges: {
+      id: string;
+      start: Date;
+      end: Date | null;
+      day: number;
+    }[] = [];
     for (const [si, s] of schedules.entries()) {
       for (const day of s.weekdays ?? []) {
         const start = dayUtc(s.effective);
@@ -614,7 +628,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             senderUserId: isCoach ? staff.userId : clientUserId,
             body: m.text ?? "",
             priority: Boolean(m.priority),
-            links: m.link ? ({ link: m.link } as Prisma.InputJsonValue) : undefined,
+            links: m.link
+              ? ({ link: m.link } as Prisma.InputJsonValue)
+              : undefined,
             clientRequestId: `seed-demo-mreq-${m.id}`,
             sentAt,
           },
@@ -659,7 +675,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           workspaceId: workspace.id,
           clientProfileId: profile.id,
           title: t.title ?? t.text ?? "Coach to-do",
-          completedAt: t.done || t.completedAt ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt) : null,
+          completedAt:
+            t.done || t.completedAt
+              ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt)
+              : null,
           createdByMemberId: staff.id,
         },
       });
@@ -667,7 +686,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
     // Client tasks.
     for (const t of data.clientTasks ?? []) {
-      const done = String(t.status).toLowerCase() === "complete" ||
+      const done =
+        String(t.status).toLowerCase() === "complete" ||
         String(t.status).toLowerCase() === "completed";
       await prisma.clientTask.upsert({
         where: { id: `seed-demo-task-${t.id}` },
@@ -715,15 +735,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         where: {
           habitId_effectiveFrom: {
             habitId,
-            effectiveFrom: dayUtc(data.coachingSince) ??
-              dayUtc(INDEX.generatedAt)!,
+            effectiveFrom:
+              dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           },
         },
         update: {},
         create: {
           habitId,
-          effectiveFrom: dayUtc(data.coachingSince) ??
-            dayUtc(INDEX.generatedAt)!,
+          effectiveFrom:
+            dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           weekdays: mask,
         },
       });
@@ -757,105 +777,208 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       kind: "MEASUREMENT" | "OPTION" | "TEXT";
       unit?: string;
       options?: string[];
+      /** Canvas display precision for the cell value. */
+      decimals?: 0 | 1 | 2;
+      /** Canvas column aggregate. */
+      summary?: "avg" | "sum" | "count" | "none";
     }[] = [
-      { key: "weight", label: "Bodyweight", kind: "MEASUREMENT", unit: "kg" },
+      {
+        key: "weight",
+        label: "Bodyweight",
+        kind: "MEASUREMENT",
+        unit: "kg",
+        decimals: 1,
+        summary: "avg",
+      },
       {
         key: "sleep",
         label: "Sleep duration",
         kind: "MEASUREMENT",
         unit: "hours",
+        decimals: 1,
+        summary: "avg",
       },
-      { key: "energy", label: "Energy outside gym", kind: "MEASUREMENT" },
+      {
+        key: "energy",
+        label: "Energy outside gym",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "steps",
         label: "Step count",
         kind: "MEASUREMENT",
         unit: "steps",
+        decimals: 0,
+        summary: "sum",
       },
       {
         key: "calories",
         label: "Energy intake",
         kind: "MEASUREMENT",
         unit: "kcal",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "protein",
         label: "Protein intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 0,
+        summary: "sum",
       },
       {
         key: "carbs",
         label: "Carbohydrate intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "fat", label: "Fat intake", kind: "MEASUREMENT", unit: "g" },
+      {
+        key: "fat",
+        label: "Fat intake",
+        kind: "MEASUREMENT",
+        unit: "g",
+        decimals: 0,
+        summary: "sum",
+      },
       {
         key: "cardio-duration",
         label: "Cardio duration",
         kind: "MEASUREMENT",
         unit: "minutes",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "water", label: "Water intake", kind: "MEASUREMENT", unit: "L" },
+      {
+        key: "water",
+        label: "Water intake",
+        kind: "MEASUREMENT",
+        unit: "L",
+        decimals: 1,
+        summary: "sum",
+      },
       {
         key: "rhr",
         label: "Resting heart rate",
         kind: "MEASUREMENT",
         unit: "bpm",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "fbg",
         label: "Fasted blood glucose",
         kind: "MEASUREMENT",
         unit: "mmol/L",
+        decimals: 1,
+        summary: "avg",
       },
       {
         key: "bp",
         label: "Blood pressure",
         kind: "TEXT",
         unit: "mmHg",
+        decimals: 0,
+        summary: "none",
       },
       {
         key: "bleeding-level",
         label: "Bleeding level",
         kind: "OPTION",
         options: ["None", "Light", "Medium", "Heavy"],
+        decimals: 0,
+        summary: "none",
       },
-      { key: "cramps", label: "Cramps", kind: "MEASUREMENT" },
-      { key: "pms-symptoms", label: "PMS symptoms", kind: "TEXT" },
+      {
+        key: "cramps",
+        label: "Cramps",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "pms-symptoms",
+        label: "PMS symptoms",
+        kind: "TEXT",
+        decimals: 0,
+        summary: "none",
+      },
       {
         key: "salt-intake",
         label: "Salt intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 1,
+        summary: "sum",
       },
       {
         key: "caffeine-intake",
         label: "Caffeine intake",
         kind: "MEASUREMENT",
         unit: "mg",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "hunger", label: "Hunger", kind: "MEASUREMENT" },
-      { key: "bloating", label: "Bloating", kind: "MEASUREMENT" },
-      { key: "sleep-quality", label: "Sleep quality", kind: "MEASUREMENT" },
+      {
+        key: "hunger",
+        label: "Hunger",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "bloating",
+        label: "Bloating",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "sleep-quality",
+        label: "Sleep quality",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "muscle-soreness",
         label: "Muscle soreness / DOMS",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
-      { key: "stress", label: "Stress", kind: "MEASUREMENT" },
+      {
+        key: "stress",
+        label: "Stress",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "energy-in-gym",
         label: "Energy in the gym",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "mood-in-gym",
         label: "Mood in the gym",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
-      { key: "daily-note", label: "Client daily note", kind: "TEXT" },
+      {
+        key: "daily-note",
+        label: "Client daily note",
+        kind: "TEXT",
+        decimals: 0,
+        summary: "none",
+      },
     ];
     const entries = data.tracking?.entries ?? [];
     if (entries.length) {
@@ -936,6 +1059,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
                   : [],
               validation: null,
               dataClassification: "GENERAL_HEALTH",
+              // Canvas tracker cell rendering hints (w2-fe2 seed fixture).
+              decimals: spec.decimals ?? 0,
+              summary: spec.summary ?? "none",
               revision: 1,
             },
           ]),
@@ -1101,7 +1227,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           data: { currentRevisionId: rev.id },
         });
         const vals = entry.values ?? {};
-        if (["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null))
+        if (
+          ["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null)
+        )
           await prisma.nutritionLog.upsert({
             where: { id: `seed-demo-nl-${cid}-${iso}` },
             update: {},
@@ -1118,6 +1246,72 @@ export default async function seed(ctx: SeedContext): Promise<void> {
               updatedByMemberId: clientMemberId,
             },
           });
+      }
+
+      // Coach notes on the tracker surface: two cell comments and one day
+      // note on fixed dates inside the seeded span. Deterministic ids and a
+      // fixed body, upserted on the natural key, so a second run only
+      // refreshes the row (no now()-derived seeded columns).
+      const cellNotes = [
+        {
+          index: 5,
+          paramKey: "weight",
+          body: "Weekly average is trending down. Keep the morning weigh-in before food.",
+        },
+        {
+          index: 30,
+          paramKey: "sleep",
+          body: "Sleep is clustering near seven hours. Lights out thirty minutes earlier this week.",
+        },
+      ];
+      for (const note of cellNotes) {
+        const raw = entries[note.index]?.date;
+        const day = raw ? dayUtc(raw) : null;
+        if (!day) continue;
+        const iso = day.toISOString().slice(0, 10);
+        await prisma.trackerComment.upsert({
+          where: {
+            clientProfileId_entryDate_parameterId: {
+              clientProfileId: profile.id,
+              entryDate: day,
+              parameterId: paramIds[note.paramKey],
+            },
+          },
+          update: { body: note.body, authorMemberId: noteStaff.id },
+          create: {
+            id: `seed-demo-tc-${iso}-${note.paramKey}`,
+            workspaceId: workspace.id,
+            clientProfileId: profile.id,
+            entryDate: day,
+            parameterId: paramIds[note.paramKey],
+            body: note.body,
+            authorMemberId: noteStaff.id,
+          },
+        });
+      }
+      const dayNoteRaw = entries[10]?.date;
+      const dayNoteDate = dayNoteRaw ? dayUtc(dayNoteRaw) : null;
+      if (dayNoteDate) {
+        const iso = dayNoteDate.toISOString().slice(0, 10);
+        const body =
+          "Day check: hydration and steps on plan. One session moved to Thursday.";
+        await prisma.trackerDayNote.upsert({
+          where: {
+            clientProfileId_entryDate: {
+              clientProfileId: profile.id,
+              entryDate: dayNoteDate,
+            },
+          },
+          update: { body, authorMemberId: noteStaff.id },
+          create: {
+            id: `seed-demo-tdn-${iso}`,
+            workspaceId: workspace.id,
+            clientProfileId: profile.id,
+            entryDate: dayNoteDate,
+            body,
+            authorMemberId: noteStaff.id,
+          },
+        });
       }
     }
 
@@ -1154,7 +1348,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // verbatim (canvas lifecycle shape documented in MAPPING.md).
     const mp = data.plans?.nutrition?.mealPlan;
     if (mp?.draft || mp?.active) {
-      const start = dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
+      const start =
+        dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       const planId = `seed-demo-mp-${cid}`;
       await prisma.mealPlan.upsert({
@@ -1181,8 +1376,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         mp.active?.content,
       ].filter(Boolean)) {
         seq += 1;
-        const eff =
-          dayUtc(item.startDate) ?? start;
+        const eff = dayUtc(item.startDate) ?? start;
         await prisma.mealPlanVersion.upsert({
           where: {
             mealPlanId_versionSeq: { mealPlanId: planId, versionSeq: seq },
@@ -1209,7 +1403,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     if (ii?.draft || ii?.active) {
       const planId = `seed-demo-iifym-${cid}`;
       const content = ii.draft ?? ii.active?.content ?? ii.active;
-      const start = dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
+      const start =
+        dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       await prisma.iifymPlan.upsert({
         where: { id: planId },
@@ -1518,7 +1713,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         fieldCells,
         setRows,
       });
-      const payload = materializeWeeks(draft, start.toISOString().slice(0, 10), weeks);
+      const payload = materializeWeeks(
+        draft,
+        start.toISOString().slice(0, 10),
+        weeks,
+      );
       const existing = await prisma.trainingProgram.findFirst({
         where: {
           workspaceId: workspace.id,
@@ -1575,8 +1774,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     }
     if (versionId && programId) {
       for (const log of data.related?.trainingLogs ?? []) {
-        const performed =
-          tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
+        const performed = tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
         if (!performed) continue;
         const logId = `seed-demo-log-${log.id}`;
         const sessionLog = await prisma.trainingSessionLog.upsert({
@@ -1634,104 +1832,104 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // tracking widgets, so the client app's remote views render live data
     // without a draft edit (default profile keeps its own draft untouched).
     const demoDashboardConfig = {
-          version: 1,
-          name: "Demo overview",
-          widgets: [
-            {
-              id: "seed-demo-cu03",
-              kind: "CU03",
-              settings: {
-                title: "Tasks",
-                source: "tasks",
-                summary: "open",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "open",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-cu06",
-              kind: "CU06",
-              settings: {
-                title: "Messages",
-                source: "feedback",
-                summary: "latest",
-                period: "7d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-bn01",
-              kind: "BN01",
-              settings: {
-                title: "Bodyweight trend",
-                source: "bodyweight",
-                summary: "daily",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Wide",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "kg",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-tl26",
-              kind: "TL26",
-              settings: {
-                title: "Your training",
-                source: "workouts",
-                summary: "current",
-                period: "week",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: ["exercise", "sets", "reps"],
-                labels: {},
-                option: "current",
-                unit: "",
-                visibility: "client",
-              },
-            },
-          ],
-          layouts: {
-            desktop: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
-              "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
-            },
-            tablet: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
-            },
-            mobile: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
-            },
+      version: 1,
+      name: "Demo overview",
+      widgets: [
+        {
+          id: "seed-demo-cu03",
+          kind: "CU03",
+          settings: {
+            title: "Tasks",
+            source: "tasks",
+            summary: "open",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "open",
+            unit: "",
+            visibility: "client",
           },
-          widths: { desktop: 1040, tablet: 640, mobile: 360 },
-        };
+        },
+        {
+          id: "seed-demo-cu06",
+          kind: "CU06",
+          settings: {
+            title: "Messages",
+            source: "feedback",
+            summary: "latest",
+            period: "7d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-bn01",
+          kind: "BN01",
+          settings: {
+            title: "Bodyweight trend",
+            source: "bodyweight",
+            summary: "daily",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Wide",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "kg",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-tl26",
+          kind: "TL26",
+          settings: {
+            title: "Your training",
+            source: "workouts",
+            summary: "current",
+            period: "week",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: ["exercise", "sets", "reps"],
+            labels: {},
+            option: "current",
+            unit: "",
+            visibility: "client",
+          },
+        },
+      ],
+      layouts: {
+        desktop: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
+          "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
+        },
+        tablet: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
+        },
+        mobile: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
+        },
+      },
+      widths: { desktop: 1040, tablet: 640, mobile: 360 },
+    };
     await prisma.clientDashboardLayout.upsert({
       where: {
         workspaceId_clientProfileId: {
