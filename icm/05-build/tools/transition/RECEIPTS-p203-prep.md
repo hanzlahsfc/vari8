@@ -21,3 +21,17 @@
   actual #203 test-merge tree.
 - Docker daemon down on this host (executor DB path unavailable — supervised path used
   postgres@5434 instead). Owner comment input still pending — merge step blocked on it.
+
+## Fresh-clone verification (p454)
+
+- Clone of `beta/p443-transition-tools` at `aec83ab`: 246/246 `artifact-sha256.txt` entries OK.
+- Overlay object proven remotely: `git fetch --depth 2 origin d677df41…` → commit `d677df4`,
+  tree `193d057`, `tools/parity` subtree `f457065f` (pinned), single parent (ungrafted
+  test-merge commit), `diff overlay^ overlay -- ':!tools/parity'` = 0 files.
+- `verify-combined.mjs` (verifier extracted from the tagged overlay objects) verifies:
+  artifact-index (241 files, every sha256), commit/tree matches provenance, material inputs
+  clean. ONE check does not complete: `assertPostCaptureDelta` requires a DESCENDANT commit
+  recording explicit post-capture receipt paths (the p4xx evidence-commit pattern) — the
+  bare capture commit `d677df4` yields `[]` by definition. Reported plainly, not bypassed.
+- Earlier failures (missing `server.log`/`prep.log` due to gitignore) corrected via
+  force-add; raw `server.log` preserved as committed bytes.
