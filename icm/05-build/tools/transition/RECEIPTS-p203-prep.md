@@ -22,6 +22,10 @@
 - Docker daemon down on this host (executor DB path unavailable — supervised path used
   postgres@5434 instead). Owner comment input still pending — merge step blocked on it.
 
+## Package accounting (corrected, p458)
+
+`p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.
+
 ## Fresh-clone verification (p454)
 
 - Clone of `beta/p443-transition-tools` at `aec83ab`: 246/246 `artifact-sha256.txt` entries OK.

@@ -62,10 +62,12 @@ psql -h 127.0.0.1 -p 5434 -U app -d postgres -lqt | grep -qw "$DB" && exit 2
 createdb -h 127.0.0.1 -p 5434 -U app "$DB"
 export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:5434/$DB?schema=public"
 
-# dirty-state refusal probe
+# dirty-state refusal probe — task-owned backup + byte-identical restore
+cp "$WT/$BUNDLE_PATH/run.mjs" "$STATE/run.mjs.bak"
 echo dirty >> "$WT/$BUNDLE_PATH/run.mjs"
 (cd "$WT" && $NODE $BUNDLE_PATH/run.mjs)      # must refuse
-git -C "$WT" checkout -- "$BUNDLE_PATH/run.mjs"
+cmp -s "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs" || cp "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs"
+shasum -a 256 "$STATE/run.mjs.bak" "$WT/$BUNDLE_PATH/run.mjs"   # byte-identical proof
 
 # fast gate — unmasked exits
 cd "$WT"; npm ci --no-audit --no-fund --prefer-offline
@@ -102,41 +104,53 @@ git rev-parse "HEAD:$BUNDLE_PATH/baseline"
 # releases this step's lock); a later step repeats acquisition/validation
 ```
 
-## Authorized merge commands (NOT run — separate approval + pending owner comment)
+## Single lock-held step (merge block — NOT run in this task)
+
+The lock acquired above stays held continuously through: live revalidation →
+test merge → gates → final ref check → authorized merge → parent/tree proof.
+A later invocation reacquires the lock and repeats validation/gates — stale
+preparation is never permission to merge.
 
 ```bash
-# immediately before merge: re-fetch + revalidate head AND base tip; abort on movement
-git fetch -q origin; git rev-parse "origin/$BASE"   # must equal recorded tip
-gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft
+# (same shell / same lock: re-fetch + revalidate seconds before merging)
+git fetch -q origin
+[[ "$(git -C "$WT" rev-parse "origin/$BASE")" == "$BASETIP" ]] || exit 4   # base moved → stop
+gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft     # revalidate
 gh pr ready 203 -R "$REPO"            # only if still draft, owner-authorized
 gh pr merge 203 -R "$REPO" --merge --match-head-commit "$HEAD"
-# derive — never invent — the resulting merge SHA, parents and tree:
 MERGE_SHA=$(gh pr view 203 -R "$REPO" --json mergeCommit --jq .mergeCommit.oid)
 git cat-file -p "$MERGE_SHA" | awk '/^parent/{print $2}'    # must be [base tip, head]
 git rev-parse "$MERGE_SHA^{tree}"                            # must equal recorded test tree
 git rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"           # must equal BEFORE hash
+flock -u 9; exec 9>&-                                         # release AFTER proof
 ```
 
 ## Remaining steps
 
-2. **#206 retarget (explicit, executable):** — fresh lock + fresh validation required;
-   prior receipts do not authorize stale refs.
+2. **#206 — concrete procedure** (fresh lock, no force-push):
 
 ```bash
-exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9
+exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
 MERGED_203=$(gh pr view 203 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
 [[ -n "$MERGED_203" ]] || { echo "#203 not merged — stop"; exit 4; }
-gh pr edit 206 -R "$REPO" -B Vari8-Beta          # explicit authorized retarget
-J206=$(gh pr view 206 -R "$REPO" --json headRefOid,baseRefName)
-H206=$(jq -r .headRefOid <<<"$J206")               # DERIVED — never invented
-[[ "$(jq -r .baseRefName <<<"$J206")" == Vari8-Beta ]] || { echo "retarget failed"; exit 4; }
-# changed head after the normal forward update => fresh review/revalidation REQUIRED
-# before the #206 preparation sequence (lock/revalidate/test-merge/gates/capture) repeats.
+git fetch -q origin; git rev-parse "origin/Vari8-Beta"  # new base tip (contains 203)
+gh pr edit 206 -R "$REPO" -B Vari8-Beta                 # explicit authorized retarget
+# normal forward update of the PR branch — merge the new base INTO it (no force-push):
+git checkout -q beta/visual-reference-establishment && git pull --ff-only
+git merge --no-edit origin/Vari8-Beta || { echo "conflict — manual review"; exit 3; }
+git push origin beta/visual-reference-establishment
+H206=$(gh pr view 206 -R "$REPO" --json headRefOid --jq .headRefOid)   # DERIVED new head
+echo "changed head $H206 — fresh review/revalidation REQUIRED before proceeding"
+# then the full locked preparation sequence repeats for $H206
+# merge (only after reviewed head): gh pr merge 206 --merge --match-head-commit "$H206"
+# parents must be [new base tip, $H206]; tree must equal the #206 test-merge tree.
 ```
 
-3. **#207:** identical: derive `MERGED_206` (required non-empty), `gh pr edit 207 -B Vari8-Beta`,
-   forward-update its branch, review/revalidate the new head, full preparation sequence.
-   Its tools enter the final tree, so no overlay graft is needed for the #207 capture.
+3. **#207 — concrete procedure**: derive `MERGED_206` (required non-empty),
+   `gh pr edit 207 -R "$REPO" -B Vari8-Beta`, forward-update
+   `beta/p203-p206-combined-verification` by merging the new base into it (no force-push),
+   push, review/revalidate the new head, run the full locked preparation. Its tools live
+   in the branch, so the combined capture runs without the overlay graft.
 4. **Baseline activation:** separately approved later step; not authorized here.
 
 ## Stop conditions / residual race
