@@ -40,7 +40,7 @@ import {
   type StepsTarget,
 } from "./targets/model";
 
-export const ATHLETE_DATA_DEMO_REVISION = 8;
+export const ATHLETE_DATA_DEMO_REVISION = 9;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
@@ -58,6 +58,22 @@ const DEMO_FIELDS = [
   "cardio-duration",
   "sleep",
   "water",
+  "rhr",
+  "fbg",
+  "bp",
+  "bleeding-level",
+  "cramps",
+  "pms-symptoms",
+  "salt-intake",
+  "caffeine-intake",
+  "hunger",
+  "bloating",
+  "sleep-quality",
+  "muscle-soreness",
+  "stress",
+  "energy-in-gym",
+  "mood-in-gym",
+  "daily-note",
 ];
 const DEMO_POSES = [
   "Front relaxed",
@@ -223,12 +239,29 @@ export function demoTrackingEntries(
     const totals = demoMacroTotals(client, date);
     const adherence = i % 9 === 0 ? 0.84 + rand() * 0.28 : 0.9 + rand() * 0.15;
     const center = stepsCenter(client.plans?.activityTargets, date);
+    const dow = weekday(date); // 0=Sun
+    const cyclePos = (((i - CYCLE_ANCHOR) % 28) + 28) % 28;
     const values: Record<string, number | null> = {
       weight,
       sleep: +(6.5 + rand() * 1.7).toFixed(1),
       water: +(3.5 + rand() * 1.5).toFixed(1),
       steps: Math.round((center * (0.9 + rand() * 0.25)) / 100) * 100,
+      rhr: 51 + Math.round(rand() * 7),
+      "salt-intake": +(3.8 + rand() * 1.1).toFixed(1),
+      "caffeine-intake": 150 + Math.round(rand() * 70),
+      hunger: 3 + Math.round(rand() * 4),
+      bloating: 1 + Math.round(rand() * 3),
+      "sleep-quality": 6 + Math.round(rand() * 3),
+      stress: 2 + Math.round(rand() * 3),
+      energy: 6 + Math.round(rand() * 3),
+      "muscle-soreness": 2 + Math.round(rand() * 4),
+      cramps: cyclePos < 5 ? Math.round(rand() * 6) : 0,
     };
+    if (dow === 1 || dow === 4) values.fbg = +(4.4 + rand() * 0.8).toFixed(1);
+    if (TRAINING_WEEKDAYS.has(dow)) {
+      values["energy-in-gym"] = 6 + Math.round(rand() * 3);
+      values["mood-in-gym"] = 6 + Math.round(rand() * 3);
+    }
     if (CARDIO_WEEKDAYS.has(weekday(date)))
       values["cardio-duration"] = Math.round(18 + rand() * 14);
     if (totals) {
@@ -245,6 +278,61 @@ export function demoTrackingEntries(
 /** The dates demoTrackingEntries() generates — used to tell demo-owned
  *  entries apart from a coach's own logs when re-deriving on a revision
  *  bump. */
+const CYCLE_ANCHOR = 6;
+const TRAINING_WEEKDAYS = new Set([1, 2, 4, 6]);
+const HEALTH_WEEKDAYS = new Set([1, 4]); // Mon + Thu
+const PMS_OPTIONS = [
+  "Tender breasts",
+  "Headache",
+  "Bloating",
+  "Acne",
+  "Mood changes",
+  "Fatigue",
+];
+const DAILY_NOTES = [
+  "Solid day — hit protein, felt full after meals.",
+  "Legs heavy this morning, still got the session done.",
+  "Stomach a bit off, kept sodium the same.",
+  "Energy dipped mid-afternoon, short nap helped.",
+  "Best posing practice so far — lines looked sharp.",
+];
+const COACH_NOTES = [
+  "Check in on digestion before adjusting macros.",
+  "Sleep quality holding — keep the evening routine.",
+  "Stress up this week, watch recovery closely.",
+];
+const BLEEDING = ["Light", "Medium", "Heavy", "Medium", "Light"];
+
+/** Deterministic tracker text/choice values for the demo window. */
+export function demoTrackingText(today: string): Record<string, string> {
+  const text: Record<string, string> = {};
+  for (let i = 0; i < TRACKING_DAYS; i += 1) {
+    if (MISSING_INDEXES.has(i)) continue;
+    const date = addLocalDays(today, i - TRACKING_DAYS);
+    const cyclePos = (((i - CYCLE_ANCHOR) % 28) + 28) % 28;
+    if (HEALTH_WEEKDAYS.has(weekday(date)))
+      text[`${date}:bp`] = `${116 + ((i * 3) % 6)} / ${74 + ((i * 2) % 5)}`;
+    if (cyclePos < 5) text[`${date}:bleeding-level`] = BLEEDING[cyclePos];
+    if (cyclePos === 26 || cyclePos === 27)
+      text[`${date}:pms-symptoms`] = [
+        PMS_OPTIONS[i % PMS_OPTIONS.length],
+        PMS_OPTIONS[(i + 2) % PMS_OPTIONS.length],
+      ].join(", ");
+    if (i % 5 === 2)
+      text[`${date}:daily-note`] = DAILY_NOTES[i % DAILY_NOTES.length];
+    if (i % 24 === 7)
+      text[`${date}:coach-note`] = COACH_NOTES[i % COACH_NOTES.length];
+  }
+  for (let back = 2; back < 9; back += 1) {
+    const date = addLocalDays(today, -back);
+    if (weekday(date) === 4) {
+      text[`${date}:note:calories`] = "Sodium spike? watch weekend.";
+      break;
+    }
+  }
+  return text;
+}
+
 function demoTrackingDates(today: string): Set<string> {
   const dates = new Set<string>();
   for (let i = 0; i < TRACKING_DAYS; i += 1) {
@@ -626,7 +714,7 @@ export function adoptAthleteDataDemo(
   const tracking = !client.tracking?.entries.length
     ? {
         entries: demoTrackingEntries(staged, today),
-        text: client.tracking?.text ?? {},
+        text: { ...demoTrackingText(today), ...(client.tracking?.text ?? {}) },
       }
     : client.tracking.entries.some((entry) => demoDates.has(entry.date))
       ? {
