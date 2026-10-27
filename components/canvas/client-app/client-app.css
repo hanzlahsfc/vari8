@@ -553,6 +553,117 @@
   margin: 8px 0 0;
   font-size: 0.9rem;
 }
+
+.coach-root .ca-checkin-summary {
+  margin-top: 20px;
+  display: grid;
+  gap: 8px;
+}
+.coach-root .ca-checkin-summary h3 {
+  margin: 0;
+}
+.coach-root .ca-checkin-summary-grid {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: var(--cd-surface);
+  display: grid;
+  gap: 8px;
+}
+.coach-root .ca-checkin-summary-grid > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .ca-checkin-summary-grid dt {
+  color: var(--cd-muted);
+}
+.coach-root .ca-checkin-summary-grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+.coach-root .ca-checkin-summary-grid dd[data-missing] {
+  color: var(--cd-muted);
+  font-weight: 400;
+}
+.coach-root .ca-checkin-schedule {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.coach-root .ca-checkin-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: var(--cd-surface);
+  text-align: left;
+  cursor: pointer;
+}
+.coach-root .ca-checkin-row:hover {
+  border-color: var(--cd-accent);
+}
+.coach-root .ca-checkin-row[aria-current="true"] {
+  border-color: var(--cd-accent);
+}
+.coach-root .ca-checkin-row-label {
+  display: grid;
+  gap: 2px;
+}
+.coach-root .ca-checkin-row-label small {
+  color: var(--cd-muted);
+}
+.coach-root .ca-checkin-status[data-status="scheduled"] {
+  color: var(--cd-accent);
+}
+.coach-root .ca-checkin-status[data-status="overdue"] {
+  color: var(--cd-danger, #b42318);
+}
+.coach-root .ca-checkin-status[data-status="cancelled"] {
+  color: var(--cd-muted);
+  text-decoration: line-through;
+}
+.coach-root .ca-checkin-back {
+  margin-top: 16px;
+}
+.coach-root .ca-checkin-answers {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+.coach-root .ca-checkin-answer {
+  padding: 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: var(--cd-surface);
+}
+.coach-root .ca-checkin-answer dt {
+  color: var(--cd-muted);
+}
+.coach-root .ca-checkin-answer dd {
+  margin: 4px 0 0;
+}
+.coach-root .ca-checkin-answer dd[data-missing] {
+  color: var(--cd-muted);
+}
+.coach-root .ca-checkin-media {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+.coach-root .ca-checkin-media img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--cd-line);
+}
 .coach-root .ca-photos-gallery {
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
 }
