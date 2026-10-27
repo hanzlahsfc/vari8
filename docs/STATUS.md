@@ -147,6 +147,153 @@
   1440 and 390 in the ethereal studio. Screenshots under
   `Vari8-evidence/FULL-PACKAGE-2/W2T7/`.
 
+## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
+
+- Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
+  the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
+  w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
+- Conflicted files and resolutions: `frontend/src/components/client-app/
+  client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+  `ca-checkin-*` styles appended intact; selector sets disjoint so neither
+  cascade regresses). `docs/STATUS.md` union, both sides' entries newest
+  first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
+  index` regenerated the merged tree (174 components, 58 API routes).
+  Canvas twin `components/canvas/client-app/client-app.css` auto-merged
+  but placed `ca-shared-media` at EOF; the identical resolution was applied
+  so parity holds.
+- Gates on the merge commit: `npm run typecheck` 0, `npm run lint` 0
+  (93 warnings), `cd frontend && npm run lint` 0 (biome 306 files, 0/0),
+  `npx vitest run` 0 (121 files, 1411 tests, 0 failures; the inherited
+  logging.test.ts env pair did not occur), `npm run index:check` 0, dash
+  gate `git diff da34672..HEAD` added lines en/em count 0.
+- Twin parity: `components/canvas/client-app/client-app.css` vs the
+  frontend twin diffs at exactly the pre-existing 80 canvas-only lines
+  (ca-photos + ca-nutrition + ca-nutrition-split extras), unchanged from
+  before the merge.
+- Independent gate cross-check by a DeepSeek child (hermes, different model
+  family): same gate list all exit 0, vitest 1411/1411. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/` (`child-gates-summary.txt`,
+  `twin-delta-pre-merge.diff`, `twin-delta-post-merge.diff`).
+- NOT done: no push, no PR, no fetch. Lane database not needed (no gate
+  demanded one).
+
+## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
+
+- Scope implemented on top of merge tip `01c66b0`:
+  - `components/canvas/client-app/photos.tsx` rewritten: shared
+    presentational `PhotoGallery` plus live wrapper: pose select on
+    upload encoded as `{pose} · {date}` in the minted media fileName,
+    pose parsed back with `"Photo"` fallback, compare mode driven by
+    `compareProgressPhotos`, delete via `deleteProgressPhoto`,
+    `SharedMedia` kept verbatim after the gallery.
+  - `frontend/src/components/client-app/photos.tsx` new authored twin:
+    byte-identical presentational block; demo wrapper uses local state +
+    object URLs (frontend has no photos section id; intentionally
+    unmounted there, named deviation).
+  - `components/canvas/client-app/client-app.tsx`: `poses` wired from
+    the variant's visual-upload question, `DEFAULT_POSES` fallback.
+  - `components/canvas/client-app/training-log/session-logger.tsx` +
+    frontend twin: typed-set dirty tracking (weight/reps/RPE/RIR/note/
+    flag set and not done) with dirty-only `beforeunload`; finish clears
+    permanently for the logger instance. Twins differ only by the
+    pre-existing `&apos;` hunk.
+  - `components/canvas/client-app/training-log/remote-training-logbook.tsx`:
+    queued/in-flight remote write counter arms the same dirty-only
+    beforeunload; no-op writes never arm.
+  - `components/canvas/ethereal/client-tracker/remote-client-tracker.tsx`:
+    day dirty = pending edits, raws differing from the loaded surface
+    baseline, or a save/refetch round trip running; guard registered
+    only while dirty; autosave/token-refresh/override semantics kept.
+- Live API proofs on lane DB `app_fp_w2c7r2` (TLS front
+  `https://localhost:5178` -> private `next start` :5177, production
+  runtime via `APP_ENV=development`, all dev flags unset):
+  Amara + Emma real logins; media intent -> local PUT -> register 200
+  for both; photo lists disjoint (Amara 16 seeded + probe, Emma probe
+  only); compare 200 own pair; Emma -> Amara photo path 403, foreign
+  session 404 both directions; own delete 200; training lifecycle
+  start/set/finish 200 for both; Amara's already-finished log correctly
+  409 `state_conflict`.
+- Browser pass (Playwright, real login) at 1440 and 390:
+  17 photo tiles rendered live each width; compare picker renders
+  `.ca-photos-compare`; training list shows 4 scheduled sessions;
+  390 overflow probe `{doc:390, win:390, offenders:[]}`.
+  Tracker guard proven live: PUT daily-entry write delayed in-flight
+  via route intercept -> synthetic cancelable `beforeunload` dispatch
+  returns `defaultPrevented:true` (armed); after save settles,
+  `defaultPrevented:false` (disarmed). Both widths.
+  Screenshots: `Vari8-evidence/FULL-PACKAGE-2/W2C7/w2c7-{1440,390}px-*.png`.
+- Gates: `npm run typecheck` 0; `npm run build` 0 (post-change, before
+  prod boot); `npm run index` + `index:check` 0; eslint touched files
+  0 errors; frontend `biome check` touched files clean; canvas-file
+  biome findings all verified pre-existing against HEAD baselines;
+  `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
+  277/277; no new en/em dashes in added lines. Known pre-existing
+  frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+- Lane teardown: `DROP DATABASE app_fp_w2c7r2` executed;
+  `pg_database` count for `app_fp_w2c7%` is 0; prod server :5177 and
+  TLS front :5178 stopped. Work committed as `d4a8659`, tree clean.
+
+## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
+
+- Lead amendment tick 160 extended the step-3 named resolution set by
+  exactly one file: `frontend/src/components/coach/clients.tsx`,
+  resolved by the same union rule granted for
+  `components/canvas/coach/store.tsx` (keep both sides' additions;
+  order matches the canvas twin's auto-merged order).
+- Merge 3 re-run: `git merge-tree --write-tree` on HEAD + fe2 pin
+  `2df2d8200fcc5aefc2a5d6629928e56d8f803e16` -> tree OID
+  `f29b779115485a06bee951458909bb55b5b7cc38`; conflicts exactly the
+  amended set (`store.tsx`, `frontend/.../clients.tsx`,
+  `docs/STATUS.md`, `docs/index/{COMPONENTS,DATA-MODEL,ROUTES}.md`);
+  `components/canvas/coach/clients.tsx` auto-merged. Merge commit
+  `01c66b0d01d6c25011d3f89f5ecbb488730af193`.
+- Resolutions: `store.tsx` union (fe2 tracker/training-logs imports
+  plus HEAD `addLocalDays`, both call sites live at 807/906);
+  `frontend/.../clients.tsx` union (both `AthleteTrackerTab` and
+  `ClientMediaPanel`, canvas auto-merge order: tracker-tab import
+  before the model block, media import after it); `STATUS.md`
+  hand-merged ours-new then theirs-new over a byte-identical tail;
+  index docs regenerated via `npm run index` (exit 0).
+- Merged-tip gates: first `npm run typecheck` exit 2 on stale Prisma
+  client (`trackerDayNote` missing), fixed by `npx prisma generate`;
+  re-run exit 0. `npm run build` exit 0.
+- New lane DB for this run: `app_fp_w2c7r2` (`app_fp_w2c7` was never
+  created; not reused).
+
+## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
+
+- Card w2-c7 (client photos, training log, tracker entry polish),
+  branch `w2/c7` off c1 tip `788714b`. Lane DB `app_fp_w2c7`, port
+  floor >4999, migration stamp `20261027000017` reserved and free.
+- Merge 1: `w2/a3` `0e91798` -> `git merge-tree --write-tree` OID
+  `8dd37c086de6a63b807cb39e6ca8f533f8ed3a72` (matches the card's
+  verified OID, clean). Merge commit
+  `842851ad8679d8d645f35a79f1bccacbdd5ae628`.
+- Merge 2: `w2/t6` pinned `f0dddf3` (note: the `w2/t6` branch tip had
+  advanced to `da34672`, a later merge of w2/fe1; the card pins
+  `f0dddf3`, so the SHA was merged, not the branch tip). merge-tree
+  OID `1c321ddf5ac0415339a56b16137ca012dd65aefd`; conflicts only in
+  the two named files, resolved per card: `docs/STATUS.md` hand-merged
+  newest-first keeping both sides, `docs/index/ROUTES.md` regenerated
+  via `npm run index` (exit 0). Merge commit
+  `0c6b0a8c87069c8f44c5cd15da96ee2d12c6b87f`.
+- Merge 3: `w2/fe2` `2df2d82` -> merge-tree OID
+  `96e7573f9705326c0b487e5589f505cf1a2e239a`; conflicts: named
+  `components/canvas/coach/store.tsx`, named docs class
+  (`docs/STATUS.md`, `docs/index/COMPONENTS.md`,
+  `docs/index/DATA-MODEL.md`, `docs/index/ROUTES.md`), PLUS the
+  unlisted `frontend/src/components/coach/clients.tsx` (t6 side adds
+  `import { ClientMediaPanel } from "./media"`, fe2 side adds
+  `import { AthleteTrackerTab } from "./athlete/tracker-tab"` in the
+  same import-block slot; the canvas twin auto-merged cleanly).
+  Card rule: any conflict beyond the named files stops the merge,
+  verbatim to report, no resolution attempt. Merge aborted; branch at
+  `0c6b0a8`. Verbatim conflicted file and stage list under
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7/`.
+- Card BLOCKED pending owner/lead ruling on `clients.tsx` resolution
+  scope. No card item work started; merged-tip typecheck/build not
+  run, per the step order.
+
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
 - Verifier B1: the T6 migration added `client_profile_id` with no
@@ -223,53 +370,6 @@
 - Note: `/client` renders sections from the canvas-local client config
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
-
-## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
-
-- Client check-in surface wired: `components/canvas/data/checkins.ts`
-  (+130: schedule status chips, per-pose VISUAL media mapping,
-  tracker-summary rows, submitted-answer display) consumed by
-  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
-  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
-  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
-  + `client-app.css` kept in parity for shared blocks. Product
-  onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
-  panel + page, `app/globals.css`). Helpers covered by
-  `tests/unit/checkin-client-surface.test.ts` (16 tests).
-- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
-  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
-  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
-  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
-  (304 files; first attempt before install exited 127),
-  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
-  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
-  en/em count 0 after repair (was 1, a comment em dash, fixed here).
-- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
-  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
-  feedback), dropped at teardown (`pg_database` count 0).
-  Production build served behind a loopback TLS front; surfaces
-  required APP_ENV=development with ENABLE_CHECK_INS=1 and
-  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
-  coach check-ins page without them).
-- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
-  sign-in, schedule a check-in, client /me Check-ins list (seeded
-  Submitted, Overdue, Scheduled items), fill form with five pose
-  slots plus tracker summary, submit (readback: Submitted,
-  awaiting coach review; media rows verified in DB), seeded
-  Oct-18 reviewed and Oct-24 awaiting-review details, product
-  onboarding empty state, required-field message on empty submit
-  at 390. Horizontal overflow 0 on every checked view.
-- Own-scope probes (client session): GET instances/[own] 200,
-  [foreign] 403 not_available, instances/next 200, instances list
-  by clientProfileId 403 denied (own and foreign), submissions
-  list 403 denied, submissions tracker-context 403 denied,
-  daily-entries 200, foreign progress-photos POST 403. Lily
-  lane-only credential returned a disjoint next instance and 403
-  on a foreign instance.
-- Repair round 1: replaced an em dash in the test file header
-  comment (B1) and added this STATUS entry (B2), verdict
-  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
-  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
 
 ## 2026-10-27 - w2-fe2 merge resolution: absorbed w2/a3, preview line product-clean
 
@@ -440,6 +540,53 @@
 - Held for w2-a5 (not claimed here): template-editor persistence of
   Decimals and Week summary, and the template-field read that drives tab
   columns from the server.
+
+## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
+
+- Client check-in surface wired: `components/canvas/data/checkins.ts`
+  (+130: schedule status chips, per-pose VISUAL media mapping,
+  tracker-summary rows, submitted-answer display) consumed by
+  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
+  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
+  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
+  + `client-app.css` kept in parity for shared blocks. Product
+  onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+  panel + page, `app/globals.css`). Helpers covered by
+  `tests/unit/checkin-client-surface.test.ts` (16 tests).
+- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
+  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
+  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
+  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
+  (304 files; first attempt before install exited 127),
+  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
+  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
+  en/em count 0 after repair (was 1, a comment em dash, fixed here).
+- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
+  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
+  feedback), dropped at teardown (`pg_database` count 0).
+  Production build served behind a loopback TLS front; surfaces
+  required APP_ENV=development with ENABLE_CHECK_INS=1 and
+  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
+  coach check-ins page without them).
+- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
+  sign-in, schedule a check-in, client /me Check-ins list (seeded
+  Submitted, Overdue, Scheduled items), fill form with five pose
+  slots plus tracker summary, submit (readback: Submitted,
+  awaiting coach review; media rows verified in DB), seeded
+  Oct-18 reviewed and Oct-24 awaiting-review details, product
+  onboarding empty state, required-field message on empty submit
+  at 390. Horizontal overflow 0 on every checked view.
+- Own-scope probes (client session): GET instances/[own] 200,
+  [foreign] 403 not_available, instances/next 200, instances list
+  by clientProfileId 403 denied (own and foreign), submissions
+  list 403 denied, submissions tracker-context 403 denied,
+  daily-entries 200, foreign progress-photos POST 403. Lily
+  lane-only credential returned a disjoint next instance and 403
+  on a foreign instance.
+- Repair round 1: replaced an em dash in the test file header
+  comment (B1) and added this STATUS entry (B2), verdict
+  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
 
 ## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
 

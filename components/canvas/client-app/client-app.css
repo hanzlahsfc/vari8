@@ -553,6 +553,152 @@
   margin: 8px 0 0;
   font-size: 0.9rem;
 }
+.coach-root .ca-photos-gallery {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+.coach-root .ca-photos-item {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.coach-root .ca-photos-item .ca-photo-tile {
+  aspect-ratio: 3 / 4;
+}
+.coach-root .ca-photos-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 14px;
+  border: 1.5px solid var(--cd-line);
+  background: var(--cd-field);
+}
+.coach-root .ca-photos-date {
+  font-size: 0.8rem;
+  color: var(--cd-muted);
+}
+.coach-root .ca-photos-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+.coach-root .ca-photos-toolbar button {
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: var(--cd-surface);
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.coach-root .ca-photos-toolbar button[aria-pressed="true"] {
+  border-color: var(--cd-accent);
+  color: var(--cd-accent);
+}
+.coach-root .ca-photos-hint {
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: var(--cd-muted);
+}
+.coach-root .ca-photos-pose {
+  display: block;
+  color: var(--cd-muted);
+}
+.coach-root .ca-photos-missing {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--cd-muted);
+}
+.coach-root .ca-photos-item .ca-photo-pick {
+  width: 100%;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.coach-root .ca-photos-item.selected-item .ca-photo-tile {
+  border-radius: 14px;
+  outline: 2px solid var(--cd-accent-ring, var(--cd-accent));
+  outline-offset: 2px;
+}
+.coach-root .ca-photos-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.coach-root .ca-photos-compare-column {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.coach-root .ca-photos-compare-column .ca-photos-img,
+.coach-root .ca-photos-compare-column .ca-photo-pick {
+  aspect-ratio: 3 / 4;
+}
+.coach-root .ca-photos-compare-column figcaption {
+  display: grid;
+  gap: 2px;
+  font-size: 0.8rem;
+  color: var(--cd-muted);
+}
+
+/* ── Client nutrition actuals (card 09) ───────────────────────── */
+.coach-root .ca-nutrition-empty {
+  margin: 12px 0 0;
+}
+.coach-root .ca-nutrition-summary {
+  margin: 14px 0 0;
+  padding: 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  background: var(--cd-surface);
+  display: grid;
+  gap: 8px;
+}
+.coach-root .ca-nutrition-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .ca-nutrition-summary dt {
+  color: var(--cd-muted);
+}
+.coach-root .ca-nutrition-summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+.coach-root .ca-nutrition-summary dd[data-missing] {
+  color: var(--cd-muted);
+  font-weight: 400;
+}
+.coach-root .ca-nutrition-kcal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .ca-nutrition-kcal span {
+  color: var(--cd-muted);
+}
+
+/* Card 10 (#175): published macro targets beside card 09 actuals - two
+   columns on wide viewports, one stacked column on narrow. */
+.coach-root .ca-nutrition-split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 900px) {
+  .coach-root .ca-nutrition-split {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}
 .coach-root .ca-shared-media {
   margin-top: 22px;
 }
@@ -692,84 +838,4 @@
   object-fit: cover;
   border-radius: 10px;
   border: 1px solid var(--cd-line);
-}
-.coach-root .ca-photos-gallery {
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-}
-.coach-root .ca-photos-item {
-  margin: 0;
-  display: grid;
-  gap: 6px;
-}
-.coach-root .ca-photos-item .ca-photo-tile {
-  aspect-ratio: 3 / 4;
-}
-.coach-root .ca-photos-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 14px;
-  border: 1.5px solid var(--cd-line);
-  background: var(--cd-field);
-}
-.coach-root .ca-photos-date {
-  font-size: 0.8rem;
-  color: var(--cd-muted);
-}
-
-/* ── Client nutrition actuals (card 09) ───────────────────────── */
-.coach-root .ca-nutrition-empty {
-  margin: 12px 0 0;
-}
-.coach-root .ca-nutrition-summary {
-  margin: 14px 0 0;
-  padding: 12px;
-  border: 1px solid var(--cd-line);
-  border-radius: 14px;
-  background: var(--cd-surface);
-  display: grid;
-  gap: 8px;
-}
-.coach-root .ca-nutrition-summary > div {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-}
-.coach-root .ca-nutrition-summary dt {
-  color: var(--cd-muted);
-}
-.coach-root .ca-nutrition-summary dd {
-  margin: 0;
-  font-weight: 600;
-}
-.coach-root .ca-nutrition-summary dd[data-missing] {
-  color: var(--cd-muted);
-  font-weight: 400;
-}
-.coach-root .ca-nutrition-kcal {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 4px;
-  border-top: 1px solid var(--cd-line);
-}
-.coach-root .ca-nutrition-kcal span {
-  color: var(--cd-muted);
-}
-
-/* Card 10 (#175): published macro targets beside card 09 actuals — two
-   columns on wide viewports, one stacked column on narrow. */
-.coach-root .ca-nutrition-split {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-}
-@media (min-width: 900px) {
-  .coach-root .ca-nutrition-split {
-    grid-template-columns: 1fr 1fr;
-    align-items: start;
-  }
 }
