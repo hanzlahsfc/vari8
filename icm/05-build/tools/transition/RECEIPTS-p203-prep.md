@@ -22,6 +22,19 @@
 - Docker daemon down on this host (executor DB path unavailable — supervised path used
   postgres@5434 instead). Owner comment input still pending — merge step blocked on it.
 
+## P462 — repaired-verifier capture + complete acceptance
+
+- New capture under the frozen repaired verifier (`e8c7a74`): `p462-run` packaged as
+  `p462-p203-prep` on `evidence/p452-p203` at descendant `0f9ca520…`; 241 artifacts,
+  242 post-capture paths recorded.
+- Fresh-clone `verify-combined` at `0f9ca52` → `verified:true`, canonical **70/70**,
+  strict **68/70**, source `e8c7a74`/`d1c42bb…`/`1f606499…` — all assertions pass.
+- Discriminating CLI negatives (5/5 in `verify-combined-cli.test.ts` on the evidence
+  lineage): forged compat, wrong capture sha, material change, byte tamper.
+- p452 preserved as historical at `c2202614` — material identity untouched.
+- Runbook literal block: fixture-tested (`runbook-prep-block.test.ts`, 2/2) — correct
+  head-into-base merge proves ancestors + feature presence; base-into-base fails.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.

@@ -44,14 +44,19 @@ NODE="npx -y node@24.22.1"
 mkdir -p "$STATE"; exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9
 trap 'flock -u 9 2>/dev/null; exec 9>&-; dropdb -h 127.0.0.1 -p 5434 -U app --if-exists "$DB" 2>/dev/null' EXIT
 
-# isolated worktree FIRST — no `git -C $WT` reads before this line
-git worktree add "$WT" --detach "origin/$BASE"
+# isolated worktree FIRST — at the pinned PR head; no `git -C $WT` before this
+git worktree add "$WT" --detach "$HEADSHA"
 
 # revalidate refs (live, under the lock)
 gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft
-git -C "$WT" rev-parse "origin/$BASE"     # record base tip
-git -C "$WT" merge -q --no-ff --no-edit -m "test merge transition p203" "origin/$BASE"
-git -C "$WT" rev-parse 'HEAD^{tree}'      # record merge tree
+git -C "$WT" fetch -q origin
+BASETIP=$(git -C "$WT" rev-parse "origin/$BASE")   # explicit, recorded
+git -C "$WT" merge -q --no-ff --no-edit -m "test merge transition p203" "$BASETIP"
+# both inputs must be ancestors of the merge result
+git -C "$WT" merge-base --is-ancestor "$HEADSHA" HEAD || exit 4
+git -C "$WT" merge-base --is-ancestor "$BASETIP" HEAD || exit 4
+MERGETREE=$(git -C "$WT" rev-parse 'HEAD^{tree}')
+git -C "$WT" diff --stat "$BASETIP" HEAD -- app lib db | head -20   # #203 changes present
 
 # baseline boundary — BEFORE
 git -C "$WT" rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"
