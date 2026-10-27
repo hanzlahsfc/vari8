@@ -32,6 +32,11 @@ import { TrackingView } from "./tracking-view";
  * surface, and a promise chain that serializes saves so a stale token never
  * races a fresh one. Displayed entries come from the raws of loaded dates and
  * from the surface's 30-day history for everything else.
+ *
+ * A day counts as dirty while it holds edits the store has not confirmed: keys
+ * waiting in `pending`, raws that differ from the loaded surface's baseline, or
+ * a save chain still running. A `beforeunload` guard is registered only while
+ * any day is dirty, so a saved or untouched day never warns.
  */
 type RemoteDateRecord = {
   surface: Extract<DailyEntrySurfaceWire, { state: "ready" }> | null;
@@ -77,6 +82,8 @@ export function RemoteClientTracker({
   const [targetVersions, setTargetVersions] = useState<
     ActivityTargetVersion[] | null
   >(null);
+  const [dirty, setDirty] = useState(false);
+  const savesRef = useRef(0);
   const datesRef = useRef(new Map<string, RemoteDateRecord>());
   const baseRef = useRef(new Map<string, RemoteDayData>());
   const metasRef = useRef<RemoteParameterMeta[]>([]);
@@ -113,6 +120,28 @@ export function RemoteClientTracker({
     return record;
   };
 
+  const refreshDirty = () => {
+    let next = savesRef.current > 0;
+    if (!next) {
+      for (const record of datesRef.current.values()) {
+        if (Object.keys(record.pending).length) {
+          next = true;
+          break;
+        }
+        if (!record.surface) continue;
+        const baseline = remoteRawsFromSurface(record.surface);
+        for (const key of Object.keys(record.raws)) {
+          if (record.raws[key] !== baseline[key]) {
+            next = true;
+            break;
+          }
+        }
+        if (next) break;
+      }
+    }
+    setDirty(next);
+  };
+
   const rebuildDisplay = () => {
     const dates = new Set([
       ...baseRef.current.keys(),
@@ -144,6 +173,7 @@ export function RemoteClientTracker({
     next.sort((first, second) => first.date.localeCompare(second.date));
     setEntries(next);
     setTextValues(texts);
+    refreshDirty();
   };
 
   const mergeHistory = (
@@ -201,40 +231,50 @@ export function RemoteClientTracker({
   const queueSave = (date: string) => {
     const record = recordFor(date);
     record.chain = record.chain.then(async () => {
-      const surface = record.surface;
-      if (!surface) return;
-      const sent = { ...record.raws };
+      // The whole round trip, token refresh refetch included, keeps the day
+      // dirty so the guard holds until the store has confirmed the entry.
+      savesRef.current += 1;
+      refreshDirty();
       try {
-        const result = await saveDailyEntryRemote(workspaceId, date, {
-          formToken: surface.formToken,
-          values: remoteOrdinalValues(metasRef.current, sent),
-        });
-        if (result.status !== "saved") return;
-        setStatus("Entry saved.");
-        // A save rotates the form token; refetch to stay writable and to
-        // pick up the coach-side view of the same day.
-        const fresh = await fetchDailyEntrySurface(workspaceId, date);
-        if (fresh.state !== "ready") return;
-        const overrides: Record<string, string> = {};
-        for (const key of Object.keys(record.raws))
-          if (record.raws[key] !== sent[key]) overrides[key] = record.raws[key];
-        mergeHistory(fresh);
-        record.surface = fresh;
-        record.raws = { ...remoteRawsFromSurface(fresh), ...overrides };
-        rebuildDisplay();
-        if (Object.keys(overrides).length) queueSave(date);
-      } catch {
-        setStatus("That entry could not be saved. The day was reloaded.");
+        const surface = record.surface;
+        if (!surface) return;
+        const sent = { ...record.raws };
         try {
+          const result = await saveDailyEntryRemote(workspaceId, date, {
+            formToken: surface.formToken,
+            values: remoteOrdinalValues(metasRef.current, sent),
+          });
+          if (result.status !== "saved") return;
+          setStatus("Entry saved.");
+          // A save rotates the form token; refetch to stay writable and to
+          // pick up the coach-side view of the same day.
           const fresh = await fetchDailyEntrySurface(workspaceId, date);
           if (fresh.state !== "ready") return;
+          const overrides: Record<string, string> = {};
+          for (const key of Object.keys(record.raws))
+            if (record.raws[key] !== sent[key])
+              overrides[key] = record.raws[key];
           mergeHistory(fresh);
           record.surface = fresh;
-          record.raws = remoteRawsFromSurface(fresh);
+          record.raws = { ...remoteRawsFromSurface(fresh), ...overrides };
           rebuildDisplay();
+          if (Object.keys(overrides).length) queueSave(date);
         } catch {
-          // The reload failing leaves the last good surface in place.
+          setStatus("That entry could not be saved. The day was reloaded.");
+          try {
+            const fresh = await fetchDailyEntrySurface(workspaceId, date);
+            if (fresh.state !== "ready") return;
+            mergeHistory(fresh);
+            record.surface = fresh;
+            record.raws = remoteRawsFromSurface(fresh);
+            rebuildDisplay();
+          } catch {
+            // The reload failing leaves the last good surface in place.
+          }
         }
+      } finally {
+        savesRef.current -= 1;
+        refreshDirty();
       }
     });
   };
@@ -269,6 +309,18 @@ export function RemoteClientTracker({
     ensureSurface(asOf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId, asOf]);
+
+  // Dirty-only beforeunload: registered while any day holds unconfirmed edits
+  // or a running save, removed on cleanup so a saved day never warns.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
 
   if (surfaceState === "loading" || (surfaceState !== "ready" && !view)) {
     return surfaceState === "loading" ? (

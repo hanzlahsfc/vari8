@@ -1,3 +1,56 @@
+## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
+
+- Scope implemented on top of merge tip `01c66b0`:
+  - `components/canvas/client-app/photos.tsx` rewritten: shared
+    presentational `PhotoGallery` plus live wrapper — pose select on
+    upload encoded as `{pose} · {date}` in the minted media fileName,
+    pose parsed back with `"Photo"` fallback, compare mode driven by
+    `compareProgressPhotos`, delete via `deleteProgressPhoto`,
+    `SharedMedia` kept verbatim after the gallery.
+  - `frontend/src/components/client-app/photos.tsx` new authored twin:
+    byte-identical presentational block; demo wrapper uses local state +
+    object URLs (frontend has no photos section id; intentionally
+    unmounted there, named deviation).
+  - `components/canvas/client-app/client-app.tsx`: `poses` wired from
+    the variant's visual-upload question, `DEFAULT_POSES` fallback.
+  - `components/canvas/client-app/training-log/session-logger.tsx` +
+    frontend twin: typed-set dirty tracking (weight/reps/RPE/RIR/note/
+    flag set and not done) with dirty-only `beforeunload`; finish clears
+    permanently for the logger instance. Twins differ only by the
+    pre-existing `&apos;` hunk.
+  - `components/canvas/client-app/training-log/remote-training-logbook.tsx`:
+    queued/in-flight remote write counter arms the same dirty-only
+    beforeunload; no-op writes never arm.
+  - `components/canvas/ethereal/client-tracker/remote-client-tracker.tsx`:
+    day dirty = pending edits, raws differing from the loaded surface
+    baseline, or a save/refetch round trip running; guard registered
+    only while dirty; autosave/token-refresh/override semantics kept.
+- Live API proofs on lane DB `app_fp_w2c7r2` (TLS front
+  `https://localhost:5178` -> private `next start` :5177, production
+  runtime via `APP_ENV=development`, all dev flags unset):
+  Amara + Emma real logins; media intent -> local PUT -> register 200
+  for both; photo lists disjoint (Amara 16 seeded + probe, Emma probe
+  only); compare 200 own pair; Emma -> Amara photo path 403, foreign
+  session 404 both directions; own delete 200; training lifecycle
+  start/set/finish 200 for both; Amara's already-finished log correctly
+  409 `state_conflict`.
+- Browser pass (Playwright, real login) at 1440 and 390:
+  17 photo tiles rendered live each width; compare picker renders
+  `.ca-photos-compare`; training list shows 4 scheduled sessions;
+  390 overflow probe `{doc:390, win:390, offenders:[]}`.
+  Tracker guard proven live: PUT daily-entry write delayed in-flight
+  via route intercept -> synthetic cancelable `beforeunload` dispatch
+  returns `defaultPrevented:true` (armed); after save settles,
+  `defaultPrevented:false` (disarmed). Both widths.
+  Screenshots: `Vari8-evidence/FULL-PACKAGE-2/W2C7/w2c7-{1440,390}px-*.png`.
+- Gates: `npm run typecheck` 0; `npm run build` 0 (post-change, before
+  prod boot); `npm run index` + `index:check` 0; eslint touched files
+  0 errors; frontend `biome check` touched files clean; canvas-file
+  biome findings all verified pre-existing against HEAD baselines;
+  `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
+  277/277; no new en/em dashes in added lines. Known pre-existing
+  frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+
 ## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
 
 - Lead amendment tick 160 extended the step-3 named resolution set by
