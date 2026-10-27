@@ -34,7 +34,7 @@ import {
   sheetSurface,
   sheetTypo,
 } from "./styles";
-import { sheetValue } from "./workbook-values";
+import { sheetImages, sheetInk, sheetValue } from "./workbook-values";
 
 const keyOf = (row: number, col: number) => `${row}:${col}`;
 
@@ -265,7 +265,9 @@ export function SheetGrid({
       if (typo?.h) classes.push(`ls-cell--h-${typo.h}`);
       if (typo?.v) classes.push(`ls-cell--va-${typo.v}`);
       if (typo?.b) classes.push("ls-cell--bold");
-      if (typo?.c) style.color = typo.c;
+      const ink = sheetInk(tab.slug, r, c);
+      if (ink) style.color = ink;
+      else if (typo?.c) style.color = typo.c;
       if (typo?.sz) style.fontSize = `${((typo.sz * 4) / 3).toFixed(2)}px`;
       if (cell?.kind === "formula") classes.push("ls-cell--fx");
       if (cell?.editable) classes.push("ls-cell--edit");
@@ -289,9 +291,15 @@ export function SheetGrid({
         !painted || cell?.editable ? undefined : sheetValue(tab.slug, r, c);
       const display =
         cell?.kind === "checkbox"
-          ? wv === "TRUE" || (wv === undefined && cell?.value === "TRUE")
-            ? "\u2713"
-            : ""
+          ? wv === undefined
+            ? cell?.value === "TRUE"
+              ? "\u2713"
+              : ""
+            : wv === "TRUE"
+              ? "\u2713"
+              : wv === "FALSE"
+                ? ""
+                : wv
           : (wv ?? "");
       emitted.push(
         // biome-ignore lint/a11y/useSemanticElements: a td cell cannot express merge spans or frozen panes; the div grid uses roving focus and arrow keys like the calendar grid.
@@ -366,6 +374,75 @@ export function SheetGrid({
         onKeyDown={onKeyDown}
       >
         {emitted}
+        {sheetImages(tab.slug).map((img) => {
+          const ri = trackIndex(rows, img.row);
+          const ci = trackIndex(cols, img.col);
+          if (!ri || !ci) return null;
+          // Anchored workbook images are grid children so the frozen bands
+          // pin them exactly like the frozen cells they sit over.
+          const style: Record<string, string> = {
+            gridRow: String(ri + 1),
+            gridColumn: String(ci + 1),
+          };
+          const frozenRow = img.row <= freeze.rows;
+          const frozenCol = img.col <= freeze.cols;
+          if (frozenRow)
+            style["--ls-t"] =
+              `calc(var(--ls-head) + ${sticky.rowTop.get(img.row) ?? 0}px)`;
+          if (frozenCol)
+            style["--ls-l"] =
+              `calc(var(--ls-gutter) + ${sticky.colLeft.get(img.col) ?? 0}px)`;
+          let w = img.w;
+          let h = img.h;
+          const toRow = img.toRow;
+          const toCol = img.toCol;
+          if ((!w || !h) && toRow && toCol) {
+            // twoCellAnchor: the size is the distance between the anchors.
+            const leftPx =
+              cols
+                .filter((c) => c < img.col)
+                .reduce((s, c) => s + colWidthPx(tab, c), 0) + img.offX;
+            const topPx =
+              rows
+                .filter((r) => r < img.row)
+                .reduce((s, r) => s + rowHeightPx(tab, r), 0) + img.offY;
+            const rightPx =
+              cols
+                .filter((c) => c < toCol)
+                .reduce((s, c) => s + colWidthPx(tab, c), 0) +
+              (img.toOffX ?? 0);
+            const bottomPx =
+              rows
+                .filter((r) => r < toRow)
+                .reduce((s, r) => s + rowHeightPx(tab, r), 0) +
+              (img.toOffY ?? 0);
+            w = Math.max(0, rightPx - leftPx);
+            h = Math.max(0, bottomPx - topPx);
+          }
+          return (
+            <div
+              key={`img${img.row}:${img.col}`}
+              aria-hidden
+              className="ls-img"
+              style={{
+                ...style,
+                position: frozenRow || frozenCol ? "sticky" : "relative",
+              }}
+            >
+              {/* biome-ignore lint/performance/noImgElement: anchored sheet art needs raw pixel placement, next/image cannot express it. */}
+              <img
+                src={img.src}
+                alt=""
+                style={{
+                  left: img.offX,
+                  top: img.offY,
+                  width: w,
+                  height: h,
+                }}
+              />
+            </div>
+          );
+        })}
         {(() => {
           const g = sheetGeom(tab.slug);
           const lines = g?.lines;
