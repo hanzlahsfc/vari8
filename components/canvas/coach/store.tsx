@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { readCoachState, writeCoachState } from "../data";
+import { loadCheckins, mergeCheckinLoad } from "../data/checkins";
 import { ApiClientError } from "../data/http";
 import {
   draftWireToMealPlan,
@@ -27,6 +28,10 @@ import {
   saveStaffIifymDraft,
   saveStaffMealPlanDraft,
 } from "../data/nutrition";
+import {
+  loadPhysiquePhotos,
+  type PhysiqueColumn,
+} from "../data/progress-photos";
 import {
   canvasTrainingToDraftWire,
   draftWireToCanvasOverrides,
@@ -71,7 +76,7 @@ import {
   fetchStaffTrainingLogs,
   staffLogToSessionLog,
 } from "../data/training-logs";
-import { localToday } from "./targets/model";
+import { addLocalDays, localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
 
 /* -------------------------------------------------------------------------
@@ -521,6 +526,8 @@ type Store = {
   workspaceId?: string;
   /** PR-MEDIA: canvas client name -> media anchor clientProfileId (roster). */
   clientProfileIdFor: (clientName: string) => Promise<string | null>;
+  /** W2-A3: the client's backend progress photos as compare columns. */
+  physiquePhotosFor: (clientName: string) => Promise<PhysiqueColumn[]>;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -671,6 +678,16 @@ export function CoachProvider({
     },
     [workspaceId],
   );
+  // W2-A3: compare-column read for the viewed client's progress photos.
+  const physiquePhotosFor = useCallback(
+    async (clientName: string): Promise<PhysiqueColumn[]> => {
+      if (!workspaceId) return [];
+      const clientProfileId = await clientProfileIdFor(clientName);
+      if (!clientProfileId) return [];
+      return loadPhysiquePhotos(workspaceId, clientProfileId);
+    },
+    [workspaceId, clientProfileIdFor],
+  );
   // W2-A2: latest-state ref so the async plan effects read the current
   // store without re-firing on every state change.
   const stateRef = useRef(state);
@@ -757,6 +774,58 @@ export function CoachProvider({
       } catch {
         // Backend unreachable or denied: keep the seeded lifecycle and
         // let the sync effect surface write failures instead.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+  // W2-A3: viewed-client check-in hydration after the seed + local merge
+  // ran. The profile Check-ins tab and the Overview Check-in card both
+  // render `state.submissions`/`client.schedules`; this is the load that
+  // makes them backend rows instead of local seeds. The merge names every
+  // other client as "failed" so their rows survive the patch untouched.
+  const checkinsHydrated = useRef(new Set<string>());
+  useEffect(() => {
+    if (!hydrated || !workspaceId || demo || !route.client) return;
+    const clientId = route.client;
+    if (checkinsHydrated.current.has(clientId)) return;
+    let cancelled = false;
+    void (async () => {
+      const client = stateRef.current.clients.find((c) => c.id === clientId);
+      if (!client) return;
+      try {
+        const today = localToday();
+        const loaded = await loadCheckins({
+          workspaceId,
+          // The instances read is bounded at 95 days; this window covers
+          // the Overview card (-21/+35) plus margin for the tab history.
+          from: addLocalDays(today, -42),
+          to: addLocalDays(today, 42),
+          clients: [{ id: client.id, name: client.name }],
+          profileIdFor: clientProfileIdFor,
+        });
+        if (cancelled || loaded.failed.includes(client.name)) return;
+        checkinsHydrated.current.add(clientId);
+        setState((s) => {
+          const merged = mergeCheckinLoad(
+            { extras: s.extras, submissions: s.submissions },
+            { extras: loaded.extras, submissions: loaded.submissions },
+            s.clients.filter((c) => c.id !== clientId).map((c) => c.id),
+          );
+          return {
+            ...s,
+            extras: merged.extras,
+            submissions: merged.submissions,
+            clients: s.clients.map((c) =>
+              c.id === clientId && loaded.schedules[c.id]
+                ? { ...c, schedules: loaded.schedules[c.id] }
+                : c,
+            ),
+          };
+        });
+      } catch {
+        // Backend unreachable or denied: the seeded state stays.
       }
     })();
     return () => {
@@ -961,6 +1030,7 @@ export function CoachProvider({
         attach,
         workspaceId,
         clientProfileIdFor,
+        physiquePhotosFor,
       }}
     >
       {children}
