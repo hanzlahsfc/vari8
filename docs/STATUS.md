@@ -1,3 +1,33 @@
+## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
+
+- Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
+  the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
+  w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
+- Conflicted files and resolutions: `frontend/src/components/client-app/
+  client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+  `ca-checkin-*` styles appended intact; selector sets disjoint so neither
+  cascade regresses). `docs/STATUS.md` union, both sides' entries newest
+  first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
+  index` regenerated the merged tree (174 components, 58 API routes).
+  Canvas twin `components/canvas/client-app/client-app.css` auto-merged
+  but placed `ca-shared-media` at EOF; the identical resolution was applied
+  so parity holds.
+- Gates on the merge commit: `npm run typecheck` 0, `npm run lint` 0
+  (93 warnings), `cd frontend && npm run lint` 0 (biome 306 files, 0/0),
+  `npx vitest run` 0 (121 files, 1411 tests, 0 failures; the inherited
+  logging.test.ts env pair did not occur), `npm run index:check` 0, dash
+  gate `git diff da34672..HEAD` added lines en/em count 0.
+- Twin parity: `components/canvas/client-app/client-app.css` vs the
+  frontend twin diffs at exactly the pre-existing 80 canvas-only lines
+  (ca-photos + ca-nutrition + ca-nutrition-split extras), unchanged from
+  before the merge.
+- Independent gate cross-check by a DeepSeek child (hermes, different model
+  family): same gate list all exit 0, vitest 1411/1411. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/` (`child-gates-summary.txt`,
+  `twin-delta-pre-merge.diff`, `twin-delta-post-merge.diff`).
+- NOT done: no push, no PR, no fetch. Lane database not needed (no gate
+  demanded one).
+
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
 - Verifier B1: the T6 migration added `client_profile_id` with no
