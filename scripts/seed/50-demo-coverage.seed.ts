@@ -24,8 +24,8 @@ import type { SeedContext } from "./index";
  *
  * Fills the `canvas-demo` workspace with Lilly's merged frontend demo state
  * from the byte-verbatim JSON snapshot in `./demo-export/` (provenance in
- * `demo-export/PROVENANCE.md`; source ref trackc/merge-frontend-9491897 @
- * 9491897b9dbd1a13855854ae2a2d5fa8d8ae8230). The seed never parses the demo
+ * `demo-export/PROVENANCE.md`; source ref origin/FRONTEND @
+ * 8e6503f6c0c7112fbf867f1af4353ab271d2418d). The seed never parses the demo
  * `.ts` files — this JSON fixture is the only runtime input.
  *
  * Determinism: every calendar value resolves `day <n>` / `day <n>T<time>`

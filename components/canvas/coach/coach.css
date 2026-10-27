@@ -16,7 +16,7 @@
   --cd-line: var(--v8-border);
   --cd-wash: var(--v8-surface-subtle);
   --cd-highlight: var(--v8-material-highlight);
-  --cd-accent-contrast: var(--v8-accent-text);
+  --cd-accent-contrast: var(--v8-on-accent);
   --cd-accent-ring: var(--cd-accent);
   --cd-chart-line: var(--cd-accent);
   --cd-sidebar-width: 216px;

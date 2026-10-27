@@ -67,7 +67,9 @@ describe("coach data seam", () => {
 
     const read = migrateCoachState(readCoachState());
     expect(isCoachState(read)).toBe(true);
-    expect(read).toEqual(state);
+    // The state migration enriches plans it sees as data (temporary plans,
+    // schedule modes), so the fixed point is migrate(state), not state.
+    expect(read).toEqual(migrateCoachState(state));
   });
 
   it("round-trips domain slices that live off the client core", () => {
@@ -147,7 +149,7 @@ describe("coach data seam", () => {
 
     const read = migrateCoachState(readCoachState());
     expect(isCoachState(read)).toBe(true);
-    expect(read).toEqual(state);
+    expect(read).toEqual(migrateCoachState(state));
     const roundTripped = read as CoachState;
     expect(roundTripped.clients[0].plans?.activityTargets).toHaveLength(1);
     expect(
@@ -162,7 +164,7 @@ describe("coach data seam", () => {
 
     const first = migrateCoachState(readCoachState());
     expect(isCoachState(first)).toBe(true);
-    expect(first).toEqual(state);
+    expect(first).toEqual(migrateCoachState(state));
     // The legacy key survives the read so a crash before the first save
     // cannot lose the last complete copy.
     expect(localStorage.getItem(LEGACY_KEY)).not.toBeNull();
@@ -170,7 +172,7 @@ describe("coach data seam", () => {
     writeCoachState(first as CoachState);
     expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
     const second = migrateCoachState(readCoachState());
-    expect(second).toEqual(state);
+    expect(second).toEqual(migrateCoachState(state));
   });
 
   it("rejects an incomplete set of domain keys", () => {

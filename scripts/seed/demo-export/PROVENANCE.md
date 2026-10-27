@@ -8,8 +8,12 @@ Re-pointed for w2/fe1 (PR 210, demo export revision 9): `README.md`,
 `workspace.json` and `clients/client-007.json` refreshed from the merged
 FRONTEND tip; the other files were byte-identical at both refs.
 
-- Source ref: `import/frontend-tip` (fetched via explicit import refspec)
-- Source commit: `a3f620a56bf3165b6775c8f0bd4acabae21935bc`
+Re-pointed for w2/fe3 (PR 211, demo export revision 11): `README.md`,
+`workspace.json` and `clients/client-007.json` refreshed from the merged
+FRONTEND tip; the other files were byte-identical at both refs.
+
+- Source ref: `origin/FRONTEND`
+- Source commit: `8e6503f6c0c7112fbf867f1af4353ab271d2418d`
 - Source path: `frontend/src/data/demo-export/` on that ref
 - Upstream generator: `frontend/scripts/export-demo.mjs`
   (`npm run export:demo` on the frontend tree)

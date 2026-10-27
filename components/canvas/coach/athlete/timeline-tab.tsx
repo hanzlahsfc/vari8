@@ -63,7 +63,6 @@ import {
   fetchActivityTargets,
   versionsFromWire,
 } from "../../data/activity-targets";
-import { TemporaryPlanDialog } from "../plans/temporary-plan-dialog";
 import { emptyClientPlans, type IifymPlan } from "../plans/types";
 import { useCoach } from "../store";
 import {
@@ -1031,7 +1030,15 @@ function groupSummary(entries: Map<string, DayEntry>, gweeks: Week[]) {
 
 // ─── Components ─────────────────────────────────────────────────────
 
-export function AthleteTimelineTab({ client }: { client: CoachClient }) {
+export function AthleteTimelineTab({
+  client,
+  viewer = "coach",
+  onOpen,
+}: {
+  client: CoachClient;
+  viewer?: "coach" | "client";
+  onOpen?: (tab: string, plan?: string) => void;
+}) {
   const {
     state,
     setState,
@@ -1410,9 +1417,11 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
           >
             <Plus size={14} aria-hidden="true" /> New view
           </Button>
-          <Button variant="secondary" onClick={() => setEditPhases(true)}>
-            <Pencil size={14} aria-hidden="true" /> Edit phases
-          </Button>
+          {viewer === "coach" && (
+            <Button variant="secondary" onClick={() => setEditPhases(true)}>
+              <Pencil size={14} aria-hidden="true" /> Edit phases
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1564,6 +1573,7 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
                   group.shown.map((week) => (
                     <WeekRow
                       key={week.monday}
+                      viewer={viewer}
                       ctx={ctx(week)}
                       renderCols={renderCols}
                       mobileKeep={mobileKeep}
@@ -1575,11 +1585,13 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
                         setExpanded(expanded === week.monday ? "" : week.monday)
                       }
                       onReview={(submissionId) =>
-                        navigate({
-                          section: "check-ins",
-                          review: submissionId,
-                          client: client.id,
-                        })
+                        onOpen
+                          ? onOpen("Check-ins")
+                          : navigate({
+                              section: "check-ins",
+                              review: submissionId,
+                              client: client.id,
+                            })
                       }
                       onOpenCheckins={() =>
                         navigate({ section: "check-ins", client: client.id })
@@ -1631,8 +1643,10 @@ function WeekRow({
   onReview,
   onOpenCheckins,
   currentRef,
+  viewer,
 }: {
   ctx: Ctx;
+  viewer: "coach" | "client";
   renderCols: RenderCol[];
   mobileKeep: Set<string>;
   template: string;
@@ -1644,9 +1658,8 @@ function WeekRow({
   onOpenCheckins: () => void;
   currentRef: RefObject<HTMLDivElement | null>;
 }) {
-  const { setState } = useCoach();
+  const { navigate, route, setState } = useCoach();
   const { client, week, state } = ctx;
-  const [tempOpen, setTempOpen] = useState(false);
   const changes = weekChanges(client, week);
   const note = client.weekNotes?.[week.monday] ?? "";
   const checkin = eventsBetween(state, week.monday, week.sunday).find(
@@ -1754,57 +1767,67 @@ function WeekRow({
                 · {checkin.status}
                 {checkinWeight !== undefined &&
                   ` · ${number1.format(checkinWeight)} kg`}{" "}
-                · <span className="apt-link">Open review</span>
+                ·{" "}
+                <span className="apt-link">
+                  {viewer === "client" ? "View check-in" : "Open review"}
+                </span>
               </button>
             ) : (
               <p className="apt-sub">No check-in this week</p>
             )}
-            <TextArea
-              label="Coach note"
-              value={note}
-              placeholder="Coach note for this week"
-              onChange={(event) => {
-                const value = event.target.value;
-                setState((s) => ({
-                  ...s,
-                  clients: s.clients.map((c) =>
-                    c.id === client.id
-                      ? {
-                          ...c,
-                          weekNotes: {
-                            ...(c.weekNotes ?? {}),
-                            [week.monday]: value,
-                          },
-                        }
-                      : c,
-                  ),
-                }));
-              }}
-            />
-            <div className="apt-detail-actions">
-              <DeloadToggle ctx={ctx} deloadId={deload?.id} />
-              <Button
-                variant="secondary"
-                disabled={!canTemp}
-                title={
-                  canTemp
-                    ? `Temporary plan from ${dayShort(week.monday)}`
-                    : "Past weeks can't get a temporary plan"
-                }
-                onClick={() => setTempOpen(true)}
-              >
-                Temporary plan
-              </Button>
-            </div>
+            {viewer === "client" && note.trim() && (
+              <p className="apt-sub" style={{ whiteSpace: "pre-wrap" }}>
+                Coach note · {note}
+              </p>
+            )}
+            {viewer === "coach" && (
+              <TextArea
+                label="Coach note"
+                value={note}
+                placeholder="Coach note for this week"
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setState((s) => ({
+                    ...s,
+                    clients: s.clients.map((c) =>
+                      c.id === client.id
+                        ? {
+                            ...c,
+                            weekNotes: {
+                              ...(c.weekNotes ?? {}),
+                              [week.monday]: value,
+                            },
+                          }
+                        : c,
+                    ),
+                  }));
+                }}
+              />
+            )}
+            {viewer === "coach" && (
+              <div className="apt-detail-actions">
+                <DeloadToggle ctx={ctx} deloadId={deload?.id} />
+                <Button
+                  variant="secondary"
+                  disabled={!canTemp}
+                  title={
+                    canTemp
+                      ? `Temporary plan from ${dayShort(week.monday)}`
+                      : "Past weeks can't get a temporary plan"
+                  }
+                  onClick={() =>
+                    navigate({
+                      ...route,
+                      plan: `temporary:new@${week.monday}`,
+                    })
+                  }
+                >
+                  Temporary plan
+                </Button>
+              </div>
+            )}
           </section>
         </div>
-      )}
-      {tempOpen && (
-        <TemporaryPlanDialog
-          client={client}
-          initialStartDate={week.monday}
-          onClose={() => setTempOpen(false)}
-        />
       )}
     </div>
   );

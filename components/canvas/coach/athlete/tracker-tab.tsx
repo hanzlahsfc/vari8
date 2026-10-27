@@ -33,16 +33,10 @@ import {
   scheduledSessions,
 } from "../../client-app/training-log/model";
 import {
-  defaultDecimals,
-  defaultSummary,
-} from "../client-tracker-preview/preview-model";
-import {
   ALL_PARAMETERS,
   type CoachClient,
   type CoachState,
-  type FieldConfig,
   formatDate,
-  type Parameter,
   type Route,
 } from "../model";
 import { applicablePlan } from "../plans/domain";
@@ -54,243 +48,22 @@ import {
   clientTracking,
   clientTrackingText,
   withTrackingText,
+  withTrackingValue,
 } from "../tracking/data";
+import {
+  dayTypeOptions,
+  loggedDayType,
+  planFollowed,
+  prescribedDayType,
+  withDayType,
+  withPlanFollowed,
+} from "../tracking/nutrition-day";
 import { Button, Dialog } from "../ui";
-import { nutritionForDate } from "./timeline";
 import { enumerateWeeks } from "./timeline-tab";
+import { buildGroups, type Col, type Group } from "./tracker-columns";
 import "./tracker-tab.css";
 
 // ─── Column model ───────────────────────────────────────────────────
-
-type Summary = "avg" | "sum" | "count" | "none";
-type Kind =
-  | "num"
-  | "rating"
-  | "text"
-  | "short"
-  | "flow"
-  | "day"
-  | "session"
-  | "coach";
-type Col = {
-  key: string;
-  label: string;
-  unit: string;
-  kind: Kind;
-  decimals: number;
-  summary: Summary;
-  /** Rating scale maximum (5 or 10). */
-  max: number;
-  lowerBetter: boolean;
-  countWord?: [string, string];
-};
-type Group = { id: string; label: string; cols: Col[] };
-
-const GROUPS: [string, string[]][] = [
-  ["Body", ["Weight basics"]],
-  ["Health", ["Health readings"]],
-  ["Cycle", ["Cycle tracking"]],
-  [
-    "Nutrition",
-    [
-      "Nutrition",
-      "Fluids",
-      "Salt & sodium",
-      "Caffeine & alcohol",
-      "Fruit & vegetables",
-      "Hunger & appetite",
-      "Digestion",
-    ],
-  ],
-  [
-    "Recovery",
-    [
-      "Sleep",
-      "Energy and readiness",
-      "Stress, mood and focus",
-      "Soreness & discomfort",
-      "Recovery context note",
-    ],
-  ],
-  ["Training", ["How training feels"]],
-  ["Activity", ["Movement and cardio", "Activity context note"]],
-  ["Notes", ["Day context", "Notes"]],
-];
-const groupOf = (parameterGroup: string) =>
-  GROUPS.find(([, sources]) => sources.includes(parameterGroup))?.[0] ??
-  "Notes";
-
-const RATING_UNITS = new Set(["1–10", "1–5", "Word labels"]);
-const LOWER_BETTER = new Set([
-  "stress",
-  "hunger",
-  "muscle-soreness",
-  "pain-discomfort",
-  "fatigue",
-  "cramps",
-  "bloating",
-  "nausea",
-  "abdominal-discomfort",
-]);
-const SHORT_LABEL: Record<string, string> = {
-  weight: "Weight",
-  time: "Weigh-in",
-  waist: "Waist",
-  calories: "kcal",
-  protein: "P",
-  carbs: "C",
-  fat: "F",
-  water: "Water",
-  "salt-intake": "Salt",
-  "sodium-intake": "Sodium",
-  "caffeine-intake": "Caffeine",
-  "alcohol-intake": "Alcohol",
-  hunger: "Hunger",
-  bloating: "Bloating",
-  sleep: "Sleep",
-  "sleep-quality": "Quality",
-  energy: "Energy",
-  stress: "Stress",
-  "muscle-soreness": "DOMS",
-  rhr: "RHR",
-  fbg: "Glucose",
-  bp: "BP",
-  hrv: "HRV",
-  "bleeding-level": "Flow",
-  cramps: "Cramps",
-  "pms-symptoms": "Symptoms",
-  "energy-in-gym": "Energy",
-  "mood-in-gym": "Mood",
-  "desire-to-train": "Drive",
-  steps: "Steps",
-  "cardio-duration": "Cardio",
-  "active-minutes": "Active",
-  "daily-note": "Client",
-};
-const UNIT_LABEL: Record<string, string> = { minutes: "min", hours: "h" };
-const TEXT_TYPES = new Set(["text", "context", "multi-choice"]);
-const SHORT_TYPES = new Set(["time", "blood-pressure", "choice"]);
-const SKIP_TYPES = new Set(["period-start", "location-rating-map"]);
-
-function colFor(field: FieldConfig, parameter: Parameter): Col {
-  const type = parameter.inputType ?? "";
-  const rating =
-    parameter.units.some((unit) => RATING_UNITS.has(unit)) ||
-    type === "location-rating";
-  const kind: Kind =
-    parameter.id === "bleeding-level"
-      ? "flow"
-      : TEXT_TYPES.has(type)
-        ? "text"
-        : SHORT_TYPES.has(type)
-          ? "short"
-          : rating
-            ? "rating"
-            : "num";
-  const unit =
-    kind === "num" ? (UNIT_LABEL[field.unit] ?? field.unit ?? "") : "";
-  return {
-    key: parameter.id,
-    label: SHORT_LABEL[parameter.id] ?? parameter.name,
-    unit: unit === "steps" || unit === "count" ? "" : unit,
-    kind,
-    decimals:
-      kind === "num" ? (field.decimals ?? defaultDecimals(parameter)) : 0,
-    summary:
-      field.summary ??
-      (parameter.id === "bleeding-level" ? "count" : defaultSummary(parameter)),
-    max: field.unit === "1–5" ? 5 : 10,
-    lowerBetter: LOWER_BETTER.has(parameter.id),
-    countWord:
-      parameter.id === "daily-note"
-        ? ["note", "notes"]
-        : kind === "flow"
-          ? ["day", "days"]
-          : kind === "text"
-            ? ["day", "days"]
-            : undefined,
-  };
-}
-
-/** Template tracker fields: snapshot order, live template settings win. */
-function trackerFields(state: CoachState, client: CoachClient): FieldConfig[] {
-  const assignment = client.assignment;
-  if (!assignment) return [];
-  const live = state.templates
-    .find((template) => template.id === assignment.templateId)
-    ?.variants.find((variant) => variant.id === assignment.variantId);
-  const snapshot =
-    assignment.snapshot.variants.find((v) => v.id === assignment.variantId) ??
-    assignment.snapshot.variants[0];
-  const liveById = new Map((live?.fields ?? []).map((f) => [f.id, f]));
-  const out = (snapshot?.fields ?? []).map((f) => ({
-    ...f,
-    ...liveById.get(f.id),
-  }));
-  for (const field of live?.fields ?? [])
-    if (!out.some((f) => f.id === field.id)) out.push(field);
-  return out;
-}
-
-function buildGroups(state: CoachState, client: CoachClient): Group[] {
-  const byGroup = new Map<string, Col[]>();
-  for (const field of trackerFields(state, client)) {
-    const parameter = ALL_PARAMETERS.find((p) => p.id === field.id);
-    if (!parameter || SKIP_TYPES.has(parameter.inputType ?? "")) continue;
-    if (parameter.id === "cycle-day") continue;
-    const group = groupOf(parameter.group);
-    byGroup.set(group, [
-      ...(byGroup.get(group) ?? []),
-      colFor(field, parameter),
-    ]);
-  }
-  const plans = client.plans;
-  const hasNutrition =
-    !!plans &&
-    !!(
-      plans.nutrition.mealPlan.active ||
-      plans.nutrition.mealPlan.history.length ||
-      plans.nutrition.iifym.active ||
-      plans.nutrition.iifym.history.length
-    );
-  const hasTraining =
-    !!plans && !!(plans.training.active || plans.training.history.length);
-  const derived = (key: string, label: string, kind: Kind): Col => ({
-    key,
-    label,
-    unit: "",
-    kind,
-    decimals: 0,
-    summary: kind === "day" ? "none" : "count",
-    max: 10,
-    lowerBetter: false,
-    countWord:
-      kind === "session"
-        ? ["session", "sessions"]
-        : kind === "coach"
-          ? ["note", "notes"]
-          : undefined,
-  });
-  if (hasNutrition)
-    byGroup.set("Nutrition", [
-      derived("@day", "Day", "day"),
-      ...(byGroup.get("Nutrition") ?? []),
-    ]);
-  if (hasTraining)
-    byGroup.set("Training", [
-      derived("@session", "Session", "session"),
-      ...(byGroup.get("Training") ?? []),
-    ]);
-  byGroup.set("Notes", [
-    ...(byGroup.get("Notes") ?? []),
-    derived("@coach", "Coach", "coach"),
-  ]);
-  return GROUPS.map(([id]) => ({
-    id,
-    label: id,
-    cols: byGroup.get(id) ?? [],
-  })).filter((group) => group.cols.length > 0);
-}
 
 // ─── Formatting ─────────────────────────────────────────────────────
 
@@ -474,9 +247,12 @@ function cellValue(
         : { text: fmt(v, col.decimals), raw: v, empty: false };
     }
     case "day": {
-      const r = nutritionForDate(client, date);
-      const label = r.temporary?.label ?? r.label ?? "";
+      const label = loggedDayType(client, date) ?? "";
       return { text: label, empty: !label };
+    }
+    case "plan": {
+      const on = planFollowed(client, date);
+      return { text: on ? "✓" : "", empty: !on };
     }
     case "session": {
       const s = data.sessions.get(date);
@@ -519,6 +295,10 @@ function summaryParts(
   const plain = (main: string) => ({ main });
   if (col.summary === "none") return plain("");
   const logged = days.filter((d) => d <= data.today);
+  if (col.kind === "plan") {
+    const n = logged.filter((d) => planFollowed(client, d)).length;
+    return plain(n ? `${n}/${days.length} days` : "");
+  }
   if (col.summary === "count" || col.kind === "session") {
     const count = logged.filter((d) => {
       const c = cellValue(col, d, data, client);
@@ -604,10 +384,25 @@ type NoteTarget = {
   y: number;
 };
 
-export function AthleteTrackerTab({ client }: { client: CoachClient }) {
+export function AthleteTrackerTab({
+  client,
+  viewer = "coach",
+  onOpen,
+}: {
+  client: CoachClient;
+  viewer?: "coach" | "client";
+  onOpen?: (tab: string, plan?: string) => void;
+}) {
   const { state, setState, navigate } = useCoach();
   const today = localToday();
-  const groups = useMemo(() => buildGroups(state, client), [state, client]);
+  const groups = useMemo(() => {
+    const all = buildGroups(state, client);
+    if (viewer === "client")
+      return all
+        .map((g) => ({ ...g, cols: g.cols.filter((c) => c.kind !== "coach") }))
+        .filter((g) => g.cols.length > 0);
+    return all;
+  }, [state, client, viewer]);
   const ranges = useMemo(() => phaseRanges(client.phases), [client.phases]);
   const weeks = useMemo(
     () =>
@@ -639,6 +434,11 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
   const [pinned, setPinned] = useState<string[]>([]);
   const [note, setNote] = useState<NoteTarget | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [edit, setEdit] = useState<NoteTarget | null>(null);
+  const [inline, setInline] = useState<{ date: string; key: string } | null>(
+    null,
+  );
+  const [editMulti, setEditMulti] = useState<string[]>([]);
   const [session, setSession] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(false);
 
@@ -759,7 +559,11 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
     let st = 0;
     const onDown = (event: PointerEvent) => {
       if (event.pointerType !== "mouse" || event.button !== 0) return;
-      if ((event.target as HTMLElement | null)?.closest("input, textarea, a"))
+      if (
+        (event.target as HTMLElement | null)?.closest(
+          "input, textarea, select, a, .trk-editing",
+        )
+      )
         return;
       pointerId = event.pointerId;
       sx = event.clientX;
@@ -873,6 +677,203 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
     updateClient((c) => withTrackingText(c, note.date, key, noteDraft.trim()));
     setNote(null);
   };
+  const openEdit = (
+    event: React.MouseEvent,
+    date: string,
+    col: Col,
+    value: string,
+  ) => {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setEdit({
+      date,
+      col,
+      value,
+      x: Math.min(rect.left, window.innerWidth - 260),
+      y: Math.min(rect.bottom + 6, window.innerHeight - 220),
+    });
+    setEditMulti(
+      value
+        ? value
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean)
+        : [],
+    );
+  };
+  const saveEdit = (raw: string) => {
+    if (!edit) return;
+    const { date, col } = edit;
+    const v = raw.trim();
+    if (col.kind === "num" || col.kind === "rating") {
+      const n = v === "" ? null : Number(v.replace(",", "."));
+      if (v !== "" && !Number.isFinite(n)) return;
+      updateClient((c) => withTrackingValue(c, date, col.key, n));
+    } else {
+      updateClient((c) => withTrackingText(c, date, col.key, v));
+    }
+  };
+  const closeEdit = () => setEdit(null);
+  const editParam = edit
+    ? ALL_PARAMETERS.find((param) => param.id === edit.col.key)
+    : undefined;
+  const commitEdit = (value: string) => {
+    saveEdit(value);
+    setEdit(null);
+  };
+
+  // Inline cell editing (client viewer): ordered list of editable column keys
+  // for Tab navigation, plus day stepping within the displayed range.
+  const editableKeys = ordered
+    .flatMap((g) => g.cols)
+    .filter(
+      (c) =>
+        c.kind !== "coach" &&
+        c.kind !== "session" &&
+        c.kind !== "plan" &&
+        c.type !== "multi-choice",
+    )
+    .map((c) => c.key);
+  const stepCol = (key: string, dir: number) => {
+    const i = editableKeys.indexOf(key);
+    return i < 0 ? undefined : editableKeys[i + dir];
+  };
+  const stepDate = (date: string, dir: number) => {
+    const i = allDays.indexOf(date);
+    const d = i < 0 ? undefined : allDays[i + dir];
+    return d && d <= today ? d : undefined;
+  };
+  /** Writes an inline edit; returns false when the input is invalid. */
+  const saveInline = (col: Col, date: string, raw: string) => {
+    const v = raw.trim();
+    if (col.kind === "num") {
+      const n = v === "" ? null : Number(v.replace(",", "."));
+      if (v !== "" && !Number.isFinite(n)) return false;
+      updateClient((c) => withTrackingValue(c, date, col.key, n));
+      return true;
+    }
+    if (col.kind === "rating") {
+      const n = v === "" ? null : Number(v);
+      if (
+        v !== "" &&
+        (!Number.isInteger(n) || n == null || n < 1 || n > col.max)
+      )
+        return false;
+      updateClient((c) => withTrackingValue(c, date, col.key, n));
+      return true;
+    }
+    if (col.kind === "day") {
+      updateClient((c) => withDayType(c, date, v));
+      return true;
+    }
+    updateClient((c) => withTrackingText(c, date, col.key, v));
+    return true;
+  };
+  const commitInline = (
+    col: Col,
+    date: string,
+    raw: string,
+    next: { date: string; key: string } | null,
+  ) => {
+    if (saveInline(col, date, raw)) setInline(next);
+    else setInline(null);
+  };
+  const onEditKey = (
+    event: React.KeyboardEvent<HTMLElement>,
+    col: Col,
+    date: string,
+  ) => {
+    const v = (event.currentTarget as HTMLInputElement).value;
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const d = stepDate(date, 1);
+      commitInline(col, date, v, d ? { date: d, key: col.key } : null);
+    } else if (event.key === "Tab") {
+      event.preventDefault();
+      const k = stepCol(col.key, event.shiftKey ? -1 : 1);
+      commitInline(col, date, v, k ? { date, key: k } : null);
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const d = stepDate(date, 1);
+      commitInline(col, date, v, d ? { date: d, key: col.key } : null);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const d = stepDate(date, -1);
+      commitInline(col, date, v, d ? { date: d, key: col.key } : null);
+    } else if (event.key === "Escape") {
+      setInline(null);
+    }
+  };
+  const inlineEditor = (col: Col, date: string, initial: string) => {
+    const param = ALL_PARAMETERS.find((p) => p.id === col.key);
+    if (col.kind === "day") {
+      const options = dayTypeOptions(client, date);
+      const prescribed = prescribedDayType(client, date);
+      return (
+        <select
+          // biome-ignore lint/a11y/noAutofocus: cell enters edit mode on click.
+          autoFocus
+          className="trk-in"
+          defaultValue={initial}
+          onChange={(event) =>
+            updateClient((c) => withDayType(c, date, event.target.value))
+          }
+          onBlur={() => setInline(null)}
+          onKeyDown={(event) => onEditKey(event, col, date)}
+          aria-label={col.label}
+        >
+          {options.map((o) => (
+            <option key={o.label} value={o.label}>
+              {o.label}
+              {o.label === prescribed ? " (prescribed)" : ""}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (col.kind === "flow" || param?.inputType === "choice") {
+      return (
+        <select
+          // biome-ignore lint/a11y/noAutofocus: cell enters edit mode on click.
+          autoFocus
+          className="trk-in"
+          defaultValue={initial}
+          onChange={(event) =>
+            updateClient((c) =>
+              withTrackingText(c, date, col.key, event.target.value),
+            )
+          }
+          onBlur={() => setInline(null)}
+          onKeyDown={(event) => onEditKey(event, col, date)}
+          aria-label={col.label}
+        >
+          <option value="">—</option>
+          {(param?.options ?? []).map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      );
+    }
+    return (
+      <input
+        // biome-ignore lint/a11y/noAutofocus: cell enters edit mode on click.
+        autoFocus
+        className="trk-in"
+        inputMode={
+          col.kind === "num" || col.kind === "rating" ? "decimal" : undefined
+        }
+        defaultValue={initial}
+        placeholder={col.key === "blood-pressure" ? "118 / 76" : undefined}
+        onKeyDown={(event) => onEditKey(event, col, date)}
+        onBlur={(event) => {
+          saveInline(col, date, event.target.value);
+          setInline(null);
+        }}
+        aria-label={col.label}
+      />
+    );
+  };
 
   const layoutChanged = pinned.length > 0 || collapsedGroups.size > 0;
   const toggleGroup = (id: string) =>
@@ -943,6 +944,12 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
       !!data.text[`${date}:note:${col.key}`] ||
       (col.kind === "coach" && !c.empty);
     const future = date > today;
+    const editableCell =
+      viewer === "client" &&
+      !future &&
+      col.kind !== "coach" &&
+      col.kind !== "session" &&
+      col.kind !== "plan";
     let content: ReactNode = c.empty ? (
       <span className="trk-mut">—</span>
     ) : (
@@ -964,8 +971,45 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
         </span>
       );
     }
-    if (!c.empty && col.kind === "day")
-      content = <span className="trk-chip">{c.text}</span>;
+    if (!c.empty && col.kind === "day") {
+      const prescribed = prescribedDayType(client, date);
+      const overridden = !!prescribed && c.text !== prescribed;
+      content = (
+        <span
+          className={`trk-chip${overridden ? " trk-chip-alt" : ""}`}
+          title={overridden ? `Prescribed: ${prescribed}` : undefined}
+        >
+          {c.text}
+        </span>
+      );
+    }
+    if (col.kind === "plan") {
+      const on = planFollowed(client, date);
+      const mark = on ? (
+        <span className="trk-plan-on">✓</span>
+      ) : (
+        <span className="trk-mut">—</span>
+      );
+      if (future) return <span key={col.key} className="trk-c trk-num" />;
+      if (viewer !== "client")
+        return (
+          <span key={col.key} className="trk-c trk-num">
+            {mark}
+          </span>
+        );
+      return (
+        <button
+          type="button"
+          key={col.key}
+          className="trk-c trk-num trk-plan"
+          title={on ? "Followed plan" : "Mark plan as followed"}
+          aria-pressed={on}
+          onClick={() => updateClient((cc) => withPlanFollowed(cc, date, !on))}
+        >
+          {mark}
+        </button>
+      );
+    }
     if (col.kind === "session" && !future) {
       const s = data.sessions.get(date);
       return (
@@ -991,16 +1035,44 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
         ? "trk-txt"
         : "trk-num";
     if (future) return <span key={col.key} className={`trk-c ${align}`} />;
+    if (
+      editableCell &&
+      inline?.date === date &&
+      inline?.key === col.key &&
+      col.type !== "multi-choice"
+    ) {
+      const initial =
+        col.kind === "num" || col.kind === "rating"
+          ? c.raw == null
+            ? ""
+            : String(c.raw)
+          : c.text;
+      return (
+        <span key={col.key} className={`trk-c ${align} trk-editing`}>
+          {inlineEditor(col, date, initial)}
+        </span>
+      );
+    }
     return (
       <button
         type="button"
         key={col.key}
         className={`trk-c ${align}`}
         title={col.kind === "text" || col.kind === "coach" ? c.text : undefined}
-        onClick={(event) => openNote(event, date, col, c.empty ? "" : c.text)}
+        onClick={(event) =>
+          viewer === "client"
+            ? !editableCell
+              ? undefined
+              : col.type === "multi-choice"
+                ? openEdit(event, date, col, c.empty ? "" : c.text)
+                : setInline({ date, key: col.key })
+            : openNote(event, date, col, c.empty ? "" : c.text)
+        }
       >
         {content}
-        {hasNote && col.kind !== "coach" && <span className="trk-cdot" />}
+        {viewer === "coach" && hasNote && col.kind !== "coach" && (
+          <span className="trk-cdot" />
+        )}
       </button>
     );
   };
@@ -1060,7 +1132,20 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
                             key={m.id}
                             className="trk-marker"
                             title={m.label}
-                            onClick={() => navigate(m.route)}
+                            onClick={() =>
+                              onOpen
+                                ? onOpen(
+                                    m.route.tab === "Plans"
+                                      ? "Plans"
+                                      : m.route.tab === "Timeline"
+                                        ? "Timeline"
+                                        : m.route.section === "check-ins"
+                                          ? "Check-ins"
+                                          : (m.route.tab ?? "Overview"),
+                                    m.route.plan,
+                                  )
+                                : navigate(m.route)
+                            }
                           >
                             {m.icon}
                             {m.short}
@@ -1365,6 +1450,74 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
               </Button>
               <Button variant="primary" size="sm" onClick={saveNote}>
                 Save note
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {edit && (
+        <>
+          <button
+            type="button"
+            className="trk-pop-backdrop"
+            aria-label="Close editor"
+            onClick={closeEdit}
+          />
+          <div
+            className="trk-pop"
+            style={{ left: edit.x, top: edit.y }}
+            role="dialog"
+            aria-label={`Edit ${edit.col.label}`}
+          >
+            <h4>
+              {formatDate(edit.date, {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+              {" · "}
+              {edit.col.label}
+            </h4>
+            <div className="trk-edit-chips">
+              {(editParam?.options ?? []).map((opt) => {
+                const on = editMulti.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    type="button"
+                    className={`cm-optchip${on ? " on" : ""}`}
+                    aria-pressed={on}
+                    onClick={() =>
+                      setEditMulti(
+                        on
+                          ? editMulti.filter((v) => v !== opt)
+                          : [...editMulti, opt],
+                      )
+                    }
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="trk-pop-actions">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  saveEdit("");
+                  setEdit(null);
+                }}
+              >
+                Clear
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => commitEdit(editMulti.join(", "))}
+              >
+                Done
               </Button>
             </div>
           </div>

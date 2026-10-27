@@ -15,6 +15,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import { Reorder, useDragControls } from "motion/react";
 import { useMemo, useRef, useState } from "react";
 import {
   Input as SharedInput,
@@ -45,18 +46,19 @@ import {
 } from "../../../ethereal/mealplan/model";
 import { macroEnergyShares } from "../../../ethereal/mealplan/overview-model";
 import { ClientPlanPreview } from "../../client-plan-preview";
+import { Toggle } from "../../ui";
 import type { IifymOption, IifymPlan } from "../types";
 import {
   addFoodAlternative,
   alternativeQuantity,
   duplicateIifymOption,
   duplicateMealOption,
-  mealDropTargetIndex,
   moveMeal,
   removeIifymOption,
   removeMealOption,
   replacementQuantity,
   replacePortionFood,
+  scaleFoodAlternatives,
 } from "./model";
 import "./editor.css";
 
@@ -402,6 +404,7 @@ function TimePicker({
         value={value}
         onValueChange={onChange}
         size="md"
+        emptyLabel="Any time"
       />
     </div>
   );
@@ -420,11 +423,7 @@ function Schedule({
   activeVariantId: string;
   onChange: (v: VariantSchedule) => void;
 }) {
-  const [enabled, setEnabled] = useState(() => schedule.mode !== "manual");
   const fallback = variants[0]?.id ?? "";
-  const manualSelection = useRef(
-    schedule.mode === "manual" ? schedule.selectedVariantId : activeVariantId,
-  );
   const weekdayKey = (index: number) =>
     (index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
   const validId = (id?: string) =>
@@ -436,23 +435,32 @@ function Schedule({
       ? validId(schedule.selectedVariantId)
       : schedule.mode === "cycle"
         ? validId(schedule.steps[0]?.variantId)
-        : validId(schedule.days[1]);
+        : schedule.mode === "weekly"
+          ? validId(schedule.days[1])
+          : validId(activeVariantId);
   const weeklyDays =
     schedule.mode === "weekly"
       ? schedule.days
       : Object.fromEntries(
           weekdays.map((_, index) => [weekdayKey(index), everydayId]),
         );
-  const changePattern = (mode: "weekly" | "cycle") => {
+  const scheduled = schedule.mode === "weekly" || schedule.mode === "cycle";
+  const MODES = [
+    ["weekly", "Weekly"],
+    ["cycle", "Cycle"],
+  ] as const;
+  const enableSchedule = () =>
+    onChange({
+      mode: "weekly",
+      days: Object.fromEntries(
+        weekdays.map((_, index) => [weekdayKey(index), validId(everydayId)]),
+      ),
+    });
+  const disableSchedule = () => onChange({ mode: "flexible" });
+  const setPattern = (mode: "weekly" | "cycle") => {
     if (schedule.mode === mode) return;
     if (mode === "weekly") {
-      const days =
-        schedule.mode === "weekly"
-          ? schedule.days
-          : Object.fromEntries(
-              weekdays.map((_, index) => [weekdayKey(index), everydayId]),
-            );
-      onChange({ mode: "weekly", days });
+      onChange({ mode: "weekly", days: weeklyDays });
       return;
     }
     const today = new Date();
@@ -470,36 +478,6 @@ function Schedule({
       ],
     });
   };
-  const enableSchedule = () => {
-    const selected =
-      schedule.mode === "manual"
-        ? validId(schedule.selectedVariantId)
-        : validId(activeVariantId);
-    manualSelection.current = selected;
-    onChange({
-      mode: "weekly",
-      days: Object.fromEntries(
-        weekdays.map((_, index) => [weekdayKey(index), selected]),
-      ),
-    });
-    setEnabled(true);
-  };
-
-  if (!enabled) {
-    return (
-      <section className="cn-schedule cn-schedule-off">
-        <div className="cn-section-title">
-          <div>
-            <h3>Variant schedule</h3>
-            <p>Use one option every day.</p>
-          </div>
-          <button type="button" aria-pressed="false" onClick={enableSchedule}>
-            Set a schedule
-          </button>
-        </div>
-      </section>
-    );
-  }
 
   const cycleDays =
     schedule.mode === "cycle"
@@ -512,66 +490,68 @@ function Schedule({
           <h3>Variant schedule</h3>
           <p>Choose how options change over time.</p>
         </div>
-        <button
-          className="cn-schedule-toggle"
-          type="button"
-          aria-pressed="true"
-          onClick={() => {
-            onChange({
-              mode: "manual",
-              selectedVariantId: validId(manualSelection.current),
-            });
-            setEnabled(false);
-          }}
+        {variants.length > 1 && (
+          <Toggle
+            label="Use a schedule"
+            checked={scheduled}
+            onChange={(on) => (on ? enableSchedule() : disableSchedule())}
+          />
+        )}
+      </div>
+      {!scheduled ? (
+        <div className="cn-schedule-enable-choice">
+          <p>
+            {variants.length === 1
+              ? "One option applies every day. Add another option to use a schedule."
+              : `Without a schedule, your client picks one of the ${variants.length} options each day.`}
+          </p>
+        </div>
+      ) : (
+        <div
+          className="cn-option-tabs cn-schedule-modes"
+          role="tablist"
+          aria-label="Meal plan schedule type"
         >
-          Turn off
-        </button>
-      </div>
-      <div
-        className="cn-option-tabs cn-schedule-modes"
-        role="tablist"
-        aria-label="Meal plan schedule type"
-      >
-        {(
-          [
-            ["weekly", "Custom weekdays"],
-            ["cycle", "Repeating cycle"],
-          ] as const
-        ).map(([mode, modeLabel]) => (
-          <button
-            key={mode}
-            id={`nutrition-schedule-${mode}`}
-            type="button"
-            role="tab"
-            aria-selected={schedule.mode === mode}
-            aria-controls="nutrition-schedule-configuration"
-            tabIndex={schedule.mode === mode ? 0 : -1}
-            onClick={() => changePattern(mode)}
-            onKeyDown={(event) => {
-              const target =
-                event.key === "ArrowRight" || event.key === "ArrowLeft"
-                  ? schedule.mode === "weekly"
-                    ? "cycle"
-                    : "weekly"
-                  : event.key === "Home"
-                    ? "weekly"
-                    : event.key === "End"
-                      ? "cycle"
-                      : undefined;
-              if (!target) return;
-              event.preventDefault();
-              changePattern(target);
-              event.currentTarget.parentElement
-                ?.querySelector<HTMLButtonElement>(
-                  `#nutrition-schedule-${target}`,
-                )
-                ?.focus();
-            }}
-          >
-            {modeLabel}
-          </button>
-        ))}
-      </div>
+          {MODES.map(([mode, modeLabel]) => (
+            <button
+              key={mode}
+              id={`nutrition-schedule-${mode}`}
+              type="button"
+              role="tab"
+              aria-selected={schedule.mode === mode}
+              aria-controls="nutrition-schedule-configuration"
+              tabIndex={schedule.mode === mode ? 0 : -1}
+              onClick={() => setPattern(mode)}
+              onKeyDown={(event) => {
+                const order = MODES.map(([m]) => m);
+                const at = order.indexOf(
+                  schedule.mode as (typeof order)[number],
+                );
+                const target =
+                  event.key === "ArrowRight"
+                    ? order[(at + 1) % order.length]
+                    : event.key === "ArrowLeft"
+                      ? order[(at - 1 + order.length) % order.length]
+                      : event.key === "Home"
+                        ? order[0]
+                        : event.key === "End"
+                          ? order[order.length - 1]
+                          : undefined;
+                if (!target) return;
+                event.preventDefault();
+                setPattern(target);
+                event.currentTarget.parentElement
+                  ?.querySelector<HTMLButtonElement>(
+                    `#nutrition-schedule-${target}`,
+                  )
+                  ?.focus();
+              }}
+            >
+              {modeLabel}
+            </button>
+          ))}
+        </div>
+      )}
       {schedule.mode === "weekly" ? (
         <div
           id="nutrition-schedule-configuration"
@@ -708,18 +688,16 @@ function Schedule({
             ))}
           </div>
         </div>
-      ) : (
-        <div className="cn-schedule-enable-choice">
-          <p>Choose a schedule type above to assign options.</p>
-        </div>
+      ) : null}
+      {scheduled && (
+        <p className="cn-schedule-note">
+          {schedule.mode === "weekly"
+            ? "Each weekday has its own plan assignment."
+            : schedule.mode === "cycle"
+              ? `Repeats every ${cycleDays} ${cycleDays === 1 ? "day" : "days"} · ${schedule.steps.map((step) => `${label(validId(step.variantId))} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" → ")}`
+              : ""}
+        </p>
       )}
-      <p className="cn-schedule-note">
-        {schedule.mode === "weekly"
-          ? "Each weekday has its own plan assignment."
-          : schedule.mode === "cycle"
-            ? `Repeats every ${cycleDays} ${cycleDays === 1 ? "day" : "days"} · ${schedule.steps.map((step) => `${label(validId(step.variantId))} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" → ")}`
-            : "Every day · one plan option"}
-      </p>
     </section>
   );
 }
@@ -833,11 +811,6 @@ function MealEditor({
   onSave,
   onDuplicate,
   onMove,
-  onMoveTo,
-  onDragTarget,
-  dropTarget,
-  dropEdge,
-  mealIds,
 }: {
   meal: Meal;
   index: number;
@@ -848,27 +821,9 @@ function MealEditor({
   onSave: () => void;
   onDuplicate: () => void;
   onMove: (direction: -1 | 1) => void;
-  onMoveTo: (mealId: string, targetIndex: number) => void;
-  onDragTarget: (sourceMealId: string, targetMealId: string | null) => void;
-  dropTarget: boolean;
-  dropEdge?: "before" | "after";
-  mealIds: string[];
 }) {
-  const dragRef = useRef<{
-    pointerId: number;
-    startX: number;
-    startY: number;
-    moved: boolean;
-  } | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
+  const dragControls = useDragControls();
   const total = calculateMealNutrients(meal, foodMap);
-  const clearDrag = () => {
-    dragRef.current = null;
-    setDragging(false);
-    setDragOffset({ x: 0, y: 0 });
-    onDragTarget(meal.id, null);
-  };
   const patchPortion = (at: number, patch: Partial<FoodPortion>) =>
     onChange({
       ...meal,
@@ -877,22 +832,15 @@ function MealEditor({
       ),
     });
   return (
-    <fieldset
-      className={`cn-meal${dragging ? " cn-meal--dragging" : ""}`}
+    <Reorder.Item
+      as="fieldset"
+      value={meal.id}
+      dragListener={false}
+      dragControls={dragControls}
+      className="cn-meal"
       data-meal-id={meal.id}
-      data-drop-target={dropTarget || undefined}
-      data-drop-edge={dropTarget ? dropEdge : undefined}
-      data-drop-label={
-        dropTarget
-          ? `Drop ${dropEdge} meal ${index + 1}: ${meal.label}`
-          : undefined
-      }
-      style={{
-        transform: dragging
-          ? `translate3d(${dragOffset.x}px, ${dragOffset.y}px, 0)`
-          : undefined,
-      }}
       aria-label={`${meal.label || "Meal"} contents`}
+      whileDrag={{ scale: 1.015, zIndex: 30 }}
     >
       <header>
         <button
@@ -900,69 +848,22 @@ function MealEditor({
           type="button"
           aria-label={`Drag ${meal.label} to reorder`}
           title="Drag to reorder meals"
-          style={{
-            touchAction: "none",
-          }}
-          onPointerDown={(event) => {
-            if (!event.isPrimary || event.button !== 0) return;
-            event.preventDefault();
-            event.currentTarget.setPointerCapture(event.pointerId);
-            dragRef.current = {
-              pointerId: event.pointerId,
-              startX: event.clientX,
-              startY: event.clientY,
-              moved: false,
-            };
-          }}
-          onPointerMove={(event) => {
-            const drag = dragRef.current;
-            if (!drag || drag.pointerId !== event.pointerId) return;
-            const x = event.clientX - drag.startX;
-            const y = event.clientY - drag.startY;
-            if (!drag.moved && Math.hypot(x, y) < 5) return;
-            drag.moved = true;
-            setDragging(true);
-            setDragOffset({ x, y });
-            const target = document
-              .elementFromPoint(event.clientX, event.clientY)
-              ?.closest<HTMLElement>("[data-meal-id]");
-            onDragTarget(meal.id, target?.dataset.mealId ?? null);
-          }}
-          onPointerUp={(event) => {
-            const drag = dragRef.current;
-            if (!drag || drag.pointerId !== event.pointerId) return;
-            if (drag.moved) {
-              const target = document
-                .elementFromPoint(event.clientX, event.clientY)
-                ?.closest<HTMLElement>("[data-meal-id]");
-              const targetIndex = target?.dataset.mealId
-                ? mealDropTargetIndex(mealIds, meal.id, target.dataset.mealId)
-                : undefined;
-              if (targetIndex !== undefined) onMoveTo(meal.id, targetIndex);
-            }
-            clearDrag();
-          }}
-          onPointerCancel={clearDrag}
-          onLostPointerCapture={clearDrag}
+          style={{ touchAction: "none" }}
+          onPointerDown={(event) => dragControls.start(event)}
         >
           <GripVertical size={14} />
         </button>
         <span className="cn-meal-number">
           {String(index + 1).padStart(2, "0")}
         </span>
-        {dragging && (
-          <span className="cn-meal-drag-preview" aria-live="polite">
-            Moving meal {index + 1}: {meal.label}
-          </span>
-        )}
         <SharedInput
           label="Meal name"
           value={meal.label}
-          size="sm"
           onChange={(e) => onChange({ ...meal, label: e.target.value })}
         />
         <TimePicker
-          label={`Time for ${meal.label || "meal"}`}
+          label="Time"
+          aria-label={`Time for ${meal.label || "meal"}`}
           value={meal.time}
           onChange={(time) => onChange({ ...meal, time })}
         />
@@ -1024,13 +925,21 @@ function MealEditor({
               </div>
               <SharedInput
                 label={`${food.name} quantity`}
+                hideLabel
                 type="number"
                 min="0"
                 step="any"
                 value={portion.quantity}
                 size="sm"
                 onChange={(e) =>
-                  patchPortion(i, { quantity: Number(e.target.value) || 0 })
+                  patchPortion(
+                    i,
+                    scaleFoodAlternatives(
+                      portion,
+                      Number(e.target.value) || 0,
+                      foodMap,
+                    ),
+                  )
                 }
               />
               <span>{food.unit}</span>
@@ -1091,6 +1000,7 @@ function MealEditor({
                     <span>Or&nbsp; {alt.name}</span>
                     <SharedInput
                       label={`${alt.name} equivalent portion`}
+                      hideLabel
                       type="number"
                       min="0"
                       step="1"
@@ -1196,20 +1106,23 @@ function MealEditor({
           </span>
         </footer>
       </div>
-    </fieldset>
+    </Reorder.Item>
   );
 }
 
 export function NutritionEditor({
   value,
   onChange,
+  singleVariant,
 }: {
   value: MealPlan;
   onChange: (value: MealPlan) => void;
+  /** Temporary plans: one day plan for the whole range — hide the variant
+   * tabs, variant tools and the schedule. */
+  singleVariant?: boolean;
 }) {
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [dropTargetMealId, setDropTargetMealId] = useState<string | null>(null);
-  const [draggedMealId, setDraggedMealId] = useState<string | null>(null);
+
   const [libraryQuery, setLibraryQuery] = useState("");
   const [deletedSaved, setDeletedSaved] = useState<{
     meal: ReusableMeal;
@@ -1336,70 +1249,75 @@ export function NutritionEditor({
   return (
     <div className="cn-editor">
       <Overview variants={value.variants} />
-      <Schedule
-        schedule={value.schedule}
-        variants={value.variants}
-        startDate={value.startDate}
-        activeVariantId={active.id}
-        onChange={(schedule) => onChange({ ...value, schedule })}
-      />
+      {!singleVariant && (
+        <Schedule
+          schedule={value.schedule}
+          variants={value.variants}
+          startDate={value.startDate}
+          activeVariantId={active.id}
+          onChange={(schedule) => onChange({ ...value, schedule })}
+        />
+      )}
       <div className="cn-options">
-        <div
-          className="cn-option-tabs"
-          role="tablist"
-          aria-label="Nutrition options"
-        >
-          {value.variants.map((v) => (
-            <button
-              role="tab"
-              tabIndex={v.id === active.id ? 0 : -1}
-              onKeyDown={(event) => {
-                const delta =
-                  event.key === "ArrowRight"
-                    ? 1
-                    : event.key === "ArrowLeft"
-                      ? -1
-                      : 0;
-                const at = value.variants.findIndex((item) => item.id === v.id);
-                const target =
-                  event.key === "Home"
-                    ? 0
-                    : event.key === "End"
-                      ? value.variants.length - 1
-                      : delta
-                        ? (at + delta + value.variants.length) %
-                          value.variants.length
-                        : undefined;
-                if (target === undefined) return;
-                event.preventDefault();
-                onChange({
-                  ...value,
-                  activeVariantId: value.variants[target].id,
-                });
-                const buttons =
-                  event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-                    "[role=tab]",
+        {!singleVariant && (
+          <div
+            className="cn-option-tabs"
+            role="tablist"
+            aria-label="Nutrition options"
+          >
+            {value.variants.map((v) => (
+              <button
+                role="tab"
+                tabIndex={v.id === active.id ? 0 : -1}
+                onKeyDown={(event) => {
+                  const delta =
+                    event.key === "ArrowRight"
+                      ? 1
+                      : event.key === "ArrowLeft"
+                        ? -1
+                        : 0;
+                  const at = value.variants.findIndex(
+                    (item) => item.id === v.id,
                   );
-                buttons?.[target]?.focus();
-              }}
-              aria-selected={v.id === active.id}
-              key={v.id}
-              type="button"
-              onClick={() => onChange({ ...value, activeVariantId: v.id })}
-            >
-              {v.label || "Untitled"}
+                  const target =
+                    event.key === "Home"
+                      ? 0
+                      : event.key === "End"
+                        ? value.variants.length - 1
+                        : delta
+                          ? (at + delta + value.variants.length) %
+                            value.variants.length
+                          : undefined;
+                  if (target === undefined) return;
+                  event.preventDefault();
+                  onChange({
+                    ...value,
+                    activeVariantId: value.variants[target].id,
+                  });
+                  const buttons =
+                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                      "[role=tab]",
+                    );
+                  buttons?.[target]?.focus();
+                }}
+                aria-selected={v.id === active.id}
+                key={v.id}
+                type="button"
+                onClick={() => onChange({ ...value, activeVariantId: v.id })}
+              >
+                {v.label || "Untitled"}
+              </button>
+            ))}
+            <button type="button" onClick={addOption}>
+              <Plus size={14} /> Add option
             </button>
-          ))}
-          <button type="button" onClick={addOption}>
-            <Plus size={14} /> Add option
-          </button>
-        </div>
-        <div className="cn-option-tools">
+          </div>
+        )}
+        <div className="cn-option-tools" hidden={singleVariant}>
           <SharedInput
             label="Option label"
             value={active.label}
             onChange={(e) => renameOption(active.id, e.target.value)}
-            size="sm"
           />
           <button type="button" onClick={duplicateOption}>
             <Copy size={14} /> Duplicate option
@@ -1526,29 +1444,25 @@ export function NutritionEditor({
           </div>
         )}
       </section>
-      <div className="cn-meal-list">
+      <Reorder.Group
+        axis="y"
+        className="cn-meal-list"
+        values={active.meals.map((item) => item.id)}
+        onReorder={(ids) =>
+          updateVariant(active.id, (v) => ({
+            ...v,
+            meals: ids.map(
+              (id) => v.meals.find((x) => x.id === id) as (typeof v.meals)[0],
+            ),
+          }))
+        }
+      >
         {active.meals.map((meal, index) => (
           <MealEditor
             key={meal.id}
             meal={meal}
             index={index}
             count={active.meals.length}
-            mealIds={active.meals.map((item) => item.id)}
-            dropTarget={
-              dropTargetMealId === meal.id && draggedMealId !== meal.id
-            }
-            dropEdge={
-              dropTargetMealId === meal.id && draggedMealId
-                ? active.meals.findIndex((item) => item.id === draggedMealId) <
-                  index
-                  ? "after"
-                  : "before"
-                : undefined
-            }
-            onDragTarget={(sourceMealId, targetMealId) => {
-              setDraggedMealId(targetMealId ? sourceMealId : null);
-              setDropTargetMealId(targetMealId);
-            }}
             reusable={value.reusableMeals}
             onChange={(m) =>
               updateVariant(active.id, (v) => ({
@@ -1578,11 +1492,6 @@ export function NutritionEditor({
                 moveMeal(v, meal.id, index + direction),
               )
             }
-            onMoveTo={(draggedMealId, targetIndex) =>
-              updateVariant(active.id, (v) =>
-                moveMeal(v, draggedMealId, targetIndex),
-              )
-            }
           />
         ))}
         <button
@@ -1592,7 +1501,7 @@ export function NutritionEditor({
         >
           <Plus size={16} /> Add meal
         </button>
-      </div>
+      </Reorder.Group>
     </div>
   );
 }
@@ -1685,8 +1594,8 @@ function OptionTargets({
 }: {
   option: IifymOption;
   onChange: (v: IifymOption) => void;
-  onRemove: () => void;
-  onDuplicate: () => void;
+  onRemove?: () => void;
+  onDuplicate?: () => void;
 }) {
   const targets = option.targets;
   const keys =
@@ -1702,12 +1611,16 @@ function OptionTargets({
           size="sm"
           onChange={(e) => onChange({ ...option, label: e.target.value })}
         />
-        <button type="button" title="Duplicate option" onClick={onDuplicate}>
-          <Copy size={14} />
-        </button>
-        <button type="button" title="Delete option" onClick={onRemove}>
-          <Trash2 size={14} />
-        </button>
+        {onDuplicate && (
+          <button type="button" title="Duplicate option" onClick={onDuplicate}>
+            <Copy size={14} />
+          </button>
+        )}
+        {onRemove && (
+          <button type="button" title="Delete option" onClick={onRemove}>
+            <Trash2 size={14} />
+          </button>
+        )}
       </header>
       <div className="cn-target-style">
         <span>Targets in</span>
@@ -1750,9 +1663,12 @@ function OptionTargets({
 export function IifymEditor({
   value,
   onChange,
+  singleVariant,
 }: {
   value: IifymPlan;
   onChange: (value: IifymPlan) => void;
+  /** Temporary plans: one option for the whole range. */
+  singleVariant?: boolean;
 }) {
   const updateOption = (id: string, next: IifymOption) =>
     onChange({
@@ -1773,30 +1689,36 @@ export function IifymEditor({
   const remove = (id: string) => onChange(removeIifymOption(value, id));
   return (
     <div className="cn-editor cn-iifym">
-      <Schedule
-        schedule={value.schedule}
-        startDate={value.startDate}
-        activeVariantId={
-          value.schedule.mode === "manual"
-            ? value.schedule.selectedVariantId
-            : value.schedule.mode === "cycle"
-              ? (value.schedule.steps[0]?.variantId ??
-                value.options[0]?.id ??
-                "")
-              : (value.schedule.days[1] ?? value.options[0]?.id ?? "")
-        }
-        variants={value.options.map((o) => ({
-          id: o.id,
-          label: o.label,
-          meals: [],
-        }))}
-        onChange={(schedule) => onChange({ ...value, schedule })}
-      />
+      {!singleVariant && (
+        <Schedule
+          schedule={value.schedule}
+          startDate={value.startDate}
+          activeVariantId={
+            value.schedule.mode === "manual"
+              ? value.schedule.selectedVariantId
+              : value.schedule.mode === "cycle"
+                ? (value.schedule.steps[0]?.variantId ??
+                  value.options[0]?.id ??
+                  "")
+                : value.schedule.mode === "weekly"
+                  ? (value.schedule.days[1] ?? value.options[0]?.id ?? "")
+                  : (value.options[0]?.id ?? "")
+          }
+          variants={value.options.map((o) => ({
+            id: o.id,
+            label: o.label,
+            meals: [],
+          }))}
+          onChange={(schedule) => onChange({ ...value, schedule })}
+        />
+      )}
       <div className="cn-iifym-head">
         <h3>Daily target options</h3>
-        <button type="button" onClick={add}>
-          <Plus size={14} /> Add option
-        </button>
+        {!singleVariant && (
+          <button type="button" onClick={add}>
+            <Plus size={14} /> Add option
+          </button>
+        )}
       </div>
       <p>
         Each option gives the client a distinct nutrition target for the
@@ -1808,8 +1730,12 @@ export function IifymEditor({
             key={option.id}
             option={option}
             onChange={(next) => updateOption(option.id, next)}
-            onDuplicate={() => onChange(duplicateIifymOption(value, option.id))}
-            onRemove={() => remove(option.id)}
+            onDuplicate={
+              singleVariant
+                ? undefined
+                : () => onChange(duplicateIifymOption(value, option.id))
+            }
+            onRemove={singleVariant ? undefined : () => remove(option.id)}
           />
         ))}
       </div>
@@ -1823,6 +1749,8 @@ function scheduleInstruction(
 ) {
   const label = (id?: string) =>
     options.find((option) => option.id === id)?.label || "Not assigned";
+  if (schedule.mode === "flexible")
+    return "The client picks an option each day.";
   if (schedule.mode === "manual")
     return `Every day: ${label(schedule.selectedVariantId)}`;
   if (schedule.mode === "weekly")

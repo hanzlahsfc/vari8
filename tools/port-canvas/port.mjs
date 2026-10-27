@@ -28,10 +28,15 @@ const HAND_MERGE = new Set([
   "components/coach/check-ins.tsx",
   // Canvas carries local wiring deltas: ClientTrainingLogs in the Plans tab,
   // review-panel status chips in coach.css, the issue-169 activity-target
-  // versions fetch in timeline-tab.
+  // versions fetch in timeline-tab, the signed-in client session and
+  // workspace appearance in client-route, backend data in overview, and
+  // provider hydration hooks in setup-ui.
+  "components/client-app/client-route.tsx",
   "components/coach/clients.tsx",
   "components/coach/coach.css",
+  "components/coach/athlete/overview.tsx",
   "components/coach/athlete/timeline-tab.tsx",
+  "components/coach/plans/setup-ui.tsx",
   "components/ethereal/mealplan/mealplan-workspace.tsx",
   "components/ethereal/builder/dashboard-builder.tsx",
   "lib/ethereal-appearance.tsx",

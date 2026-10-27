@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 import {
   SegmentedControl,
   Input as SharedInput,
@@ -12,7 +12,18 @@ import {
   TextArea as SharedTextArea,
 } from "@/components/canvas/vari8/inputs";
 import { FormGrid, Section } from "@/components/canvas/vari8/layouts";
-import type { MealPlan } from "../../ethereal/mealplan/model";
+import { MobileActivity } from "../../client-app/mobile/activity";
+import { MobileMealPlan } from "../../client-app/mobile/meal-plan";
+import { MobileSupplements } from "../../client-app/mobile/supplements";
+import {
+  MobileSessionOverview,
+  MobileTraining,
+} from "../../client-app/mobile/training";
+import type { ScheduledSession } from "../../client-app/training-log/model";
+import {
+  calculateVariantNutrients,
+  type MealPlan,
+} from "../../ethereal/mealplan/model";
 import {
   ALL_PARAMETERS,
   type CoachClient,
@@ -27,6 +38,7 @@ import { useCoach } from "../store";
 import {
   type ActivityMetric,
   type ActivityTargetVersion,
+  addLocalDays,
   formatActivityTarget,
   resolveActivityTarget,
 } from "../targets/model";
@@ -52,17 +64,18 @@ import {
   normalizePhases,
   phaseRanges,
 } from "./phase-planning";
+import { OtherTargetDialog, otherTargetLabel } from "./plan-cards-support";
+import "../../client-app/mobile/mobile.css";
+import { planFoodMap } from "./domain";
 import {
-  nutritionOptions,
-  OtherTargetDialog,
-  otherTargetLabel,
-} from "./plan-cards-support";
-import { removeTemporaryNutrition } from "./temporary-nutrition";
-import { TemporaryPlanDialog, temporaryKcal } from "./temporary-plan-dialog";
+  removeTemporaryNutrition,
+  splitTemporaryNutrition,
+} from "./temporary-nutrition";
 import {
   type ClientGoal,
   type ClientPlans,
   emptyClientPlans,
+  type IifymPlan,
   type PlanLifecycle,
   resolveTrainingWeek,
 } from "./types";
@@ -106,6 +119,7 @@ function nutritionScheduleSummary(
     date,
   );
   const option = choices.find((choice) => choice.id === optionId);
+  if (plan.schedule.mode === "flexible") return "Client chooses each day";
   if (!option) return undefined;
   const cadence =
     plan.schedule.mode === "manual"
@@ -348,9 +362,17 @@ export function ClientPlansSummary({
 }) {
   const { navigate, route, setState } = useCoach();
   const activityDate = useLocalToday();
-  const [tempDialog, setTempDialog] = useState<"new" | { id: string } | null>(
-    null,
-  );
+  const [prevOpen, setPrevOpen] = useState(false);
+  const [previewPlan, setPreviewPlan] = useState<
+    | {
+        plan: MealPlan | IifymPlan;
+        title: string;
+        chip?: string;
+        editPlan?: "nutrition" | "temporary";
+        tempId?: string;
+      }
+    | undefined
+  >(undefined);
   const [targetDialog, setTargetDialog] = useState(false);
   const setup = configured(client);
   const plans = planData(client);
@@ -435,6 +457,27 @@ export function ClientPlansSummary({
   const goals = plans.goals.length;
   const hasGoalFields =
     configuredGoalFields(client.assignment?.snapshot).length > 0;
+  const MODULE_KEYS = [
+    "nutrition",
+    "training",
+    "activity-targets",
+    "supplements",
+    "other-targets",
+    "habits",
+  ];
+  const available = MODULE_KEYS.filter(
+    (k) =>
+      (k !== "nutrition" || hasNutrition) &&
+      (k !== "training" || hasTraining) &&
+      (k !== "habits" || setup?.habits),
+  );
+  const [session, setSession] = useState<ScheduledSession | null>(null);
+  const [sel, setSel] = useState(() => {
+    const want = route.module ?? route.plan;
+    return want && available.includes(want)
+      ? want
+      : (available[0] ?? "nutrition");
+  });
   if (!expanded)
     return (
       <section className="cd-plan-summary" aria-label="Plans and targets">
@@ -519,18 +562,11 @@ export function ClientPlansSummary({
     nutritionLifecycle as PlanLifecycle<MealPlan>,
   );
   const temporary = plans.nutrition.temporary ?? [];
-  const shownTemporary = [
-    ...temporary.filter(
-      (t) => t.startDate <= activityDate && activityDate <= t.endDate,
-    ),
-    ...temporary
-      .filter((t) => t.startDate > activityDate)
-      .sort((a, b) => a.startDate.localeCompare(b.startDate)),
-    ...temporary
-      .filter((t) => t.endDate < activityDate)
-      .sort((a, b) => b.endDate.localeCompare(a.endDate))
-      .slice(0, 1),
-  ];
+  const { current: shownTemporary, past: pastTemporary } =
+    splitTemporaryNutrition(temporary, activityDate);
+  const hasActiveTemporary = shownTemporary.some(
+    (t) => t.startDate <= activityDate && activityDate <= t.endDate,
+  );
 
   const openPlan = (plan: string) =>
     navigate({
@@ -548,6 +584,80 @@ export function ClientPlansSummary({
           : c,
       ),
     }));
+
+  const statusChip = (text: string) => <Status text={text} />;
+  const lifecycleChip = (status: string) => (
+    <Status
+      text={status === "Active with draft changes" ? "Draft changes" : status}
+    />
+  );
+  const moduleItems: {
+    key: string;
+    title: string;
+    line: string;
+    chip: ReactNode;
+  }[] = [
+    ...(hasNutrition
+      ? [
+          {
+            key: "nutrition",
+            title: "Nutrition",
+            line: nutritionDetail || "No plan saved",
+            chip: lifecycleChip(nutritionStatus),
+          },
+        ]
+      : []),
+    ...(hasTraining
+      ? [
+          {
+            key: "training",
+            title: "Training",
+            line: trainingDetail ?? "No plan saved",
+            chip: lifecycleChip(lifecycleStatus(plans.training)),
+          },
+        ]
+      : []),
+    {
+      key: "activity-targets",
+      title: "Activity targets",
+      line: activity.text,
+      chip: statusChip(activity.configured ? "Active" : "Not set"),
+    },
+    {
+      key: "supplements",
+      title: "Supplements",
+      line: supplements
+        ? `${supplementCount} product${supplementCount === 1 ? "" : "s"} prescribed`
+        : "No supplement plan saved",
+      chip: statusChip(supplements ? "Active" : "Not set"),
+    },
+    {
+      key: "other-targets",
+      title: "Other targets",
+      line: plans.otherTargets?.length
+        ? `${plans.otherTargets.length} custom target${plans.otherTargets.length === 1 ? "" : "s"}`
+        : "No custom targets",
+      chip: statusChip(
+        plans.otherTargets?.length
+          ? `${plans.otherTargets.length} set`
+          : "Not set",
+      ),
+    },
+    ...(setup?.habits
+      ? [
+          {
+            key: "habits",
+            title: "Habits",
+            line: client.habits.length
+              ? `${client.habits.length} client habits`
+              : "No habits configured",
+            chip: statusChip(
+              client.habits.length ? `${client.habits.length} set` : "Not set",
+            ),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <Section
@@ -576,307 +686,726 @@ export function ClientPlansSummary({
           </Empty>
         </Surface>
       ) : (
-        <div className="cp-grid">
-          {hasNutrition && (
-            <Surface className="cp-card">
-              <div className="cp-card-head">
-                <h3>Nutrition</h3>
-                <Status
-                  text={
-                    nutritionStatus === "Active with draft changes"
-                      ? "Active"
-                      : nutritionStatus
-                  }
-                />
-                {nutritionStatus === "Active with draft changes" && (
-                  <span className="cp-chip-sub">Draft changes</span>
-                )}
-              </div>
-              {nutritionContent?.name && (
-                <p className="cp-card-name">{nutritionContent.name}</p>
-              )}
-              {nutritionLifecycle.active && (
-                <p className="cp-sub">
-                  Active since{" "}
-                  {formatDate(
-                    nutritionLifecycle.active.activatedAt.slice(0, 10),
-                    { month: "short", day: "numeric" },
-                  )}
-                </p>
-              )}
-              <div className="cp-opts">
-                {nutritionOptions(nutritionContent, nutritionSource).map(
-                  (option) => (
-                    <div className="cp-opt" key={option.id}>
-                      <span className="cp-opt-head">
-                        <b>{option.label}</b>
-                        <small>{option.days}</small>
-                      </span>
-                      <span className="cp-opt-kcal">
-                        {option.calories !== undefined
-                          ? integer.format(Math.round(option.calories))
-                          : "—"}
-                        <small> kcal</small>
-                      </span>
-                      <span className="cp-sub">
-                        P {Math.round(option.protein ?? 0)} · C{" "}
-                        {Math.round(option.carbs ?? 0)} · F{" "}
-                        {Math.round(option.fat ?? 0)}
-                      </span>
+        <div className="cp-split">
+          <aside className="cp-side">
+            {moduleItems.map((m) => (
+              <button
+                key={m.key}
+                type="button"
+                className={`cm-card cm-navcard${sel === m.key ? " cm-sel" : ""}`}
+                onClick={() => {
+                  setSel(m.key);
+                  setSession(null);
+                  setPreviewPlan(undefined);
+                }}
+              >
+                <div
+                  className="cm-row"
+                  style={{ justifyContent: "space-between" }}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>
+                      {m.title}
                     </div>
-                  ),
-                )}
-              </div>
-              {shownTemporary.length > 0 && (
-                <div className="cp-temps">
-                  {shownTemporary.map((temp) => {
-                    const kcal = temporaryKcal(temp);
-                    return (
-                      <div className="cp-temp" key={temp.id}>
-                        <span>
-                          <b>{temp.label}</b>
-                          <small>
-                            {formatDate(temp.startDate, {
-                              day: "numeric",
-                              month: "short",
-                            })}{" "}
-                            –{" "}
-                            {formatDate(temp.endDate, {
-                              day: "numeric",
-                              month: "short",
-                            })}
-                            {kcal !== undefined &&
-                              ` · ${integer.format(Math.round(kcal))} kcal`}
-                          </small>
-                        </span>
-                        <span className="cp-temp-actions">
+                    <div className="cm-mut" style={{ fontSize: 12 }}>
+                      {m.line}
+                    </div>
+                  </div>
+                  {m.chip}
+                </div>
+              </button>
+            ))}
+          </aside>
+          <div className="cp-detail cm-app">
+            {sel === "nutrition" && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Nutrition</h3>
+                    {lifecycleChip(nutritionStatus)}
+                  </div>
+                  <div className="cp-card-actions">
+                    <Button onClick={() => openPlan("nutrition")}>
+                      Edit plan
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => openPlan("temporary:new")}
+                    >
+                      New temporary plan
+                    </Button>
+                  </div>
+                </div>
+                {previewPlan ? (
+                  <>
+                    <button
+                      type="button"
+                      className="cm-mut"
+                      style={{
+                        display: "block",
+                        background: "none",
+                        border: 0,
+                        padding: 0,
+                        marginBottom: 10,
+                        fontSize: 12.5,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => setPreviewPlan(undefined)}
+                    >
+                      ‹ All nutrition plans
+                    </button>
+                    <div
+                      className="cp-detail-head"
+                      style={{ marginBottom: 12 }}
+                    >
+                      <div className="cp-card-head">
+                        <h3>{previewPlan.title}</h3>
+                        {statusChip(previewPlan.chip ?? "Plan")}
+                      </div>
+                      {previewPlan.editPlan && (
+                        <div className="cp-card-actions">
                           <Button
-                            variant="ghost"
                             size="sm"
-                            onClick={() => setTempDialog({ id: temp.id })}
+                            onClick={() =>
+                              openPlan(
+                                previewPlan.editPlan === "temporary"
+                                  ? `temporary:${previewPlan.tempId}`
+                                  : "nutrition",
+                              )
+                            }
                           >
                             Edit
                           </Button>
-                          <IconButton
-                            label={`Remove ${temp.label}`}
-                            size="sm"
-                            onClick={() =>
-                              setState((s) => ({
-                                ...s,
-                                clients: s.clients.map((c) =>
-                                  c.id === client.id
-                                    ? {
-                                        ...c,
-                                        plans: removeTemporaryNutrition(
-                                          c.plans ?? emptyClientPlans(),
-                                          temp.id,
-                                        ),
-                                      }
-                                    : c,
-                                ),
-                              }))
-                            }
-                          >
-                            <Trash2 size={13} />
-                          </IconButton>
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="cp-card-actions">
-                <Button onClick={() => openPlan("nutrition")}>Edit plan</Button>
-                <Button variant="ghost" onClick={() => setTempDialog("new")}>
-                  Temporary plan
-                </Button>
-              </div>
-            </Surface>
-          )}
-
-          {hasTraining && (
-            <Surface className="cp-card">
-              <div className="cp-card-head">
-                <h3>Training</h3>
-                {(() => {
-                  const status = lifecycleStatus(plans.training);
-                  return (
-                    <>
-                      <Status
-                        text={
-                          status === "Active with draft changes"
-                            ? "Active"
-                            : status
-                        }
-                      />
-                      {status === "Active with draft changes" && (
-                        <span className="cp-chip-sub">Draft changes</span>
+                        </div>
                       )}
-                    </>
-                  );
-                })()}
-              </div>
-              {trainingContent?.name && (
-                <p className="cp-card-name">{trainingContent.name}</p>
-              )}
-              {trainingRotationText && (
-                <p className="cp-sub">{trainingRotationText}</p>
-              )}
-              {trainingContent && trainingContent.program !== "Evergreen" && (
-                <p className="cp-sub">
-                  Plan week {trainingWeek(trainingContent, activityDate)}
-                </p>
-              )}
-              <p className="cp-sub">{trainingDetail ?? "No plan saved"}</p>
-              {trainingContent && (
-                <SharedInput
-                  label="Focus"
-                  value={trainingContent.focus ?? ""}
-                  placeholder="e.g. Hypertrophy · lower-body priority"
-                  size="md"
-                  onChange={(event) =>
-                    updatePlan((current) => ({
-                      ...current,
-                      training: {
-                        ...current.training,
-                        ...(current.training.active
-                          ? {
-                              active: {
-                                ...current.training.active,
-                                content: {
-                                  ...current.training.active.content,
-                                  focus: event.target.value,
-                                },
-                              },
-                            }
-                          : {}),
-                      },
-                    }))
-                  }
-                />
-              )}
-              <div className="cp-card-actions">
-                <Button onClick={() => openPlan("training")}>
-                  {plans.training.active || plans.training.draft
-                    ? "Edit plan"
-                    : "Set up plan"}
-                </Button>
-              </div>
-            </Surface>
-          )}
-
-          <Surface className="cp-card">
-            <div className="cp-card-head">
-              <h3>Activity targets</h3>
-              <Status text={activity.configured ? "Active" : "Not set"} />
-            </div>
-            <p className="cp-sub">{activity.text}</p>
-            <div className="cp-card-actions">
-              <Button onClick={() => openPlan("activity-targets")}>
-                {activity.configured ? "Edit targets" : "Set targets"}
-              </Button>
-            </div>
-          </Surface>
-
-          <Surface className="cp-card">
-            <div className="cp-card-head">
-              <h3>Supplements</h3>
-              <Status text={supplements ? "Active" : "Not set"} />
-            </div>
-            <p className="cp-sub">
-              {supplements
-                ? `${supplementCount} product${supplementCount === 1 ? "" : "s"} prescribed`
-                : "No supplement plan saved"}
-            </p>
-            <div className="cp-card-actions">
-              <Button onClick={() => openPlan("supplements")}>
-                {supplements ? "Edit plan" : "Set up plan"}
-              </Button>
-            </div>
-          </Surface>
-
-          <Surface className="cp-card">
-            <div className="cp-card-head">
-              <h3>Other targets</h3>
-              <Status
-                text={
-                  plans.otherTargets?.length
-                    ? `${plans.otherTargets.length} set`
-                    : "Not set"
-                }
-              />
-            </div>
-            {(plans.otherTargets ?? []).map((target) => (
-              <div className="cp-target-row" key={target.id}>
-                <span>{otherTargetLabel(client, target)}</span>
-                <IconButton
-                  label="Remove target"
-                  size="sm"
-                  onClick={() =>
-                    updatePlan((current) => ({
-                      ...current,
-                      otherTargets: (current.otherTargets ?? []).filter(
-                        (t) => t.id !== target.id,
-                      ),
-                    }))
-                  }
-                >
-                  <Trash2 size={13} />
-                </IconButton>
-              </div>
-            ))}
-            <div className="cp-card-actions">
-              <Button onClick={() => setTargetDialog(true)}>Add target</Button>
-            </div>
-          </Surface>
-
-          {setup.habits && (
-            <Surface className="cp-card">
-              <div className="cp-card-head">
-                <h3>Habits</h3>
-                <Status
-                  text={
-                    client.habits.length
-                      ? `${client.habits.length} set`
-                      : "Not set"
-                  }
-                />
-              </div>
-              {client.habits.map((habit) => {
-                const frequency = parseHabitFrequency(habit.frequency);
-                const adherence = habitAdherence(
-                  client,
-                  habit.id,
-                  frequency,
-                  activityDate,
-                );
-                return (
-                  <div className="cp-habit-row" key={habit.id}>
-                    <b>{habit.name}</b>
-                    <small>
-                      {habitFrequencyLabel(frequency)}
-                      {adherence.thisWeek !== undefined &&
-                        ` · ${adherence.thisWeek}% this week · ${adherence.fourWeek}% 4 wk`}
-                    </small>
+                    </div>
+                    <MobileMealPlan
+                      client={client}
+                      plan={previewPlan.plan}
+                      title={previewPlan.title}
+                      embedded
+                    />
+                  </>
+                ) : (
+                  <>
+                    <Surface>
+                      <div className="cp-nut-card">
+                        <div className="cp-nut-head">
+                          <div>
+                            <div className="cm-row" style={{ gap: 8 }}>
+                              <h3 style={{ margin: 0, fontSize: 14 }}>
+                                Active plan
+                              </h3>
+                              {statusChip(
+                                nutritionStatus === "Active with draft changes"
+                                  ? "Active · draft changes"
+                                  : "Active",
+                              )}
+                            </div>
+                            <div
+                              className="cm-mut"
+                              style={{ fontSize: 12.5, marginTop: 2 }}
+                            >
+                              {nutritionContent?.name}
+                              {nutritionLifecycle.active &&
+                                ` · Since ${formatDate(nutritionLifecycle.active.activatedAt.slice(0, 10), { month: "short", day: "numeric" })}`}
+                            </div>
+                          </div>
+                          <div className="cp-card-actions">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                nutritionContent &&
+                                setPreviewPlan({
+                                  plan: nutritionContent as
+                                    | MealPlan
+                                    | IifymPlan,
+                                  title: nutritionContent.name ?? "Meal plan",
+                                  chip:
+                                    nutritionStatus ===
+                                    "Active with draft changes"
+                                      ? "Active · draft changes"
+                                      : "Active",
+                                  editPlan: "nutrition",
+                                })
+                              }
+                            >
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => openPlan("nutrition")}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                        {nutritionContent && "variants" in nutritionContent && (
+                          <div className="cp-macro-table">
+                            <div className="cp-macro-row cp-macro-head">
+                              <span>Day type</span>
+                              <span>kcal</span>
+                              <span>P</span>
+                              <span>C</span>
+                              <span>F</span>
+                            </div>
+                            {nutritionContent.variants.map((v) => {
+                              const n = calculateVariantNutrients(
+                                v,
+                                planFoodMap,
+                              );
+                              return (
+                                <div className="cp-macro-row" key={v.id}>
+                                  <span>{v.label}</span>
+                                  <span>
+                                    {integer.format(Math.round(n.calories))}
+                                  </span>
+                                  <span>
+                                    {integer.format(Math.round(n.protein))}
+                                  </span>
+                                  <span>
+                                    {integer.format(Math.round(n.carbs))}
+                                  </span>
+                                  <span>
+                                    {integer.format(Math.round(n.fat))}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        {shownTemporary.length > 0 && (
+                          <>
+                            <div className="cp-nut-sub">
+                              {hasActiveTemporary
+                                ? "Temporary plans"
+                                : "Upcoming temporary plans"}
+                            </div>
+                            {shownTemporary.map((temp) => {
+                              const plan =
+                                "variants" in temp.plan
+                                  ? (temp.plan as MealPlan)
+                                  : undefined;
+                              return (
+                                <div className="cp-nut-temp" key={temp.id}>
+                                  <div
+                                    className="cm-row"
+                                    style={{
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                    }}
+                                  >
+                                    <div className="cm-row" style={{ gap: 8 }}>
+                                      <b style={{ fontSize: 13 }}>
+                                        {temp.label}
+                                      </b>
+                                      {statusChip("Temporary")}
+                                    </div>
+                                    <div className="cp-temp-actions">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          setPreviewPlan({
+                                            plan: temp.plan as
+                                              | MealPlan
+                                              | IifymPlan,
+                                            title: temp.label,
+                                            chip: "Temporary",
+                                            editPlan: "temporary",
+                                            tempId: temp.id,
+                                          })
+                                        }
+                                      >
+                                        View
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() =>
+                                          openPlan(`temporary:${temp.id}`)
+                                        }
+                                      >
+                                        Edit
+                                      </Button>
+                                      <IconButton
+                                        label={`Remove ${temp.label}`}
+                                        size="sm"
+                                        onClick={() =>
+                                          setState((s) => ({
+                                            ...s,
+                                            clients: s.clients.map((c) =>
+                                              c.id === client.id
+                                                ? {
+                                                    ...c,
+                                                    plans:
+                                                      removeTemporaryNutrition(
+                                                        c.plans ??
+                                                          emptyClientPlans(),
+                                                        temp.id,
+                                                      ),
+                                                  }
+                                                : c,
+                                            ),
+                                          }))
+                                        }
+                                      >
+                                        <Trash2 size={13} />
+                                      </IconButton>
+                                    </div>
+                                  </div>
+                                  <div
+                                    className="cm-mut"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    {formatDate(temp.startDate, {
+                                      weekday: "short",
+                                      day: "numeric",
+                                      month: "short",
+                                    })}{" "}
+                                    –{" "}
+                                    {formatDate(temp.endDate, {
+                                      weekday: "short",
+                                      day: "numeric",
+                                      month: "short",
+                                    })}
+                                  </div>
+                                  {plan?.variants.map((v) => {
+                                    const n = calculateVariantNutrients(
+                                      v,
+                                      planFoodMap,
+                                    );
+                                    return (
+                                      <div
+                                        className="cp-macro-row cp-macro-temp"
+                                        key={v.id}
+                                      >
+                                        <span>Day plan</span>
+                                        <span>
+                                          {integer.format(
+                                            Math.round(n.calories),
+                                          )}
+                                        </span>
+                                        <span>
+                                          {integer.format(
+                                            Math.round(n.protein),
+                                          )}
+                                        </span>
+                                        <span>
+                                          {integer.format(Math.round(n.carbs))}
+                                        </span>
+                                        <span>
+                                          {integer.format(Math.round(n.fat))}
+                                        </span>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
+                    </Surface>
+                    {nutritionLifecycle.history.length > 0 && (
+                      <Surface className="cp-nut-prev-card">
+                        <button
+                          type="button"
+                          className="cp-nut-collapse"
+                          aria-expanded={prevOpen}
+                          onClick={() => setPrevOpen((o) => !o)}
+                        >
+                          <span>
+                            Previous plans ·{" "}
+                            {nutritionLifecycle.history.length +
+                              pastTemporary.length}
+                          </span>
+                          <svg
+                            aria-hidden="true"
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.75"
+                            style={{
+                              transform: prevOpen
+                                ? "rotate(180deg)"
+                                : "rotate(0deg)",
+                              transition: "transform 0.15s",
+                            }}
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </button>
+                        {prevOpen &&
+                          [
+                            ...nutritionLifecycle.history.map((ver) => ({
+                              kind: "version" as const,
+                              end: ver.archivedOn ?? ver.activatedAt,
+                              ver,
+                            })),
+                            ...pastTemporary.map((temp) => ({
+                              kind: "temp" as const,
+                              end: temp.endDate,
+                              temp,
+                            })),
+                          ]
+                            .sort((a, b) => b.end.localeCompare(a.end))
+                            .slice(0, 5)
+                            .map((item) =>
+                              item.kind === "temp" ? (
+                                <div className="cp-nut-prev" key={item.temp.id}>
+                                  <div className="cm-row" style={{ gap: 8 }}>
+                                    <b style={{ fontSize: 13 }}>
+                                      {item.temp.label}
+                                    </b>
+                                    {statusChip("Temporary")}
+                                  </div>
+                                  <div
+                                    className="cm-mut"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    {formatDate(item.temp.startDate, {
+                                      day: "numeric",
+                                      month: "short",
+                                    })}{" "}
+                                    –{" "}
+                                    {formatDate(item.temp.endDate, {
+                                      day: "numeric",
+                                      month: "short",
+                                    })}
+                                  </div>
+                                  {"variants" in item.temp.plan &&
+                                    (item.temp.plan as MealPlan).variants.map(
+                                      (v) => {
+                                        const n = calculateVariantNutrients(
+                                          v,
+                                          planFoodMap,
+                                        );
+                                        return (
+                                          <div
+                                            className="cp-macro-row cp-macro-sm"
+                                            key={v.id}
+                                          >
+                                            <span>Day plan</span>
+                                            <span>
+                                              {integer.format(
+                                                Math.round(n.calories),
+                                              )}
+                                            </span>
+                                            <span>
+                                              {integer.format(
+                                                Math.round(n.protein),
+                                              )}
+                                            </span>
+                                            <span>
+                                              {integer.format(
+                                                Math.round(n.carbs),
+                                              )}
+                                            </span>
+                                            <span>
+                                              {integer.format(
+                                                Math.round(n.fat),
+                                              )}
+                                            </span>
+                                          </div>
+                                        );
+                                      },
+                                    )}
+                                </div>
+                              ) : (
+                                <div className="cp-nut-prev" key={item.ver.id}>
+                                  <div className="cm-row" style={{ gap: 8 }}>
+                                    <b style={{ fontSize: 13 }}>
+                                      {item.ver.content.name}
+                                    </b>
+                                  </div>
+                                  <div
+                                    className="cm-mut"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                    {formatDate(
+                                      item.ver.activatedAt.slice(0, 10),
+                                      { day: "numeric", month: "short" },
+                                    )}
+                                    {item.ver.archivedOn &&
+                                      ` – ${formatDate(addLocalDays(item.ver.archivedOn.slice(0, 10), -1), { day: "numeric", month: "short" })}`}
+                                  </div>
+                                  {"variants" in item.ver.content &&
+                                    item.ver.content.variants.map((v) => {
+                                      const n = calculateVariantNutrients(
+                                        v,
+                                        planFoodMap,
+                                      );
+                                      return (
+                                        <div
+                                          className="cp-macro-row cp-macro-sm"
+                                          key={v.id}
+                                        >
+                                          <span>{v.label}</span>
+                                          <span>
+                                            {integer.format(
+                                              Math.round(n.calories),
+                                            )}
+                                          </span>
+                                          <span>
+                                            {integer.format(
+                                              Math.round(n.protein),
+                                            )}
+                                          </span>
+                                          <span>
+                                            {integer.format(
+                                              Math.round(n.carbs),
+                                            )}
+                                          </span>
+                                          <span>
+                                            {integer.format(Math.round(n.fat))}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  <div
+                                    className="cp-temp-actions"
+                                    style={{ marginTop: 4 }}
+                                  >
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() =>
+                                        setPreviewPlan({
+                                          plan: item.ver.content as
+                                            | MealPlan
+                                            | IifymPlan,
+                                          title: item.ver.content.name,
+                                          chip: "Previous",
+                                        })
+                                      }
+                                    >
+                                      View
+                                    </Button>
+                                  </div>
+                                </div>
+                              ),
+                            )}
+                      </Surface>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+            {sel === "training" && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Training</h3>
+                    {lifecycleChip(lifecycleStatus(plans.training))}
                   </div>
-                );
-              })}
-              <div className="cp-card-actions">
-                <Button onClick={() => openPlan("habits")}>
-                  {client.habits.length ? "Edit habits" : "Configure habits"}
-                </Button>
-              </div>
-            </Surface>
-          )}
+                  <div className="cp-card-actions">
+                    <Button onClick={() => openPlan("training")}>
+                      {plans.training.active || plans.training.draft
+                        ? "Edit plan"
+                        : "Set up plan"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="cp-meta">
+                  {trainingContent?.name && (
+                    <p className="cp-card-name">{trainingContent.name}</p>
+                  )}
+                  <p className="cp-sub">
+                    {[
+                      trainingRotationText,
+                      trainingContent && trainingContent.program !== "Evergreen"
+                        ? `Plan week ${trainingWeek(trainingContent, activityDate)}`
+                        : undefined,
+                      !trainingContent ? "No plan saved" : undefined,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                  {trainingContent && (
+                    <SharedInput
+                      label="Focus"
+                      value={trainingContent.focus ?? ""}
+                      placeholder="e.g. Hypertrophy · lower-body priority"
+                      size="md"
+                      onChange={(event) =>
+                        updatePlan((current) => ({
+                          ...current,
+                          training: {
+                            ...current.training,
+                            ...(current.training.active
+                              ? {
+                                  active: {
+                                    ...current.training.active,
+                                    content: {
+                                      ...current.training.active.content,
+                                      focus: event.target.value,
+                                    },
+                                  },
+                                }
+                              : {}),
+                          },
+                        }))
+                      }
+                    />
+                  )}
+                </div>
+                {session ? (
+                  <>
+                    <button
+                      type="button"
+                      className="cm-back"
+                      onClick={() => setSession(null)}
+                    >
+                      Training
+                    </button>
+                    <MobileSessionOverview
+                      client={client}
+                      item={session}
+                      onStart={() => {}}
+                      readOnly
+                    />
+                  </>
+                ) : (
+                  <MobileTraining
+                    client={client}
+                    readOnly
+                    embedded
+                    onOpenSession={(item) => setSession(item)}
+                  />
+                )}
+              </>
+            )}
+            {sel === "activity-targets" && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Activity targets</h3>
+                    <Status text={activity.configured ? "Active" : "Not set"} />
+                  </div>
+                  <div className="cp-card-actions">
+                    <Button onClick={() => openPlan("activity-targets")}>
+                      {activity.configured ? "Edit targets" : "Set targets"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="cp-meta">
+                  <p className="cp-sub">{activity.text}</p>
+                </div>
+                <MobileActivity client={client} embedded />
+              </>
+            )}
+            {sel === "supplements" && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Supplements</h3>
+                    <Status text={supplements ? "Active" : "Not set"} />
+                  </div>
+                  <div className="cp-card-actions">
+                    <Button onClick={() => openPlan("supplements")}>
+                      {supplements ? "Edit plan" : "Set up plan"}
+                    </Button>
+                  </div>
+                </div>
+                <div className="cp-meta">
+                  <p className="cp-sub">
+                    {supplements
+                      ? `${supplementCount} product${supplementCount === 1 ? "" : "s"} prescribed`
+                      : "No supplement plan saved"}
+                  </p>
+                </div>
+                <MobileSupplements client={client} readOnly embedded />
+              </>
+            )}
+            {sel === "other-targets" && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Other targets</h3>
+                    <Status
+                      text={
+                        plans.otherTargets?.length
+                          ? `${plans.otherTargets.length} set`
+                          : "Not set"
+                      }
+                    />
+                  </div>
+                  <div className="cp-card-actions">
+                    <Button onClick={() => setTargetDialog(true)}>
+                      Add target
+                    </Button>
+                  </div>
+                </div>
+                {(plans.otherTargets ?? []).map((target) => (
+                  <div className="cp-target-row" key={target.id}>
+                    <span>{otherTargetLabel(client, target)}</span>
+                    <IconButton
+                      label="Remove target"
+                      size="sm"
+                      onClick={() =>
+                        updatePlan((current) => ({
+                          ...current,
+                          otherTargets: (current.otherTargets ?? []).filter(
+                            (t) => t.id !== target.id,
+                          ),
+                        }))
+                      }
+                    >
+                      <Trash2 size={13} />
+                    </IconButton>
+                  </div>
+                ))}
+              </>
+            )}
+            {sel === "habits" && setup?.habits && (
+              <>
+                <div className="cp-detail-head">
+                  <div className="cp-card-head">
+                    <h3>Habits</h3>
+                    <Status
+                      text={
+                        client.habits.length
+                          ? `${client.habits.length} set`
+                          : "Not set"
+                      }
+                    />
+                  </div>
+                  <div className="cp-card-actions">
+                    <Button onClick={() => openPlan("habits")}>
+                      {client.habits.length
+                        ? "Edit habits"
+                        : "Configure habits"}
+                    </Button>
+                  </div>
+                </div>
+                {client.habits.map((habit) => {
+                  const frequency = parseHabitFrequency(habit.frequency);
+                  const adherence = habitAdherence(
+                    client,
+                    habit.id,
+                    frequency,
+                    activityDate,
+                  );
+                  return (
+                    <div className="cp-habit-row" key={habit.id}>
+                      <b>{habit.name}</b>
+                      <small>
+                        {habitFrequencyLabel(frequency)}
+                        {adherence.thisWeek !== undefined &&
+                          ` · ${adherence.thisWeek}% this week · ${adherence.fourWeek}% 4 wk`}
+                      </small>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+          </div>
         </div>
       )}
-      {tempDialog && (
-        <TemporaryPlanDialog
-          client={client}
-          existingId={tempDialog === "new" ? undefined : tempDialog.id}
-          onClose={() => setTempDialog(null)}
-        />
-      )}
+
       {targetDialog && (
         <OtherTargetDialog
           client={client}
