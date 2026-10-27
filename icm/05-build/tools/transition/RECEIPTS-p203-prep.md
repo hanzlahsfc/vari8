@@ -35,6 +35,12 @@
 - Runbook literal block: fixture-tested (`runbook-prep-block.test.ts`, 2/2) — correct
   head-into-base merge proves ancestors + feature presence; base-into-base fails.
 
+## P466 — strict receipt schema
+
+ validated against exact key set + sha shapes before use; malformed/
+missing/extra fields refuse; later vars (BASETIP/MERGETREE) assign only from validated
+state under . Fresh locked validation/gates still required.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.
