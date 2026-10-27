@@ -11,7 +11,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { describe, expect, it, vi } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 // Each executor test spawns the real bash executor + transition-check.mjs
 // (node) + fixture stub processes — inherently multi-second (heaviest path
@@ -143,7 +143,12 @@ exit 0`,
   mkdirSync(beta, { recursive: true });
   const wt = path.join(dir, "wt");
   mkdirSync(wt, { recursive: true });
-  return { dir, bin, state, beta, wt };
+  // the executor resolves HERE via `git rev-parse --show-toplevel` (stubbed to
+  // HERE_REAL) — point it at a per-fixture repo so `_transition` state is
+  // unique to this task-owned temp dir, never the real checkout
+  const repo = path.join(dir, "repo");
+  mkdirSync(repo, { recursive: true });
+  return { dir, bin, state, beta, wt, repo };
 }
 
 function manifest(over: Partial<Record<string, unknown>> = {}) {
@@ -175,13 +180,18 @@ function fulfilledManifest(tmp: string, over: Record<string, unknown> = {}) {
 }
 const FMF = () => fulfilledManifest(mkdtempSync(path.join(tmpdir(), "fmf-")));
 
+const fixtureDirs = new Set<string>();
+afterAll(() => {
+  for (const d of fixtureDirs) rmSync(d, { recursive: true, force: true });
+});
+
 function run(
   args: string[],
   over: Record<string, string> = {},
   env: Record<string, string> = {},
 ) {
   const f = fixtures(over);
-  rmSync(path.join(ROOT, "_transition"), { recursive: true, force: true });
+  fixtureDirs.add(f.dir);
   const r = spawnSync("bash", [SCRIPT, ...args], {
     cwd: ROOT,
     env: {
@@ -189,7 +199,7 @@ function run(
       PATH: `${f.bin}:${process.env.PATH}`,
       POSTGRES_PASSWORD: "x",
       FIX: f.dir,
-      HERE_REAL: ROOT,
+      HERE_REAL: f.repo,
       GH_AUTH_LOGIN: "hanzlahsfc",
       GIT_SNAP: "snap111",
       GIT_TREE: SHA.tree,
@@ -203,9 +213,6 @@ function run(
     },
     encoding: "utf8",
   });
-  // remove the executor's incidental state dir immediately — the repo index
-  // scan (system-index.test.ts) races it under parallel workers
-  rmSync(path.join(ROOT, "_transition"), { recursive: true, force: true });
   const called = existsSync(path.join(f.state, "called"))
     ? readFileSync(path.join(f.state, "called"), "utf8")
     : "";
@@ -349,6 +356,43 @@ describe("integrate-transition single-step executor", () => {
     );
     expect(r.status).toBe(4);
     expect(r.called).not.toContain("merged");
+  });
+
+  // state isolation — the executor's _transition lives under the fixture's
+  // own repo dir; nothing shared is created, read, overwritten or removed
+  it("writes executor state only under the fixture repo — never the real checkout", () => {
+    const r = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(r.status).toBe(0);
+    expect(existsSync(path.join(r.f.repo, "_transition"))).toBe(true);
+    expect(existsSync(path.join(ROOT, "_transition"))).toBe(false);
+  });
+
+  it("a pre-existing foreign _transition sentinel is never touched", () => {
+    const foreign = fixtures();
+    fixtureDirs.add(foreign.dir);
+    const sentinel = path.join(foreign.repo, "_transition", "owner-sentinel");
+    mkdirSync(path.dirname(sentinel), { recursive: true });
+    writeFileSync(sentinel, "belongs to another task");
+    const r = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(r.status).toBe(0);
+    expect(readFileSync(sentinel, "utf8")).toBe("belongs to another task");
+  });
+
+  it("two concurrent fixtures cannot observe or erase each other's state", () => {
+    const a = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(a.status).toBe(0);
+    const aDir = path.join(a.f.repo, "_transition");
+    expect(existsSync(aDir)).toBe(true);
+    writeFileSync(path.join(aDir, "p203.json"), '{"status":"kept"}');
+    const b = run([FMF(), "--pr", "203"], { gh_state: "MERGED" });
+    expect(b.status).toBe(0);
+    // b's run neither removed nor overwrote a's state; each owns its own dir
+    expect(readFileSync(path.join(aDir, "p203.json"), "utf8")).toBe(
+      '{"status":"kept"}',
+    );
+    expect(b.f.dir).not.toBe(a.f.dir);
+    expect(existsSync(path.join(b.f.repo, "_transition"))).toBe(true);
+    expect(existsSync(path.join(ROOT, "_transition"))).toBe(false);
   });
 });
 

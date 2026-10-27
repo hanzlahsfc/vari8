@@ -177,6 +177,21 @@ state under . Fresh locked validation/gates still required.
   `system-index` occasionally scanned while the dir existed. The test now
   removes it immediately after every run (post-spawnSync); full suite green.
 
+## P476 — executor test state isolated to per-fixture repo
+
+- Review finding: the executor resolves `STATE_DIR` via stubbed
+  `git rev-parse --show-toplevel` (`HERE_REAL`) — the test pointed it at the
+  REAL checkout and `rmSync`'d `ROOT/_transition` before AND after every run:
+  recursive deletion of shared state, plus a during-test race.
+- Fixed via the existing seam — `HERE_REAL` now points at a per-fixture
+  `repo/` dir inside the unique `mkdtemp` root; executor untouched (parked);
+  both `rmSync(ROOT/_transition)` calls removed; `afterAll` cleanup targets
+  only `fixtureDirs` (paths the fixture itself created).
+- Regressions: (1) foreign `_transition` sentinel under a separate fixture is
+  byte-intact after a run; (2) two runs' state dirs are disjoint —
+  a second run neither reads, overwrites nor removes the first's files;
+  (3) `ROOT/_transition` never exists. Suite: 27/27.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.
