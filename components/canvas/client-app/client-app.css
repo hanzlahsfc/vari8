@@ -59,6 +59,12 @@
   );
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.coach-root .cd-client-app-bottom::-webkit-scrollbar {
+  display: none;
 }
 
 .coach-root[data-mode="light"] .cd-client-app-bottom {
@@ -76,7 +82,7 @@
 .coach-root .cd-client-app-bottom .cd-client-app-link {
   flex: 1 1 0;
   min-block-size: 44px;
-  min-inline-size: 44px;
+  min-inline-size: max-content;
   display: flex;
   flex-direction: column;
   align-items: center;
