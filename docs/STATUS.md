@@ -1,3 +1,45 @@
+## 2026-10-27 - w2-fe2 repair 1: parity runner https origin, s07 recipe fix, baseline refresh
+
+- Verdict `VERDICT-f16be09db2e9e5f192c245769257f76975a6538c.md` blocked on
+  twin parity only: the runner forced an http `BETTER_AUTH_URL` onto its own
+  spawned production server (boot_refused exit 2), and the dev-mode s07
+  capture failed on "Set up plan" then crashed pre-compare.
+- `tools/parity/run.mjs`: the spawned root-app production server now keeps
+  `next start` on a private http port while an in-process TLS front serves
+  `https://localhost:<port>` (self-signed loopback cert, or
+  `PARITY_TLS_CERT`/`PARITY_TLS_KEY`), and that https origin is what the
+  server gets as `BETTER_AUTH_URL`/`AUTH_URL`. Port ownership is still
+  enforced on both listeners; NODE_ENV is forced for the spawn env so a
+  sourced lane shell cannot poison the production build.
+- `tools/parity/capture.mjs`: loopback https origins get an undici
+  `rejectUnauthorized:false` dispatcher for fetches and
+  `ignoreHTTPSErrors` for Playwright contexts; context/page creation moved
+  inside the capture retry block so a `newContext` protocol error becomes a
+  retried failure instead of crashing the run before compare.
+- s07 attribution: the same capture on parent base `74cff77` renders
+  "Set up plan" for Emma Anders; on w2-fe2 the server plan hydration added
+  by this diff turns her card into "Edit plan" once the seeded published
+  program loads, so the recipe raced or missed. Recipe now uses Chloe Park
+  (no seeded training program, "Set up plan" deterministic) plus a scoped
+  alternate label for reruns where a prior capture already persisted a
+  draft.
+- `tools/parity/baseline` regenerated from the current `frontend/` tree via
+  `PARITY_DEV=1 --update-baseline` (74/74 screens): the committed baseline
+  predated the PR-204 frontend reset (recorded at `44eec07`) and the prod
+  frontend build still trips the inherited `dialog.tsx` `labelHidden`
+  typecheck defect (STATUS F1), so the documented dev path was used.
+- Result on the production build through the fixed runner: 74/74 screens
+  captured at both viewports, exit 1 at compare with 63 problems - the
+  identical fingerprint reproduces on base `74cff77` (same 63 problems),
+  so the residual is pre-existing seed-vs-canvas drift and owner-rulable
+  truth text, not a w2-fe2 regression. A `?demo` diagnostic run decomposes
+  it further (37 problems persist at render level without hydration; the
+  26 that clear are server-data drift). Exit 0 additionally needs the
+  project-level seed alignment or RULED decisions, which are outside this
+  card's scope.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), index:check
+  0, vitest 1396/1396, dash gate 0.
+
 ## 2026-10-27 - w2-fe2: backend for the coach Tracker tab
 
 - Merge: `git merge-tree` (no ref updates) predicted one content conflict in
