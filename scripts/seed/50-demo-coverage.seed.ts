@@ -41,11 +41,9 @@ import type { SeedContext } from "./index";
 const WORKSPACE_SLUG = "canvas-demo";
 const TIMEZONE = "Europe/Vienna";
 const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00 — documented schedule default
+const SEED_CLIENT_PROFILE_NAME = "Amara Lewis";
 
-const FIXTURE = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "demo-export",
-);
+const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "demo-export");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = any;
@@ -129,9 +127,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   const prefs = WORKSPACE.preferences ?? {};
   const prefData: Prisma.WorkspaceUpdateInput = {
     appearanceMode:
-      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT"
-        ? "LIGHT"
-        : "DARK",
+      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT" ? "LIGHT" : "DARK",
     appearanceAccent: String(prefs.accent ?? "#EB91B8"),
     availabilityText: String(prefs.availability ?? ""),
     notificationsEnabled: prefs.notifications !== false,
@@ -151,23 +147,51 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
 
   const clients = INDEX.clients.map((c) => ({ meta: c, data: load(c.file) }));
-  const password = process.env.SEED_DEMO_CLIENT_PASSWORD ??
-    process.env.SEED_CLIENT_PASSWORD;
+  const password =
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? process.env.SEED_CLIENT_PASSWORD;
   if (!password)
     throw new Error(
       "50-demo-coverage: SEED_DEMO_CLIENT_PASSWORD or SEED_CLIENT_PASSWORD required",
     );
+  // The demo-export Amara Lewis row (client-007) resolves to the seeded
+  // sign-in client so a full reseed leaves SEED_CLIENT_EMAIL owning a
+  // client_profile: sign-in reaches /me and getClientViewer is non-null.
+  const seedClientEmail = process.env.SEED_CLIENT_EMAIL;
+  if (!seedClientEmail)
+    throw new Error("50-demo-coverage: SEED_CLIENT_EMAIL required");
+  const seedClient = await prisma.user.findUniqueOrThrow({
+    where: { email: seedClientEmail },
+    select: { id: true },
+  });
+  const seedClientPassword = process.env.SEED_CLIENT_PASSWORD ?? password;
 
-  // ── Accounts: every demo client gets a credential login; client-001 keeps
-  // the default-profile client account (its profile is already linked).
+  // ── Accounts: every client_profile link the seed leaves in canvas-demo
+  // resolves to a user holding a Better Auth credential (the same
+  // `providerId="credential"` shape `00-workspace.seed.ts` writes), so all
+  // fifteen linked demo clients can sign in. The Amara Lewis row resolves
+  // to the SEED_CLIENT account instead of a fixture-email user; other rows
+  // reuse the pre-linked user (33-checkins demo users) or create a
+  // fixture-email user when the profile is unlinked.
   const users = new Map<string, string>(); // clientId -> userId
   const members = new Map<string, string>(); // clientId -> memberId
   for (const { meta, data } of clients) {
     const profile = await prisma.clientProfile.findFirstOrThrow({
       where: { workspaceId: workspace.id, name: data.name },
     });
+    const isSeedClientRow = data.name === SEED_CLIENT_PROFILE_NAME;
     let userId = profile.userId;
-    if (!userId) {
+    if (isSeedClientRow) {
+      userId = seedClient.id;
+      if (profile.userId !== userId)
+        await prisma.clientProfile.update({
+          where: { id: profile.id },
+          data: { userId },
+        });
+      await prisma.user.update({
+        where: { id: userId },
+        data: { name: data.name },
+      });
+    } else if (!userId) {
       const email = String(data.email ?? `${slug(data.name)}@demo.invalid`);
       const user = await prisma.user.upsert({
         where: { email },
@@ -175,24 +199,26 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         create: { email, name: data.name, status: "ACTIVE" },
       });
       userId = user.id;
-      const hash = await hashPassword(password);
-      await prisma.account.upsert({
-        where: {
-          providerId_accountId: { providerId: "credential", accountId: userId },
-        },
-        update: {},
-        create: {
-          userId,
-          accountId: userId,
-          providerId: "credential",
-          password: hash,
-        },
-      });
       await prisma.clientProfile.update({
         where: { id: profile.id },
         data: { userId },
       });
     }
+    const hash = await hashPassword(
+      isSeedClientRow ? seedClientPassword : password,
+    );
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: { providerId: "credential", accountId: userId },
+      },
+      update: { password: hash },
+      create: {
+        userId,
+        accountId: userId,
+        providerId: "credential",
+        password: hash,
+      },
+    });
     const member = await prisma.workspaceMember.upsert({
       where: {
         workspaceId_userId: { workspaceId: workspace.id, userId },
@@ -230,7 +256,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
   // ── Check-in forms: one form + published version per canvas template,
   // fields derived from the selected variant's metric fields + questions.
-  const formByTemplate = new Map<string, { formId: string; versionId: string }>();
+  const formByTemplate = new Map<
+    string,
+    { formId: string; versionId: string }
+  >();
   for (const tpl of WORKSPACE.templates ?? []) {
     const variant =
       tpl.variants.find((v: J) => v.id === tpl.defaultVariant) ??
@@ -247,7 +276,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         order: fields.length,
       });
     for (const q of variant.questions ?? []) {
-      const kind = QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
+      const kind =
+        QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
       const field: J = {
         fieldId: `demo-q-${slug(tpl.id)}-${slug(q.id)}`,
         kind,
@@ -312,7 +342,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     const clientMemberId = members.get(cid)!;
     const clientUserId = users.get(cid)!;
-    const assigned = formByTemplate.get(data.assignment?.templateId) ??
+    const assigned =
+      formByTemplate.get(data.assignment?.templateId) ??
       [...formByTemplate.values()][0];
 
     // Priority flag + archive state (legacy strings stay unmapped).
@@ -339,8 +370,12 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       "SATURDAY",
       "SUNDAY",
     ];
-    const ruleRanges: { id: string; start: Date; end: Date | null; day: number }[] =
-      [];
+    const ruleRanges: {
+      id: string;
+      start: Date;
+      end: Date | null;
+      day: number;
+    }[] = [];
     for (const [si, s] of schedules.entries()) {
       for (const day of s.weekdays ?? []) {
         const start = dayUtc(s.effective);
@@ -614,7 +649,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             senderUserId: isCoach ? staff.userId : clientUserId,
             body: m.text ?? "",
             priority: Boolean(m.priority),
-            links: m.link ? ({ link: m.link } as Prisma.InputJsonValue) : undefined,
+            links: m.link
+              ? ({ link: m.link } as Prisma.InputJsonValue)
+              : undefined,
             clientRequestId: `seed-demo-mreq-${m.id}`,
             sentAt,
           },
@@ -659,7 +696,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           workspaceId: workspace.id,
           clientProfileId: profile.id,
           title: t.title ?? t.text ?? "Coach to-do",
-          completedAt: t.done || t.completedAt ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt) : null,
+          completedAt:
+            t.done || t.completedAt
+              ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt)
+              : null,
           createdByMemberId: staff.id,
         },
       });
@@ -667,7 +707,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
     // Client tasks.
     for (const t of data.clientTasks ?? []) {
-      const done = String(t.status).toLowerCase() === "complete" ||
+      const done =
+        String(t.status).toLowerCase() === "complete" ||
         String(t.status).toLowerCase() === "completed";
       await prisma.clientTask.upsert({
         where: { id: `seed-demo-task-${t.id}` },
@@ -715,15 +756,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         where: {
           habitId_effectiveFrom: {
             habitId,
-            effectiveFrom: dayUtc(data.coachingSince) ??
-              dayUtc(INDEX.generatedAt)!,
+            effectiveFrom:
+              dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           },
         },
         update: {},
         create: {
           habitId,
-          effectiveFrom: dayUtc(data.coachingSince) ??
-            dayUtc(INDEX.generatedAt)!,
+          effectiveFrom:
+            dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           weekdays: mask,
         },
       });
@@ -949,7 +990,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           data: { currentRevisionId: rev.id },
         });
         const vals = entry.values ?? {};
-        if (["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null))
+        if (
+          ["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null)
+        )
           await prisma.nutritionLog.upsert({
             where: { id: `seed-demo-nl-${cid}-${iso}` },
             update: {},
@@ -1002,7 +1045,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // verbatim (canvas lifecycle shape documented in MAPPING.md).
     const mp = data.plans?.nutrition?.mealPlan;
     if (mp?.draft || mp?.active) {
-      const start = dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
+      const start =
+        dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       const planId = `seed-demo-mp-${cid}`;
       await prisma.mealPlan.upsert({
@@ -1029,8 +1073,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         mp.active?.content,
       ].filter(Boolean)) {
         seq += 1;
-        const eff =
-          dayUtc(item.startDate) ?? start;
+        const eff = dayUtc(item.startDate) ?? start;
         await prisma.mealPlanVersion.upsert({
           where: {
             mealPlanId_versionSeq: { mealPlanId: planId, versionSeq: seq },
@@ -1057,7 +1100,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     if (ii?.draft || ii?.active) {
       const planId = `seed-demo-iifym-${cid}`;
       const content = ii.draft ?? ii.active?.content ?? ii.active;
-      const start = dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
+      const start =
+        dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       await prisma.iifymPlan.upsert({
         where: { id: planId },
@@ -1366,7 +1410,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         fieldCells,
         setRows,
       });
-      const payload = materializeWeeks(draft, start.toISOString().slice(0, 10), weeks);
+      const payload = materializeWeeks(
+        draft,
+        start.toISOString().slice(0, 10),
+        weeks,
+      );
       const existing = await prisma.trainingProgram.findFirst({
         where: {
           workspaceId: workspace.id,
@@ -1423,8 +1471,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     }
     if (versionId && programId) {
       for (const log of data.related?.trainingLogs ?? []) {
-        const performed =
-          tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
+        const performed = tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
         if (!performed) continue;
         const logId = `seed-demo-log-${log.id}`;
         const sessionLog = await prisma.trainingSessionLog.upsert({
@@ -1482,104 +1529,104 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // tracking widgets, so the client app's remote views render live data
     // without a draft edit (default profile keeps its own draft untouched).
     const demoDashboardConfig = {
-          version: 1,
-          name: "Demo overview",
-          widgets: [
-            {
-              id: "seed-demo-cu03",
-              kind: "CU03",
-              settings: {
-                title: "Tasks",
-                source: "tasks",
-                summary: "open",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "open",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-cu06",
-              kind: "CU06",
-              settings: {
-                title: "Messages",
-                source: "feedback",
-                summary: "latest",
-                period: "7d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-bn01",
-              kind: "BN01",
-              settings: {
-                title: "Bodyweight trend",
-                source: "bodyweight",
-                summary: "daily",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Wide",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "kg",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-tl26",
-              kind: "TL26",
-              settings: {
-                title: "Your training",
-                source: "workouts",
-                summary: "current",
-                period: "week",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: ["exercise", "sets", "reps"],
-                labels: {},
-                option: "current",
-                unit: "",
-                visibility: "client",
-              },
-            },
-          ],
-          layouts: {
-            desktop: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
-              "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
-            },
-            tablet: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
-            },
-            mobile: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
-            },
+      version: 1,
+      name: "Demo overview",
+      widgets: [
+        {
+          id: "seed-demo-cu03",
+          kind: "CU03",
+          settings: {
+            title: "Tasks",
+            source: "tasks",
+            summary: "open",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "open",
+            unit: "",
+            visibility: "client",
           },
-          widths: { desktop: 1040, tablet: 640, mobile: 360 },
-        };
+        },
+        {
+          id: "seed-demo-cu06",
+          kind: "CU06",
+          settings: {
+            title: "Messages",
+            source: "feedback",
+            summary: "latest",
+            period: "7d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-bn01",
+          kind: "BN01",
+          settings: {
+            title: "Bodyweight trend",
+            source: "bodyweight",
+            summary: "daily",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Wide",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "kg",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-tl26",
+          kind: "TL26",
+          settings: {
+            title: "Your training",
+            source: "workouts",
+            summary: "current",
+            period: "week",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: ["exercise", "sets", "reps"],
+            labels: {},
+            option: "current",
+            unit: "",
+            visibility: "client",
+          },
+        },
+      ],
+      layouts: {
+        desktop: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
+          "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
+        },
+        tablet: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
+        },
+        mobile: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
+        },
+      },
+      widths: { desktop: 1040, tablet: 640, mobile: 360 },
+    };
     await prisma.clientDashboardLayout.upsert({
       where: {
         workspaceId_clientProfileId: {
