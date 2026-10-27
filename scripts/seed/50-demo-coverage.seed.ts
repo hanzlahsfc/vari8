@@ -69,6 +69,18 @@ const dayUtc = (v: unknown): Date | null => {
   const r = resolveDate(v);
   return r ? new Date(`${r.slice(0, 10)}T00:00:00Z`) : null;
 };
+/** Re-anchor every `day <n>` token inside a verbatim demo-export payload. */
+function deepResolveDates(value: unknown): unknown {
+  if (typeof value === "string") return resolveDate(value) ?? value;
+  if (Array.isArray(value)) return value.map(deepResolveDates);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, v] of Object.entries(value))
+      out[key] = deepResolveDates(v);
+    return out;
+  }
+  return value;
+}
 const tsUtc = (v: unknown, fallback = "T12:00:00Z"): Date | null => {
   const r = resolveDate(v);
   if (!r) return null;
@@ -266,7 +278,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         workspaceId: workspace.id,
         name: tpl.name,
         status: "ACTIVE",
-        draft: definition,
+        draft: deepResolveDates(definition) as Prisma.InputJsonValue,
         draftRevision: 1,
         draftSavedByMemberId: staff.id,
         createdByMemberId: staff.id,
@@ -1058,7 +1070,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           timezone: TIMEZONE,
           timezoneSetByMemberId: staff.id,
           timezoneSetAt: start,
-          draft: (mp.draft ?? null) as Prisma.InputJsonValue,
+          draft: deepResolveDates(mp.draft ?? null) as Prisma.InputJsonValue,
           draftRevision: 1,
           draftSavedByMemberId: staff.id,
           draftUpdatedAt: start,
@@ -1086,7 +1098,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             effectiveDate: eff,
             effectiveTimezone: TIMEZONE,
             activationInstant: eff,
-            payload: item as Prisma.InputJsonValue,
+            payload: deepResolveDates(item) as Prisma.InputJsonValue,
             publishOriginRevision: seq,
             publishedAt: eff,
             publishedByMemberId: staff.id,
@@ -1112,7 +1124,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           timezone: TIMEZONE,
           timezoneSetByMemberId: staff.id,
           timezoneSetAt: start,
-          draft: (ii.draft ?? null) as Prisma.InputJsonValue,
+          draft: deepResolveDates(ii.draft ?? null) as Prisma.InputJsonValue,
           draftRevision: 1,
           draftSavedByMemberId: staff.id,
           draftUpdatedAt: start,
@@ -1140,7 +1152,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             effectiveDate: eff,
             effectiveTimezone: TIMEZONE,
             activationInstant: eff,
-            payload: item as Prisma.InputJsonValue,
+            payload: deepResolveDates(item) as Prisma.InputJsonValue,
             publishOriginRevision: seq,
             publishedAt: eff,
             publishedByMemberId: staff.id,
@@ -1434,7 +1446,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             confirmedTimezone: TIMEZONE,
             timezoneSetByMemberId: staff.id,
             timezoneSetAt: start,
-            draft: draft as unknown as Prisma.InputJsonValue,
+            draft: deepResolveDates(draft) as Prisma.InputJsonValue,
             draftRevision: 1,
             draftSavedByMemberId: staff.id,
             draftUpdatedAt: start,
@@ -1449,7 +1461,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
                 effectiveDate: start,
                 effectiveTimezone: TIMEZONE,
                 activationInstant: start,
-                payload: payload as unknown as Prisma.InputJsonValue,
+                payload: deepResolveDates(payload) as Prisma.InputJsonValue,
                 fieldConfig: fieldConfig as unknown as Prisma.InputJsonValue,
                 publishOriginRevision: 1,
                 publishedAt: start,
