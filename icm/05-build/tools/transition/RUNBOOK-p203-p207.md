@@ -106,6 +106,11 @@ cd "$WT" && env -u NODE_ENV APP_ENV=development DATABASE_URL="$DATABASE_URL" \
 # baseline boundary — AFTER (must equal BEFORE)
 git rev-parse "HEAD:$BUNDLE_PATH/baseline"
 
+# persist structured receipts (JSON, strict-validated — later invocations load
+# these, never shell state from a previous run)
+jq -n --arg head "$HEADSHA" --arg base "$BASETIP"   --arg tree "$MERGETREE" --argjson canonical 70 --argjson strict 68   '{head:$head, base:$base, mergeTree:$tree, canonical:$canonical, strict:$strict}'   > "$STATE/p203-prep.json"
+jq -e '.head|test("^[0-9a-f]{40}$")' "$STATE/p203-prep.json" >/dev/null   || { echo "receipt invalid"; exit 4; }
+
 # cleanup — handled by the EXIT trap (drops only the DB this step created,
 # releases this step's lock); a later step repeats acquisition/validation
 ```
@@ -120,9 +125,11 @@ and repeats required preparation/gates; stale preparation is never permission.
 mkdir -p "$STATE"; exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
 trap 'flock -u 9 2>/dev/null; exec 9>&-' EXIT
 git fetch -q origin
+# reload+validate persisted receipts — missing/stale refuses
+PREP=$(jq -r 'select(.head and .mergeTree and .base)' "$STATE/p203-prep.json")   || { echo "missing/invalid prep receipt — re-run preparation"; exit 4; }
 # live revalidation under the fresh lock
 gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft
-[[ "$(git rev-parse origin/Vari8-Beta)" == "$(<"$STATE/base-tip")" ]] || exit 4
+[[ "$(git rev-parse origin/Vari8-Beta)" == "$(jq -r .base <<<"$PREP")" ]] || exit 4
 # re-run the test merge + fast + combined gates (as the preparation block),
 # then, with the owner comment recorded and verified:
 gh pr ready 203 -R "$REPO"    # only if still draft and owner-authorized
