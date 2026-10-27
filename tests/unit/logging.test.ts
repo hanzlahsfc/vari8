@@ -554,6 +554,10 @@ describe("api_v1_request_failed — media/object (signature, not session)", () =
 
   function stubLocal() {
     vi.stubEnv("MEDIA_STORAGE_ADAPTER", "local");
+    // localStorageConfig() prefers MEDIA_STORAGE_SIGNING_SECRET over
+    // BETTER_AUTH_SECRET, so a lane env that exports it must be overridden
+    // or the route verifies against the wrong secret and returns 403.
+    vi.stubEnv("MEDIA_STORAGE_SIGNING_SECRET", SECRET);
     vi.stubEnv("BETTER_AUTH_SECRET", SECRET);
   }
 

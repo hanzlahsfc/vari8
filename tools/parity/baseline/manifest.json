@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:57410",
+  "baseUrl": "http://127.0.0.1:4921",
   "fixedNow": "2026-10-19T10:00:00+02:00",
   "timezone": "Europe/Vienna",
   "screens": [
@@ -28,9 +28,9 @@
           "png": "390/s01-roster.s135-0-0.png",
           "box": [
             37,
-            422,
+            424,
             316,
-            1377
+            1367
           ]
         },
         {
@@ -40,9 +40,9 @@
           "png": "390/s01-roster.s135-316-0.png",
           "box": [
             37,
-            422,
+            424,
             316,
-            1377
+            1367
           ]
         },
         {
@@ -52,18 +52,18 @@
           "png": "390/s01-roster.s135-464-0.png",
           "box": [
             37,
-            422,
+            424,
             316,
-            1377
+            1367
           ]
         }
       ],
-      "sha256": "b3057b1254dc368eee6b8a5a084ed39a4e276466b91e91e55a4aa3cbc8f9b1ee",
+      "sha256": "52ce3471ea4c5a13407853e3b4b8368b5a2880a075f02ac589c0fd28910afb68",
       "size": {
         "width": 390,
-        "height": 1920
+        "height": 1912
       },
-      "elements": 419,
+      "elements": 423,
       "pageErrors": []
     },
     {
@@ -93,36 +93,36 @@
       "png": "390/s01-profile-overview.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-overview.s131-0-0.png",
+          "png": "390/s01-profile-overview.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#123",
+          "x": 197,
           "y": 0,
-          "png": "390/s01-profile-overview.s131-138-0.png",
+          "png": "390/s01-profile-overview.s123-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         }
       ],
-      "sha256": "79bfaa04861a6258e5a1d06046b258bdc2ed87ab2ba0575db55b6adecb821356",
+      "sha256": "31ec065d545cd3fa0144202f1fbf582b2e7ee166ebc1dc31ee2d93960b29f58d",
       "size": {
         "width": 390,
-        "height": 1943
+        "height": 2299
       },
-      "elements": 166,
+      "elements": 276,
       "pageErrors": []
     },
     {
@@ -160,36 +160,36 @@
       "png": "390/s01-profile-plans.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-plans.s131-0-0.png",
+          "png": "390/s01-profile-plans.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#123",
+          "x": 196,
           "y": 0,
-          "png": "390/s01-profile-plans.s131-138-0.png",
+          "png": "390/s01-profile-plans.s123-196-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         }
       ],
-      "sha256": "b373727e6f83326a78db582511e81c6b7b1c699a347ce6827742e4968b2e11a1",
+      "sha256": "7f06ff334a16ed8fb34e9879317eb04dcbe67a0760eb64203674cf7892ca797b",
       "size": {
         "width": 390,
-        "height": 2272
+        "height": 1518
       },
-      "elements": 209,
+      "elements": 134,
       "pageErrors": []
     },
     {
@@ -227,36 +227,36 @@
       "png": "390/s01-profile-checkins.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-checkins.s131-0-0.png",
+          "png": "390/s01-profile-checkins.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#123",
+          "x": 197,
           "y": 0,
-          "png": "390/s01-profile-checkins.s131-138-0.png",
+          "png": "390/s01-profile-checkins.s123-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         }
       ],
-      "sha256": "09e661e487ceaacaf5a89dd6ddd80025969151a15d68b59f0fb81d7c614ee5bf",
+      "sha256": "b26cb59f37fc1b013af280fadeaeb33ad65bb6afa5a4cb755425fbb656032f37",
       "size": {
         "width": 390,
-        "height": 1014
+        "height": 844
       },
-      "elements": 91,
+      "elements": 93,
       "pageErrors": []
     },
     {
@@ -294,36 +294,36 @@
       "png": "390/s01-profile-notes.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-notes.s131-0-0.png",
+          "png": "390/s01-profile-notes.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#123",
+          "x": 198,
           "y": 0,
-          "png": "390/s01-profile-notes.s131-138-0.png",
+          "png": "390/s01-profile-notes.s123-198-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         }
       ],
-      "sha256": "ea4c97ced795c289e58bfcbbd8d768f7a1390a58f72978cf69d013ea2a011f57",
+      "sha256": "f8b881883e9909e72186044c7a3ac12986c00921b9bc7e40604ee259af913ac5",
       "size": {
         "width": 390,
-        "height": 1503
+        "height": 1676
       },
-      "elements": 120,
+      "elements": 147,
       "pageErrors": []
     },
     {
@@ -350,47 +350,71 @@
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Onboarding",
+          "label": "Client settings",
           "matches": 1,
           "tag": "button",
-          "seen": "onboarding",
+          "seen": "",
           "scoped": false,
-          "recipe": "Onboarding"
+          "recipe": "Client settings"
         }
       ],
       "png": "390/s01-profile-onboarding.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#128",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-onboarding.s131-0-0.png",
+          "png": "390/s01-profile-onboarding.s128-0-0.png",
+          "box": [
+            17,
+            129,
+            356,
+            664
+          ]
+        },
+        {
+          "scroller": "div#128",
+          "x": 0,
+          "y": 121,
+          "png": "390/s01-profile-onboarding.s128-0-121.png",
+          "box": [
+            17,
+            129,
+            356,
+            664
+          ]
+        },
+        {
+          "scroller": "div#170",
+          "x": 0,
+          "y": 0,
+          "png": "390/s01-profile-onboarding.s170-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#170",
+          "x": 197,
           "y": 0,
-          "png": "390/s01-profile-onboarding.s131-138-0.png",
+          "png": "390/s01-profile-onboarding.s170-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         }
       ],
-      "sha256": "a78c2464bc4baeee0897a46c087620ad1c75480052536d3c6016078da2fef3f4",
+      "sha256": "2e67ab63567a1d33ed6a8ddf855cdcfb5ac9db2436b94e9b2be4447a6c62ea23",
       "size": {
         "width": 390,
-        "height": 952
+        "height": 2299
       },
-      "elements": 91,
+      "elements": 320,
       "pageErrors": []
     },
     {
@@ -418,37 +442,37 @@
           "png": "390/s02-messages.s123-0-0.png",
           "box": [
             0,
-            315,
+            311,
             390,
-            457
+            461
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 457,
-          "png": "390/s02-messages.s123-0-457.png",
+          "y": 461,
+          "png": "390/s02-messages.s123-0-461.png",
           "box": [
             0,
-            315,
+            311,
             390,
-            457
+            461
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 841,
-          "png": "390/s02-messages.s123-0-841.png",
+          "y": 837,
+          "png": "390/s02-messages.s123-0-837.png",
           "box": [
             0,
-            315,
+            311,
             390,
-            457
+            461
           ]
         }
       ],
-      "sha256": "fb0b174fd5a588e93aaf8838e95dc0398ba1a48553dc72f31a65162d6c7a1881",
+      "sha256": "c1b7300a854d7bc82f41b17dc2e2d9d069fefd7ee1f9c9a630c29a0bfdcdbb3a",
       "size": {
         "width": 390,
         "height": 844
@@ -483,14 +507,14 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         }
       ],
       "png": "390/s02-thread.png",
       "scrolls": [],
-      "sha256": "05374e220c1d0966bcdf3eb27b70c45e5108bd7e0b7926ed1cad6700a2966bee",
+      "sha256": "2a4b9f1f29544d310d098e8b4cd20eb3238a56854e81f472016bbcfc3d6d606b",
       "size": {
         "width": 390,
         "height": 844
@@ -525,7 +549,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         },
@@ -540,7 +564,7 @@
       ],
       "png": "390/s02-thread-attachments.png",
       "scrolls": [],
-      "sha256": "b506343d5dabad069aa2bda14abc1115215430fe3c0540472152e1f3dae4d3ce",
+      "sha256": "dd0d71794d04890fa5608e156b2f4a478c263fed3c659d9db7301effefe438b1",
       "size": {
         "width": 390,
         "height": 844
@@ -566,10 +590,10 @@
       ],
       "png": "390/s02-notes-todos.png",
       "scrolls": [],
-      "sha256": "473c7b37a26b57e04be43ec87e528f3692991c2e2018c81902c3d0124d15fa1a",
+      "sha256": "9a6ca8d445a3d5503b5c3237e9e361c4bd3b409e6dbe55a29ca084b2f87bdd28",
       "size": {
         "width": 390,
-        "height": 1833
+        "height": 1831
       },
       "elements": 258,
       "pageErrors": []
@@ -592,12 +616,12 @@
       ],
       "png": "390/s03-checkins-board.png",
       "scrolls": [],
-      "sha256": "22155efd1c4baa549068191a46656accdf5761b8604938c9925506d9e8a962aa",
+      "sha256": "93e546cdf5350f139830d424a0beeb54377d15ef57af5e90a4c90544ad953f65",
       "size": {
         "width": 390,
-        "height": 2413
+        "height": 2415
       },
-      "elements": 236,
+      "elements": 244,
       "pageErrors": []
     },
     {
@@ -626,12 +650,12 @@
       ],
       "png": "390/s03-add-extra.png",
       "scrolls": [],
-      "sha256": "98120fed1e3d8c72030fafffca5c100babaf8643ac0921964c62d0378c54d4e5",
+      "sha256": "447391e6de465e97cd192bc39b6b53cb278dc0a3221815e446499a44384fa0a9",
       "size": {
         "width": 390,
-        "height": 2413
+        "height": 2415
       },
-      "elements": 273,
+      "elements": 281,
       "pageErrors": []
     },
     {
@@ -668,10 +692,10 @@
       ],
       "png": "390/s03-checkin-review.png",
       "scrolls": [],
-      "sha256": "f0bbc049a16f400a7b22bf33bd63d136c46ec91362179db67a87d938e9aecae8",
+      "sha256": "a74ff5b5179f169ab64332be46a9d2741fc887e0afa3e228a31f2d8fcb9ac347",
       "size": {
         "width": 390,
-        "height": 3028
+        "height": 2994
       },
       "elements": 203,
       "pageErrors": []
@@ -718,12 +742,12 @@
       ],
       "png": "390/s04-habit-editor.png",
       "scrolls": [],
-      "sha256": "2b02c967a90f6b0aac64f09d58497a8128dd00b10df5a2ba897bceab8feb007e",
+      "sha256": "f02c30d87c85952804d70caf76f81c03eb89083356162571bf6659140edba090",
       "size": {
         "width": 443,
-        "height": 1076
+        "height": 1082
       },
-      "elements": 95,
+      "elements": 102,
       "pageErrors": []
     },
     {
@@ -807,30 +831,30 @@
           "png": "390/s04-template-habits.s124-0-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         },
         {
           "scroller": "nav#124",
-          "x": 323,
+          "x": 228,
           "y": 0,
-          "png": "390/s04-template-habits.s124-323-0.png",
+          "png": "390/s04-template-habits.s124-228-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "791dcbd0dab1a3c7a11afcf9cf3daeaf2e6b968f838ebb93c5679f72a7c7052e",
+      "sha256": "5ee2cd2efbe8f82555ebc463f7a59d3b4294fdebca46b55845ae4763fc15a7fc",
       "size": {
         "width": 390,
-        "height": 1246
+        "height": 1242
       },
-      "elements": 139,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -842,10 +866,10 @@
       "clicks": [],
       "png": "390/s05-templates.png",
       "scrolls": [],
-      "sha256": "575d6b7e852a800f9c51a4fa66b65db852bf5c4089e687b95a7da28371d88657",
+      "sha256": "ce266ae73660d05f6668177ba6311f232bcdb2352afc3860500666834eb42c19",
       "size": {
         "width": 390,
-        "height": 1390
+        "height": 1386
       },
       "elements": 191,
       "pageErrors": []
@@ -875,30 +899,30 @@
           "png": "390/s05-template-editor.s124-0-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         },
         {
           "scroller": "nav#124",
-          "x": 323,
+          "x": 228,
           "y": 0,
-          "png": "390/s05-template-editor.s124-323-0.png",
+          "png": "390/s05-template-editor.s124-228-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "8e0140572ab692979fc7c7ce5421ad01e91a0b43adb2e259f94b56dbadee96b6",
+      "sha256": "e73902c976fe1419c1b1319b898b7131ccc909b2075f168db0771242f377a1dd",
       "size": {
         "width": 390,
-        "height": 1246
+        "height": 1242
       },
-      "elements": 139,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -917,28 +941,28 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
+          "label": "Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "dashboard",
+          "seen": "tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
+          "recipe": "01 Tabs"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
           "seen": "tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "02 Tracker"
+        },
+        {
+          "label": "Move down",
+          "matches": 1,
+          "tag": "button",
+          "seen": "",
+          "scoped": true,
+          "recipe": "Move down"
         }
       ],
       "png": "390/s05-tracker-setup.png",
@@ -950,30 +974,30 @@
           "png": "390/s05-tracker-setup.s124-0-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         },
         {
           "scroller": "nav#124",
-          "x": 323,
+          "x": 228,
           "y": 0,
-          "png": "390/s05-tracker-setup.s124-323-0.png",
+          "png": "390/s05-tracker-setup.s124-228-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "3017b622eedb4bcc6aad3b7d506ed2923390d1178515b5220a3743bf9ed06b53",
+      "sha256": "60c840ca2b4274b94633dfaf273f8f111626e7b8f7f6299b0c77a7267ce7f6cd",
       "size": {
         "width": 390,
-        "height": 2224
+        "height": 2218
       },
-      "elements": 325,
+      "elements": 324,
       "pageErrors": []
     },
     {
@@ -1000,45 +1024,61 @@
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
-          "label": "Assign template",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "assign template",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Assign template"
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Open client setup",
+          "matches": 1,
+          "tag": "button",
+          "seen": "open client setup",
+          "scoped": false,
+          "recipe": "Open client setup"
+        },
+        {
+          "label": "Choose a saved template",
+          "matches": 1,
+          "tag": "button",
+          "seen": "choose a saved template",
+          "scoped": false,
+          "recipe": "Choose a saved template"
         }
       ],
       "png": "390/s05-client-setup.png",
       "scrolls": [
         {
-          "scroller": "div#131",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s05-client-setup.s131-0-0.png",
+          "png": "390/s05-client-setup.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#131",
-          "x": 138,
+          "scroller": "div#123",
+          "x": 196,
           "y": 0,
-          "png": "390/s05-client-setup.s131-138-0.png",
+          "png": "390/s05-client-setup.s123-196-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
             54
           ]
         },
         {
-          "scroller": "div#200",
+          "scroller": "div#154",
           "x": 0,
           "y": 0,
-          "png": "390/s05-client-setup.s200-0-0.png",
+          "png": "390/s05-client-setup.s154-0-0.png",
           "box": [
             17,
             129,
@@ -1047,10 +1087,10 @@
           ]
         },
         {
-          "scroller": "div#200",
+          "scroller": "div#154",
           "x": 0,
-          "y": 28,
-          "png": "390/s05-client-setup.s200-0-28.png",
+          "y": 26,
+          "png": "390/s05-client-setup.s154-0-26.png",
           "box": [
             17,
             129,
@@ -1059,12 +1099,12 @@
           ]
         }
       ],
-      "sha256": "dfb9148bf3dc73ad795b800844288d6ea6275e08770fe129ad78c6d08d6c1545",
+      "sha256": "778a7b4ec513dab55bad4543b1b3dc317c19e2b190e44c348af79a3af245ff7b",
       "size": {
         "width": 390,
-        "height": 1520
+        "height": 869
       },
-      "elements": 165,
+      "elements": 130,
       "pageErrors": []
     },
     {
@@ -1099,20 +1139,20 @@
           "recipe": "Plans"
         },
         {
-          "label": "Create",
+          "label": "Edit plan",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "edit plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Edit plan"
         }
       ],
       "png": "390/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "4b09fff07aa6a32e3548a3caf84cdc91ee0723bf986c43b48dd94835d49a0c9a",
+      "sha256": "1f94a702707af6d7072cf50f81d225c370af0206fe411eb1731fa139e742debf",
       "size": {
         "width": 390,
-        "height": 1528
+        "height": 1524
       },
       "elements": 152,
       "pageErrors": []
@@ -1133,28 +1173,12 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
-          "matches": 1,
-          "tag": "button",
-          "seen": "dashboard",
-          "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
           "seen": "tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "02 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
@@ -1169,16 +1193,16 @@
           "matches": 1,
           "tag": "button",
           "seen": "timeline / roadmap",
-          "scoped": false,
-          "recipe": "04 Timeline / Roadmap"
+          "scoped": true,
+          "recipe": "03 Timeline / Roadmap"
         },
         {
           "label": "Nutrition",
           "matches": 1,
           "tag": "button",
           "seen": "nutrition",
-          "scoped": false,
-          "recipe": "05 Nutrition"
+          "scoped": true,
+          "recipe": "04 Nutrition"
         }
       ],
       "png": "390/s06-template-nutrition.png",
@@ -1190,30 +1214,30 @@
           "png": "390/s06-template-nutrition.s124-0-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         },
         {
           "scroller": "nav#124",
-          "x": 323,
+          "x": 228,
           "y": 0,
-          "png": "390/s06-template-nutrition.s124-323-0.png",
+          "png": "390/s06-template-nutrition.s124-228-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "f937d0ac66e8156c32ba76b3ad254473263b760ddf0993bb5e39af94cc13b6b1",
+      "sha256": "28df67a97f55cbb017fbb68ddcd2aa11d25be5ec56f4e0117a471743c9b4345a",
       "size": {
         "width": 390,
-        "height": 965
+        "height": 963
       },
-      "elements": 106,
+      "elements": 105,
       "pageErrors": []
     },
     {
@@ -1240,12 +1264,12 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Open chat (1 unread)",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "1",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Open chat (1 unread)"
         },
         {
           "label": "Training program",
@@ -1258,10 +1282,10 @@
       ],
       "png": "390/s07-training-editor.png",
       "scrolls": [],
-      "sha256": "5c9b8ad9081aac28fb039b11f04aa0c759608c09de068c2d8ec6e79340ca91bb",
+      "sha256": "239580c61c46e84cfa853dfb1e09dcb445c915db3468ebcf2661adf032ff5a43",
       "size": {
         "width": 390,
-        "height": 2366
+        "height": 2356
       },
       "elements": 228,
       "pageErrors": []
@@ -1282,12 +1306,12 @@
           "recipe": "Clients"
         },
         {
-          "label": "EA Emma Anders Lifestyle",
+          "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
-          "seen": "ea emma anders lifestyle",
+          "seen": "cp chloe park lifestyle",
           "scoped": false,
-          "recipe": "EA Emma Anders Lifestyle"
+          "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Edit plans",
@@ -1298,12 +1322,12 @@
           "recipe": "Edit plans"
         },
         {
-          "label": "Create",
+          "label": "Set up plan",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "set up plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Set up plan"
         },
         {
           "label": "Add session",
@@ -1465,10 +1489,10 @@
           ]
         }
       ],
-      "sha256": "39c06ffadd70b14f383b7a0e3e9fbe7887bc37f595bd673a8d195bda02df0be7",
+      "sha256": "100ee3fb13339475564b936631da961fbb7d653efef2f3483fde3b360775826b",
       "size": {
         "width": 390,
-        "height": 2491
+        "height": 2481
       },
       "elements": 433,
       "pageErrors": []
@@ -1507,7 +1531,7 @@
           ]
         }
       ],
-      "sha256": "e11ac95a85edf309bdbff39ecf815f0401dcfd04135c3d85b50ef765817dfae3",
+      "sha256": "371a665f2f95c58699b84fcc390d42adfd6c9d8ca12ef31e7b8b66e46a175c8e",
       "size": {
         "width": 390,
         "height": 1246
@@ -1702,7 +1726,7 @@
           ]
         }
       ],
-      "sha256": "8cdc7a892f41cbc7f58b439977c3818c411af81743db7f346abe170aefb382e4",
+      "sha256": "8b6d116c2f2c84bfefa5237fd6a5beb729250d5c973374075ca0d770e77c1fc1",
       "size": {
         "width": 390,
         "height": 1246
@@ -1726,12 +1750,12 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
+          "label": "Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "dashboard",
+          "seen": "tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         }
       ],
       "png": "390/s08-template-dashboard.png",
@@ -1743,30 +1767,30 @@
           "png": "390/s08-template-dashboard.s124-0-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         },
         {
           "scroller": "nav#124",
-          "x": 323,
+          "x": 228,
           "y": 0,
-          "png": "390/s08-template-dashboard.s124-323-0.png",
+          "png": "390/s08-template-dashboard.s124-228-0.png",
           "box": [
             16,
-            436,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "c3a6d485c70c73a476cfcf00331e240057eac82ef064001d8aabe97ed5347108",
+      "sha256": "e73902c976fe1419c1b1319b898b7131ccc909b2075f168db0771242f377a1dd",
       "size": {
         "width": 390,
-        "height": 2136
+        "height": 1242
       },
-      "elements": 443,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -1795,7 +1819,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -1818,8 +1842,8 @@
         {
           "scroller": "div#245",
           "x": 0,
-          "y": 733,
-          "png": "390/s09-tracker-today.s245-0-733.png",
+          "y": 22,
+          "png": "390/s09-tracker-today.s245-0-22.png",
           "box": [
             17,
             94,
@@ -1828,60 +1852,60 @@
           ]
         },
         {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 796,
-          "png": "390/s09-tracker-today.s245-0-796.png",
-          "box": [
-            17,
-            94,
-            356,
-            733
-          ]
-        },
-        {
-          "scroller": "nav#253",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-today.s253-0-0.png",
+          "png": "390/s09-tracker-today.s300-0-0.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            256,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 324,
-          "y": 0,
-          "png": "390/s09-tracker-today.s253-324-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-today.s300-0-554.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            256,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 330,
-          "y": 0,
-          "png": "390/s09-tracker-today.s253-330-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1108,
+          "png": "390/s09-tracker-today.s300-0-1108.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            256,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1419,
+          "png": "390/s09-tracker-today.s300-0-1419.png",
+          "box": [
+            34,
+            256,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "20d0e6899fa6c049413fe399963160f2ad596c7674329170b5827b5e9f8b4065",
+      "sha256": "70176f853537ae11da3df2361a1da08d55d74d9ccbd78cdc54f1e7a14a8893b6",
       "size": {
         "width": 390,
-        "height": 1390
+        "height": 1386
       },
-      "elements": 391,
+      "elements": 471,
       "pageErrors": []
     },
     {
@@ -1910,7 +1934,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -1941,8 +1965,8 @@
         {
           "scroller": "div#245",
           "x": 0,
-          "y": 733,
-          "png": "390/s09-tracker-week.s245-0-733.png",
+          "y": 22,
+          "png": "390/s09-tracker-week.s245-0-22.png",
           "box": [
             17,
             94,
@@ -1951,72 +1975,84 @@
           ]
         },
         {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 1466,
-          "png": "390/s09-tracker-week.s245-0-1466.png",
-          "box": [
-            17,
-            94,
-            356,
-            733
-          ]
-        },
-        {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 1674,
-          "png": "390/s09-tracker-week.s245-0-1674.png",
-          "box": [
-            17,
-            94,
-            356,
-            733
-          ]
-        },
-        {
-          "scroller": "nav#253",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-week.s253-0-0.png",
+          "png": "390/s09-tracker-week.s300-0-0.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 324,
-          "y": 0,
-          "png": "390/s09-tracker-week.s253-324-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-week.s300-0-554.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 330,
-          "y": 0,
-          "png": "390/s09-tracker-week.s253-330-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1108,
+          "png": "390/s09-tracker-week.s300-0-1108.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1662,
+          "png": "390/s09-tracker-week.s300-0-1662.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2216,
+          "png": "390/s09-tracker-week.s300-0-2216.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2349,
+          "png": "390/s09-tracker-week.s300-0-2349.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "3f59142f479e1db3bb7c6726ab6b5a060b4c7e25999f2d8256243577ecab83d4",
+      "sha256": "777e43723c454c1a0729bbc98e175120ce6ad3fe5f3aa22376070539bd27bd34",
       "size": {
         "width": 390,
-        "height": 1390
+        "height": 1386
       },
-      "elements": 459,
+      "elements": 539,
       "pageErrors": []
     },
     {
@@ -2045,7 +2081,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -2076,8 +2112,8 @@
         {
           "scroller": "div#245",
           "x": 0,
-          "y": 252,
-          "png": "390/s09-tracker-trends.s245-0-252.png",
+          "y": 22,
+          "png": "390/s09-tracker-trends.s245-0-22.png",
           "box": [
             17,
             94,
@@ -2086,48 +2122,84 @@
           ]
         },
         {
-          "scroller": "nav#253",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-trends.s253-0-0.png",
+          "png": "390/s09-tracker-trends.s300-0-0.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 324,
+          "scroller": "div#300",
+          "x": 2,
           "y": 0,
-          "png": "390/s09-tracker-trends.s253-324-0.png",
+          "png": "390/s09-tracker-trends.s300-2-0.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#253",
-          "x": 330,
-          "y": 0,
-          "png": "390/s09-tracker-trends.s253-330-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-trends.s300-0-554.png",
           "box": [
-            33,
-            205,
-            324,
-            54
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 2,
+          "y": 554,
+          "png": "390/s09-tracker-trends.s300-2-554.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 887,
+          "png": "390/s09-tracker-trends.s300-0-887.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 2,
+          "y": 887,
+          "png": "390/s09-tracker-trends.s300-2-887.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "5ce20add7ca5222d8cda6a78663246edd04b1aca92d30e61bc01ff755b747bdd",
+      "sha256": "40da2d07d71d8ab6595bf4b6a2d52298c6c6fbbd28235803391b6166fb5a091f",
       "size": {
         "width": 390,
-        "height": 1390
+        "height": 1386
       },
-      "elements": 326,
+      "elements": 406,
       "pageErrors": []
     },
     {
@@ -2148,7 +2220,7 @@
       ],
       "png": "390/s09-tracker-config.png",
       "scrolls": [],
-      "sha256": "647da4cfbb566f7c65537008cdceda3f30057375ce83161baf68eb8dbdc4ca59",
+      "sha256": "41f28b7478e72fb0d3f799a43cc6e28ed528833e1acf79a8a2bce100a197eaa5",
       "size": {
         "width": 390,
         "height": 2374
@@ -2174,7 +2246,7 @@
       ],
       "png": "390/s10-appearance.png",
       "scrolls": [],
-      "sha256": "11913310f78f4d4f0d96f448622c987d9ef65043674057d3ad40dcc32d5a808a",
+      "sha256": "f9914ae86cd7e7ae96f5df3fb1e594ae7309e3f3db807cec64e84a89ff0adb67",
       "size": {
         "width": 390,
         "height": 4880
@@ -2191,7 +2263,7 @@
       "clicks": [],
       "png": "390/s10-clients-studio.png",
       "scrolls": [],
-      "sha256": "6b705e994d9eb2332844dae53936c6ac7fadc9f03787f8f3d0882369d999335a",
+      "sha256": "c2eb080116067c6c39ce23d5300a041d6025fe1456614d2f01b4bb5cb7dfac28",
       "size": {
         "width": 390,
         "height": 5987
@@ -2208,7 +2280,7 @@
       "clicks": [],
       "png": "390/s10-mealplan-studio.png",
       "scrolls": [],
-      "sha256": "e93f191b8609fc8eb173640168e1f171c6736d3bb454554f27513cb5f298b676",
+      "sha256": "9c76369adcafc8da8d3b2b1dd29fcc7b977e6f1c0f99efcc243ab66f47fc546a",
       "size": {
         "width": 390,
         "height": 3593
@@ -2249,8 +2321,8 @@
         {
           "scroller": "div#245",
           "x": 0,
-          "y": 357,
-          "png": "390/s11-preferences.s245-0-357.png",
+          "y": 345,
+          "png": "390/s11-preferences.s245-0-345.png",
           "box": [
             17,
             129,
@@ -2259,10 +2331,10 @@
           ]
         }
       ],
-      "sha256": "90f2ff4910c780640170bd801a20fa93e0f5196c6c08ed53fce8dfb96296ef07",
+      "sha256": "b5297cece3a77c3a45f0b6505ed0bd11824f4994656c16b04bff3dbf85b46a00",
       "size": {
         "width": 390,
-        "height": 1390
+        "height": 1386
       },
       "elements": 261,
       "pageErrors": []
@@ -2291,107 +2363,22 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Preview assigned tool",
+          "label": "Open client app",
           "matches": 1,
           "tag": "button",
-          "seen": "preview assigned tool",
+          "seen": "open client app",
           "scoped": false,
-          "recipe": "Preview assigned tool"
+          "recipe": "Open client app"
         }
       ],
       "png": "390/s11-client-preview.png",
-      "scrolls": [
-        {
-          "scroller": "div#132",
-          "x": 0,
-          "y": 0,
-          "png": "390/s11-client-preview.s132-0-0.png",
-          "box": [
-            16,
-            418,
-            358,
-            54
-          ]
-        },
-        {
-          "scroller": "div#132",
-          "x": 138,
-          "y": 0,
-          "png": "390/s11-client-preview.s132-138-0.png",
-          "box": [
-            16,
-            418,
-            358,
-            54
-          ]
-        },
-        {
-          "scroller": "div#239",
-          "x": 0,
-          "y": 0,
-          "png": "390/s11-client-preview.s239-0-0.png",
-          "box": [
-            17,
-            94,
-            356,
-            733
-          ]
-        },
-        {
-          "scroller": "div#239",
-          "x": 0,
-          "y": 594,
-          "png": "390/s11-client-preview.s239-0-594.png",
-          "box": [
-            17,
-            94,
-            356,
-            733
-          ]
-        },
-        {
-          "scroller": "nav#247",
-          "x": 0,
-          "y": 0,
-          "png": "390/s11-client-preview.s247-0-0.png",
-          "box": [
-            33,
-            205,
-            324,
-            54
-          ]
-        },
-        {
-          "scroller": "nav#247",
-          "x": 324,
-          "y": 0,
-          "png": "390/s11-client-preview.s247-324-0.png",
-          "box": [
-            33,
-            205,
-            324,
-            54
-          ]
-        },
-        {
-          "scroller": "nav#247",
-          "x": 330,
-          "y": 0,
-          "png": "390/s11-client-preview.s247-330-0.png",
-          "box": [
-            33,
-            205,
-            324,
-            54
-          ]
-        }
-      ],
-      "sha256": "d88f862fd5daea91a3132f63327acdfb21955a7003342f6042f1bbbfda1b65a4",
+      "scrolls": [],
+      "sha256": "fc9386e79f444457f8ab8e7ed39279644817bb9f0ce037ca05342333f13d96da",
       "size": {
         "width": 390,
-        "height": 2010
+        "height": 844
       },
-      "elements": 308,
+      "elements": 51,
       "pageErrors": []
     },
     {
@@ -2430,13 +2417,13 @@
           "matches": 1,
           "tag": "button",
           "seen": "set up plan",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Set up plan"
         }
       ],
       "png": "390/s13-supplements.png",
       "scrolls": [],
-      "sha256": "b3facca5c61566c0eb19ac7ee8b35236cbc8fdb810e03c8310e90993a1f07d93",
+      "sha256": "facfd657330b1a5420ca4895599611b43b85aa4fbcd785b9fc0af1ee27170ceb",
       "size": {
         "width": 390,
         "height": 844
@@ -2486,10 +2473,10 @@
       ],
       "png": "390/s12-activity-targets.png",
       "scrolls": [],
-      "sha256": "4cc2575beec7561a6d4db4ee3dd6f3ab2a818b1279ad3eeb42f8cace1920c7ea",
+      "sha256": "e89fedd69863adc5ec4af56a42f6a94e23ff7ddba8f6b3f22fdd9c854f4059f4",
       "size": {
         "width": 390,
-        "height": 1349
+        "height": 1345
       },
       "elements": 106,
       "pageErrors": []
@@ -2512,12 +2499,12 @@
       ],
       "png": "1440/s01-roster.png",
       "scrolls": [],
-      "sha256": "f35dd97f9c2f57eb1b33bdfb7b065459b3217da2b1ca4851916b60d96a3de22c",
+      "sha256": "dfd7d9767d2bc503ef0b4933c756d395a2bd218d6062749b58ebe5abb647a308",
       "size": {
         "width": 1440,
-        "height": 1595
+        "height": 1569
       },
-      "elements": 442,
+      "elements": 446,
       "pageErrors": []
     },
     {
@@ -2546,12 +2533,12 @@
       ],
       "png": "1440/s01-profile-overview.png",
       "scrolls": [],
-      "sha256": "f3c7dbd97a6f86c04a3ff03b535b113dda8b8d5348de2d9a8e0f414be96f7e49",
+      "sha256": "e31acb4eee345e25725ec84f376752355b3510fe52095d660820e708ec0d54ab",
       "size": {
         "width": 1440,
-        "height": 1144
+        "height": 1260
       },
-      "elements": 189,
+      "elements": 299,
       "pageErrors": []
     },
     {
@@ -2588,12 +2575,12 @@
       ],
       "png": "1440/s01-profile-plans.png",
       "scrolls": [],
-      "sha256": "020f6d0dce19af55927c29759c75b59d1b1148fd28e18d8163186f9ba2c3c5a6",
+      "sha256": "b701c1452c373eb16bd5ca1a45d803c4c5ead5fce02ad86ff8325506439ed98c",
       "size": {
         "width": 1440,
-        "height": 1846
+        "height": 906
       },
-      "elements": 232,
+      "elements": 157,
       "pageErrors": []
     },
     {
@@ -2630,12 +2617,12 @@
       ],
       "png": "1440/s01-profile-checkins.png",
       "scrolls": [],
-      "sha256": "3e30475dbdedeab5d381744745b0cfe8f50a76f382649ec4a1fdf2a2c6f67407",
+      "sha256": "eaef33480a1bb962b70bfe56a5eb4c01b60bc588b376eab46231d4bfa2ce2ec4",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 114,
+      "elements": 116,
       "pageErrors": []
     },
     {
@@ -2672,12 +2659,12 @@
       ],
       "png": "1440/s01-profile-notes.png",
       "scrolls": [],
-      "sha256": "73aefafba8c4b1e90351382e1e7b2f97669ef06063a6412e8f26d850204065bb",
+      "sha256": "31f3dae9f967209c84b7aefa311cf065e6147f0573756f512702207067bf04bd",
       "size": {
         "width": 1440,
-        "height": 1013
+        "height": 900
       },
-      "elements": 143,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -2704,22 +2691,47 @@
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Onboarding",
+          "label": "Client settings",
           "matches": 1,
           "tag": "button",
-          "seen": "onboarding",
+          "seen": "",
           "scoped": false,
-          "recipe": "Onboarding"
+          "recipe": "Client settings"
         }
       ],
       "png": "1440/s01-profile-onboarding.png",
-      "scrolls": [],
-      "sha256": "6a8968114761c6cfdadd84d82084621253fac034be8eaaabc791ea2e3205eff0",
+      "scrolls": [
+        {
+          "scroller": "div#128",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s01-profile-onboarding.s128-0-0.png",
+          "box": [
+            241,
+            148,
+            958,
+            685
+          ]
+        },
+        {
+          "scroller": "div#128",
+          "x": 0,
+          "y": 84,
+          "png": "1440/s01-profile-onboarding.s128-0-84.png",
+          "box": [
+            241,
+            148,
+            958,
+            685
+          ]
+        }
+      ],
+      "sha256": "3e814ba414a5dd3b7682cb2b0bc70ff65a87cfd4b3eb57742fd7c0bf234a3d2c",
       "size": {
         "width": 1440,
-        "height": 900
+        "height": 1260
       },
-      "elements": 114,
+      "elements": 343,
       "pageErrors": []
     },
     {
@@ -2747,37 +2759,37 @@
           "png": "1440/s02-messages.s123-0-0.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 575,
-          "png": "1440/s02-messages.s123-0-575.png",
+          "y": 579,
+          "png": "1440/s02-messages.s123-0-579.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 723,
-          "png": "1440/s02-messages.s123-0-723.png",
+          "y": 719,
+          "png": "1440/s02-messages.s123-0-719.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         }
       ],
-      "sha256": "34554fb7b6b5cc510da9f9fc907d2b39f98239945891fa6afb70ab8cd9c7ddfe",
+      "sha256": "797273d24983f1bbf22630f4a61d2d3dd4f5170d8008da5766fb2908141a3115",
       "size": {
         "width": 1440,
         "height": 900
@@ -2812,7 +2824,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         }
@@ -2826,37 +2838,37 @@
           "png": "1440/s02-thread.s123-0-0.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 575,
-          "png": "1440/s02-thread.s123-0-575.png",
+          "y": 579,
+          "png": "1440/s02-thread.s123-0-579.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 723,
-          "png": "1440/s02-thread.s123-0-723.png",
+          "y": 719,
+          "png": "1440/s02-thread.s123-0-719.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         }
       ],
-      "sha256": "211a8bb16afe95dea7aba11adbf1d26eea758b3e0d10edeb495fd1ccfbcfe70f",
+      "sha256": "cc2243053eb9e46b52af7eff4673f3b9df7f87db999d6f7123ed55229f95acfc",
       "size": {
         "width": 1440,
         "height": 900
@@ -2891,7 +2903,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         },
@@ -2913,37 +2925,37 @@
           "png": "1440/s02-thread-attachments.s123-0-0.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 575,
-          "png": "1440/s02-thread-attachments.s123-0-575.png",
+          "y": 579,
+          "png": "1440/s02-thread-attachments.s123-0-579.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         },
         {
           "scroller": "div#123",
           "x": 0,
-          "y": 723,
-          "png": "1440/s02-thread-attachments.s123-0-723.png",
+          "y": 719,
+          "png": "1440/s02-thread-attachments.s123-0-719.png",
           "box": [
             216,
-            326,
+            322,
             304,
-            574
+            578
           ]
         }
       ],
-      "sha256": "fee31019c483ed3202098cc9e1a768b2db6859dd35a49e209c60aa4c495be548",
+      "sha256": "34cccb768f13f232d3fdd2fd6b8375108408174b4d938dba66183ef15b7483fc",
       "size": {
         "width": 1440,
         "height": 900
@@ -2969,10 +2981,10 @@
       ],
       "png": "1440/s02-notes-todos.png",
       "scrolls": [],
-      "sha256": "86f718a0342350bc13213bbfb04f26493cf798e62c51d1c9336c54fd7dfa0562",
+      "sha256": "52aa0f468ca7bf5208b4b47575e9e8de06ba7897e8b20acdda98d5ec49891b47",
       "size": {
         "width": 1440,
-        "height": 1590
+        "height": 1588
       },
       "elements": 281,
       "pageErrors": []
@@ -2995,12 +3007,12 @@
       ],
       "png": "1440/s03-checkins-board.png",
       "scrolls": [],
-      "sha256": "84b4ac87796766af3597e981f5e5b0b356faacbbc8663d41aa99616a5c874e98",
+      "sha256": "c8f6f4e6ac9bb4c7c5f3583e26163e59795a91941963d0ac7f114be56c62442f",
       "size": {
         "width": 1440,
-        "height": 923
+        "height": 1055
       },
-      "elements": 273,
+      "elements": 281,
       "pageErrors": []
     },
     {
@@ -3029,12 +3041,12 @@
       ],
       "png": "1440/s03-add-extra.png",
       "scrolls": [],
-      "sha256": "a1872696d847e6ec227ae0f2f4e264cfe2789923f372e013afce0f7eea09ed78",
+      "sha256": "c6a487d9ab9990302f2055a82a3ee8a86b04e940119849f4bec11cdbcecb7e3f",
       "size": {
         "width": 1440,
-        "height": 923
+        "height": 1055
       },
-      "elements": 310,
+      "elements": 318,
       "pageErrors": []
     },
     {
@@ -3071,10 +3083,10 @@
       ],
       "png": "1440/s03-checkin-review.png",
       "scrolls": [],
-      "sha256": "9fe56a465ecb12b1fe1a559636f6f1cdc103231061563c291b3e7202502c9da3",
+      "sha256": "6115cca26b121bae0246949b994a14518f80ba6c2d193c1af813c6c981b6f47e",
       "size": {
         "width": 1440,
-        "height": 2044
+        "height": 2022
       },
       "elements": 226,
       "pageErrors": []
@@ -3121,12 +3133,12 @@
       ],
       "png": "1440/s04-habit-editor.png",
       "scrolls": [],
-      "sha256": "f199a36af4d12c965b59370c75db0187506898c28362429dc8fb3ccbb2120fc7",
+      "sha256": "cb7242012e279a942a2fa236cf4d0041600a8e161b0f772c5b005c9982cb857c",
       "size": {
         "width": 1440,
-        "height": 900
+        "height": 919
       },
-      "elements": 119,
+      "elements": 126,
       "pageErrors": []
     },
     {
@@ -3203,12 +3215,12 @@
       ],
       "png": "1440/s04-template-habits.png",
       "scrolls": [],
-      "sha256": "f6c9f1b3fcd5d6ca949b627720c00440693c4ffca7b4f2b947d028aaa808e283",
+      "sha256": "d909a2333cb910bb93dab91351423b400bb8a7466da27cc7ec664cc800f4e6b8",
       "size": {
         "width": 1440,
-        "height": 984
+        "height": 980
       },
-      "elements": 172,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3220,7 +3232,7 @@
       "clicks": [],
       "png": "1440/s05-templates.png",
       "scrolls": [],
-      "sha256": "5d680000c9b2f1480f8918d6e2584f879878b1a1429b2ed011066c3570de9a00",
+      "sha256": "caedeb63963cd45acbdf1b9bbd0755edb1d9ab97f212898528049409b42205da",
       "size": {
         "width": 1440,
         "height": 900
@@ -3246,12 +3258,12 @@
       ],
       "png": "1440/s05-template-editor.png",
       "scrolls": [],
-      "sha256": "7d7e528f42cce6bee893ece7cc8fc20ef4d7ab627e7b113520d5882d1a280bce",
+      "sha256": "0ad63c0e8b71208fe81228d2415cbfd6e58d649f7e468ad99d751cf02efec1a0",
       "size": {
         "width": 1440,
-        "height": 984
+        "height": 980
       },
-      "elements": 172,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3270,38 +3282,38 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "01 Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "01 tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         },
         {
-          "label": "Move Bodyweight trend",
+          "label": "02 Tracker",
+          "matches": 1,
+          "tag": "button",
+          "seen": "02 tracker",
+          "scoped": true,
+          "recipe": "02 Tracker"
+        },
+        {
+          "label": "Move down",
           "matches": 1,
           "tag": "button",
           "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
-          "label": "03 Tracker",
-          "matches": 1,
-          "tag": "button",
-          "seen": "03 tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "Move down"
         }
       ],
       "png": "1440/s05-tracker-setup.png",
       "scrolls": [],
-      "sha256": "d6e169d40b682b4806fc0ca5aaa6ce8be50e14f2f66f7037e5e574e9e05dd635",
+      "sha256": "841a897ed1812f8ca2ec732d8d22d1b460b097843fdf71531b50a176464c2372",
       "size": {
         "width": 1440,
-        "height": 1446
+        "height": 1440
       },
-      "elements": 358,
+      "elements": 356,
       "pageErrors": []
     },
     {
@@ -3328,22 +3340,38 @@
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
-          "label": "Assign template",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "assign template",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Assign template"
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Open client setup",
+          "matches": 1,
+          "tag": "button",
+          "seen": "open client setup",
+          "scoped": false,
+          "recipe": "Open client setup"
+        },
+        {
+          "label": "Choose a saved template",
+          "matches": 1,
+          "tag": "button",
+          "seen": "choose a saved template",
+          "scoped": false,
+          "recipe": "Choose a saved template"
         }
       ],
       "png": "1440/s05-client-setup.png",
       "scrolls": [],
-      "sha256": "f8813cb7da14abd1cfe2347e7fd8f0942dedcc325a7c88dbf236ffddb48ece2a",
+      "sha256": "17c20edd74f98fb61c4c88e747e8a8d9d6c011c00804c8e190eb0a05ef53b649",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 188,
+      "elements": 153,
       "pageErrors": []
     },
     {
@@ -3378,20 +3406,20 @@
           "recipe": "Plans"
         },
         {
-          "label": "Create",
+          "label": "Edit plan",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "edit plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Edit plan"
         }
       ],
       "png": "1440/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "d7a5fa9b26c950b59c946a45fab2f8b04c1e3bc445a90959062da0722a09a6dc",
+      "sha256": "adfcc77fde989283ef3a98a725b769cac1684de6bd43de542a7a086b97a10d9c",
       "size": {
         "width": 1440,
-        "height": 1129
+        "height": 1127
       },
       "elements": 178,
       "pageErrors": []
@@ -3412,28 +3440,12 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "02 Tracker",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "02 tracker",
           "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
-          "label": "03 Tracker",
-          "matches": 1,
-          "tag": "button",
-          "seen": "03 tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "recipe": "02 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
@@ -3444,30 +3456,30 @@
           "recipe": "Settings for Bodyweight"
         },
         {
-          "label": "04 Timeline / Roadmap",
+          "label": "03 Timeline / Roadmap",
           "matches": 1,
           "tag": "button",
-          "seen": "04 timeline / roadmap",
-          "scoped": false,
-          "recipe": "04 Timeline / Roadmap"
+          "seen": "03 timeline / roadmap",
+          "scoped": true,
+          "recipe": "03 Timeline / Roadmap"
         },
         {
-          "label": "05 Nutrition",
+          "label": "04 Nutrition",
           "matches": 1,
           "tag": "button",
-          "seen": "05 nutrition",
-          "scoped": false,
-          "recipe": "05 Nutrition"
+          "seen": "04 nutrition",
+          "scoped": true,
+          "recipe": "04 Nutrition"
         }
       ],
       "png": "1440/s06-template-nutrition.png",
       "scrolls": [],
-      "sha256": "4cf5427b259f6c9845a0d3005e6f86ddb3153f4a5272a49e86548ac1f90cecdb",
+      "sha256": "6e5aa3e45eac807a8cc932d26cbe00687d1db0c95ef34c6859a7ccd6726aa8a5",
       "size": {
         "width": 1440,
-        "height": 918
+        "height": 900
       },
-      "elements": 139,
+      "elements": 137,
       "pageErrors": []
     },
     {
@@ -3494,12 +3506,12 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Open chat (1 unread)",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "1",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Open chat (1 unread)"
         },
         {
           "label": "Training program",
@@ -3512,10 +3524,10 @@
       ],
       "png": "1440/s07-training-editor.png",
       "scrolls": [],
-      "sha256": "3c69c0f8542c6b8a7930733213fe07ab94dcbe15663886d7715284abbe8c5ae0",
+      "sha256": "8d4a5bb6c565800f47c70faf9becd2bec1ad3185c665a88097c723fd2ece0e14",
       "size": {
         "width": 1440,
-        "height": 1293
+        "height": 1285
       },
       "elements": 249,
       "pageErrors": []
@@ -3536,12 +3548,12 @@
           "recipe": "Clients"
         },
         {
-          "label": "EA Emma Anders Lifestyle",
+          "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
-          "seen": "ea emma anders lifestyle",
+          "seen": "cp chloe park lifestyle",
           "scoped": false,
-          "recipe": "EA Emma Anders Lifestyle"
+          "recipe": "CP Chloe Park Lifestyle"
         },
         {
           "label": "Edit plans",
@@ -3552,12 +3564,12 @@
           "recipe": "Edit plans"
         },
         {
-          "label": "Create",
+          "label": "Set up plan",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "set up plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Set up plan"
         },
         {
           "label": "Add session",
@@ -3647,10 +3659,10 @@
           ]
         }
       ],
-      "sha256": "af95d8ff0a86ae9052037599120a13e880d4ba1fbf8dcd7c5eeb3ad9c3467db7",
+      "sha256": "acc86c9dc9148b60bd53f9902fa38a52b3e562915e9d7b27b7624c6d0dbfd4e1",
       "size": {
         "width": 1440,
-        "height": 1458
+        "height": 1450
       },
       "elements": 461,
       "pageErrors": []
@@ -3664,7 +3676,7 @@
       "clicks": [],
       "png": "1440/s08-builder.png",
       "scrolls": [],
-      "sha256": "172210512542f33ae53f96c9ff14f9246a136994771a206bc71a02ddf21a17c0",
+      "sha256": "bd5ce93cccf3dc14c6ae75d81dd38c998631fc286807f075efac8d0dd8ad84d3",
       "size": {
         "width": 1440,
         "height": 1044
@@ -3763,7 +3775,7 @@
           ]
         }
       ],
-      "sha256": "cf222af066bcf2e878553872bc93226969cc39b736b305fcffa62d31a34ab3aa",
+      "sha256": "861e99e125fa8c35403d55fe60fac8d1c740a9109594659377ebff58967975a1",
       "size": {
         "width": 1440,
         "height": 1044
@@ -3787,22 +3799,22 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "01 Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "01 tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         }
       ],
       "png": "1440/s08-template-dashboard.png",
       "scrolls": [],
-      "sha256": "bb5c29dc9b1fd8296f2a5e8cf884017a381c2a28cb6aa8b7307982a4aa0937cf",
+      "sha256": "51b938f187c19613cd19feb109f0faedbc8ff2f44ccecc8ac5212ce396ff4c54",
       "size": {
         "width": 1440,
-        "height": 1250
+        "height": 980
       },
-      "elements": 474,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3831,7 +3843,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3840,36 +3852,156 @@
       "png": "1440/s09-tracker-today.png",
       "scrolls": [
         {
-          "scroller": "div#245",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "1440/s09-tracker-today.s245-0-0.png",
+          "png": "1440/s09-tracker-today.s300-0-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
           ]
         },
         {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 522,
-          "png": "1440/s09-tracker-today.s245-0-522.png",
+          "scroller": "div#300",
+          "x": 82,
+          "y": 0,
+          "png": "1440/s09-tracker-today.s300-82-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-today.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 610,
+          "png": "1440/s09-tracker-today.s300-82-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1220,
+          "png": "1440/s09-tracker-today.s300-0-1220.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 1220,
+          "png": "1440/s09-tracker-today.s300-82-1220.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1830,
+          "png": "1440/s09-tracker-today.s300-0-1830.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 1830,
+          "png": "1440/s09-tracker-today.s300-82-1830.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2440,
+          "png": "1440/s09-tracker-today.s300-0-2440.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 2440,
+          "png": "1440/s09-tracker-today.s300-82-2440.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2627,
+          "png": "1440/s09-tracker-today.s300-0-2627.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 2627,
+          "png": "1440/s09-tracker-today.s300-82-2627.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
           ]
         }
       ],
-      "sha256": "57c1053d872fe7da71b2bd38a5c44a3b1ced130ef960824d345fc9503f1eed3c",
+      "sha256": "01bd643526a0a318aab9b8416f8367170edc3e47a2df3d9c834da51fb9cef988",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 439,
+      "elements": 511,
       "pageErrors": []
     },
     {
@@ -3898,7 +4030,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3915,36 +4047,120 @@
       "png": "1440/s09-tracker-week.png",
       "scrolls": [
         {
-          "scroller": "div#245",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "1440/s09-tracker-week.s245-0-0.png",
+          "png": "1440/s09-tracker-week.s300-0-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
           ]
         },
         {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 240,
-          "png": "1440/s09-tracker-week.s245-0-240.png",
+          "scroller": "div#300",
+          "x": 82,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s300-82-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-week.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 610,
+          "png": "1440/s09-tracker-week.s300-82-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 953,
+          "png": "1440/s09-tracker-week.s300-0-953.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 953,
+          "png": "1440/s09-tracker-week.s300-82-953.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-0-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 356,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-356-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 534,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-534-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
           ]
         }
       ],
-      "sha256": "e2a7b6cebc74ece6315d78173832ccf4bab614abd3b4b4ce8a40d3184d852a08",
+      "sha256": "1b461d9e2fb074e6eba8d0cba0ff35ec0577c1b27528cf34ab110134d253a359",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 537,
+      "elements": 616,
       "pageErrors": []
     },
     {
@@ -3973,7 +4189,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3990,36 +4206,84 @@
       "png": "1440/s09-tracker-trends.png",
       "scrolls": [
         {
-          "scroller": "div#245",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "1440/s09-tracker-trends.s245-0-0.png",
+          "png": "1440/s09-tracker-trends.s300-0-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
           ]
         },
         {
-          "scroller": "div#245",
-          "x": 0,
-          "y": 13,
-          "png": "1440/s09-tracker-trends.s245-0-13.png",
+          "scroller": "div#300",
+          "x": 83,
+          "y": 0,
+          "png": "1440/s09-tracker-trends.s300-83-0.png",
           "box": [
-            17,
-            98,
-            1406,
-            785
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-trends.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 83,
+          "y": 610,
+          "png": "1440/s09-tracker-trends.s300-83-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 661,
+          "png": "1440/s09-tracker-trends.s300-0-661.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 83,
+          "y": 661,
+          "png": "1440/s09-tracker-trends.s300-83-661.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
           ]
         }
       ],
-      "sha256": "cc945fd663a8c5989e95f74dc4abc39d13d51b0d3bac87fc9e449d4a84b1d487",
+      "sha256": "c5061fe7aca684c68841a194f720de688122a35a82c2430b480be9c2b7519d59",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 350,
+      "elements": 428,
       "pageErrors": []
     },
     {
@@ -4040,7 +4304,7 @@
       ],
       "png": "1440/s09-tracker-config.png",
       "scrolls": [],
-      "sha256": "bfe8b5129c825c9dae35a4c9b6a740d7338b0df7464fd505bc5ea55831423f7f",
+      "sha256": "fdff9d7eed9271e664cb54ff95756157dd41fe0a4e10be85552308476408c427",
       "size": {
         "width": 1440,
         "height": 1369
@@ -4066,7 +4330,7 @@
       ],
       "png": "1440/s10-appearance.png",
       "scrolls": [],
-      "sha256": "82b4e9587f96fb41af7702d38ff35b8653511229cb36d2d52aa5e7b80e91f95f",
+      "sha256": "01ca7828136758f424c28f3d70c14918914666bb23cc248e97ea449f13131d4d",
       "size": {
         "width": 1440,
         "height": 2545
@@ -4083,10 +4347,10 @@
       "clicks": [],
       "png": "1440/s10-clients-studio.png",
       "scrolls": [],
-      "sha256": "9a7b4315641ceeb1dcb7e077728d63aee3e5139d4b6f27b339b5620a594bcd21",
+      "sha256": "c72cdd1b7df6410c459bb7c8b9ef306dd5d1531f83334fc9974706f5ce349f31",
       "size": {
         "width": 1440,
-        "height": 3156
+        "height": 3158
       },
       "elements": 571,
       "pageErrors": []
@@ -4100,10 +4364,10 @@
       "clicks": [],
       "png": "1440/s10-mealplan-studio.png",
       "scrolls": [],
-      "sha256": "19f2471d8fc14373f799d5fe995c33947966cdf7830b31c79c4f91001d84ae42",
+      "sha256": "cc609b99718533f2c6f19036cedce5ee6c490b3a40534ea9fa9c0091c1374b04",
       "size": {
         "width": 1440,
-        "height": 2513
+        "height": 2511
       },
       "elements": 374,
       "pageErrors": []
@@ -4141,8 +4405,8 @@
         {
           "scroller": "div#245",
           "x": 0,
-          "y": 314,
-          "png": "1440/s11-preferences.s245-0-314.png",
+          "y": 304,
+          "png": "1440/s11-preferences.s245-0-304.png",
           "box": [
             401,
             148,
@@ -4151,7 +4415,7 @@
           ]
         }
       ],
-      "sha256": "b170337b589dc8695d62c875277ee2f62b72f85045813c92c54273df7167900b",
+      "sha256": "deaef92440840f0660f65255db61f280834357ff912a14f9c740a07d6124121a",
       "size": {
         "width": 1440,
         "height": 900
@@ -4183,47 +4447,22 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Preview assigned tool",
+          "label": "Open client app",
           "matches": 1,
           "tag": "button",
-          "seen": "preview assigned tool",
+          "seen": "open client app",
           "scoped": false,
-          "recipe": "Preview assigned tool"
+          "recipe": "Open client app"
         }
       ],
       "png": "1440/s11-client-preview.png",
-      "scrolls": [
-        {
-          "scroller": "div#239",
-          "x": 0,
-          "y": 0,
-          "png": "1440/s11-client-preview.s239-0-0.png",
-          "box": [
-            17,
-            98,
-            1406,
-            785
-          ]
-        },
-        {
-          "scroller": "div#239",
-          "x": 0,
-          "y": 22,
-          "png": "1440/s11-client-preview.s239-0-22.png",
-          "box": [
-            17,
-            98,
-            1406,
-            785
-          ]
-        }
-      ],
-      "sha256": "b0da706b021d27b641c0a6420373713429df7ede25acdc2b9641aefc81c4975a",
+      "scrolls": [],
+      "sha256": "3e764776abbed12ec99c9d5dfb0a92ab10651543597704ffed09a14f7765e898",
       "size": {
         "width": 1440,
-        "height": 1144
+        "height": 1260
       },
-      "elements": 332,
+      "elements": 300,
       "pageErrors": []
     },
     {
@@ -4262,13 +4501,13 @@
           "matches": 1,
           "tag": "button",
           "seen": "set up plan",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Set up plan"
         }
       ],
       "png": "1440/s13-supplements.png",
       "scrolls": [],
-      "sha256": "acfa3f282ee027047e3771a9d4f7910582581ae13b1ff40abd0775176fc54965",
+      "sha256": "c6bf7e729439db31f0645aa4f7d38a246a739c831c167f7207364a2786746d5e",
       "size": {
         "width": 1440,
         "height": 900
@@ -4318,7 +4557,7 @@
       ],
       "png": "1440/s12-activity-targets.png",
       "scrolls": [],
-      "sha256": "f92aed756a06ea4a131ab70936260e7f26ea05bcb414dfd15d054a19e69c51c5",
+      "sha256": "463d26a027569c9fac45e6593bbd74e1290b2b1bec536aaa942a11cd4111ed2a",
       "size": {
         "width": 1440,
         "height": 900
