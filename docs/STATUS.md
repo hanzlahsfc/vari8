@@ -1,3 +1,42 @@
+## 2026-10-27 - w2-t8: message attachments and read state on `w2/t8`
+
+- Upload-then-link attachments on the messages wire: `POST /messages`
+  and `POST conversations/:clientProfileId` accept `mediaObjectIds`
+  (max 10, safe id grammar, duplicates rejected). Each id must resolve
+  to a live MediaObject in the same workspace anchored to the
+  conversation's client profile; anything else denies 403. Attachment
+  rows link in the same transaction as the message create, so the send
+  response and every later read carry real metadata. Attachment-only
+  sends (empty body) are allowed; a send with neither body nor
+  attachments is `invalid_input`.
+- Attachment urls reuse the T6 media mint unchanged: download urls are
+  workspace-scoped object keys, expire per the presign ttl, and deny
+  foreign workspaces and foreign client profiles. No media files edited.
+- Read state on the wire: own messages carry `read` (client-authored
+  rows count any staff MessageRead; staff-authored rows count the
+  client user's MessageRead). New `POST /messages/read` marks the
+  caller's unread staff messages, mirroring the staff read route.
+- Canvas send path: refuses to send while a real attachment still has
+  no mediaObjectId, passes the ids on the wire, and keeps local
+  fallback only for missing backend context or demo media. Coach
+  status renders Local message / Read / Sent instead of the literal
+  "Example · read".
+- Frontend twin updated in lockstep for the read-state label; the
+  twin's send stays local-preview per the existing wiring split.
+- Gates: typecheck 0; lint 0 (one pre-existing hooks warning in
+  messages.tsx on the merged base); prettier on touched files 0;
+  `npm run test` 1437/1437 0; `npm run test:integration` on the
+  attachment suite plus staff-messages regression 14/14 0;
+  `npm run build` 0; `npm run index` regenerated and `index:check` 0;
+  `cd frontend && npm run lint` 0; dash gate on added lines 0.
+- Live proof on fresh lane DB app_fp_w2t8 (migrate deploy, demo seed,
+  production server on 5310): coach attach+send at 1440 renders the
+  minted image on reload; client wire read shows the attachment and
+  `marked: 2` on POST /messages/read; coach thread flips Sent to Read;
+  staff2 foreign-workspace mint returns 403; a minted url redeems 200
+  while an expired signature returns 403; 390 render verified.
+  Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
 ## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
 
 - Verdict on 59080f8, Finding 1 (blocking): the assign roster built
@@ -232,10 +271,10 @@
   `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
   LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
   `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
-  + `client-app.css` kept in parity for shared blocks. Product
-  onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
-  panel + page, `app/globals.css`). Helpers covered by
-  `tests/unit/checkin-client-surface.test.ts` (16 tests).
+  - `client-app.css` kept in parity for shared blocks. Product
+    onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+    panel + page, `app/globals.css`). Helpers covered by
+    `tests/unit/checkin-client-surface.test.ts` (16 tests).
 - Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
   (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
   (120 files, 1407 tests), `npm run build` 0, `npm run index` +
@@ -322,8 +361,7 @@
 - B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
   stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
   over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
-  so the route verified signed URLs against the wrong secret and answered
-  403. Full suite reproduction: standalone logging.test.ts red under the
+  so the route verified signed URLs against the wrong secret and answered 403. Full suite reproduction: standalone logging.test.ts red under the
   lane env before the stub, green after. Product code unchanged.
 - Live proof on a lane dev server (seeded coach, 1440 and 390): the
   profile overview fires 0 tracker values or training-logs GETs before
@@ -492,7 +530,7 @@
   gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
   `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
   0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
-  npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
   `labelHidden` (stage-10 F1, present at merge base).
 - Browser proof: production build via `next start` on http 4403 behind the
   disposable TLS proxy on https 4402 (F2 workaround; production auth
@@ -591,7 +629,6 @@
   per-domain slice seam, so the defect exists only on the canvas side.
 - Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR2/`.
 
-
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
 - Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
@@ -629,7 +666,7 @@
 - Branch `w2/a1` off `2967bb1`. One migration directory
   `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
   and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
-  false`, tenant-coherent FKs and indexes.
+false`, tenant-coherent FKs and indexes.
 - New service `lib/workspace/client-detail.ts`; new routes
   `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
   `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace

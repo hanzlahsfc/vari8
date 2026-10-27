@@ -234,6 +234,16 @@ export function MessagesWorkspace() {
     const attachments = draft.attachments;
     const sentLink = link;
     const canvasId = client.id;
+    // W2-T8: attachments ride the wire once their media_object ids exist. A
+    // send while an upload is still in flight waits (the draft stays put)
+    // instead of silently dropping the file onto a local-only message.
+    if (
+      workspaceId &&
+      attachments.some((a) => !a.mediaObjectId && !a.demo)
+    ) {
+      toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
     const appendLocal = () =>
       setState((s) => ({
         ...s,
@@ -261,10 +271,17 @@ export function MessagesWorkspace() {
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
-    // W2-A4: the send POSTs and the returned wire row is what lands in the
-    // thread. A textless send has no body field and attachments have no wire
-    // route yet (w2-t8), so those keep the local row.
-    if (!workspaceId || !text) {
+    // W2-T8: the send POSTs and the returned wire row is what lands in the
+    // thread - body and attachments alike. Anything without a stored
+    // media_object id (demo media, no backend) keeps the local row.
+    const mediaObjectIds = attachments
+      .map((a) => a.mediaObjectId)
+      .filter((id): id is string => Boolean(id));
+    if (
+      !workspaceId ||
+      mediaObjectIds.length !== attachments.length ||
+      (!text && mediaObjectIds.length === 0)
+    ) {
       appendLocal();
       return;
     }
@@ -279,17 +296,14 @@ export function MessagesWorkspace() {
           workspaceId,
           clientProfileId,
           text,
+          mediaObjectIds,
         );
         serverDrafts.current[canvasId] = "";
         setState((s) => ({
           ...s,
           messages: [
             ...s.messages,
-            {
-              ...toCanvasMessage(message, canvasId),
-              attachments,
-              link: sentLink,
-            },
+            { ...toCanvasMessage(message, canvasId), link: sentLink },
           ],
         }));
         await saveStaffDraft(workspaceId, clientProfileId, "");
@@ -564,7 +578,11 @@ export function MessagesWorkspace() {
                             </span>
                             {m.from === "coach" && (
                               <span>
-                                {m.local ? "Local message" : "Example · read"}
+                                {m.local
+                                  ? "Local message"
+                                  : m.read
+                                    ? "Read"
+                                    : "Sent"}
                                 <Check size={11} />
                               </span>
                             )}

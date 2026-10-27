@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 163 modules with exports, 1617 exported symbols.
+Counts: 163 modules with exports, 1620 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1457,18 +1457,21 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/messages/service.ts`
 
+- `export type AttachmentView = { mediaObjectId: string; fileName: string; contentType: string; byteSize: number; position: number; }`
 - `export type MessageDeps = { db?: PrismaLike }`
 - `export class MessageError extends Error (1 members)`
-- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; attachments: AttachmentView[]; }`
+- `export type OwnMessageView = MessageView & { read: boolean }`
 - `export type StaffConversationView = { clientProfileId: string; clientName: string; lastMessageAt: string | null; lastMessagePreview: string | null; unreadCount: number; hasPriority: boolean; }`
 - `export type StaffMessageView = MessageView & { read: boolean; priority: boolean; links: unknown; }`
 - `export async function getStaffThread(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ clientProfileId: string; messages: StaffMessag...`
-- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: OwnMessageView[] }>`
 - `export async function listStaffConversations(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ conversations: StaffConversationView[] }>`
+- `export async function markOwnThreadRead(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function markStaffThreadRead(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function saveStaffDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown }, deps: MessageDeps = {}): Promise<{ draft: { body: string; revision...`
-- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
-- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; }, deps: MessageDeps = {}): Promise<{ m...`
+- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: MessageDeps = {}): Promise<{ me...`
+- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: Mess...`
 
 ## `lib/nutrition/foods.ts`
 

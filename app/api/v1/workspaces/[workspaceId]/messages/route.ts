@@ -11,15 +11,18 @@ import { readBody, sessionOf, unwrapMessage } from "./_result";
  *
  * Card 05a client thread. GET uses own.read (roles.ts has no message read
  * capability) and resolves the caller's own conversation; POST is the
- * client-authored text send with server-generated clientRequestId
- * idempotency.
+ * client-authored send with server-generated clientRequestId idempotency.
+ * W2-T8: POST also accepts mediaObjectIds (upload-then-link) and an empty
+ * body when attachments carry the message.
  */
 export const dynamic = "force-dynamic";
 
 const paramsSchema = z.object({ workspaceId: z.string().min(1) });
 
 const bodySchema = z.object({
-  body: z.string().min(1).max(4000),
+  body: z.string().max(4000).optional(),
+  clientRequestId: z.string().max(128).optional(),
+  mediaObjectIds: z.array(z.string().min(1).max(64)).max(10).optional(),
 });
 
 export const GET = defineApiV1Route({
@@ -42,6 +45,8 @@ export const POST = defineApiV1Route({
       sendOwnMessage(sessionOf(viewer), {
         workspaceId: params.workspaceId,
         body: body.body,
+        clientRequestId: body.clientRequestId,
+        mediaObjectIds: body.mediaObjectIds,
       }),
     );
   },

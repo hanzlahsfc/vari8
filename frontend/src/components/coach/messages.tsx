@@ -419,7 +419,11 @@ export function MessagesWorkspace() {
                             </span>
                             {m.from === "coach" && (
                               <span>
-                                {m.local ? "Local message" : "Example · read"}
+                                {m.local
+                                  ? "Local message"
+                                  : m.read
+                                    ? "Read"
+                                    : "Sent"}
                                 <Check size={11} />
                               </span>
                             )}

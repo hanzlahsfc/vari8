@@ -380,6 +380,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
           read: true,
           priority: false,
           links: null,
+          attachments: [],
         },
         {
           id: messages[1]!.id,
@@ -390,6 +391,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
           read: true,
           priority: true,
           links: null,
+          attachments: [],
         },
         {
           id: messages[2]!.id,
@@ -400,6 +402,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
           read: false,
           priority: false,
           links: null,
+          attachments: [],
         },
       ],
       draft: null,
@@ -440,6 +443,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
       read: false,
       priority: false,
       links: null,
+      attachments: [],
     });
 
     const row = await prisma.message.findUniqueOrThrow({
