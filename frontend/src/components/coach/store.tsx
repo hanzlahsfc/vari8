@@ -56,7 +56,13 @@ export function routeUrl(route: Route) {
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
-export function CoachProvider({ children }: { children: ReactNode }) {
+export function CoachProvider({
+  workspaceId,
+  children,
+}: {
+  workspaceId?: string;
+  children: ReactNode;
+}) {
   const router = useRouter();
   const params = useSearchParams();
   const [state, setState] = useState<CoachState>(() =>
@@ -176,6 +182,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         dismiss: () => setNotice(null),
         media,
         attach,
+        workspaceId,
       }}
     >
       {children}
