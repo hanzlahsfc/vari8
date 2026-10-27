@@ -1,3 +1,45 @@
+## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
+
+- Branch `w2/a1` off `2967bb1`. One migration directory
+  `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
+  and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
+  false`, tenant-coherent FKs and indexes.
+- New service `lib/workspace/client-detail.ts`; new routes
+  `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
+  client role denied, unauthenticated 401, bad payload 400.
+- Provider swap: `components/canvas/data/clients.ts` reads/writes
+  `/api/v1` for the detail domain and drops the remote-owned fields
+  from the persisted slice; `components/canvas/data/notes.ts` moves the
+  workspace Private-notes list to `/api/v1/notes` while coach to-dos
+  stay local for w2-a4. `components/canvas/coach/store.tsx` hydrates
+  the viewed client after the roster seed and PUTs on owned-field
+  changes (the roster-wide `state.clients` reseed stays out of scope).
+- Seed `50-demo-coverage.seed.ts` writes `ClientPhase`, `ClientWeekNote`
+  and `CoachNote.pinned` directly (no `[pinned]` body prefix), idempotent.
+- Boundary notes (task record): the timeline week-table NOTES column is
+  shared. This card owns the `weekNotes` value only; the other columns
+  belong to w2-a5 and w2-a2. The audit's unresolved `CoachNote` pinned
+  mapping resolved to a real `pinned` column. The store override point
+  sits in `components/canvas/coach/store.tsx` after the seed runs
+  because `coach/model.ts` is outside lane A ownership.
+- Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
+  `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
+  `index:check` 0; `format:check` exits 1: 56 files fail, all
+  inherited at merge base `6d3a07f`, zero touched by this card
+  (scoped `prettier --check` on all card files clean).
+- Browser pass on prod build `127.0.0.1:4191`, real login as coach, no
+  `?demo`: 1440 + 390 evidence in `FULL-PACKAGE-2/W2A1/`. Seeded Amara
+  (client-007) shows label chips, email, coaching-since, height, phase
+  progress, pinned notes card, timeline phase band, private + general
+  notes. Add-note and timeline week-note edits persist through reload
+  (verified in `coach_note`/`client_week_note` rows). Second-workspace
+  coach gets literal 403 on both endpoints.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 160 modules with exports, 1591 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1975,6 +1975,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type PrismaLike = PrismaClient | Prisma.TransactionClient`
 - `export function createPrismaAuthorizationRepo(client: PrismaLike = prisma): AuthorizationRepo`
 - `export const prismaAuthorizationRepo = createPrismaAuthorizationRepo()`
+
+## `lib/workspace/client-detail.ts`
+
+- `export type ClientDetail = { clientProfileId: string; name: string; label: string | null; email: string | null; coachingSince: string | null; heightCm: number | null; phases: DetailPhase[]; interna...`
+- `export type ClientDetailBundle = { clients: ClientDetail[]; workspaceNotes: DetailNote[]; }`
+- `export type ClientDetailWrite = { phases: DetailPhase[]; internalNotes: DetailNote[]; generalNotes: DetailNote[]; weekNotes: Record<string, string>; }`
+- `export type DetailNote = { id: string; text: string; pinned?: boolean }`
+- `export type DetailPhase = { id: string; name: string; startDate: string; durationWeeks: number; }`
+- `export async function listWorkspaceCoachNotes(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<{ notes: DetailNote[] }>`
+- `export async function readClientDetail(workspace: ApiWorkspaceContext, clientProfileId: string, client: PrismaLike = prisma): Promise<ClientDetail>`
+- `export async function readClientDetailBundle(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<ClientDetailBundle>`
+- `export async function writeClientDetail(workspace: ApiWorkspaceContext, clientProfileId: string, input: ClientDetailWrite, db: PrismaClient = prisma): Promise<ClientDetail>`
+- `export async function writeWorkspaceCoachNotes(workspace: ApiWorkspaceContext, notes: DetailNote[], db: PrismaClient = prisma): Promise<{ notes: DetailNote[] }>`
 
 ## `lib/workspace/clients.ts`
 
