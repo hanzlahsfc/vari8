@@ -30,6 +30,29 @@
 - `frontend/` untouched, so `cd frontend && npm run lint` was not run.
   Client to-do cancel versus soft-delete semantics untouched.
 - Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR1/`.
+- Round 2 repair (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the `e6a8e80` window carry cores without
+  those two fields, and `isCoachState` requires both as arrays
+  (`components/canvas/coach/model.ts:1717`), so the read failed the
+  guard and the store parked the workspace behind the preserve notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Verdict gate `npx vitest run` on `tests/unit/canvas-data-seam.test.ts`
+  and `tests/unit/coach-store-roster.test.tsx` exits 0, 2 files, 13
+  tests.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam, so the defect exists only on the canvas side.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR2/`.
 
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
