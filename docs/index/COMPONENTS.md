@@ -234,6 +234,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Button` | `frontend/src/components/ui/button.tsx` | - |
 | `ClientRoute` | `frontend/src/components/client-app/client-route.tsx` | /client |
 | `CoachingWorkspaceSample` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
+| `FirstRunChecklist` | `frontend/src/components/coach/first-run-checklist.tsx` | - |
 | `InputShowcase` | `frontend/src/components/vari8/input-showcase.tsx` | - |
 | `LayoutShowcase` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
 | `LegacySheetDialog` | `frontend/src/components/client/legacy-sheet/dialog.tsx` | - |
