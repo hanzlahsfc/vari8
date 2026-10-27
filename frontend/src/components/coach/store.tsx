@@ -43,6 +43,15 @@ type Store = {
   attach: (media: Media, blob: Blob) => void;
   /** Server workspace binding when embedded in the app; unset standalone. */
   workspaceId?: string;
+  /** W2-A3: the client's backend progress photos as compare columns.
+   *  The standalone app has no backend, so it always resolves empty. */
+  physiquePhotosFor: (clientName: string) => Promise<
+    {
+      date: string;
+      submissionId?: string;
+      photos: { pose: string; src: string }[];
+    }[]
+  >;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -156,6 +165,7 @@ export function CoachProvider({
     (text: string, undo?: () => void) => setNotice({ text, undo }),
     [],
   );
+  const physiquePhotosFor = useCallback(async () => [], []);
   const attach = useCallback((item: Media, blob: Blob) => {
     const url = URL.createObjectURL(blob);
     urls.current.add(url);
@@ -183,6 +193,7 @@ export function CoachProvider({
         media,
         attach,
         workspaceId,
+        physiquePhotosFor,
       }}
     >
       {children}

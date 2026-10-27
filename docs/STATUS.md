@@ -34,6 +34,37 @@
   `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
 - Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
   count 0 saved to `pg_database-absent.txt`.
+## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
+
+- Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
+  GET+PUT, `.../meal-plans/publish` POST, `.../meal-plans/versions/{id}`
+  GET, `clients/{cp}/training-programs` GET+PUT,
+  `.../training-programs/{id}` GET, `.../{id}/publish` POST,
+  `.../{id}/versions/{vid}` GET, `workspaces/{ws}/exercise-library` GET.
+  Capabilities: `plan.read`, `plan.write`, `library.manage`.
+- `components/canvas/data/{nutrition,training}.ts` gained wire mappers
+  and staff fetch/save/publish functions; localStorage slices kept as
+  write-through caches (lossless-seam tests). `coach/store.tsx`
+  hydrates the viewed client's mealPlan/iifym/training lifecycles and
+  the workspace exercise library, debounce-syncs draft PUTs and
+  publishes. `past_week_locked` fixed by preserving the raw wire at
+  locked weeks (seeded en-dash rep ranges vs canvas normalization).
+- `scripts/seed/50-demo-coverage.seed.ts` now deep-resolves `day <n>`
+  tokens inside verbatim payloads before storing (the export contract
+  requires re-anchoring; unresolved tokens broke `applicablePlan`).
+- Gates: typecheck 0, lint 0 (pre-existing warnings), format 0,
+  `npm test` 1380/1380, build 0, `npm run index`+`index:check` 0,
+  integration `api-v1-plans` 6/6 on lane DB (needs the domain dev flags
+  exported: ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS),
+  fresh `prisma migrate deploy` + `VARI8_SEED_DEMO=1` seed on
+  `app_fp_w2a2`, dash gate 0 added violations. Browser pass on
+  production build port 4401, real coach login, no `?demo`: Overview
+  nutrition targets (TD 2,082/refeed 2,062) + training program card,
+  Timeline NUTRITION kcal (2,370/2,213/2,082 per published version) +
+  TRAINING Sess (0/4), Plans cards (meal plan, temporary chip, training,
+  supplements), training draft rename persists after reload.
+  Role matrix: in-workspace 200 / foreign 403 / unauth 401.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
 
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
