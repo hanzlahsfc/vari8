@@ -1,3 +1,31 @@
+## 2026-10-27 - w2-c7 conflict repair: absorbed verified c6 tip `2f602b6`
+
+- Preview merge probe `git merge-tree --write-tree 4bfaf2b 2f602b6`
+  -> tree `76845d35b2700fa26bed02a39d102ab2dbdd291f`; conflicts on
+  `components/canvas/client-app/client-app.css`, `docs/STATUS.md` and
+  generated `docs/index/{COMPONENTS,DATA-MODEL,ROUTES,SYMBOLS}.md`,
+  matching the lead probe. Frontend css twin auto-merged.
+- Merge commit `9f28b3c` (--no-ff of `2f602b6`).
+- `client-app.css` resolved by union: the auto-merged head (c7 photos,
+  training log and tracker polish plus the c6 bottom-nav repair lines
+  `min-inline-size: max-content` and the hidden-scrollbar rules) kept
+  whole, then the c6-side w2-c5 messages/tasks block appended whole so
+  neither side's cascade regresses; the stale base tail blocks the c7
+  polish had replaced stayed dropped. Frontend twin auto-merged to the
+  same union shape; twin delta stays the pre-existing 114 lines,
+  content identical before and after the merge.
+- `docs/STATUS.md`: ours-new entries then theirs-new (w2-a4 repair)
+  over the byte-identical tail; all 2026-10-27 entries above all
+  2026-10-26. Index docs regenerated via `npm run index` on the merged
+  tree; `npm run index:check` 0 on both runs.
+- Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
+  generate` (stale client missed `clientPhase`/`clientWeekNote`);
+  `npm run lint` 0 (0 errors, 94 pre-existing warnings);
+  `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
+  files (the inherited logging.test.ts env pair stayed green here, also
+  30/30 isolated); dash gate prints 0. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7M2/`.
+
 ## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
 
 - Scope implemented on top of merge tip `01c66b0`:
