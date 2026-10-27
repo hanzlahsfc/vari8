@@ -42,10 +42,7 @@ const WORKSPACE_SLUG = "canvas-demo";
 const TIMEZONE = "Europe/Vienna";
 const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00 — documented schedule default
 
-const FIXTURE = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "demo-export",
-);
+const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "demo-export");
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type J = any;
@@ -72,6 +69,18 @@ const dayUtc = (v: unknown): Date | null => {
   const r = resolveDate(v);
   return r ? new Date(`${r.slice(0, 10)}T00:00:00Z`) : null;
 };
+/** Re-anchor every `day <n>` token inside a verbatim demo-export payload. */
+function deepResolveDates(value: unknown): unknown {
+  if (typeof value === "string") return resolveDate(value) ?? value;
+  if (Array.isArray(value)) return value.map(deepResolveDates);
+  if (value && typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [key, v] of Object.entries(value))
+      out[key] = deepResolveDates(v);
+    return out;
+  }
+  return value;
+}
 const tsUtc = (v: unknown, fallback = "T12:00:00Z"): Date | null => {
   const r = resolveDate(v);
   if (!r) return null;
@@ -117,9 +126,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   const prefs = WORKSPACE.preferences ?? {};
   const prefData: Prisma.WorkspaceUpdateInput = {
     appearanceMode:
-      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT"
-        ? "LIGHT"
-        : "DARK",
+      String(prefs.mode ?? "dark").toUpperCase() === "LIGHT" ? "LIGHT" : "DARK",
     appearanceAccent: String(prefs.accent ?? "#EB91B8"),
     availabilityText: String(prefs.availability ?? ""),
     notificationsEnabled: prefs.notifications !== false,
@@ -139,8 +146,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
 
   const clients = INDEX.clients.map((c) => ({ meta: c, data: load(c.file) }));
-  const password = process.env.SEED_DEMO_CLIENT_PASSWORD ??
-    process.env.SEED_CLIENT_PASSWORD;
+  const password =
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? process.env.SEED_CLIENT_PASSWORD;
   if (!password)
     throw new Error(
       "50-demo-coverage: SEED_DEMO_CLIENT_PASSWORD or SEED_CLIENT_PASSWORD required",
@@ -218,7 +225,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
   // ── Check-in forms: one form + published version per canvas template,
   // fields derived from the selected variant's metric fields + questions.
-  const formByTemplate = new Map<string, { formId: string; versionId: string }>();
+  const formByTemplate = new Map<
+    string,
+    { formId: string; versionId: string }
+  >();
   for (const tpl of WORKSPACE.templates ?? []) {
     const variant =
       tpl.variants.find((v: J) => v.id === tpl.defaultVariant) ??
@@ -235,7 +245,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         order: fields.length,
       });
     for (const q of variant.questions ?? []) {
-      const kind = QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
+      const kind =
+        QUESTION_KIND[String(q.type).toLowerCase()]?.field ?? "longText";
       const field: J = {
         fieldId: `demo-q-${slug(tpl.id)}-${slug(q.id)}`,
         kind,
@@ -267,7 +278,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         workspaceId: workspace.id,
         name: tpl.name,
         status: "ACTIVE",
-        draft: definition,
+        draft: deepResolveDates(definition) as Prisma.InputJsonValue,
         draftRevision: 1,
         draftSavedByMemberId: staff.id,
         createdByMemberId: staff.id,
@@ -300,7 +311,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     const clientMemberId = members.get(cid)!;
     const clientUserId = users.get(cid)!;
-    const assigned = formByTemplate.get(data.assignment?.templateId) ??
+    const assigned =
+      formByTemplate.get(data.assignment?.templateId) ??
       [...formByTemplate.values()][0];
 
     // Priority flag + archive state (legacy strings stay unmapped).
@@ -327,8 +339,12 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       "SATURDAY",
       "SUNDAY",
     ];
-    const ruleRanges: { id: string; start: Date; end: Date | null; day: number }[] =
-      [];
+    const ruleRanges: {
+      id: string;
+      start: Date;
+      end: Date | null;
+      day: number;
+    }[] = [];
     for (const [si, s] of schedules.entries()) {
       for (const day of s.weekdays ?? []) {
         const start = dayUtc(s.effective);
@@ -602,7 +618,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             senderUserId: isCoach ? staff.userId : clientUserId,
             body: m.text ?? "",
             priority: Boolean(m.priority),
-            links: m.link ? ({ link: m.link } as Prisma.InputJsonValue) : undefined,
+            links: m.link
+              ? ({ link: m.link } as Prisma.InputJsonValue)
+              : undefined,
             clientRequestId: `seed-demo-mreq-${m.id}`,
             sentAt,
           },
@@ -618,7 +636,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       }
     }
 
-    // Coach notes: internal -> PRIVATE, general -> GENERAL.
+    // Coach notes: internal -> PRIVATE, general -> GENERAL. The pin flag
+    // rides the W2-A1 CoachNote.pinned column (it used to be a "[pinned] "
+    // body prefix before the column existed).
     for (const [kind, list] of [
       ["PRIVATE", data.internalNotes],
       ["GENERAL", data.generalNotes],
@@ -632,11 +652,50 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             workspaceId: workspace.id,
             clientProfileId: profile.id,
             visibility: kind,
-            body: n.pinned ? `[pinned] ${n.text}` : n.text,
+            body: n.text ?? "",
+            pinned: kind === "PRIVATE" && n.pinned === true,
             authorMemberId: staff.id,
           },
         });
       }
+    }
+
+    // W2-A1: phase plan and per-week timeline notes.
+    for (const p of data.phases ?? []) {
+      const start = dayUtc(p.startDate);
+      if (!start) continue;
+      await prisma.clientPhase.upsert({
+        where: { id: `seed-demo-phase-${p.id}` },
+        update: {},
+        create: {
+          id: `seed-demo-phase-${p.id}`,
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          name: p.name ?? "Phase",
+          startDate: start,
+          durationWeeks: Number(p.durationWeeks) || 1,
+        },
+      });
+    }
+    for (const [weekToken, body] of Object.entries(data.weekNotes ?? {})) {
+      const weekStart = dayUtc(weekToken);
+      if (!weekStart || typeof body !== "string" || !body.trim()) continue;
+      await prisma.clientWeekNote.upsert({
+        where: {
+          clientProfileId_weekStart: {
+            clientProfileId: profile.id,
+            weekStart,
+          },
+        },
+        update: {},
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          weekStart,
+          body,
+          authorMemberId: staff.id,
+        },
+      });
     }
     for (const t of data.related?.coachTodos ?? []) {
       await prisma.coachTask.upsert({
@@ -647,7 +706,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           workspaceId: workspace.id,
           clientProfileId: profile.id,
           title: t.title ?? t.text ?? "Coach to-do",
-          completedAt: t.done || t.completedAt ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt) : null,
+          completedAt:
+            t.done || t.completedAt
+              ? dayUtc(t.completedAt ?? t.dueDate ?? INDEX.generatedAt)
+              : null,
           createdByMemberId: staff.id,
         },
       });
@@ -655,7 +717,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
     // Client tasks.
     for (const t of data.clientTasks ?? []) {
-      const done = String(t.status).toLowerCase() === "complete" ||
+      const done =
+        String(t.status).toLowerCase() === "complete" ||
         String(t.status).toLowerCase() === "completed";
       await prisma.clientTask.upsert({
         where: { id: `seed-demo-task-${t.id}` },
@@ -703,15 +766,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         where: {
           habitId_effectiveFrom: {
             habitId,
-            effectiveFrom: dayUtc(data.coachingSince) ??
-              dayUtc(INDEX.generatedAt)!,
+            effectiveFrom:
+              dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           },
         },
         update: {},
         create: {
           habitId,
-          effectiveFrom: dayUtc(data.coachingSince) ??
-            dayUtc(INDEX.generatedAt)!,
+          effectiveFrom:
+            dayUtc(data.coachingSince) ?? dayUtc(INDEX.generatedAt)!,
           weekdays: mask,
         },
       });
@@ -937,7 +1000,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           data: { currentRevisionId: rev.id },
         });
         const vals = entry.values ?? {};
-        if (["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null))
+        if (
+          ["calories", "protein", "carbs", "fat"].some((k) => vals[k] != null)
+        )
           await prisma.nutritionLog.upsert({
             where: { id: `seed-demo-nl-${cid}-${iso}` },
             update: {},
@@ -990,7 +1055,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // verbatim (canvas lifecycle shape documented in MAPPING.md).
     const mp = data.plans?.nutrition?.mealPlan;
     if (mp?.draft || mp?.active) {
-      const start = dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
+      const start =
+        dayUtc(mp.draft?.startDate ?? mp.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       const planId = `seed-demo-mp-${cid}`;
       await prisma.mealPlan.upsert({
@@ -1004,7 +1070,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           timezone: TIMEZONE,
           timezoneSetByMemberId: staff.id,
           timezoneSetAt: start,
-          draft: (mp.draft ?? null) as Prisma.InputJsonValue,
+          draft: deepResolveDates(mp.draft ?? null) as Prisma.InputJsonValue,
           draftRevision: 1,
           draftSavedByMemberId: staff.id,
           draftUpdatedAt: start,
@@ -1017,8 +1083,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         mp.active?.content,
       ].filter(Boolean)) {
         seq += 1;
-        const eff =
-          dayUtc(item.startDate) ?? start;
+        const eff = dayUtc(item.startDate) ?? start;
         await prisma.mealPlanVersion.upsert({
           where: {
             mealPlanId_versionSeq: { mealPlanId: planId, versionSeq: seq },
@@ -1033,7 +1098,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             effectiveDate: eff,
             effectiveTimezone: TIMEZONE,
             activationInstant: eff,
-            payload: item as Prisma.InputJsonValue,
+            payload: deepResolveDates(item) as Prisma.InputJsonValue,
             publishOriginRevision: seq,
             publishedAt: eff,
             publishedByMemberId: staff.id,
@@ -1045,7 +1110,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     if (ii?.draft || ii?.active) {
       const planId = `seed-demo-iifym-${cid}`;
       const content = ii.draft ?? ii.active?.content ?? ii.active;
-      const start = dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
+      const start =
+        dayUtc(content?.startDate ?? ii.active?.activatedAt) ??
         dayUtc(INDEX.generatedAt)!;
       await prisma.iifymPlan.upsert({
         where: { id: planId },
@@ -1058,7 +1124,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           timezone: TIMEZONE,
           timezoneSetByMemberId: staff.id,
           timezoneSetAt: start,
-          draft: (ii.draft ?? null) as Prisma.InputJsonValue,
+          draft: deepResolveDates(ii.draft ?? null) as Prisma.InputJsonValue,
           draftRevision: 1,
           draftSavedByMemberId: staff.id,
           draftUpdatedAt: start,
@@ -1086,7 +1152,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             effectiveDate: eff,
             effectiveTimezone: TIMEZONE,
             activationInstant: eff,
-            payload: item as Prisma.InputJsonValue,
+            payload: deepResolveDates(item) as Prisma.InputJsonValue,
             publishOriginRevision: seq,
             publishedAt: eff,
             publishedByMemberId: staff.id,
@@ -1354,7 +1420,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         fieldCells,
         setRows,
       });
-      const payload = materializeWeeks(draft, start.toISOString().slice(0, 10), weeks);
+      const payload = materializeWeeks(
+        draft,
+        start.toISOString().slice(0, 10),
+        weeks,
+      );
       const existing = await prisma.trainingProgram.findFirst({
         where: {
           workspaceId: workspace.id,
@@ -1376,7 +1446,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             confirmedTimezone: TIMEZONE,
             timezoneSetByMemberId: staff.id,
             timezoneSetAt: start,
-            draft: draft as unknown as Prisma.InputJsonValue,
+            draft: deepResolveDates(draft) as Prisma.InputJsonValue,
             draftRevision: 1,
             draftSavedByMemberId: staff.id,
             draftUpdatedAt: start,
@@ -1391,7 +1461,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
                 effectiveDate: start,
                 effectiveTimezone: TIMEZONE,
                 activationInstant: start,
-                payload: payload as unknown as Prisma.InputJsonValue,
+                payload: deepResolveDates(payload) as Prisma.InputJsonValue,
                 fieldConfig: fieldConfig as unknown as Prisma.InputJsonValue,
                 publishOriginRevision: 1,
                 publishedAt: start,
@@ -1411,8 +1481,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     }
     if (versionId && programId) {
       for (const log of data.related?.trainingLogs ?? []) {
-        const performed =
-          tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
+        const performed = tsUtc(log.startedAt) ?? dayUtc(log.scheduledDate);
         if (!performed) continue;
         const logId = `seed-demo-log-${log.id}`;
         const sessionLog = await prisma.trainingSessionLog.upsert({
@@ -1470,104 +1539,104 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     // tracking widgets, so the client app's remote views render live data
     // without a draft edit (default profile keeps its own draft untouched).
     const demoDashboardConfig = {
-          version: 1,
-          name: "Demo overview",
-          widgets: [
-            {
-              id: "seed-demo-cu03",
-              kind: "CU03",
-              settings: {
-                title: "Tasks",
-                source: "tasks",
-                summary: "open",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "open",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-cu06",
-              kind: "CU06",
-              settings: {
-                title: "Messages",
-                source: "feedback",
-                summary: "latest",
-                period: "7d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-bn01",
-              kind: "BN01",
-              settings: {
-                title: "Bodyweight trend",
-                source: "bodyweight",
-                summary: "daily",
-                period: "30d",
-                historyPeriod: "auto",
-                target: false,
-                size: "Wide",
-                fields: [],
-                labels: {},
-                option: "default",
-                unit: "kg",
-                visibility: "client",
-              },
-            },
-            {
-              id: "seed-demo-tl26",
-              kind: "TL26",
-              settings: {
-                title: "Your training",
-                source: "workouts",
-                summary: "current",
-                period: "week",
-                historyPeriod: "auto",
-                target: false,
-                size: "Regular",
-                fields: ["exercise", "sets", "reps"],
-                labels: {},
-                option: "current",
-                unit: "",
-                visibility: "client",
-              },
-            },
-          ],
-          layouts: {
-            desktop: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
-              "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
-            },
-            tablet: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
-            },
-            mobile: {
-              "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
-              "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
-              "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
-              "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
-            },
+      version: 1,
+      name: "Demo overview",
+      widgets: [
+        {
+          id: "seed-demo-cu03",
+          kind: "CU03",
+          settings: {
+            title: "Tasks",
+            source: "tasks",
+            summary: "open",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "open",
+            unit: "",
+            visibility: "client",
           },
-          widths: { desktop: 1040, tablet: 640, mobile: 360 },
-        };
+        },
+        {
+          id: "seed-demo-cu06",
+          kind: "CU06",
+          settings: {
+            title: "Messages",
+            source: "feedback",
+            summary: "latest",
+            period: "7d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-bn01",
+          kind: "BN01",
+          settings: {
+            title: "Bodyweight trend",
+            source: "bodyweight",
+            summary: "daily",
+            period: "30d",
+            historyPeriod: "auto",
+            target: false,
+            size: "Wide",
+            fields: [],
+            labels: {},
+            option: "default",
+            unit: "kg",
+            visibility: "client",
+          },
+        },
+        {
+          id: "seed-demo-tl26",
+          kind: "TL26",
+          settings: {
+            title: "Your training",
+            source: "workouts",
+            summary: "current",
+            period: "week",
+            historyPeriod: "auto",
+            target: false,
+            size: "Regular",
+            fields: ["exercise", "sets", "reps"],
+            labels: {},
+            option: "current",
+            unit: "",
+            visibility: "client",
+          },
+        },
+      ],
+      layouts: {
+        desktop: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 8, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 8, y: 0, w: 4, h: 4, size: "Regular" },
+          "seed-demo-cu06": { x: 8, y: 4, w: 4, h: 4, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 4, w: 8, h: 4, size: "Regular" },
+        },
+        tablet: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 6, h: 3, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 3, y: 3, w: 3, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 6, w: 6, h: 3, size: "Regular" },
+        },
+        mobile: {
+          "seed-demo-bn01": { x: 0, y: 0, w: 2, h: 4, size: "Wide" },
+          "seed-demo-cu03": { x: 0, y: 4, w: 2, h: 3, size: "Regular" },
+          "seed-demo-cu06": { x: 0, y: 7, w: 2, h: 3, size: "Regular" },
+          "seed-demo-tl26": { x: 0, y: 10, w: 2, h: 3, size: "Regular" },
+        },
+      },
+      widths: { desktop: 1040, tablet: 640, mobile: 360 },
+    };
     await prisma.clientDashboardLayout.upsert({
       where: {
         workspaceId_clientProfileId: {

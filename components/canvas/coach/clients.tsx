@@ -7,7 +7,7 @@ import {
   Pin,
   Trash2,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Checkbox,
   SegmentedControl,
@@ -16,6 +16,13 @@ import {
 } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
 import { FormGrid, Toolbar } from "../vari8/layouts";
+import { assignStaffClientTask, fetchStaffClientTasks } from "../data/clients";
+import {
+  createCoachTask,
+  deleteCoachTask,
+  fetchCoachTasks,
+  setCoachTaskCompleted,
+} from "../data/notes";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
 import {
@@ -292,17 +299,74 @@ export function ClientsWorkspace() {
   );
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
-  const { state, setState, navigate, route } = useCoach();
+  const {
+    state,
+    setState,
+    navigate,
+    route,
+    toast,
+    hydrated,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const tab = route.tab ?? "Overview";
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
   const [noteText, setNoteText] = useState("");
   const [notePinned, setNotePinned] = useState(false);
   const [todoText, setTodoText] = useState("");
-  const [todoDue, setTodoDue] = useState("");
   const [taskText, setTaskText] = useState("");
   const [taskDue, setTaskDue] = useState(addDays(TODAY, 7));
   const [extra, setExtra] = useState(false);
+  // W2-A4: both cards on the Notes and tasks tab read remote. One pass per
+  // opened profile resolves the backend profile id, then hydrates the client
+  // task list and the per-client coach to-dos.
+  const tasksSynced = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hydrated || !workspaceId || tasksSynced.current === c.id) return;
+    tasksSynced.current = c.id;
+    void (async () => {
+      try {
+        const clientProfileId = await clientProfileIdFor(c.name);
+        if (!clientProfileId) {
+          tasksSynced.current = null;
+          return;
+        }
+        const [tasks, todos] = await Promise.all([
+          fetchStaffClientTasks(workspaceId, clientProfileId),
+          fetchCoachTasks(workspaceId, clientProfileId),
+        ]);
+        setState((s) => ({
+          ...s,
+          clients: s.clients.map((client) =>
+            client.id !== c.id
+              ? client
+              : {
+                  ...client,
+                  clientTasks: tasks
+                    .filter((t) => t.status !== "cancelled")
+                    .map((t) => ({
+                      id: t.id,
+                      title: t.title,
+                      dueDate: t.dueDate,
+                      status:
+                        t.status === "open"
+                          ? ("open" as const)
+                          : ("complete" as const),
+                    })),
+                  coachTasks: todos.map((t) => ({
+                    id: t.id,
+                    title: t.title,
+                    complete: t.complete,
+                  })),
+                },
+          ),
+        }));
+      } catch {
+        tasksSynced.current = null;
+      }
+    })();
+  }, [hydrated, workspaceId, c.id, c.name, clientProfileIdFor, setState]);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -470,29 +534,40 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               value={todoText}
               onChange={(e) => setTodoText(e.target.value)}
             />
-            <DateField
-              label="Due (optional)"
-              value={todoDue}
-              onChange={setTodoDue}
-            />
             <Button
               primary
-              disabled={!todoText.trim()}
+              disabled={!todoText.trim() || !workspaceId}
               onClick={() => {
-                update((c) => ({
-                  ...c,
+                if (!workspaceId) return;
+                const title = todoText.trim();
+                const localId = uid("task");
+                update((client) => ({
+                  ...client,
                   coachTasks: [
-                    ...c.coachTasks,
-                    {
-                      id: uid("task"),
-                      title: todoText.trim(),
-                      complete: false,
-                      ...(todoDue ? { deadline: todoDue } : {}),
-                    },
+                    ...client.coachTasks,
+                    { id: localId, title, complete: false },
                   ],
                 }));
                 setTodoText("");
-                setTodoDue("");
+                void (async () => {
+                  try {
+                    const clientProfileId = await clientProfileIdFor(c.name);
+                    if (!clientProfileId) return;
+                    const todo = await createCoachTask(
+                      workspaceId,
+                      title,
+                      clientProfileId,
+                    );
+                    update((client) => ({
+                      ...client,
+                      coachTasks: client.coachTasks.map((t) =>
+                        t.id === localId ? { ...t, id: todo.id } : t,
+                      ),
+                    }));
+                  } catch {
+                    toast("To-do could not be saved.");
+                  }
+                })();
               }}
             >
               Add to-do
@@ -504,16 +579,37 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
                     className="cd-task"
                     label={t.title}
                     checked={t.complete}
-                    onCheckedChange={(checked) =>
-                      update((c) => ({
-                        ...c,
-                        coachTasks: c.coachTasks.map((x) =>
+                    onCheckedChange={(checked) => {
+                      update((client) => ({
+                        ...client,
+                        coachTasks: client.coachTasks.map((x) =>
                           x.id === t.id ? { ...x, complete: checked } : x,
                         ),
-                      }))
-                    }
+                      }));
+                      if (!workspaceId) return;
+                      setCoachTaskCompleted(workspaceId, t.id, checked).catch(
+                        () => toast("To-do could not be saved."),
+                      );
+                    }}
                   />
                   {t.deadline && <small>Due {formatDate(t.deadline)}</small>}
+                  <IconButton
+                    label={`Remove to-do: ${t.title}`}
+                    onClick={() => {
+                      update((client) => ({
+                        ...client,
+                        coachTasks: client.coachTasks.filter(
+                          (x) => x.id !== t.id,
+                        ),
+                      }));
+                      if (!workspaceId) return;
+                      deleteCoachTask(workspaceId, t.id).catch(() =>
+                        toast("To-do could not be removed."),
+                      );
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </IconButton>
                 </div>
               ))}
             </div>
@@ -529,21 +625,32 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             <DateField label="Deadline" value={taskDue} onChange={setTaskDue} />
             <Button
               primary
-              disabled={!taskText.trim() || !taskDue}
+              disabled={!taskText.trim() || !taskDue || !workspaceId}
               onClick={() => {
-                update((c) => ({
-                  ...c,
-                  clientTasks: [
-                    ...c.clientTasks,
-                    {
-                      id: uid("task"),
-                      title: taskText.trim(),
-                      dueDate: taskDue,
-                      status: "open",
-                    },
-                  ],
-                }));
-                setTaskText("");
+                if (!workspaceId) return;
+                const title = taskText.trim();
+                const dueDate = taskDue;
+                void (async () => {
+                  try {
+                    const clientProfileId = await clientProfileIdFor(c.name);
+                    if (!clientProfileId) return;
+                    const created = await assignStaffClientTask(
+                      workspaceId,
+                      clientProfileId,
+                      { title, dueDate },
+                    );
+                    update((client) => ({
+                      ...client,
+                      clientTasks: [
+                        ...client.clientTasks,
+                        { id: created.id, title, dueDate, status: "open" },
+                      ],
+                    }));
+                    setTaskText("");
+                  } catch {
+                    toast("Task could not be assigned.");
+                  }
+                })();
               }}
             >
               Assign task

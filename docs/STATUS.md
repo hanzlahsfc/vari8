@@ -1,3 +1,133 @@
+## 2026-10-27 - w2-a4 repair 1: localStorage seam and lazy client-detail fetch
+
+- Round 1 repair of stage w2-a4 on branch `w2/a4` (base commit
+  `e6a8e80`). Two branch-introduced defects fixed.
+- Defect (a), lost persisted data: `components/canvas/data/messages.ts`,
+  `notes.ts` and `clients.ts` had switched `extract` to drop the
+  remote-owned fields (`messages`, `drafts`, `coachNotes`, `coachTodos`,
+  and the client detail fields `internalNotes`, `generalNotes`,
+  `phases`, `weekNotes`), so write-then-read round-trips returned empty
+  values. All three slices persist the full local copy again; the
+  `/api/v1` reads stay authoritative and overwrite on hydration.
+- Defect (b), wasted fetch: in `components/canvas/coach/store.tsx` the
+  W2-A1 client-detail bundle fetch fired unconditionally on every
+  provider mount. It is now lazy on the surfaces that consume it
+  (sections `clients` and `notes`). That removes a wasted staff read
+  plus an unrelated `Client details could not be loaded.` banner on
+  other screens, and stops the mount fetch from displacing the roster
+  resolver's first request.
+- Gates on this worktree, real exit codes: `npm run test` 0 (117 files,
+  1382 tests passed); `npm run lint` 0 with 0 errors and 88 warnings,
+  all pre-existing; `npm run typecheck` 0; `npx prettier --check` on the
+  four source files 0 (`docs/STATUS.md` exits 1 identically at base
+  `e6a8e80`, inherited; the added entry itself is prettier-clean);
+  `npm run index` 0 with no regeneration diff; `npm run index:check` 0;
+  owned-lines dash gate prints 0 added violations.
+- `npm run build` 0. The inherited `_global-error` prerender TypeError
+  from the round-1 verdict did not reproduce in this environment (Node
+  v26.12.0, Next.js 16.3.8 webpack). Recorded as observed, no toolchain
+  fix attempted.
+- `frontend/` untouched, so `cd frontend && npm run lint` was not run.
+  Client to-do cancel versus soft-delete semantics untouched.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR1/`.
+- Round 2 repair (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the `e6a8e80` window carry cores without
+  those two fields, and `isCoachState` requires both as arrays
+  (`components/canvas/coach/model.ts:1717`), so the read failed the
+  guard and the store parked the workspace behind the preserve notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Verdict gate `npx vitest run` on `tests/unit/canvas-data-seam.test.ts`
+  and `tests/unit/coach-store-roster.test.tsx` exits 0, 2 files, 13
+  tests.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam, so the defect exists only on the canvas side.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR2/`.
+
+## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
+
+- Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
+  GET+PUT, `.../meal-plans/publish` POST, `.../meal-plans/versions/{id}`
+  GET, `clients/{cp}/training-programs` GET+PUT,
+  `.../training-programs/{id}` GET, `.../{id}/publish` POST,
+  `.../{id}/versions/{vid}` GET, `workspaces/{ws}/exercise-library` GET.
+  Capabilities: `plan.read`, `plan.write`, `library.manage`.
+- `components/canvas/data/{nutrition,training}.ts` gained wire mappers
+  and staff fetch/save/publish functions; localStorage slices kept as
+  write-through caches (lossless-seam tests). `coach/store.tsx`
+  hydrates the viewed client's mealPlan/iifym/training lifecycles and
+  the workspace exercise library, debounce-syncs draft PUTs and
+  publishes. `past_week_locked` fixed by preserving the raw wire at
+  locked weeks (seeded en-dash rep ranges vs canvas normalization).
+- `scripts/seed/50-demo-coverage.seed.ts` now deep-resolves `day <n>`
+  tokens inside verbatim payloads before storing (the export contract
+  requires re-anchoring; unresolved tokens broke `applicablePlan`).
+- Gates: typecheck 0, lint 0 (pre-existing warnings), format 0,
+  `npm test` 1380/1380, build 0, `npm run index`+`index:check` 0,
+  integration `api-v1-plans` 6/6 on lane DB (needs the domain dev flags
+  exported: ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS),
+  fresh `prisma migrate deploy` + `VARI8_SEED_DEMO=1` seed on
+  `app_fp_w2a2`, dash gate 0 added violations. Browser pass on
+  production build port 4401, real coach login, no `?demo`: Overview
+  nutrition targets (TD 2,082/refeed 2,062) + training program card,
+  Timeline NUTRITION kcal (2,370/2,213/2,082 per published version) +
+  TRAINING Sess (0/4), Plans cards (meal plan, temporary chip, training,
+  supplements), training draft rename persists after reload.
+  Role matrix: in-workspace 200 / foreign 403 / unauth 401.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
+
+## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
+
+- Branch `w2/a1` off `2967bb1`. One migration directory
+  `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
+  and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
+  false`, tenant-coherent FKs and indexes.
+- New service `lib/workspace/client-detail.ts`; new routes
+  `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
+  client role denied, unauthenticated 401, bad payload 400.
+- Provider swap: `components/canvas/data/clients.ts` reads/writes
+  `/api/v1` for the detail domain and drops the remote-owned fields
+  from the persisted slice; `components/canvas/data/notes.ts` moves the
+  workspace Private-notes list to `/api/v1/notes` while coach to-dos
+  stay local for w2-a4. `components/canvas/coach/store.tsx` hydrates
+  the viewed client after the roster seed and PUTs on owned-field
+  changes (the roster-wide `state.clients` reseed stays out of scope).
+- Seed `50-demo-coverage.seed.ts` writes `ClientPhase`, `ClientWeekNote`
+  and `CoachNote.pinned` directly (no `[pinned]` body prefix), idempotent.
+- Boundary notes (task record): the timeline week-table NOTES column is
+  shared. This card owns the `weekNotes` value only; the other columns
+  belong to w2-a5 and w2-a2. The audit's unresolved `CoachNote` pinned
+  mapping resolved to a real `pinned` column. The store override point
+  sits in `components/canvas/coach/store.tsx` after the seed runs
+  because `coach/model.ts` is outside lane A ownership.
+- Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
+  `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
+  `index:check` 0; `format:check` exits 1: 56 files fail, all
+  inherited at merge base `6d3a07f`, zero touched by this card
+  (scoped `prettier --check` on all card files clean).
+- Browser pass on prod build `127.0.0.1:4191`, real login as coach, no
+  `?demo`: 1440 + 390 evidence in `FULL-PACKAGE-2/W2A1/`. Seeded Amara
+  (client-007) shows label chips, email, coaching-since, height, phase
+  progress, pinned notes card, timeline phase band, private + general
+  notes. Add-note and timeline week-note edits persist through reload
+  (verified in `coach_note`/`client_week_note` rows). Second-workspace
+  coach gets literal 403 on both endpoints.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,

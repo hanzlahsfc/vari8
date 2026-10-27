@@ -1,9 +1,15 @@
 // Clients domain provider (PR-W0). Owns the roster slice of the persisted
-// coach state and the ethereal client-workspace draft key. PR-W2 wires this
-// domain to the server; it edits this file only.
+// coach state and the ethereal client-workspace draft key.
+//
+// W2-A1: the client-detail fields (phases, internalNotes, generalNotes,
+// weekNotes, plus the pin flag on internalNotes) also sync through
+// /api/v1 via the functions below. The local slice still persists them so
+// the seam keeps its full-state round-trip: the local copy is the cache and
+// first paint, the remote reads overwrite it once they land.
 
-import type { CoachClient, CoachState } from "../coach/model";
+import type { CoachClient } from "../coach/model";
 import type { WorkspaceClient } from "../ethereal/clients/model";
+import { apiFetch } from "./http";
 import { type CoachSlice, readStorage, writeJson } from "./provider";
 
 export const CLIENTS_KEY = "coach-data-clients-v1";
@@ -17,7 +23,7 @@ export type ClientCore = Omit<
 /**
  * The roster slice: every client core. `assignment` is owned by the templates
  * slice, `schedules` by checkins, `plans` by nutrition, training and tracker,
- * `entries` by tracker, and `habits`/`retiredHabits` by habits — each merge
+ * `entries` by tracker, and `habits`/`retiredHabits` by habits - each merge
  * folds its own data back onto these cores, in registry order.
  */
 export const clientsSlice: CoachSlice = {
@@ -36,10 +42,174 @@ export const clientsSlice: CoachSlice = {
   merge: (slice, state) => {
     if (!Array.isArray(slice)) throw new Error("Invalid clients slice");
     // Cores stay incomplete until the per-domain merges run; isCoachState is
-    // the gate before the assembled state is used.
-    state.clients = slice as CoachClient[];
+    // the gate before the assembled state is used. Envelopes stored before
+    // the detail fields joined this slice carry no note arrays, so the
+    // merge re-defaults them or the client guard rejects the whole state.
+    state.clients = (slice as Partial<CoachClient>[]).map((client) => ({
+      internalNotes: [],
+      generalNotes: [],
+      ...client,
+    })) as CoachClient[];
   },
 };
+
+// --- W2-A1 remote detail wiring ---
+
+/** Server note shape: PRIVATE notes may carry the pin flag. */
+export type RemoteNote = { id: string; text: string; pinned?: boolean };
+export type RemotePhase = {
+  id: string;
+  name: string;
+  startDate: string;
+  durationWeeks: number;
+};
+export type RemoteClientDetail = {
+  clientProfileId: string;
+  name: string;
+  label: string | null;
+  email: string | null;
+  coachingSince: string | null;
+  heightCm: number | null;
+  phases: RemotePhase[];
+  internalNotes: RemoteNote[];
+  generalNotes: RemoteNote[];
+  weekNotes: Record<string, string>;
+};
+export type ClientDetailBundle = {
+  clients: RemoteClientDetail[];
+  workspaceNotes: RemoteNote[];
+};
+
+/** Canonical note: the server omits `pinned` unless it is true. */
+const canonicalNote = (note: { id: string; text: string; pinned?: boolean }) => ({
+  id: note.id,
+  text: note.text,
+  ...(note.pinned === true ? { pinned: true } : {}),
+});
+
+/** The owned detail fields, normalized to the remote write shape. */
+export function clientDetailPayload(client: CoachClient) {
+  return {
+    phases: client.phases ?? [],
+    internalNotes: (client.internalNotes ?? []).map(canonicalNote),
+    generalNotes: (client.generalNotes ?? []).map(canonicalNote),
+    weekNotes: Object.fromEntries(
+      Object.entries(client.weekNotes ?? {})
+        .filter(([, body]) => body.trim())
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+    ),
+  };
+}
+
+/**
+ * A stable comparison key for the owned fields. It matches the shape a
+ * server round-trip produces: unpinned notes carry no flag, empty week
+ * notes are absent, and weekNotes keys are sorted because the server
+ * returns them in week order while the local record may carry insertion
+ * order.
+ */
+export function clientDetailKey(client: {
+  phases?: CoachClient["phases"];
+  internalNotes: CoachClient["internalNotes"];
+  generalNotes: CoachClient["generalNotes"];
+  weekNotes?: CoachClient["weekNotes"];
+}): string {
+  return JSON.stringify(clientDetailPayload(client as CoachClient));
+}
+
+/** Folds a remote detail into the local client record. */
+export function mergeRemoteDetail(
+  client: CoachClient,
+  detail: RemoteClientDetail,
+): CoachClient {
+  return {
+    ...client,
+    label: detail.label ?? client.label,
+    email: detail.email ?? client.email,
+    coachingSince: detail.coachingSince ?? client.coachingSince,
+    heightCm: detail.heightCm ?? client.heightCm,
+    phases: detail.phases,
+    internalNotes: detail.internalNotes,
+    generalNotes: detail.generalNotes,
+    weekNotes: detail.weekNotes,
+  };
+}
+
+/** GET the workspace-wide detail bundle (all clients + workspace notes). */
+export function fetchClientDetailBundle(
+  workspaceId: string,
+): Promise<ClientDetailBundle> {
+  return apiFetch<ClientDetailBundle>(
+    `/workspaces/${workspaceId}/client-detail`,
+  );
+}
+
+/** PUT the owned detail collections for one client (full replace). */
+export function putClientDetail(
+  workspaceId: string,
+  clientProfileId: string,
+  client: CoachClient,
+): Promise<RemoteClientDetail> {
+  return apiFetch<RemoteClientDetail>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}`,
+    { method: "PUT", body: clientDetailPayload(client) },
+  );
+}
+
+// --- W2-A4 staff client tasks (clients/:clientProfileId/tasks routes) ---
+
+export type StaffTaskView = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "OPEN" | "COMPLETED" | "CANCELLED";
+  dueState: "overdue" | "due-today" | "upcoming";
+  completedAt: string | null;
+  assignedByMemberId: string;
+  revision: number;
+};
+
+/** A client-task row as the coach profile card renders it. */
+export type StaffClientTask = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "open" | "complete" | "cancelled";
+  revision: number;
+};
+
+export function toStaffClientTask(view: StaffTaskView): StaffClientTask {
+  return {
+    id: view.id,
+    title: view.title,
+    dueDate: view.dueDate,
+    status: view.status.toLowerCase() as StaffClientTask["status"],
+    revision: view.revision,
+  };
+}
+
+/** GET clients/:clientProfileId/tasks - the client's assigned task list. */
+export async function fetchStaffClientTasks(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffClientTask[]> {
+  const body = await apiFetch<{ tasks: StaffTaskView[]; hasMore: boolean }>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tasks`,
+  );
+  return body.tasks.map(toStaffClientTask);
+}
+
+/** POST clients/:clientProfileId/tasks - assign one task to the client. */
+export function assignStaffClientTask(
+  workspaceId: string,
+  clientProfileId: string,
+  input: { title: string; dueDate: string },
+): Promise<{ id: string; revision: number }> {
+  return apiFetch<{ id: string; revision: number }>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tasks`,
+    { method: "POST", body: input },
+  );
+}
 
 // --- Ethereal client workspace draft (coaching-clients-workspace-v1) ---
 
