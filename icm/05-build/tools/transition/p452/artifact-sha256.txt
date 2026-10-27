@@ -1,5 +1,5 @@
-fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c  ./capture/adapter/d32-capture-adapter.mjs
-354003d3ea55fa4e879a422378cc9a6c036b2d083d1c54f4e32ee81381a426b3  ./capture/artifact-index.json
+3e27062090a0fe5b2ad533b0ef45ac7743fcb8bd53f0464ffb7a1c548da15352  ./capture/adapter/d32-capture-adapter.mjs
+dff6804629f1ed533ec3966ede8125a1409e4ded82e8d1def48c8f5ae0b4e1fd  ./capture/artifact-index.json
 cd46480244b01c3462902ca79814583f5efa3b22bb3de7edb7459298c2fcf215  ./capture/current/1440/s01-profile-checkins.geom.json.gz
 afc6fcb806a3e494f9746a650d458217b91e05d80d19a5a90ff9bc41bc29b9ce  ./capture/current/1440/s01-profile-checkins.png
 732acf44ccba2daa8ccc8195df877361cd9bc95450388fc22824ba6ec3121496  ./capture/current/1440/s01-profile-notes.geom.json.gz

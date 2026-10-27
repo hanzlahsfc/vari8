@@ -11,8 +11,13 @@ import { chromium } from "@playwright/test";
 import { existsSync } from "node:fs";
 
 let ROOT = path.dirname(fileURLToPath(import.meta.url));
-while (!existsSync(path.join(ROOT, "package.json")) && path.dirname(ROOT) !== ROOT) ROOT = path.dirname(ROOT);
-if (!existsSync(path.join(ROOT, "package.json"))) throw new Error("package.json not found above adapter");
+while (
+  !existsSync(path.join(ROOT, "package.json")) &&
+  path.dirname(ROOT) !== ROOT
+)
+  ROOT = path.dirname(ROOT);
+if (!existsSync(path.join(ROOT, "package.json")))
+  throw new Error("package.json not found above adapter");
 export const INDEX_PATH = path.join(ROOT, "icm/04-briefing/shots/index.json");
 export const VIEWPORTS = {
   1440: { width: 1440, height: 900 },
@@ -23,7 +28,10 @@ export const TIMEZONE = "Europe/Vienna";
 // Same storage seed for every capture. Empty on purpose: the canvas seeds its demo state from code.
 export const STORAGE_SEED = {};
 
-const { inspectPage } = await import(pathToFileURL(path.join(ROOT, "tools/parity/reference/capture-metadata.mjs")).href);
+const { inspectPage } = await import(
+  pathToFileURL(path.join(ROOT, "tools/parity/reference/capture-metadata.mjs"))
+    .href
+);
 const FREEZE_CSS = `
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 input,textarea,[contenteditable]{caret-color:transparent!important}
@@ -772,7 +780,8 @@ export async function captureAll({
             const geom = await page.evaluate(geometry);
             const captureEvidence = await inspectPage(page);
             captureEvidence.scrollers = await page.evaluate(scrollers);
-            for (const row of geom) row.push(...(captureEvidence.semantics[row[0]] ?? ["", ""]));
+            for (const row of geom)
+              row.push(...(captureEvidence.semantics[row[0]] ?? ["", ""]));
             const rel = path.join(vp, `${stem}.png`);
             await writeFile(path.join(outDir, rel), png);
             await writeFile(

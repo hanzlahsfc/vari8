@@ -32,16 +32,42 @@ REPO=hanzlahsfc/vari8
 HEADSHA=90c16bee63e2609ebc4f09e91459332390562464   # pinned #203 head
 BASE=Vari8-Beta
 HEAD="$HEADSHA"
-WT=${WT:-/tmp/p452-wt}; STATE=${STATE:-/tmp/p452/state}; DB=${DB:-app_p452}; PORT=${PORT:-58152}
 BUNDLE_COMMIT=04902f1dc3d317e0959ae533f2f4c479a8fc55f9
 BUNDLE_PATH=tools/parity
 BUNDLE_TREE=f457065f61753245b6853ac3ddb3236deb00c8bd
 NODE="npx -y node@24.22.1"
+PORT=${PORT:-58152}
+RUN_ID=p203-prep      # this task's run identity — receipt + capture out-dir
+
+# task-owned scratch — REQUIRED input, never a shared default. An existing
+# directory must carry this task's sentinel (bound to its canonical path) or
+# the block refuses untouched; a symlinked destination refuses outright.
+SCRATCH="${SCRATCH:?set SCRATCH to a task-owned scratch directory}"
+SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
+[[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch $SCRATCH"; exit 4; }
+if [[ -e "$SCRATCH" ]]; then
+  grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
+    || { echo "refusing foreign/unowned $SCRATCH"; exit 4; }
+else
+  mkdir -p "$SCRATCH" && echo "$SCRATCH" > "$SCRATCH/.task-owned"
+fi
+WT="$SCRATCH/wt"; STATE="$SCRATCH/state"; DB=app_p203
+[[ ! -e "$WT" ]] || { echo "WT $WT already exists — refusing to reuse"; exit 4; }
+mkdir -p "$STATE" "$SCRATCH/overlay"
+
+# refuse-before-mutation — every cleanup/removal below re-verifies the target
+# resolves inside THIS canonical scratch and is not a symlink alias
+task_owned() {
+  [[ -n "${1:-}" && "$1" == "$SCRATCH/"* && ! -L "$1" ]] || return 1
+  local d; d="$(cd -P "$(dirname -- "$1")" && pwd -P)" || return 1
+  [[ "$d/$(basename -- "$1")" == "$SCRATCH/"* ]] \
+    && grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" >/dev/null
+}
 
 # lock (real shared flock, held continuously through this step's
 # revalidation, gates and merge — a later step acquires a fresh lock; prior
 # invocations' locks/receipts never carry over)
-mkdir -p "$STATE"; exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9
+exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9
 trap 'flock -u 9 2>/dev/null; exec 9>&-; dropdb -h 127.0.0.1 -p 5434 -U app --if-exists "$DB" 2>/dev/null' EXIT
 
 # isolated worktree FIRST — at the pinned PR head; no `git -C $WT` before this
@@ -88,28 +114,47 @@ $NODE ./node_modules/.bin/next build
 # The #203 merge tree lacks tools/parity/reference; the overlay supplies gate tools only.
 # Verify: git diff HEAD~1 HEAD -- ':!tools/parity' must be EMPTY (no app/product/auth change).
 git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH"     # must equal $BUNDLE_TREE
-mkdir -p /tmp/p452-overlay "$WT/tools"; rm -rf /tmp/p452-overlay/tools
-git archive "$BUNDLE_COMMIT" "$BUNDLE_PATH" | tar -x -C /tmp/p452-overlay
-rm -rf "$WT/$BUNDLE_PATH"; cp -R "/tmp/p452-overlay/$BUNDLE_PATH" "$WT/tools/"
+mkdir -p "$WT/tools"
+task_owned "$SCRATCH/overlay/tools" || { echo "overlay target not task-owned — refusing"; exit 4; }
+rm -rf "$SCRATCH/overlay/tools"
+git archive "$BUNDLE_COMMIT" "$BUNDLE_PATH" | tar -x -C "$SCRATCH/overlay"
+task_owned "$WT/$BUNDLE_PATH" || { echo "worktree bundle target not task-owned — refusing"; exit 4; }
+rm -rf "$WT/$BUNDLE_PATH"; cp -R "$SCRATCH/overlay/$BUNDLE_PATH" "$WT/tools/"
 git -C "$WT" add -f "$BUNDLE_PATH"
 git -C "$WT" commit -qm "overlay graft $BUNDLE_TREE"
 
 # combined capture — proposed-reference
 (cd "$WT/$BUNDLE_PATH/reference" && npm ci --no-audit --no-fund)
 cd "$WT" && env -u NODE_ENV APP_ENV=development DATABASE_URL="$DATABASE_URL" \
-  MEDIA_STORAGE_ADAPTER=local MEDIA_STORAGE_DIR=/tmp/p452-media \
+  MEDIA_STORAGE_ADAPTER=local MEDIA_STORAGE_DIR="$STATE/media" \
   NEXT_TELEMETRY_DISABLED=1 PARITY_COMPARER=reference \
   PARITY_REFERENCE_DIR=$BUNDLE_PATH/reference/proposed \
-  PARITY_OUT_DIR=$BUNDLE_PATH/out/p452-run PARITY_PORT=$PORT \
+  PARITY_OUT_DIR=$BUNDLE_PATH/out/$RUN_ID PARITY_PORT=$PORT \
   $NODE $BUNDLE_PATH/run.mjs            # require: canonical 70/70; strict diagnostics reported
+
+# gate evidence — parsed from the capture's own receipts, bound to this run
+CANON_N=$(jq -r '.passed // 0' "$WT/$BUNDLE_PATH/out/$RUN_ID/proposed-canonical.json")
+STRICT_N=$(jq -r '.passed // 0' "$WT/$BUNDLE_PATH/out/$RUN_ID/proposed-strict.json")
+[[ "$CANON_N" == 70 && "$STRICT_N" -ge 68 ]] \
+  || { echo "gate counts below expected (canonical $CANON_N/70, strict $STRICT_N/68)"; exit 5; }
 
 # baseline boundary — AFTER (must equal BEFORE)
 git rev-parse "HEAD:$BUNDLE_PATH/baseline"
 
 # persist structured receipts (JSON, strict-validated — later invocations load
-# these, never shell state from a previous run)
-jq -n --arg head "$HEADSHA" --arg base "$BASETIP"   --arg tree "$MERGETREE" --argjson canonical 70 --argjson strict 68   '{head:$head, base:$base, mergeTree:$tree, canonical:$canonical, strict:$strict}'   > "$STATE/p203-prep.json"
-jq -e '.head|test("^[0-9a-f]{40}$")' "$STATE/p203-prep.json" >/dev/null   || { echo "receipt invalid"; exit 4; }
+# these, never shell state from a previous run) + integrity sidecar
+PREP_FILE="$STATE/p203-prep.json"
+jq -n --arg head "$HEADSHA" --arg base "$BASE" --arg baseTip "$BASETIP" \
+  --arg mergeTree "$MERGETREE" --arg runId "$RUN_ID" \
+  --arg bundleCommit "$BUNDLE_COMMIT" --arg bundlePath "$BUNDLE_PATH" --arg bundleTree "$BUNDLE_TREE" \
+  --argjson canonical "$CANON_N" --argjson strict "$STRICT_N" \
+  '{schema:"transition-prep-v2", pr:203, head:$head, base:$base, baseTip:$baseTip,
+    mergeTree:$mergeTree,
+    toolBundle:{commit:$bundleCommit, path:$bundlePath, tree:$bundleTree},
+    gates:{runId:$runId,
+           canonical:{expected:70, observed:$canonical},
+           strict:{expectedMin:68, observed:$strict}}}' > "$PREP_FILE"
+shasum -a 256 "$PREP_FILE" > "$PREP_FILE.sha256"   # tamper-evident reload proof
 
 # cleanup — handled by the EXIT trap (drops only the DB this step created,
 # releases this step's lock); a later step repeats acquisition/validation
@@ -122,15 +167,117 @@ invocation is a NEW lock-held block that reacquires the lock, revalidates refs
 and repeats required preparation/gates; stale preparation is never permission.
 
 ```bash
-mkdir -p "$STATE"; exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
-trap 'flock -u 9 2>/dev/null; exec 9>&-' EXIT
+# task-owned scratch — REQUIRED; must carry the sentinel preparation created.
+# A missing/foreign/symlinked destination refuses before anything is touched.
+SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch used by preparation}"
+SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
+[[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch $SCRATCH"; exit 4; }
+grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
+  || { echo "no task-owned scratch at $SCRATCH — run preparation first"; exit 4; }
+STATE="$SCRATCH/state"; DB=app_p203
+MWT="$SCRATCH/wt-merge"; [[ ! -e "$MWT" ]] || { echo "$MWT already exists — refusing"; exit 4; }
+REPO=hanzlahsfc/vari8
+NODE="npx -y node@24.22.1"; PORT=${PORT:-58152}
+
+task_owned() {
+  [[ -n "${1:-}" && "$1" == "$SCRATCH/"* && ! -L "$1" ]] || return 1
+  local d; d="$(cd -P "$(dirname -- "$1")" && pwd -P)" || return 1
+  [[ "$d/$(basename -- "$1")" == "$SCRATCH/"* ]] \
+    && grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" >/dev/null
+}
+
+exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
+trap 'flock -u 9 2>/dev/null; exec 9>&-; dropdb -h 127.0.0.1 -p 5434 -U app --if-exists "$DB" 2>/dev/null' EXIT
 git fetch -q origin
-# reload+validate persisted receipts — missing/stale refuses
-PREP=$(jq -r 'select(.head and .mergeTree and .base)' "$STATE/p203-prep.json")   || { echo "missing/invalid prep receipt — re-run preparation"; exit 4; }
-# live revalidation under the fresh lock
-gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft
-[[ "$(git rev-parse origin/Vari8-Beta)" == "$(jq -r .base <<<"$PREP")" ]] || exit 4
-# re-run the test merge + fast + combined gates (as the preparation block),
+
+# reload + validate the persisted receipt — integrity sidecar first, then the
+# exact schema: missing keys, extras, non-SHA identities or failed-gate counts
+# all refuse before any merge command
+PREP_FILE="$STATE/p203-prep.json"
+[[ -f "$PREP_FILE" && -f "$PREP_FILE.sha256" ]] \
+  || { echo "missing prep receipt/digest — re-run preparation"; exit 4; }
+[[ "$(shasum -a 256 "$PREP_FILE" | cut -d' ' -f1)" == "$(cut -d' ' -f1 "$PREP_FILE.sha256")" ]] \
+  || { echo "receipt digest mismatch — tampered; re-run preparation"; exit 4; }
+PREP="$(jq -c '
+  if (keys | sort) != ["base","baseTip","gates","head","mergeTree","pr","schema","toolBundle"]
+    then error("receipt fields") else . end
+  | if .schema != "transition-prep-v2" or .pr != 203 or .base != "Vari8-Beta"
+    then error("receipt identity") else . end
+  | if (.head | test("^[0-9a-f]{40}$") | not)
+       or (.baseTip | test("^[0-9a-f]{40}$") | not)
+       or (.mergeTree | test("^[0-9a-f]{40}$") | not)
+    then error("receipt shas") else . end
+  | if (.toolBundle.commit | test("^[0-9a-f]{40}$") | not)
+       or (.toolBundle.tree | test("^[0-9a-f]{40}$") | not)
+       or .toolBundle.path != "tools/parity"
+    then error("bundle identity") else . end
+  | if (.gates.canonical.observed != .gates.canonical.expected)
+       or (.gates.strict.observed < .gates.strict.expectedMin)
+    then error("gate evidence") else . end' "$PREP_FILE")" \
+  || { echo "invalid prep receipt — re-run preparation"; exit 4; }
+# every later variable comes from the validated receipt, never the environment
+HEADSHA=$(jq -r .head <<<"$PREP"); BASE=$(jq -r .base <<<"$PREP")
+BASETIP=$(jq -r .baseTip <<<"$PREP"); MERGETREE=$(jq -r .mergeTree <<<"$PREP")
+BUNDLE_COMMIT=$(jq -r .toolBundle.commit <<<"$PREP")
+BUNDLE_PATH=$(jq -r .toolBundle.path <<<"$PREP"); BUNDLE_TREE=$(jq -r .toolBundle.tree <<<"$PREP")
+RUN_ID=$(jq -r .gates.runId <<<"$PREP")
+
+# live revalidation under the fresh lock — receipt identities must still hold
+J=$(gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft)
+[[ "$(jq -r .headRefOid <<<"$J")" == "$HEADSHA" ]] || { echo "head moved — fresh authorization required"; exit 4; }
+[[ "$(jq -r .baseRefName <<<"$J")" == "$BASE" ]] || { echo "base retargeted — re-review"; exit 4; }
+[[ "$(jq -r .state <<<"$J")" == "OPEN" ]] || { echo "PR not OPEN"; exit 4; }
+[[ "$(git rev-parse "origin/$BASE")" == "$BASETIP" ]] || { echo "base moved — stale receipt"; exit 4; }
+
+# fresh locked preparation repeats — a persisted receipt is never permission.
+# disposable DB (refuse existing, task-owned)
+psql -h 127.0.0.1 -p 5434 -U app -d postgres -lqt | grep -qw "$DB" && exit 2
+createdb -h 127.0.0.1 -p 5434 -U app "$DB"
+export DATABASE_URL="postgresql://app:${POSTGRES_PASSWORD}@127.0.0.1:5434/$DB?schema=public"
+
+# isolated test merge at the receipt-pinned head over the live base
+git worktree add "$MWT" --detach "$HEADSHA"
+git -C "$MWT" fetch -q origin
+git -C "$MWT" merge -q --no-ff --no-edit -m "test merge transition p203 (merge invocation)" "$BASETIP"
+git -C "$MWT" merge-base --is-ancestor "$HEADSHA" HEAD || exit 4
+git -C "$MWT" merge-base --is-ancestor "$BASETIP" HEAD || exit 4
+[[ "$(git -C "$MWT" rev-parse 'HEAD^{tree}')" == "$MERGETREE" ]] \
+  || { echo "fresh test-merge tree != receipt mergeTree — investigate"; exit 4; }
+
+# fast gate — unmasked exits (identical to preparation)
+cd "$MWT"; npm ci --no-audit --no-fund --prefer-offline
+$NODE ./node_modules/.bin/prisma generate
+$NODE ./node_modules/.bin/prisma migrate deploy
+$NODE ./node_modules/.bin/tsc --noEmit
+$NODE ./node_modules/.bin/eslint .
+npm run test
+$NODE ./node_modules/.bin/next build
+
+# reviewed tooling overlay — same pinned graft as preparation
+git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH"     # must equal $BUNDLE_TREE
+mkdir -p "$MWT/tools" "$SCRATCH/overlay-merge"
+task_owned "$SCRATCH/overlay-merge/tools" || { echo "overlay target not task-owned — refusing"; exit 4; }
+rm -rf "$SCRATCH/overlay-merge/tools"
+git archive "$BUNDLE_COMMIT" "$BUNDLE_PATH" | tar -x -C "$SCRATCH/overlay-merge"
+task_owned "$MWT/$BUNDLE_PATH" || { echo "worktree bundle target not task-owned — refusing"; exit 4; }
+rm -rf "$MWT/$BUNDLE_PATH"; cp -R "$SCRATCH/overlay-merge/$BUNDLE_PATH" "$MWT/tools/"
+git -C "$MWT" add -f "$BUNDLE_PATH"
+git -C "$MWT" commit -qm "overlay graft $BUNDLE_TREE (merge invocation)"
+
+# combined gate — fresh capture, bound to the receipt's recorded run identity
+(cd "$MWT/$BUNDLE_PATH/reference" && npm ci --no-audit --no-fund)
+cd "$MWT" && env -u NODE_ENV APP_ENV=development DATABASE_URL="$DATABASE_URL" \
+  MEDIA_STORAGE_ADAPTER=local MEDIA_STORAGE_DIR="$STATE/media" \
+  NEXT_TELEMETRY_DISABLED=1 PARITY_COMPARER=reference \
+  PARITY_REFERENCE_DIR=$BUNDLE_PATH/reference/proposed \
+  PARITY_OUT_DIR=$BUNDLE_PATH/out/$RUN_ID-merge PARITY_PORT=$PORT \
+  $NODE $BUNDLE_PATH/run.mjs
+CANON_N=$(jq -r '.passed // 0' "$MWT/$BUNDLE_PATH/out/$RUN_ID-merge/proposed-canonical.json")
+STRICT_N=$(jq -r '.passed // 0' "$MWT/$BUNDLE_PATH/out/$RUN_ID-merge/proposed-strict.json")
+[[ "$CANON_N" == "$(jq -r .gates.canonical.expected <<<"$PREP")" \
+   && "$STRICT_N" -ge "$(jq -r .gates.strict.expectedMin <<<"$PREP")" ]] \
+  || { echo "fresh gate counts below recorded expected"; exit 5; }
+
 # then, with the owner comment recorded and verified:
 gh pr ready 203 -R "$REPO"    # only if still draft and owner-authorized
 gh pr merge 203 -R "$REPO" --merge --match-head-commit "$HEADSHA"
@@ -147,6 +294,13 @@ git rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"   # must equal the BEFORE has
 2. **#206 — concrete procedure** (fresh lock, no force-push):
 
 ```bash
+SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch}"
+SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
+[[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch"; exit 4; }
+grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
+  || { echo "no task-owned scratch — refusing"; exit 4; }
+STATE="$SCRATCH/state"; mkdir -p "$STATE"
+REPO=hanzlahsfc/vari8
 exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
 MERGED_203=$(gh pr view 203 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
 [[ -n "$MERGED_203" ]] || { echo "#203 not merged — stop"; exit 4; }
@@ -166,6 +320,13 @@ echo "changed head $H206 — fresh review/revalidation REQUIRED before proceedin
 3. **#207 — concrete procedure** (fresh lock, no force-push):
 
 ```bash
+SCRATCH="${SCRATCH:?set SCRATCH to the task-owned scratch}"
+SCRATCH="$(cd -P "$(dirname "$SCRATCH")" && pwd -P)/$(basename "$SCRATCH")"
+[[ ! -L "$SCRATCH" ]] || { echo "refusing symlinked scratch"; exit 4; }
+grep -qxF "$SCRATCH" "$SCRATCH/.task-owned" 2>/dev/null \
+  || { echo "no task-owned scratch — refusing"; exit 4; }
+STATE="$SCRATCH/state"; mkdir -p "$STATE"
+REPO=hanzlahsfc/vari8
 exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9            # reacquire — fresh lock
 MERGED_206=$(gh pr view 206 -R "$REPO" --json state,mergeCommit --jq 'select(.state=="MERGED").mergeCommit.oid')
 [[ -n "$MERGED_206" ]] || { echo "#206 not merged — stop"; exit 4; }

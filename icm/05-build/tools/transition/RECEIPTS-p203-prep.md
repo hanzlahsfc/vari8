@@ -87,6 +87,45 @@ state under . Fresh locked validation/gates still required.
   (runbook-prep-block, transition-identity, identity.mjs) were fixed — dead
   imports/params removed, `tree` now asserts a distinct merge tree.
 
+## P471 — safeguards moved into the published runbook + real receipt contract
+
+- Shared /tmp defaults REMOVED from the runbook. `SCRATCH` is a required input
+  (`${SCRATCH:?}` — omitted input refuses), canonicalized (parent resolved
+  `cd -P`), symlink destinations refuse, existing dirs must carry this task's
+  `.task-owned` sentinel bound to the canonical path or the block refuses
+  untouched. `task_owned()` in the runbook re-verifies every destructive
+  target before `rm -rf` — inside scratch, non-symlink, sentinel intact.
+  Tests execute the RUNBOOK's own prelude/function text (extracted slices),
+  not a harness guard: omitted SCRATCH, existing-unowned, foreign sentinel,
+  symlinked scratch, and task_owned alias/foreign/dead-sentinel cases all
+  refuse with `called` empty / files intact.
+- Receipt contract made real. Prep parses gate counts from the capture's own
+  `proposed-{canonical,strict}.json` receipts (no more hardcoded 70/68), fails
+  (exit 5) before writing any receipt when gates are red, and persists a
+  `transition-prep-v2` receipt: `head`, `base`, `baseTip`, `mergeTree`,
+  `toolBundle` (commit/path/tree), `gates` (runId + expected/observed counts)
+  - a sha256 integrity sidecar. The merge block loads and strictly validates
+    it itself — digest first, then exact key set, schema/PR/branch identity,
+    SHA shapes, bundle identity, gate counts — and derives HEADSHA/BASETIP/
+    MERGETREE/BUNDLE_*/RUN_ID from it; no env injection. It then re-verifies
+    live (head/base/state + base tip) and re-runs the literal test-merge,
+    ancestors, fast gate and combined capture — fresh gates are literal commands
+    bound to the receipt's run identity; a persisted receipt is never permission.
+- Mutation matrix (each against a receipt produced by REALLY executing prep):
+  tampered-no-redigest → digest refusal; forged head → live headRefOid check;
+  forged baseTip → stale-refusal; forged mergeTree → fresh test-merge
+  disproves pre-merge; extra field → schema; missing gates → schema; failed
+  gate counts → schema; missing file/sidecar → refuse; moved base → live
+  refusal on an untampered receipt. All refuse before any `gh pr merge` stub.
+- Formatting narrowed: dir-wide `p452/` ignore replaced by 5 exact pinned-evidence
+  entries (capture manifest + 4 gate receipts — all sha256-pinned).
+  `d32-capture-adapter.mjs` is executable tooling — NOT exempted; it was
+  formatted and its pins honestly updated: adapter sha256 fd6a9a99 → 3e270620,
+  artifact-index.json sha256 354003d3 → dff68046 (both records updated
+  consistently; `shasum -a 256 -c artifact-sha256.txt` → 248/248 OK).
+- `git diff --check` base→head: 8 trailing-whitespace warnings, all in pinned
+  p452 evidence logs introduced by earlier branch commits — this delta adds 0.
+
 ## Package accounting (corrected, p458)
 
 `p452/capture/` contains 241 indexed artifacts + `artifact-index.json` + receipts/provenance files = **248 checksum-bearing entries** (241+7); earlier "246" claims were stale. Verified from fresh clone.

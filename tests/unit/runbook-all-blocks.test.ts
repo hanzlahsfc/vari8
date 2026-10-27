@@ -1,9 +1,12 @@
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
@@ -32,6 +35,16 @@ function block(marker: string, inside = false) {
   return RUNBOOK.slice(f1 + 7, f2);
 }
 
+// extract a text span inside the runbook (e.g. the scratch prelude or the
+// task_owned definition) — used to execute the runbook's own safeguards
+function slice(from: string, to: string) {
+  const i = RUNBOOK.indexOf(from);
+  expect(i).toBeGreaterThan(-1);
+  const j = RUNBOOK.indexOf(to, i + from.length);
+  expect(j).toBeGreaterThan(-1);
+  return RUNBOOK.slice(i, j);
+}
+
 const SHAS = {
   h203: "90c16bee63e2609ebc4f09e91459332390562464",
   h206: "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
@@ -45,24 +58,11 @@ const SHAS = {
   d207: "d207".repeat(10),
 };
 
-// receipt in the schema the runbook's jq -n writes: base is the base-tip sha
-function receipt(base: string) {
-  return {
-    schema: "transition-prep-v1",
-    pr: 203,
-    head: SHAS.h203,
-    base,
-    mergeCommit: SHAS.h203,
-    mergeTree: SHAS.tree,
-    toolBundle: SHAS.bundle,
-    gates: { canonical: "70", strict: "68" },
-  };
-}
-
 function fixtures() {
   const dir = mkdtempSync(path.join(os.tmpdir(), "rbk-"));
   const bin = path.join(dir, "bin");
   const st = path.join(dir, "state");
+  const scratch = path.join(dir, "scratch");
   mkdirSync(bin, { recursive: true });
   mkdirSync(st);
   writeFileSync(path.join(st, "called"), "");
@@ -87,6 +87,8 @@ if [[ "$1" == pr && "$2" == ready ]]; then exit 0; fi
 if [[ "$1" == pr && "$2" == edit ]]; then echo "gh pr edit $*" >> "$FIX/state/called"; exit 0; fi
 exit 0`,
   );
+  // git stub — worktree add lays down a fixture bundle layout inside the
+  // (task-owned) scratch worktree; rev-parse answers from GIT_* env
   sh(
     "git",
     `echo "git $*" >> "$FIX/state/called"
@@ -99,87 +101,55 @@ case "$*" in
   *rev-parse*'^{tree}'*) echo "$GIT_TREE";;
   *rev-parse*"origin"*) echo "$GIT_BASETIP";;
   *rev-parse*HEAD) echo "$GH_HEAD";;
-  *worktree*add*) mkdir -p "$3/$BUNDLE_PATH/reference" "$3/$BUNDLE_PATH/baseline"
-    : > "$3/$BUNDLE_PATH/run.mjs"; exit 0;;
+  *worktree*add*) mkdir -p "$3/tools/parity/reference" "$3/tools/parity/baseline"
+    : > "$3/tools/parity/run.mjs"; exit 0;;
   *worktree*) exit 0;;
   *) exit 0;; esac`,
   );
-  sh("flock", `echo "flock $*" >> "$FIX/state/called"; exit 0`);
-  for (const b of [
-    "psql",
-    "createdb",
-    "dropdb",
-    "npm",
+  // npx stub — the parity runner writes the gate receipts the runbook parses
+  // (real files inside the fixture worktree, counts controllable via GATE_*)
+  sh(
     "npx",
-    "openssl",
-    "shasum",
-    "cmp",
-    "cp",
-    "mv",
-    "rm",
+    `echo "npx $*" >> "$FIX/state/called"
+if [[ "$*" == *run.mjs* && -n "\${PARITY_OUT_DIR:-}" ]]; then
+  mkdir -p "$PARITY_OUT_DIR"
+  printf '{"strict":false,"total":70,"passed":%s,"failed":0}\\n' "\${GATE_CANON:-70}" > "$PARITY_OUT_DIR/proposed-canonical.json"
+  printf '{"strict":true,"total":70,"passed":%s,"failed":0}\\n' "\${GATE_STRICT:-68}" > "$PARITY_OUT_DIR/proposed-strict.json"
+fi
+exit 0`,
+  );
+  // tar stub — git archive | tar -x lays down the reviewed-tooling layout
+  sh(
     "tar",
-  ])
+    `echo "tar $*" >> "$FIX/state/called"
+c=""; prev=""; for a in "$@"; do [[ "$prev" == -C ]] && c="$a"; prev="$a"; done
+[[ -n "$c" ]] && mkdir -p "$c/tools/parity/reference" "$c/tools/parity/baseline" && : > "$c/tools/parity/run.mjs"
+exit 0`,
+  );
+  sh("flock", `echo "flock $*" >> "$FIX/state/called"; exit 0`);
+  for (const b of ["psql", "createdb", "dropdb", "npm", "openssl"])
     sh(b, `echo "${b} $*" >> "$FIX/state/called"; exit 0`);
   return {
     dir,
     bin,
     st,
+    scratch,
     called: () => readFileSync(path.join(st, "called"), "utf8"),
   };
 }
 
-// fixture safety preamble — prepended to EVERY executed block. Refuses unless
-// the caller supplies task-owned scratch paths: WT must be a non-existent path
-// under the fixture root, STATE under the fixture root, DB/FIX set. Omitted or
-// unsafe inputs stop here — before any block command can touch operator paths.
-const GUARD = `set -euo pipefail
-for v in WT STATE DB FIX; do [[ -n "\${!v:-}" ]] || { echo "fixture-guard: $v unset — refusing"; exit 5; }; done
-[[ "$WT" == "$FIX"/* && ! -e "$WT" ]] || { echo "fixture-guard: unsafe WT=$WT — refusing"; exit 5; }
-[[ "$STATE" == "$FIX"/* ]] || { echo "fixture-guard: unsafe STATE=$STATE — refusing"; exit 5; }
-`;
-
-function guardedEnv(
+// environment for block execution — SCRATCH is the only location the caller
+// supplies; every other location/identity comes from the block or the receipt
+function blockEnv(
   f: ReturnType<typeof fixtures>,
   extra: Record<string, string> = {},
 ) {
   return {
     PATH: `${f.bin}:${process.env.PATH}`,
     FIX: f.dir,
-    WT: path.join(f.dir, "wt"),
-    STATE: f.st,
-    DB: "app_x",
-    ...extra,
-  };
-}
-
-function runBlock(
-  marker: string,
-  extra: Record<string, string> = {},
-  inside = false,
-) {
-  const f = fixtures();
-  const vars = {
-    REPO: "fx/fx",
-    HEADSHA: SHAS.h203,
-    HEAD: SHAS.h203,
-    BASE: "Vari8-Beta",
-    WT: path.join(f.dir, "wt"),
-    STATE: f.st,
-    DB: "app_x",
-    PR: "203",
-    BUNDLE_PATH: "tools/parity",
-    BUNDLE_TREE: SHAS.bundle,
-    BUNDLE_COMMIT: SHAS.h207,
-    CANON_N: "70",
-    STRICT_N: "68",
-    MERGETREE: SHAS.tree,
-    BASETIP: SHAS.base,
-    MERGE_SHA: SHAS.merge,
+    SCRATCH: f.scratch,
     POSTGRES_PASSWORD: "x",
     BETTER_AUTH_SECRET: "y",
-    NODE: "node",
-    PATH: `${f.bin}:${process.env.PATH}`,
-    FIX: f.dir,
     GH_HEAD: SHAS.h203,
     GH_BASE: "Vari8-Beta",
     GH_STATE: "OPEN",
@@ -189,14 +159,70 @@ function runBlock(
     GIT_TREE: SHAS.tree,
     GIT_P1: SHAS.base,
     GIT_P2: SHAS.h203,
+    BUNDLE_PATH: "tools/parity",
+    GATE_CANON: "70",
+    GATE_STRICT: "68",
     ...extra,
   };
-  const src = `${GUARD}${block(marker, inside)}`;
-  const r = spawnSync("bash", ["-c", src], {
-    env: { ...process.env, ...vars },
+}
+
+function runSrc(src: string, env: Record<string, string>) {
+  return spawnSync("bash", ["-c", `set -euo pipefail\n${src}`], {
+    env: { ...process.env, ...env },
     encoding: "utf8",
   });
-  return { r, st: f.st, wt: vars.WT, called: f.called() };
+}
+
+function runBlock(
+  f: ReturnType<typeof fixtures>,
+  marker: string,
+  extra: Record<string, string> = {},
+) {
+  const r = runSrc(block(marker, true), blockEnv(f, extra));
+  return { r, called: f.called() };
+}
+
+// the runbook's own scratch prelude (SCRATCH requirement → task_owned def) —
+// executed verbatim to produce an owned scratch for the merge/stage blocks
+const PRELUDE = slice('SCRATCH="${SCRATCH:?', "# lock (real shared flock");
+function prepScratch(
+  f: ReturnType<typeof fixtures>,
+  extra: Record<string, string> = {},
+) {
+  const r = runSrc(PRELUDE, blockEnv(f, extra));
+  expect(r.status).toBe(0);
+}
+const canonScratch = (f: ReturnType<typeof fixtures>) =>
+  path.join(realpathSync(f.dir), "scratch");
+
+// run the literal prep block, producing a real receipt under the scratch
+function runPrep(
+  f: ReturnType<typeof fixtures>,
+  extra: Record<string, string> = {},
+) {
+  return runBlock(f, "# #203 changes present", extra);
+}
+const receiptPath = (f: ReturnType<typeof fixtures>) =>
+  path.join(canonScratch(f), "state", "p203-prep.json");
+const readReceipt = (f: ReturnType<typeof fixtures>) =>
+  JSON.parse(readFileSync(receiptPath(f), "utf8"));
+// forge a mutated-but-internally-consistent receipt (valid digest sidecar) —
+// the merge block's content checks must be what refuses it, not the digest
+function forge(
+  f: ReturnType<typeof fixtures>,
+  mutate: (p: Record<string, unknown>) => void,
+) {
+  const p = receiptPath(f);
+  const j = JSON.parse(readFileSync(p, "utf8"));
+  mutate(j);
+  writeFileSync(p, JSON.stringify(j));
+  const d = createHash("sha256").update(readFileSync(p)).digest("hex");
+  writeFileSync(`${p}.sha256`, `${d}  ${p}`);
+}
+
+// reset the invocation log between phases so assertions see one block's calls
+function clearCalled(f: ReturnType<typeof fixtures>) {
+  writeFileSync(path.join(f.st, "called"), "");
 }
 
 // stacked stages — each retargets onto Vari8-Beta after its prerequisite merges
@@ -221,8 +247,9 @@ const STAGES = [
 const T = 30_000;
 
 describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
-  it("#203 prep block runs to completion under lock — test merge, ancestors, receipt persisted", () => {
-    const { r, st, wt, called } = runBlock("# #203 changes present", {}, true);
+  it("#203 prep block runs end-to-end under lock and persists a complete receipt", () => {
+    const f = fixtures();
+    const { r, called } = runPrep(f);
     expect(r.status).toBe(0);
     const iF = called.indexOf("flock -x");
     const iW = called.indexOf("worktree add");
@@ -230,114 +257,267 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     expect(iF).toBeGreaterThan(-1);
     expect(iF).toBeLessThan(iW);
     expect(iW).toBeLessThan(iM);
-    expect(called).toContain(`worktree add ${wt} --detach ${SHAS.h203}`);
-    expect(called).toContain(
-      "merge -q --no-ff --no-edit -m test merge transition p203",
-    );
     expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(2);
     expect(called).toContain("createdb"); // disposable-DB probe passed
     expect(called).not.toContain("gh pr merge");
-    // the dirty-state probe wrote into the fixture worktree, not a real one
+    // the dirty-state probe restored run.mjs byte-identically (real cp/cmp/shasum)
+    const wt = path.join(canonScratch(f), "wt");
     expect(
       readFileSync(path.join(wt, "tools/parity/run.mjs"), "utf8"),
-    ).toContain("dirty");
-    // strict-validated receipt persisted under the fixture state dir
-    const prep = JSON.parse(
-      readFileSync(path.join(st, "p203-prep.json"), "utf8"),
-    );
-    expect(prep.head).toBe(SHAS.h203);
-    expect(prep.base).toBe(SHAS.base);
-    expect(prep.mergeTree).toBe(SHAS.tree);
-  });
-
-  it("merge block refuses when receipts are missing", () => {
-    const f = fixtures();
-    const src = GUARD + block("REACQUIRE", true);
-    const r = spawnSync("bash", ["-c", src], {
-      env: { ...process.env, ...guardedEnv(f, { REPO: "x" }) },
-      encoding: "utf8",
-    });
-    expect(r.status).not.toBe(0);
-    expect(f.called()).not.toContain("gh pr merge");
-  });
-
-  it("merge block refuses a stale receipt base", () => {
-    const f = fixtures();
-    writeFileSync(
-      path.join(f.st, "p203-prep.json"),
-      JSON.stringify(receipt("0".repeat(40))),
-    );
-    const src = GUARD + block("REACQUIRE", true);
-    const r = spawnSync("bash", ["-c", src], {
-      env: {
-        ...process.env,
-        ...guardedEnv(f, {
-          REPO: "x",
-          GH_HEAD: SHAS.h203,
-          GH_BASE: "Vari8-Beta",
-          GH_STATE: "OPEN",
-          GH_DRAFT: "true",
-          GH_MERGE: SHAS.merge,
-          GIT_BASETIP: SHAS.base,
-          GIT_TREE: SHAS.tree,
-          HEADSHA: SHAS.h203,
-        }),
+    ).not.toContain("dirty");
+    // the receipt carries every field the merge block needs — produced by the
+    // block itself, none of it injected through the environment
+    const prep = readReceipt(f);
+    expect(prep).toEqual({
+      schema: "transition-prep-v2",
+      pr: 203,
+      head: SHAS.h203,
+      base: "Vari8-Beta",
+      baseTip: SHAS.base,
+      mergeTree: SHAS.tree,
+      toolBundle: {
+        commit: SHAS.h207,
+        path: "tools/parity",
+        tree: SHAS.bundle,
       },
-      encoding: "utf8",
+      gates: {
+        runId: "p203-prep",
+        canonical: { expected: 70, observed: 70 },
+        strict: { expectedMin: 68, observed: 68 },
+      },
     });
-    expect(r.status).not.toBe(0);
-    expect(f.called()).not.toContain("gh pr merge");
+    expect(existsSync(`${receiptPath(f)}.sha256`)).toBe(true);
   });
 
-  it("merge checkpoint holds the lock before merging and verifies parents/tree", () => {
+  it("prep writes no receipt and refuses when the combined gate is red", () => {
     const f = fixtures();
-    writeFileSync(
-      path.join(f.st, "p203-prep.json"),
-      JSON.stringify(receipt(SHAS.base)),
+    const { r } = runPrep(f, { GATE_CANON: "69" });
+    expect(r.status).toBe(5);
+    expect(r.stderr + r.stdout).toContain("gate counts below expected");
+    expect(existsSync(receiptPath(f))).toBe(false);
+  });
+
+  it("omitted SCRATCH input refuses before touching anything", () => {
+    const f = fixtures();
+    const env = blockEnv(f);
+    delete (env as Record<string, string>).SCRATCH;
+    const r = runSrc(block("# #203 changes present", true), env);
+    expect(r.status).not.toBe(0);
+    expect(r.stderr + r.stdout).toContain("SCRATCH");
+    expect(f.called()).toBe(""); // zero invocations — nothing ran, nothing touched
+  });
+
+  it("existing unowned destination refuses untouched", () => {
+    const f = fixtures();
+    const foreign = path.join(f.dir, "foreign");
+    mkdirSync(foreign);
+    writeFileSync(path.join(foreign, "keep.txt"), "do not touch");
+    const { r } = runBlock(f, "# #203 changes present", { SCRATCH: foreign });
+    expect(r.status).toBe(4);
+    expect(r.stderr + r.stdout).toContain("foreign/unowned");
+    expect(readFileSync(path.join(foreign, "keep.txt"), "utf8")).toBe(
+      "do not touch",
     );
-    const src = GUARD + block("REACQUIRE", true);
-    const r = spawnSync("bash", ["-c", src], {
-      env: {
-        ...process.env,
-        ...guardedEnv(f, {
-          REPO: "x",
-          HEADSHA: SHAS.h203,
-          HEAD: SHAS.h203,
-          BASE: "Vari8-Beta",
-          BASETIP: SHAS.base,
-          MERGETREE: SHAS.tree,
-          GH_HEAD: SHAS.h203,
-          GH_BASE: "Vari8-Beta",
-          GH_STATE: "OPEN",
-          GH_DRAFT: "true",
-          GH_MERGE: SHAS.merge,
-          GIT_BASETIP: SHAS.base,
-          GIT_TREE: SHAS.tree,
-          GIT_P1: SHAS.base,
-          GIT_P2: SHAS.h203,
-          BUNDLE_PATH: "tools/parity",
-        }),
-      },
-      encoding: "utf8",
-    });
-    const called = f.called();
+    expect(existsSync(path.join(foreign, ".task-owned"))).toBe(false);
+  });
+
+  it("foreign sentinel — a .task-owned naming another path refuses", () => {
+    const f = fixtures();
+    const alien = path.join(f.dir, "alien");
+    mkdirSync(alien);
+    writeFileSync(path.join(alien, ".task-owned"), "/tmp/somebody-else\n");
+    const { r } = runBlock(f, "# #203 changes present", { SCRATCH: alien });
+    expect(r.status).toBe(4);
+    expect(r.stderr + r.stdout).toContain("foreign/unowned");
+  });
+
+  it("symlinked scratch destination refuses outright", () => {
+    const f = fixtures();
+    const real = path.join(f.dir, "real-target");
+    mkdirSync(real);
+    const link = path.join(f.dir, "scratch-alias");
+    symlinkSync(real, link);
+    const { r } = runBlock(f, "# #203 changes present", { SCRATCH: link });
+    expect(r.status).toBe(4);
+    expect(r.stderr + r.stdout).toContain("symlinked scratch");
+  });
+
+  it("task_owned refuses symlink aliases and foreign paths, allows owned", () => {
+    const f = fixtures();
+    prepScratch(f); // runbook's own prelude created the owned scratch
+    const s = canonScratch(f);
+    mkdirSync(path.join(s, "inside"));
+    const foreign = path.join(f.dir, "elsewhere");
+    mkdirSync(foreign);
+    symlinkSync(foreign, path.join(s, "alias"));
+    const taskOwned = slice("task_owned() {", "# lock (real shared flock");
+    const check = (target: string) =>
+      spawnSync("bash", [
+        "-c",
+        `SCRATCH="$0"\n${taskOwned}\ntask_owned "$1"`,
+        s,
+        target,
+      ]).status;
+    // owned path inside the canonical scratch is allowed
+    expect(check(`${s}/inside`)).toBe(0);
+    // a symlink alias inside the scratch refuses — even pointing within $FIX
+    expect(check(`${s}/alias`)).toBe(1);
+    // a foreign path outside the scratch refuses
+    expect(check(foreign)).toBe(1);
+    // and after the sentinel is removed even the owned path refuses
+    const sentinel = path.join(s, ".task-owned");
+    const saved = readFileSync(sentinel, "utf8");
+    writeFileSync(sentinel, "x");
+    expect(check(`${s}/inside`)).toBe(1);
+    writeFileSync(sentinel, saved);
+  });
+
+  it("merge block runs the real receipt flow: reload → live revalidation → fresh gates → merge", () => {
+    const f = fixtures();
+    expect(runPrep(f).r.status).toBe(0);
+    clearCalled(f);
+    // NO HEADSHA/BASETIP/MERGETREE in the environment — the merge block must
+    // take every identity from the validated receipt
+    const { r, called } = runBlock(f, "REACQUIRE");
     expect(r.status).toBe(0);
-    expect(called).toContain("gh pr ready 203");
     expect(called).toContain("gh pr merge 203");
-    // lock ownership: the exclusive flock precedes every merge action
+    expect(called).toContain("gh pr ready 203");
     expect(called.indexOf("flock -x")).toBeGreaterThan(-1);
     expect(called.indexOf("flock -x")).toBeLessThan(
       called.indexOf("gh pr merge 203"),
     );
+    // fresh gates re-ran before the merge: second worktree + fresh capture
+    expect(called.match(/worktree add/g)).toHaveLength(1);
+    expect(called.match(/merge-base --is-ancestor/g)).toHaveLength(2);
+  });
+
+  const MERGE_NEGATIVES: Array<{
+    name: string;
+    act?: (f: ReturnType<typeof fixtures>) => void;
+    env?: Record<string, string>;
+    want?: RegExp;
+  }> = [
+    {
+      name: "missing receipt file",
+      act: (f) => {
+        const p = receiptPath(f);
+        spawnSync("rm", [p]);
+      },
+      want: /missing prep receipt/,
+    },
+    {
+      name: "missing integrity sidecar",
+      act: (f) => spawnSync("rm", [`${receiptPath(f)}.sha256`]),
+      want: /missing prep receipt/,
+    },
+    {
+      name: "tampered receipt (stale digest) — integrity refusal",
+      act: (f) => {
+        const p = receiptPath(f);
+        const j = JSON.parse(readFileSync(p, "utf8")) as Record<string, string>;
+        j.head = "0".repeat(40);
+        writeFileSync(p, JSON.stringify(j)); // sidecar left stale — digest must catch it
+      },
+      want: /digest mismatch/,
+    },
+    {
+      name: "forged head — live revalidation refuses",
+      act: (f) =>
+        forge(
+          f,
+          (j) => void ((j as Record<string, string>).head = "0".repeat(40)),
+        ),
+      want: /head moved/,
+    },
+    {
+      name: "forged baseTip — stale receipt refuses",
+      act: (f) =>
+        forge(
+          f,
+          (j) => void ((j as Record<string, string>).baseTip = "0".repeat(40)),
+        ),
+      want: /base moved/,
+    },
+    {
+      name: "forged mergeTree — fresh test-merge disproves it before merge",
+      act: (f) =>
+        forge(
+          f,
+          (j) =>
+            void ((j as Record<string, string>).mergeTree = "f".repeat(40)),
+        ),
+      want: /test-merge tree != receipt/,
+    },
+    {
+      name: "extra field refuses",
+      act: (f) =>
+        forge(f, (j) => void ((j as Record<string, unknown>).injected = true)),
+      want: /invalid prep receipt/,
+    },
+    {
+      name: "missing gate evidence refuses",
+      act: (f) =>
+        forge(f, (j) => void delete (j as Record<string, unknown>).gates),
+      want: /invalid prep receipt/,
+    },
+    {
+      name: "failed gate evidence refuses",
+      act: (f) =>
+        forge(f, (j) => {
+          (j.gates as { canonical: { observed: number } }).canonical.observed =
+            0;
+        }),
+      want: /invalid prep receipt/,
+    },
+    {
+      name: "moved base — live revalidation refuses the untampered receipt",
+      env: { GIT_BASETIP: "9".repeat(40) },
+      want: /base moved/,
+    },
+  ];
+
+  for (const c of MERGE_NEGATIVES) {
+    it(`merge refuses: ${c.name}`, () => {
+      const f = fixtures();
+      expect(runPrep(f).r.status).toBe(0);
+      c.act?.(f);
+      clearCalled(f);
+      const { r, called } = runBlock(f, "REACQUIRE", c.env ?? {});
+      expect(r.status).not.toBe(0);
+      if (c.want) expect(r.stderr + r.stdout).toMatch(c.want);
+      expect(called).not.toContain("gh pr merge");
+    });
+  }
+
+  // regression for the incident where a fixture-less run wrote into the real
+  // /tmp/p452-wt — the safeguards now live in the published runbook text itself
+  it("sentinel: the refusal path never reaches cleanup or mutation", () => {
+    const f = fixtures();
+    // foreign scratch with a live file inside — refusal must not even create
+    // the sentinel, let alone remove anything
+    const foreign = path.join(f.dir, "preexisting");
+    mkdirSync(foreign);
+    writeFileSync(path.join(foreign, "victim"), "x");
+    for (const marker of [
+      "# #203 changes present",
+      "REACQUIRE",
+      "gh pr edit 206",
+    ]) {
+      const { r, called } = runBlock(f, marker, { SCRATCH: foreign });
+      expect(r.status).toBe(4);
+      expect(called).not.toContain("rm -rf");
+    }
+    expect(readFileSync(path.join(foreign, "victim"), "utf8")).toBe("x");
   });
 
   for (const s of STAGES) {
     it(`#${s.n} block reaches the changed-head checkpoint — retarget + forward update, no merge`, () => {
-      const { r, called } = runBlock(
-        s.marker,
-        { GH_STATE: "MERGED", GH_HEAD: s.derived },
-        true,
-      );
+      const f = fixtures();
+      prepScratch(f);
+      const { r, called } = runBlock(f, s.marker, {
+        GH_STATE: "MERGED",
+        GH_HEAD: s.derived,
+      });
       expect(r.status).toBe(0);
       // prerequisite check ran live under the fresh lock, then the retarget
       expect(called).toContain(`gh pr view ${s.prev}`);
@@ -345,7 +525,9 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       expect(called.indexOf("flock -x")).toBeLessThan(
         called.indexOf(`gh pr edit ${s.n}`),
       );
-      expect(called).toContain(`gh pr edit ${s.n} -R fx/fx -B Vari8-Beta`);
+      expect(called).toContain(
+        `gh pr edit ${s.n} -R hanzlahsfc/vari8 -B Vari8-Beta`,
+      );
       // forward update of the PR branch — merge base in, no force-push
       expect(called).toContain("git pull --ff-only");
       expect(called).toContain("git merge --no-edit origin/Vari8-Beta");
@@ -359,7 +541,9 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
     });
 
     it(`#${s.n} block stops when #${s.prev} is not merged — no retarget, no push, no merge`, () => {
-      const { r, called } = runBlock(s.marker, { GH_STATE: "OPEN" }, true);
+      const f = fixtures();
+      prepScratch(f);
+      const { r, called } = runBlock(f, s.marker, { GH_STATE: "OPEN" });
       expect(r.status).toBe(4);
       expect(r.stdout).toContain(`#${s.prev} not merged`);
       expect(called).toContain("flock -x");
@@ -368,44 +552,4 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       expect(called).not.toContain("gh pr merge");
     });
   }
-
-  // regression for the incident where a fixture-less run wrote into the real
-  // /tmp/p452-wt — omitted or unsafe scratch inputs must die at the guard,
-  // before any block command runs (RECEIPTS-p203-prep.md P467/P468 records it)
-  it("sentinel: omitted scratch paths refuse before touching operator defaults", () => {
-    const f = fixtures();
-    // WT/STATE/DB deliberately absent — the block's ${VAR:-/tmp/p452-*} defaults
-    // would point at operator paths; the guard must fire first.
-    const src = GUARD + block("# #203 changes present", true);
-    const r = spawnSync("bash", ["-c", src], {
-      env: { ...process.env, PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir },
-      encoding: "utf8",
-    });
-    expect(r.status).toBe(5);
-    expect(r.stderr + r.stdout).toContain("fixture-guard");
-    expect(f.called()).toBe(""); // zero invocations — nothing ran, nothing touched
-  });
-
-  it("sentinel: foreign or pre-existing WT destinations refuse before mutation", () => {
-    const f = fixtures();
-    const probe = 'echo ran >> "$FIX/state/called"';
-    // real operator path, an existing dir inside the fixture, and a foreign path —
-    // all must refuse identically, on any host
-    for (const WT of ["/tmp/p452-wt", f.st, "/tmp"]) {
-      const r = spawnSync("bash", ["-c", GUARD + probe], {
-        env: {
-          ...process.env,
-          PATH: `${f.bin}:${process.env.PATH}`,
-          FIX: f.dir,
-          WT,
-          STATE: f.st,
-          DB: "x",
-        },
-        encoding: "utf8",
-      });
-      expect(r.status).toBe(5);
-      expect(r.stderr + r.stdout).toContain("fixture-guard");
-    }
-    expect(f.called()).toBe("");
-  });
 });

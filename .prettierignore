@@ -41,10 +41,14 @@ public/AGENTS.md
 # Written by the parity harness on every baseline capture (tools/parity/capture.mjs).
 tools/parity/baseline/manifest.json
 
-# Hash-pinned transition evidence: every artifact byte is recorded in
-# p452/artifact-sha256.txt + capture/artifact-index.json. Reformatting would
-# invalidate the recorded hashes and the verified capture identity.
-icm/05-build/tools/transition/p452/
+# Hash-pinned transition evidence (exact files only — tooling is NOT exempt):
+# these recorded capture bytes are pinned in p452/artifact-sha256.txt and
+# p452/capture/artifact-index.json; reformatting would break the pins.
+icm/05-build/tools/transition/p452/capture/current/manifest.json
+icm/05-build/tools/transition/p452/capture/receipts/canonical.json
+icm/05-build/tools/transition/p452/capture/receipts/combined-provenance.json
+icm/05-build/tools/transition/p452/capture/receipts/execution.json
+icm/05-build/tools/transition/p452/capture/receipts/strict.json
 
 # Independent frontend project uses Biome.
 frontend/

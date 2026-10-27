@@ -4,7 +4,7 @@
   "artifacts": [
     {
       "path": "adapter/d32-capture-adapter.mjs",
-      "sha256": "fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c"
+      "sha256": "3e27062090a0fe5b2ad533b0ef45ac7743fcb8bd53f0464ffb7a1c548da15352"
     },
     {
       "path": "current/1440/s01-profile-checkins.geom.json.gz",
