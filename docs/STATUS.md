@@ -75,6 +75,100 @@
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
 
+## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
+
+- Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`
+  resolved to `a3f620a56bf3165b6775c8f0bd4acabae21935bc` (verified by rev-parse),
+  merged into `w2/fe1` as merge commit `a83c0e92c87b5ac0a12160c82280a941e063ebe0`.
+  All 14 upstream files under `frontend/` verified byte-identical to the merge
+  tip by diff. No rebase, no force.
+- Port: `tools/port-canvas/port.mjs` run with `PORT_BASE=9491897`
+  `PORT_REF=a3f620a`. 9 mechanical copies plus 4 three-way merges
+  (`clients.tsx`, `coach.css`, `athlete/timeline-tab.tsx`, `model.ts`, all
+  added to HAND_MERGE because they carry local wiring deltas). New files
+  `components/canvas/coach/athlete/tracker-tab.tsx` + `tracker-tab.css` are
+  byte-identical to the upstream twin after the import-alias rewrite.
+  Hand-merges finished with zero conflicts and preserved the local deltas
+  (ClientTrainingLogs in clients view, review-panel status chips in
+  coach.css, activity-target version fetch in timeline-tab, provider/import
+  wiring). Tracker tab renders for `tab === "Tracker"` between Timeline and
+  Plans on the athlete profile.
+- Ownership note: `components/canvas/coach/model.ts` is on the card's
+  must-not-edit list, but the upstream `FieldConfig.decimals`/`summary`
+  extension and the revision-9 union live in that file's canvas twin and the
+  ported tab does not typecheck without them. Carried via the port's
+  three-way merge; flagged for the owner.
+- Demo seed re-point to export revision 9: `README.md`, `workspace.json`,
+  `clients/client-007.json` copied byte-verbatim into
+  `lib/canvas/data/demo-export/` and `scripts/seed/demo-export/`;
+  `PROVENANCE.md` now names source ref `import/frontend-tip`, commit
+  `a3f620a`, revision 9. `scripts/seed/50-demo-coverage.seed.ts` extended
+  from 8 keys to the full 26-field rev-9 tracker set: numeric fields seed
+  as MEASUREMENT (rating fields included so zero values and decimals
+  survive), `bleeding-level` as OPTION, `bp`/`pms-symptoms`/`daily-note`
+  as TEXT from `tracking.text` `${iso}:${fieldId}`. Coach-authored keys
+  `${iso}:note:*` and `${iso}:coach-note` deliberately unseeded; the
+  server-side note path is held w2-a5 work.
+- Seed proofs on lane `app_fp_w2fe1` (plus `app_fp_w2fe1b` as baseline):
+  default profile byte-identical, normalized `pg_dump` diff 0 lines
+  (1525 rows each side; only migration ledger ids, password hashes and
+  dump session tokens excluded). Demo profile: client-007 Amara Lewis,
+  26 template fields, 65 daily entries, 1338 revision values (1288
+  numeric, 38 text, 12 option), matching the rev-9 export counts.
+  Idempotent across reruns: row counts and normalized content hashes
+  identical (evidence `counts-demo-run*.txt`, `hash-demo-run*.txt`,
+  `dump-default-*.txt`).
+- Gates: `npm run typecheck` 0; `npm run lint` 0 errors / 92 warnings
+  (89 inherited, 2 in byte-verbatim upstream code, 1 authored and fixed);
+  `npm run format:check` exits 1 with 57 failing files, all inherited at
+  the merge base, zero authored; `npm test` 116 files / 1380 tests pass;
+  `npm run build` 0; `npm run index` + `index:check` 0 (COMPONENTS.md
+  gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
+  `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
+  0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
+  npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+  `labelHidden` (stage-10 F1, present at merge base).
+- Browser proof: production build via `next start` on http 4403 behind the
+  disposable TLS proxy on https 4402 (F2 workaround; production auth
+  rejects http origins). Lane `app_fp_w2fe1`, seeded default + demo,
+  signed in as seeded coach, no `?demo`. URL
+  `/coach?section=clients&client=client-007&tab=Tracker` at 1440 and 2560:
+  `.trk` root renders, 10 expanded week rows plus the current week,
+  week labels 17 Aug through 25 Oct, template-driven column groups
+  (Body, Nutrition, Recovery, Activity, Notes) with derived Day/Session/
+  Coach columns, Expand/Collapse/Jump-to-today/pin controls. Screenshots
+  `tracker-1440.png`, `tracker-2560.png` in the evidence dir, looked at.
+- Note persistence: coach day note written through the tab's note popover
+  on today's Coach cell, page reloaded, popover reopened: text intact
+  (`PERSIST-PROOF: PASS`; `note-popover.png`, `note-saved-1440.png`,
+  `note-after-reload-1440.png`). Persistence is the local
+  `tracking.text`/`writeCoachState` flow Lilly shipped; the server-side
+  note path is the held work.
+- Read path record (step 4 HELD): the ported tab reads `client.tracking`
+  from the localStorage-backed `CoachState`; without `?demo` the roster
+  and template resolve but daily-entry cells render empty because no
+  canvas hydration maps `daily_entry` rows into `client.tracking` yet.
+  `TrackerComment` exists in the Prisma schema with no read/write route.
+  No route files added or extended on this card (grep: none). No
+  migration (schema unchanged). Held work verbatim for the follow-up
+  card: "Backend: FieldConfig.decimals and summary must persist with
+  template tracker fields (extend the w2-a5 template and tracker config
+  route and tests, new migration only if the schema needs it, timestamp
+  from the lead). Per-cell notes and coach day notes persist server-side
+  with workspace and role scoping, replacing local tracking.text storage
+  for coach notes."
+- Parked-stage reconciliation: Lilly's tracker supersedes w2-k2
+  (desktop) and w2-k4 (coach read-only view). w2-k3 (mobile) and the
+  client tracker entry in w2-c7 need an owner decision; PR 210 ships no
+  mobile layout by design (under 900px shows a notice plus last 7 days).
+  Nothing unparked: k1-k4 and a8 stay parked.
+- Teardown: prod server and TLS proxy stopped; lane databases
+  `app_fp_w2fe1` and `app_fp_w2fe1b` dropped, `pg_database` query shows
+  `app_fp_w2fe1%` absent (evidence `teardown-pg-database.txt`).
+- NOT done: no push, no PR, no unparks, no backend note path (held),
+  independent review by a different model family still pending (not
+  requested per instruction).
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,

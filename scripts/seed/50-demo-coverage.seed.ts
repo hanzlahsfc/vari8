@@ -732,21 +732,124 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     }
 
     // Tracking entries -> daily entries on a shared demo template, plus
-    // nutrition logs for macro days.
+    // nutrition logs for macro days. Rev 9 (w2-fe1): the full canvas tracker
+    // field set. Canvas rating fields seed as MEASUREMENT so zero values and
+    // decimals survive verbatim (the authoritative tracker-config mapping is
+    // the held w2-a5 work). Text values come from `tracking.text` keyed
+    // `${iso}:${fieldId}`; `${iso}:note:*` and `${iso}:coach-note` are the
+    // coach-authored note encoding and stay unseeded until w2-a5 lands the
+    // server-side note path.
+    const TRACKING_PARAMS: {
+      key: string;
+      label: string;
+      kind: "MEASUREMENT" | "OPTION" | "TEXT";
+      unit?: string;
+      options?: string[];
+    }[] = [
+      { key: "weight", label: "Bodyweight", kind: "MEASUREMENT", unit: "kg" },
+      {
+        key: "sleep",
+        label: "Sleep duration",
+        kind: "MEASUREMENT",
+        unit: "hours",
+      },
+      { key: "energy", label: "Energy outside gym", kind: "MEASUREMENT" },
+      {
+        key: "steps",
+        label: "Step count",
+        kind: "MEASUREMENT",
+        unit: "steps",
+      },
+      {
+        key: "calories",
+        label: "Energy intake",
+        kind: "MEASUREMENT",
+        unit: "kcal",
+      },
+      {
+        key: "protein",
+        label: "Protein intake",
+        kind: "MEASUREMENT",
+        unit: "g",
+      },
+      {
+        key: "carbs",
+        label: "Carbohydrate intake",
+        kind: "MEASUREMENT",
+        unit: "g",
+      },
+      { key: "fat", label: "Fat intake", kind: "MEASUREMENT", unit: "g" },
+      {
+        key: "cardio-duration",
+        label: "Cardio duration",
+        kind: "MEASUREMENT",
+        unit: "minutes",
+      },
+      { key: "water", label: "Water intake", kind: "MEASUREMENT", unit: "L" },
+      {
+        key: "rhr",
+        label: "Resting heart rate",
+        kind: "MEASUREMENT",
+        unit: "bpm",
+      },
+      {
+        key: "fbg",
+        label: "Fasted blood glucose",
+        kind: "MEASUREMENT",
+        unit: "mmol/L",
+      },
+      {
+        key: "bp",
+        label: "Blood pressure",
+        kind: "TEXT",
+        unit: "mmHg",
+      },
+      {
+        key: "bleeding-level",
+        label: "Bleeding level",
+        kind: "OPTION",
+        options: ["None", "Light", "Medium", "Heavy"],
+      },
+      { key: "cramps", label: "Cramps", kind: "MEASUREMENT" },
+      { key: "pms-symptoms", label: "PMS symptoms", kind: "TEXT" },
+      {
+        key: "salt-intake",
+        label: "Salt intake",
+        kind: "MEASUREMENT",
+        unit: "g",
+      },
+      {
+        key: "caffeine-intake",
+        label: "Caffeine intake",
+        kind: "MEASUREMENT",
+        unit: "mg",
+      },
+      { key: "hunger", label: "Hunger", kind: "MEASUREMENT" },
+      { key: "bloating", label: "Bloating", kind: "MEASUREMENT" },
+      { key: "sleep-quality", label: "Sleep quality", kind: "MEASUREMENT" },
+      {
+        key: "muscle-soreness",
+        label: "Muscle soreness / DOMS",
+        kind: "MEASUREMENT",
+      },
+      { key: "stress", label: "Stress", kind: "MEASUREMENT" },
+      {
+        key: "energy-in-gym",
+        label: "Energy in the gym",
+        kind: "MEASUREMENT",
+      },
+      {
+        key: "mood-in-gym",
+        label: "Mood in the gym",
+        kind: "MEASUREMENT",
+      },
+      { key: "daily-note", label: "Client daily note", kind: "TEXT" },
+    ];
     const entries = data.tracking?.entries ?? [];
     if (entries.length) {
-      const KEYS = [
-        "weight",
-        "sleep",
-        "water",
-        "steps",
-        "calories",
-        "protein",
-        "carbs",
-        "fat",
-      ];
       const paramIds: Record<string, string> = {};
-      for (const key of KEYS) {
+      for (const spec of TRACKING_PARAMS) {
+        const key = spec.key;
         paramIds[key] = `seed-demo-de-param-${key}`;
         await prisma.parameterDefinition.upsert({
           where: {
@@ -760,11 +863,16 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             id: paramIds[key],
             workspaceId: workspace.id,
             key: `p_demo_${key}`,
-            kind: "MEASUREMENT",
-            label:
-              key === "weight"
-                ? "Morning weight"
-                : key[0].toUpperCase() + key.slice(1),
+            kind: spec.kind,
+            label: spec.label,
+            unit: spec.unit ?? null,
+            options:
+              spec.kind === "OPTION"
+                ? (spec.options ?? []).map((label, i) => ({
+                    optionId: `seed-demo-de-opt-${key}-${i}`,
+                    label,
+                  }))
+                : [],
             dataClassification: "GENERAL_HEALTH",
             createdByMemberId: staff.id,
             updatedByMemberId: staff.id,
@@ -779,7 +887,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           workspaceId: workspace.id,
           name: "Demo daily tracking",
           description:
-            "Stage 11 demo metrics (weight, sleep, water, steps, macros).",
+            "Stage 11 demo metrics: the rev 9 canvas tracker field set.",
           createdByMemberId: staff.id,
         },
       });
@@ -788,26 +896,32 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           {
             sectionId: "seed-demo-de-section",
             order: 1,
-            items: KEYS.map((k, i) => ({
-              itemId: `seed-demo-de-item-${k}`,
-              parameterId: paramIds[k],
-              parameterKey: `p_demo_${k}`,
+            items: TRACKING_PARAMS.map((spec, i) => ({
+              itemId: `seed-demo-de-item-${spec.key}`,
+              parameterId: paramIds[spec.key],
+              parameterKey: `p_demo_${spec.key}`,
               required: false,
               order: i + 1,
             })),
           },
         ],
         parameters: Object.fromEntries(
-          KEYS.map((k) => [
-            paramIds[k],
+          TRACKING_PARAMS.map((spec) => [
+            paramIds[spec.key],
             {
-              key: `p_demo_${k}`,
-              kind: "MEASUREMENT",
-              label: k,
+              key: `p_demo_${spec.key}`,
+              kind: spec.kind,
+              label: spec.label,
               helpText: null,
-              unit: null,
+              unit: spec.unit ?? null,
               ratingScheme: null,
-              options: [],
+              options:
+                spec.kind === "OPTION"
+                  ? (spec.options ?? []).map((label, i) => ({
+                      optionId: `seed-demo-de-opt-${spec.key}-${i}`,
+                      label,
+                    }))
+                  : [],
               validation: null,
               dataClassification: "GENERAL_HEALTH",
               revision: 1,
@@ -819,7 +933,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         where: {
           templateId_versionSeq: { templateId: template.id, versionSeq: 1 },
         },
-        update: {},
+        // Refresh the published demo snapshot so a rev-bumped fixture lands
+        // its new fields on databases seeded with an earlier revision.
+        update: { definition: definition as Prisma.InputJsonValue },
         create: {
           id: "seed-demo-de-tv-1",
           workspaceId: workspace.id,
@@ -886,28 +1002,64 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         if (de.currentRevisionId) continue;
         const hashParams: HashParam[] = [];
         const values: J[] = [];
-        for (const [k, v] of Object.entries(entry.values ?? {})) {
-          const pid = paramIds[k];
-          const p = defParams?.[pid];
-          if (!pid || !p || v === null || v === undefined) continue;
-          const num = String(v);
+        const push = (
+          spec: (typeof TRACKING_PARAMS)[number],
+          tagged: HashParam["value"],
+          row: J,
+        ) => {
+          const pid = paramIds[spec.key];
           hashParams.push({
             parameterId: pid,
-            parameterKey: `p_demo_${k}`,
+            parameterKey: `p_demo_${spec.key}`,
             dataClassification: "GENERAL_HEALTH",
-            kind: "MEASUREMENT",
+            kind: spec.kind,
             snapshotRevision: 1,
             sectionId: defSection?.sectionId ?? "",
-            itemId: `seed-demo-de-item-${k}`,
-            value: { tag: "measurement", canonical: num },
+            itemId: `seed-demo-de-item-${spec.key}`,
+            value: tagged,
           });
           values.push({
             revisionId: `seed-demo-rev-${cid}-${iso}-1`,
             workspaceId: workspace.id,
             parameterId: pid,
-            kind: "MEASUREMENT",
-            valueNumeric: num,
+            kind: spec.kind,
+            ...row,
           });
+        };
+        const text = data.tracking?.text ?? {};
+        for (const spec of TRACKING_PARAMS) {
+          const pid = paramIds[spec.key];
+          const p = defParams?.[pid];
+          if (!pid || !p) continue;
+          if (spec.kind === "MEASUREMENT") {
+            const v = entry.values?.[spec.key];
+            if (v === null || v === undefined) continue;
+            const num = String(v);
+            push(
+              spec,
+              { tag: "measurement", canonical: num },
+              { valueNumeric: num },
+            );
+            continue;
+          }
+          const raw = text[`${iso}:${spec.key}`];
+          if (typeof raw !== "string" || !raw.trim()) continue;
+          if (spec.kind === "OPTION") {
+            const idx = (spec.options ?? []).indexOf(raw.trim());
+            if (idx < 0) continue;
+            const optionId = `seed-demo-de-opt-${spec.key}-${idx}`;
+            push(
+              spec,
+              { tag: "option", optionId },
+              { valueOptionId: optionId },
+            );
+          } else {
+            push(
+              spec,
+              { tag: "text", value: raw.trim() },
+              { valueText: raw.trim() },
+            );
+          }
         }
         if (!values.length) continue;
         const rev = await prisma.dailyEntryRevision.create({

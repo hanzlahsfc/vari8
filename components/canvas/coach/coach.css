@@ -333,6 +333,10 @@
 .coach-root .cd-main.cd-main-clients {
   max-width: 1680px;
 }
+/* The tracker uses the full width of wide monitors. */
+.coach-root .cd-main.cd-main-clients:has(.trk) {
+  max-width: none;
+}
 .coach-root .cd-main:focus {
   outline: none;
 }
