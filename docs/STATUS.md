@@ -1,3 +1,37 @@
+## 2026-10-27 - Wave 2 T6: media taxonomy and client assignment on `w2/t6` (base `2967bb1`)
+
+- `MediaObject.clientProfileId` (NULL = coach library, set = client upload)
+  plus new `MediaAssignment` with same-workspace composite FK; one
+  migration dir `20261027000015_media_taxonomy_client_assignment`
+  (`migration.sql` + `down.sql`). Delete semantics: restrict - a live
+  assignment makes staff delete return 409 `has_assignments`.
+- New endpoints under `app/api/v1/media/`: GET list with `kind`/
+  `ownership` filters (`library.manage`), DELETE media (409 while
+  assigned), POST/DELETE `.../assignments[/:clientProfileId]`, GET
+  `.../assigned` (client own-scope only). Download auth extended so a
+  client may open media assigned to them.
+- UI: type + ownership filter chips and Assign/Unassign/Remove controls
+  in `media.tsx` (frontend authored first, identical shared block ported
+  to canvas twin); "Media" profile tab in both `clients.tsx` twins;
+  "Shared by your coach" list in `components/canvas/client-app/photos.tsx`.
+- Tests: `tests/unit/media-library.test.ts` (4), integration
+  `api-v1-media-library.test.ts` (8: filters, assign, unassign,
+  cross-client denial, 409 delete). Gates: typecheck 0, lint 0
+  (89 warnings, baseline parity), prettier on touched files 0,
+  `index`/`index:check` 0, `cd frontend && npm run lint` 0, vitest unit
+  4/4 + integration 12/12 on lane DB, `build` 0, `migrate deploy` 0 on
+  `app_fp_w2t6`, `seed:dev` 0.
+- Live pass on prod server :4517 at 1440+390: coach filter Images
+  20->19 rows, assign POST 200 ("Assigned to Amara Lewis."), delete on
+  assigned item 409 ("Unassign this item before removing it."); client
+  `amara.lewis@example.com` via `/me/login` then `/client?client=client-007`
+  Photos shows "Shared by your coach" with 4 items;
+  `GET .../assigned` 200 items=4. Screenshots under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/`.
+- Note: `/client` renders sections from the canvas-local client config
+  (`?client=<canvas-id>`); the remote `own` binding only enables the
+  Photos section. `/me` is a separate surface and does not mount it.
+
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,
