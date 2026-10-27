@@ -44,7 +44,7 @@ export function SavedMealLibrary({
   foodMap: Map<string, Food>;
   clientName: string;
   onChange: (meals: ReusableMeal[]) => void;
-  onAssign?: (meal: ReusableMeal) => void;
+  onAssign?: (meal: ReusableMeal) => Promise<boolean>;
 }) {
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
@@ -129,10 +129,14 @@ export function SavedMealLibrary({
     setDeleted(null);
   }
 
-  function assign() {
-    if (!selected) return;
-    onAssign?.(selected);
-    setMessage(`“${selected.name}” assigned to ${clientName}.`);
+  async function assign() {
+    if (!selected || !onAssign) return;
+    const ok = await onAssign(selected).catch(() => false);
+    setMessage(
+      ok
+        ? `“${selected.name}” assigned to ${clientName}.`
+        : `“${selected.name}” could not be assigned to ${clientName}.`,
+    );
   }
 
   return (
@@ -393,14 +397,16 @@ export function SavedMealLibrary({
                           >
                             <Copy size={13} /> Duplicate
                           </Button>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={assign}
-                          >
-                            <Send size={13} /> Assign to {clientName}
-                          </Button>
+                          {onAssign && (
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              onClick={assign}
+                            >
+                              <Send size={13} /> Assign to {clientName}
+                            </Button>
+                          )}
                           <Button
                             type="button"
                             variant="destructive"

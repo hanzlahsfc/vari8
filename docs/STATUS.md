@@ -1,3 +1,30 @@
+## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
+
+- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
+  unconditionally while no caller supplies `onAssign`; browser proof
+  showed success text with zero `/api/v1/saved-meals` requests.
+- Lead ruling, option (b): the Assign affordance renders only when
+  `onAssign` is provided; wiring the demo-backed studio to the real API
+  stays parked as an owner decision.
+- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
+  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
+  without a callback, awaits it, sets success only on a truthy resolve
+  and an honest failure message on false or rejection; the Assign
+  button renders behind `{onAssign && (...)}`. No fetch inside the
+  component. `mealplan-workspace.tsx`, routes, migration, schema and
+  integration tests untouched.
+- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
+  baseline), prettier on changed files 0, vitest 117 files 1384 tests
+  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate
+  0. First vitest run flaked a `system-index` beforeAll timeout under
+  parallel load; solo rerun passed clean.
+- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
+  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
+  Duplicate, Delete and NO Assign button, no assigned text, zero
+  `/api/v1/saved-meals` requests, no console errors. Screenshots and
+  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
+  with pg_database absence proof and `app_fp_w2t7%` census saved.
+
 ## 2026-10-27 - Wave 2 T7: saved meal assign-to-client on `w2/t7`
 
 - Semantics: `saved_meal.client_profile_id` NULL means coach library row;
