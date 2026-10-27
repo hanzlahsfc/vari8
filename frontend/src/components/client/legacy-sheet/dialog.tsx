@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Input, Modal, Status, Tabs } from "@/components/vari8/components";
 import { SHEET_FIXTURE } from "./fixture";
 import { SheetGrid, selectionStart } from "./grid";
+import { sheetFormula } from "./workbook-values";
 import "./legacy-sheet.css";
 import {
   cellAddress,
@@ -45,6 +46,18 @@ export function LegacySheetDialog({
   const [activeSlug, setActiveSlug] = useState(WORKBOOK[0].slug);
   const [selections, setSelections] = useState<Record<string, RangeRef>>({});
   const [nameEdit, setNameEdit] = useState<string | null>(null);
+  const tabBarRef = useRef<HTMLDivElement>(null);
+
+  // The tab bar scrolls horizontally on narrow layouts; keep the active tab
+  // inside the scrollport whenever the selection or the dialog changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeSlug is the re-run trigger, not an input.
+  useEffect(() => {
+    if (!open) return;
+    tabBarRef.current
+      ?.querySelector('[role="tab"][aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [open, activeSlug]);
+
   const tab = tabBySlug(activeSlug) ?? WORKBOOK[0];
   const selection = selections[tab.slug] ?? selectionStart(tab);
   const tabCells = SHEET_FIXTURE[tab.slug] ?? {};
@@ -55,8 +68,11 @@ export function LegacySheetDialog({
   };
 
   const activeCell = tabCells[keyOf(selection.r1, selection.c1)];
+  const workbookFormula = sheetFormula(tab.slug, selection.r1, selection.c1);
   const badges: string[] = [];
-  if (activeCell?.kind === "formula") {
+  if (workbookFormula) {
+    badges.push(FORMULA_SHAPE_BADGE);
+  } else if (activeCell?.kind === "formula") {
     badges.push(
       activeCell.formulaWrap === "udf" ? UDF_SHAPE_BADGE : FORMULA_SHAPE_BADGE,
     );
@@ -65,7 +81,10 @@ export function LegacySheetDialog({
     badges.push(SYNTHETIC_VALUE_BADGE);
   }
   const readout =
-    activeCell?.kind === "formula" ? activeCell.formulaText : activeCell?.value;
+    workbookFormula ??
+    (activeCell?.kind === "formula"
+      ? activeCell.formulaText
+      : activeCell?.value);
 
   const tabItems = WORKBOOK.map((item) => ({
     value: item.slug,
@@ -132,16 +151,18 @@ export function LegacySheetDialog({
             ))}
           </span>
         </div>
-        <Tabs
-          label="Workbook tabs"
-          value={tab.slug}
-          onValueChange={(slug) => {
-            setActiveSlug(slug);
-            setNameEdit(null);
-          }}
-          items={tabItems}
-          className="ls-tabs"
-        />
+        <div ref={tabBarRef} className="ls-tabwrap">
+          <Tabs
+            label="Workbook tabs"
+            value={tab.slug}
+            onValueChange={(slug) => {
+              setActiveSlug(slug);
+              setNameEdit(null);
+            }}
+            items={tabItems}
+            className="ls-tabs"
+          />
+        </div>
         <div className="ls-status">
           <span>{`${tab.name} · ${cellAddress({ row: selection.r1, col: selection.c1 })}`}</span>
           <span className="ls-status-synth">{SYNTHETIC_VALUE_BADGE}</span>

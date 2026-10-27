@@ -72,6 +72,13 @@
   max-width: 60%;
 }
 
+.ls-tabwrap {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
 .ls-tabs {
   display: flex;
   flex-direction: column-reverse;
@@ -189,6 +196,21 @@
   box-shadow:
     inset 0 calc(-1 * var(--v8-border-width-hairline)) 0 0 var(--v8-border),
     inset calc(-1 * var(--v8-border-width-hairline)) 0 0 0 var(--v8-border);
+}
+
+.ls-img {
+  position: relative;
+  z-index: 4;
+  pointer-events: none;
+  top: var(--ls-t, auto);
+  left: var(--ls-l, auto);
+}
+
+.ls-img > img {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
 }
 
 .ls-lines {
