@@ -109,6 +109,237 @@
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
 
+## 2026-10-27 - w2-fe2 repair 2: tracker hydration scoped to the Tracker tab, logging test env isolation
+
+- Verdict `VERDICT-6069da5.md` blocked on B2 (the W2-FE2 tracker hydration
+  effect fired for every signed-in client route, not only the Tracker tab)
+  and B3 (inherited red: two logging.test.ts media/object tests, expected
+  500, got 403 in the full suite under the lane env).
+- B2 repair: `components/canvas/coach/store.tsx` hydration effect now
+  returns early unless `route.tab === "Tracker"`; `route.tab` added to its
+  dependency array. On the profile overview and onboarding screens no
+  tracker values or training-log fetch fires. The note-sync effect keeps
+  its `trackingHydrated` gate, so it stays inert until the Tracker tab has
+  hydrated once and keeps pending note writes alive across tab navigation.
+  The frontend twin `frontend/src/components/coach/store.tsx` holds only
+  local-storage hydration: no server fetch exists there to scope, so the
+  alias rewrite remains the only twin delta.
+- B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
+  stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
+  over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
+  so the route verified signed URLs against the wrong secret and answered
+  403. Full suite reproduction: standalone logging.test.ts red under the
+  lane env before the stub, green after. Product code unchanged.
+- Live proof on a lane dev server (seeded coach, 1440 and 390): the
+  profile overview fires 0 tracker values or training-logs GETs before
+  the Tracker tab opens; opening Tracker fires values 200 and
+  training-logs GET 200 once, note markers and the week matrix render.
+  Reference spot check on the unrepaired tree measured 1 values GET on
+  the same overview.
+- Parity on the production build through the fixed runner: 74/74 screens
+  captured, exit 1 with 63 problems. The four s01 lines returned exactly
+  to base values (s01-profile-overview 10723 px geom 5/2/12 at 1440 and
+  297827 px geom 5/2/218 at 390; s01-profile-onboarding 2186 and 193294
+  px with the same geoms). All other FAIL lines are byte-identical to the
+  reviewed tip run except s07-exercise-library and s11-client-preview,
+  which are capture-variable and now match the base and pre-stage
+  measurements instead.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), frontend
+  lint 0, index:check 0, vitest run 0 (117 files, 1396 tests under the
+  lane env), dash gate 0.
+
+## 2026-10-27 - w2-fe2 repair 1: parity runner https origin, s07 recipe fix, baseline refresh
+
+- Verdict `VERDICT-f16be09db2e9e5f192c245769257f76975a6538c.md` blocked on
+  twin parity only: the runner forced an http `BETTER_AUTH_URL` onto its own
+  spawned production server (boot_refused exit 2), and the dev-mode s07
+  capture failed on "Set up plan" then crashed pre-compare.
+- `tools/parity/run.mjs`: the spawned root-app production server now keeps
+  `next start` on a private http port while an in-process TLS front serves
+  `https://localhost:<port>` (self-signed loopback cert, or
+  `PARITY_TLS_CERT`/`PARITY_TLS_KEY`), and that https origin is what the
+  server gets as `BETTER_AUTH_URL`/`AUTH_URL`. Port ownership is still
+  enforced on both listeners; NODE_ENV is forced for the spawn env so a
+  sourced lane shell cannot poison the production build.
+- `tools/parity/capture.mjs`: loopback https origins get an undici
+  `rejectUnauthorized:false` dispatcher for fetches and
+  `ignoreHTTPSErrors` for Playwright contexts; context/page creation moved
+  inside the capture retry block so a `newContext` protocol error becomes a
+  retried failure instead of crashing the run before compare.
+- s07 attribution: the same capture on parent base `74cff77` renders
+  "Set up plan" for Emma Anders; on w2-fe2 the server plan hydration added
+  by this diff turns her card into "Edit plan" once the seeded published
+  program loads, so the recipe raced or missed. Recipe now uses Chloe Park
+  (no seeded training program, "Set up plan" deterministic) plus a scoped
+  alternate label for reruns where a prior capture already persisted a
+  draft.
+- `tools/parity/baseline` regenerated from the current `frontend/` tree via
+  `PARITY_DEV=1 --update-baseline` (74/74 screens): the committed baseline
+  predated the PR-204 frontend reset (recorded at `44eec07`) and the prod
+  frontend build still trips the inherited `dialog.tsx` `labelHidden`
+  typecheck defect (STATUS F1), so the documented dev path was used.
+- Result on the production build through the fixed runner: 74/74 screens
+  captured at both viewports, exit 1 at compare with 63 problems - the
+  identical fingerprint reproduces on base `74cff77` (same 63 problems),
+  so the residual is pre-existing seed-vs-canvas drift and owner-rulable
+  truth text, not a w2-fe2 regression. A `?demo` diagnostic run decomposes
+  it further (37 problems persist at render level without hydration; the
+  26 that clear are server-data drift). Exit 0 additionally needs the
+  project-level seed alignment or RULED decisions, which are outside this
+  card's scope.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), index:check
+  0, vitest 1396/1396, dash gate 0.
+
+## 2026-10-27 - w2-fe2: backend for the coach Tracker tab
+
+- Merge: `git merge-tree` (no ref updates) predicted one content conflict in
+  `docs/STATUS.md`; resolved keeping both entries, newest first. Merged
+  w2/a2 tip `8403a6230ee7fb97eff2ed8ed4769ade8f2db2a2` into `w2/fe2` as
+  merge commit `072eb5a9d35617fe716e7eed1d48e78ef40f6b93`. Typecheck and
+  build on the merged tip passed before feature work.
+- Schema: new `TrackerDayNote` model (one coach-authored day note per
+  client+date) beside the existing `TrackerComment` per-cell note;
+  migration `20261027000012_tracker_day_notes` with `down.sql`, deployed
+  via `prisma migrate deploy` on a fresh lane database.
+- API: `GET .../clients/:clientProfileId/daily-entries/values` returns the
+  tracker span (65 seeded days for Amara) with per-field display values,
+  cell notes, day notes and the workspace parameter list, batched (no
+  N+1); entries and both note lists are each capped at the newest 400
+  rows, capability `clientData.read`. `PUT`/`DELETE .../tracker-notes`
+  upsert and clear cell/day notes on natural keys, capability
+  `notes.write` at the route layer, with the service then applying the
+  authoritative `coachNotes` write matrix: ACTIVE `ClientAssignment`
+  required, so unassigned same-workspace coaches, owners, clients and
+  foreign members are denied (owner write is `denied` in rbac.ts D10;
+  `roles.ts` `notes.write` still says owner-workspace - open question for
+  Marcel, implementation follows rbac).
+- Canvas: `data/tracker.ts` fetchers plus the wire->tracking mapper;
+  `store.tsx` hydrates `client.tracking` and remote session logs for the
+  viewed client (reusing the w2-a2 training-log route) and debounce-syncs
+  `note:`/`coach-note` text keys to the notes route. Derived columns
+  without a server parameter keep their note local, matching pre-backend
+  behavior.
+- Seed: `36-daily-entries.seed.ts` and `50-demo-coverage.seed.ts` now set
+  field `decimals`/`summary` metadata and deterministic tracker cell/day
+  notes; two consecutive seeded dumps are byte-stable after normalizing
+  timestamps, cuids, password hashes and COPY row order
+  (`W2FE2/normalize-dump.py`).
+- Seed: a second same-workspace coach is provisioned when
+  `SEED_COACH2_EMAIL`/`SEED_COACH2_PASSWORD` are set (00-workspace) and
+  assigned at COACH scope to every canvas client (20-clients); seeded note
+  ids are profile-anchored constants and stale-date rows are cleaned, so
+  reseeding on a different calendar day leaves no orphans.
+- Verified: typecheck, lint (0 errors), build, 117 files / 1392 tests,
+  prettier clean on touched files, docs/index regenerated and
+  `index:check` green. Independent review (Claude family via
+  hermes-verify) returned REPAIR on round 1; all findings fixed and
+  re-proven. Live matrix on the lane app (APP_ENV=test, feature flags on,
+  consent gates off per D12): assigned coach GET/PUT 200, second assigned
+  coach GET 200 and sees the notes, unassigned same-workspace coach
+  GET/PUT 403, foreign-workspace coach 403, client 403, owner PUT 403,
+  anonymous 401, `2026-02-31` 400, bogus parameter key 400
+  (`W2FE2/role-matrix.txt`). Browser proof at 1440 and 2560, real login,
+  no `?demo`: UI cell note PUT 200 persists after reload, day note renders
+  server-side, 0 console errors; screenshots in
+  `Vari8-evidence/FULL-PACKAGE-2/W2FE2/shots/`.
+- Held for w2-a5 (not claimed here): template-editor persistence of
+  Decimals and Week summary, and the template-field read that drives tab
+  columns from the server.
+
+## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
+
+- Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`
+  resolved to `a3f620a56bf3165b6775c8f0bd4acabae21935bc` (verified by rev-parse),
+  merged into `w2/fe1` as merge commit `a83c0e92c87b5ac0a12160c82280a941e063ebe0`.
+  All 14 upstream files under `frontend/` verified byte-identical to the merge
+  tip by diff. No rebase, no force.
+- Port: `tools/port-canvas/port.mjs` run with `PORT_BASE=9491897`
+  `PORT_REF=a3f620a`. 9 mechanical copies plus 4 three-way merges
+  (`clients.tsx`, `coach.css`, `athlete/timeline-tab.tsx`, `model.ts`, all
+  added to HAND_MERGE because they carry local wiring deltas). New files
+  `components/canvas/coach/athlete/tracker-tab.tsx` + `tracker-tab.css` are
+  byte-identical to the upstream twin after the import-alias rewrite.
+  Hand-merges finished with zero conflicts and preserved the local deltas
+  (ClientTrainingLogs in clients view, review-panel status chips in
+  coach.css, activity-target version fetch in timeline-tab, provider/import
+  wiring). Tracker tab renders for `tab === "Tracker"` between Timeline and
+  Plans on the athlete profile.
+- Ownership note: `components/canvas/coach/model.ts` is on the card's
+  must-not-edit list, but the upstream `FieldConfig.decimals`/`summary`
+  extension and the revision-9 union live in that file's canvas twin and the
+  ported tab does not typecheck without them. Carried via the port's
+  three-way merge; flagged for the owner.
+- Demo seed re-point to export revision 9: `README.md`, `workspace.json`,
+  `clients/client-007.json` copied byte-verbatim into
+  `lib/canvas/data/demo-export/` and `scripts/seed/demo-export/`;
+  `PROVENANCE.md` now names source ref `import/frontend-tip`, commit
+  `a3f620a`, revision 9. `scripts/seed/50-demo-coverage.seed.ts` extended
+  from 8 keys to the full 26-field rev-9 tracker set: numeric fields seed
+  as MEASUREMENT (rating fields included so zero values and decimals
+  survive), `bleeding-level` as OPTION, `bp`/`pms-symptoms`/`daily-note`
+  as TEXT from `tracking.text` `${iso}:${fieldId}`. Coach-authored keys
+  `${iso}:note:*` and `${iso}:coach-note` deliberately unseeded; the
+  server-side note path is held w2-a5 work.
+- Seed proofs on lane `app_fp_w2fe1` (plus `app_fp_w2fe1b` as baseline):
+  default profile byte-identical, normalized `pg_dump` diff 0 lines
+  (1525 rows each side; only migration ledger ids, password hashes and
+  dump session tokens excluded). Demo profile: client-007 Amara Lewis,
+  26 template fields, 65 daily entries, 1338 revision values (1288
+  numeric, 38 text, 12 option), matching the rev-9 export counts.
+  Idempotent across reruns: row counts and normalized content hashes
+  identical (evidence `counts-demo-run*.txt`, `hash-demo-run*.txt`,
+  `dump-default-*.txt`).
+- Gates: `npm run typecheck` 0; `npm run lint` 0 errors / 92 warnings
+  (89 inherited, 2 in byte-verbatim upstream code, 1 authored and fixed);
+  `npm run format:check` exits 1 with 57 failing files, all inherited at
+  the merge base, zero authored; `npm test` 116 files / 1380 tests pass;
+  `npm run build` 0; `npm run index` + `index:check` 0 (COMPONENTS.md
+  gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
+  `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
+  0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
+  npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+  `labelHidden` (stage-10 F1, present at merge base).
+- Browser proof: production build via `next start` on http 4403 behind the
+  disposable TLS proxy on https 4402 (F2 workaround; production auth
+  rejects http origins). Lane `app_fp_w2fe1`, seeded default + demo,
+  signed in as seeded coach, no `?demo`. URL
+  `/coach?section=clients&client=client-007&tab=Tracker` at 1440 and 2560:
+  `.trk` root renders, 10 expanded week rows plus the current week,
+  week labels 17 Aug through 25 Oct, template-driven column groups
+  (Body, Nutrition, Recovery, Activity, Notes) with derived Day/Session/
+  Coach columns, Expand/Collapse/Jump-to-today/pin controls. Screenshots
+  `tracker-1440.png`, `tracker-2560.png` in the evidence dir, looked at.
+- Note persistence: coach day note written through the tab's note popover
+  on today's Coach cell, page reloaded, popover reopened: text intact
+  (`PERSIST-PROOF: PASS`; `note-popover.png`, `note-saved-1440.png`,
+  `note-after-reload-1440.png`). Persistence is the local
+  `tracking.text`/`writeCoachState` flow Lilly shipped; the server-side
+  note path is the held work.
+- Read path record (step 4 HELD): the ported tab reads `client.tracking`
+  from the localStorage-backed `CoachState`; without `?demo` the roster
+  and template resolve but daily-entry cells render empty because no
+  canvas hydration maps `daily_entry` rows into `client.tracking` yet.
+  `TrackerComment` exists in the Prisma schema with no read/write route.
+  No route files added or extended on this card (grep: none). No
+  migration (schema unchanged). Held work verbatim for the follow-up
+  card: "Backend: FieldConfig.decimals and summary must persist with
+  template tracker fields (extend the w2-a5 template and tracker config
+  route and tests, new migration only if the schema needs it, timestamp
+  from the lead). Per-cell notes and coach day notes persist server-side
+  with workspace and role scoping, replacing local tracking.text storage
+  for coach notes."
+- Parked-stage reconciliation: Lilly's tracker supersedes w2-k2
+  (desktop) and w2-k4 (coach read-only view). w2-k3 (mobile) and the
+  client tracker entry in w2-c7 need an owner decision; PR 210 ships no
+  mobile layout by design (under 900px shows a notice plus last 7 days).
+  Nothing unparked: k1-k4 and a8 stay parked.
+- Teardown: prod server and TLS proxy stopped; lane databases
+  `app_fp_w2fe1` and `app_fp_w2fe1b` dropped, `pg_database` query shows
+  `app_fp_w2fe1%` absent (evidence `teardown-pg-database.txt`).
+- NOT done: no push, no PR, no unparks, no backend note path (held),
+  independent review by a different model family still pending (not
+  requested per instruction).
+
 ## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
 
 - Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`

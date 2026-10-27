@@ -18,7 +18,7 @@ import { TextArea } from "../vari8/inputs";
 import { FormGrid, Toolbar } from "../vari8/layouts";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
-import { ClientMediaPanel } from "./media";
+import { AthleteTrackerTab } from "./athlete/tracker-tab";
 import {
   addDays,
   assignTemplate,
@@ -29,6 +29,7 @@ import {
   uid,
   unreadCount,
 } from "./model";
+import { ClientMediaPanel } from "./media";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
@@ -317,6 +318,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
     <>
       {tab === "Overview" && <AthleteOverview client={c} />}
       {tab === "Timeline" && <AthleteTimelineTab client={c} />}
+      {tab === "Tracker" && <AthleteTrackerTab client={c} />}
       {tab === "Plans" && (
         <ClientPlansSummary
           client={c}
@@ -593,6 +595,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         items={[
           "Overview",
           "Timeline",
+          "Tracker",
           "Plans",
           "Check-ins",
           "Notes & tasks",
