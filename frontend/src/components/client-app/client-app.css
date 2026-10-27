@@ -553,3 +553,32 @@
   margin: 8px 0 0;
   font-size: 0.9rem;
 }
+.coach-root .ca-shared-media {
+  margin-top: 22px;
+}
+.coach-root .ca-shared-media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.coach-root .ca-shared-media-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--cd-border);
+  border-radius: 12px;
+  font-size: 13px;
+}
+.coach-root .ca-shared-media-row small {
+  display: block;
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .ca-shared-media-row button {
+  flex-shrink: 0;
+}

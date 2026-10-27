@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 58 backend pages, 55 API routes, 14 layouts, 5 canvas pages.
+Counts: 58 backend pages, 58 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -83,6 +83,9 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/auth/refresh` | `app/api/v1/auth/refresh/route.ts` | POST | none detected |
 | `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]/assignments` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/[clientProfileId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/[clientProfileId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/assigned` | `app/api/v1/media/[workspaceId]/assigned/route.ts` | - | none detected |
 | `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/route.ts` | - | none detected |
