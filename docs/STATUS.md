@@ -1,3 +1,35 @@
+## 2026-10-27 - W2T6 preview conflict repair 2: w2/c7 merge line `daaad6e` merged into `w2/t6`
+
+- Preview rebuild skipped w2-t6 again after the verified c7 merge line
+  advanced to `daaad6e` (merge `9f28b3c` of `4bfaf2b` + `2f602b6` plus
+  its STATUS record commit). Absorbed into stage tip `b9f5003` as
+  `--no-ff` merge `03d2a93`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree b9f5003 daaad6e`
+  -> tree `440b528ace9fc186c3b5fd887d049d2349869577`; conflict list
+  `docs/STATUS.md` only. Both `client-app.css` twins and the generated
+  `docs/index/*` auto-merged clean this round.
+- Resolutions: `docs/STATUS.md` union, ours-new (the t6 repair entry)
+  then theirs-new (the c7 repair entry) over the shared tail, all
+  2026-10-27 entries above all 2026-10-26. `npm run index` regenerated
+  the merged docs byte-identical to the auto-merge; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (29 frontend-only + 85
+  canvas-only lines: the ca-nutrition actuals/split blocks plus the
+  end-positioned ca-shared-media block on the canvas side). The diff
+  hunk count moved 6 -> 4 only because surrounding merged lines
+  shifted hunk boundaries; the differing line set did not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
+  files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+  index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
 ## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
 
 - Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
