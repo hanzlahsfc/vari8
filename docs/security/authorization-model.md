@@ -83,7 +83,7 @@ Legend / decisions:
   capabilities over every client of their workspace, so `dailyTracking`,
   `mealPlans`, `checkinInstances` and `checkinsCoachReviews` reads are `ws`
   for COACH without an ACTIVE `ClientAssignment`. Writes stay `asg` per
-  decision #111; assistant stays `asg / —`.
+  decision #111; assistant reads stay `asg` with writes denied.
 - **Support is denied by default** to all client data. Any support access requires an explicit,
   separately-authorized grant (`TODO(human)`).
 - ⚠ **Owner and assistant access to cycle/bloodwork is TODO(human).** Default is denied; only an
@@ -127,8 +127,8 @@ Legend / decisions:
 - **Check-In resources** (P-025-A/P-025-B, decisions #92–#97): three
   closed resources — `checkinFormDefinitions` (staff-managed forms only),
   `checkinInstances` (one-off schedule/cancel: owner ws/ws, coach ws/asg
-  after the D10/D22 read widening, assistant asg/— read-only, client own/—), and
-  `checkinsCoachReviews`
+  after the D10/D22 read widening, assistant `asg` read-only, client `own`
+  read-only), and `checkinsCoachReviews`
   (client submission/history own/own; staff review write deferred to
   P-025-C). SUPPORT and CLIENT writes are denied; **all three resources
   are in the platform-admin denied set** — a PLATFORM_ADMIN is denied even

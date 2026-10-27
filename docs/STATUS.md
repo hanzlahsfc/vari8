@@ -1,3 +1,53 @@
+## 2026-10-27 - w2/coach-reads: repair-1 - dash-free legend lines; macro-targets stall proven pre-existing; data-bearing iifym proof
+
+- Repair round on `c3f6f04` after the round-1 REPAIR verdict. Only
+  `docs/security/authorization-model.md` and this entry changed; no
+  product code, routes, services, tests or `lib/auth/rbac.ts` touched.
+- F1: the two legend lines rewritten without U+2013 or U+2014. The
+  dagger note now reads "assistant reads stay `asg` with writes
+  denied." and the check-in resources bullet reads "assistant `asg`
+  read-only, client `own` read-only". The four matrix table rows
+  (daily tracking, meal plans, check-in instances, check-ins and coach
+  reviews) are byte-identical to `c3f6f04`; the denied-cell glyph stays
+  owner-gated (blocked_on w2_coachreads_f1_table_glyph).
+- F2 verdict: PRE-EXISTING, not introduced by `c3f6f04`. Instrumented
+  Playwright repro (fetch/XHR wrappers, console and pageerror capture,
+  React fiber probe) on lane `app_fp_w2coachrr2`, signed in as the
+  seeded coach, Amara macro-targets with her assignment REMOVED. On
+  `c3f6f04` AND on base `6d8560c` in a detached scratch worktree the
+  page renders the server-side "Loading macro targets" shell, zero
+  `/api/v1` requests fire, `window.fetch` is never called, and zero
+  React fiber nodes exist on the DOM after 70 s of observation. The
+  server emits the RSC flight payload (document 200, nine `__next_f.push`
+  scripts in the served HTML, no CSP header) and the React client
+  runtime loads, but hydration never mounts, so the mount effect's
+  `apiFetch` is never scheduled. Identical signature on both commits
+  means inherited behavior; no product fix made. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2-COACHREADS/r2/`
+  (`repro-macro-targets.mjs`, `head-c3f6f04-v2.json` plus screenshot,
+  `base-6d8560c.json` plus screenshot, `probe-html.mjs`,
+  `head-c3f6f04-html.html`).
+- F3 coverage: one data-bearing plan written in SQL for unassigned
+  Amara (`iifym_plan` `fp3plan_amara01` plus published
+  `iifym_plan_version` `fp3ver_amara01`, two-option weekly draft,
+  version 1 effective 2026-10-20). Coach GET
+  `clients/{cp}/iifym-plans` then returned 200 with a real payload:
+  plan id and title, draftRevision 1, two draft options, one version
+  header, `currentVersionId` set, `canWrite` false (assignment REMOVED
+  so workspace read grants but no write). Captured in
+  `r2/f3-coach-iifym-amara.json`. No seed files changed.
+- Gates on the repair delta: `npx vitest run tests/unit` exit 0 (120
+  files, 1410 tests, lead-verified after the child gate run);
+  `npm run lint` exit 0 (91 warnings, 0 errors); `npm run typecheck`
+  exit 0; `npm run index:check` exit 0;
+  `npx vitest run --config vitest.integration.config.ts` on the seven
+  touched integration files exit 0 (147 tests) against
+  `app_fp_w2coachrr2`. Dash gate on `c3f6f04..HEAD` added lines prints
+  0. Lane created via `lane-db`, `prisma migrate deploy` exit 0, real
+  seed exit 0 (8 modules), dropped after verification. Delegated the
+  unit-gate execution to one DeepSeek flash child via hermes; all
+  other work lead-side.
+
 ## 2026-10-27 - w2/coach-reads: COACH read scope widened to workspace on plan and client data resources
 
 - Owner ruling 2026-10-27 (w2-c7 verdict F2): the seeded coach 403s on
