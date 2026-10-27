@@ -646,7 +646,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       }
     }
 
-    // Coach notes: internal -> PRIVATE, general -> GENERAL.
+    // Coach notes: internal -> PRIVATE, general -> GENERAL. The pin flag
+    // rides the W2-A1 CoachNote.pinned column (it used to be a "[pinned] "
+    // body prefix before the column existed).
     for (const [kind, list] of [
       ["PRIVATE", data.internalNotes],
       ["GENERAL", data.generalNotes],
@@ -660,11 +662,50 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             workspaceId: workspace.id,
             clientProfileId: profile.id,
             visibility: kind,
-            body: n.pinned ? `[pinned] ${n.text}` : n.text,
+            body: n.text ?? "",
+            pinned: kind === "PRIVATE" && n.pinned === true,
             authorMemberId: staff.id,
           },
         });
       }
+    }
+
+    // W2-A1: phase plan and per-week timeline notes.
+    for (const p of data.phases ?? []) {
+      const start = dayUtc(p.startDate);
+      if (!start) continue;
+      await prisma.clientPhase.upsert({
+        where: { id: `seed-demo-phase-${p.id}` },
+        update: {},
+        create: {
+          id: `seed-demo-phase-${p.id}`,
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          name: p.name ?? "Phase",
+          startDate: start,
+          durationWeeks: Number(p.durationWeeks) || 1,
+        },
+      });
+    }
+    for (const [weekToken, body] of Object.entries(data.weekNotes ?? {})) {
+      const weekStart = dayUtc(weekToken);
+      if (!weekStart || typeof body !== "string" || !body.trim()) continue;
+      await prisma.clientWeekNote.upsert({
+        where: {
+          clientProfileId_weekStart: {
+            clientProfileId: profile.id,
+            weekStart,
+          },
+        },
+        update: {},
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          weekStart,
+          body,
+          authorMemberId: staff.id,
+        },
+      });
     }
     for (const t of data.related?.coachTodos ?? []) {
       await prisma.coachTask.upsert({

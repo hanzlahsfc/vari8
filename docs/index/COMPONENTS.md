@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 176 components in 92 files.
+Counts: 178 components in 94 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -45,10 +45,12 @@ its surface section and open the file in the second column. Canvas screens: see
 | `ClientGoalsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientHabitsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientMediaPanel` | `frontend/src/components/coach/media.tsx` | /coach |
+| `ClientMessages` | `frontend/src/components/client-app/messages.tsx` | /client, /coach |
 | `ClientPhasePlanEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientPlanPreview` | `frontend/src/components/coach/client-plan-preview.tsx` | /client, /coach |
 | `ClientPlansSummary` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientPreview` | `frontend/src/components/coach/client-preview.tsx` | /coach |
+| `ClientTasks` | `frontend/src/components/client-app/tasks.tsx` | /client, /coach |
 | `ClientsWorkspace` | `frontend/src/components/coach/clients.tsx` | /coach |
 | `CoachApp` | `frontend/src/components/coach/coach-app.tsx` | /coach |
 | `CoachDashboardEditor` | `frontend/src/components/coach/builder/coach-dashboard.tsx` | /client, /coach |

@@ -200,6 +200,36 @@ describe("coach data seam", () => {
     const assembled = migrateCoachState(readCoachState());
     expect(isCoachState(assembled)).toBe(false);
   });
+
+  it("defaults the note arrays on a stored clients slice that predates them", () => {
+    const state = storedSeed();
+    writeCoachState(state);
+    // Envelopes written while the detail fields lived outside the clients
+    // slice carry cores with no internalNotes or generalNotes. The merge
+    // must re-default them: isCoachState requires both as arrays, and a
+    // false verdict is the exact condition that sets preserveRaw in the
+    // store and shows "Saved workspace could not be read".
+    const clientsKey = dataDomains.find(({ domain }) => domain === "clients")
+      ?.slice?.key as string;
+    const raw = JSON.parse(localStorage.getItem(clientsKey) as string);
+    for (const client of raw.data as Record<string, unknown>[]) {
+      delete client.internalNotes;
+      delete client.generalNotes;
+    }
+    localStorage.setItem(clientsKey, JSON.stringify(raw));
+
+    const assembled = migrateCoachState(readCoachState());
+    expect(isCoachState(assembled)).toBe(true);
+    const read = assembled as CoachState;
+    // The roster survives the merge, so the clients list still renders.
+    expect(read.clients.map((client) => client.id)).toEqual(
+      state.clients.map((client) => client.id),
+    );
+    for (const client of read.clients) {
+      expect(client.internalNotes).toEqual([]);
+      expect(client.generalNotes).toEqual([]);
+    }
+  });
 });
 
 describe("shared /api/v1 fetch client (O1)", () => {
