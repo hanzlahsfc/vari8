@@ -29,6 +29,7 @@ import { DatePicker, TimePicker } from "@/components/vari8/inputs";
 import foodSource from "@/data/food-database.json";
 import { useReducedMotion } from "@/lib/reduced-motion";
 import { createInitialClients } from "../clients/model";
+import { assignSavedMealToClient } from "./assign-saved-meal";
 import { ClientPlanPreview } from "./client-plan-preview";
 import {
   addMealToVariant,
@@ -43,6 +44,7 @@ import {
   type Meal,
   type MealPlan,
   type MealPlanVariant,
+  type ReusableMeal,
   validateMealPlan,
 } from "./model";
 import { PlanOverview } from "./plan-overview";
@@ -140,7 +142,7 @@ function TooltipIconButton({
   );
 }
 
-export function MealplanWorkspace() {
+export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
   const reduceMotion = useReducedMotion();
   const clients = useMemo(
     () => createInitialClients().filter((client) => !client.archived),
@@ -213,6 +215,19 @@ export function MealplanWorkspace() {
     [query],
   );
   const selectedClient = clients.find((client) => client.id === clientId);
+
+  async function assignSavedMeal(meal: ReusableMeal): Promise<boolean> {
+    if (!workspaceId || !selectedClient) return false;
+    const sortOrder = plan?.reusableMeals.findIndex(
+      (entry) => entry.id === meal.id,
+    );
+    return assignSavedMealToClient(
+      workspaceId,
+      selectedClient.name,
+      meal,
+      sortOrder !== undefined && sortOrder >= 0 ? sortOrder : undefined,
+    );
+  }
 
   function update(next: MealPlan) {
     setPlans((current) => ({ ...current, [clientId]: next }));
@@ -506,6 +521,7 @@ export function MealplanWorkspace() {
             foodMap={foodMap}
             clientName={selectedClient?.name ?? "Client"}
             onChange={(reusableMeals) => update({ ...plan, reusableMeals })}
+            onAssign={workspaceId ? assignSavedMeal : undefined}
           />
         </div>
       )}
