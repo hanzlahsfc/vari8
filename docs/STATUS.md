@@ -1,3 +1,37 @@
+## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
+
+- Card w2-c7 (client photos, training log, tracker entry polish),
+  branch `w2/c7` off c1 tip `788714b`. Lane DB `app_fp_w2c7`, port
+  floor >4999, migration stamp `20261027000017` reserved and free.
+- Merge 1: `w2/a3` `0e91798` -> `git merge-tree --write-tree` OID
+  `8dd37c086de6a63b807cb39e6ca8f533f8ed3a72` (matches the card's
+  verified OID, clean). Merge commit
+  `842851ad8679d8d645f35a79f1bccacbdd5ae628`.
+- Merge 2: `w2/t6` pinned `f0dddf3` (note: the `w2/t6` branch tip had
+  advanced to `da34672`, a later merge of w2/fe1; the card pins
+  `f0dddf3`, so the SHA was merged, not the branch tip). merge-tree
+  OID `1c321ddf5ac0415339a56b16137ca012dd65aefd`; conflicts only in
+  the two named files, resolved per card: `docs/STATUS.md` hand-merged
+  newest-first keeping both sides, `docs/index/ROUTES.md` regenerated
+  via `npm run index` (exit 0). Merge commit
+  `0c6b0a8c87069c8f44c5cd15da96ee2d12c6b87f`.
+- Merge 3: `w2/fe2` `2df2d82` -> merge-tree OID
+  `96e7573f9705326c0b487e5589f505cf1a2e239a`; conflicts: named
+  `components/canvas/coach/store.tsx`, named docs class
+  (`docs/STATUS.md`, `docs/index/COMPONENTS.md`,
+  `docs/index/DATA-MODEL.md`, `docs/index/ROUTES.md`), PLUS the
+  unlisted `frontend/src/components/coach/clients.tsx` (t6 side adds
+  `import { ClientMediaPanel } from "./media"`, fe2 side adds
+  `import { AthleteTrackerTab } from "./athlete/tracker-tab"` in the
+  same import-block slot; the canvas twin auto-merged cleanly).
+  Card rule: any conflict beyond the named files stops the merge,
+  verbatim to report, no resolution attempt. Merge aborted; branch at
+  `0c6b0a8`. Verbatim conflicted file and stage list under
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7/`.
+- Card BLOCKED pending owner/lead ruling on `clients.tsx` resolution
+  scope. No card item work started; merged-tip typecheck/build not
+  run, per the step order.
+
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
 - Verifier B1: the T6 migration added `client_profile_id` with no
