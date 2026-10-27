@@ -29,8 +29,9 @@ head-pinned merge, post-merge parent/tree/audit checks, baseline boundary.
 ```bash
 # variables — all defined; secrets from env only (POSTGRES_PASSWORD, BETTER_AUTH_SECRET)
 REPO=hanzlahsfc/vari8
-HEAD=90c16bee63e2609ebc4f09e91459332390562464
+HEADSHA=90c16bee63e2609ebc4f09e91459332390562464   # pinned #203 head
 BASE=Vari8-Beta
+HEAD="$HEADSHA"
 WT=/tmp/p452-wt; STATE=/tmp/p452/state; DB=app_p452; PORT=58152
 BUNDLE_COMMIT=04902f1dc3d317e0959ae533f2f4c479a8fc55f9
 BUNDLE_PATH=tools/parity
@@ -104,25 +105,29 @@ git rev-parse "HEAD:$BUNDLE_PATH/baseline"
 # releases this step's lock); a later step repeats acquisition/validation
 ```
 
-## Single lock-held step (merge block — NOT run in this task)
+## Single-invocation execution block (merge — NOT run in this task)
 
-The lock acquired above stays held continuously through: live revalidation →
-test merge → gates → final ref check → authorized merge → parent/tree proof.
-A later invocation reacquires the lock and repeats validation/gates — stale
-preparation is never permission to merge.
+The preparation above releases its lock and resources when it ends. A merge
+invocation is a NEW lock-held block that reacquires the lock, revalidates refs
+and repeats required preparation/gates; stale preparation is never permission.
 
 ```bash
-# (same shell / same lock: re-fetch + revalidate seconds before merging)
+mkdir -p "$STATE"; exec 9>"$STATE/Vari8-Beta.lock"; flock -x 9   # REACQUIRE
+trap 'flock -u 9 2>/dev/null; exec 9>&-' EXIT
 git fetch -q origin
-[[ "$(git -C "$WT" rev-parse "origin/$BASE")" == "$BASETIP" ]] || exit 4   # base moved → stop
-gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft     # revalidate
-gh pr ready 203 -R "$REPO"            # only if still draft, owner-authorized
-gh pr merge 203 -R "$REPO" --merge --match-head-commit "$HEAD"
+# live revalidation under the fresh lock
+gh pr view 203 -R "$REPO" --json headRefOid,baseRefName,state,isDraft
+[[ "$(git rev-parse origin/Vari8-Beta)" == "$(<"$STATE/base-tip")" ]] || exit 4
+# re-run the test merge + fast + combined gates (as the preparation block),
+# then, with the owner comment recorded and verified:
+gh pr ready 203 -R "$REPO"    # only if still draft and owner-authorized
+gh pr merge 203 -R "$REPO" --merge --match-head-commit "$HEADSHA"
 MERGE_SHA=$(gh pr view 203 -R "$REPO" --json mergeCommit --jq .mergeCommit.oid)
-git cat-file -p "$MERGE_SHA" | awk '/^parent/{print $2}'    # must be [base tip, head]
-git rev-parse "$MERGE_SHA^{tree}"                            # must equal recorded test tree
-git rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"           # must equal BEFORE hash
-flock -u 9; exec 9>&-                                         # release AFTER proof
+git fetch -q origin "$MERGE_SHA"          # fetch BEFORE checking parents/tree
+P1=$(git rev-parse "$MERGE_SHA^1"); P2=$(git rev-parse "$MERGE_SHA^2")
+MT=$(git rev-parse "$MERGE_SHA^{tree}")
+[[ "$P1" == "$BASETIP" && "$P2" == "$HEADSHA" && "$MT" == "$MERGETREE" ]]   || { echo "merge tree/parent mismatch — investigate"; exit 4; }
+git rev-parse "origin/$BASE:$BUNDLE_PATH/baseline"   # must equal the BEFORE hash
 ```
 
 ## Remaining steps
