@@ -128,6 +128,30 @@ case "$*" in
   };
 }
 
+// fixture safety preamble — prepended to EVERY executed block. Refuses unless
+// the caller supplies task-owned scratch paths: WT must be a non-existent path
+// under the fixture root, STATE under the fixture root, DB/FIX set. Omitted or
+// unsafe inputs stop here — before any block command can touch operator paths.
+const GUARD = `set -euo pipefail
+for v in WT STATE DB FIX; do [[ -n "\${!v:-}" ]] || { echo "fixture-guard: $v unset — refusing"; exit 5; }; done
+[[ "$WT" == "$FIX"/* && ! -e "$WT" ]] || { echo "fixture-guard: unsafe WT=$WT — refusing"; exit 5; }
+[[ "$STATE" == "$FIX"/* ]] || { echo "fixture-guard: unsafe STATE=$STATE — refusing"; exit 5; }
+`;
+
+function guardedEnv(
+  f: ReturnType<typeof fixtures>,
+  extra: Record<string, string> = {},
+) {
+  return {
+    PATH: `${f.bin}:${process.env.PATH}`,
+    FIX: f.dir,
+    WT: path.join(f.dir, "wt"),
+    STATE: f.st,
+    DB: "app_x",
+    ...extra,
+  };
+}
+
 function runBlock(
   marker: string,
   extra: Record<string, string> = {},
@@ -167,7 +191,7 @@ function runBlock(
     GIT_P2: SHAS.h203,
     ...extra,
   };
-  const src = `set -euo pipefail\n${block(marker, inside)}`;
+  const src = `${GUARD}${block(marker, inside)}`;
   const r = spawnSync("bash", ["-c", src], {
     env: { ...process.env, ...vars },
     encoding: "utf8",
@@ -228,15 +252,9 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
 
   it("merge block refuses when receipts are missing", () => {
     const f = fixtures();
-    const src = `set -euo pipefail\nSTATE=${f.st}\n` + block("REACQUIRE", true);
+    const src = GUARD + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
-      env: {
-        ...process.env,
-        PATH: `${f.bin}:${process.env.PATH}`,
-        FIX: f.dir,
-        STATE: f.st,
-        REPO: "x",
-      },
+      env: { ...process.env, ...guardedEnv(f, { REPO: "x" }) },
       encoding: "utf8",
     });
     expect(r.status).not.toBe(0);
@@ -249,23 +267,21 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       path.join(f.st, "p203-prep.json"),
       JSON.stringify(receipt("0".repeat(40))),
     );
-    const src =
-      `set -euo pipefail\nSTATE=${f.st}\nREPO=x\n` + block("REACQUIRE", true);
+    const src = GUARD + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
       env: {
         ...process.env,
-        PATH: `${f.bin}:${process.env.PATH}`,
-        FIX: f.dir,
-        STATE: f.st,
-        REPO: "x",
-        GH_HEAD: SHAS.h203,
-        GH_BASE: "Vari8-Beta",
-        GH_STATE: "OPEN",
-        GH_DRAFT: "true",
-        GH_MERGE: SHAS.merge,
-        GIT_BASETIP: SHAS.base,
-        GIT_TREE: SHAS.tree,
-        HEADSHA: SHAS.h203,
+        ...guardedEnv(f, {
+          REPO: "x",
+          GH_HEAD: SHAS.h203,
+          GH_BASE: "Vari8-Beta",
+          GH_STATE: "OPEN",
+          GH_DRAFT: "true",
+          GH_MERGE: SHAS.merge,
+          GIT_BASETIP: SHAS.base,
+          GIT_TREE: SHAS.tree,
+          HEADSHA: SHAS.h203,
+        }),
       },
       encoding: "utf8",
     });
@@ -279,29 +295,28 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       path.join(f.st, "p203-prep.json"),
       JSON.stringify(receipt(SHAS.base)),
     );
-    const src = `set -euo pipefail\n` + block("REACQUIRE", true);
+    const src = GUARD + block("REACQUIRE", true);
     const r = spawnSync("bash", ["-c", src], {
       env: {
         ...process.env,
-        PATH: `${f.bin}:${process.env.PATH}`,
-        FIX: f.dir,
-        STATE: f.st,
-        REPO: "x",
-        HEADSHA: SHAS.h203,
-        HEAD: SHAS.h203,
-        BASE: "Vari8-Beta",
-        BASETIP: SHAS.base,
-        MERGETREE: SHAS.tree,
-        GH_HEAD: SHAS.h203,
-        GH_BASE: "Vari8-Beta",
-        GH_STATE: "OPEN",
-        GH_DRAFT: "true",
-        GH_MERGE: SHAS.merge,
-        GIT_BASETIP: SHAS.base,
-        GIT_TREE: SHAS.tree,
-        GIT_P1: SHAS.base,
-        GIT_P2: SHAS.h203,
-        BUNDLE_PATH: "tools/parity",
+        ...guardedEnv(f, {
+          REPO: "x",
+          HEADSHA: SHAS.h203,
+          HEAD: SHAS.h203,
+          BASE: "Vari8-Beta",
+          BASETIP: SHAS.base,
+          MERGETREE: SHAS.tree,
+          GH_HEAD: SHAS.h203,
+          GH_BASE: "Vari8-Beta",
+          GH_STATE: "OPEN",
+          GH_DRAFT: "true",
+          GH_MERGE: SHAS.merge,
+          GIT_BASETIP: SHAS.base,
+          GIT_TREE: SHAS.tree,
+          GIT_P1: SHAS.base,
+          GIT_P2: SHAS.h203,
+          BUNDLE_PATH: "tools/parity",
+        }),
       },
       encoding: "utf8",
     });
@@ -353,4 +368,44 @@ describe(`runbook blocks ${RBHASH}`, { timeout: T }, () => {
       expect(called).not.toContain("gh pr merge");
     });
   }
+
+  // regression for the incident where a fixture-less run wrote into the real
+  // /tmp/p452-wt — omitted or unsafe scratch inputs must die at the guard,
+  // before any block command runs (RECEIPTS-p203-prep.md P467/P468 records it)
+  it("sentinel: omitted scratch paths refuse before touching operator defaults", () => {
+    const f = fixtures();
+    // WT/STATE/DB deliberately absent — the block's ${VAR:-/tmp/p452-*} defaults
+    // would point at operator paths; the guard must fire first.
+    const src = GUARD + block("# #203 changes present", true);
+    const r = spawnSync("bash", ["-c", src], {
+      env: { ...process.env, PATH: `${f.bin}:${process.env.PATH}`, FIX: f.dir },
+      encoding: "utf8",
+    });
+    expect(r.status).toBe(5);
+    expect(r.stderr + r.stdout).toContain("fixture-guard");
+    expect(f.called()).toBe(""); // zero invocations — nothing ran, nothing touched
+  });
+
+  it("sentinel: foreign or pre-existing WT destinations refuse before mutation", () => {
+    const f = fixtures();
+    const probe = 'echo ran >> "$FIX/state/called"';
+    // real operator path, an existing dir inside the fixture, and a foreign path —
+    // all must refuse identically, on any host
+    for (const WT of ["/tmp/p452-wt", f.st, "/tmp"]) {
+      const r = spawnSync("bash", ["-c", GUARD + probe], {
+        env: {
+          ...process.env,
+          PATH: `${f.bin}:${process.env.PATH}`,
+          FIX: f.dir,
+          WT,
+          STATE: f.st,
+          DB: "x",
+        },
+        encoding: "utf8",
+      });
+      expect(r.status).toBe(5);
+      expect(r.stderr + r.stdout).toContain("fixture-guard");
+    }
+    expect(f.called()).toBe("");
+  });
 });

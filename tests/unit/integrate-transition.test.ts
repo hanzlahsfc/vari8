@@ -11,7 +11,13 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// Each executor test spawns the real bash executor + transition-check.mjs
+// (node) + fixture stub processes — inherently multi-second (heaviest path
+// ~3.3s standalone). File-scoped ceiling guards parallel-run jitter; it is
+// not masking a hang.
+vi.setConfig({ testTimeout: 20_000 });
 
 const ROOT = process.cwd();
 const SCRIPT = path.join(ROOT, "icm/05-build/tools/integrate-transition.sh");

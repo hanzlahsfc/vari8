@@ -37,7 +37,7 @@
 
 ## P466 — strict receipt schema
 
- validated against exact key set + sha shapes before use; malformed/
+validated against exact key set + sha shapes before use; malformed/
 missing/extra fields refuse; later vars (BASETIP/MERGETREE) assign only from validated
 state under . Fresh locked validation/gates still required.
 
@@ -56,6 +56,36 @@ state under . Fresh locked validation/gates still required.
   stop at "not merged" when the prerequisite PR is OPEN; merge block refuses missing
   and stale-base receipts; at the simulated checkpoint `flock -x` precedes `gh pr merge`.
 - `runbook-prep-block.test.ts` 2/2 unchanged.
+
+## P469 — fixture isolation + final gates
+
+- Incident (disclosed above) repaired for real: every executed block now runs behind
+  a `GUARD` preamble — refuses (exit 5) unless WT/STATE/DB/FIX are set, WT is a
+  non-existent path under the mkdtemp fixture root, STATE under it. Sentinel
+  regression (2 tests): omitted scratch paths refuse before ANY command runs
+  (`called` empty — /tmp/p452-wt never reached), and foreign/pre-existing WT
+  (`/tmp/p452-wt`, an existing fixture dir, `/tmp`) refuse identically on any host.
+  p452-wt restoration verified via `git restore` → clean status, `tools/parity`
+  intact, HEAD `d677df4` unchanged.
+- Suite: `runbook-all-blocks.test.ts` 10/10; `runbook-prep-block.test.ts` 2/2.
+- `integrate-transition` full-suite timeout resolved at the cause: the executor
+  spawned ~18 `node -e` cold-starts just for manifest field reads — all converted
+  to `jq` (already a hard prerequisite), preserving null/false semantics; only
+  `transition-check.mjs` (the real validator) still uses node. Heaviest test
+  5130ms → ~3300ms standalone; file-scoped `testTimeout: 20_000` added with
+  justification comment. `npm run test` unmasked: **1294/1294 pass**.
+- Formatting: 6 of the 8 failing files are hash-pinned p452 evidence (every byte
+  recorded in `artifact-sha256.txt`/`artifact-index.json`) — reformatting would
+  invalidate the verified capture, so `icm/05-build/tools/transition/p452/` is
+  excluded in `.prettierignore` with the hash-pin reason (same class as the
+  existing `spec/` and `tools/parity/baseline/manifest.json` entries — not a
+  green-shopping exclusion). The 2 branch-owned files were formatted.
+  `npm run format:check` now fully green.
+- Lint provenance proven, not assumed: 81 warnings remain, ALL in files
+  byte-identical to merge-base `d1c408102` (canvas trees, icm/03-plan tool,
+  lib/dashboard, tests/integration). The 9 branch-introduced warnings
+  (runbook-prep-block, transition-identity, identity.mjs) were fixed — dead
+  imports/params removed, `tree` now asserts a distinct merge tree.
 
 ## Package accounting (corrected, p458)
 

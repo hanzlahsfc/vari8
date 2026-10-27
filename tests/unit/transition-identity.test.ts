@@ -1,14 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  mkdtempSync,
-  writeFileSync,
-  mkdirSync,
-  writeSync,
-  openSync,
-  readFileSync,
-  writeFileSync as wf,
-} from "node:fs";
-import fs from "node:fs";
+import { mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";

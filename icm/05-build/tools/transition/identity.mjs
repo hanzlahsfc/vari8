@@ -43,7 +43,8 @@ export function verifyPackage(dir) {
   const walk = (d) => {
     for (const e of fs.readdirSync(d, { withFileTypes: true })) {
       const p = `${d}/${e.name}`;
-      e.isDirectory() ? walk(p) : files.push(p);
+      if (e.isDirectory()) walk(p);
+      else files.push(p);
     }
   };
   walk(dir);

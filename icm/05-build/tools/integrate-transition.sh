@@ -42,11 +42,14 @@ command -v node >/dev/null || die "node required (approved runtime)" 2
 
 node "$TOOLS/transition-check.mjs" "$MANIFEST" || die "manifest invalid" 4
 
-jqf() { node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const it=m.items.find(i=>i.pr===+process.argv[2]);if(!it){console.error("unlisted PR");process.exit(4)}console.log(it[process.argv[3]]??"")' "$MANIFEST" "$WANT_PR" "$1"; }
+jqf() { jq -r --argjson pr "$WANT_PR" --arg f "$1" \
+  '(.items | map(select(.pr == $pr)) | .[0]) as $it
+   | if $it == null then error("unlisted PR") else ($it[$f] | if . == null then "" else . end) end' \
+  "$MANIFEST"; }
 PR_ITEM() { jqf "$1" || die "unlisted PR #$WANT_PR — not in the authorized manifest" 4; }
 STEP_ORDER="$(PR_ITEM order)"; HEAD_SHA="$(PR_ITEM head)"; ITEM_BASE="$(PR_ITEM base)"
 ITEM_BRANCH="$(PR_ITEM branch)"; ITEM_DRAFT="$(PR_ITEM isDraft)"
-COMBINED_REF="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.reference)' "$MANIFEST")"
+COMBINED_REF="$(jq -r '.gates.combined.reference // ""' "$MANIFEST")"
 STATE_DIR="$HERE/_transition"; mkdir -p "$STATE_DIR"
 STATE="$STATE_DIR/p${WANT_PR}.json"
 
@@ -62,11 +65,11 @@ fi
 verify_auth() {
   local key url author contains id body pending
   key="$1"
-  pending="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.pendingInput??"")' "$MANIFEST" "$key")"
+  pending="$(jq -r --arg k "$key" '.authorization[$k].pendingInput // ""' "$MANIFEST")"
   [[ -z "$pending" ]] || die "authorization input pending: $pending" 4
-  url="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.commentUrl)' "$MANIFEST" "$key")"
-  author="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.author)' "$MANIFEST" "$key")"
-  contains="$(node -e 'const a=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).authorization[process.argv[2]];console.log(a.contains)' "$MANIFEST" "$key")"
+  url="$(jq -r --arg k "$key" '.authorization[$k].commentUrl // ""' "$MANIFEST")"
+  author="$(jq -r --arg k "$key" '.authorization[$k].author // ""' "$MANIFEST")"
+  contains="$(jq -r --arg k "$key" '.authorization[$k].contains // ""' "$MANIFEST")"
   id="${url##*issuecomment-}"
   body="$(gh api "repos/${REPO}/issues/comments/${id}" --jq '{l:.user.login,b:.body}' 2>/dev/null)" \
     || die "cannot verify $key — comment record unreachable via gh api; missing input: comment $id on $REPO" 4
@@ -83,9 +86,9 @@ echo "authorization records verified"
 git fetch -q origin
 mkdir -p "$LOCKS"
 exec 9>"$LOCKS/Vari8-Beta.lock"; echo "waiting for the integration lock"; flock 9; echo "lock held"
-COUNT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).items.length)' "$MANIFEST")"
+COUNT="$(jq '.items | length' "$MANIFEST")"
 for i in $(seq 1 "$COUNT"); do
-  pf() { node -e 'const m=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));console.log(m.items[process.argv[2]-1][process.argv[3]])' "$MANIFEST" "$i" "$1"; }
+  pf() { jq -r --argjson i "$i" --arg f "$1" '.items[$i - 1][$f] | if . == null then "" else . end' "$MANIFEST"; }
   p="$(pf pr)"; h="$(pf head)"; b="$(pf base)"; d="$(pf isDraft)"
   J="$(gh pr view "$p" -R "$REPO" --json headRefOid,baseRefName,state,isDraft,comments,mergeCommit)"
   [[ "$(jq -r .headRefOid <<<"$J")" == "$h" ]] || die "PR #$p head moved (authorized $h) — fresh authorization required" 4
@@ -123,7 +126,7 @@ trap 'jq -n --arg s interrupted "{status:\$s}" > "$STATE.tmp" 2>/dev/null && mv 
 BASE_REF="origin/$ITEM_BASE"
 snap() { git rev-parse -q --verify "origin/$1:$2" 2>/dev/null || echo "absent"; }
 BASELINE_SNAP=""
-for bp in $(node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).baseline?.paths||["tools/parity/baseline"]).join(" "))' "$MANIFEST"); do
+for bp in $(jq -r '(.baseline.paths // ["tools/parity/baseline"]) | join(" ")' "$MANIFEST"); do
   BASELINE_SNAP="$BASELINE_SNAP$bp::$(snap "$ITEM_BASE" "$bp") "
 done
 
@@ -139,7 +142,7 @@ TEST_TREE="$(git rev-parse 'HEAD^{tree}')"
 # --- Activation boundary: the merge result must not touch baseline/active
 # reference paths (files, config, symlinks, resolutions). ---
 while IFS= read -r changed; do
-  for bp in $(node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).baseline?.paths||["tools/parity/baseline"]).join(" "))' "$MANIFEST"); do
+  for bp in $(jq -r '(.baseline.paths // ["tools/parity/baseline"]) | join(" ")' "$MANIFEST"); do
     [[ "$changed" == "$bp"* ]] && die "merge touches baseline path $changed — unauthorized activation" 6
     [[ -L "$changed" && "$changed" == tools/parity/* ]] && die "merge introduces symlink $changed under tools/parity" 6
   done
@@ -174,9 +177,9 @@ fi
 # Runner argv comes from the manifest; missing verifier/package/inputs fails
 # before mutation — historical receipts alone are never sufficient. ---
 CG_OUT="$STATE_DIR/p${WANT_PR}.combined"; mkdir -p "$CG_OUT"
-BUNDLE_COMMIT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.commit??"")' "$MANIFEST")"
-BUNDLE_PATH="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.path??"")' "$MANIFEST")"
-BUNDLE_TREE="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.bundle?.treeSha??"")' "$MANIFEST")"
+BUNDLE_COMMIT="$(jq -r '.gates.combined.bundle.commit? // ""' "$MANIFEST")"
+BUNDLE_PATH="$(jq -r '.gates.combined.bundle.path? // ""' "$MANIFEST")"
+BUNDLE_TREE="$(jq -r '.gates.combined.bundle.treeSha? // ""' "$MANIFEST")"
 GATE_HOME="$STATE_DIR/gate-tools"
 if [[ -n "$BUNDLE_COMMIT" ]]; then
   [[ "$(git rev-parse "$BUNDLE_COMMIT:$BUNDLE_PATH" 2>/dev/null)" == "$BUNDLE_TREE" ]]     || die "gate bundle tree sha mismatch for $BUNDLE_COMMIT:$BUNDLE_PATH" 5
@@ -189,7 +192,7 @@ else
 fi
 CG_OK=1
 RUNNER=()
-while IFS= read -r a; do RUNNER+=("$a"); done < <(node -e 'for(const a of JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.runner)console.log(a)' "$MANIFEST")
+while IFS= read -r a; do RUNNER+=("$a"); done < <(jq -r '.gates.combined.runner[]' "$MANIFEST")
 [[ -f "${RUNNER[1]:-}" ]] || die "combined gate runner missing: ${RUNNER[1]:-?}" 5
 [[ -d "$COMBINED_REF" ]] || die "combined reference package missing: $COMBINED_REF" 5
 if (cd "$RUNNER_DIR"; unset NODE_ENV; PARITY_OUT_DIR="$CG_OUT" PARITY_COMPARER=reference PARITY_REFERENCE_DIR="$COMBINED_REF" PARITY_PORT="${PARITY_PORT:-58300}" APP_ENV=development NEXT_TELEMETRY_DISABLED=1 MEDIA_STORAGE_ADAPTER=local MEDIA_STORAGE_DIR="$STATE_DIR/media" "${RUNNER[@]}") > "$CG_OUT/run.log" 2>&1; then CG_OK=0; fi
@@ -197,8 +200,8 @@ CG_JSON="$CG_OUT/current/manifest.json"
 CANON_N=0; STRICT_N=0
 [[ -f "$CG_OUT/proposed-canonical.json" ]] && CANON_N="$(jq -r '.passed // 0' "$CG_OUT/proposed-canonical.json")"
 [[ -f "$CG_OUT/proposed-strict.json" ]] && STRICT_N="$(jq -r '.passed // 0' "$CG_OUT/proposed-strict.json")"
-EXP_CANON="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.expectedCanonical)' "$MANIFEST")"
-EXP_STRICT="$(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).gates.combined.expectedStrictMin ?? 0)' "$MANIFEST")"
+EXP_CANON="$(jq -r '.gates.combined.expectedCanonical // ""' "$MANIFEST")"
+EXP_STRICT="$(jq -r '.gates.combined.expectedStrictMin // 0' "$MANIFEST")"
 [[ "$CG_OK" == 0 ]] || die "combined gate runner failed; see $CG_OUT/run.log" 5
 [[ "$CANON_N" == "$EXP_CANON" ]] || die "combined canonical $CANON_N != expected $EXP_CANON" 5
 (( STRICT_N >= EXP_STRICT )) || die "combined strict $STRICT_N < expected minimum $EXP_STRICT" 5
@@ -229,7 +232,7 @@ MT="$(git rev-parse "$MERGE_SHA^{tree}" 2>/dev/null || echo unknown)"
 [[ "$MT" == "$TEST_TREE" ]] || die "remote merge tree $MT != tested $TEST_TREE — remote race, investigate" 4
 [[ "${MP% }" == "$BASE_TIP $HEAD_SHA" ]] || die "merge parents $MP != expected $BASE_TIP $HEAD_SHA — hard failure, investigate" 4
 
-for bp in $(node -e 'console.log((JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).baseline?.paths||["tools/parity/baseline"]).join(" "))' "$MANIFEST"); do
+for bp in $(jq -r '(.baseline.paths // ["tools/parity/baseline"]) | join(" ")' "$MANIFEST"); do
   want="$(printf '%s' "$BASELINE_SNAP" | tr ' ' '\n' | grep "^${bp}::" | cut -d: -f3-)"
   [[ "$(snap "$ITEM_BASE" "$bp")" == "$want" ]] || die "baseline path $bp changed by merge — activation boundary violated" 6
 done
