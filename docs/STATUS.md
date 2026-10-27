@@ -1,3 +1,20 @@
+## 2026-10-27 - W2T5 merge absorption: w2/t1 + w2/a3 unioned into w2/t5
+
+- Merge-resolution card only, no feature work. Two --no-ff merges off the
+  verified t5 tip `5c3e3b6`: `b6c9f0b` absorbed w2/t1 `56b5dff`, then
+  `ada3caa` absorbed w2/a3 `0e91798`.
+- Conflicts resolved by union per card brief: `system-index.test.ts`
+  canary now asserts the true merged count 60 backend pages (58 base +
+  T5 coach dashboard + T1 settings page); coach `store.tsx` keeps both
+  the T5 `workspaceId` prop and the A3 `physiquePhotosFor` member;
+  STATUS.md keeps both sides newest-first; `docs/index/*` regenerated
+  via `npm run index` inside each merge commit.
+- Gates on `ada3caa`: `prisma generate` 0, `typecheck` 0, `lint` 0
+  (90 warnings, 0 errors), `system-index.test.ts` 18/18, full vitest
+  121 files / 1409 pass 0 fail (honest merged count, brief expected
+  1396), `index` + `index:check` 0, dash gate 0 added violations.
+  No lane database. Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2T5/`.
+
 ## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
 
 - Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
