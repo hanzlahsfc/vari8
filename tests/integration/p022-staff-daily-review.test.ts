@@ -410,17 +410,19 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       ).rejects.toThrow(AccessDeniedError);
     });
 
-    it("unassigned coach is denied", async () => {
+    it("unassigned coach lists under workspace read (D10/D22)", async () => {
       const c = await seedWorkspace({ assignCoach: false });
       await clientSaves(c, "2026-10-01", "75");
-      await expect(
-        listStaffDailyEntries(c.coach, listInput(c), {
-          registry: DEV_REGISTRY,
-        }),
-      ).rejects.toThrow(AccessDeniedError);
+      const res = await listStaffDailyEntries(c.coach, listInput(c), {
+        registry: DEV_REGISTRY,
+      });
+      expect(res.state).toBe("ready");
+      if (res.state !== "ready") return;
+      expect(res.items).toHaveLength(1);
+      expect(res.items[0].entryDate).toBe("2026-10-01");
     });
 
-    it("REMOVED assignment ends access", async () => {
+    it("REMOVED assignment does not end coach list access (D10/D22)", async () => {
       const c = await seedWorkspace();
       await clientSaves(c, "2026-10-01", "75");
       await prisma.clientAssignment.updateMany({
@@ -430,16 +432,17 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
         },
         data: { status: "REMOVED" },
       });
-      await expect(
-        listStaffDailyEntries(c.coach, listInput(c), {
-          registry: DEV_REGISTRY,
-        }),
-      ).rejects.toThrow(AccessDeniedError);
-      // Owner workspace scope survives the assignment removal.
-      const res = await listStaffDailyEntries(c.owner, listInput(c), {
+      // COACH read is workspace scoped, so the removal no longer denies.
+      const res = await listStaffDailyEntries(c.coach, listInput(c), {
         registry: DEV_REGISTRY,
       });
       expect(res.state).toBe("ready");
+      if (res.state === "ready") expect(res.items).toHaveLength(1);
+      // Owner workspace scope survives the assignment removal.
+      const ownerRes = await listStaffDailyEntries(c.owner, listInput(c), {
+        registry: DEV_REGISTRY,
+      });
+      expect(ownerRes.state).toBe("ready");
     });
 
     it("foreign workspace client is denied for coach and owner alike", async () => {
@@ -791,7 +794,7 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
         const assignment = await prisma.clientAssignment.findFirstOrThrow({
           where: {
             clientProfileId: c.profile.id,
-            coachMemberId: c.coachMember.id,
+            coachMemberId: c.assistantMember.id,
           },
         });
         let locked!: () => void;
@@ -810,7 +813,7 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
         });
         await held;
         const outcome = await readStaffDailyEntryDetail(
-          c.coach,
+          c.assistant,
           detailInput(c, "2026-10-01"),
           { registry: DEV_REGISTRY },
         ).then(
@@ -868,7 +871,7 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       await clientSaves(c, "2026-10-01", "75");
       // Read fully commits first…
       const d = await readStaffDailyEntryDetail(
-        c.coach,
+        c.assistant,
         detailInput(c, "2026-10-01"),
         { registry: DEV_REGISTRY },
       );
@@ -878,12 +881,12 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       await prisma.clientAssignment.updateMany({
         where: {
           clientProfileId: c.profile.id,
-          coachMemberId: c.coachMember.id,
+          coachMemberId: c.assistantMember.id,
         },
         data: { status: "REMOVED" },
       });
       await expect(
-        readStaffDailyEntryDetail(c.coach, detailInput(c, "2026-10-01"), {
+        readStaffDailyEntryDetail(c.assistant, detailInput(c, "2026-10-01"), {
           registry: DEV_REGISTRY,
         }),
       ).rejects.toThrow(AccessDeniedError);
@@ -896,11 +899,11 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       const assignment = await prisma.clientAssignment.findFirstOrThrow({
         where: {
           clientProfileId: c.profile.id,
-          coachMemberId: c.coachMember.id,
+          coachMemberId: c.assistantMember.id,
         },
       });
       const [readOutcome] = await Promise.all([
-        readStaffDailyEntryDetail(c.coach, detailInput(c, "2026-10-01"), {
+        readStaffDailyEntryDetail(c.assistant, detailInput(c, "2026-10-01"), {
           registry: DEV_REGISTRY,
         }).then(
           () => "read" as const,
@@ -917,7 +920,7 @@ describe.skipIf(!enabled)("P-022 staff DailyEntry review (real PG)", () => {
       else expect(audits).toBe(0);
       // Post-removal reads always deny.
       await expect(
-        readStaffDailyEntryDetail(c.coach, detailInput(c, "2026-10-01"), {
+        readStaffDailyEntryDetail(c.assistant, detailInput(c, "2026-10-01"), {
           registry: DEV_REGISTRY,
         }),
       ).rejects.toThrow(AccessDeniedError);
