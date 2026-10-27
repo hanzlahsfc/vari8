@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1581 exported symbols.
+Counts: 160 modules with exports, 1596 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1106,7 +1106,12 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/email.ts`
 
+- `export const EMAIL_NOTIFICATION_KEYS = ["email.messages"] as const`
+- `export type EmailNotificationKey = (typeof EMAIL_NOTIFICATION_KEYS)[number]`
+- `export type NotificationDeps = { db?: NotifyPrisma; send?: (message: MailMessage) => Promise<void>; }`
 - `export function normalizeEmail(value: unknown): string`
+- `export async function notifyStaffOfClientMessage(input: { workspaceId: string; clientProfileId: string }, deps: NotificationDeps = {}): Promise<number>`
+- `export async function sendMemberNotificationMail(input: { workspaceId: string; memberId: string; key: EmailNotificationKey; message: MailMessage; }, deps: NotificationDeps = {}): Promise<"sent" | "...`
 
 ## `lib/exercise/import.ts`
 
@@ -1436,7 +1441,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/messages/service.ts`
 
-- `export type MessageDeps = { db?: PrismaLike }`
+- `export type MessageDeps = { db?: PrismaLike; notifyClientMessage?: (input: { workspaceId: string; clientProfileId: string; }) => Promise<unknown>; }`
 - `export class MessageError extends Error (1 members)`
 - `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
 - `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
@@ -2039,6 +2044,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
 - `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
+
+## `lib/workspace/preferences.ts`
+
+- `export const PREFERENCE_KEYS = [ "attention.unread_messages", "attention.priority_messages", "email.messages", ] as const`
+- `export type PreferenceDeps = { db?: WritePrisma }`
+- `export class PreferenceError extends Error (1 members)`
+- `export type PreferenceItem = { key: PreferenceKey; enabled: boolean }`
+- `export type PreferenceKey = (typeof PREFERENCE_KEYS)[number]`
+- `export type PreferenceReadDeps = { db?: ReadPrisma }`
+- `export function isPreferenceKey(value: unknown): value is PreferenceKey`
+- `export async function listMemberPreferences(workspaceId: string, memberId: string, deps: PreferenceReadDeps = {}): Promise<PreferenceItem[]>`
+- `export async function memberPreferenceEnabled(workspaceId: string, memberId: string, key: PreferenceKey, deps: PreferenceReadDeps = {}): Promise<boolean>`
+- `export async function updateMemberPreferences(workspaceId: string, memberId: string, updates: readonly { key: unknown; enabled: unknown }[], deps: PreferenceDeps = {}): Promise<PreferenceItem[]>`
 
 ## `lib/workspace/retention.ts`
 

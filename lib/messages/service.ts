@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../db";
 import { AccessDeniedError } from "../auth/guard";
+import { notifyStaffOfClientMessage } from "../email";
 
 export class MessageError extends Error {
   constructor(
@@ -33,7 +34,19 @@ type PrismaLike = Pick<
   "clientProfile" | "conversation" | "message" | "$transaction"
 >;
 
-export type MessageDeps = { db?: PrismaLike };
+export type MessageDeps = {
+  db?: PrismaLike;
+  /**
+   * W2-T1: notification fan-out after a NEW client message commits. The
+   * default honours each staff member's `email.messages` preference at send
+   * time; tests inject a spy. Failures inside the notifier never roll the
+   * message back (it runs after the transaction commits).
+   */
+  notifyClientMessage?: (input: {
+    workspaceId: string;
+    clientProfileId: string;
+  }) => Promise<unknown>;
+};
 
 export type MessageView = {
   id: string;
@@ -89,8 +102,7 @@ async function ownProfile(
     where: { workspaceId, userId },
     select: { id: true },
   });
-  if (!profile)
-    throw new AccessDeniedError("not_owner", "messages", action);
+  if (!profile) throw new AccessDeniedError("not_owner", "messages", action);
   return profile;
 }
 
@@ -165,7 +177,7 @@ export async function sendOwnMessage(
   const clientRequestId = normalizeRequestId(input.clientRequestId);
   const profile = await ownProfile(db, input.workspaceId, userId, "write");
 
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const conversation = await tx.conversation.upsert({
       where: {
         workspaceId_clientProfileId: {
@@ -195,7 +207,7 @@ export async function sendOwnMessage(
         sentAt: true,
       },
     });
-    if (existing) return { message: toView(existing) };
+    if (existing) return { message: toView(existing), created: false };
     const row = await tx.message.create({
       data: {
         workspaceId: input.workspaceId,
@@ -217,6 +229,23 @@ export async function sendOwnMessage(
       where: { id: conversation.id },
       data: { lastMessageAt: row.sentAt },
     });
-    return { message: toView(row) };
+    return { message: toView(row), created: true };
   });
+
+  // Notification fan-out runs after the commit boundary: a mail outage must
+  // not roll a delivered message back, and the notifier itself contains
+  // per-recipient failures.
+  if (result.created) {
+    const notify = deps.notifyClientMessage ?? notifyStaffOfClientMessage;
+    try {
+      await notify({
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      });
+    } catch {
+      // Delivery failure is already logged inside the notifier; the send
+      // result stands.
+    }
+  }
+  return { message: result.message };
 }
