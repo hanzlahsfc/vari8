@@ -291,17 +291,19 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         status: "ACTIVE",
       },
     });
-    // Rerun safety: free the user from any profile it already owns —
-    // `clients` is createdAt-ordered and bulk rows share a timestamp, so a
-    // previous run may have linked this user to a different profile.
-    await prisma.clientProfile.updateMany({
-      where: { workspaceId: ws, userId: user.id },
-      data: { userId: null },
-    });
-    await prisma.clientProfile.update({
+    // Bind only this demo user's named fixture profile, and only while it
+    // is unbound: 00-workspace already links Emma Anders to the
+    // SEED_CLIENT user, so a blind rebind steals that link (w2-c4m).
+    const bound = await prisma.clientProfile.findUniqueOrThrow({
       where: { id: clientId(i) },
-      data: { userId: user.id },
+      select: { userId: true },
     });
+    if (!bound.userId) {
+      await prisma.clientProfile.update({
+        where: { id: clientId(i) },
+        data: { userId: user.id },
+      });
+    }
     const member = await prisma.workspaceMember.findFirst({
       where: { workspaceId: ws, userId: user.id },
       select: { id: true },
@@ -476,9 +478,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   // ── submission-emma (Full, recurring 2026-10-12) ──
 
   const emma = await demoClientUser(0, "emma.anders");
-  // CHECKIN-ENABLE — the trial client walkthrough signs in as the first
-  // canvas demo client, who owns `clients[0]` (Emma Anders) and its seeded
-  // check-in history. Same Better Auth credential shape as
+  // CHECKIN-ENABLE - the demo credential client signs in as
+  // emma.anders@canvas-demo.test and owns Emma Anders' seeded check-in
+  // submissions; Emma's profile itself stays linked to the SEED_CLIENT
+  // user from 00-workspace. Same Better Auth credential shape as
   // `00-workspace.seed.ts` (`providerId="credential"`, `accountId=user.id`,
   // `password=hashPassword`), reusing SEED_CLIENT_PASSWORD so the 8-var seed
   // env contract stays unchanged. The SEED-FIX credential client keeps no
