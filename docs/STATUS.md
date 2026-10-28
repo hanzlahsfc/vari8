@@ -1,3 +1,11 @@
+## 2026-10-28 - Promotion: meal plan payload and IIFYM actuals
+
+- Promoted `beta/pr-m5-mealplan-payload` (PR 114) by Hanzlah and
+  `beta/iifym-actuals` (PR 221) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-iifym-actuals`: merged PR 221 IIFYM actuals and PR 114
+  meal-plan payload; the meal-plan screens consume the payload end to
+  end, and the actuals helpers carry the nullable-macro semantics.
+
 ## 2026-10-28 - Promotion: nutrition source adapters (BLS + CIQUAL, issue 182)
 
 - Promoted `beta/nutrition-source-adapters` (PR 222) by Hanzlah into
