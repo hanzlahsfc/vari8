@@ -55,5 +55,39 @@
   "dedupeDecision": {
     "path": "tests/fixtures/nutrition/dedupe-review-decision.json",
     "sha256": "2550d89e97b29db27c38fbea2865e2c5ddba8f13bd8193bcb251ab999cf16788"
+  },
+  "accuracyGate": {
+    "command": "npx tsx scripts/check-nutrition-source-accuracy.ts --input bls=<xlsx> --expected bls=expected-bls.json [--input ciqual=... --expected ciqual=...] [--out <dir>]",
+    "packageScript": "npm run check:nutrition-sources",
+    "expected": {
+      "bls": {
+        "file": "expected-bls.json",
+        "sha256": "ccf38458f4951baa165c9f6f36d9c2e7d8da488769ed04347c5d49af1e360778"
+      },
+      "ciqual": {
+        "file": "expected-ciqual.json",
+        "sha256": "064a4469622e14e77f1085644251f8156991a3586796ece0250ebb73a399f4a7"
+      },
+      "extraction": "tests/fixtures/nutrition/extract-expected.py \u2014 independent raw-XML extraction, NOT the TS adapters"
+    },
+    "corruptFixtures": {
+      "corrupt0": "ciqual-2025-sample-corrupt0.xlsx",
+      "corruptnum": "ciqual-2025-sample-corruptnum.xlsx",
+      "corruptqual": "ciqual-2025-sample-corruptqual.xlsx"
+    },
+    "hashes": {
+      "expected-bls.json": "ccf38458f4951baa165c9f6f36d9c2e7d8da488769ed04347c5d49af1e360778",
+      "expected-ciqual.json": "064a4469622e14e77f1085644251f8156991a3586796ece0250ebb73a399f4a7",
+      "ciqual-2025-sample-corrupt0.xlsx": "a813a1a5076d6279c154322420da9e8efc96d6d9fd379c6f5794d4c71d77ede7",
+      "ciqual-2025-sample-corruptnum.xlsx": "352564154dfbde15359c0d0d19699227b8e2aa10a35fd59486786141c955e5a7",
+      "ciqual-2025-sample-corruptqual.xlsx": "3e25f1f8fff2a5bf0b78c3e0c9fb50ddad2589de1e1f744e2dcbf00011df9462"
+    },
+    "pendingOn181": "duplicate-barcode served-view check, last_verified_at served-row provenance, licence attribution rendering \u2014 all require #181's schema/served projection; not implemented here",
+    "corruptExpected": {
+      "omit": "expected-ciqual-omit.json",
+      "wrongunit": "expected-ciqual-wrongunit.json",
+      "wrongbasis": "expected-ciqual-wrongbasis.json",
+      "dup": "expected-ciqual-dup.json"
+    }
   }
 }
