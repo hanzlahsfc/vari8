@@ -1,0 +1,219 @@
+/**
+ * CATALOGUE-LABEL-ENTRY (#186) — hand-captured label validation
+ * boundary. A human reads one label/one page; this path validates and
+ * normalizes what they entered. Reusable by 18.3 without a second
+ * implementation. Writes nothing — persistence needs #181's schema.
+ *
+ * Provenance is user-entered: the record carries what the human
+ * supplied (licence, label photo hash, source) and never fabricates
+ * verification status or source attribution.
+ */
+
+export class LabelEntryError extends Error {
+  constructor(
+    readonly code:
+      | "invalid_input"
+      | "invalid_measurement"
+      | "invalid_unit"
+      | "invalid_basis"
+      | "missing_serving_quantity"
+      | "invalid_photo_hash",
+    detail: string,
+  ) {
+    super(`label entry ${code}: ${detail}`);
+    this.name = "LabelEntryError";
+  }
+}
+
+export type LabelBasis = "per 100 g" | "per serving";
+
+export const LABEL_ENTRY_UNITS = new Set(["g", "mg", "µg", "ug", "kJ", "kcal"]);
+
+export interface LabelNutrient {
+  code: string;
+  /** `null` = the label does not list it — never a fabricated 0 */
+  value: number | null;
+  unit: string;
+  basis: LabelBasis;
+}
+
+export interface LabelEntryInput {
+  barcode?: string;
+  name: string;
+  brand?: string;
+  variant?: { kind: "flavour"; label: string };
+  /** declared serving quantity — required when any nutrient uses
+   * `per serving` basis; never silently assumed */
+  servingSizeG?: number;
+  nutrients: {
+    code: string;
+    value: number | null;
+    unit: string;
+    basis: LabelBasis;
+  }[];
+  provenance: {
+    /** sha256 of the label photo the human captured — required */
+    labelPhotoSha256: string;
+    /** the licence the human recorded for the label/page — required */
+    licence: string;
+    /** what the human read (e.g. "manufacturer page", "package label") */
+    capturedFrom: string;
+  };
+}
+
+export interface LabelEntryRecord {
+  barcode: string | null;
+  name: string;
+  brand: string | null;
+  variant: { kind: "flavour"; label: string } | null;
+  servingSizeG: number | null;
+  nutrients: LabelNutrient[];
+  provenance: {
+    labelPhotoSha256: string;
+    licence: string;
+    capturedFrom: string;
+    /** human-captured by definition — this is NOT a verification claim */
+    capturedBy: "manual-label-entry";
+  };
+}
+
+function finite(v: unknown): v is number {
+  return typeof v === "number" && Number.isFinite(v);
+}
+
+/** Validate a hand-entered label record. Untrusted user input is
+ * validated field-by-field; anything invalid refuses with a typed
+ * error rather than being normalized into a wrong record. */
+export function parseLabelEntry(input: unknown): LabelEntryRecord {
+  const o =
+    typeof input === "object" && input !== null
+      ? (input as Record<string, unknown>)
+      : null;
+  if (!o)
+    throw new LabelEntryError("invalid_input", "label entry must be an object");
+  const name = typeof o.name === "string" ? o.name.trim() : "";
+  if (!name) throw new LabelEntryError("invalid_input", "name is required");
+
+  const barcode =
+    o.barcode === undefined || o.barcode === null
+      ? null
+      : typeof o.barcode === "string" && /^\d+$/.test(o.barcode)
+        ? o.barcode
+        : (() => {
+            throw new LabelEntryError(
+              "invalid_input",
+              `barcode must be digits, got ${JSON.stringify(o.barcode)}`,
+            );
+          })();
+
+  const servingSizeG =
+    o.servingSizeG === undefined || o.servingSizeG === null
+      ? null
+      : finite(o.servingSizeG) && o.servingSizeG > 0
+        ? o.servingSizeG
+        : (() => {
+            throw new LabelEntryError(
+              "invalid_input",
+              `servingSizeG must be a positive number, got ${JSON.stringify(o.servingSizeG)}`,
+            );
+          })();
+
+  const raw = Array.isArray(o.nutrients) ? o.nutrients : [];
+  if (!raw.length)
+    throw new LabelEntryError(
+      "invalid_input",
+      "at least one nutrient is required",
+    );
+  const nutrients: LabelNutrient[] = raw.map((n, i) => {
+    const nr =
+      typeof n === "object" && n !== null ? (n as Record<string, unknown>) : {};
+    const code = typeof nr.code === "string" ? nr.code.trim() : "";
+    if (!code)
+      throw new LabelEntryError(
+        "invalid_measurement",
+        `nutrient ${i}: code required`,
+      );
+    const unit = typeof nr.unit === "string" ? nr.unit.trim() : "";
+    if (!LABEL_ENTRY_UNITS.has(unit))
+      throw new LabelEntryError(
+        "invalid_unit",
+        `nutrient ${code}: unsupported unit ${JSON.stringify(nr.unit)}`,
+      );
+    const basis = nr.basis;
+    if (basis !== "per 100 g" && basis !== "per serving")
+      throw new LabelEntryError(
+        "invalid_basis",
+        `nutrient ${code}: basis must be "per 100 g" or "per serving", got ${JSON.stringify(basis)}`,
+      );
+    const v = nr.value;
+    if (v !== null && (!finite(v) || v < 0))
+      throw new LabelEntryError(
+        "invalid_measurement",
+        `nutrient ${code}: value must be a non-negative finite number or null, got ${JSON.stringify(v)}`,
+      );
+    if (basis === "per serving" && servingSizeG === null)
+      throw new LabelEntryError(
+        "missing_serving_quantity",
+        `nutrient ${code}: per-serving basis needs a declared servingSizeG — never silently assumed`,
+      );
+    return { code, value: v, unit, basis };
+  });
+
+  const prov =
+    typeof o.provenance === "object" && o.provenance !== null
+      ? (o.provenance as Record<string, unknown>)
+      : {};
+  const photo =
+    typeof prov.labelPhotoSha256 === "string" &&
+    /^[0-9a-f]{64}$/.test(prov.labelPhotoSha256)
+      ? prov.labelPhotoSha256
+      : (() => {
+          throw new LabelEntryError(
+            "invalid_photo_hash",
+            "labelPhotoSha256 must be a 64-hex digest of the captured label photo",
+          );
+        })();
+  const licence = typeof prov.licence === "string" ? prov.licence.trim() : "";
+  if (!licence)
+    throw new LabelEntryError("invalid_input", "licence is required per row");
+  const capturedFrom =
+    typeof prov.capturedFrom === "string" ? prov.capturedFrom.trim() : "";
+  if (!capturedFrom)
+    throw new LabelEntryError(
+      "invalid_input",
+      "capturedFrom must record what the human read",
+    );
+
+  const variant =
+    o.variant === undefined || o.variant === null
+      ? null
+      : (() => {
+          const vr = o.variant as Record<string, unknown>;
+          if (
+            vr?.kind !== "flavour" ||
+            typeof vr.label !== "string" ||
+            !vr.label.trim()
+          )
+            throw new LabelEntryError(
+              "invalid_input",
+              "variant must be {kind:'flavour', label}",
+            );
+          return { kind: "flavour" as const, label: vr.label.trim() };
+        })();
+
+  return {
+    barcode,
+    name,
+    brand:
+      typeof o.brand === "string" && o.brand.trim() ? o.brand.trim() : null,
+    variant,
+    servingSizeG,
+    nutrients,
+    provenance: {
+      labelPhotoSha256: photo,
+      licence,
+      capturedFrom,
+      capturedBy: "manual-label-entry",
+    },
+  };
+}
