@@ -276,7 +276,8 @@ describe("integrate-transition single-step executor", () => {
     m.authorization.mergeAuthorization = {
       source: "test",
       author: "hanzlahsfc",
-      contains: "x",
+      contains:
+        "Integrate #203, #206, #207 in order under the disclosed cross-review arrangement.",
       pendingInput: "human-posted comment",
     };
     const f = path.join(tmp, "m.json");
