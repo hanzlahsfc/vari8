@@ -1,8 +1,19 @@
 import type { CoachClient, FieldConfig, Variant } from "./model";
 import { planTargets } from "./plans/domain";
+import {
+  type ActivityMetric,
+  type ActivitySegment,
+  activitySegments,
+  localToday,
+} from "./targets/model";
 
 const DAY = 86_400_000;
 const RECORDED_FIELDS = new Set(["weight", "sleep", "steps", "calories"]);
+const ACTIVITY_FIELD_METRICS: Record<string, ActivityMetric> = {
+  steps: "steps",
+  "cardio-duration": "cardio",
+  "cardio-sessions": "cardio",
+};
 
 function monday(date: string) {
   const day = new Date(`${date}T12:00:00Z`);
@@ -22,12 +33,25 @@ function convert(value: number, field: FieldConfig) {
   return value;
 }
 
-export function weeklyRoadmapRows(configuration: Variant, client: CoachClient) {
+export function weeklyRoadmapRows(
+  configuration: Variant,
+  client: CoachClient,
+  options?: { asOf?: string },
+) {
   const entries = [...client.entries].sort((a, b) =>
     a.date.localeCompare(b.date),
   );
-  const weeks = [...new Set(entries.map((entry) => monday(entry.date)))];
-  return weeks.map((start) => {
+  const planning = configuration.roadmapActivityTargets ?? [];
+  const activityVersions = client.plans?.activityTargets ?? [];
+  const weeks = new Set(entries.map((entry) => monday(entry.date)));
+  if (planning.length) {
+    const selected = new Set<ActivityMetric>(planning);
+    for (const version of activityVersions)
+      if (selected.has(version.metric))
+        weeks.add(monday(version.effectiveFrom));
+    weeks.add(monday(options?.asOf ?? localToday()));
+  }
+  return [...weeks].sort().map((start) => {
     const end = endOfWeek(start);
     const recorded = entries.filter(
       (entry) => entry.date >= start && entry.date <= end,
@@ -36,6 +60,22 @@ export function weeklyRoadmapRows(configuration: Variant, client: CoachClient) {
       start,
       end,
       phase: client.phase,
+      activityTargets: planning.map(
+        (
+          metric,
+        ): {
+          metric: ActivityMetric;
+          segments: ActivitySegment[];
+        } => ({
+          metric,
+          segments: activitySegments({
+            versions: activityVersions,
+            metric,
+            start,
+            end,
+          }),
+        }),
+      ),
       metrics: configuration.roadmap.flatMap((metric) => {
         const field = configuration.fields.find(
           (candidate) => candidate.id === metric.source,
@@ -57,8 +97,13 @@ export function weeklyRoadmapRows(configuration: Variant, client: CoachClient) {
           field.id === "calories" || field.id === "protein"
             ? field.id
             : undefined;
-        const target =
-          nutrient && applicable.length
+        const activityMetric = ACTIVITY_FIELD_METRICS[field.id];
+        const structured =
+          activityMetric !== undefined &&
+          activityVersions.some((version) => version.metric === activityMetric);
+        const target = structured
+          ? null
+          : nutrient && applicable.length
             ? applicable.reduce((sum, t) => sum + t[nutrient], 0) /
               applicable.length
             : (client.plans?.goals.find(
@@ -72,7 +117,7 @@ export function weeklyRoadmapRows(configuration: Variant, client: CoachClient) {
             values.length > 1 ? values[values.length - 1] - values[0] : null;
         if (metric.calculation === "Adherence")
           value =
-            values.length && target !== null
+            !structured && values.length && target !== null
               ? (values.filter((reading) => reading >= target).length /
                   values.length) *
                 100

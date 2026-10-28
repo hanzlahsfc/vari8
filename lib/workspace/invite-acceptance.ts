@@ -4,6 +4,7 @@ import type { SessionLike } from "../auth/guard";
 import { PasswordPolicyError } from "../password-policy";
 import { prisma } from "../db";
 import { inspectAccessToken } from "../tokens/store";
+import { hashAccessToken } from "../tokens/crypto";
 import { WorkspaceServiceError } from "./clients";
 import { acceptWorkspaceInvitation, InvitationError } from "./invitations";
 
@@ -31,6 +32,46 @@ import { acceptWorkspaceInvitation, InvitationError } from "./invitations";
  */
 
 export type InviteLinkState = { state: "ready" } | { state: "invalid" };
+
+/**
+ * O17: which shell the acceptance page wears. The invite's own
+ * `intended_role` decides it — a client invitation opens on the client look, a
+ * staff invitation on the coach look. Read here, in the route-facing seam,
+ * because `inspectAccessToken` deliberately never returns the role (its unit
+ * test pins that) and a layout cannot see `searchParams`.
+ *
+ * Same validity rules as the peek: a malformed, missing, expired, revoked,
+ * consumed, foreign-workspace or wrong-purpose token yields `null`, so the
+ * caller falls back to the coach shell and the page's own invalid state.
+ */
+export async function getInviteShellRole(
+  input: { workspaceId: unknown; rawToken: unknown },
+  client: PrismaClient = prisma,
+): Promise<"client" | "staff" | null> {
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    typeof input.rawToken !== "string" ||
+    input.rawToken.length === 0
+  ) {
+    return null;
+  }
+  let tokenHash: string;
+  try {
+    tokenHash = hashAccessToken(input.rawToken);
+  } catch {
+    return null;
+  }
+  const row = await client.accessToken.findUnique({
+    where: { tokenHash },
+    select: { purpose: true, workspaceId: true, intendedRole: true },
+  });
+  if (!row || row.purpose !== "WORKSPACE_INVITE") return null;
+  if (row.workspaceId !== input.workspaceId) return null;
+  // The peek already rejected unusable rows; this read only runs for a ready
+  // link, so the remaining check is the role itself.
+  return row.intendedRole === "CLIENT" ? "client" : "staff";
+}
 
 /**
  * Non-consuming peek. Both link parameters are required and structurally

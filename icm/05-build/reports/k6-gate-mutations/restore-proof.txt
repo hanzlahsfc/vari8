@@ -1,0 +1,2 @@
+diff -u hashes-before.txt hashes-restored.txt
+HASHES-IDENTICAL

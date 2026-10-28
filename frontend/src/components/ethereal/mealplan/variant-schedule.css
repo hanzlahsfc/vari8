@@ -1,61 +1,3 @@
-.mp-schedule-modes {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  margin-inline: 0;
-  padding: 3px;
-  border: 1px solid var(--mp-edge);
-  border-radius: 999px;
-  background: var(--surface-subtle);
-  min-width: 0;
-  margin-block: 0;
-  border-style: solid;
-}
-
-.mp-schedule-modes legend {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.mp-workspace .mp-schedule-mode-pill {
-  min-height: 30px;
-  padding: 5px 11px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: var(--mp-muted);
-  font: inherit;
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    background-color 140ms ease;
-}
-
-.mp-schedule-mode-pill:hover {
-  color: var(--mp-text);
-}
-
-.mp-schedule-mode-pill.is-active {
-  background: var(--mp-core);
-  color: var(--mp-text);
-  box-shadow: inset 0 0 0 1px var(--mp-edge);
-}
-
-.mp-schedule-mode-pill:focus-visible,
-.mp-cycle-add:focus-visible,
-.mp-cycle-remove:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
 .mp-cycle-editor {
   margin-top: 18px;
 }
@@ -72,6 +14,10 @@
 .mp-cycle-anchor {
   display: grid;
   gap: 7px;
+}
+
+.mp-cycle-anchor .v8-field {
+  max-width: 190px;
 }
 
 .mp-cycle-anchor > span,
@@ -124,56 +70,23 @@
   font-weight: 550;
 }
 
-.mp-cycle-steps label {
-  display: grid;
+.mp-cycle-steps > li > .v8-field {
   min-width: 0;
-  gap: 8px;
-}
-
-.mp-cycle-steps label > span:first-child {
-  padding-left: 12px;
 }
 
 .mp-cycle-duration-control {
   display: flex;
-  min-height: 40px;
   align-items: center;
   gap: 8px;
 }
 
-.mp-cycle-duration-control > input {
+.mp-cycle-steps > li > .mp-cycle-duration-control .v8-field {
   width: 72px;
-  min-height: 40px;
-  padding: 6px 8px;
-  text-align: center;
+  flex: 0 0 72px;
 }
 
-.mp-cycle-remove,
 .mp-cycle-add {
-  min-height: 34px;
-  padding: 6px 10px;
-  border: 1px solid var(--mp-edge);
-  border-radius: 7px;
-  background: transparent;
-  color: var(--mp-muted);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    background-color 140ms ease;
-}
-
-.mp-cycle-remove:hover:not(:disabled),
-.mp-cycle-add:hover:not(:disabled) {
-  background: var(--surface-subtle);
-  color: var(--mp-text);
-}
-
-.mp-cycle-remove:disabled,
-.mp-cycle-add:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
+  white-space: nowrap;
 }
 
 .mp-cycle-summary {
@@ -225,23 +138,12 @@
   overflow-wrap: anywhere;
 }
 
-.mp-schedule-date {
-  max-width: 190px;
-}
-
 .mp-schedule-everyday {
   margin-top: 18px;
 }
 
 .mp-schedule-assignment {
-  display: grid;
   width: min(240px, 100%);
-  gap: 8px;
-  font-size: 12px;
-}
-
-.mp-schedule-assignment > span {
-  color: var(--mp-muted);
 }
 
 .mp-schedule-instruction {
@@ -267,17 +169,6 @@
   .mp-section-heading:has(.mp-schedule-modes) {
     align-items: stretch;
     flex-direction: column;
-  }
-
-  .mp-schedule-modes {
-    width: fit-content;
-    max-width: 100%;
-    margin-inline: 0;
-  }
-
-  .mp-schedule-mode-pill {
-    padding-inline: 8px;
-    font-size: 11px;
   }
 
   .mp-cycle-toolbar-actions {
@@ -328,11 +219,6 @@
   font-weight: 500;
 }
 
-.mp-schedule-assignment select {
-  text-align: center;
-  text-align-last: center;
-}
-
 .mp-workspace.is-preview .mp-variants {
   margin-bottom: 0;
   padding-bottom: 12px;
@@ -346,34 +232,4 @@
 .mp-cycle-duration input::-webkit-inner-spin-button {
   appearance: none;
   margin: 0;
-}
-
-.mp-cycle-steps select {
-  text-align: center;
-  text-align-last: center;
-}
-
-.mp-workspace .mp-cycle-remove {
-  display: inline-flex;
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border-color: transparent;
-  border-radius: 50%;
-}
-
-.mp-workspace .mp-cycle-add {
-  display: inline-flex;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 0 15px;
-  border: 1px solid var(--mp-edge);
-  border-radius: 999px;
-  font-size: 12px;
 }

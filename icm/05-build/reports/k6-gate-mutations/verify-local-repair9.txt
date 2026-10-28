@@ -1,0 +1,1781 @@
+realpath: /home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8: No such file or directory
+== clean tree: bash -c git diff --quiet && git diff --cached --quiet
+== schema guard (D34): schema_guard
+== program generator check: python3 icm/05-build/tools/generate.py --root /Users/apple/Devin/vari8-worktrees/k6-gate --check
+generate.py --check: 158 generated files match the committed tree
+== npm ci: npm ci --no-audit --no-fund --prefer-offline
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 767 packages in 22s
+== prisma generate: npx prisma generate
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+Environment variables loaded from .env
+Prisma schema loaded from db/schema.prisma
+
+✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 431ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+
+== frontend npm ci: npm --prefix frontend ci --no-audit --no-fund --prefer-offline
+
+added 383 packages in 9s
+== format check: npm run format:check
+
+> app@0.1.0 format:check
+> prettier --check .
+
+Checking formatting...
+All matched files use Prettier code style!
+== typecheck: npm run typecheck
+
+> app@0.1.0 typecheck
+> tsc --noEmit
+
+== frontend typecheck: npm --prefix frontend run typecheck
+
+> ui-studio@0.1.0 typecheck
+> next typegen && tsc --noEmit
+
+Generating route types...
+✓ Types generated successfully
+== lint: npm run lint
+
+> app@0.1.0 lint
+> eslint
+
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/coach-dashboard.tsx
+  225:28  warning  Error: Expected the first argument to be an inline function expression
+
+Expected the first argument to be an inline function expression.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/coach-dashboard.tsx:225:28
+  223 |     [variant, sample, state],
+  224 |   );
+> 225 |   const fallback = useMemo(createDashboardDraft, []);
+      |                            ^^^^^^^^^^^^^^^^^^^^ Expected the first argument to be an inline function expression
+  226 |   return (
+  227 |     <DashboardBuilder
+  228 |       key={variant.id}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/use-memo
+  249:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/coach-dashboard.tsx:249:5
+  247 |   );
+  248 |   useEffect(() => {
+> 249 |     setRecords(recordsForCoach(variant, athlete, state));
+      |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  250 |   }, [variant, athlete, state]);
+  251 |   const dashboard = bindDashboardUnits(
+  252 |     variant.dashboard ?? createDashboardDraft(),  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx
+   94:11  warning  The ref value 'ref.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'ref.current' to a variable inside the effect, and use that variable in the cleanup function                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/exhaustive-deps
+  178:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:178:5
+  176 |
+  177 |   useEffect(() => {
+> 178 |     setRecords(structuredClone(sourceRecords));
+      |     ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  179 |   }, [sourceRecords]);
+  180 |   useEffect(() => {
+  181 |     const el = canvas.current;  react-hooks/set-state-in-effect
+  195:17  warning  '_next' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  289:5   warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:289:5
+  287 |   };
+  288 |   const propose = useCallback(
+> 289 |     (g: Gesture, rect: Rect) => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 290 |       const sizedRect =
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 291 |         g.type === "resize"
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 330 |       );
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 331 |     },
+      | ^^^^^^ Could not preserve existing memoization
+  332 |     [bp, cols, syncGesture, width],
+  333 |   );
+  334 |   const startGesture = (                                                                                                                                                                                                                               react-hooks/preserve-manual-memoization
+  332:6   warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:332:6
+  330 |       );
+  331 |     },
+> 332 |     [bp, cols, syncGesture, width],
+      |      ^^ This dependency may be modified later
+  333 |   );
+  334 |   const startGesture = (
+  335 |     id: string,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/preserve-manual-memoization
+  332:10  warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:332:10
+  330 |       );
+  331 |     },
+> 332 |     [bp, cols, syncGesture, width],
+      |          ^^^^ This dependency may be modified later
+  333 |   );
+  334 |   const startGesture = (
+  335 |     id: string,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/preserve-manual-memoization
+  395:3   warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:395:3
+  393 |     cancelGesture,
+  394 |   });
+> 395 |   pointerHandlers.current = { movePointer, completeGesture, cancelGesture };
+      |   ^^^^^^^^^^^^^^^^^^^^^^^ Cannot update ref during render
+  396 |   useEffect(() => {
+  397 |     if (gesture && gesture.startWidth !== width) cancelGesture();
+  398 |   }, [gesture, width, cancelGesture]);                                                                                                                                                                                                                                                                                   react-hooks/refs
+  808:30  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:808:30
+  806 |                   aria-label="Undo"
+  807 |                   title="Undo"
+> 808 |                   disabled={!history.current.past.length}
+      |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  809 |                   onClick={() => travel("undo")}
+  810 |                 >
+  811 |                   <Undo2 size={17} />                                                                                                                                                                                                                                          react-hooks/refs
+  817:30  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/dashboard-builder.tsx:817:30
+  815 |                   aria-label="Redo"
+  816 |                   title="Redo"
+> 817 |                   disabled={!history.current.future.length}
+      |                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  818 |                   onClick={() => travel("redo")}
+  819 |                 >
+  820 |                   <Redo2 size={17} />                                                                                                                                                                                                                                      react-hooks/refs
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/gallery.tsx
+  113:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/builder/gallery.tsx:113:5
+  111 |
+  112 |   useEffect(() => {
+> 113 |     setSearch("");
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  114 |     setCategory("All categories");
+  115 |     setError("");
+  116 |     if (mode === "configure" && existing) {  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-preview.tsx
+  182:26  warning  Error: Expected the first argument to be an inline function expression
+
+Expected the first argument to be an inline function expression.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-preview.tsx:182:26
+  180 |     initialHistory.textValues,
+  181 |   );
+> 182 |   const groups = useMemo(parameterGroups, []);
+      |                          ^^^^^^^^^^^^^^^ Expected the first argument to be an inline function expression
+  183 |   return (
+  184 |     <TrackingView
+  185 |       config={trackerConfig(configuration)}  react-hooks/use-memo
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/time-input.tsx
+  101:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/time-input.tsx:101:5
+   99 |
+  100 |   useEffect(() => {
+> 101 |     setActive(Math.max(0, options.indexOf(value)));
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  102 |   }, [value, options]);
+  103 |
+  104 |   useEffect(() => {  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/today-view.tsx
+  84:43  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/today-view.tsx:84:43
+  82 |   )?.label;
+  83 |   useEffect(() => {
+> 84 |     if (focusedParameter && focusedGroup) setActiveGroup(focusedGroup);
+     |                                           ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  85 |   }, [focusedParameter, focusedGroup]);
+  86 |
+  87 |   // biome-ignore lint/correctness/useExhaustiveDependencies: date and category changes mount the target field before focus  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx
+   213:3   warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:213:3
+  211 |   const editingScopeRef = useRef("");
+  212 |   const scopeRef = useRef("");
+> 213 |   scopeRef.current = `${mode}:${date}:${parameter.id}`;
+      |   ^^^^^^^^^^^^^^^^ Cannot update ref during render
+  214 |   const wasEditingRef = useRef(false);
+  215 |
+  216 |   // Reset editors when the parent changes weeks, mode, or parameter in place                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/refs
+   219:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:219:5
+  217 |   // biome-ignore lint/correctness/useExhaustiveDependencies: prop changes must cancel an open cell editor.
+  218 |   useEffect(() => {
+> 219 |     setEditingValue(false);
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  220 |     setCommentOpen(false);
+  221 |     setValueError("");
+  222 |   }, [mode, date, parameter.id]);  react-hooks/set-state-in-effect
+   237:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:237:5
+  235 |   useEffect(() => {
+  236 |     if (!commentOpen) return;
+> 237 |     setCommentDraft(comment);
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  238 |     setPanelPoint(placePanel(anchorRef.current));
+  239 |     commentRef.current?.focus();
+  240 |                                                                               react-hooks/set-state-in-effect
+   630:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:630:15
+  628 |                 </div>
+  629 |               </div>,
+> 630 |               anchorRef.current?.closest(
+      |               ^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  631 |                 ".cd-full-client-preview, .ct-shared-tracker",
+  632 |               ) ?? document.body,
+  633 |             )}                                                                                                                                                                                                                                                                                                                                                                                                         react-hooks/refs
+   630:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:630:15
+  628 |                 </div>
+  629 |               </div>,
+> 630 |               anchorRef.current?.closest(
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  631 |                 ".cd-full-client-preview, .ct-shared-tracker",
+  632 |               ) ?? document.body,
+  633 |             )}                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/refs
+   630:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:630:15
+  628 |                 </div>
+  629 |               </div>,
+> 630 |               anchorRef.current?.closest(
+      |               ^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  631 |                 ".cd-full-client-preview, .ct-shared-tracker",
+  632 |               ) ?? document.body,
+  633 |             )}                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/refs
+   630:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:630:15
+  628 |                 </div>
+  629 |               </div>,
+> 630 |               anchorRef.current?.closest(
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  631 |                 ".cd-full-client-preview, .ct-shared-tracker",
+  632 |               ) ?? document.body,
+  633 |             )}                                                                                                                                                                                                                                                                                                                                                                         react-hooks/refs
+  1154:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:1154:15
+  1152 |                 )}
+  1153 |               </fieldset>,
+> 1154 |               portalTargetRef.current ?? document.body,
+       |               ^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  1155 |             )}
+  1156 |           <button
+  1157 |             ref={anchorRef}                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/refs
+  1154:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/tracker-cell.tsx:1154:15
+  1152 |                 )}
+  1153 |               </fieldset>,
+> 1154 |               portalTargetRef.current ?? document.body,
+       |               ^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  1155 |             )}
+  1156 |           <button
+  1157 |             ref={anchorRef}                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/refs
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/trends-view.tsx
+  244:7   warning  The attribute aria-description is not supported by the role slider                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              jsx-a11y/role-supports-aria-props
+  303:10  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/trends-view.tsx:303:10
+  301 |         }}
+  302 |       >
+> 303 |         {mountedRef.current && width > left + right && (
+      |          ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  304 |           <svg
+  305 |             className="ct-trends-plot"
+  306 |             viewBox={`0:0 ${width} ${height}`}                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/refs
+  303:10  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/trends-view.tsx:303:10
+  301 |         }}
+  302 |       >
+> 303 |         {mountedRef.current && width > left + right && (
+      |          ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  304 |           <svg
+  305 |             className="ct-trends-plot"
+  306 |             viewBox={`0:0 ${width} ${height}`}                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/refs
+  303:10  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/trends-view.tsx:303:10
+  301 |         }}
+  302 |       >
+> 303 |         {mountedRef.current && width > left + right && (
+      |          ^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  304 |           <svg
+  305 |             className="ct-trends-plot"
+  306 |             viewBox={`0:0 ${width} ${height}`}                                                                                                                                                                                                                                                                                                                                                                                                                                                react-hooks/refs
+  667:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/client-tracker-preview/trends-view.tsx:667:5
+  665 |   useEffect(() => {
+  666 |     const available = new Set(configuredSignature.split("\u0000"));
+> 667 |     setSelectedIds((current) => {
+      |     ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  668 |       const next = current.filter((id) => available.has(id));
+  669 |       return next.length === current.length ? current : next;
+  670 |     });  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/messages.tsx
+  111:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/messages.tsx:111:5
+  109 |       unreadCount(s, selectedId) ? readConversation(s, selectedId) : s,
+  110 |     );
+> 111 |     setThreadSearch("");
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  112 |     setMenu(null);
+  113 |     setNewMessages(false);
+  114 |   }, [selectedId, setState]);  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx
+  324:3   warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:324:3
+  322 |     JSON.stringify(value) === JSON.stringify(life.active?.content);
+  323 |   const draftRef = useRef({ value, dirty });
+> 324 |   draftRef.current = { value, dirty };
+      |   ^^^^^^^^^^^^^^^^ Cannot update ref during render
+  325 |   const save = () => {
+  326 |     setState((s) =>
+  327 |       updateLife(s, client.id, kind, (l) => ({                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/refs
+  337:13  warning  Error: Cannot modify local variables after render completes
+
+This argument is a function which may reassign or mutate `guard` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:337:13
+  335 |     );
+  336 |   };
+> 337 |   useEffect(() => {
+      |             ^^^^^^^
+> 338 |     guard.current = (next) => {
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 339 |       if (!draftRef.current.dirty) return true;
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 350 |     };
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 351 |   }, [guard]);
+      | ^^^^ This function may (indirectly) reassign or modify `guard` after render
+  352 |   // Back/Forward stays resumable without changing active client content.
+  353 |   useEffect(
+  354 |     () => () => {
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:338:5
+  336 |   };
+  337 |   useEffect(() => {
+> 338 |     guard.current = (next) => {
+      |     ^^^^^ This modifies `guard`
+  339 |       if (!draftRef.current.dirty) return true;
+  340 |       setLeaving(next);
+  341 |       return false;                                                                                                                                                                                                           react-hooks/immutability
+  338:5   warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:338:5
+  336 |   };
+  337 |   useEffect(() => {
+> 338 |     guard.current = (next) => {
+      |     ^^^^^ `guard` cannot be modified
+  339 |       if (!draftRef.current.dirty) return true;
+  340 |       setLeaving(next);
+  341 |       return false;
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             react-hooks/immutability
+  732:24  warning  Error: Cannot modify local variables after render completes
+
+This argument is a function which may reassign or mutate `guard` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:732:24
+  730 |             <Button onClick={() => setLeaving(null)}>Keep editing</Button>
+  731 |             <Button
+> 732 |               onClick={() => {
+      |                        ^^^^^^^
+> 733 |                 draftRef.current.dirty = false;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 734 |                 guard.current = null;
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 735 |                 navigate(leaving);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 736 |               }}
+      | ^^^^^^^^^^^^^^^^ This function may (indirectly) reassign or modify `guard` after render
+  737 |             >
+  738 |               Discard changes
+  739 |             </Button>
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:734:17
+  732 |               onClick={() => {
+  733 |                 draftRef.current.dirty = false;
+> 734 |                 guard.current = null;
+      |                 ^^^^^ This modifies `guard`
+  735 |                 navigate(leaving);
+  736 |               }}
+  737 |             >  react-hooks/immutability
+  734:17  warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:734:17
+  732 |               onClick={() => {
+  733 |                 draftRef.current.dirty = false;
+> 734 |                 guard.current = null;
+      |                 ^^^^^ `guard` cannot be modified
+  735 |                 navigate(leaving);
+  736 |               }}
+  737 |             >
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              react-hooks/immutability
+  742:24  warning  Error: Cannot modify local variables after render completes
+
+This argument is a function which may reassign or mutate `guard` after render, which can cause inconsistent behavior on subsequent renders. Consider using state instead.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:742:24
+  740 |             <Button
+  741 |               primary
+> 742 |               onClick={() => {
+      |                        ^^^^^^^
+> 743 |                 save();
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 744 |                 draftRef.current.dirty = false;
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 745 |                 guard.current = null;
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 746 |                 navigate(leaving);
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 747 |               }}
+      | ^^^^^^^^^^^^^^^^ This function may (indirectly) reassign or modify `guard` after render
+  748 |             >
+  749 |               Save & leave
+  750 |             </Button>
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:745:17
+  743 |                 save();
+  744 |                 draftRef.current.dirty = false;
+> 745 |                 guard.current = null;
+      |                 ^^^^^ This modifies `guard`
+  746 |                 navigate(leaving);
+  747 |               }}
+  748 |             >                                                                         react-hooks/immutability
+  745:17  warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/plans/workspace.tsx:745:17
+  743 |                 save();
+  744 |                 draftRef.current.dirty = false;
+> 745 |                 guard.current = null;
+      |                 ^^^^^ `guard` cannot be modified
+  746 |                 navigate(leaving);
+  747 |               }}
+  748 |             >
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/immutability
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/store.tsx
+   94:35  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/store.tsx:94:35
+  92 |       if (stored !== undefined) {
+  93 |         const parsed: unknown = migrateCoachState(stored);
+> 94 |         if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
+     |                                   ^^^^^^^^ Avoid calling setState() directly within an effect
+  95 |         else {
+  96 |           preserveRaw.current = true;
+  97 |           setStorageOk(false);  react-hooks/set-state-in-effect
+  116:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/store.tsx:116:7
+  114 |     try {
+  115 |       writeCoachState(state);
+> 116 |       setStorageOk(true);
+      |       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  117 |     } catch {
+  118 |       setStorageOk(false);
+  119 |     }                                                                                                                                                                react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx
+  489:28  warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:489:28
+  487 |       ),
+  488 |     }));
+> 489 |   const save = useCallback(() => {
+      |                            ^^^^^^^
+> 490 |     const cfg = templateSetup(draft);
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 491 |     if (
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 521 |     }
+      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 522 |   }, [draft, id, setState, toast, route.client, guard, navigate]);
+      | ^^^^ Could not preserve existing memoization
+  523 |   useEffect(() => {
+  524 |     guard.current = (next) => {
+  525 |       if (!dirty) return true;  react-hooks/preserve-manual-memoization
+  519:7   warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:519:7
+  517 |     toast("Template saved to your library");
+  518 |     if (route.client) {
+> 519 |       guard.current = null;
+      |       ^^^^^ `guard` cannot be modified
+  520 |       navigate({ section: "clients", client: route.client, tab: "Plans" });
+  521 |     }
+  522 |   }, [draft, id, setState, toast, route.client, guard, navigate]);
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                          react-hooks/immutability
+  522:7   warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:522:7
+  520 |       navigate({ section: "clients", client: route.client, tab: "Plans" });
+  521 |     }
+> 522 |   }, [draft, id, setState, toast, route.client, guard, navigate]);
+      |       ^^^^^ This dependency may be modified later
+  523 |   useEffect(() => {
+  524 |     guard.current = (next) => {
+  525 |       if (!dirty) return true;                                                                                                                                                                                                                          react-hooks/preserve-manual-memoization
+  524:5   warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:524:5
+  522 |   }, [draft, id, setState, toast, route.client, guard, navigate]);
+  523 |   useEffect(() => {
+> 524 |     guard.current = (next) => {
+      |     ^^^^^ `guard` cannot be modified
+  525 |       if (!dirty) return true;
+  526 |       setLeaving(next);
+  527 |       return false;
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                                react-hooks/immutability
+  547:5   warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:547:5
+  545 |   }, [dirty, guard, save]);
+  546 |   const discard = () => {
+> 547 |     guard.current = null;
+      |     ^^^^^ `guard` cannot be modified
+  548 |     setState((s) => {
+  549 |       const d = { ...s.editorDrafts };
+  550 |       delete d[id];
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                                                                 react-hooks/immutability
+  817:19  warning  Error: This value cannot be modified
+
+Modifying a value returned from a hook is not allowed. Consider moving the modification into the hook where the value is constructed.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/templates.tsx:817:19
+  815 |                 if (discarding) discard();
+  816 |                 else if (leaving) {
+> 817 |                   guard.current = null;
+      |                   ^^^^^ `guard` cannot be modified
+  818 |                   navigate(leaving);
+  819 |                 }
+  820 |               }}
+
+Hint: If this value is a Ref (value returned by `useRef()`), rename the variable to end in "Ref"                                                                                                                                                                                                                                                                    react-hooks/immutability
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/ui.tsx
+  205:3  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/coach/ui.tsx:205:3
+  203 |   const close = useRef(onClose);
+  204 |   const reduced = useReducedMotion();
+> 205 |   close.current = onClose;
+      |   ^^^^^^^^^^^^^ Cannot update ref during render
+  206 |   useEffect(() => {
+  207 |     const d = ref.current;
+  208 |     const previous = document.activeElement as HTMLElement | null;  react-hooks/refs
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/checkins.ts
+  7:3  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/clients.ts
+  5:28  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/habits.ts
+  5:28  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/messages.ts
+  5:15  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/nutrition.ts
+  6:15  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/templates.ts
+  6:27  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/tracker.ts
+  6:28  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/data/training.ts
+  5:15  warning  'CoachState' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/appearance-views.tsx
+  55:19  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/appearance-views.tsx:55:19
+  53 |   }, [foundationMessage]);
+  54 |
+> 55 |   useEffect(() => setDraft(appearance.accent), [appearance.accent]);
+     |                   ^^^^^^^^ Avoid calling setState() directly within an effect
+  56 |
+  57 |   const valid = /^#[\da-fA-F]{6}$/.test(draft);
+  58 |   const updateAccent = (value: string) => {  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx
+   261:11  warning  The ref value 'ref.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'ref.current' to a variable inside the effect, and use that variable in the cleanup function                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+   339:9   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:339:9
+  337 |         if (!isValidDraft(saved))
+  338 |           throw new Error("Unsupported or invalid draft");
+> 339 |         setDraft(saved);
+      |         ^^^^^^^^ Avoid calling setState() directly within an effect
+  340 |         draftRef.current = saved;
+  341 |         setName(saved.name);
+  342 |         setSaveState("Local draft restored");  react-hooks/set-state-in-effect
+   488:5   warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This value was memoized in source but not in compilation output.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:488:5
+  486 |   };
+  487 |   const propose = useCallback(
+> 488 |     (g: Gesture, rect: Rect) => {
+      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 489 |       const sizedRect =
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 490 |         g.type === "resize"
+      …
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 529 |       );
+      | ^^^^^^^^^^^^^^^^^^^^^^^
+> 530 |     },
+      | ^^^^^^ Could not preserve existing memoization
+  531 |     [bp, cols, syncGesture, width],
+  532 |   );
+  533 |   const startGesture = (                                                                                                                                                                                                                                                                                                                      react-hooks/preserve-manual-memoization
+   531:6   warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:531:6
+  529 |       );
+  530 |     },
+> 531 |     [bp, cols, syncGesture, width],
+      |      ^^ This dependency may be modified later
+  532 |   );
+  533 |   const startGesture = (
+  534 |     id: string,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          react-hooks/preserve-manual-memoization
+   531:10  warning  Compilation Skipped: Existing memoization could not be preserved
+
+React Compiler has skipped optimizing this component because the existing manual memoization could not be preserved. This dependency may be mutated later, which could cause the value to change unexpectedly.
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:531:10
+  529 |       );
+  530 |     },
+> 531 |     [bp, cols, syncGesture, width],
+      |          ^^^^ This dependency may be modified later
+  532 |   );
+  533 |   const startGesture = (
+  534 |     id: string,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   react-hooks/preserve-manual-memoization
+   594:3   warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:594:3
+  592 |     cancelGesture,
+  593 |   });
+> 594 |   pointerHandlers.current = { movePointer, completeGesture, cancelGesture };
+      |   ^^^^^^^^^^^^^^^^^^^^^^^ Cannot update ref during render
+  595 |   useEffect(() => {
+  596 |     if (gesture && gesture.startWidth !== width) cancelGesture();
+  597 |   }, [gesture, width, cancelGesture]);                                                                                                                                                                                                                                                                                                                                                                          react-hooks/refs
+   992:28  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:992:28
+  990 |                 aria-label="Undo"
+  991 |                 title="Undo"
+> 992 |                 disabled={!history.current.past.length}
+      |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  993 |                 onClick={() => travel("undo")}
+  994 |               >
+  995 |                 <Undo2 size={17} />                                                                                                                                                                                                                                                                                                                                               react-hooks/refs
+  1001:28  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/dashboard-builder.tsx:1001:28
+   999 |                 aria-label="Redo"
+  1000 |                 title="Redo"
+> 1001 |                 disabled={!history.current.future.length}
+       |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  1002 |                 onClick={() => travel("redo")}
+  1003 |               >
+  1004 |                 <Redo2 size={17} />                                                                                                                                                                                                                                                                                                                                   react-hooks/refs
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/gallery.tsx
+  113:5  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/builder/gallery.tsx:113:5
+  111 |
+  112 |   useEffect(() => {
+> 113 |     setSearch("");
+      |     ^^^^^^^^^ Avoid calling setState() directly within an effect
+  114 |     setCategory("All categories");
+  115 |     setError("");
+  116 |     if (mode === "configure" && existing) {  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/client-tracker.tsx
+  62:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/client-tracker.tsx:62:7
+  60 |     const draft = readClientTrackerDraft(identity);
+  61 |     if (draft) {
+> 62 |       setConfig(draft.config);
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  63 |       setEntries(draft.entries);
+  64 |       setComments(draft.comments);
+  65 |     }  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx
+  192:3   warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:192:3
+  190 |   const editingScopeRef = useRef("");
+  191 |   const scopeRef = useRef("");
+> 192 |   scopeRef.current = `${mode}:${date}:${parameter.id}`;
+      |   ^^^^^^^^^^^^^^^^ Cannot update ref during render
+  193 |   const wasEditingRef = useRef(false);
+  194 |
+  195 |   // Reset editors when the parent changes weeks, mode, or parameter in place                                                                                                                                                                                                                                                                                                                                                                                  react-hooks/refs
+  198:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:198:5
+  196 |   // biome-ignore lint/correctness/useExhaustiveDependencies: prop changes must cancel an open cell editor.
+  197 |   useEffect(() => {
+> 198 |     setEditingValue(false);
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  199 |     setCommentOpen(false);
+  200 |     setValueError("");
+  201 |   }, [mode, date, parameter.id]);  react-hooks/set-state-in-effect
+  215:5   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:215:5
+  213 |   useEffect(() => {
+  214 |     if (!commentOpen) return;
+> 215 |     setCommentDraft(comment);
+      |     ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  216 |     setPanelPoint(placePanel(anchorRef.current));
+  217 |     commentRef.current?.focus();
+  218 |                                                                               react-hooks/set-state-in-effect
+  558:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:558:15
+  556 |                 </div>
+  557 |               </div>,
+> 558 |               anchorRef.current?.closest(".eg-root") ?? document.body,
+      |               ^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  559 |             )}
+  560 |         </>
+  561 |       )}                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/refs
+  558:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:558:15
+  556 |                 </div>
+  557 |               </div>,
+> 558 |               anchorRef.current?.closest(".eg-root") ?? document.body,
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^ Cannot access ref value during render
+  559 |             )}
+  560 |         </>
+  561 |       )}                                                                                                                                                                                                                                                                                                                                                                                                                                               react-hooks/refs
+  558:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:558:15
+  556 |                 </div>
+  557 |               </div>,
+> 558 |               anchorRef.current?.closest(".eg-root") ?? document.body,
+      |               ^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  559 |             )}
+  560 |         </>
+  561 |       )}                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/refs
+  558:15  warning  Error: Cannot access refs during render
+
+React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during render can cause your component not to update as expected (https://react.dev/reference/react/useRef).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/client-tracker/tracker-cell.tsx:558:15
+  556 |                 </div>
+  557 |               </div>,
+> 558 |               anchorRef.current?.closest(".eg-root") ?? document.body,
+      |               ^^^^^^^^^^^^^^^^^^^^^^^^^^ Passing a ref to a function may read its value during render
+  559 |             )}
+  560 |         </>
+  561 |       )}                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/refs
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/clients/client-profile.tsx
+  205:5  warning  Expected an assignment or function call and instead saw an expression  @typescript-eslint/no-unused-expressions
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/clients/clients-workspace.tsx
+  41:27  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/clients/clients-workspace.tsx:41:27
+  39 |     try {
+  40 |       const saved = loadClientsWorkspace();
+> 41 |       if (saved?.clients) setClients(saved.clients);
+     |                           ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  42 |       if (saved?.invitations) setInvitations(saved.invitations);
+  43 |     } catch {
+  44 |       setNotice(  react-hooks/set-state-in-effect
+  56:7   warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/clients/clients-workspace.tsx:56:7
+  54 |       saveClientsWorkspace({ clients, invitations });
+  55 |     } catch {
+> 56 |       setNotice(
+     |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  57 |         "Browser storage is unavailable. Changes will last for this session.",
+  58 |       );
+  59 |     }                                                react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/mealplan/mealplan-workspace.tsx
+  158:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/mealplan/mealplan-workspace.tsx:158:7
+  156 |       saved = loadMealPlans() ?? {};
+  157 |     } catch {
+> 158 |       setNotice("Saved plans could not be opened. A fresh demo plan is ready.");
+      |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  159 |     }
+  160 |     const loaded = { ...saved };
+  161 |     clients.forEach((client) => {  react-hooks/set-state-in-effect
+  174:7  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/components/canvas/ethereal/mealplan/mealplan-workspace.tsx:174:7
+  172 |       saveMealPlans(plans);
+  173 |     } catch {
+> 174 |       setNotice(
+      |       ^^^^^^^^^ Avoid calling setState() directly within an effect
+  175 |         "Browser storage is unavailable. Changes will last for this session.",
+  176 |       );
+  177 |     }                                                      react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/icm/03-plan/tools/plan-to-issues.mjs
+  7:19  warning  'join' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/lib/canvas/ethereal-appearance.tsx
+  125:17  warning  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/lib/canvas/ethereal-appearance.tsx:125:17
+  123 |   useEffect(() => {
+  124 |     const stored = readStoredAppearance();
+> 125 |     if (stored) setAppearance(stored);
+      |                 ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  126 |     setHydrated(true);
+  127 |   }, []);
+  128 |  react-hooks/set-state-in-effect
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/lib/dashboard/config-schema.ts
+  445:17  warning  'bp' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/apple/Devin/vari8-worktrees/k6-gate/tests/integration/p025b-checkin-instances.test.ts
+  1127:11  warning  'fieldId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 81 problems (0 errors, 81 warnings)
+
+== frontend lint: npm --prefix frontend run lint
+
+> ui-studio@0.1.0 lint
+> biome check . --error-on-warnings
+
+Checked 257 files in 364ms. No fixes applied.
+== unit tests: npm run test
+
+> app@0.1.0 test
+> vitest run
+
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.2 [39m[90m/Users/apple/Devin/vari8-worktrees/k6-gate[39m
+
+ [32m✓[39m tests/unit/rbac.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 21[2mms[22m[39m
+ [32m✓[39m tests/unit/load-gate.test.ts [2m([22m[2m46 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/training-payload.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 57[2mms[22m[39m
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2missues saveDraft exactly once with the bounded payload shape
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2missues saveDraft exactly once with the bounded payload shape
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2madopts the SERVER-NORMALIZED title — never the raw padded local name
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2madopts the SERVER-NORMALIZED title — never the raw padded local name
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mdisables every mutation control while the save is in flight, then re-enables
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mdisables every mutation control while the save is in flight, then re-enables
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma typed save rejection shows the safe alert and preserves unsaved edits
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma typed save rejection shows the safe alert and preserves unsaved edits
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma transport failure shows the generic alert, preserves edits, and does not auto-retry
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma transport failure shows the generic alert, preserves edits, and does not auto-retry
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma field-only save preserves the existing form name — never an empty name
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma field-only save preserves the existing form name — never an empty name
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mcleared helpText saves as a normalized omission — the emptied input is not persisted
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mcleared helpText saves as a normalized omission — the emptied input is not persisted
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma pending save disables the whole fieldset breadth plus the outside name/save controls
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma pending save disables the whole fieldset breadth plus the outside name/save controls
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma new save press clears the prior alert
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma new save press clears the prior alert
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma new save press clears the prior alert
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma new save press clears the prior alert
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2ma new save press clears the prior alert
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mthe alert never echoes internals, ids, or raw payload text
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — save wiring (intentionally RED until ES-3)[2m > [22m[2mthe alert never echoes internals, ids, or raw payload text
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mremove+add payload: contiguous orders, surviving field/option ids, no retired-id resurrection
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mremove+add payload: contiguous orders, surviving field/option ids, no retired-id resurrection
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mmove-up payload: contiguous orders with stable ids on the swapped rows
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mmove-up payload: contiguous orders with stable ids on the swapped rows
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2moption remove+add payload: surviving option id preserved, retired id never reassigned
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2moption remove+add payload: surviving option id preserved, retired id never reassigned
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mmove+remove payload: surviving choice field keeps option values AND optionIds
+[22m[39mThe current testing environment is not configured to support act(...)
+
+[90mstderr[2m | tests/unit/onboarding-draft-editor.dom.test.tsx[2m > [22m[2mDraftEditor — structure-ops payload subset (deferred to ES-3)[2m > [22m[2mmove+remove payload: surviving choice field keeps option values AND optionIds
+[22m[39mThe current testing environment is not configured to support act(...)
+
+ [32m✓[39m tests/unit/onboarding-draft-editor.dom.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 305[2mms[22m[39m
+ [32m✓[39m tests/unit/guard.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/password-reset-boundary.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m tests/unit/audit.test.ts [2m([22m[2m70 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-forms.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-submission.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/transition-diff.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+[90mstderr[2m | tests/unit/logging.test.ts[2m > [22m[2mboot_refused — the instrumentation refusal line[2m > [22m[2ma refused boot still rethrows (no log line) outside production
+[22m[39m2026-10-24T13:54:40.070Z WARN [Better Auth]: [better-auth] Base URL is not set. Set the baseURL option or BETTER_AUTH_URL env, or use a dynamic baseURL with allowedHosts for multi-host setups. Without it the origin is derived from the incoming request, and callbacks and redirects may not work correctly.
+
+ [32m✓[39m tests/unit/boot-checks.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/logging.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 984[2mms[22m[39m
+   [32m✓[39m logger — one JSON line, redacted [2m(16)[22m
+     [33m[2m✓[22m[39m a trustedId marker cannot smuggle an oversized or unsafe string[33m 374[2mms[22m[39m
+   [32m✓[39m boot_refused — the instrumentation refusal line [2m(2)[22m
+     [33m[2m✓[22m[39m a refused production boot logs one boot_refused line then exits 1[33m 394[2mms[22m[39m
+ [32m✓[39m tests/unit/transition-impact.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup-selection.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-m8.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 219[2mms[22m[39m
+ [32m✓[39m tests/unit/mealplan-payload.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-actions.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-schedule-timezone.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 72[2mms[22m[39m
+ [32m✓[39m tests/unit/invitations.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-forms.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-forms-boundary.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-entry-canonical.test.ts [2m([22m[2m65 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/dashboard-autosave.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-draft-editor.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-assignments-boundary.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-instances.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 111[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-parameters.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/unit/databases.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+ [32m✓[39m tests/unit/token-crypto.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/supplements-plan.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/dashboard-config.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/password-policy.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 349[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-boundary.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-templates.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-submission-panel.dom.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 141[2mms[22m[39m
+ [32m✓[39m tests/unit/token-store.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/password-reset.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/habits-date.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 33[2mms[22m[39m
+ [32m✓[39m tests/unit/training-bookings-transport.dom.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[33m 377[2mms[22m[39m
+ [32m✓[39m tests/unit/storage.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-entry-validate.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup-actions.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/unit/storage-local.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m tests/unit/coach-assignments-actions.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m tests/unit/canvas-data-seam.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 123[2mms[22m[39m
+ [32m✓[39m tests/unit/habits-boundary.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-feedback.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-review-queue.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 120[2mms[22m[39m
+ [32m✓[39m tests/unit/clients-service.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/invite-acceptance.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/exercise-source.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 91[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-actions.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 52[2mms[22m[39m
+ [32m✓[39m tests/unit/nutrition-source.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 199[2mms[22m[39m
+ [32m✓[39m tests/unit/client-tasks-boundary.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/transition-review.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 15[2mms[22m[39m
+ [32m✓[39m tests/unit/canvas-access.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup-transition-actions.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-schedules.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup-boundary.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-assignments-actions.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-calendar.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 83[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-entry-impact.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/mealplan-timezone.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 71[2mms[22m[39m
+ [32m✓[39m tests/unit/e2e-config.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 1666[2mms[22m[39m
+   [32m✓[39m playwright.config e2e origin/port contract [2m(12)[22m
+     [33m[2m✓[22m[39m defaults the lane port to 3000 with an https browser origin[33m 791[2mms[22m[39m
+   [32m✓[39m tls-proxy process contract [2m(2)[22m
+     [33m[2m✓[22m[39m running proxy removes its temp dir on SIGTERM[33m 746[2mms[22m[39m
+ [32m✓[39m tests/unit/runtime.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/parse.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/client-tasks-date.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/password-reset-token-failure.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/unit/storage-s3.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/unit/roles.test.ts [2m([22m[2m38 tests[22m[2m)[22m[32m 13[2mms[22m[39m
+ [32m✓[39m tests/unit/password-reset-delivery.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/unit/dashboard-config-habits.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/client-roster.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-forms-boundary.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m tests/unit/mail.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-review.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m tests/unit/source-config.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 233[2mms[22m[39m
+ [32m✓[39m tests/unit/credentials.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 470[2mms[22m[39m
+ [32m✓[39m tests/unit/summaries.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/unit/mealplan-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/theme.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-week-groups.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-prototype.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/route-guard.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup-rbac.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/dashboard-autosave-ssr.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/theme-artifact.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/normalize.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/unit/session-version.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 29[2mms[22m[39m
+ [32m✓[39m tests/unit/retention-boundary.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/unit/extraction-contract.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/checkin-tracker-context.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/unit/password.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 475[2mms[22m[39m
+ [32m✓[39m tests/unit/staff-daily-review.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/daily-tracker.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/token-exposure.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-classification.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m tests/unit/onboarding-assignments.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/sheet-viewer-gate.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [32m✓[39m tests/unit/client-setup.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/coaching-gate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+ [32m✓[39m tests/unit/email.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 2[2mms[22m[39m
+ [32m✓[39m tests/unit/coach-store-roster.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/unit/system-index.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 14555[2mms[22m[39m
+   [32m✓[39m system index generator [2m(18)[22m
+     [33m[2m✓[22m[39m F2: indexes re-exports and matches an independent compiler count[33m 1574[2mms[22m[39m
+     [33m[2m✓[22m[39m F9: names the canvas component behind a screen element[33m 1025[2mms[22m[39m
+     [33m[2m✓[22m[39m pass 2: a layout's imports apply to every route beneath it[33m 910[2mms[22m[39m
+     [33m[2m✓[22m[39m pass 2: COMPONENTS.md groups rows by canvas surface[33m 930[2mms[22m[39m
+     [33m[2m✓[22m[39m pass 2: index:check reports a missing hand-written index doc[33m 4881[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m104 passed[39m[22m[90m (104)[39m
+[2m      Tests [22m [1m[32m1250 passed[39m[22m[90m (1250)[39m
+[2m   Start at [22m 18:54:38
+[2m   Duration [22m 16.89s[2m (tests 49%, import 22%, transform 19%, environment 8%, worker 1%)[22m
+
+[2m    Isolate [22m [33m104 workers spawned[39m[2m · ~211ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~2.92s faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+== frontend tests: npm --prefix frontend run test
+
+> ui-studio@0.1.0 test
+> node scripts/test-frontend.mjs
+
+(node:20077) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ reports server serves report files and keeps access inside reports/ (78.133584ms)
+✔ occupied ports are reported without stopping the existing listener (57.702709ms)
+(node:20078) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ scales mixed 100 g, one-item, and 100 mL bases without replacing database calories (0.942375ms)
+✔ food swaps are alternatives and do not contribute to meal totals (0.314209ms)
+✔ variant clones have fresh nested ids and independent mutable data (3.130125ms)
+✔ archived plan snapshots retain schedule and stay independent from later edits (2.337916ms)
+✔ manual and weekly selection honor the plan start date and ISO weekdays (1.056209ms)
+✔ repeating rhythms honor anchors, block boundaries, month/year rollover, and browsing assignment (0.606584ms)
+✔ repeating rhythm day arithmetic stays aligned across daylight-saving changes (0.357334ms)
+✔ cycle schedules are archived, structurally guarded, and domain-validated (1.679709ms)
+✔ initial plans use the selected local calendar date (0.275625ms)
+✔ target validation rejects negative values and reversed ranges (0.280958ms)
+✔ plan validation rejects invalid dates/times, incomplete weekly schedules, and unknown foods (0.159417ms)
+✔ storage shape guard allows structurally sound drafts with invalid domain values (0.10125ms)
+✔ storage shape guard rejects malformed nested portions, targets, schedules, archives, and reusable meals (0.207458ms)
+(node:20078) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/scripts/mealplan-model.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20079) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ macro energy shares use 4/4/9 and are independent of source calories (2.274208ms)
+✔ macro energy shares return zeros when there is no macro energy (1.081084ms)
+✔ legacy target drafts do not block saving static meal plans (0.440792ms)
+(node:20079) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/scripts/mealplan-overview.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20080) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ grouped mode recognizes uniform prescriptions and keeps varied sets individual (0.67275ms)
+✔ applying one shared prescription preserves each set identity and all cue fields (0.218167ms)
+✔ numeric draft accepts 8 → empty → 1 → 12 without clamping intermediate typing (0.528042ms)
+✔ swapping a library reference keeps coach notes and prescription data (0.117208ms)
+(node:20080) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/scripts/training-model.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20081) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ accent action foreground remains readable for pale and saturated accents (22.766167ms)
+✔ accent is normalized and malformed values fall back safely (17.018833ms)
+✔ action fills and labels stay distinct and readable on light and dark surfaces (37.473666ms)
+(node:20081) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/accent-contrast.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20082) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20082) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ the screenshot pink keeps its fill with a dark label (20.661083ms)
+✔ pastels and bright accents retain their exact fill and dark labels (65.150041ms)
+✔ dark accents keep passing fills; mid-gray prefers a dark label (11.959709ms)
+✔ white preference never requires excessive darkening or lowers text contrast (2032.089333ms)
+✔ hex normalization and fallback remain deterministic (25.214ms)
+(node:20083) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ coach content widgets survive saved JSON validation (1.470083ms)
+✔ resource links accept only absolute http and https URLs (0.147ms)
+✔ invalid resource links and incomplete link pairs fail draft validation (0.0955ms)
+✔ one-row section headings survive saved validation and layout reconciliation (0.678542ms)
+(node:20083) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/ethereal/builder/grid.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20084) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20084) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(node:20084) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ derives every cycle day when cycle-day is configured without period-start (1.4125ms)
+(node:20085) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20085) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ calorie readings, headers, means, trends and edits all use the selected energy unit (14.861875ms)
+✔ existing weight conversions remain delegated to the original tracker helpers (0.097833ms)
+(node:20086) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20086) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ UTC week navigation remains Monday-first across year, leap day, and DST boundaries (20.090708ms)
+✔ disabled cycle fields are removed while ordinary and custom health fields remain (0.2935ms)
+✔ zero is recorded, missing values are not, and numeric weekly summaries average observed values (0.678084ms)
+✔ weekly numeric aggregation follows each parameter's configured summary metadata (1.55925ms)
+✔ binary choices summarize recorded yes/no answers and other structured text stays unsummarized (0.233209ms)
+✔ cycle day derives from the latest period start on or before the selected date (0.196167ms)
+(node:20086) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20087) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20087) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ complete seed envelope validates and is independently cloned (51.070958ms)
+✔ assignment takes an isolated configuration snapshot (10.067417ms)
+✔ variant switches retain athlete identity, entries, plans and submissions (7.112417ms)
+✔ Monday-first date arithmetic stays stable across month, year and DST (0.157583ms)
+✔ recurrence merges additional requests by explicit association without duplicate IDs (3.689375ms)
+✔ schedule changes preserve submitted history (3.477625ms)
+✔ feedback is atomic, linked, preserves private notes and cannot be submitted twice (1.351667ms)
+✔ plan activations become explicit review changes linked to the correct client module (1.435459ms)
+✔ week-based instructions carry forward without rewriting earlier weeks (0.091084ms)
+✔ optional raster logo validates, survives round-trip and preserves all collections (28.819625ms)
+✔ invalid logo values are rejected without affecting other preferences (5.892708ms)
+✔ invalid sidebarCollapsed values are rejected (3.752542ms)
+✔ activity target planning selections accept only steps and cardio (7.051584ms)
+✔ structured activity prescriptions drive summary labels and suppress scalar comparisons (1.692ms)
+✔ activity summary resolves prescriptions at the requested as-of date (1.020875ms)
+(node:20087) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20088) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20088) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ the existing sample schedule counts working sets by primary muscle per week (5.682625ms)
+✔ different weeks and scheduled sessions remain isolated, with empty intensity safe (0.663667ms)
+✔ unmapped sets are reported rather than assigned a fabricated muscle or silently lost (0.115ms)
+(node:20089) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20089) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain-nutrition-defaults.checks.mjs (267.982416ms)
+(node:20090) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ activation snapshots content and keeps prior versions effective before a future start (7.82325ms)
+✔ saving a changed draft cannot mutate active or historical content (0.160542ms)
+✔ archiving sets a date cutoff without losing earlier applicable versions (0.216542ms)
+✔ state migration preserves legacy profile data and creates only empty individual lifecycles (1.717208ms)
+✔ nested structural validation rejects malformed prescriptions while accepting valid empty drafts (0.69725ms)
+✔ activation validates week bounds and resolves all authored week overrides (0.483292ms)
+✔ unknown schedule references are rejected and cycle scheduling survives DST boundaries (0.458167ms)
+✔ nutrition activation requires authored positive targets and valid plans retain client ownership (0.222416ms)
+✔ weekly day roles survive storage and activation without changing date assignments (0.239ms)
+✔ legacy plans migrate to empty activity targets and malformed records are rejected (2.268375ms)
+✔ Amara training example adoption preserves recorded activity targets (1.0485ms)
+✔ saved supplement plans validate, migrate and stay bound to their client (0.397625ms)
+✔ Amara training example adoption preserves a saved supplement plan (0.169834ms)
+(node:20090) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20091) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20091) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/ethereal/mealplan/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/nutrition/model.checks.mjs (208.170584ms)
+(node:20092) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20092) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/phase-planning.checks.mjs (408.119417ms)
+(node:20093) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+Amara example checks passed: valid four-session plan, weekly schedule, focus muscles, full set rows, lifecycle preservation, sibling preservation, and reload idempotence.
+(node:20093) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/training/amara-example.checks.mjs (424.623542ms)
+(node:20094) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+training model checks passed
+(node:20094) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/muscle-volume.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/training/training-model.checks.mjs (198.851708ms)
+(node:20098) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20098) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ roadmap uses separate observed weeks rather than repeating a synthetic average (31.6655ms)
+✔ a legacy scalar summary does not invent roadmap targets (0.263542ms)
+✔ configured physical units convert actual observations and targets consistently (0.15325ms)
+✔ selected activity planning projects dated midweek segments without actual entries (2.099292ms)
+✔ deselected planning metrics stay absent and stops keep explicit stopped segments (0.319958ms)
+✔ planning unions observed, version and current weeks while unselected configs stay observed-only (0.379417ms)
+✔ structured activity versions suppress scalar goal targets and adherence on activity fields (0.746583ms)
+(node:20098) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20099) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20099) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ roadmap uses separate observed weeks rather than repeating a synthetic average (8.253208ms)
+✔ adherence requires recorded values and an actual client target (0.512292ms)
+✔ configured physical units convert actual observations and targets consistently (0.464792ms)
+✔ nutrition targets are absent before an active plan's start date (0.371333ms)
+(node:20099) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20100) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ draftOf keeps the saved product snapshot and savedItem writes it back unchanged (0.997166ms)
+✔ savedItem rejects a snapshot whose id or brand disagrees with the selection (0.085708ms)
+✔ blankDraft and rowErrors cover missing product and quantity only (0.122125ms)
+✔ plan guard rejects unsafe product URLs in saved snapshots (0.18225ms)
+(node:20100) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/supplements/draft.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20101) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ declared total uses original reference ratio, not rounded per-unit values (1.720542ms)
+✔ fractional reference portion scales declared amount correctly (0.317167ms)
+✔ missing composition, missing/invalid reference or invalid quantity return null (0.477292ms)
+✔ dosage falls back to product units only when no declared basis exists (2.49575ms)
+✔ supplement plan guard accepts a valid saved plan including empty items (0.798ms)
+✔ supplement plan guard rejects malformed rows and snapshots (0.879709ms)
+✔ safe product url accepts http(s) hosts and rejects unsafe forms (6.848875ms)
+(node:20101) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/supplements/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20102) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20107) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/targets/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20110) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/targets/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ four steps kinds format correctly and cardio keeps its weekly pair (0.843125ms)
+✔ validation rejects malformed values while keeping whole/fractional rules (0.582708ms)
+✔ a midweek change resolves by effective date while earlier days keep the old prescription (0.115709ms)
+✔ weekly segments split on the change day and keep a leading no-target segment (1.96625ms)
+✔ a stop wins from its date onward without reviving earlier targets or mutating inputs (0.9795ms)
+✔ unsorted versions resolve by date and the last same-date entry wins (0.092417ms)
+✔ same-day writes require confirmation and confirmed writes append without mutating inputs (0.244875ms)
+✔ localToday returns the local calendar day for the process timezone (296.7245ms)
+✔ saving before or after midnight uses the commit-time local date, not the draft-open date (0.496416ms)
+✔ saved-state guard accepts only well-formed dated versions (0.599708ms)
+✔ calendar arithmetic stays Monday-first and DST-safe (0.23975ms)
+(node:20102) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/targets/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20103) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20103) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ one active configuration retains legacy configurations without mutating the source (1.578167ms)
+✔ a client keeps the configuration actually assigned, including archived legacy selections (0.18ms)
+✔ workspace normalization preserves history, plans, messages, preferences and independent drafts (1.248209ms)
+✔ explicit phase and habit choices survive normalization and serialization (0.141958ms)
+(node:20104) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20104) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(node:20104) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/domain.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ daily overview preserves legacy summaries without changing check-in configuration (8.749291ms)
+✔ overview settings survive persistence and isolated assignment snapshots (9.113125ms)
+(node:20105) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ weekly source averages include zero, count unique logged days and stay coherent (2.780916ms)
+✔ upgrading saved records preserves intentional empty sources and completions (19.857792ms)
+✔ habit consistency changes when the shared schedule completion changes (131.386916ms)
+(node:20106) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ version two saved samples gain history without losing edits or intentional empty sources (10.800916ms)
+✔ edited historical plans survive sample upgrades unchanged (49.537875ms)
+✔ version three records missing the selected option's current-day nutrition are repaired (13.916959ms)
+✔ unmarked edited nutrition sources gain older and current keys while existing gaps and values stay intact (5.440084ms)
+(node:20106) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/ethereal/builder/model.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20108) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ breakpoints and width-aware footprints follow the canvas contract (0.9815ms)
+✔ arrange and addToLayout use the first top-left vacancy without mutating input (0.298042ms)
+✔ section headings default to one full-width structural row (0.096667ms)
+✔ arrangeInReadingOrder preserves mixed-size widget order (0.226875ms)
+✔ resolvePlacement pins the moved widget, pushes collisions downward in reading order, and preserves unrelated positions (0.151333ms)
+✔ reconcileLayout retains valid positions, drops removed widgets, and places new ones (0.252834ms)
+✔ custom rectangles keep independent width and height across breakpoint reconciliation (0.097ms)
+✔ minimum spans protect canvas width and keep breakpoint row floors (0.085542ms)
+✔ reading-order auto arrangement keeps custom spans while repacking (0.091916ms)
+✔ compact arrangement fills an earlier vacancy without changing custom spans (0.137875ms)
+✔ content caps limit growth without setting a canvas row limit (0.133667ms)
+(node:20108) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/ethereal/builder/grid.test.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20109) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ denser histories retain gaps, zero and latest values without replacing edited sources (2.282083ms)
+✔ all line-chart families expose per-instance ranges and year changes data coverage (229.308333ms)
+✔ daily macros share one format and history supports both graphs for every nutrient (48.5875ms)
+✔ steps include the source-record target while missing stays distinct from zero (2.871916ms)
+(node:20111) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ every widget's title opens its corresponding local source record detail (158.0735ms)
+✔ all twenty-two catalogue entries render all five measured content states (220.965459ms)
+✔ unassigned and empty fixture sources render missing states without fabricated values (55.580625ms)
+✔ instance periods filter data without changing another instance (4.667208ms)
+✔ custom dimensions preserve source meaning, setting, and eligible units (3.757125ms)
+✔ habit consistency preserves source statuses in its summary, strip, and calendar (69.128708ms)
+✔ habit consistency matches the 3×2 summary and 4×2/4×3 strip layouts (29.085ms)
+✔ weekly focus, selected measures, and phase progress use dated source facts (1.346584ms)
+✔ missing observations remain distinct from recorded zero (19.724417ms)
+✔ shared habit updates reach duplicate renderings and do not erase assignments (2.8565ms)
+✔ habit completion controls mutate data only in client preview (0.423417ms)
+✔ habit contribution graph uses scheduled history and keeps today unlogged distinct (43.081917ms)
+✔ habit fixture upgrades leave current and already recorded completions intact (1.633125ms)
+✔ nutrition preserves missing amounts and fixed, range and minimum targets (3.110125ms)
+✔ metric summaries remain eligible and presentation titles retain source units (0.343084ms)
+✔ weight conversion and named exercise metrics preserve dated observations (8.643917ms)
+✔ tall workout cards pair applicable prescriptions with the next scheduled session (0.457292ms)
+✔ workout sizes keep one compact prescription and match expanded logbook evidence (0.632417ms)
+✔ step cards use dated columns and retain recorded zero values (1.469042ms)
+✔ smooth plots use dated x positions, bridge display gaps and retain missing observations (5.391958ms)
+✔ nutrition compares one selected day with explicit logged and target values (2.911208ms)
+✔ recovery scales, drafts, due windows, and published feedback retain their semantics (5.822625ms)
+✔ client task completion updates the shared assigned task record (2.307917ms)
+✔ scheduled habit fields and custom link labels preserve source identity (2.388208ms)
+(node:20112) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20112) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ weekly averages ignore missing readings and include a real zero (29.441167ms)
+✔ weekly averages and totals use only the week's recorded values (0.210291ms)
+✔ unit preferences convert canonical weight, length, and fluid values for display (0.16725ms)
+✔ rating display and distributions follow the selected numeric scale (0.190667ms)
+✔ word ratings retain their meaning and use a labelled distribution (0.091875ms)
+✔ latest summaries select the most recent date regardless of input order (0.627ms)
+✔ week ledger means override latest, total, and distribution preferences (0.101875ms)
+✔ week ledger means convert units and exclude invalid readings (0.109ms)
+✔ weekly deltas compare observed means in displayed units and omit unavailable comparisons (0.110208ms)
+✔ weight deltas use the closest earlier recorded reading across missing days and week boundaries (0.139208ms)
+(node:20113) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20113) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+✔ each client collection is a deep independent copy of the fixtures (0.962583ms)
+✔ overdue task totals match each client's actual task statuses (0.753833ms)
+(node:20114) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+VARI8 component semantic checks passed.
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/vari8/components.checks.mjs (1274.431083ms)
+(node:20115) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20115) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/vari8/date-utils.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/vari8/date-utils.checks.mjs (174.137ms)
+(node:20116) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/vari8/overlay-motion.checks.mjs (118.787542ms)
+(node:20117) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ theme variables adapt effective accents and labels while preserving the selected hex (53.611ms)
+✔ nutrition macro chart colors retain separated contrast for extreme accents (538.749958ms)
+(node:20118) ExperimentalWarning: `--experimental-loader` may be removed in the future; instead use `register()`:
+--import 'data:text/javascript,import { register } from "node:module"; import { pathToFileURL } from "node:url"; register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./")); register("/Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/components/coach/plans/test-loader.mjs", pathToFileURL("./"));'
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ normalizeAccent accepts valid short and full hex colors only (1.328125ms)
+✔ theme resolver exposes all named semantic roles as concrete hex values (27.469208ms)
+✔ theme resolver preserves each selected accent separately from derived roles (840.238917ms)
+✔ fixed neutral surface, text, and border roles stay achromatic in both modes (19.804625ms)
+✔ accent spotlight is an opaque accent-derived surface in both modes (38.302ms)
+✔ fixed material surfaces do not change when the accent changes (173.129292ms)
+✔ new accent roles preserve aliases and lighting contrast (513.856416ms)
+✔ dark purple accents remain the action fill with white readable labels (69.544958ms)
+✔ bright and pale action accents use black labels and keep the raw preference (87.067167ms)
+✔ action boundary stays visible without forcing every fill to contrast with surfaces (9.372375ms)
+✔ material and elevation CSS tokens use achromatic values in each mode (0.536209ms)
+✔ semantic typography tokens retain distinct role-based sizes (0.172375ms)
+✔ app material background uses one bounded accent wash over the canvas (0.117ms)
+✔ all accent and text roles meet contrast against every rendered same-mode surface (500.879459ms)
+✔ semantic status roles retain readable identity on every same-mode surface (15.426917ms)
+✔ destructive label stays readable on fill and its brightness hover (485.478167ms)
+✔ an RGB color grid and generated accents keep every derived role in bounds (7292.838167ms)
+(node:20118) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/apple/Devin/vari8-worktrees/k6-gate/frontend/src/lib/vari8-theme.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/apple/Devin/vari8-worktrees/k6-gate/frontend/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+ℹ tests 198
+ℹ suites 0
+ℹ pass 198
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12189.198167
+Cannot connect to the Docker daemon at unix:///Users/apple/.docker/run/docker.sock. Is the docker daemon running?
+COMMAND_EXIT=1

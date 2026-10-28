@@ -67,8 +67,10 @@ import { accountLimitKey, consumeRateLimit, userLimitKey } from "./rate-limit";
  *       >=1 digit) — `minPasswordLength` covers length, the hook adds the
  *       digit rule.
  * - In production the process refuses to boot when the auth secret is absent
- *   or shorter than 32 characters, or when a canonical and legacy name (say
- *   `BETTER_AUTH_URL` and `AUTH_URL`) are set to different values
+ *   or shorter than 32 characters, when a canonical and legacy name (say
+ *   `BETTER_AUTH_URL` and `AUTH_URL`) are set to different values, or when
+ *   the resolved auth origin is `http:` (BOOT-CHECKS: insecure reset links
+ *   and plaintext session cookies)
  *   (`assertAuthSecretConfigured`, invoked by
  *   `instrumentation.ts` and at module load; `instrumentation.ts` exits the
  *   process non-zero on the refusal so a dead deployment cannot sit serving
@@ -142,6 +144,25 @@ export function assertAuthSecretConfigured(): void {
       );
     }
   }
+  // BOOT-CHECKS (READINESS B7): an http: auth origin would mint insecure
+  // reset links and let the session cookie ride plaintext. The BETTER_AUTH_*
+  // name wins the same `??` resolution the client uses; the configured
+  // value is never printed — the variable name and scheme are enough.
+  const origin = process.env.BETTER_AUTH_URL ?? process.env.AUTH_URL;
+  if (origin) {
+    let protocol: string | null = null;
+    try {
+      protocol = new URL(origin).protocol;
+    } catch {
+      protocol = null;
+    }
+    if (protocol === "http:") {
+      const name = process.env.BETTER_AUTH_URL ? "BETTER_AUTH_URL" : "AUTH_URL";
+      throw new Error(
+        `Refusing to start: ${name} is an http: origin; production auth requires an https: base URL.`,
+      );
+    }
+  }
   const secret = process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error(
@@ -190,10 +211,17 @@ export const auth = betterAuth({
         process.env.AUTH_URL ??
         ""
       ).replace(/\/+$/, "");
+      // O17: a client's reset link stays on /me. The role is read here, at
+      // send time, from a live unarchived ClientProfile; staff keep /reset.
+      const clientProfile = await prisma.clientProfile.findFirst({
+        where: { userId: user.id, archivedAt: null },
+        select: { id: true },
+      });
+      const resetPath = clientProfile ? "/me/reset" : "/reset";
       await sendMail({
         to: user.email,
         subject: "Reset your password",
-        text: `Reset your password: ${origin}/reset?token=${token}`,
+        text: `Reset your password: ${origin}${resetPath}?token=${token}`,
       });
     },
     onPasswordReset: async ({ user }) => {

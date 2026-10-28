@@ -21,3 +21,5 @@ Rules: see the repo-root AGENTS.md and CONTEXT.md.
   `DELETE FROM "_prisma_migrations" WHERE migration_name = '<dir>';`.
 - `ALTER TYPE ... ADD VALUE` gets its own directory when the same deploy
   consumes the new values (PG forbids use in the adding transaction).
+- Merge order (issue #164, owner decision): `20261023000000_supplement_plan`
+  (PR #162) first, then `20261022090000_auth_rotate` (PR #158).

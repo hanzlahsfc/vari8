@@ -1,3 +1,5 @@
+import type { Prisma } from "@prisma/client";
+
 /**
  * P-010 read-only client roster — pure URL query seam.
  *
@@ -102,4 +104,16 @@ export function prevRosterHref(base: string, history: string[]): string | null {
     popped === HISTORY_START ? undefined : popped,
     history.slice(0, -1),
   );
+}
+
+/**
+ * PR-M1 (D27): archived clients leave the roster. Every roster-scoped
+ * client-profile query composes this predicate so "hide archived" is defined
+ * in exactly one place. Pass `includeArchived` only where a surface
+ * deliberately lists archived profiles (the staff restore flow).
+ */
+export function rosterClientVisibility(
+  includeArchived: boolean,
+): Prisma.ClientProfileWhereInput {
+  return includeArchived ? {} : { archivedAt: null };
 }

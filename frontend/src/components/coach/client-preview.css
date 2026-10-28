@@ -111,9 +111,10 @@
 
 .coach-root .cd-preview-section > h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 560;
-  letter-spacing: -0.02em;
+  font-size: var(--v8-font-size-section-title);
+  font-weight: var(--v8-font-weight-section-title);
+  line-height: var(--v8-line-height-section-title);
+  letter-spacing: var(--v8-letter-spacing-ui);
 }
 
 .coach-root .cd-phase-badge {
@@ -223,10 +224,10 @@
 
 .coach-root .cd-iifym-day {
   min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--cd-line);
-  border-radius: 10px;
-  background: var(--cd-raised);
+  padding: var(--v8-card-padding-sm);
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface);
 }
 
 .coach-root .cd-iifym-day > header {
@@ -266,7 +267,7 @@
 
 .coach-root .cd-iifym-energy > span:first-child {
   color: var(--cd-muted);
-  font-size: 12px;
+  font-size: var(--v8-font-size-supporting);
 }
 
 .coach-root .cd-iifym-energy strong {
@@ -355,7 +356,7 @@
 }
 
 .coach-root .cd-iifym-ring-total {
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -371,7 +372,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
 }
 
 .coach-root .cd-iifym-distribution li {
@@ -399,17 +400,17 @@
   display: grid;
   gap: 12px;
   margin-top: 8px;
-  padding: 18px;
-  border: 1px solid var(--cd-line);
-  border-radius: 16px;
-  background: var(--cd-raised);
+  padding: var(--v8-card-padding-sm);
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-surface-raised);
 }
 
 .coach-root .cd-roadmap-table small {
   display: block;
   margin-top: 3px;
   color: var(--cd-muted);
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
 }
 
 .coach-root .cd-preview-session small {
@@ -426,64 +427,32 @@
   font-weight: 400;
 }
 
-.coach-root .cd-body-map {
-  display: grid;
-  grid-template-columns: minmax(0, auto) minmax(180px, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.coach-root .cd-body-figures {
+.coach-root .cd-saved-phase-ranges {
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 7px;
 }
-
-.coach-root .cd-body-figure {
-  width: 108px;
-  height: auto;
-}
-
-.coach-root .cd-body-outline {
-  fill: var(--cd-field);
-  stroke: var(--cd-line);
-  stroke-width: 1;
-}
-
-.coach-root .cd-body-region {
-  stroke: var(--cd-surface);
-  stroke-width: 0.8;
-}
-
-.coach-root .cd-body-legend {
+/* biome-ignore lint/style/noDescendingSpecificity: These phase-summary selectors are scoped to saved phase preview rows. */
+.coach-root .cd-saved-phase-ranges > span {
   display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.coach-root .cd-body-legend li {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 14px;
-}
-
-.coach-root .cd-body-legend li span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-
-.coach-root .cd-body-legend li strong {
-  font-variant-numeric: tabular-nums;
-}
-
-.coach-root .cd-body-swatch {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
+  gap: 2px;
+  padding: 7px 10px;
   border: 1px solid var(--cd-line);
-  border-radius: 4px;
+  border-radius: 8px;
+  color: var(--cd-text);
+  font-size: 12px;
+}
+/* biome-ignore lint/style/noDescendingSpecificity: The nested label is specific to saved phase ranges. */
+.coach-root .cd-saved-phase-ranges small {
+  color: var(--cd-muted);
+  font-size: 10px;
+}
+.coach-root .cd-phase-value {
+  display: block;
+  padding: 4px 8px;
+  color: var(--cd-text);
+  font-size: var(--v8-font-size-control);
+  font-weight: 550;
 }
 
 @media (max-width: 700px) {
@@ -494,10 +463,6 @@
   .coach-root .cd-preview-note {
     flex-basis: 100%;
     margin-left: 0;
-  }
-
-  .coach-root .cd-body-map {
-    grid-template-columns: minmax(0, 1fr);
   }
 
   .coach-root .cd-iifym-days {

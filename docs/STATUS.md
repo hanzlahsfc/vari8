@@ -1,3 +1,313 @@
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
+
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
+## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
+
+- Independent review found the complete base-to-head
+  `git diff --check` had **16 findings / exit 2** in two committed
+  `.txt` receipts. The prior unqualified “diff check 0” claim is
+  corrected: it did not cover those committed receipt artifacts.
+- `verify-local-canonical.txt` and
+  `verify-local-canonical-skip-parity.txt` are whitespace-normalized
+  copies only: trailing spaces and whitespace-only blank lines removed;
+  output order, commands, results, counts and exits unchanged. Raw
+  pre-normalization copies are preserved outside the tracked tree under
+  `_evidence/K6-GATE/` with recorded SHA-256 hashes in `K6-GATE.md`.
+- Node v24.22.1 checks after normalization: `npm run format:check`
+  exit 0; `npm run index:check` exit 0; working-tree
+  `git diff --check 2214105…` exit 0. Post-commit
+  `git diff --check 2214105…..HEAD` exit 0.
+- Exact non-documentation/non-evidence path check from reviewed
+  `0c3c3d5` to the normalized head: `git diff --exit-code -- tests/
+tools/ app/ components/ frontend/ public/ db/ lib/ scripts/
+package.json package-lock.json playwright.config.ts vitest.config.ts
+vitest.integration.config.ts tsconfig.json` exit 0. The delta is
+  documentation/evidence only; no behavioral suite was rerun.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — applicable run passes; parity recorded not applicable
+
+- Applicability decision: K6-GATE is local tooling only and the full
+  base-to-head diff contains no rendered UI, style, font, asset,
+  `app/`, `components/`, `frontend/`, JSX/TSX, CSS, image or font
+  changes. Under D32 (“each wiring PR gates the screens it wires”) and
+  the local gate's no-screen rule, `Parity (D32) on: none`.
+- The earlier `5fbeef3` run without `SKIP_PARITY` is preserved as a
+  separate failure: parity startup exit 2 because the runner supplied an
+  HTTP `BETTER_AUTH_URL` to production boot. It was not a visual
+  regression; issue #202 tracks the harness defect.
+- Applicable canonical invocation at `44bf054`: Node v24.22.1,
+  `LANE_DB=app_k6_gate_skip`, `CARD=K6-GATE`, `REQUIRE_NODE24=1`,
+  `SKIP_PARITY=1`, and only the real `docker exec vari8-db-1 →
+app-db-1` adapter.
+- Result: **VERIFY-LOCAL PASS, exit 0** — clean tree, schema guard,
+  generator, installs, format/type/lint, unit **1250/1250**, frontend
+  tests **198/198**, disposable migrate deploy, root/frontend builds,
+  and e2e **10 passed / 7 skipped / 0 failed**. Integration remained
+  skipped by the script's unchanged-path rule; parity is `SKIP`, not
+  PASS.
+- Task DB `app_k6_gate_skip` was removed by the script trap and verified
+  absent. Lifecycle and mutation receipts remain separate: focused
+  suite 23/23, zero skipped; mut4 bite/restore/current baseline intact.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — DB stage reached; parity harness fails on HTTPS origin
+
+- Docker Desktop was started to inspect the expected development DB.
+  Established container identity: `app-db-1`, compose project `app`,
+  service `db`, `postgres:16-alpine`, healthy on `127.0.0.1:5433`.
+  `vari8-db-1` does not exist; the earlier instruction was corrected.
+- Canonical run used only the documented narrow adapter
+  `docker exec vari8-db-1 → docker exec app-db-1`, `LANE_DB` =
+  disposable `app_k6_gate_verify`, Node v24.22.1,
+  `REQUIRE_NODE24=1`, and private `.env` credentials.
+- `verify-local.sh` result: **FAIL, exit 1**. It passed clean tree,
+  schema guard, generator, installs, format/type/lint, root and frontend
+  tests/builds, disposable migrate deploy, and e2e (**10 passed /
+  7 skipped / 0 failed**). Its integration stage was skipped by the
+  script's unchanged-path rule; the separate lifecycle suite remains
+  23/23 on real PostgreSQL.
+- The sole failure is parity D32 exit 2: the parity runner launches
+  production `next start` with HTTP `BETTER_AUTH_URL`, and the app
+  correctly refuses HTTP auth in production. The run was not repeated or
+  adapted to fake a pass.
+- Disposable `app_k6_gate_verify` was dropped by the script's trap and
+  verified absent; builder `app_k6_it` remains. No duplicate/renamed
+  container or shared DB contents were changed.
+
+## 2026-10-24 — PR #201 K6-GATE repair 9 disposable-PG proof — focused suite green; canonical DB stage blocked by Docker
+
+- Branch `beta/k6-gate` adds deterministic lifecycle proof on an
+  isolated `embedded-postgres@16.14.0-beta.17` cluster (PostgreSQL
+  16.14, `127.0.0.1:55681`, scratch `pgdata`, `app_k6_it?schema=public`).
+  Docker Desktop remains unavailable; the scratch cluster was stopped and
+  removed afterward, with no shared database/service modified.
+- Focused suite on Node v24.22.1: **23/23 passed, zero skipped, exit 0**.
+  Coverage now distinguishes an injected pending create promise
+  (post-dispatch/pre-settlement, repeated signals) from an actual SQL
+  `CREATE DATABASE` observed `state='active'` in `pg_stat_activity`
+  before SIGTERM. Existing DB, fixture transaction and victim-row checks
+  pass; residue check leaves only `app_k6_it` and no `loadgate_*` DBs.
+- TargetId mutation ran behaviorally on PostgreSQL: full focused suite
+  exit 1 with the expected mismatched-target acceptance and follow-on
+  legitimate-cleanup failure. The patch reverse-restored
+  byte-identically; the focused suite reran 23/23 green.
+- `verify-local.sh` under Node 24 proceeded through clean tree, schema
+  guard, generator, installs, format/type/lint/unit and frontend checks,
+  then exited 1 at its hardcoded `docker exec vari8-db-1` stage because
+  Docker Desktop is closed. Its stale `/home/nexuslink` root path also
+  emits a `realpath` warning. This is a canonical-gate blocker, not a
+  pass.
+- PR body/report update, scoped commit, push and independent review
+  remain the handoff path; issue #178 stays open with capacity/staging
+  unchanged.
+
+## 2026-10-24 — PR #201 K6-GATE repair 8 lifecycle/mutation provenance — verified locally except disposable PG
+
+- Branch `beta/k6-gate` (worktree `vari8-worktrees/k6-gate`) implements
+  PROMPT 391 review repairs for `tools/load/provision.ts`: explicit
+  pending/created/failed `CREATE DATABASE` state, catchable-signal
+  cleanup that awaits in-flight operations, scoped fixture transaction
+  semantics, and no `K6_GATE_FAULT` read in the shipping CLI.
+- Test-only synchronization/fault injection moved to
+  `tests/integration/k6-gate-provision-harness.ts`; the disposable-PG
+  suite now has 22 lifecycle/safety cases covering SIGTERM/SIGINT race,
+  create failure, existing-DB refusal, and fixture atomicity.
+- Node v24.22.1 (`npx -p node@24.22.1`) results: `npm run typecheck` 0;
+  focused load-gate tests 46/46; `npm run test` 1250/1250; lint 0
+  errors/81 existing warnings; `npm run format:check` 0;
+  `npm run index:check` 0; `npm run build` 0; `git diff --check` 0.
+- Docker is unavailable (`docker info` exit 1) and
+  `INTEGRATION_DATABASE_URL` is unset; focused integration reports 22/22
+  skipped, so fresh disposable-DB lifecycle/mut4 evidence is explicitly
+  unavailable rather than relabeled. Mutation patches were regenerated
+  from the final baseline with apply/restore proofs; report mutants
+  failed fresh unit checks as expected.
+- The scoped repair/evidence commits were pushed to
+  `origin/beta/k6-gate`; independent review remains pending. Issue #178
+  stays open with capacity/staging unchanged.
+
+## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
+
+- Branch `beta/frontend-sync-2026-10-22`, merge of `origin/FRONTEND` `51fa6a2`
+  (#151) into `origin/Vari8-Beta` `69c74c3`. `frontend/` takes FRONTEND; the
+  #70 hydration fix (`useReducedMotion` from `@/lib/reduced-motion`, not
+  `motion/react`) is preserved.
+- `npm run check` in `frontend/` exit 0 after Biome sorted imports in five
+  files (import order only, no product change). Log kept outside Git.
+- Root `npx prettier --check docs/STATUS.md docs/tasks/frontend-current-2026-10-22.md` exit 0.
+
+## 2026-10-22 — current frontend publication gates green — verified locally
+
+- `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
+- `npm run check` in `frontend/` (test → agent-context:check → typecheck →
+  lint → build): exit 0. Biome checked 260 files with `--error-on-warnings`,
+  no findings; `tsc --noEmit` clean; `next build --webpack` produced routes
+  `/`, `/_not-found`, `/coach`, `/dev/design-system`, `/ethereal`.
+- Five stale test assertions were updated to deliberate current behavior
+  (test files only, no product changes):
+  - `accent-contrast.test.mjs`: the screenshot pink `#D93A7F` now keeps its
+    fill (hover `#DB4284`) with a black `#000000` label; the surface-aware
+    accent algorithm replaced the previous minimal-darkened fill plus white
+    label.
+  - `accent-contrast.test.mjs`: mid-gray `#777777` keeps its fill
+    (`#777777`) with a black label instead of darkening to `#767676` with a
+    white label; `contrastRatio(bg, fg) >= 4.5` is asserted.
+  - `widgets.test.mjs`: catalogue count is 22 after CU17 "Section heading"
+    and CU18 "Coach announcement" joined the Coaching category.
+  - `widgets.test.mjs`: CU17/CU18 intentionally return no source-record
+    detail (`widgetDetailKey` → `null`); the detail loop skips them behind
+    an ID allowlist assertion.
+  - `refinement.test.mjs`: `ChartPeriodControl` renders the shared VARI8
+    `Select` (`v8-select dw-chart-range`, Base UI trigger + hidden input)
+    instead of a native `<select>` with `<option selected>`.
+- Browser smoke on a dedicated dev server (port 3100, headless Chrome via
+  CDP): screenshots at 1440×900 and 390×844 for the Supplements plan
+  (`plan=supplements`), the Activity targets plan (`plan=activity-targets`)
+  and the client "Preview assigned tool" dialog, all for `client-001`.
+  Zero console errors; one network 404 for `/favicon.ico` in dev.
+  Artifacts kept outside Git under the local `.agent-runs` archive.
+- `/dev` boundary confirmed fail-closed: the production build lists the
+  `/dev/design-system` route but its built HTML renders the 404 page
+  (`notFound()` outside development) and `next.config.ts` aliases the
+  playground module to a throwing stub in production webpack builds.
+- Commit, push, PR and merge remain pending under the publication plan.
+
+## 2026-10-22 — current frontend PR and clean integration — planned
+
+- Owner authorized publication of the current local frontend, direct review
+  and a clean PR merge into `FRONTEND`. `main` remains out of scope.
+- Clean publication checkout starts from `great-tracker/FRONTEND` at
+  `fe5780dd5b759823b98f5adb4495530923cf4beb`.
+- Feature branch: `devin/vari8-frontend-current-20261022`.
+- Plan: `docs/tasks/frontend-current-2026-10-22.md`.
+- Preserve target-only tests/configuration and the source workspace. The
+  additive overlay, publication gates, direct review and PR are pending.
+- Root runtime, backend, database and CI workflows are not part of this work.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

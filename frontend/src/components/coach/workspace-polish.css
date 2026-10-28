@@ -1,20 +1,13 @@
-/* Small interaction refinements for the roster, profile, and message workspaces. */
-.coach-root .cd-roster-cards > .cd-roster-card-surface {
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
-}
-
-.coach-root .cd-roster-cards > .cd-roster-card-surface .cd-core {
+/* The nested button fills the shared card surface, so the card has no inset. */
+.coach-root .cd-roster-cards > .cd-roster-card-surface.cd-core {
   padding: 0;
   overflow: hidden;
-  transition: background-color 160ms ease;
 }
 
 .coach-root .cd-roster-card-surface .cd-roster-card {
   display: block;
   min-height: 100%;
-  padding: 22px;
+  padding: 20px;
   border-radius: inherit;
   color: inherit;
   cursor: pointer;
@@ -46,60 +39,12 @@
   margin-top: 14px;
 }
 
-.coach-root .cd-bubble-meta button.cd-icon-button.cd-message-flag {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+.coach-root .cd-bubble-meta button.v8-icon-button.cd-message-flag {
   margin: 0;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
   cursor: pointer;
 }
 
-.coach-root
-  .cd-bubble-meta
-  button.cd-icon-button.cd-message-flag[aria-pressed="true"] {
-  color: var(--cd-accent-text);
-  border-color: color-mix(in srgb, var(--cd-accent) 22%, var(--cd-line));
-  background: color-mix(in srgb, var(--cd-accent) 11%, var(--cd-surface));
-}
-
-.coach-root
-  .cd-bubble-meta
-  button.cd-icon-button.cd-message-flag:focus-visible {
-  outline: 2px solid var(--cd-accent);
-  outline-offset: 2px;
-}
-
-.coach-root .cd-bubble-meta button.cd-icon-button.cd-message-flag:disabled {
+.coach-root .cd-bubble-meta button.v8-icon-button.cd-message-flag:disabled {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .coach-root .cd-roster-cards > .cd-roster-card-surface:hover {
-    border-color: color-mix(in srgb, var(--cd-accent) 35%, var(--cd-line));
-    background-color: color-mix(
-      in srgb,
-      var(--cd-accent) 4%,
-      var(--cd-surface)
-    );
-  }
-
-  .coach-root .cd-roster-cards > .cd-roster-card-surface:hover .cd-core {
-    background-color: color-mix(
-      in srgb,
-      var(--cd-accent) 3%,
-      var(--cd-surface)
-    );
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .coach-root .cd-roster-cards > .cd-roster-card-surface,
-  .coach-root .cd-roster-cards > .cd-roster-card-surface .cd-core {
-    transition: none;
-  }
 }

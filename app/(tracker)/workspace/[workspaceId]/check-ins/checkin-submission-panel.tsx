@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 
+import { CHECKIN_RATING_WORD_LABELS } from "@/lib/checkin/forms";
 import type {
   CheckInFeedbackItem,
   CheckInField,
@@ -146,6 +147,47 @@ function FieldControl({
           </select>
         </div>
       );
+    case "rating": {
+      // The canvas scale select (templates.tsx) — stored integer per
+      // scheme: 1–10 / 1–5, or the 1-based CHECKIN_RATING_WORD_LABELS
+      // position. The definition validator requires a scheme on rating
+      // fields; an absent scheme renders no control and the required
+      // field guard below keeps the form unsubmittable rather than
+      // silently dropping the answer.
+      const options =
+        field.ratingScheme === "WORD_LABELS"
+          ? CHECKIN_RATING_WORD_LABELS.map((label, i) => ({
+              value: String(i + 1),
+              label,
+            }))
+          : field.ratingScheme === "SCALE_1_10" ||
+              field.ratingScheme === "SCALE_1_5"
+            ? Array.from(
+                { length: field.ratingScheme === "SCALE_1_5" ? 5 : 10 },
+                (_, i) => ({ value: String(i + 1), label: String(i + 1) }),
+              )
+            : [];
+      return (
+        <div className="daily-field">
+          <label htmlFor={id}>{label}</label>
+          <select
+            id={id}
+            className="catalog-search__input"
+            disabled={disabled}
+            value={typeof value === "string" ? value : ""}
+            aria-required={field.required || undefined}
+            onChange={(e) => onChange(e.target.value)}
+          >
+            <option value="">—</option>
+            {options.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
     case "multiChoice": {
       const selected = Array.isArray(value) ? value : [];
       return (
@@ -332,12 +374,24 @@ function SubmittedView({
       <ul className="tracker-list" data-testid="checkin-submitted-answers">
         {answers.map((a) => {
           const field = fieldById.get(a.fieldId);
+          // Same render rules as the staff detail's displayCheckInAnswer:
+          // word labels resolve the stored 1-based position, numeric
+          // schemes show "v / max", visuals show the attachment count.
           const value =
             a.valueText ??
             (a.valueNumeric !== null ? a.valueNumeric : null) ??
             a.valueDate ??
+            (a.valueRating !== null
+              ? field?.ratingScheme === "WORD_LABELS"
+                ? (CHECKIN_RATING_WORD_LABELS[a.valueRating - 1] ??
+                  String(a.valueRating))
+                : `${a.valueRating} / ${field?.ratingScheme === "SCALE_1_5" ? 5 : 10}`
+              : null) ??
             (a.valueOptionIds !== null && field
               ? a.valueOptionIds.map((id) => optionLabel(field, id)).join(", ")
+              : null) ??
+            (a.mediaIds.length > 0
+              ? `${a.mediaIds.length} visual${a.mediaIds.length === 1 ? "" : "s"}`
               : null) ??
             "—";
           return (
