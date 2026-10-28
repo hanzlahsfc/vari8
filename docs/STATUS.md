@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
+
+- Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-catalogue-accuracy-gate`: merged PR 223
+  nutrition source accuracy gate; wired services where they apply.
+
 ## 2026-10-28 - Promotion: nutrition source adapters (BLS + CIQUAL, issue 182)
 
 - Promoted `beta/nutrition-source-adapters` (PR 222) by Hanzlah into
