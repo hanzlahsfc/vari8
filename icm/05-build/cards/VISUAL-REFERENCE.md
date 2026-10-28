@@ -43,3 +43,18 @@ No product UI, fonts, old baselines, mask expansion, waiver, merge, deployment o
 - Contract v2 compatibility accepts retained v1 only when all material capture/comparison fields match; adoption-only metadata differences are accepted, unknown versions/allowances and material changes fail. Original provenance unchanged.
 - Candidate 237-file evidence and reference 245-file package are committed under `tools/parity/reference/evidence/`; artifact index 482; verifier/recompare are self-contained. New recomparisons: canonical 70/70, strict 68/70; historical 68/70 preserved.
 - No capture/tolerance/mask/S03-18 change. Clean checkout at `c93f33b` verified 482 artifacts, canonical 70/70, strict 68/70 and byte-stable recomparison. No merge, retarget or baseline activation; stop for SWE-2 validation.
+
+## Prompt 427 combined gate preparation
+
+- Owner authorized combined #203+#206 result verification and disclosed cross-review. Prep branch `beta/p203-p206-combined-verification` preserves both PR branches and adds only explicit proposed-reference/capture/output/comparer env paths.
+- Fresh combined-app capture on synthetic `app_p427`: canonical 70/70, strict 68/70; active old baseline diagnostic remains 70 failures. No merge, retarget or baseline activation.
+
+## Prompt 429 combined-gate repair
+
+- The labelled prep branch now forbids arbitrary capture modules and unsafe output paths, validates the proposed package and real combined captures, and records exact source/tool/environment provenance.
+- Draft PR #207 is stacked on `beta/visual-reference-establishment` at head `2bee45a`. Durable `tools/parity/reference/combined/p429-run` evidence verifies canonical 70/70 and strict 68/70; old active baseline diagnostic is separately red at 70 failures. Historical 482-artifact evidence remains separate.
+
+## Prompt 431 provenance repair
+
+- Combined verification now binds capture source commit/tree, material-input hash, recorded tool/dependency pins and an exact post-capture path list; later docs/package changes are checked explicitly rather than assumed docs-only.
+- Portable adapter `fd6a9a99…` and durable `p431-run` package verify canonical 70/70, strict 68/70; old baseline remains a separate 70-failure diagnostic. Transition order is #203, then #206, then #207, with reruns after material/retarget changes and separately approved activation.

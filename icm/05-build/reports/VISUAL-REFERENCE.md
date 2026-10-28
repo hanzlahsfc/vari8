@@ -160,3 +160,19 @@ or waive any gate.
    pre-decision comparison remains 68/70 and the post-decision comparison is reported separately.
 
 No self-approval, merge, deployment, Actions, Slack/Hermes, website or shared-infrastructure changes.
+
+## Prompt 427 combined-result preparation
+
+The owner authorized combined verification of #203 `90c16bee63e2609ebc4f09e91459332390562464` with #206 `43b63ed0f41e6e92e93ecf72065c0190c9ef3dea`, including the disclosed SWE-2/DeepSeek cross-review arrangement. `Vari8-Beta` `d1c4081022f2ac21070b28f284248fad2ef04839` is already an ancestor, so the combined result is conflict-free and no app/product files changed relative to #203.
+
+Preparation branch `beta/p203-p206-combined-verification` adds only explicit `PARITY_REFERENCE_DIR`, `PARITY_OUT_DIR`, `PARITY_CAPTURE_MODULE` and `PARITY_COMPARER=reference` plumbing; it cannot update a custom reference directory and leaves `tools/parity/baseline` unchanged. Fresh combined-app evidence: synthetic `app_p427`, Node 24.22.1, D32 adapter `74e3b932fecf3953460aad1510b2fc6073c454bbb36955ea301d6c085f729690`, 70 screens/0 failures, manifest `f1e337a7314dae28751cf207affd1f074dbcb5e2c9e03163111d73d099d4ff3e`; canonical `70/70`, strict `68/70`; packaged evidence `482` verified; unit `106/1287`, focused `37/37`, integration `64 files/913 tests`, flow E2E `10 passed/7 skipped`; old baseline diagnostic `70` failures. This does not claim old-reference parity and does not activate the proposed baseline.
+
+## Prompt 429 combined-gate safety repair
+
+Scoped review required the fresh evidence to be safe and reviewable. Draft PR #207 (`beta/visual-reference-establishment` <- `beta/p203-p206-combined-verification`, head `2bee45a`) is the review unit. The runner now uses only the generated D32 adapter, requires explicit task-owned outputs, canonicalizes/rejects overlapping protected paths, refuses `--update-baseline`, validates reference/package/capture artifacts and writes a combined execution receipt. A failed `NODE_ENV=development` build attempt is disclosed; the valid run used disposable `app_p429`, Node 24.22.1, HTTPS `58130`, clean prep head `1bdc044`, and produced `tools/parity/reference/combined/p429-run` (242 indexed artifacts). Package verification recomputes canonical 70/70 and strict 68/70 in both the working tree and a detached checkout under `/tmp/vari8 p429 clean` after fresh installs; the old active baseline is a separate 70-failure diagnostic. Real `app_p429` integration was 64 files/913 tests; the exact verify-local E2E subset was 10 passed/7 mail-dependent skips.
+
+## Prompt 431 provenance enforcement
+
+Scoped review required a non-circular source identity contract. `source-identity.mjs` proves the recorded capture commit/tree, compares a material-input tree hash at capture and verification heads, and checks an exact post-capture path receipt. `combined-pins.mjs` rehashes runner, comparer, adapter, contract, metadata helpers, locks and dependency state rather than trusting `artifact-index.json`. The D32 adapter now discovers the checkout root portably; two detached checkouts including spaces/non-ASCII generated identical bytes/hash `fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c`.
+
+Fresh `p431-run-9` evidence used capture source `082e57c5d7e6a7a36e6afd5f3ddc752e9f667ae6` / material tree `b6f0ee264f1928a4c07a3249302427bc0f98c7a0d278f5d34b5d5ca0d8e67576`; canonical 70/70, strict 68/70 and old-baseline diagnostic 70 failures. Transition order is #203, #206, then #207; any material-input or retarget change requires a fresh combined run, and baseline activation remains separately approved and post-verified.
