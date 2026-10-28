@@ -1,0 +1,511 @@
+import { spawn, type ChildProcess } from "node:child_process";
+import fs from "node:fs";
+import http from "node:http";
+import { AddressInfo } from "node:net";
+
+import { afterEach, describe, expect, it } from "vitest";
+
+import { createLocalTlsProxy } from "../../tools/local-tls-proxy.mjs";
+import {
+  captureProblem,
+  expectedCaptureMarker,
+} from "../../tools/parity/capture.mjs";
+import {
+  browserCookies,
+  httpsRequest,
+  createOwnedProcessGroup,
+  listenerPids,
+  ownsPort,
+  parityPortPair,
+  registerOwnedProcess,
+  stopOwnedProcessGroup,
+  parityUrl,
+  selectPortPair,
+} from "../../tools/parity/local-https.mjs";
+
+let proxy: Awaited<ReturnType<typeof createLocalTlsProxy>> | null = null;
+let backend: http.Server | null = null;
+let ownedChild: ChildProcess | null = null;
+
+const freePort = () =>
+  new Promise<number>((resolve, reject) => {
+    const probe = http.createServer();
+    probe.once("error", reject);
+    probe.listen(0, "127.0.0.1", () => {
+      const port = (probe.address() as AddressInfo).port;
+      probe.close(() => resolve(port));
+    });
+  });
+
+afterEach(async () => {
+  await proxy?.close().catch(() => {});
+  await new Promise<void>(
+    (resolve) => backend?.close(() => resolve()) ?? resolve(),
+  );
+  if (ownedChild && ownedChild.exitCode === null)
+    try {
+      process.kill(-ownedChild.pid!, "SIGKILL");
+    } catch {}
+  proxy = null;
+  backend = null;
+  ownedChild = null;
+});
+
+describe("local TLS proxy", () => {
+  it("terminates loopback HTTPS and forwards to the backend", async () => {
+    const backendPort = await freePort();
+    backend = http.createServer((req, res) => {
+      res.writeHead(200, { "content-type": "text/plain" });
+      res.end(
+        `${req.headers["x-forwarded-proto"]}:${req.headers.host}:${req.url}`,
+      );
+    });
+    await new Promise<void>((resolve) =>
+      backend!.listen(backendPort, "127.0.0.1", resolve),
+    );
+
+    const proxyPort = await freePort();
+    proxy = await createLocalTlsProxy({
+      port: proxyPort,
+      target: `http://127.0.0.1:${backendPort}`,
+    });
+
+    const res = await httpsRequest(`${proxy.url}/coach?x=1`, {
+      ca: proxy.cert,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body).toBe(`https:127.0.0.1:${proxyPort}:/coach?x=1`);
+    expect(fs.existsSync(proxy.materialDir)).toBe(false);
+  });
+
+  it("refuses a non-loopback HTTP backend", async () => {
+    await expect(
+      createLocalTlsProxy({
+        port: await freePort(),
+        target: "http://example.com:8080",
+      }),
+    ).rejects.toThrow("http://127.0.0.1");
+  });
+
+  it("fails closed when the public port is taken before proxy startup", async () => {
+    const port = await freePort();
+    backend = http.createServer((_req, res) => res.end("occupant"));
+    await new Promise<void>((resolve) =>
+      backend!.listen(port, "127.0.0.1", resolve),
+    );
+
+    const backendPort = await freePort();
+    await expect(
+      createLocalTlsProxy({
+        port,
+        target: `http://127.0.0.1:${backendPort}`,
+      }),
+    ).rejects.toThrow();
+
+    expect(listenerPids(port)).toEqual([String(process.pid)]);
+  });
+});
+
+describe("task-owned process lifecycle", () => {
+  it("terminates only the spawned listener and verifies the port is released", async () => {
+    const port = await freePort();
+    ownedChild = spawn(
+      process.execPath,
+      [
+        "-e",
+        `require("node:http").createServer((_q,r)=>r.end("ok")).listen(${port},"127.0.0.1",()=>setInterval(()=>{},1000))`,
+      ],
+      { detached: true, stdio: "ignore" },
+    );
+    const ownership = await createOwnedProcessGroup(ownedChild);
+    for (let i = 0; i < 100 && !listenerPids(port).length; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listenerPids(port)).toEqual([String(ownedChild.pid)]);
+
+    await expect(
+      stopOwnedProcessGroup(ownedChild, port, { ownership }),
+    ).resolves.toEqual([]);
+    expect(listenerPids(port)).toEqual([]);
+    expect(ownedChild.exitCode ?? ownedChild.signalCode).not.toBeNull();
+  });
+
+  it("cleans a registered descendant listener after the group leader exits", async () => {
+    const port = await freePort();
+    const unrelatedPort = await freePort();
+    backend = http.createServer((_req, res) => res.end("unrelated"));
+    await new Promise<void>((resolve) =>
+      backend!.listen(unrelatedPort, "127.0.0.1", resolve),
+    );
+    expect(listenerPids(unrelatedPort)).toEqual([String(process.pid)]);
+
+    ownedChild = spawn(
+      process.execPath,
+      [
+        "-e",
+        `const {spawn}=require("node:child_process");const c=spawn(process.execPath,["-e","require('node:http').createServer((_q,r)=>r.end('ok')).listen(${port},'127.0.0.1',()=>setInterval(()=>{},1000))"],{stdio:"ignore"});c.unref();process.on("message",()=>process.exit(0));`,
+      ],
+      { detached: true, stdio: ["ignore", "ignore", "ignore", "ipc"] },
+    );
+    const ownership = await createOwnedProcessGroup(ownedChild);
+    for (let i = 0; i < 100 && !listenerPids(port).length; i++)
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(listenerPids(port)).toHaveLength(1);
+    expect(registerOwnedProcess(ownership, Number(listenerPids(port)[0]))).toBe(
+      true,
+    );
+    ownedChild.send("exit");
+    await new Promise<void>((resolve) => ownedChild!.once("exit", resolve));
+
+    await expect(
+      stopOwnedProcessGroup(ownedChild, port, { ownership }),
+    ).resolves.toEqual([]);
+    expect(listenerPids(port)).toEqual([]);
+    expect(listenerPids(unrelatedPort)).toEqual([String(process.pid)]);
+  });
+});
+
+describe("owned-process identity", () => {
+  type Identity = {
+    pid: number;
+    ppid?: number;
+    pgid: number;
+    start: string;
+    argv?: string;
+  };
+  const child = { pid: 500, exitCode: 0, signalCode: null };
+  const leader = { pid: 500, pgid: 500, start: "leader" };
+  const owner = { pid: 501, ppid: 500, pgid: 500, start: "start-1" };
+  const ownership = { pgid: "500", processes: [leader] };
+  const descendantOwnership = { pgid: "500", processes: [leader, owner] };
+
+  const inspectorFor = (
+    group: Array<Identity | null>,
+    listeners: Array<Identity | null>,
+  ) => ({
+    group: () => group.map((entry) => (entry ? { ...entry } : null)),
+    listeners: () => listeners.map((entry) => (entry ? { ...entry } : null)),
+    process: (pid: number) => {
+      const found = [...group, ...listeners].find(
+        (entry) => entry?.pid === pid,
+      );
+      return found ? { ...found } : null;
+    },
+  });
+
+  it("requires listener PGID as well as matching PID and start identity", () => {
+    expect(
+      ownsPort(40000, ownership, {
+        inspector: inspectorFor([leader], [leader]),
+      }),
+    ).toBe(true);
+    expect(
+      ownsPort(40000, ownership, {
+        inspector: inspectorFor([], [{ ...leader, pgid: 999 }]),
+      }),
+    ).toBe(false);
+  });
+
+  it("returns an explicit problem when ownership is unavailable", async () => {
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+    });
+    expect(sent).toEqual([]);
+    expect(problems).toEqual([
+      "process ownership is unavailable; cleanup refused",
+    ]);
+  });
+
+  it("never signals a same-PGID argv-only or unverified process", async () => {
+    const group = [
+      {
+        pid: 700,
+        pgid: 500,
+        start: "s1",
+        argv: "PARITY_OWNERSHIP_TOKEN=tok",
+      },
+    ];
+    const listeners = [
+      {
+        pid: 200,
+        pgid: 500,
+        start: "s1",
+        argv: "PARITY_OWNERSHIP_TOKEN=tok",
+      },
+    ];
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership,
+      inspector: inspectorFor(group, listeners),
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([]);
+    expect(problems.join(" ")).toContain("unverified");
+    expect(problems.join(" ")).toContain("listener 40000");
+  });
+
+  it("fails closed on malformed inspection records", async () => {
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership,
+      inspector: inspectorFor([null], [null]),
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([]);
+    expect(problems.join(" ")).toContain("malformed-record");
+    expect(problems.join(" ")).toContain("unverified");
+  });
+
+  it("cleans an owned descendant after the leader exits", async () => {
+    const group = [owner];
+    const listeners = [owner];
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership: descendantOwnership,
+      inspector: inspectorFor(group, listeners),
+      signal: (pid: number, name: string) => {
+        sent.push([pid, name]);
+        group.length = 0;
+        listeners.length = 0;
+      },
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([[501, "SIGTERM"]]);
+    expect(problems).toEqual([]);
+  });
+
+  it("rechecks identity before escalation and never signals a reused process", async () => {
+    const member = { pid: 700, pgid: 500, start: "old" };
+    const reused = { pid: 700, pgid: 500, start: "new" };
+    const memberOwnership = { pgid: "500", processes: [member] };
+    let recheckForeign = false;
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership: memberOwnership,
+      inspector: {
+        group: () => [{ ...member }],
+        listeners: () => [{ ...member }],
+        process: () => ({ ...(recheckForeign ? reused : member) }),
+      },
+      signal: (pid: number, name: string) => {
+        sent.push([pid, name]);
+        if (name === "SIGTERM") recheckForeign = true;
+      },
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([[700, "SIGTERM"]]);
+    expect(problems.join(" ")).toContain("ownership no longer verifies");
+  });
+
+  it("fails closed when process inspection fails", async () => {
+    const sent: [number, string][] = [];
+    const problems = await stopOwnedProcessGroup(child, 40000, {
+      ownership,
+      inspector: {
+        group: () => {
+          throw new Error("ps unavailable");
+        },
+        listeners: () => [],
+        process: () => null,
+      },
+      signal: (pid: number, name: string) => sent.push([pid, name]),
+      terminateMs: 0,
+      killMs: 0,
+    });
+    expect(sent).toEqual([]);
+    expect(problems.join(" ")).toContain("inspection failed");
+  });
+});
+
+describe("authenticated capture validation", () => {
+  const shot = {
+    file: "s01-roster.png",
+    route: "/coach",
+    screen: "Clients roster",
+    clicks: ["Clients"],
+  };
+  const page = {
+    url: "https://127.0.0.1:55880/coach?section=clients",
+    text: "Clients roster Filter athletes CP Chloe Park Lifestyle",
+  };
+
+  it("rejects redirected, unauthenticated, wrong-state and generic captures", () => {
+    expect(
+      captureProblem(shot, { ...page, url: "https://x.test/login" }),
+    ).toContain("expected capture route");
+    expect(captureProblem(shot, { ...page, text: "Please sign in" })).toContain(
+      "authentication",
+    );
+    expect(
+      captureProblem(shot, { ...page, text: "Missing navigation" }),
+    ).toContain('content marker "Filter athletes"');
+    expect(captureProblem(shot, page)).toBeNull();
+
+    const profile = {
+      file: "s01-profile-overview.png",
+      route: "/coach",
+      screen: "Client profile, Overview tab",
+      clicks: ["Clients", "CP Chloe Park Lifestyle"],
+    };
+    expect(
+      captureProblem(profile, {
+        url: "https://127.0.0.1:55880/coach?section=messages&client=wrong",
+        text: "Clients Client setup generic client text",
+        state: [],
+      }),
+    ).toContain("expected capture query section=clients");
+    expect(
+      captureProblem(profile, {
+        url: "https://127.0.0.1:55880/coach?section=clients&client=wrong",
+        text: "Clients Client setup generic client text",
+        state: [],
+      }),
+    ).toContain("expected capture query client=client-013");
+  });
+
+  it("keeps a screen-specific state marker for captures without click recipes", () => {
+    const studio = {
+      file: "s10-clients-studio.png",
+      route: "/ethereal#clients",
+      screen: "Clients studio",
+      clicks: [],
+    };
+    expect(expectedCaptureMarker(studio)).toBe("active clients");
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients 12 active clients shared roster",
+        state: ["Clients"],
+      }),
+    ).toBeNull();
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients",
+        state: ["Clients"],
+      }),
+    ).toContain('content marker "active clients"');
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal#clients",
+        text: "Clients 12 active clients",
+        state: [],
+      }),
+    ).toContain('selected capture state "Clients"');
+    expect(
+      captureProblem(studio, {
+        url: "https://127.0.0.1:55880/ethereal",
+        text: "Clients 12 active clients",
+        state: ["Clients"],
+      }),
+    ).toContain("#clients");
+  });
+});
+
+describe("parity HTTPS origin configuration", () => {
+  it("requires a free second port for the backend pair", () => {
+    expect(parityPortPair("55880")).toEqual({
+      publicPort: 55880,
+      backendPort: 55881,
+    });
+    for (const raw of ["", "abc", "0", "65535", "65536"])
+      expect(() => parityPortPair(raw)).toThrow("PARITY_PORT");
+  });
+
+  it("refuses an occupied pinned backend port", async () => {
+    const bind = async (port: number) => {
+      if (port === 55881) throw new Error("address in use");
+      return port;
+    };
+    await expect(selectPortPair(55880, bind)).rejects.toThrow(
+      "port 55881 is in use",
+    );
+  });
+
+  it("keeps allocating until the public and backend ports are distinct", async () => {
+    const allocations = [55880, 55880, 55890, 55891];
+    let calls = 0;
+    const bind = async () => allocations[calls++];
+    await expect(selectPortPair(null, bind)).resolves.toEqual({
+      publicPort: 55890,
+      backendPort: 55891,
+    });
+    expect(calls).toBe(4);
+  });
+
+  it("requires the external root-app URL to be HTTPS", () => {
+    expect(() => parityUrl("not-a-url", true)).toThrow("PARITY_URL");
+    expect(() => parityUrl("http://127.0.0.1:3000", true)).toThrow("https");
+    expect(parityUrl("https://127.0.0.1:3000", true)).toBe(
+      "https://127.0.0.1:3000",
+    );
+    expect(parityUrl("http://127.0.0.1:3000", false)).toBe(
+      "http://127.0.0.1:3000",
+    );
+  });
+
+  it("preserves Secure and SameSite cookie semantics for browser contexts", () => {
+    const cookies = browserCookies(
+      [
+        "better-auth.session_token=abc; Path=/; HttpOnly; Secure; SameSite=Lax",
+        "other=value; Path=/; SameSite=Strict",
+      ],
+      "https://127.0.0.1:55880",
+    );
+    expect(cookies).toMatchObject([
+      {
+        name: "better-auth.session_token",
+        value: "abc",
+        domain: "127.0.0.1",
+        path: "/",
+        httpOnly: true,
+        secure: true,
+        sameSite: "Lax",
+      },
+      {
+        name: "other",
+        value: "value",
+        secure: false,
+        sameSite: "Strict",
+      },
+    ]);
+    expect(cookies[0]).not.toHaveProperty("expires");
+    expect(cookies[1]).not.toHaveProperty("expires");
+  });
+
+  it("preserves Max-Age and Expires semantics with a controlled clock", () => {
+    const now = Date.UTC(2026, 9, 24, 12, 0, 0);
+    const cookies = browserCookies(
+      [
+        "session=now; Max-Age=60; Expires=Wed, 21 Oct 2030 00:00:00 GMT; Secure; HttpOnly; SameSite=Lax; Path=/app; Domain=127.0.0.1",
+        "expired=old; Max-Age=0",
+        "dated=expiry; Expires=Wed, 21 Oct 2030 00:00:00 GMT",
+        "fallback=expires; Max-Age=garbage; Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+      ],
+      "https://127.0.0.1:55880",
+      now,
+    );
+
+    expect(cookies[0]).toMatchObject({
+      name: "session",
+      expires: now / 1000 + 60,
+      secure: true,
+      httpOnly: true,
+      sameSite: "Lax",
+      domain: "127.0.0.1",
+      path: "/app",
+    });
+    expect(cookies[1]).toMatchObject({ name: "expired", expires: now / 1000 });
+    expect(cookies[2]).toMatchObject({
+      name: "dated",
+      expires: Date.UTC(2030, 9, 21) / 1000,
+    });
+    expect(cookies[3]).toMatchObject({ name: "fallback", expires: 0 });
+  });
+});

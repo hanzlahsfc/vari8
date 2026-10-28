@@ -205,12 +205,13 @@ Owner overriding rule. Every screen in `icm/04-briefing/shots/index.json` (35) p
 
 Truth-text exceptions (copy that names browser-local storage would become false once data lives on the server; same position, style and size, new words). Reverse with `keep-demo-copy`.
 
-| Row    | Today                                | After                                             |
-| ------ | ------------------------------------ | ------------------------------------------------- |
-| S01-09 | "Local demo" / "Session only"        | "Saved" / "Saving"                                |
-| S10-09 | "Saved automatically on this device" | "Saved automatically for this workspace"          |
-| S03-17 | "Sent locally"                       | "Sent"                                            |
-| S02-24 | "Local demo media"                   | the file size, as the canvas shows for real files |
+| Row    | Today                                | After                                                          |
+| ------ | ------------------------------------ | -------------------------------------------------------------- |
+| S01-09 | "Local demo" / "Session only"        | "Saved" / "Saving"                                             |
+| S10-09 | "Saved automatically on this device" | "Saved automatically for this workspace"                       |
+| S03-17 | "Sent locally"                       | "Sent"                                                         |
+| S03-18 | "Record demo video feedback"         | "Record video feedback"; real recorder button is 39px narrower |
+| S02-24 | "Local demo media"                   | the file size, as the canvas shows for real files              |
 
 Demo-only controls ("Reset this mockup", "Load demo audio preview") render only when `APP_ENV` is development, which is the mode the parity gate runs in.
 

@@ -38,6 +38,7 @@ import {
   serverTodayUtc,
   shiftDateUtc,
 } from "./date";
+import { weekdayMaskToFrequency } from "./frequency";
 
 export class HabitError extends Error {
   constructor(
@@ -79,16 +80,26 @@ export type HabitView = {
   id: string;
   name: string;
   target: string;
+  /** Coach-authored "why this matters" text (canvas habit card). */
+  reason: string;
   archived: boolean;
   revision: number;
   /** Latest declared boundary (the editable, not-yet-past schedule). */
   schedule: { weekdays: number; endDate: string | null } | null;
+  /** Canvas frequency label derived from the latest live boundary. */
+  frequency: string | null;
+  /** All-time count of DONE log days (canvas `habit.completed`). */
+  completed: number;
 };
 
 export type TodayHabitView = {
   id: string;
   name: string;
   target: string;
+  /** Coach-authored "why this matters" text (canvas habit card). */
+  reason: string;
+  /** Canvas frequency label of the boundary in force today. */
+  frequency: string | null;
   /** Current stored log state for today. */
   status: "DONE" | "SKIPPED" | "NONE";
 };
@@ -109,6 +120,24 @@ export type HabitConsistencyResult = {
   to: string;
   rows: HabitConsistencyRow[];
   totals: { scheduled: number; done: number; skipped: number; missing: number };
+};
+
+/**
+ * PR-M7 — the canvas "Recorded completions" row: one per habit of the
+ * FULL authorized cohort (active and archived — archived habits keep
+ * their history), never bounded by a period or list page.
+ */
+export type HabitCompletionRow = {
+  habitId: string;
+  name: string;
+  target: string;
+  reason: string;
+  /** Canvas frequency label of the latest live boundary; null when the
+   *  habit only ever carried an archive boundary. */
+  frequency: string | null;
+  /** All-time count of DONE log days (canvas `habit.completed`). */
+  completed: number;
+  archived: boolean;
 };
 
 async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
@@ -248,6 +277,19 @@ function normalizeBoundedText(input: unknown): string {
   return value;
 }
 
+/**
+ * PR-M7 — bounded optional reason: trimmed, empty clears to "", at most
+ * REASON_MAX code points (the helpTextMax convention for coach-authored
+ * explanatory text). Absent/undefined leaves the stored value untouched.
+ */
+export const HABIT_REASON_MAX = 500;
+function normalizeReason(input: unknown): string {
+  if (typeof input !== "string") throw new HabitError("invalid_input");
+  const value = input.trim();
+  if (value.length > HABIT_REASON_MAX) throw new HabitError("invalid_input");
+  return value;
+}
+
 /** Strict declared-date grammar check (bounds handled by callers). */
 function strictDate(input: unknown): string | null {
   if (typeof input !== "string" || !DATE_RE.test(input)) return null;
@@ -272,6 +314,7 @@ type HabitRow = {
   clientProfileId: string;
   name: string;
   target: string;
+  reason: string;
   revision: number;
   archivedAt: Date | null;
   createdAt: Date;
@@ -284,6 +327,7 @@ function mapHabitRow(row: Record<string, unknown>): HabitRow {
     clientProfileId: row["client_profile_id"] as string,
     name: row["name"] as string,
     target: row["target"] as string,
+    reason: (row["reason"] as string | null) ?? "",
     revision: row["revision"] as number,
     archivedAt: row["archived_at"]
       ? new Date(row["archived_at"] as never)
@@ -354,6 +398,20 @@ function scheduledOn(boundaries: Boundary[], date: string): boolean {
   return maskCoversDate(b.weekdays, date);
 }
 
+/**
+ * Canvas frequency label of the latest boundary with a live mask. An
+ * archived habit's trailing zero boundary is skipped so a retired habit
+ * still reports the schedule it last ran under.
+ */
+function frequencyOf(boundaries: Boundary[]): string | null {
+  for (let i = boundaries.length - 1; i >= 0; i--) {
+    const b = boundaries[i];
+    if (b.weekdays !== ARCHIVE_WEEKDAY_MASK)
+      return weekdayMaskToFrequency(b.weekdays);
+  }
+  return null;
+}
+
 async function boundariesOf(
   tx: Prisma.TransactionClient,
   habitIds: string[],
@@ -410,6 +468,7 @@ export async function createHabit(
     clientProfileId: string;
     name: unknown;
     target: unknown;
+    reason?: unknown;
     startDate: unknown;
     weekdays: unknown;
     endDate?: unknown;
@@ -420,6 +479,8 @@ export async function createHabit(
   const today = serverTodayUtc(deps.now ?? new Date());
   const name = normalizeBoundedText(input.name);
   const target = normalizeBoundedText(input.target);
+  const reason =
+    input.reason === undefined ? "" : normalizeReason(input.reason);
   const startDate = parseHabitStartDate(input.startDate, { today });
   if (!startDate) throw new HabitError("invalid_input");
   const weekdays = parseWeekdayMask(input.weekdays);
@@ -455,6 +516,7 @@ export async function createHabit(
             clientProfileId: input.clientProfileId,
             name,
             target,
+            reason,
             // The declared start date is the initial effective boundary —
             // the only boundary that may equal today.
             schedules: {
@@ -490,6 +552,7 @@ export async function editHabit(
     habitId: string;
     name?: unknown;
     target?: unknown;
+    reason?: unknown;
     schedule?: { weekdays?: unknown; endDate?: unknown };
     expectedRevision: number;
   },
@@ -502,6 +565,8 @@ export async function editHabit(
     input.name === undefined ? undefined : normalizeBoundedText(input.name);
   const target =
     input.target === undefined ? undefined : normalizeBoundedText(input.target);
+  const reason =
+    input.reason === undefined ? undefined : normalizeReason(input.reason);
   let schedule: { weekdays: number; endDate: string | null } | undefined;
   if (input.schedule !== undefined) {
     const weekdays = parseWeekdayMask(input.schedule.weekdays);
@@ -545,6 +610,7 @@ export async function editHabit(
 
         const nextName = name ?? row.name;
         const nextTarget = target ?? row.target;
+        const nextReason = reason ?? row.reason;
         let scheduleChanged = false;
 
         if (schedule !== undefined) {
@@ -593,6 +659,7 @@ export async function editHabit(
         if (
           nextName === row.name &&
           nextTarget === row.target &&
+          nextReason === row.reason &&
           !scheduleChanged
         )
           return { revision: row.revision, changed: false };
@@ -602,6 +669,7 @@ export async function editHabit(
           data: {
             name: nextName,
             target: nextTarget,
+            reason: nextReason,
             revision: { increment: 1 },
           },
         });
@@ -803,18 +871,19 @@ export async function setHabitLog(
 
 /* ---------------- reads ---------------- */
 
-async function latestBoundaries(
+/** All-time DONE-log counts for a page/cohort of habits. */
+async function completionCountsOf(
   tx: Prisma.TransactionClient,
   habitIds: string[],
-): Promise<Map<string, { weekdays: number; endDate: string | null }>> {
-  const map = new Map<string, { weekdays: number; endDate: string | null }>();
-  const boundaries = await boundariesOf(tx, habitIds);
-  for (const [id, list] of boundaries)
-    if (list.length > 0)
-      map.set(id, {
-        weekdays: list[list.length - 1].weekdays,
-        endDate: list[list.length - 1].endDate,
-      });
+): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  if (habitIds.length === 0) return map;
+  const groups = await tx.habitLog.groupBy({
+    by: ["habitId"],
+    where: { habitId: { in: habitIds }, status: "DONE" },
+    _count: { _all: true },
+  });
+  for (const g of groups) map.set(g.habitId, g._count._all);
   return map;
 }
 
@@ -843,19 +912,27 @@ export async function listStaffHabits(
           take: PAGE_FETCH,
         })) as unknown as HabitRow[];
         const page = rows.slice(0, PAGE_SIZE);
-        const latest = await latestBoundaries(
-          tx,
-          page.map((r) => r.id),
-        );
+        const pageIds = page.map((r) => r.id);
+        const boundaries = await boundariesOf(tx, pageIds);
+        const counts = await completionCountsOf(tx, pageIds);
         return {
-          habits: page.map((r) => ({
-            id: r.id,
-            name: r.name,
-            target: r.target,
-            archived: r.archivedAt !== null,
-            revision: r.revision,
-            schedule: latest.get(r.id) ?? null,
-          })),
+          habits: page.map((r) => {
+            const list = boundaries.get(r.id) ?? [];
+            const latest = list[list.length - 1];
+            return {
+              id: r.id,
+              name: r.name,
+              target: r.target,
+              reason: r.reason,
+              archived: r.archivedAt !== null,
+              revision: r.revision,
+              schedule: latest
+                ? { weekdays: latest.weekdays, endDate: latest.endDate }
+                : null,
+              frequency: frequencyOf(list),
+              completed: counts.get(r.id) ?? 0,
+            };
+          }),
           hasMore: rows.length > PAGE_SIZE,
         };
       },
@@ -966,6 +1043,10 @@ export async function listTodayHabits(
             id: h.id,
             name: h.name,
             target: h.target,
+            reason: h.reason,
+            frequency: weekdayMaskToFrequency(
+              boundaryInForce(boundaries.get(h.id) ?? [], today)?.weekdays ?? 0,
+            ),
             status: logByHabit.get(h.id) ?? "NONE",
           })),
           hasMore: eligible.length > PAGE_SIZE,
@@ -1102,6 +1183,91 @@ export async function habitConsistency(
           to: today,
           rows,
           totals,
+        };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },
+    ),
+  );
+}
+
+/**
+ * PR-M7 — the canvas "Recorded completions" aside: every habit of the
+ * authorized cohort (active AND archived — retirement keeps history)
+ * with its all-time DONE-log count, canvas frequency label, goal and
+ * reason. Same authorization split as `habitConsistency`: staff pass
+ * `clientProfileId`, a client omits it and reads only their own. The
+ * cohort is unbounded for the same reason TL22 is — habits per client
+ * are few and the aside lists every one.
+ */
+export async function listHabitCompletions(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId?: string;
+    fields?: unknown;
+  },
+  deps: HabitDeps = {},
+): Promise<{ habits: HabitCompletionRow[] }> {
+  const db = deps.db ?? prisma;
+  const fields = validateFields(input.fields);
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "habits", "read");
+
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        let clientProfileId: string;
+        if (input.clientProfileId !== undefined) {
+          const { ctx } = await lockedAuthorize(tx, session, {
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          });
+          if (ctx.grantedScope === "own") {
+            const client = await tx.clientProfile.findUnique({
+              where: { id: input.clientProfileId },
+              select: { userId: true },
+            });
+            if (!client || client.userId !== userId)
+              throw new AccessDeniedError("not_owner", "habits", "read");
+          } else requireManagementScope(ctx, "read");
+          clientProfileId = input.clientProfileId;
+        } else {
+          const profile = await ownProfile(tx, input.workspaceId, userId);
+          const { ctx } = await lockedAuthorize(tx, session, {
+            action: "read",
+            workspaceId: input.workspaceId,
+            clientProfileId: profile.id,
+          });
+          if (ctx.grantedScope !== "own")
+            throw new AccessDeniedError("role_denied", "habits", "read");
+          clientProfileId = profile.id;
+        }
+
+        const cohort = (await tx.habit.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId,
+            ...(fields !== null ? { id: { in: fields } } : {}),
+          },
+          orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        })) as unknown as HabitRow[];
+
+        const ids = cohort.map((h) => h.id);
+        const boundaries = await boundariesOf(tx, ids);
+        const counts = await completionCountsOf(tx, ids);
+
+        return {
+          habits: cohort.map((h) => ({
+            habitId: h.id,
+            name: h.name,
+            target: h.target,
+            reason: h.reason,
+            frequency: frequencyOf(boundaries.get(h.id) ?? []),
+            completed: counts.get(h.id) ?? 0,
+            archived: h.archivedAt !== null,
+          })),
         };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },

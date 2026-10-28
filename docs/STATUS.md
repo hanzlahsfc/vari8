@@ -1,3 +1,206 @@
+## 2026-10-28 - Promotion: template definitions report (PR-M4)
+
+- Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m4-template-definitions`: the PR-M4
+  template definitions build report.
+
+## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
+
+- Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m9-dashboard-config`: dashboard config
+  schema, adapter and the dashboard editor surface.
+
+## 2026-10-28 - Promotion: habits service (PR-M7)
+
+- Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-m7-habits`: habits service with frequency semantics
+  and completion tracking.
+
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 425 — exact contract, portable paths, complete execution provenance
+
+- Contract compatibility is a closed, named `retained-v1-to-approved-v2` transition. Version 2 and retained v1 are exact schemas; missing/unknown fields, changed `authority`, changed `implementedAlternative`, administrative differences and empty/subset/unknown allowance sets fail. Exact allowance rule identities/labels are checked against the comparer. Historical provenance is unchanged. Focused reference tests cover every SWE-2 probe plus the positive v1/v2 cases: **16/16**.
+- `comparer.json` is now a reviewed execution-pin manifest (`visual-reference-comparer-v2`, SHA `8bc2935…`) covering `reference.mjs`, both comparers, `capture.mjs`, `capture-metadata.mjs`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`, both lockfiles, direct dependency pins and the contract. `receipts/metadata.json` is `receiptVersion: 2`, hashes the manifest and copies its pins; omitted/tampered components and dependency changes fail. No self-hash loop; generated receipts are excluded and documented.
+- `recompare.mjs` uses `fileURLToPath`. Clean detached checkout at code commit `11bfe70` under a path with spaces and non-ASCII characters: 482 artifacts verified, canonical **70/70**, strict **68/70**, two byte-identical recomparisons, clean worktree, no p414 input.
+- Counts unchanged: candidate 237, reference 245, evidence 246, artifact index 482, old baseline 242 unchanged, map 272. Candidate captures use synthetic app data but retain local paths/process IDs/command lines in provenance; no credentials/tokens/keys/auth secrets found. No capture, threshold, reference or S03-18 behavior change.
+- Fresh checks on Node 24.22.1: unit **106 files / 1286 tests**, focused **16/16**, format/index/type/lint/build/diff pass; lint 0 errors/81 warnings. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 scoped validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 423 — contract self-validation and durable evidence package
+
+- Contract compatibility now separates immutable material settings from adoption metadata: retained v1 provenance is accepted only when source/tree/clock/timezone/geometry/pixel/viewport/device-scale/expected-screen material fields match; unknown versions and unknown allowances fail. Original provenance is unchanged. Focused tests cover adoption-only acceptance and material/unknown rejections.
+- Candidate captures and recomparison tooling are committed under `tools/parity/reference/evidence/`: candidate 237 files, reference 245, evidence directory 246, artifact index 482 hashes, old baseline 242 unchanged, map 272. `verify-evidence.mjs` fails on missing/tampered artifacts and validates both runs/contract/receipt provenance; `recompare.mjs` uses only the committed reference+candidate package.
+- New recomparison receipts (not original receipts, not new captures): canonical **70/70**, strict **68/70**; metadata records comparer `6ea1115…`, legacy comparer `56a709a…`, contract `4a29fd5…`, dependency versions/integrities and input hashes. Historical 68/70 receipt preserved; original receipt comparer provenance remains missing and disclosed.
+- Existing S11-03/D18/S11-04 applied allowances remain unchanged; D18/S11-04 apply on s03@1440 alongside S03-18. No tolerance/mask expansion or capture semantics change.
+- Fresh focused 13/13, unit 106 files/1283, format/index/type/lint/build/diff checks pass. Clean detached checkout at `c93f33b` with fresh Node 24 installs: verifier 482 artifacts/canonical 70/70/strict 68/70, recompare byte-stable, no p414 input. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 417 — owner decisions recorded; activation still held
+
+- Owner adopted `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch
+  threshold 0.1 and changed-pixel fraction <=0.001. The legacy 10:00/.5px/zero settings remain a
+  separate strict diagnostic only.
+- Owner accepted the real-recorder copy `Record video feedback`, including the demonstrated 39px
+  narrower button. Recorded as exact S03-18 truth-text/geometry rule; unrelated text, movement,
+  added/removed elements and pixel differences still fail.
+- `tools/parity/reference/proposed/` contains 245 files: 244 mapped proposed artifacts plus the
+  mapping file. The 272-entry map remains, including 28 honest old-only paths with no proposed
+  counterpart because their historical offsets/artifacts differ.
+- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, unit 1281/1281, format/index/typecheck/lint and
+  `git diff --check` exit 0. Post-decision recomputation from existing artifacts: canonical **70/70**, strict diagnostic
+  **68/70** (s03 pixels only); historical 68/70 receipt preserved. Exact S03-18 rule is stem-scoped,
+  text/exact-width based, and adds no pixel mask/global tolerance. Unit **106 files / 1281 tests**;
+  focused 11/11; format/index/type/lint/diff pass.
+- Scope remains the historical/current-Beta reference only. FRONTEND `9491897` and Marcel's
+  unpublished full-package pipeline are not certified or imported. Baseline activation, merge and
+  issue #202 resolution remain held behind independent review and unmerged PR #203 `90c16be`.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 — historical reference proposal packaged; s03 copy decision outstanding
+
+- Authority/contract: historical frontend `c78311042edcc2f96350a132c682782d8da1b6a7`; frontend tree
+  `36ceaf8eadc010369ed48ab5158682f2bf9d55de`; owner D32 09:00 Vienna clock, 1px geometry, 0.1%
+  changed pixels / pixelmatch 0.1. The legacy 10:00/.5px/zero-pixel contract is retained only as a
+  separately reported strict diagnostic.
+- Two independent historical runs each captured all 70 screens with zero failures/retries; image,
+  geometry and scroll artifacts were byte-identical (`hashMismatches: []`, stability 70/70 canonical
+  and strict). Original baselines remain unchanged; old hashes and the old→proposed map are packaged
+  under `tools/parity/reference/proposed/`.
+- Current root comparison is **68/70** canonical and strict. Both `s03-checkin-review` widths fail
+  geometry/text/role/name because the button changed from “Record demo video feedback” to “Record
+  video feedback” and narrowed 39px (`244.5 → 205.5`); pixels remain within budget.
+- The copy was introduced by PR-MEDIA `21d8fc0` and wired by `e355c59`. No owner D32 truth-text row
+  or issue-#205 allowance covers it; both failures remain explicit and an exact owner decision is
+  requested. No mask, tolerance change or baseline refresh was made.
+- Tooling: Node v24.22.1; unit **106 files / 1280 tests**, exit 0; typecheck/lint/format/index/build
+  checks recorded; reference tests and two 70/70 reference runs valid. No full 70 rerun for packaging.
+- PR #206 remains draft/stacked on unmerged PR #203 `90c16be`; issue #202 remains open. Stop for
+  independent review; no parity PASS, merge, deployment, Actions, Slack/Hermes or website change.
+
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
+
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head

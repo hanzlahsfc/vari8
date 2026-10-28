@@ -6,19 +6,19 @@ import {
 } from "../db";
 import { AccessDeniedError, authorize, type SessionLike } from "../auth/guard";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
-import {
-  hasExactActiveConsent,
-  requiredConsentsFor,
-  type ConsentKind,
-  type ConsentPolicyRegistry,
-} from "../consent";
+import { type ConsentPolicyRegistry } from "../consent";
 import {
   dailyEntryConsentRegistry,
   parseDeclaredDate,
   readStaffDailyEntryDetailTx,
   type StaffDailyEntryDetail,
 } from "../daily-entry/service";
-import { CheckInInstanceError, type PrismaLike } from "./instances";
+import {
+  checkConsentIntersection,
+  CheckInInstanceError,
+  type PrismaLike,
+  reconcileTrackerContextScopes,
+} from "./instances";
 import { resolveCheckInConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
 import { isCheckInsEnabled } from "./forms-gate";
@@ -73,23 +73,6 @@ export type CheckInTrackerContextInput = {
   entryDate: string;
 };
 
-/** Strict effective-scope reconciliation (#103 contract): the stricter
- *  of both authorized scopes wins; `own`, denials, or unknown values
- *  fail closed. */
-export function reconcileTrackerContextScopes(
-  checkinScope: string | null | undefined,
-  dailyScope: string | null | undefined,
-): "workspace" | "assigned" | "denied" {
-  if (
-    (checkinScope !== "workspace" && checkinScope !== "assigned") ||
-    (dailyScope !== "workspace" && dailyScope !== "assigned")
-  )
-    return "denied";
-  return checkinScope === "assigned" || dailyScope === "assigned"
-    ? "assigned"
-    : "workspace";
-}
-
 function isRetryableSerialization(error: unknown): boolean {
   if (
     error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -127,54 +110,6 @@ function boundedId(raw: unknown): string {
   if (typeof raw !== "string" || raw.length === 0 || raw.length > 128)
     throw new CheckInInstanceError("invalid_input");
   return raw;
-}
-
-/** Consent intersection — each resource's required kinds at THAT
- *  resource's registry version; rows FOR UPDATE once per kind in
- *  deterministic kind order. Any withdrawal → consent_missing. */
-async function checkConsentIntersection(
-  tx: Prisma.TransactionClient,
-  clientProfileId: string,
-  pairs: Array<{
-    resource: "checkinsCoachReviews" | "dailyTracking";
-    registry: ConsentPolicyRegistry;
-  }>,
-): Promise<void> {
-  // D19: parked consent gate — allows (and skips the consent reads) when
-  // ENABLE_CONSENT_GATES is off.
-  if (!consentGatesEnabled()) return;
-  const required: { kind: ConsentKind; version: string }[] = [];
-  for (const { resource, registry } of pairs) {
-    for (const kind of requiredConsentsFor(resource) ?? []) {
-      const version = registry.currentVersion(kind);
-      if (version === null)
-        throw new CheckInInstanceError("policy_not_configured");
-      required.push({ kind, version });
-    }
-  }
-  const kinds = [...new Set(required.map((r) => r.kind))].sort();
-  for (const kind of kinds) {
-    const rows = (
-      await tx.$queryRawUnsafe<
-        { kind: string; version: string; revoked_at: Date | null }[]
-      >(
-        `SELECT kind, version, revoked_at
-         FROM "consent_record"
-         WHERE client_profile_id = $1
-           AND kind = CAST($2 AS "public"."ConsentKind")
-         FOR UPDATE`,
-        clientProfileId,
-        kind,
-      )
-    ).map((r) => ({
-      kind: r.kind,
-      version: r.version,
-      revokedAt: r.revoked_at,
-    }));
-    for (const req of required.filter((r) => r.kind === kind))
-      if (!hasExactActiveConsent(rows, kind, req.version))
-        throw new CheckInInstanceError("consent_missing");
-  }
 }
 
 export async function readCheckInReviewTrackerContext(
