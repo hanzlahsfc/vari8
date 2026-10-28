@@ -20,7 +20,16 @@ export type WidgetKind =
   | "CU06"
   | "CU09"
   | "CU10"
-  | "CU16";
+  | "CU16"
+  | "CU17"
+  | "CU18";
+
+export type DashboardContentSettings = {
+  body: string;
+  tone: "neutral" | "accent" | "important";
+  actionLabel: string;
+  actionUrl: string;
+};
 
 export interface WidgetSettings {
   title: string;
@@ -34,6 +43,22 @@ export interface WidgetSettings {
   unit: string;
   labels?: Record<string, string>;
   historyPeriod?: "auto" | "3m" | "6m" | "1y";
+  content?: DashboardContentSettings;
+}
+
+export function safeResourceUrl(value: string): string | null {
+  const candidate = value.trim();
+  if (!candidate) return null;
+  try {
+    const url = new URL(candidate);
+    return ["http:", "https:"].includes(url.protocol) &&
+      !url.username &&
+      !url.password
+      ? url.href
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export interface WidgetInstance {
@@ -461,6 +486,26 @@ export const catalogue: CatalogueEntry[] = [
     defaultSize: "Regular",
     sizes: ["Compact", "Regular", "Wide"],
   },
+  {
+    id: "CU17",
+    name: "Section heading",
+    category: "Coaching",
+    description:
+      "Separate dashboard sections with a clear coach-configured heading and optional supporting line.",
+    aliases: "section heading divider title label dashboard organization",
+    defaultSize: "Compact",
+    sizes: ["Compact", "Regular", "Wide"],
+  },
+  {
+    id: "CU18",
+    name: "Coach announcement",
+    category: "Coaching",
+    description:
+      "Share a coach-written update with a restrained tone and an optional resource link.",
+    aliases: "announcement coach note message resource action link update",
+    defaultSize: "Regular",
+    sizes: ["Compact", "Regular", "Wide", "Tall"],
+  },
 ];
 
 const defaults: Record<WidgetKind, WidgetSettings> = {
@@ -684,6 +729,40 @@ const defaults: Record<WidgetKind, WidgetSettings> = {
     option: "default",
     unit: "",
   },
+  CU17: {
+    title: "Your coaching plan",
+    source: "content:section",
+    summary: "section",
+    period: "",
+    target: false,
+    size: "Compact",
+    fields: [],
+    option: "default",
+    unit: "",
+    content: {
+      body: "",
+      tone: "neutral",
+      actionLabel: "",
+      actionUrl: "",
+    },
+  },
+  CU18: {
+    title: "A note from your coach",
+    source: "content:announcement",
+    summary: "announcement",
+    period: "",
+    target: false,
+    size: "Regular",
+    fields: [],
+    option: "default",
+    unit: "",
+    content: {
+      body: "Add a clear update or next step for your client.",
+      tone: "accent",
+      actionLabel: "",
+      actionUrl: "",
+    },
+  },
 };
 
 export function defaultSettings(kind: WidgetKind): WidgetSettings {
@@ -739,6 +818,12 @@ export function sourceOptions(
     CU09: [{ value: "roadmap:selected", label: "Selected roadmap metrics" }],
     CU10: [{ value: "milestones:published", label: "Published milestones" }],
     CU16: [{ value: "links", label: "Enabled client destinations" }],
+    CU17: [
+      { value: "content:section", label: "Coach-authored section heading" },
+    ],
+    CU18: [
+      { value: "content:announcement", label: "Coach-authored announcement" },
+    ],
   };
   return options[kind];
 }
@@ -766,6 +851,8 @@ export function summaryOptions(kind: WidgetKind, source: string): string[] {
   if (kind === "CU06") return ["latest", "unread"];
   if (kind === "CU09") return ["weekly-trends", "latest-values"];
   if (kind === "CU10") return ["phase-progress"];
+  if (kind === "CU17") return ["section"];
+  if (kind === "CU18") return ["announcement"];
   return ["enabled"];
 }
 

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { reportV1Failure, requestIdFor } from "@/lib/api/v1";
 import {
   getObjectStorage,
   MAX_MEDIA_BYTES,
@@ -22,6 +23,12 @@ import {
  *
  * It answers 404 unless the active backend is `local`, so a deployment on a
  * real bucket exposes no signature-verification surface at all.
+ *
+ * LOGGING (#168): this endpoint cannot go through `defineApiV1Route` — the
+ * signature IS the credential, not a session — so unexpected DB/storage
+ * faults are reported through the same `reportV1Failure` path: one redacted
+ * `api_v1_request_failed` line (request id, pathname only, status 500) and
+ * the standard safe body. Expected responses (404/403/400) never log.
  */
 export const dynamic = "force-dynamic";
 
@@ -65,51 +72,61 @@ function verifiedKey(
 }
 
 export async function GET(request: Request): Promise<Response> {
-  const gate = await localOnly();
-  if (gate) return gate;
-  const checked = verifiedKey(request, "get");
-  if (checked instanceof Response) return checked;
+  const requestId = requestIdFor(request);
+  try {
+    const gate = await localOnly();
+    if (gate) return gate;
+    const checked = verifiedKey(request, "get");
+    if (checked instanceof Response) return checked;
 
-  const media = await prisma.mediaObject.findFirst({
-    where: { storageKey: checked.key, deletedAt: null },
-    select: { contentType: true, byteSize: true },
-  });
-  if (!media) return error(404, "not_found");
+    const media = await prisma.mediaObject.findFirst({
+      where: { storageKey: checked.key, deletedAt: null },
+      select: { contentType: true, byteSize: true },
+    });
+    if (!media) return error(404, "not_found");
 
-  const bytes = await readLocalObject(checked.key);
-  if (!bytes) return error(404, "not_found");
-  return new Response(Buffer.from(bytes), {
-    headers: {
-      "content-type": media.contentType,
-      "content-length": String(bytes.byteLength),
-      "cache-control": "private, no-store",
-    },
-  });
+    const bytes = await readLocalObject(checked.key);
+    if (!bytes) return error(404, "not_found");
+    return new Response(Buffer.from(bytes), {
+      headers: {
+        "content-type": media.contentType,
+        "content-length": String(bytes.byteLength),
+        "cache-control": "private, no-store",
+      },
+    });
+  } catch (error) {
+    return reportV1Failure(request, requestId, error);
+  }
 }
 
 export async function PUT(request: Request): Promise<Response> {
-  const gate = await localOnly();
-  if (gate) return gate;
-  const checked = verifiedKey(request, "put");
-  if (checked instanceof Response) return checked;
+  const requestId = requestIdFor(request);
+  try {
+    const gate = await localOnly();
+    if (gate) return gate;
+    const checked = verifiedKey(request, "put");
+    if (checked instanceof Response) return checked;
 
-  const media = await prisma.mediaObject.findFirst({
-    where: { storageKey: checked.key, deletedAt: null },
-    select: { byteSize: true },
-  });
-  if (!media) return error(404, "not_found");
+    const media = await prisma.mediaObject.findFirst({
+      where: { storageKey: checked.key, deletedAt: null },
+      select: { byteSize: true },
+    });
+    if (!media) return error(404, "not_found");
 
-  const bytes = new Uint8Array(await request.arrayBuffer());
-  // The declared size on the media_object row is the contract: a body that
-  // is not exactly it — truncated, padded, or swapped — is rejected before
-  // a single byte hits disk, and the schema CHECK keeps it inside the
-  // 20 MB D20 cap regardless.
-  if (
-    bytes.byteLength !== Number(media.byteSize) ||
-    bytes.byteLength > MAX_MEDIA_BYTES
-  )
-    return error(400, "invalid_input");
+    const bytes = new Uint8Array(await request.arrayBuffer());
+    // The declared size on the media_object row is the contract: a body that
+    // is not exactly it — truncated, padded, or swapped — is rejected before
+    // a single byte hits disk, and the schema CHECK keeps it inside the
+    // 20 MB D20 cap regardless.
+    if (
+      bytes.byteLength !== Number(media.byteSize) ||
+      bytes.byteLength > MAX_MEDIA_BYTES
+    )
+      return error(400, "invalid_input");
 
-  await writeLocalObject(checked.key, bytes);
-  return Response.json({ uploaded: true });
+    await writeLocalObject(checked.key, bytes);
+    return Response.json({ uploaded: true });
+  } catch (error) {
+    return reportV1Failure(request, requestId, error);
+  }
 }

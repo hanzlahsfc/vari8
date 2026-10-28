@@ -51,32 +51,6 @@
   line-height: 1.6;
 }
 
-.eg-root .eg-ap-reset {
-  display: inline-flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 9px;
-  padding: 0 14px;
-  border: 1px solid var(--eg-ap-line);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface, #121214) 84%, transparent);
-  color: var(--eg-ap-muted);
-  font-size: 12px;
-  transition:
-    color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.eg-root .eg-ap-reset:hover {
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--eg-ap-line));
-  color: var(--eg-ap-ink);
-}
-
-.eg-root .eg-ap-reset:active {
-  transform: scale(0.98);
-}
-
 .eg-root .eg-ap-layout {
   display: grid;
   grid-template-columns: minmax(270px, 0.79fr) minmax(0, 1.21fr);
@@ -126,37 +100,10 @@
   line-height: 1.5;
 }
 
-.eg-root .eg-ap-controls .segmented {
+.eg-root .eg-ap-controls .v8-segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px;
-  padding: 5px;
-  border: 1px solid var(--eg-ap-line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--surface, #121214) 74%, transparent);
-}
-
-.eg-root .eg-ap-controls .segment {
-  min-height: 43px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--eg-ap-muted);
-  font-size: 13px;
-  transition:
-    color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    background-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-color 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.eg-root .eg-ap-controls .segment[aria-pressed="true"] {
-  border-color: color-mix(in srgb, var(--eg-ap-ink) 11%, transparent);
-  background: color-mix(in srgb, var(--surface, #151517) 90%, transparent);
-  color: var(--eg-ap-ink);
+  width: 100%;
 }
 
 .eg-root .eg-ap-accent-tools {
@@ -165,8 +112,7 @@
   gap: 9px;
 }
 
-.eg-root .eg-ap-color-well,
-.eg-root .eg-ap-hex {
+.eg-root .eg-ap-color-well {
   position: relative;
   min-height: 47px;
   display: flex;
@@ -203,28 +149,13 @@
 }
 
 .eg-root .eg-ap-hex {
-  gap: 2px;
-  padding: 0 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
   color: var(--eg-ap-muted);
   font-variant-numeric: tabular-nums;
-}
-
-.eg-root .eg-ap-hex.is-invalid {
-  border-color: color-mix(in srgb, var(--danger, #eb777c) 70%, transparent);
-}
-
-.eg-root .eg-ap-hex .form-input {
-  width: 100%;
-  min-width: 0;
-  height: 42px;
-  padding: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--eg-ap-ink);
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.045em;
 }
 
 .eg-root .eg-ap-swatches {
@@ -693,11 +624,6 @@
 
   .eg-root .eg-ap-heading {
     gap: 14px;
-  }
-
-  .eg-root .eg-ap-reset {
-    min-height: 39px;
-    padding-inline: 11px;
   }
 
   .eg-root .eg-ap-intro {

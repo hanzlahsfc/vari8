@@ -5,6 +5,7 @@ build
 coverage
 playwright-report
 test-results
+_evidence
 package-lock.json
 next-env.d.ts
 docs/conductor-generic/SKILL.md

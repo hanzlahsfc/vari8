@@ -140,6 +140,51 @@ describe.skipIf(!enabled)(
       ).toBe(0);
     });
 
+    it("the first canvas demo client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
+      // The trial client walkthrough signs in as the first canvas demo
+      // client — `33-checkins.seed.ts` gives her a credential reusing
+      // SEED_CLIENT_PASSWORD — because the SEED-FIX credential client
+      // deliberately has no profile.
+      const emma = await expectCredential(
+        "emma.anders@canvas-demo.test",
+        SEED_ENV.SEED_CLIENT_PASSWORD,
+      );
+      const canvas = await prisma.workspace.findUniqueOrThrow({
+        where: { slug: "canvas-demo" },
+      });
+      const profile = await prisma.clientProfile.findFirstOrThrow({
+        where: { workspaceId: canvas.id, userId: emma.id },
+      });
+      expect(profile.name).toBe("Emma Anders");
+      // Without instances the sign-in client has nothing to submit — the
+      // loop is not exercisable regardless of credentials.
+      expect(
+        await prisma.checkInInstance.count({
+          where: { workspaceId: canvas.id, clientProfileId: profile.id },
+        }),
+      ).toBeGreaterThan(0);
+
+      // Staff review requires a coherent ACTIVE assignment (coach scope
+      // never reads the workspace boundary) — the seeded coach is linked
+      // to every canvas client as PRIMARY.
+      const coach = await prisma.user.findUniqueOrThrow({
+        where: { email: SEED_ENV.SEED_COACH_EMAIL },
+      });
+      const coachMember = await prisma.workspaceMember.findUniqueOrThrow({
+        where: {
+          workspaceId_userId: { workspaceId: canvas.id, userId: coach.id },
+        },
+      });
+      const assignments = await prisma.clientAssignment.count({
+        where: {
+          workspaceId: canvas.id,
+          coachMemberId: coachMember.id,
+          status: "ACTIVE",
+        },
+      });
+      expect(assignments).toBe(15);
+    });
+
     it("re-running the seed does not duplicate accounts or members", async () => {
       runSeed();
       const emails = Object.values(SEED_ENV).filter((v) => v.includes("@"));

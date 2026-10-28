@@ -1,0 +1,17 @@
+diff --git a/tools/parity/local-https.mjs b/tools/parity/local-https.mjs
+index ceecacf..67b2564 100644
+--- a/tools/parity/local-https.mjs
++++ b/tools/parity/local-https.mjs
+@@ -181,9 +181,7 @@ export async function stopOwnedProcessGroup(
+ ) {
+   const problems = [];
+   const pgid = String(child.pid);
+-  const owned = (entry) =>
+-    entry?.owned === true &&
+-    String(entry.pgid) === pgid &&
+-    Boolean(entry.start);
++  const owned = (entry) =>
++    String(entry?.pgid) === pgid && Boolean(entry?.start);
+   const inspect = (kind) => {
+     const result =
+       kind === "group" ? inspector.group(pgid) : inspector.listeners(port);

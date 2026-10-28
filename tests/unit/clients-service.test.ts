@@ -138,7 +138,8 @@ describe("listAccessibleClientProfiles", () => {
     );
     expect(delegates.clientProfile.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId: ws },
+        // PR-M1 (D27): the roster query hides archived profiles by default.
+        where: { workspaceId: ws, archivedAt: null },
         orderBy: { id: "asc" },
         take: 6,
       }),

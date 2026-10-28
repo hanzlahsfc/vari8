@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MotionProvider } from "@/components/motion-provider";
 import "./globals.css";
+import "@/styles/vari8-tokens.css";
 import "./tracker.css";
 import "./weight.css";
 import "@/components/ethereal/foundation-components.css";

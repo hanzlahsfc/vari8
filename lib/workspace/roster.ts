@@ -1,6 +1,7 @@
 import type { ApiViewer, ApiWorkspaceContext } from "@/lib/api/v1";
 import { prisma } from "@/lib/db";
 import type { PrismaLike } from "./access";
+import { rosterClientVisibility } from "./roster-query";
 
 /**
  * PR-05: the coach's client roster read — the reference operation for the
@@ -49,7 +50,7 @@ export function parseRosterCursor(
 export async function listWorkspaceClientRoster(
   viewer: ApiViewer,
   workspace: ApiWorkspaceContext,
-  input: { limit?: number; cursor?: string },
+  input: { limit?: number; cursor?: string; includeArchived?: boolean },
   client: PrismaLike = prisma,
 ): Promise<ClientRosterResult> {
   const limit = Math.min(
@@ -60,6 +61,9 @@ export async function listWorkspaceClientRoster(
   const rows = await client.clientProfile.findMany({
     where: {
       workspaceId: workspace.workspaceId,
+      // D27 (PR-M1): archived clients leave the roster unless a caller
+      // explicitly asks for them.
+      ...rosterClientVisibility(input.includeArchived === true),
       // "own" scope only ever matches the caller's own profile — used when a
       // role gets a narrowed grant; the D15 matrix currently denies clients
       // roster.read outright, so this is defense in depth, not new scope.

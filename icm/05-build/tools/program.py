@@ -21,7 +21,7 @@ ICM = f"{ROOT}/icm"
 IN5 = f"{ICM}/05-build"
 OUT = f"{OUTROOT}/icm/05-build"
 os.makedirs(f"{OUT}/cards", exist_ok=True)
-REPO = "hanzlahsfc/The-great-tracker-"
+REPO = "hanzlahsfc/vari8"
 SHOTS = json.load(open(f"{ICM}/04-briefing/shots/index.json"))["shots"]
 SHOT_FILES = [s["file"] for s in SHOTS]
 PR_BY_ID = {p["id"]: p for p in PRS}
@@ -177,12 +177,12 @@ SPECIAL_OWNERS = {"PRESENT", "PARKED-D12", "N/A", "POST-BETA-INFRA", "OWNER-QUES
 
 # Concrete checks for P0 rows owned by a gate card (W0-fix-2 item 1).
 GATE_P0_CHECK = {
-    "PR-133": ("for every program PR merged into `Vari8-Beta` (`gh pr list -R hanzlahsfc/The-great-tracker- --base Vari8-Beta --state merged "
+    "PR-133": ("for every program PR merged into `Vari8-Beta` (`gh pr list -R hanzlahsfc/vari8 --base Vari8-Beta --state merged "
                "--search 'merged:>=2026-10-19' --json number,title,headRefOid,mergeCommit`), `gh pr view <n> --json comments` contains a line "
                "`SHIP <PR-id> <sha>` whose sha is the PR's last head before the merge, posted by a verifier card whose model differs from the builder's "
                "(builder and verifier models from `icm/05-build/graph.json`). Write the table (PR, head sha, SHIP line found, verifier model, builder model) "
                f"to `{EVID}/GATE-CLEAN/pr-133.md`; any PR without a matching SHIP fails this card. Also record "
-               "`gh api repos/hanzlahsfc/The-great-tracker-/branches/Vari8-Beta/protection` (404 today); turning protection on is the owner's call, "
+               "`gh api repos/hanzlahsfc/vari8/branches/Vari8-Beta/protection` (404 today); turning protection on is the owner's call, "
                "so a 404 is reported, not failed."),
 }
 

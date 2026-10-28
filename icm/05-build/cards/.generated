@@ -88,6 +88,10 @@ pr-r2-schema-reduction.md
 pr-r3-flags-deps-merge.md
 pr-r3-flags-deps-verify.md
 pr-r3-flags-deps.md
+pr-supp-plan-merge.md
+pr-supp-plan-secverify.md
+pr-supp-plan-verify.md
+pr-supp-plan.md
 pr-sv1-roster-read-merge.md
 pr-sv1-roster-read-verify.md
 pr-sv1-roster-read.md

@@ -166,6 +166,24 @@ export const AUDIT_RESOURCE_TYPES = [
   // date, pinned version seq, booked week) — never prescription text,
   // session content, or timezone strings.
   "training_session_booking",
+  // PR-M3 (D26, O7, O13): coach note, coach task and tracker comment
+  // lifecycle (CREATE/UPDATE/DELETE on mutation, UPDATE on restore —
+  // `changed` marker and declared comment date only). IDs and structural
+  // markers only — never note, task or comment body text.
+  "coach_note",
+  "coach_task",
+  "tracker_comment",
+  // PR-M1 (D27): client-profile lifecycle — archive and restore as UPDATE
+  // with an ARCHIVED/ACTIVE status marker, retention-gated delete as DELETE
+  // with a REMOVED marker. IDs + structural markers only — never names,
+  // labels, archive reasons, or profile values.
+  "client_profile",
+  // PR-SUPP: saved supplement-plan lifecycle (CREATE on first save,
+  // UPDATE on each whole-plan re-save, READ on detail views). IDs +
+  // structural markers only (versionSeq = revision, count = item count)
+  // — never plan names, product names, brands, timing, notes, statuses,
+  // or URLs.
+  "supplement_plan",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
