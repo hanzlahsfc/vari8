@@ -61,7 +61,21 @@ function parseBlsHeader(cells: string[]): {
     const h = cells[i] ?? "";
     const m = NUTRIENT_HEADER.exec(h);
     if (!m) {
-      // trailing non-nutrient columns (BLS `Hinweis`) — verbatim notes
+      // trailing non-nutrient columns (BLS `Hinweis`) — verbatim notes,
+      // but an INTERRUPTED nutrient triple must fail closed: any
+      // remaining header resembling a component tail is a parse error.
+      const tail = cells.slice(i);
+      if (
+        tail.some(
+          (c) =>
+            /Datenherkunft$|Referenz$|\[.+\/100g\]$/.test(c ?? "") ||
+            (c ?? "") === "",
+        )
+      )
+        throw new SourceAdapterError(
+          "unexpected_header",
+          `interrupted nutrient header from col ${i + 1}: ${JSON.stringify(tail.slice(0, 3))}`,
+        );
       for (let j = i; j < cells.length; j++)
         if (cells[j]) noteCols.push({ name: cells[j]!, col: j });
       break;

@@ -94,7 +94,12 @@ function parseCiqualHeader(cells: string[]): {
         "unsupported_unit",
         `col ${i + 1}: unit ${JSON.stringify(unit)}`,
       );
-    cols.push({ code: slug(name), name, unit, col: i });
+    cols.push({
+      code: `${slug(name)}-${unit.toUpperCase()}`,
+      name,
+      unit,
+      col: i,
+    });
   }
   return { cols, noteCols };
 }

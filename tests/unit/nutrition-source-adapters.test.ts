@@ -10,7 +10,11 @@ import { describe, expect, it } from "vitest";
 
 import { parseBlsExport } from "../../lib/nutrition/sources/bls";
 import { parseCiqualExport } from "../../lib/nutrition/sources/ciqual";
-import { SourceAdapterError } from "../../lib/nutrition/sources/common";
+import {
+  parseSourceNumeric,
+  SourceAdapterError,
+  toNutritionSource,
+} from "../../lib/nutrition/sources/common";
 
 const BLS_FIXTURE = "tests/fixtures/nutrition/bls-4.0-sample.xlsx";
 const CIQUAL_FIXTURE = "tests/fixtures/nutrition/ciqual-2025-sample.xlsx";
@@ -72,7 +76,7 @@ describe("parseCiqualExport — authentic CIQUAL 2025 slice", () => {
     expect(first.sourceId).toBe("24999");
     expect(first.name).toContain("Dessert");
     // decimal-comma cell "49,9" → 49.9
-    const water = first.nutrients.find((n) => n.code === "EAU");
+    const water = first.nutrients.find((n) => n.code === "EAU-G");
     expect(water?.value).toBeCloseTo(49.9, 5);
     // "-" cell → null, not 0
     const dashCells = first.nutrients.filter((n) => n.value === null);
@@ -92,5 +96,73 @@ describe("fail-closed behavior", () => {
     await expect(
       parseBlsExport(readFileSync(BLS_FIXTURE).subarray(0, 200)),
     ).rejects.toBeInstanceOf(SourceAdapterError);
+  });
+});
+
+describe("parseSourceNumeric — source marker semantics", () => {
+  it("preserves real zeros, missing markers and qualifiers verbatim", () => {
+    expect(parseSourceNumeric("0")).toEqual({ value: 0 });
+    expect(parseSourceNumeric("-")).toEqual({ value: null });
+    expect(parseSourceNumeric("traces")).toEqual({
+      value: null,
+      qualifier: "traces",
+    });
+    expect(parseSourceNumeric("TR")).toEqual({
+      value: null,
+      qualifier: "traces",
+    });
+    expect(parseSourceNumeric("<LOD")).toEqual({
+      value: null,
+      qualifier: "lod",
+    });
+    expect(parseSourceNumeric("<LOQ")).toEqual({
+      value: null,
+      qualifier: "loq",
+    });
+    expect(parseSourceNumeric("< 0,5")).toEqual({
+      value: 0.5,
+      qualifier: "lt",
+    });
+    expect(parseSourceNumeric("2.7E-2")).toEqual({ value: 0.027 });
+    // unrecognised representation → reject, never guess
+    expect(parseSourceNumeric("approx")).toBeUndefined();
+    expect(parseSourceNumeric("(0.5)")).toBeUndefined();
+  });
+});
+
+describe("fail-closed nutrient headers", () => {
+  it("a renamed nutrient header refuses the whole parse — never degrades to a note", async () => {
+    // fixture variant with the FAT header renamed mid-table: its
+    // Datenherkunft/Referenz followers are orphaned → unexpected_header
+    await expect(
+      parseBlsExport(
+        readFileSync("tests/fixtures/nutrition/bls-4.0-sample-badheader.xlsx"),
+      ),
+    ).rejects.toMatchObject({ code: "unexpected_header" });
+    await expect(
+      parseBlsExport(readFileSync(CIQUAL_FIXTURE)),
+    ).rejects.toBeInstanceOf(SourceAdapterError);
+  });
+});
+
+describe("toNutritionSource — existing importer contract", () => {
+  it("projects candidates into NutritionSource records", async () => {
+    const { classified } = await parseCiqualExport(
+      readFileSync(CIQUAL_FIXTURE),
+    );
+    const importer = toNutritionSource(classified, {
+      calories: "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL",
+      protein: "PROTEINES-N-X-6-25-G",
+      carbs: "GLUCIDES-G",
+      fats: "LIPIDES-G",
+    });
+    expect(importer.accepted).toHaveLength(8);
+    const first = importer.accepted[0];
+    expect(first.sourceNo).toBe(24999);
+    expect(first.name).toContain("Dessert");
+    expect(first.amount).toBe(100);
+    expect(first.unit).toBe("g");
+    expect(first.calories).toBeCloseTo(255, 5);
+    expect(first.rowFingerprint).toMatch(/^[0-9a-f]{64}$/);
   });
 });

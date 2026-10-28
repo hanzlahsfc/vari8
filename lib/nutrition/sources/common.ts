@@ -166,3 +166,82 @@ export function parseSourceNumeric(raw: string | null | undefined):
 /** Declared units accepted from these two sources. Anything else fails
  * closed — B1 forbids guessing conversions. */
 export const SUPPORTED_UNITS = new Set(["kJ", "kcal", "g", "mg", "µg", "IU"]);
+
+import {
+  NUTRITION_SOURCE_FIELDS,
+  type NutritionSource,
+  type NutritionSourceRecord,
+} from "../source";
+
+/**
+ * #182→#181 bridge: project the rich `SourceCandidate` into the
+ * existing importer's `NutritionSource` record shape — the projection
+ * is a real contract, not a claim: `sourceNo` is the numeric component
+ * of the source id, and the flat nutrient columns map their canonical
+ * component codes (per-100-g basis → `amount: 100, unit: "g"`).
+ * Provenance beyond those columns stays on the `SourceCandidate` and
+ * lands via #181's provenance fields.
+ */
+export function toNutritionSource(
+  classified: ClassifiedSource,
+  nutritionCodes: {
+    calories?: string;
+    protein?: string;
+    carbs?: string;
+    fats?: string;
+  },
+): NutritionSource {
+  const accepted: NutritionSourceRecord[] = classified.accepted.map((c) => {
+    const numericPart = c.sourceId.replace(/[^0-9]/g, "");
+    const sourceNo = Number(numericPart);
+    if (!Number.isInteger(sourceNo) || sourceNo <= 0)
+      throw new SourceAdapterError(
+        "invalid_source_id",
+        `non-numeric source id ${JSON.stringify(c.sourceId)}`,
+      );
+    const by = (code?: string) =>
+      code ? (c.nutrients.find((n) => n.code === code)?.value ?? null) : null;
+    return {
+      sourceRow: c.sourceRow,
+      sourceNo,
+      name: c.name,
+      amount: 100,
+      unit: "g",
+      calories: by(nutritionCodes.calories),
+      protein: by(nutritionCodes.protein),
+      carbs: by(nutritionCodes.carbs),
+      fats: by(nutritionCodes.fats),
+      state: null,
+      category: null,
+      rowFingerprint: c.rowFingerprint,
+    };
+  });
+  return {
+    sourceName: classified.sourceName,
+    sourceFingerprint: classified.sourceFingerprint,
+    headerRow: 1,
+    // no source-column mapping — the projection is record-shaped, not
+    // header-derived; indices are a satisfier, not read by the importer
+    columns: Object.fromEntries(
+      NUTRITION_SOURCE_FIELDS.map((f) => [f, -1]),
+    ) as NutritionSource["columns"],
+    scannedRowCount: classified.scannedRowCount,
+    ignoredEmptyRowCount: classified.ignoredEmptyRowCount,
+    sourceRowCount: classified.sourceRowCount,
+    accepted,
+    rejected: classified.rejected.map((r) => ({
+      sourceRow: r.sourceRow,
+      sourceNo: r.sourceId
+        ? Number(r.sourceId.replace(/[^0-9]/g, "")) || null
+        : null,
+      reasonCode: r.reasonCode as never,
+    })),
+    duplicates: classified.duplicates.map((r) => ({
+      sourceRow: r.sourceRow,
+      sourceNo: r.sourceId
+        ? Number(r.sourceId.replace(/[^0-9]/g, "")) || null
+        : null,
+      reasonCode: r.reasonCode as never,
+    })),
+  };
+}
