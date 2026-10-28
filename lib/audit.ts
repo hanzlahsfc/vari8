@@ -174,7 +174,7 @@ export const AUDIT_RESOURCE_TYPES = [
   "coach_task",
   "tracker_comment",
   // TRK-NOTE (pair-3 port): per-day tracker note lifecycle follows the
-  // tracker comment rule — CREATE/UPDATE/DELETE on mutation, `changed`
+  // tracker comment rule: CREATE/UPDATE/DELETE on mutation, `changed`
   // marker and declared date only, never the note body.
   "tracker_day_note",
   // PR-M1 (D27): client-profile lifecycle — archive and restore as UPDATE

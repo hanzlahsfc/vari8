@@ -9,7 +9,7 @@ import { hashPassword } from "../../lib/password";
 import { GET } from "../../app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/series/route";
 
 /**
- * PR-SV2 — GET /api/v1/workspaces/:ws/clients/:client/daily-entries/series on a dedicated
+ * PR-SV2: GET /api/v1/workspaces/:ws/clients/:client/daily-entries/series on a dedicated
  * disposable PostgreSQL database (INTEGRATION_DATABASE_URL). Calls the
  * route the way a client does (real Request, bearer credential from a real
  * sign-in) and asserts the literal JSON contract, latest-revision
