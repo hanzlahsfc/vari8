@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   LabelEntryError,
+  nutrientUnits,
   parseLabelEntry,
 } from "../../lib/nutrition/label-entry";
 
@@ -61,6 +62,9 @@ describe("parseLabelEntry", () => {
     ["unsupported unit", { unit: "oz" }],
     ["invalid basis", { basis: "per portion" }],
     ["missing code", { code: "" }],
+    ["protein in kcal", { unit: "kcal" }],
+    ["unknown nutrient code", { code: "unicornium" }],
+    ["unknown code in g", { code: "unknown-x", unit: "g" }],
   ])("rejects %s measurement", (_label, over) => {
     expect(() =>
       parseLabelEntry({ ...BASE, nutrients: [macros(over)] }),
@@ -101,5 +105,50 @@ describe("parseLabelEntry", () => {
     expect(() =>
       parseLabelEntry({ ...BASE, barcode: "abc", nutrients: [macros()] }),
     ).toThrow(LabelEntryError);
+  });
+
+  it("barcode is optional; supplied values must satisfy GTIN checksums", () => {
+    // absent → null, no validation
+    const { barcode: _omit, ...noBarcode } = BASE;
+    expect(
+      parseLabelEntry({ ...noBarcode, nutrients: [macros()] }).barcode,
+    ).toBeNull();
+    // valid GTINs across lengths
+    for (const b of [
+      "3017620422003",
+      "30176249",
+      "301762042230",
+      "03017620422003",
+    ])
+      expect(
+        parseLabelEntry({ ...BASE, barcode: b, nutrients: [macros()] }).barcode,
+      ).toBe(b);
+    // invalid checksum / wrong length / non-string refuse
+    for (const b of ["3017620422004", "3017620422", 12345678, "1"]) {
+      expect(() =>
+        parseLabelEntry({
+          ...BASE,
+          barcode: b as unknown as string,
+          nutrients: [macros()],
+        }),
+      ).toThrow(LabelEntryError);
+    }
+  });
+
+  it("valid nutrient/unit pairs accept; incompatible pairs refuse", () => {
+    expect(nutrientUnits("protein")).toEqual(["g"]);
+    expect(nutrientUnits("energy")).toEqual(["kJ", "kcal"]);
+    expect(nutrientUnits("vitamin_a")).toEqual(["µg", "ug"]);
+    expect(() =>
+      parseLabelEntry({ ...BASE, nutrients: [macros({ unit: "kcal" })] }),
+    ).toThrow(LabelEntryError); // protein in kcal — the review's case
+    const r = parseLabelEntry({
+      ...BASE,
+      nutrients: [
+        macros({ code: "energy", unit: "kcal" }),
+        macros({ code: "energy-kj", unit: "kJ" }),
+      ],
+    });
+    expect(r.nutrients).toHaveLength(2);
   });
 });

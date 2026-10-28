@@ -9,6 +9,8 @@
  * verification status or source attribution.
  */
 
+import { isValidBarcode } from "./off";
+
 export class LabelEntryError extends Error {
   constructor(
     readonly code:
@@ -28,6 +30,49 @@ export class LabelEntryError extends Error {
 export type LabelBasis = "per 100 g" | "per serving";
 
 export const LABEL_ENTRY_UNITS = new Set(["g", "mg", "µg", "ug", "kJ", "kcal"]);
+
+/** Nutrient-code → allowed units. A globally supported unit is not
+ * valid for every nutrient — protein in kcal must refuse. Unknown
+ * codes fail safe: an unmapped nutrient code is refused, never
+ * guessed or silently relabelled. */
+export const NUTRIENT_UNITS: Record<string, readonly string[]> = {
+  // macronutrients
+  protein: ["g"],
+  carbohydrates: ["g"],
+  carbs: ["g"],
+  fat: ["g"],
+  saturated_fat: ["g"],
+  "saturated-fat": ["g"],
+  sugars: ["g"],
+  sugar: ["g"],
+  fibre: ["g"],
+  fiber: ["g"],
+  salt: ["g"],
+  sodium: ["g"],
+  // energy
+  energy: ["kJ", "kcal"],
+  "energy-kj": ["kJ"],
+  "energy-kcal": ["kcal"],
+  kcal: ["kcal"],
+  kj: ["kJ"],
+  // vitamins / minerals (mass units only)
+  vitamin_a: ["µg", "ug"],
+  vitamin_c: ["mg"],
+  vitamin_d: ["µg", "ug"],
+  calcium: ["mg"],
+  iron: ["mg"],
+  potassium: ["mg"],
+  magnesium: ["mg"],
+  zinc: ["mg"],
+};
+
+/** Resolve a nutrient code to its allowed units, or null when the code
+ * is unknown. Returns the canonical code + units; an unknown code must
+ * refuse — never guess a unit contract. */
+export function nutrientUnits(code: string): readonly string[] | null {
+  const normalized = code.trim().toLowerCase().replace(/\s+/g, "-");
+  return NUTRIENT_UNITS[normalized] ?? null;
+}
 
 export interface LabelNutrient {
   code: string;
@@ -94,15 +139,18 @@ export function parseLabelEntry(input: unknown): LabelEntryRecord {
   const name = typeof o.name === "string" ? o.name.trim() : "";
   if (!name) throw new LabelEntryError("invalid_input", "name is required");
 
+  // reuse the shared GTIN/EAN/UPC validator — check digits for the
+  // supported 8/12/13/14 formats, leading zeros preserved; the field
+  // stays optional and never infers uniqueness
   const barcode =
     o.barcode === undefined || o.barcode === null
       ? null
-      : typeof o.barcode === "string" && /^\d+$/.test(o.barcode)
+      : typeof o.barcode === "string" && isValidBarcode(o.barcode)
         ? o.barcode
         : (() => {
             throw new LabelEntryError(
               "invalid_input",
-              `barcode must be digits, got ${JSON.stringify(o.barcode)}`,
+              `barcode must be a valid GTIN/EAN/UPC (8/12/13/14 digits with check digit), got ${JSON.stringify(o.barcode)}`,
             );
           })();
 
@@ -134,10 +182,21 @@ export function parseLabelEntry(input: unknown): LabelEntryRecord {
         `nutrient ${i}: code required`,
       );
     const unit = typeof nr.unit === "string" ? nr.unit.trim() : "";
-    if (!LABEL_ENTRY_UNITS.has(unit))
+    if (!unit || !LABEL_ENTRY_UNITS.has(unit))
       throw new LabelEntryError(
         "invalid_unit",
         `nutrient ${code}: unsupported unit ${JSON.stringify(nr.unit)}`,
+      );
+    const allowed = nutrientUnits(code);
+    if (allowed === null)
+      throw new LabelEntryError(
+        "invalid_measurement",
+        `nutrient ${code}: unknown nutrient code — no unit contract`,
+      );
+    if (!allowed.includes(unit))
+      throw new LabelEntryError(
+        "invalid_unit",
+        `nutrient ${code}: unit ${JSON.stringify(unit)} incompatible — allowed ${allowed.join("/")}`,
       );
     const basis = nr.basis;
     if (basis !== "per 100 g" && basis !== "per serving")
