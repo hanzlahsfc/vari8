@@ -1,3 +1,10 @@
+## 2026-10-28 - Promotion: nutrition source adapters (BLS + CIQUAL, issue 182)
+
+- Promoted `beta/nutrition-source-adapters` (PR 222) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-nutrition-source-adapters`: BLS and
+  CIQUAL food source adapters, shared source helpers, dedupe decision
+  handling, the dry-run script, workbook fixtures and unit tests.
+
 ## 2026-10-28 - Promotion: template definitions report (PR-M4)
 
 - Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
