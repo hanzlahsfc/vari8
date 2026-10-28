@@ -582,7 +582,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const createCoachTaskFromRoute = (caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ id: string; re...`
 - `export const deleteCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; cha...`
 - `export const readCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<CoachTaskView>> =>`
-- `export const readCoachTasks = (caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ tasks: CoachTaskView[]; hasMore: bo...`
+- `export const readCoachTasks = (caller: CoachTaskCaller, input: { clientProfileId?: string | null; workspaceOnly?: boolean } = {}, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ tasks: Coa...`
 - `export const restoreCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; changed: boolean }>> =>`
 - `export const setCoachTaskCompletionFromRoute = (caller: CoachTaskCaller, input: { taskId: string; complete: boolean; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise< CoachTaskSafeRes...`
 - `export const updateCoachTaskTitleFromRoute = (caller: CoachTaskCaller, input: { taskId: string; title: unknown; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ ...`
@@ -596,7 +596,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const RESTORE_WINDOW_MS = 30_000`
 - `export async function createCoachTask(caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<{ id: string; revision: number }>`
 - `export async function deleteCoachTask(caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
-- `export async function listCoachTasks(caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<{ tasks: CoachTaskView[]; hasMore: boolean }>`
+- `export async function listCoachTasks(caller: CoachTaskCaller, input: { clientProfileId?: string | null; workspaceOnly?: boolean } = {}, deps: CoachTaskDeps = {}): Promise<{ tasks: CoachTaskView[]; ...`
 - `export function normalizeTaskTitle(input: unknown): string`
 - `export async function readCoachTask(caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<CoachTaskView>`
 - `export async function restoreCoachTask(caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
