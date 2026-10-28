@@ -24,7 +24,8 @@ export class OffLookupError extends Error {
       | "upstream_error"
       | "timeout"
       | "malformed_response"
-      | "rate_limited",
+      | "rate_limited"
+      | "code_mismatch",
     detail: string,
   ) {
     super(`off lookup ${code}: ${detail}`);
@@ -63,10 +64,24 @@ export type OffLookupResult =
   | { status: "found"; product: OffProduct }
   | { status: "not_found"; barcode: string };
 
-/** EAN/UPC digits only — 8, 12, 13 or 14 digits per OFF's barcode
- * conventions. Anything else is a caller error, not an upstream miss. */
+/** GTIN check digit (GS1): alternating 3/1 weights, check digit on the
+ * right. Odd-length codes weight 1 first, even-length weight 3. */
+function checkDigitValid(code: string): boolean {
+  const digits = [...code].map(Number);
+  const first = digits.length % 2 === 0 ? 3 : 1;
+  let sum = 0;
+  for (let i = 0; i < digits.length - 1; i++)
+    sum += digits[i] * (i % 2 === 0 ? first : first === 3 ? 1 : 3);
+  return (10 - (sum % 10)) % 10 === digits[digits.length - 1];
+}
+
+/** Valid GTIN/EAN/UPC barcode — 8/12/13/14 digits with a correct check
+ * digit (leading zeros preserved as digits, never parsed as a number).
+ * Anything else is a caller error, not an upstream miss. */
 export function isValidBarcode(barcode: string): boolean {
-  return /^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(barcode);
+  return /^\d{8}$|^\d{12}$|^\d{13}$|^\d{14}$/.test(barcode)
+    ? checkDigitValid(barcode)
+    : false;
 }
 
 export type OffFetch = (
@@ -108,9 +123,13 @@ function normalizeProduct(barcode: string, body: unknown): OffProduct {
     const code = key.slice(0, -5);
     if (!code || /_unit$|_serving$|_value$|_prepared$/.test(code)) continue;
     const value = asNumber(v);
-    if (value === null) continue; // missing upstream → absent, never 0
-    const unit = asString(nutriments[`${code}_unit`]) ?? "g";
-    if (!ALLOWED_UNITS.has(unit)) continue; // unsupported unit → drop, don't guess
+    // missing/negative/non-finite measurements are dropped, never
+    // coerced; a real 0 is a valid measurement and survives
+    if (value === null || value < 0) continue;
+    // the upstream unit must be explicit and supported — never a
+    // default guess
+    const unit = asString(nutriments[`${code}_unit`]);
+    if (unit === null || !ALLOWED_UNITS.has(unit)) continue;
     nutrients.push({ code, value, unit, basis: "per 100 g" });
   }
 
@@ -182,6 +201,18 @@ export async function lookupOffProduct(
         `unexpected payload shape for ${barcode}`,
       );
     if (root.status === 0) return { status: "not_found", barcode };
+    if (root.status !== 1)
+      throw new OffLookupError(
+        "malformed_response",
+        `unexpected status ${JSON.stringify(root.status)} for ${barcode}`,
+      );
+    // the response's OFF code must be exactly the requested barcode —
+    // never relabel another product
+    if (root.code !== barcode)
+      throw new OffLookupError(
+        "code_mismatch",
+        `response code ${JSON.stringify(root.code)} does not match requested ${barcode}`,
+      );
     return { status: "found", product: normalizeProduct(barcode, body) };
   } catch (e) {
     if (e instanceof OffLookupError) throw e;

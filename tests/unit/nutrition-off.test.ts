@@ -20,6 +20,7 @@ const fetchOf = (status: number, body: unknown): OffFetch => {
 
 const FROZEN_PIZZA = {
   status: 1,
+  code: "3017620422003",
   product: {
     product_name: "Pizza Margherita",
     brands: "Doe Foods, Example Co",
@@ -148,16 +149,63 @@ describe("lookupOffProduct", () => {
   });
 });
 
+describe("response identity + normalization (#509)", () => {
+  const B = "3017620422003";
+  it("a mismatched response code refuses — never relabels", async () => {
+    const d = structuredClone(FROZEN_PIZZA);
+    d.code = "5901234123457";
+    await expect(
+      lookupOffProduct(B, { fetchImpl: fetchOf(200, d) }),
+    ).rejects.toMatchObject({ code: "code_mismatch" });
+  });
+  it("a missing or malformed response code refuses", async () => {
+    const d = structuredClone(FROZEN_PIZZA) as Record<string, unknown>;
+    delete d.code;
+    await expect(
+      lookupOffProduct(B, { fetchImpl: fetchOf(200, d) }),
+    ).rejects.toMatchObject({ code: "code_mismatch" });
+    await expect(
+      lookupOffProduct(B, {
+        fetchImpl: fetchOf(200, { status: 2, code: B, product: {} }),
+      }),
+    ).rejects.toMatchObject({ code: "malformed_response" });
+  });
+  it("negative measurements and missing units are dropped, zero kept", async () => {
+    const d = structuredClone(FROZEN_PIZZA);
+    (d.product as { nutriments: Record<string, unknown> }).nutriments = {
+      proteins_100g: -1,
+      proteins_unit: "g",
+      fat_100g: 8.3,
+      fat_unit: "g",
+      sugars_100g: 0,
+      sugars_unit: "g",
+      sodium_100g: 0.5, // no unit → dropped
+      "energy-kcal_100g": 245,
+      "energy-kcal_unit": "kcal",
+      bogus_100g: 10,
+      bogus_unit: "furlongs", // unsupported unit → dropped
+    };
+    const r = await lookupOffProduct(B, { fetchImpl: fetchOf(200, d) });
+    if (r.status !== "found") throw new Error("expected found");
+    const by = Object.fromEntries(r.product.nutrients.map((n) => [n.code, n]));
+    expect(by.proteins).toBeUndefined();
+    expect(by.sodium).toBeUndefined(); // missing unit → no "g" guess
+    expect(by.bogus).toBeUndefined(); // unsupported unit
+    expect(by.sugars?.value).toBe(0); // real zero preserved
+    expect(by.fat?.value).toBe(8.3);
+  });
+});
+
 describe("barcode validation + provenance boundary", () => {
   it.each([
     ["3017620422003", true],
     ["5901234123457", true],
-    ["30176242", true],
+    ["30176249", true], // valid EAN-8
     ["3017620422", false],
     ["abc", false],
     ["", false],
     ["1", false],
-    ["30176204220034", true],
+    ["30176204220034", false], // 14 digits, bad check digit
   ])("isValidBarcode(%s) === %s", (code, ok) => {
     expect(isValidBarcode(code)).toBe(ok);
   });
