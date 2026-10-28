@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
 ## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
 
 - Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
