@@ -73,6 +73,8 @@ const NUTRIENT_ALIASES: Record<string, string> = {
   "total-fat": "fats",
   carbohydrate: "carbs",
   carbohydrates: "carbs",
+  proteins: "protein", // OFF normalizer key — aligned, not a duplicate vocabulary
+  "energy-kcal": "calories", // OFF key — kcal resolves to canonical calories
 };
 
 export function canonicalNutrientCode(code: string): string {
