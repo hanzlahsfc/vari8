@@ -67,8 +67,10 @@ import { accountLimitKey, consumeRateLimit, userLimitKey } from "./rate-limit";
  *       >=1 digit) — `minPasswordLength` covers length, the hook adds the
  *       digit rule.
  * - In production the process refuses to boot when the auth secret is absent
- *   or shorter than 32 characters, or when a canonical and legacy name (say
- *   `BETTER_AUTH_URL` and `AUTH_URL`) are set to different values
+ *   or shorter than 32 characters, when a canonical and legacy name (say
+ *   `BETTER_AUTH_URL` and `AUTH_URL`) are set to different values, or when
+ *   the resolved auth origin is `http:` (BOOT-CHECKS: insecure reset links
+ *   and plaintext session cookies)
  *   (`assertAuthSecretConfigured`, invoked by
  *   `instrumentation.ts` and at module load; `instrumentation.ts` exits the
  *   process non-zero on the refusal so a dead deployment cannot sit serving
@@ -139,6 +141,25 @@ export function assertAuthSecretConfigured(): void {
     if (a && b && a !== b) {
       throw new Error(
         `Refusing to start: ${primary} and ${legacy} are both set to different values. Only the BETTER_AUTH_* names are supported: unset ${legacy} or make the two equal.`,
+      );
+    }
+  }
+  // BOOT-CHECKS (READINESS B7): an http: auth origin would mint insecure
+  // reset links and let the session cookie ride plaintext. The BETTER_AUTH_*
+  // name wins the same `??` resolution the client uses; the configured
+  // value is never printed — the variable name and scheme are enough.
+  const origin = process.env.BETTER_AUTH_URL ?? process.env.AUTH_URL;
+  if (origin) {
+    let protocol: string | null = null;
+    try {
+      protocol = new URL(origin).protocol;
+    } catch {
+      protocol = null;
+    }
+    if (protocol === "http:") {
+      const name = process.env.BETTER_AUTH_URL ? "BETTER_AUTH_URL" : "AUTH_URL";
+      throw new Error(
+        `Refusing to start: ${name} is an http: origin; production auth requires an https: base URL.`,
       );
     }
   }

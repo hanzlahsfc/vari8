@@ -10,6 +10,8 @@ import {
   useMemo,
   useState,
 } from "react";
+import { ThemeScope } from "@/components/vari8/theme";
+import { vari8Theme } from "./vari8-theme";
 
 export type AppearanceMode = "light" | "dark";
 export type AppearanceFont =
@@ -158,13 +160,14 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppearanceContext.Provider value={value}>
-      <div
+      <ThemeScope
+        mode={appearance.mode}
+        accent={appearance.accent}
         className="appearance-root eg-root"
-        data-mode={appearance.mode}
         style={themeVariables(appearance)}
       >
         {children}
-      </div>
+      </ThemeScope>
     </AppearanceContext.Provider>
   );
 }
@@ -217,6 +220,25 @@ function mixHex(color: string, destination: string, amount: number): string {
   return `#${channels.join("")}`;
 }
 
+function colorAtLuminance(color: string, target: number): string {
+  const source = normalizeHex(color) ?? defaultAppearance.accent;
+  const sourceLuminance = relativeLuminance(source);
+  const destination = target > sourceLuminance ? "#FFFFFF" : "#000000";
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 24; step += 1) {
+    const middle = (low + high) / 2;
+    const candidate = mixHex(source, destination, middle);
+    const reachedTarget =
+      target > sourceLuminance
+        ? relativeLuminance(candidate) >= target
+        : relativeLuminance(candidate) <= target;
+    if (reachedTarget) high = middle;
+    else low = middle;
+  }
+  return mixHex(source, destination, high);
+}
+
 function contrastSafe(
   color: string,
   backgrounds: string[],
@@ -254,20 +276,34 @@ export function themeVariables(appearance: Appearance): CSSProperties {
       : ["#F4F4F4", "#FFFFFF", "#E8E8E8", "#E9E9E9"];
   const accentInk = contrastSafe(accent, backgrounds, 4.5);
   const accentBoundary = contrastSafe(accent, backgrounds, 3);
+  const effectiveAccent = contrastSafe(accent, backgrounds, 3);
+  const actionText = textOn(effectiveAccent);
   const ring = contrastSafe(accent, backgrounds, 3);
   const chartLine = contrastSafe(accent, backgrounds, 3.05);
+  const macroLuminanceTargets =
+    appearance.mode === "dark" ? [0.14, 0.36, 0.82] : [0.02, 0.1, 0.26];
+  const macroColors = macroLuminanceTargets.map((target) =>
+    colorAtLuminance(effectiveAccent, target),
+  );
 
   return {
-    "--accent": accent,
+    ...vari8Theme({ mode: appearance.mode, accent: appearance.accent }),
+    "--accent": effectiveAccent,
+    "--accent-raw": accent,
     "--accent-ink": accentInk,
-    "--accent-contrast": textOn(accent),
+    "--accent-contrast": actionText,
     "--accent-soft": `color-mix(in srgb, ${accent} 14%, var(--canvas))`,
     "--accent-border": accentBoundary,
+    "--accent-action": effectiveAccent,
+    "--accent-action-text": actionText,
     "--accent-ring": ring,
     "--font-ui": font.family,
     "--font-tracking": appearance.font === "sans" ? "-0.012em" : "0em",
     "--chart-line": chartLine,
-    "--chart-fill": accent,
+    "--chart-fill": chartLine,
+    "--nutrition-macro-protein": macroColors[0],
+    "--nutrition-macro-carbs": macroColors[1],
+    "--nutrition-macro-fat": macroColors[2],
     "--ring": ring,
   } as CSSProperties;
 }

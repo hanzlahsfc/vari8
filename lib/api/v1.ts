@@ -1,9 +1,12 @@
+import { randomUUID } from "node:crypto";
+
 import { ZodError, type ZodType } from "zod";
 
 import { getViewerFromHeaders } from "@/lib/auth/viewer";
 import { capabilityScope, memberRoleToRole } from "@/lib/auth/roles";
 import type { Capability, CapabilityScope, Role } from "@/lib/auth/roles";
 import { prisma } from "@/lib/db";
+import { logError, TRUSTED_ID_SHAPE, trustedId } from "@/lib/log";
 
 /**
  * PR-05 /api/v1 route helper (D6): every operation goes through this boundary.
@@ -93,6 +96,46 @@ async function resolveWorkspaceContext(
   return { workspaceId, memberId: member.id, role, scope };
 }
 
+/**
+ * LOGGING (#168): an inbound `x-request-id` is honored only when it matches a
+ * safe token shape — a caller-controlled id must not smuggle newlines or markup
+ * into a log line; anything else mints a fresh UUID. The id is echoed back on
+ * the 500 response so a client can report it against the log line.
+ */
+export function requestIdFor(request: Request): string {
+  const inbound = request.headers.get("x-request-id");
+  return inbound && TRUSTED_ID_SHAPE.test(inbound) ? inbound : randomUUID();
+}
+
+/**
+ * The one structured failure reporter for /api/v1 — used by the
+ * defineApiV1Route funnel for every unhandled handler error and by routes
+ * that cannot go through the wrapper (`media/object` redeems an HMAC
+ * signature instead of a session). One redacted line on stdout, then the
+ * safe `{ error: { code: "internal" } }` body with the correlation id the
+ * line used — logged and returned ids are identical by construction.
+ */
+export function reportV1Failure(
+  request: Request,
+  requestId: string,
+  error: unknown,
+): Response {
+  // Re-validate: callers pass requestIdFor's output today, but the trusted
+  // marker must never carry an unvalidated string into a log line.
+  const id = TRUSTED_ID_SHAPE.test(requestId) ? requestId : randomUUID();
+  logError("api_v1_request_failed", {
+    requestId: trustedId(id),
+    method: request.method,
+    route: new URL(request.url).pathname,
+    status: 500,
+    error,
+  });
+  return Response.json(
+    { error: { code: "internal" } },
+    { status: 500, headers: { "x-request-id": id } },
+  );
+}
+
 export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
   def: V1RouteDefinition<P, Q, R>,
 ) {
@@ -100,6 +143,7 @@ export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
     request: Request,
     routeCtx: { params: Promise<unknown> },
   ): Promise<Response> {
+    const requestId = requestIdFor(request);
     try {
       const viewer = await authenticate(request);
       const params = def.params.parse(await routeCtx.params);
@@ -142,7 +186,13 @@ export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(
           { status: 400 },
         );
       }
-      return Response.json({ error: { code: "internal" } }, { status: 500 });
+      // One error line per unhandled 500 — request id, route and status,
+      // redacted error. Typed ApiError/ZodError responses are expected
+      // traffic and never reach the log.
+      // One error line per unhandled 500 — request id, route and status,
+      // redacted error. Typed ApiError/ZodError responses are expected
+      // traffic and never reach the log.
+      return reportV1Failure(request, requestId, error);
     }
   };
 }

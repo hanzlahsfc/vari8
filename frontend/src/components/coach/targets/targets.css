@@ -1,0 +1,165 @@
+.coach-root .at-editor {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.coach-root .at-intro {
+  margin: 0;
+  color: var(--cd-muted);
+}
+.coach-root .at-panels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.coach-root .at-panel {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.coach-root .at-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.coach-root .at-panel-head h3 {
+  margin: 0;
+}
+.coach-root .at-panel-head p {
+  margin: 4px 0 0;
+  color: var(--cd-muted);
+}
+.coach-root .at-current {
+  display: grid;
+  gap: 3px;
+  text-align: right;
+  min-width: 0;
+}
+.coach-root .at-current small {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.75rem);
+}
+.coach-root .at-applies {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.875rem);
+}
+.coach-root .at-error {
+  margin: 0;
+  color: var(--v8-danger-text);
+  font-size: 0.75rem;
+}
+.coach-root .at-confirm-value {
+  margin: 0;
+  font-weight: var(--v8-font-weight-card-title, 550);
+}
+.coach-root .at-history {
+  border-top: 1px solid var(--cd-line);
+  padding-top: 12px;
+}
+.coach-root .at-history summary {
+  cursor: pointer;
+  color: var(--cd-muted);
+}
+.coach-root .at-history ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.coach-root .at-history li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.coach-root .at-summary {
+  border: 1px solid var(--cd-line);
+  border-radius: var(--v8-radius-card, 12px);
+  background: var(--cd-raised, transparent);
+  padding: var(--v8-card-padding-sm, 16px);
+  margin: 0 0 16px;
+  min-width: 0;
+}
+.coach-root .at-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.coach-root .at-summary-head h3 {
+  margin: 0;
+}
+.coach-root .at-summary-head small {
+  color: var(--cd-muted);
+}
+.coach-root .at-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+}
+.coach-root .at-summary-metric-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.coach-root .at-summary-metric-head small {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.75rem);
+}
+.coach-root .at-history li small {
+  color: var(--cd-muted);
+  white-space: nowrap;
+}
+.coach-root .at-summary-value {
+  margin: 0;
+  font-weight: var(--v8-font-weight-card-title, 550);
+}
+.coach-root .at-summary-value.is-empty,
+.coach-root .at-summary-value.is-stopped,
+.coach-root .at-summary-segments li.is-empty,
+.coach-root .at-summary-segments li.is-stopped {
+  color: var(--cd-muted);
+  font-weight: normal;
+}
+.coach-root .at-summary-segments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.coach-root .at-summary-segments li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.coach-root .at-summary-days {
+  color: var(--cd-muted);
+  white-space: nowrap;
+}
+
+.coach-root .cd-target-segments {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.coach-root .cd-target-segments li {
+  display: grid;
+  gap: 2px;
+}
+.coach-root .cd-target-segments .cd-segment-days {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.75rem);
+}
