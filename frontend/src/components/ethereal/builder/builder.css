@@ -1,6 +1,6 @@
 /* biome-ignore-all lint/style/noDescendingSpecificity: Builder selectors address distinct scoped controls and surfaces. */
 .eg-root .db-builder {
-  width: min(100%, 1360px);
+  width: min(100%, 1760px);
   margin: 0 auto;
   padding: 24px 0 40px;
   color: var(--text);
@@ -13,21 +13,8 @@
   gap: 24px;
   margin-bottom: 24px;
 }
-.db-name-label {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-bottom: 5px;
-}
-.db-heading input {
-  display: block;
+.db-heading .db-name-input {
   width: min(600px, 100%);
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: 520 clamp(24px, 3vw, 34px) / 1.2 var(--font-ui);
-  letter-spacing: -0.035em;
 }
 .db-heading p {
   margin: 8px 0 0;
@@ -46,42 +33,6 @@
   flex-shrink: 0;
   color: var(--accent-ink);
 }
-.db-builder button:not(:where(.dw-adaptive button)),
-.db-detail-dialog button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 13px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--eg-wash);
-  color: var(--text);
-  font: 500 12px var(--font-ui);
-  cursor: pointer;
-  transition:
-    background 0.16s,
-    color 0.16s;
-}
-.db-builder button:not(:where(.dw-adaptive button)):hover,
-.db-detail-dialog button:hover {
-  background: color-mix(in srgb, var(--text) 9%, var(--surface));
-}
-.db-builder button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-.db-builder .db-primary,
-.db-detail-dialog .db-primary {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  border-color: transparent;
-  box-shadow: inset 0 1px rgb(255 255 255 / 18%);
-}
-.db-builder .db-primary:hover {
-  background: color-mix(in srgb, var(--accent) 86%, var(--text));
-}
 .db-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -98,10 +49,6 @@
   display: flex;
   gap: 6px;
   margin-right: auto;
-}
-.db-client-switch[aria-pressed="true"] {
-  color: var(--accent-ink);
-  border-color: var(--accent-border);
 }
 .db-canvas-meta {
   display: flex;
@@ -129,17 +76,13 @@
   justify-content: center;
   text-align: center;
   border: 1px dashed color-mix(in srgb, var(--text) 18%, transparent);
-  border-radius: 18px;
-  background: linear-gradient(
-    155deg,
-    color-mix(in srgb, var(--text) 3%, transparent),
-    transparent 65%
-  );
+  border-radius: var(--v8-radius-card, 16px);
+  background: var(--surface);
 }
 .db-empty-symbol {
   height: 58px;
   width: 58px;
-  border-radius: 15px;
+  border-radius: var(--v8-radius-control, 12px);
   display: grid;
   place-items: center;
   background: var(--eg-wash);
@@ -149,36 +92,24 @@
 }
 .db-empty h2 {
   margin: 0;
-  font-size: 24px;
-  font-weight: 500;
-  letter-spacing: -0.035em;
+  font-size: 20px;
+  font-weight: 550;
 }
 .db-empty p {
   margin: 12px 20px 24px;
   color: var(--muted);
-  font-size: 13px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.47;
 }
 .db-empty .db-example {
-  border: 0;
-  background: transparent;
-  color: var(--muted);
   margin-top: 10px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 .db-card {
   position: absolute;
-  padding: 14px 16px;
+  padding: 16px;
   border: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
-  border-radius: 14px;
-  background:
-    linear-gradient(
-      160deg,
-      color-mix(in srgb, var(--text) 3%, transparent),
-      transparent 55%
-    ),
-    color-mix(in srgb, var(--surface) 97%, transparent);
+  border-radius: var(--v8-radius-card, 16px);
+  background: var(--surface);
   box-shadow: inset 0 1px color-mix(in srgb, var(--text) 5%, transparent);
   font-variant-numeric: tabular-nums;
   transition: border-color 0.16s;
@@ -204,9 +135,9 @@
 }
 .db-card-header h2 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 550;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -220,12 +151,8 @@
   margin-right: -8px;
 }
 .db-card-tools .db-move {
-  min-height: 32px;
-  width: 32px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
+  min-height: 44px;
+  width: 44px;
   touch-action: none;
   user-select: none;
   cursor: grab;
@@ -301,31 +228,15 @@
 .db-card:has(.db-card-menu[open]) {
   z-index: 25;
 }
-.db-card-menu > div > button,
-.db-dashboard-menu > div > button {
-  display: flex;
-  justify-content: flex-start;
+.db-card-menu > div .db-menu-action,
+.db-dashboard-menu > div .db-menu-action {
   width: 100%;
-  border: 0;
-  background: transparent;
   text-align: left;
+  justify-content: flex-start;
 }
-.db-card-menu label {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
-  font-size: 12px;
-}
-.db-card-menu select {
+.db-card-menu .v8-field {
   flex: 1;
   min-width: 0;
-  padding: 7px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface-subtle);
-  color: var(--text);
-  font: inherit;
 }
 .db-step-buttons {
   display: grid;
@@ -333,12 +244,8 @@
   gap: 3px;
   padding-block: 6px;
 }
-.db-step-buttons button {
-  padding-inline: 3px;
-}
-.db-card-menu .db-remove {
-  border-top: 1px solid var(--border);
-  border-radius: 0;
+.db-step-action {
+  min-height: 44px;
 }
 .db-proposed {
   position: absolute;
@@ -386,21 +293,11 @@
   align-items: end;
   gap: 8px;
 }
-.db-size-fields label {
-  display: grid;
-  gap: 4px;
-  color: var(--muted);
-  font-size: 11px;
-}
-.db-size-fields input {
+.db-size-fields .v8-field {
   width: 82px;
-  min-height: 34px;
-  padding: 5px 8px;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: var(--surface-subtle);
-  color: var(--text);
-  font: inherit;
+}
+.db-size-fields .db-size-input {
+  width: 100%;
   font-variant-numeric: tabular-nums;
 }
 .db-footnote {
@@ -418,9 +315,6 @@
   min-height: 24px;
   overflow-wrap: anywhere;
 }
-.db-toast button {
-  min-height: 30px;
-}
 .db-sr {
   position: absolute;
   width: 1px;
@@ -437,7 +331,7 @@
   overflow: auto;
   padding: 24px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: var(--v8-radius-overlay, 16px);
   background: var(--surface);
   color: var(--text);
   font: 14px / 1.6 var(--font-ui);
@@ -465,24 +359,13 @@
   gap: 12px;
   margin-top: 24px;
 }
-.db-detail-dialog :where(select, input) {
-  font: inherit;
-  color: var(--text);
-  background: var(--surface-subtle);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 10px;
-}
 .db-builder ::selection {
   background: var(--accent);
   color: var(--accent-contrast);
 }
-.db-builder input {
-  caret-color: var(--accent-ink);
-}
 @media (min-width: 1100px) {
   .eg-content:has(.db-builder) {
-    width: min(calc(100% - 64px), 1360px);
+    width: min(calc(100% - 64px), 1760px);
     padding: 36px 0 24px;
   }
 }
@@ -495,9 +378,8 @@
   .db-heading > div {
     width: 100%;
   }
-  .db-heading input {
-    font-size: 26px;
-    width: 100%;
+  .db-heading .db-name-input {
+    width: min(600px, 100%);
   }
   .db-toolbar {
     gap: 8px;
@@ -507,13 +389,6 @@
     margin-right: 0;
     flex: 1;
   }
-  .db-toolbar > button {
-    min-height: 44px;
-  }
-  .db-card {
-    padding: 14px;
-  }
-  .db-card-tools .db-move,
   .db-card-menu summary {
     width: 44px;
     height: 44px;
@@ -581,22 +456,14 @@
   .eg-island:has(+ main .db-builder) .eg-segment {
     flex: 1;
   }
-  .db-builder .db-client-switch {
-    padding-inline: 10px;
-    font-size: 11px;
-  }
   .db-canvas-meta span {
     max-width: 60%;
   }
   .db-empty {
     height: 400px;
   }
-  .db-card-header h2 {
-    font-size: 12px;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .db-builder button,
   .db-builder .db-canvas-wrap,
   .db-builder .db-card {
     transition: none;

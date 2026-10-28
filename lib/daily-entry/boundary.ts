@@ -1,11 +1,16 @@
 import type { PrismaClient } from "@prisma/client";
 
 import { prisma } from "../db";
-import { type SessionLike } from "../auth/guard";
+import { AccessDeniedError, type SessionLike } from "../auth/guard";
 import { mapError as sharedMapError } from "../boundary";
 import type { ConsentPolicyRegistry } from "../consent";
+import { ApiError, type ApiViewer, type ApiWorkspaceContext } from "../api/v1";
 import { DailyEntryError, isDailyEntryEnabled } from "./gate";
-import { saveDailyEntry } from "./service";
+import {
+  dailyEntryConsentRegistry,
+  readDailyEntryNumericSeries,
+  saveDailyEntry,
+} from "./service";
 
 /**
  * P-021 — DailyEntry boundary: the single app-facing save surface.
@@ -129,5 +134,44 @@ export async function saveDailyEntryFromAction(
     return { ok: true, value: { status: result.status } };
   } catch (error) {
     return { ok: false, message: mapError(error) };
+  }
+}
+
+/**
+ * PR-SV2 — /api/v1 boundary for the numeric series read. The route helper
+ * has already authenticated the viewer, validated params/query and granted
+ * the `clientData.read` scope; this boundary forwards the typed context and
+ * maps domain outcomes onto the shared `{ error: { code } }` contract —
+ * scope and disclosure denials stay indistinguishable 403s.
+ */
+export async function readDailyEntryNumericSeriesFromApi(
+  viewer: ApiViewer,
+  workspace: ApiWorkspaceContext,
+  input: {
+    clientProfileId: unknown;
+    parameterId: unknown;
+    from: unknown;
+    to: unknown;
+  },
+  deps: { db?: PrismaClient; registry?: ConsentPolicyRegistry } = {},
+) {
+  try {
+    return await readDailyEntryNumericSeries(viewer, workspace, input, {
+      db: deps.db ?? prisma,
+      // Same resolution as the app callers: the dev policy while the D19
+      // consent gates stay parked, unconfigured (fail closed) if they ever
+      // activate without a real policy.
+      registry: deps.registry ?? dailyEntryConsentRegistry(true),
+    });
+  } catch (error) {
+    if (error instanceof AccessDeniedError)
+      throw new ApiError(403, "forbidden");
+    if (error instanceof DailyEntryError) {
+      if (error.code === "invalid_input")
+        throw new ApiError(400, "invalid_input");
+      if (error.code === "not_available" || error.code === "ineligible")
+        throw new ApiError(404, "not_found");
+    }
+    throw error;
   }
 }

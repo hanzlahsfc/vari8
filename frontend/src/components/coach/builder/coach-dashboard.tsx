@@ -94,6 +94,7 @@ export function recordsForCoach(
         : [];
     });
     r.activeNutritionOption = "TD";
+    r.stepsTarget = undefined;
     r.macroIntake = [];
     r.waist = [];
     r.recovery = [];

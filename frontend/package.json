@@ -14,7 +14,12 @@
     "test": "node scripts/test-frontend.mjs",
     "check": "npm run test && npm run agent-context:check && npm run typecheck && npm run lint && npm run build",
     "typecheck": "next typegen && tsc --noEmit",
-    "ui:add": "shadcn add"
+    "ui:add": "shadcn add",
+    "preview:up": "node scripts/local-preview.mjs up",
+    "preview:status": "node scripts/local-preview.mjs status",
+    "preview:down": "node scripts/local-preview.mjs down",
+    "preview:test": "node --test scripts/local-preview.test.mjs",
+    "ui:check": "node scripts/ui-system-checks.mjs --self-test && node scripts/ui-system-checks.mjs"
   },
   "engines": {
     "node": ">=24.0.0"

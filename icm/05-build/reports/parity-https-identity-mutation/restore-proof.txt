@@ -1,0 +1,11 @@
+Post-mutation restore verification
+
+Command: npx -y -p node@24.22.1 sh -c 'npx vitest run tests/unit/parity-https.test.ts'
+Exit: 0
+Result: 1 file passed; 17/17 tests passed.
+
+Restored SHA-256:
+285fcd92fd28e411c8b1871d0133db1c40d7a2c2612c24477201288ea5cf0206  tools/parity/local-https.mjs
+2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a  tools/parity/capture.mjs
+b38001487495f50366bdababa1451745deb5bbaf80341b05a074c76f450d2b24  tests/unit/parity-https.test.ts
+ce42737a606e4e24444ed07c8df9fa1c80ac99d2add58b80ee30c741b7f63bed  tools/parity/run.mjs

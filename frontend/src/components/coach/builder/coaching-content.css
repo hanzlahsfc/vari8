@@ -384,6 +384,74 @@
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+.coach-root .cb-cc-section-heading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  min-width: 0;
+  height: 100%;
+}
+.coach-root .cb-cc-section-heading h2,
+.coach-root .cb-cc-announcement h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(17px, 4cqw, 22px);
+  font-weight: 560;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.coach-root .cb-cc-section-heading p,
+.coach-root .cb-cc-announcement p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.coach-root .cb-cc-section-heading > span {
+  width: 100%;
+  height: 1px;
+  background: var(--border);
+}
+.coach-root .cb-cc-announcement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+  min-width: 0;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.coach-root .cb-cc-announcement[data-tone="accent"] {
+  border-color: color-mix(in srgb, var(--accent-border) 38%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-subtle));
+}
+.coach-root .cb-cc-announcement[data-tone="important"] {
+  border-color: color-mix(in srgb, #e2a04a 45%, var(--border));
+  background: color-mix(in srgb, #e2a04a 8%, var(--surface-subtle));
+}
+.coach-root .cb-cc-announcement > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-top: 2px;
+  color: var(--accent-ink);
+  font-size: 13px;
+  font-weight: 550;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.coach-root .cb-cc-announcement > a:focus-visible {
+  outline: 2px solid var(--accent-ring);
+  outline-offset: 3px;
+}
 .coach-root .cb-cc-focus-copy.is-bounded {
   display: -webkit-box;
   overflow: hidden;
@@ -668,7 +736,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--accent);
+  background: var(--chart-line, var(--accent));
 }
 .coach-root .cb-cc-phase-dates {
   display: flex;
@@ -779,8 +847,8 @@
 }
 .coach-root .cb-cc-habit-toggle.is-done::before,
 .coach-root .cb-cc-task-read-state.is-done::before {
-  border-color: var(--accent);
-  background: var(--accent);
+  border-color: var(--accent-action, var(--accent));
+  background: var(--accent-action, var(--accent));
 }
 .coach-root .cb-cc-habit-toggle.is-done,
 .coach-root .cb-cc-task-read-state.is-done {
@@ -796,7 +864,7 @@
 }
 .coach-root .cb-cc-habit-toggle.is-skipped::before,
 .coach-root .cb-cc-task-read-state.is-skipped::before {
-  border-color: var(--accent);
+  border-color: var(--accent-border, var(--accent));
 }
 .coach-root .cb-cc-habit-toggle.is-skipped,
 .coach-root .cb-cc-task-read-state.is-skipped {
@@ -815,12 +883,12 @@
 }
 .coach-root .cb-cc-habit-toggle.is-done::before,
 .coach-root .cb-cc-task-read-state.is-done::before {
-  border-color: var(--border, var(--accent));
-  background: var(--accent);
+  border-color: var(--accent-action, var(--accent));
+  background: var(--accent-action, var(--accent));
 }
 .coach-root .cb-cc-habit-toggle.is-skipped::before,
 .coach-root .cb-cc-task-read-state.is-skipped::before {
-  border-color: var(--accent);
+  border-color: var(--accent-border, var(--accent));
   background: var(--surface, transparent);
 }
 .coach-root .cb-cc-task-read-state {

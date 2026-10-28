@@ -3687,6 +3687,109 @@
    "branch": "beta/pr-31-pwa-mobile-merge"
   },
   {
+   "key": "PR-SUPP:build",
+   "slug": "pr-supp-plan",
+   "kind": "build",
+   "pr": "PR-SUPP",
+   "title": "PR-SUPP build: Supplement plan per client",
+   "assignee": "yamato",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-M1:merge"
+   ],
+   "est_min": 60,
+   "max_runtime": "90m",
+   "skills": [
+    "devin",
+    "verification-before-completion",
+    "show-me-your-work"
+   ],
+   "external": false,
+   "start": "07:55",
+   "done": "19 08:55",
+   "body_file": "icm/05-build/cards/pr-supp-plan.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-supp-plan",
+   "branch": "beta/pr-supp-plan"
+  },
+  {
+   "key": "PR-SUPP:verify",
+   "slug": "pr-supp-plan-verify",
+   "kind": "verify",
+   "pr": "PR-SUPP",
+   "title": "PR-SUPP verify",
+   "assignee": "neji",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SUPP:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "behavioral-verification",
+    "webapp-testing",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:55",
+   "done": "19 09:15",
+   "body_file": "icm/05-build/cards/pr-supp-plan-verify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-supp-plan-verify",
+   "branch": "beta/pr-supp-plan-verify"
+  },
+  {
+   "key": "PR-SUPP:secverify",
+   "slug": "pr-supp-plan-secverify",
+   "kind": "verify",
+   "pr": "PR-SUPP",
+   "title": "PR-SUPP security verify",
+   "assignee": "shinobu",
+   "model": "claude-haiku-5-5",
+   "provider": "anthropic",
+   "parents": [
+    "PR-SUPP:build"
+   ],
+   "est_min": 20,
+   "max_runtime": "45m",
+   "skills": [
+    "security-diff-scan",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "08:55",
+   "done": "19 09:15",
+   "body_file": "icm/05-build/cards/pr-supp-plan-secverify.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-supp-plan-secverify",
+   "branch": "beta/pr-supp-plan-secverify"
+  },
+  {
+   "key": "PR-SUPP:merge",
+   "slug": "pr-supp-plan-merge",
+   "kind": "merge",
+   "pr": "PR-SUPP",
+   "title": "PR-SUPP merge",
+   "assignee": "kakashi",
+   "model": "deepseek-v4.1-flash",
+   "provider": "opencode-go",
+   "parents": [
+    "PR-SUPP:verify",
+    "PR-SUPP:secverify"
+   ],
+   "est_min": 10,
+   "max_runtime": "30m",
+   "skills": [
+    "resolving-merge-conflicts",
+    "verification-before-completion"
+   ],
+   "external": false,
+   "start": "09:30",
+   "done": "19 09:40",
+   "body_file": "icm/05-build/cards/pr-supp-plan-merge.md",
+   "worktree": "/home/nexuslink/vari8-worktrees/pr-supp-plan-merge",
+   "branch": "beta/pr-supp-plan-merge"
+  },
+  {
    "key": "GATE-PRR:gate",
    "slug": "gate-prr-readiness",
    "kind": "gate",
@@ -3740,6 +3843,7 @@
     "PR-X2:merge",
     "PR-D1:merge",
     "PR-31:merge",
+    "PR-SUPP:merge",
     "AUD-PRR-BASELINE:decision"
    ],
    "est_min": 60,

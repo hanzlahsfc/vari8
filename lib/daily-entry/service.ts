@@ -582,7 +582,7 @@ function valueRow(
   }
 }
 
-type StoredValue = {
+export type StoredValue = {
   parameterId: string;
   kind: string;
   valueNumeric: unknown;
@@ -664,14 +664,25 @@ export type StaffDailyEntryListResult =
 
 /** Renders a revision's stored values through an immutable version snapshot.
  * Parameters outside the snapshot — or not GENERAL_HEALTH — are dropped;
- * OPTION values resolve to their snapshot labels. Display strings only. */
-function renderRevisionDisplayRows(
+ * OPTION values resolve to their snapshot labels. Display strings only.
+ * Rows render in the snapshot's item order regardless of stored order
+ * (PR-SV5 stable ordering; exported for the ordering contract test). */
+export function renderRevisionDisplayRows(
   values: readonly StoredValue[],
   snapshot: readonly SnapshotParam[],
   def: VersionDefinition,
 ): DailyEntryHistoryRow[] {
   const paramById = new Map(snapshot.map((p) => [p.parameterId, p]));
+  // Stable ordering (PR-SV5): DB row order is arbitrary — render in the
+  // immutable template version's item order.
+  const orderOf = new Map(snapshot.map((p, i) => [p.parameterId, i]));
   return (values ?? [])
+    .slice()
+    .sort(
+      (a, b) =>
+        (orderOf.get(a.parameterId) ?? Number.MAX_SAFE_INTEGER) -
+        (orderOf.get(b.parameterId) ?? Number.MAX_SAFE_INTEGER),
+    )
     .map((v) => {
       const p = paramById.get(v.parameterId);
       if (!p || p.dataClassification !== "GENERAL_HEALTH") return null;
@@ -973,7 +984,21 @@ export async function readStaffDailyEntryDetail(
  * the dailyTracking authorization context for the audit. Used by the
  * public detail service and by P-025-D6's Check-In tracker context.
  */
-export async function readStaffDailyEntryDetailTx(
+export type StaffDailyEntryLoad = {
+  /** Internal row id — audit resource target only, never leaves the tx
+   *  boundary in the public detail shape. */
+  entryId: string;
+  detail: StaffDailyEntryDetail;
+};
+
+/**
+ * Audit-free detail loader shared by `readStaffDailyEntryDetailTx`
+ * (which writes its own `READ daily_entry` audit) and the Check-In
+ * review packet embedded in the submission detail read (which carries
+ * one `checkin_submission` audit for the whole view instead — see
+ * `readCheckInSubmissionDetail`).
+ */
+export async function loadStaffDailyEntryDetailTx(
   tx: Prisma.TransactionClient,
   input: {
     workspaceId: string;
@@ -981,7 +1006,7 @@ export async function readStaffDailyEntryDetailTx(
     entryDate: string;
     ctx: Awaited<ReturnType<typeof authorize>>;
   },
-): Promise<StaffDailyEntryDetail> {
+): Promise<StaffDailyEntryLoad> {
   // Entry + coherent current pointer + count.
   const entry = await tx.dailyEntry.findUnique({
     where: {
@@ -1047,23 +1072,38 @@ export async function readStaffDailyEntryDetailTx(
     version.definition as VersionDefinition,
   );
 
+  return {
+    entryId: entry.id,
+    detail: {
+      entryDate: input.entryDate,
+      revisionSeq: revision.seq,
+      revisionCount,
+      declaredAt: revision.declaredAt.toISOString(),
+      values,
+    },
+  };
+}
+
+export async function readStaffDailyEntryDetailTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    ctx: Awaited<ReturnType<typeof authorize>>;
+  },
+): Promise<StaffDailyEntryDetail> {
+  const { entryId, detail } = await loadStaffDailyEntryDetailTx(tx, input);
   // Structural READ audit — last, inside the same transaction; a failed
   // write rolls the detail read's audit (and result) back.
   await writeAuditEvent(tx, input.ctx, {
     action: "READ",
     resourceType: "daily_entry",
-    resourceId: entry.id,
+    resourceId: entryId,
     subjectClientProfileId: input.clientProfileId,
     meta: { changed: false },
   });
-
-  return {
-    entryDate: input.entryDate,
-    revisionSeq: revision.seq,
-    revisionCount,
-    declaredAt: revision.declaredAt.toISOString(),
-    values,
-  };
+  return detail;
 }
 
 // ── Read surface (form + history payload for the client's own page) ───────
@@ -1400,5 +1440,228 @@ export async function loadDailyEntrySurface(
     entryDate,
     sections,
     history,
+  };
+}
+
+// ── PR-SV2 numeric series (Week/Trends reads; api/v1 clientData.read) ──────
+
+/** Maximum inclusive span (calendar days) a single series request may cover.
+ * Bounds the entries scan so one request cannot page through unbounded
+ * history; comfortably covers every canvas span (Week 7, Trends up to 180). */
+export const SERIES_MAX_SPAN_DAYS = 372;
+
+/** Kinds whose stored values are single numbers the canvas charts. */
+const SERIES_NUMERIC_KINDS = new Set(["MEASUREMENT", "RATING"]);
+
+export type DailyEntryNumericSeriesPoint = {
+  /** Declared client calendar date (`YYYY-MM-DD`). */
+  date: string;
+  /** Latest-revision numeric value; a recorded 0 is a value, not missing. */
+  value: number;
+};
+
+export type DailyEntryNumericSeriesResult =
+  | {
+      state: "ready";
+      parameter: {
+        parameterId: string;
+        key: string;
+        label: string;
+        unit: string | null;
+        kind: string;
+      };
+      /** Inclusive declared-date bounds (echoed, normalized). */
+      from: string;
+      to: string;
+      /** Ascending by declared date; only dates whose current revision
+       * holds a numeric value for the parameter appear. */
+      points: DailyEntryNumericSeriesPoint[];
+    }
+  | { state: "consent_missing" };
+
+/** Real `YYYY-MM-DD` calendar date without the write path's future bound:
+ * a read range may end in the future (the Week view shows the whole week,
+ * with unrecorded days simply absent from the series). */
+function parseSeriesDate(raw: unknown): string {
+  if (typeof raw !== "string" || !DATE_RE.test(raw))
+    throw new DailyEntryError("invalid_input");
+  const [y, m, d] = raw.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d ||
+    raw < "1970-01-01"
+  )
+    throw new DailyEntryError("invalid_input");
+  return raw;
+}
+
+/** Strict declared-date range: both ends real `YYYY-MM-DD` dates,
+ * `from <= to`, and the inclusive span within SERIES_MAX_SPAN_DAYS. */
+export function parseDailyEntrySeriesRange(
+  rawFrom: unknown,
+  rawTo: unknown,
+): { from: string; to: string } {
+  const from = parseSeriesDate(rawFrom);
+  const to = parseSeriesDate(rawTo);
+  if (from > to) throw new DailyEntryError("invalid_input");
+  const spanDays =
+    (new Date(`${to}T00:00:00Z`).getTime() -
+      new Date(`${from}T00:00:00Z`).getTime()) /
+      86_400_000 +
+    1;
+  if (spanDays > SERIES_MAX_SPAN_DAYS)
+    throw new DailyEntryError("invalid_input");
+  return { from, to };
+}
+
+function seriesPointValue(v: {
+  kind: string;
+  valueNumeric: unknown;
+  valueRating: number | null;
+}): number | null {
+  if (v.kind === "MEASUREMENT")
+    return v.valueNumeric === null ? null : Number(v.valueNumeric);
+  if (v.kind === "RATING") return v.valueRating === null ? null : v.valueRating;
+  return null;
+}
+
+/**
+ * Typed per-parameter numeric series for the tracker Week and Trends views.
+ * Authorization is resolved by the /api/v1 route (`clientData.read`); this
+ * service enforces the granted scope: `own` only ever reads the caller's
+ * own profile, `workspace` any client of the workspace. Profile and
+ * parameter must both belong to the workspace — foreign or missing ids are
+ * non-disclosing denials. The parameter must carry a numeric kind and the
+ * GENERAL_HEALTH classification (same disclosure rule as the detail read).
+ * Points come from each entry's CURRENT revision only (#79); dates without
+ * a numeric value stay missing, never zero (D29). Archived clients keep
+ * their history: archive removes the roster row, not the records (D27).
+ */
+export async function readDailyEntryNumericSeries(
+  viewer: { userId: string },
+  workspace: { workspaceId: string; scope: "workspace" | "own" },
+  input: {
+    clientProfileId: unknown;
+    parameterId: unknown;
+    from: unknown;
+    to: unknown;
+  },
+  deps: DailyEntryDeps = {},
+): Promise<DailyEntryNumericSeriesResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  if (
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128 ||
+    typeof input.parameterId !== "string" ||
+    input.parameterId.length === 0 ||
+    input.parameterId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+  const range = parseDailyEntrySeriesRange(input.from, input.to);
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: workspace.workspaceId },
+    select: { id: true, userId: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+  if (workspace.scope === "own" && profile.userId !== viewer.userId)
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const parameter = await db.parameterDefinition.findFirst({
+    where: { id: input.parameterId, workspaceId: workspace.workspaceId },
+    select: {
+      id: true,
+      key: true,
+      label: true,
+      unit: true,
+      kind: true,
+      dataClassification: true,
+    },
+  });
+  if (
+    !parameter ||
+    !SERIES_NUMERIC_KINDS.has(parameter.kind) ||
+    parameter.dataClassification !== "GENERAL_HEALTH"
+  )
+    throw new DailyEntryError("not_available");
+
+  try {
+    await checkRequiredConsent(db, input.clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { state: "consent_missing" };
+    throw error;
+  }
+
+  const entries = await db.dailyEntry.findMany({
+    where: {
+      workspaceId: workspace.workspaceId,
+      clientProfileId: input.clientProfileId,
+      entryDate: {
+        gte: new Date(`${range.from}T00:00:00Z`),
+        lte: new Date(`${range.to}T00:00:00Z`),
+      },
+    },
+    orderBy: { entryDate: "asc" },
+    select: { entryDate: true, currentRevisionId: true },
+  });
+  const revisionIds = entries
+    .map((e) => e.currentRevisionId)
+    .filter((id): id is string => id !== null);
+  // One bounded batched lookup for the pointed revisions' values, never a
+  // per-row query (same discipline as the staff list read).
+  const values = revisionIds.length
+    ? await db.dailyEntryRevisionValue.findMany({
+        where: {
+          revisionId: { in: revisionIds },
+          workspaceId: workspace.workspaceId,
+          parameterId: input.parameterId,
+        },
+        select: {
+          revisionId: true,
+          kind: true,
+          valueNumeric: true,
+          valueRating: true,
+        },
+      })
+    : [];
+  const valueByRevision = new Map(values.map((v) => [v.revisionId, v]));
+  const points: DailyEntryNumericSeriesPoint[] = [];
+  for (const entry of entries) {
+    if (entry.currentRevisionId === null) continue;
+    const value = seriesPointValue(
+      valueByRevision.get(entry.currentRevisionId) ?? {
+        kind: "",
+        valueNumeric: null,
+        valueRating: null,
+      },
+    );
+    if (value === null) continue;
+    points.push({
+      date: entry.entryDate.toISOString().slice(0, 10),
+      value,
+    });
+  }
+
+  return {
+    state: "ready",
+    parameter: {
+      parameterId: parameter.id,
+      key: parameter.key,
+      label: parameter.label,
+      unit: parameter.unit,
+      kind: parameter.kind,
+    },
+    from: range.from,
+    to: range.to,
+    points,
   };
 }
