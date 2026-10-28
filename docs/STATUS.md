@@ -1,3 +1,100 @@
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
+
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head

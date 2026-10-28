@@ -1,0 +1,25 @@
+SUPERSEDED: this historical patch is corrupt/truncated (independent review 409).
+Retained as failed evidence, not an applicable mutant. Prompt 410 regenerated
+start-identity-off.diff against baseline bd036ece2a758a1d725e511077b9e93c4c5cc2ad.
+
+diff --git a/tools/parity/local-https.mjs b/tools/parity/local-https.mjs
+--- a/tools/parity/local-https.mjs
++++ b/tools/parity/local-https.mjs
+@@ -148,9 +148,7 @@ const ownedIdentity = (ownership, entry) =>
+   validIdentity(entry) &&
+   String(entry.pgid) === String(ownership.pgid) &&
+   ownership.processes.some(
+-    (owned) => owned.pid === Number(entry.pid) && owned.start === entry.start,
+-  );
++    (owned) => owned.pid === Number(entry.pid));
+@@ -282,11 +280,7 @@ export async function stopOwnedProcessGroup(
+       } catch {}
+-      if (
+-        !owned(current) ||
+-        current.start !== candidate.start ||
+-        current.pid !== candidate.pid
+-      ) {
++      if (!owned(current) || current.pid !== candidate.pid) {
+         problems.push(
+           `${name} skipped for process ${candidate.pid}: ownership no longer verifies`,
+         );
