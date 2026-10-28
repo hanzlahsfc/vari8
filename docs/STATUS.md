@@ -1,3 +1,47 @@
+## 2026-10-28 - W2-N7 client own meal plan view route (audit row N7) on `w2/n7`
+
+- Gap: GET `.../clients/[clientProfileId]/meal-plans` declared `plan.read`
+  (client scope `own`) but always called `readStaffMealPlan`, which denies
+  anything but workspace/assigned scope, so a bound client could never read
+  its own published plan over the API.
+- Change (route.ts only): the GET handler now calls
+  `requireOwnClientProfile(viewer, workspace, params.clientProfileId)` before
+  any read. Scope `own` is bound to the caller's own client profile id and a
+  foreign `clientProfileId` is a plain 403; only then does the handler branch:
+  `own` serves `readOwnMealPlan` (`{current, upcoming}` with the published
+  payload and version metadata, no draft), every other scope keeps
+  `readStaffMealPlan` verbatim. PUT is untouched (staff `plan.write` only).
+- Tests: new `tests/integration/api-v1-mealplan-own.test.ts` (4 tests, real
+  PG + real sign-in): own read 200 with literal own-shape assertions and no
+  staff keys, the named test "denies a foreign clientProfileId with 403
+  before any read" (403 plus zero READ audit rows on the foreign subject),
+  staff keeps the staff shape, unauthenticated 401. Mutation-proved: with the
+  compare removed the foreign request returns 200 and the named test fails.
+  Regression: `api-v1-plans.test.ts` 6/6 stays green (its client role matrix
+  case uses an unbound profile, still 403 through the same compare).
+- Gates: typecheck 0; eslint on diff files 0 (repo lint 0 errors / 96
+  pre-existing warnings); prettier on diff files clean; `next build` 0;
+  `npm run index` 0 and `index:check` 0 (generated output unchanged); unit
+  vitest 132 files / 1509 tests 0; integration suite 4/4 + regression 6/6;
+  fresh `prisma migrate deploy` on lane DB `app_fp_w2n7` clean. No migration
+  consumed (reserved dir `20261027000022` unused; no schema need).
+- Live proof on `app_fp_w2n7` (seeded `VARI8_SEED_DEMO=1`, real sign-in via
+  /api/auth/sign-in/email, dev server 127.0.0.1:5455): own client GET 200
+  with `current.versionSeq=1` + full payload + `upcoming=null`; same client
+  on a foreign clientProfileId 403 forbidden; staff coach GET 200 staff
+  shape; no credentials 401 unauthenticated. Request/status lines under
+  `Vari8-evidence/FULL-PACKAGE-2/W2N7/`. Server stopped; `pg_database` shows
+  `lane_present|0` (lane-teardown.txt). Exported method set of the route
+  file: GET, PUT (unchanged, matches this claim). Zero U+2013/U+2014 in added
+  lines.
+- Unmapped client fields: resolved macro totals (kcal/protein/carbs/fat) are
+  not in the response; the client derives them from `payload` portions plus
+  the food catalog, which this route intentionally does not join. The
+  "temporary plan" badge is an audit N1 feature with no `MealPlanDraft`
+  field; not derivable. `upcoming` is metadata-only by service design.
+- Screenshot: none applies; no mounted surface on this base consumes the
+  route (the canvas client-app meal plan is demo data).
+
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
 - Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
@@ -29,7 +73,7 @@
 - B1 root cause: a composer attachment whose background upload settled
   without a media_object stamp kept its session blob in `media`, so the
   send guard's restored-draft check (`!a.mediaObjectId && !a.demo &&
-  !media[a.id]`) passed and the message appended locally with no server
+!media[a.id]`) passed and the message appended locally with no server
   attachment and no notice. The canvas twin now keeps a `failedUploads`
   ref beside `pendingUploads`: the attach handler records the id when a
   workspace upload settles without the stamp, and `send()` refuses any
@@ -53,9 +97,9 @@
   `tests/unit/system-index.test.ts` F2, which passes 18/18 standalone
   and is unrelated to this change; the inherited logging.test.ts env
   pair was not observed this round); `npm run typecheck` exit 0; `npm
-  run lint` exit 0 (92 warnings, 0 errors, one pre-existing warning on
+run lint` exit 0 (92 warnings, 0 errors, one pre-existing warning on
   messages.tsx:198); `npm run index` produced no diff and `npm run
-  index:check` exit 0; dash gate 0 U+2013/U+2014 on added lines.
+index:check` exit 0; dash gate 0 U+2013/U+2014 on added lines.
 - Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
 
 ## 2026-10-27 - w2-t8 repair 3: restored-draft attachments no longer wedge the send on `w2/t8`
@@ -77,9 +121,9 @@
   called `appendLocal` identically) is collapsed to one `appendLocal()`
   with a comment naming the canvas wire step it mirrors.
 - I2 corrected baseline per the verifier's re-measurement: `npm run
-  test` at decd41a is 123 files / 1437 tests, all passed, exit 0 (the
+test` at decd41a is 123 files / 1437 tests, all passed, exit 0 (the
   repair-1 entry's 1436/1437 timeout did not reproduce); `cd frontend &&
-  npm run typecheck` exits nonzero with exactly one inherited TS2322 at
+npm run typecheck` exits nonzero with exactly one inherited TS2322 at
   `src/components/client/legacy-sheet/dialog.tsx(109,15)` (the file has
   since moved out of `components/ui/`; this repair does not touch it).
 - I3: `npm run index:check` run twice on this tip; both exits 0.
@@ -101,7 +145,7 @@
 - Gates on this tip: `npm run typecheck` 0; `npm run lint` 0 (92
   warnings, 0 errors); `cd frontend && npm run lint` 0; `npx vitest run`
   124 files / 1440 tests, all passed, 0; `npm run build` 0; `npm run
-  index:check` 0 on both runs; dash gate 0 U+2013/U+2014 on added lines.
+index:check` 0 on both runs; dash gate 0 U+2013/U+2014 on added lines.
 - Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
 
 ## 2026-10-27 - w2-t8 repair 1: frontend send carries the attach flow in local-demo idiom on `w2/t8`
@@ -170,6 +214,7 @@
   staff2 foreign-workspace mint returns 403; a minted url redeems 200
   while an expired signature returns 403; 390 render verified.
   Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
 ## 2026-10-27 - W2T7 preview conflict repair: w2/t6 merge line `c9440dc` merged into `w2/t7`
 
 - Preview rebuild skipped w2-t7 on conflicts against the merged stage
@@ -197,7 +242,7 @@
   (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 310
   files), `npx vitest run` 0 (123 files, 1437 tests, 0 failures; the
   inherited logging.test.ts env pair did not occur), `npm run
-  index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
+index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
   count 0.
 - NOT done: no push, no PR, no fetch. Lane database not needed (no
   gate demanded one).
@@ -352,7 +397,7 @@
   (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
   files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
   inherited logging.test.ts env pair did not occur), `npm run
-  index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
   count 0.
 - NOT done: no push, no PR, no fetch. Lane database not needed (no
   gate demanded one).
@@ -363,11 +408,11 @@
   the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
   w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
 - Conflicted files and resolutions: `frontend/src/components/client-app/
-  client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+client-app.css` union (t6 `ca-shared-media` block kept in place, c6
   `ca-checkin-*` styles appended intact; selector sets disjoint so neither
   cascade regresses). `docs/STATUS.md` union, both sides' entries newest
   first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
-  index` regenerated the merged tree (174 components, 58 API routes).
+index` regenerated the merged tree (174 components, 58 API routes).
   Canvas twin `components/canvas/client-app/client-app.css` auto-merged
   but placed `ca-shared-media` at EOF; the identical resolution was applied
   so parity holds.
@@ -408,7 +453,7 @@
   2026-10-26. Index docs regenerated via `npm run index` on the merged
   tree; `npm run index:check` 0 on both runs.
 - Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
-  generate` (stale client missed `clientPhase`/`clientWeekNote`);
+generate` (stale client missed `clientPhase`/`clientWeekNote`);
   `npm run lint` 0 (0 errors, 94 pre-existing warnings);
   `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
   files (the inherited logging.test.ts env pair stayed green here, also
@@ -1294,7 +1339,7 @@ false`, tenant-coherent FKs and indexes.
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -1344,7 +1389,7 @@ false`, tenant-coherent FKs and indexes.
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -1456,7 +1501,7 @@ false`, tenant-coherent FKs and indexes.
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  + media still mintable + rows retained in db.
+  - media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
