@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: template definitions report (PR-M4)
+
+- Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m4-template-definitions`: the PR-M4
+  template definitions build report.
+
 ## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
 
 - Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
