@@ -16,9 +16,11 @@ import {
   editHabit as serviceEdit,
   habitConsistency as serviceConsistency,
   listHabitChoices as serviceChoices,
+  listHabitCompletions as serviceCompletions,
   listStaffHabits as serviceListStaff,
   listTodayHabits as serviceListToday,
   setHabitLog as serviceSetLog,
+  type HabitCompletionRow,
   type HabitConsistencyResult,
   type HabitDeps,
   type HabitView,
@@ -94,6 +96,7 @@ export const createHabitFromAction = (
     clientProfileId: string;
     name: unknown;
     target: unknown;
+    reason?: unknown;
     startDate: unknown;
     weekdays: unknown;
     endDate?: unknown;
@@ -110,6 +113,7 @@ export const editHabitFromAction = (
     habitId: string;
     name?: unknown;
     target?: unknown;
+    reason?: unknown;
     schedule?: { weekdays?: unknown; endDate?: unknown };
     expectedRevision: number;
   },
@@ -181,3 +185,15 @@ export const readHabitConsistency = (
   deps: HabitDeps = {},
 ): Promise<HabitSafeResult<HabitConsistencyResult>> =>
   guard(() => serviceConsistency(session as never, input, deps));
+
+/** PR-M7 — the canvas "Recorded completions" aside (all-time counts). */
+export const readHabitCompletions = (
+  session: Session,
+  input: {
+    workspaceId: string;
+    clientProfileId?: string;
+    fields?: unknown;
+  },
+  deps: HabitDeps = {},
+): Promise<HabitSafeResult<{ habits: HabitCompletionRow[] }>> =>
+  guard(() => serviceCompletions(session as never, input, deps));
