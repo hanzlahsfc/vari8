@@ -10,7 +10,6 @@ import {
   type SourceRecords,
   safeResourceUrl,
 } from "./model";
-import { TriageContent } from "./triage-content";
 import { type AdaptiveWidgetProps, widgetDetailKey } from "./widget-geometry";
 import "./coaching-content.css";
 
@@ -1164,8 +1163,6 @@ export function CoachingWidgetContent(props: AdaptiveWidgetProps) {
       return <DashboardSectionHeading {...props} />;
     case "CU18":
       return <CoachAnnouncement {...props} />;
-    case "CU19":
-      return <TriageContent {...props} />;
     default:
       return null;
   }

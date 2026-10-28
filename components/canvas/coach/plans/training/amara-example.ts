@@ -474,7 +474,7 @@ export function adoptAmaraTrainingExample(state: CoachState): CoachState {
         iifym: { history: [] },
       },
       goals: client.plans?.goals ?? [],
-      activityTargets: client.plans?.activityTargets ?? [],
+      activityTargets: client.plans?.activityTargets,
       supplements: client.plans?.supplements,
       training: {
         ...lifecycle,
