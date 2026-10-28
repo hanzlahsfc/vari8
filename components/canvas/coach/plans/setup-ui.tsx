@@ -1,7 +1,23 @@
 "use client";
 
-import { ArrowUpRight, Plus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpRight,
+  Copy,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { useMemo, useState } from "react";
+import {
+  Input as SharedInput,
+  Select as SharedSelect,
+} from "@/components/canvas/vari8/components";
+import {
+  DatePicker as SharedDatePicker,
+  TextArea as SharedTextArea,
+} from "@/components/canvas/vari8/inputs";
+import { FormGrid, Section } from "@/components/canvas/vari8/layouts";
 import {
   ALL_PARAMETERS,
   type CoachClient,
@@ -11,6 +27,13 @@ import {
   uid,
 } from "../model";
 import { useCoach } from "../store";
+import {
+  type ActivityMetric,
+  type ActivityTargetVersion,
+  formatActivityTarget,
+  resolveActivityTarget,
+} from "../targets/model";
+import { useLocalToday } from "../targets/use-local-today";
 import { templateSetup } from "../template-setup";
 import { Button, Empty, IconButton, Surface } from "../ui";
 import {
@@ -20,6 +43,12 @@ import {
   scheduledOption,
   trainingWeek,
 } from "./domain";
+import {
+  type ClientPhasePlan,
+  canSaveClientPhasePlan,
+  isValidPhaseStartDate,
+  phasePlanRanges,
+} from "./phase-planning";
 import {
   type ClientGoal,
   type ClientPlans,
@@ -80,6 +109,259 @@ function configured(client: CoachClient) {
   return templateSetup(client.assignment.snapshot, client.assignment.variantId);
 }
 
+export function ClientPhasePlanEditor({
+  client,
+  phaseOptions,
+}: {
+  client: CoachClient;
+  phaseOptions: string[];
+}) {
+  const { setState, toast } = useCoach();
+  const choices = phaseOptions.length
+    ? phaseOptions
+    : [client.phase || "Foundation"];
+  const [draft, setDraft] = useState<ClientPhasePlan>(() =>
+    structuredClone(
+      client.phasePlan ?? {
+        startDate: TODAY,
+        phases: [
+          {
+            id: uid("phase"),
+            name: choices.includes(client.phase) ? client.phase : choices[0],
+            durationWeeks: 4,
+          },
+        ],
+      },
+    ),
+  );
+  const [saved, setSaved] = useState(() => JSON.stringify(client.phasePlan));
+  const ranges = phasePlanRanges(draft);
+  const dirty = JSON.stringify(draft) !== saved;
+  const valid = canSaveClientPhasePlan(draft);
+  const startDateValid = isValidPhaseStartDate(draft.startDate);
+  const patchPhase = (
+    id: string,
+    patch: Partial<ClientPhasePlan["phases"][number]>,
+  ) =>
+    setDraft((current) => ({
+      ...current,
+      phases: current.phases.map((phase) =>
+        phase.id === id ? { ...phase, ...patch } : phase,
+      ),
+    }));
+  const addPhase = () =>
+    setDraft((current) => ({
+      ...current,
+      phases: [
+        ...current.phases,
+        {
+          id: uid("phase"),
+          name: choices[0],
+          durationWeeks: 4,
+        },
+      ],
+    }));
+  const duplicatePhase = (id: string) =>
+    setDraft((current) => {
+      const index = current.phases.findIndex((phase) => phase.id === id);
+      if (index < 0) return current;
+      const source = current.phases[index];
+      const phases = [...current.phases];
+      phases.splice(index + 1, 0, { ...source, id: uid("phase") });
+      return { ...current, phases };
+    });
+  const movePhase = (id: string, offset: -1 | 1) =>
+    setDraft((current) => {
+      const index = current.phases.findIndex((phase) => phase.id === id);
+      const target = index + offset;
+      if (index < 0 || target < 0 || target >= current.phases.length)
+        return current;
+      const phases = [...current.phases];
+      [phases[index], phases[target]] = [phases[target], phases[index]];
+      return { ...current, phases };
+    });
+  const removePhase = (id: string) =>
+    setDraft((current) => ({
+      ...current,
+      phases: current.phases.filter((phase) => phase.id !== id),
+    }));
+  const savePlan = () => {
+    if (!canSaveClientPhasePlan(draft)) return;
+    const phasePlan = draft.phases.length ? structuredClone(draft) : undefined;
+    setState((current) => ({
+      ...current,
+      clients: current.clients.map((item) =>
+        item.id === client.id ? { ...item, phasePlan } : item,
+      ),
+    }));
+    setSaved(JSON.stringify(phasePlan));
+    toast(phasePlan ? "Phase plan saved" : "Phase plan removed");
+  };
+
+  return (
+    <Section
+      className="cd-phase-plan-editor"
+      title="Phase plan"
+      description="Map the client’s phases across consecutive weeks."
+      actions={
+        <Button primary disabled={!dirty || !valid} onClick={savePlan}>
+          Save phase plan
+        </Button>
+      }
+    >
+      <div className="cd-phase-start">
+        <SharedDatePicker
+          label="Plan starts"
+          value={draft.startDate}
+          onValueChange={(startDate) =>
+            setDraft((current) => ({
+              ...current,
+              startDate,
+            }))
+          }
+          error={
+            !startDateValid ? "Choose a valid plan start date." : undefined
+          }
+          size="md"
+        />
+      </div>
+      {draft.phases.length ? (
+        <div className="cd-phase-blocks">
+          {draft.phases.map((phase, index) => {
+            const range = ranges[index];
+            return (
+              <article className="cd-phase-block" key={phase.id}>
+                <div className="cd-phase-block-head">
+                  <span>Phase {index + 1}</span>
+                  <div>
+                    <IconButton
+                      label={`Move ${phase.name} up`}
+                      disabled={index === 0}
+                      onClick={() => movePhase(phase.id, -1)}
+                    >
+                      <ArrowUp size={14} />
+                    </IconButton>
+                    <IconButton
+                      label={`Move ${phase.name} down`}
+                      disabled={index === draft.phases.length - 1}
+                      onClick={() => movePhase(phase.id, 1)}
+                    >
+                      <ArrowDown size={14} />
+                    </IconButton>
+                    <IconButton
+                      label={`Duplicate ${phase.name}`}
+                      onClick={() => duplicatePhase(phase.id)}
+                    >
+                      <Copy size={14} />
+                    </IconButton>
+                    <IconButton
+                      label={`Remove ${phase.name}`}
+                      onClick={() => removePhase(phase.id)}
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </div>
+                </div>
+                <FormGrid columns={2} className="cd-phase-block-fields">
+                  <SharedSelect
+                    label="Phase"
+                    value={phase.name}
+                    options={choices.map((choice) => ({
+                      value: choice,
+                      label: choice,
+                    }))}
+                    onValueChange={(name) => patchPhase(phase.id, { name })}
+                    size="md"
+                  />
+                  <div className="cd-phase-duration">
+                    <SharedInput
+                      label="Duration"
+                      type="number"
+                      min={1}
+                      max={52}
+                      value={phase.durationWeeks}
+                      onChange={(event) =>
+                        patchPhase(phase.id, {
+                          durationWeeks: Number(event.target.value),
+                        })
+                      }
+                      aria-label={`Duration for ${phase.name} in weeks`}
+                      size="md"
+                    />
+                    <span>weeks</span>
+                  </div>
+                </FormGrid>
+                {(!Number.isInteger(phase.durationWeeks) ||
+                  phase.durationWeeks < 1 ||
+                  phase.durationWeeks > 52) && (
+                  <p className="cd-phase-error" role="alert">
+                    Use a whole number from 1 to 52 weeks.
+                  </p>
+                )}
+                {!phase.name.trim() && (
+                  <p className="cd-phase-error" role="alert">
+                    Choose a phase name.
+                  </p>
+                )}
+                {range && (
+                  <p className="cd-phase-range">
+                    {range.startDate} – {range.endDate}
+                  </p>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      ) : (
+        <Empty title="No phases in this plan">
+          Add a phase to preview the client’s timeline.
+        </Empty>
+      )}
+      <Button onClick={addPhase}>
+        <Plus size={14} /> Add phase
+      </Button>
+      {ranges.length > 0 && (
+        <ol className="cd-phase-timeline" aria-label="Phase timeline preview">
+          {ranges.map((range) => (
+            <li
+              className="cd-phase-timeline-segment"
+              key={range.id}
+              style={{ flexGrow: range.durationWeeks }}
+              title={`${range.name}: ${range.startDate} – ${range.endDate}`}
+            >
+              <strong>{range.name}</strong>
+              <span>{range.durationWeeks} weeks</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Section>
+  );
+}
+
+const activityTargetDetail = (
+  versions: ActivityTargetVersion[] | undefined,
+  date: string,
+) => {
+  const list = versions ?? [];
+  if (!list.length) return { text: "No targets saved", configured: false };
+  const part = (metric: ActivityMetric) => {
+    const version = resolveActivityTarget({
+      versions: list,
+      metric,
+      date,
+    });
+    if (!version) return `No ${metric} target`;
+    return version.target === null
+      ? `${metric === "steps" ? "Steps" : "Cardio"} stopped`
+      : formatActivityTarget(version);
+  };
+  return {
+    text: `${part("steps")} · ${part("cardio")}`,
+    configured: true,
+  };
+};
+
 export function ClientPlansSummary({
   client,
   expanded = false,
@@ -90,8 +372,10 @@ export function ClientPlansSummary({
   onAssign?: () => void;
 }) {
   const { navigate, route } = useCoach();
+  const activityDate = useLocalToday();
   const setup = configured(client);
   const plans = planData(client);
+  const activity = activityTargetDetail(plans.activityTargets, activityDate);
   const views = setup?.views ?? [];
   const hasNutrition = views.some(
     (view) => view === "Nutrition" || view === "Mealplan",
@@ -150,7 +434,10 @@ export function ClientPlansSummary({
       : []),
   ];
   const goals = plans.goals.length;
+  const supplements = plans.supplements;
+  const supplementCount = supplements?.items.length ?? 0;
   const hasGoalFields =
+    plans.goals.length > 0 ||
     configuredGoalFields(client.assignment?.snapshot).length > 0;
   if (!expanded)
     return (
@@ -176,6 +463,28 @@ export function ClientPlansSummary({
             </span>
           </div>
         ))}
+        {setup && (
+          <div className="cd-plan-summary-row">
+            <span>
+              <strong>Activity targets</strong>
+              <small>{activity.text}</small>
+            </span>
+            <span className="cd-plan-summary-meta">Steps · weekly cardio</span>
+          </div>
+        )}
+        {setup && (
+          <div className="cd-plan-summary-row">
+            <span>
+              <strong>Supplements</strong>
+              <small>
+                {supplements
+                  ? `${supplementCount} product${supplementCount === 1 ? "" : "s"} prescribed`
+                  : "No supplement plan saved"}
+              </small>
+            </span>
+            <span className="cd-plan-summary-meta">Catalogue plan</span>
+          </div>
+        )}
         {setup && hasGoalFields && (
           <div className="cd-plan-summary-row">
             <span>
@@ -206,20 +515,15 @@ export function ClientPlansSummary({
     );
 
   return (
-    <section
+    <Section
       className="cd-client-plans-summary"
-      aria-label={`${client.name} plans`}
+      title="Plans & targets"
+      description={
+        client.assignment
+          ? `Configured from ${client.assignment.snapshot.name}.`
+          : "No setup assigned."
+      }
     >
-      <header>
-        <div>
-          <h2>Plans & targets</h2>
-          <p className="cd-plan-description">
-            {client.assignment
-              ? `Configured from ${client.assignment.snapshot.name}.`
-              : "No setup assigned."}
-          </p>
-        </div>
-      </header>
       {!setup ? (
         <Surface>
           <Empty
@@ -271,6 +575,58 @@ export function ClientPlansSummary({
               </div>
             </Surface>
           ))}
+          <Surface className="cd-plan-module">
+            <div>
+              <h3>Activity targets</h3>
+              <p>{activity.text}</p>
+            </div>
+            <div className="cd-plan-module-detail">
+              <span>Steps and weekly cardio prescriptions</span>
+            </div>
+            <div className="cd-plan-module-action">
+              <Button
+                onClick={() =>
+                  navigate({
+                    ...route,
+                    section: "clients",
+                    client: client.id,
+                    plan: "activity-targets",
+                  })
+                }
+              >
+                {activity.configured ? "Edit targets" : "Set targets"}
+                <ArrowUpRight size={14} />
+              </Button>
+            </div>
+          </Surface>
+          <Surface className="cd-plan-module">
+            <div>
+              <h3>Supplements</h3>
+              <p>
+                {supplements
+                  ? `${supplementCount} product${supplementCount === 1 ? "" : "s"} prescribed`
+                  : "No supplement plan saved"}
+              </p>
+            </div>
+            <div className="cd-plan-module-detail">
+              <span>Catalogue products, quantity, timing and status</span>
+            </div>
+            <div className="cd-plan-module-action">
+              <Button
+                onClick={() =>
+                  navigate({
+                    ...route,
+                    section: "clients",
+                    client: client.id,
+                    plan: "supplements",
+                  })
+                }
+              >
+                {supplements ? "Edit plan" : "Set up plan"}
+                <ArrowUpRight size={14} />
+              </Button>
+            </div>
+          </Surface>
           {hasGoalFields && (
             <Surface className="cd-plan-module">
               <div>
@@ -327,11 +683,24 @@ export function ClientPlansSummary({
               </div>
             </Surface>
           )}
+          {setup.roadmapPhases !== false && (
+            <ClientPhasePlanEditor
+              key={client.id}
+              client={client}
+              phaseOptions={setup.phaseOptions ?? []}
+            />
+          )}
         </div>
       )}
-    </section>
+    </Section>
   );
 }
+
+const LEGACY_ACTIVITY_GOAL_FIELDS = new Set([
+  "steps",
+  "cardio-duration",
+  "cardio-sessions",
+]);
 
 function configuredGoalFields(
   template?: Template,
@@ -343,7 +712,8 @@ function configuredGoalFields(
     if (
       !parameter ||
       typeof parameter.sample !== "number" ||
-      parameter.group === "Nutrition"
+      parameter.group === "Nutrition" ||
+      LEGACY_ACTIVITY_GOAL_FIELDS.has(field.id)
     )
       return [];
     return [
@@ -427,108 +797,108 @@ export function ClientGoalsEditor({ client }: { client: CoachClient }) {
       ),
     }));
   return (
-    <section className="cd-setup-editor">
-      <header>
-        <h2>Goals</h2>
-        <p className="cd-setup-description">
-          Use numeric fields included in the assigned setup. Nutrition targets
-          stay in the nutrition plan.
-        </p>
-      </header>
+    <Section
+      className="cd-setup-editor"
+      title="Goals"
+      description="Use numeric fields included in the assigned setup. Nutrition targets stay in the nutrition plan."
+    >
       {!choices.length ? (
-        <Empty title="No eligible fields in this setup">
-          Add numeric tracking fields in the assigned template to set client
-          goals.
-        </Empty>
+        plans.goals.length ? (
+          <p className="cd-caption">
+            No new fields are eligible in this setup. Saved legacy entries are
+            kept below; steps and cardio are prescribed in Activity targets.
+          </p>
+        ) : (
+          <Empty title="No eligible fields in this setup">
+            Add numeric tracking fields in the assigned template to set client
+            goals.
+          </Empty>
+        )
       ) : (
-        <>
-          <div className="cd-goal-form">
-            <label className="cd-field">
-              <span>Configured field</span>
-              <select
-                value={fieldId}
-                onChange={(event) => {
-                  setFieldId(event.target.value);
-                  setUnit("");
-                }}
-              >
-                <option value="" disabled>
-                  Select a field
-                </option>
-                {choices.map((choice) => (
-                  <option key={choice.field.id} value={choice.field.id}>
-                    {choice.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="cd-field">
-              <span>Target</span>
-              <input
-                type="number"
-                value={value}
-                onChange={(event) => setValue(event.target.value)}
-              />
-            </label>
-            {selected?.unit ? (
-              <label className="cd-field">
-                <span>Unit</span>
-                <input value={selected.unit} readOnly aria-readonly="true" />
-              </label>
-            ) : (
-              <label className="cd-field">
-                <span>Unit</span>
-                <select
-                  value={unit}
-                  onChange={(event) => setUnit(event.target.value)}
-                >
-                  <option value="" disabled>
-                    Select a unit
-                  </option>
-                  {selected?.units.map((supportedUnit) => (
-                    <option key={supportedUnit} value={supportedUnit}>
-                      {supportedUnit}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-            <label className="cd-field">
-              <span>Target date</span>
-              <input
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-              />
-            </label>
+        <div className="cd-goal-form">
+          <SharedSelect
+            label="Configured field"
+            value={fieldId}
+            options={[
+              { value: "", label: "Select a field", disabled: true },
+              ...choices.map((choice) => ({
+                value: choice.field.id,
+                label: choice.name,
+              })),
+            ]}
+            onValueChange={(nextFieldId) => {
+              setFieldId(nextFieldId);
+              setUnit("");
+            }}
+            size="md"
+          />
+          <SharedInput
+            label="Target"
+            type="number"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            size="md"
+          />
+          {selected?.unit ? (
+            <SharedInput
+              label="Unit"
+              value={selected.unit}
+              readOnly
+              size="md"
+            />
+          ) : (
+            <SharedSelect
+              label="Unit"
+              value={unit}
+              options={[
+                { value: "", label: "Select a unit", disabled: true },
+                ...(selected?.units ?? []).map((supportedUnit) => ({
+                  value: supportedUnit,
+                  label: supportedUnit,
+                })),
+              ]}
+              onValueChange={setUnit}
+              size="md"
+            />
+          )}
+          <SharedDatePicker
+            label="Target date"
+            value={date}
+            onValueChange={setDate}
+            size="md"
+          />
+          <Button
+            primary
+            disabled={
+              !selected ||
+              value === "" ||
+              !Number.isFinite(Number(value)) ||
+              !date
+            }
+            onClick={save}
+          >
+            <Plus size={15} />
+            {editingGoal ? "Save changes" : "Save goal"}
+          </Button>
+          {editingGoal && (
             <Button
-              primary
-              disabled={
-                !selected ||
-                value === "" ||
-                !Number.isFinite(Number(value)) ||
-                !date
-              }
-              onClick={save}
+              onClick={() => {
+                setEditingGoal(null);
+                setValue("");
+                setUnit("");
+                setDate(TODAY);
+              }}
             >
-              <Plus size={15} />
-              {editingGoal ? "Save changes" : "Save goal"}
+              Cancel edit
             </Button>
-            {editingGoal && (
-              <Button
-                onClick={() => {
-                  setEditingGoal(null);
-                  setValue("");
-                  setUnit("");
-                  setDate(TODAY);
-                }}
-              >
-                Cancel edit
-              </Button>
-            )}
-          </div>
-          <div className="cd-goal-list">
-            {plans.goals.map((goal) => (
+          )}
+        </div>
+      )}
+      {plans.goals.length > 0 && (
+        <div className="cd-goal-list">
+          {plans.goals.map((goal) => {
+            const legacy = LEGACY_ACTIVITY_GOAL_FIELDS.has(goal.fieldId);
+            return (
               <div className="cd-goal-row" key={goal.id}>
                 <span>
                   <strong>
@@ -542,20 +912,28 @@ export function ClientGoalsEditor({ client }: { client: CoachClient }) {
                   {goal.value} {goal.unit}
                 </strong>
                 <div className="cd-goal-actions">
-                  <Button onClick={() => beginEdit(goal)}>Edit</Button>
-                  <IconButton
-                    label="Remove goal"
-                    onClick={() => remove(goal.id)}
-                  >
-                    <Trash2 size={15} />
-                  </IconButton>
+                  {legacy ? (
+                    <small className="cd-goal-legacy">
+                      Legacy · set in Activity targets
+                    </small>
+                  ) : (
+                    <>
+                      <Button onClick={() => beginEdit(goal)}>Edit</Button>
+                      <IconButton
+                        label="Remove goal"
+                        onClick={() => remove(goal.id)}
+                      >
+                        <Trash2 size={15} />
+                      </IconButton>
+                    </>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        </>
+            );
+          })}
+        </div>
       )}
-    </section>
+    </Section>
   );
 }
 
@@ -616,14 +994,11 @@ export function ClientHabitsEditor({ client }: { client: CoachClient }) {
     setEditing(null);
   };
   return (
-    <section className="cd-setup-editor">
-      <header>
-        <h2>Habits</h2>
-        <p>
-          Client habit definitions and completion history remain with this
-          profile.
-        </p>
-      </header>
+    <Section
+      className="cd-setup-editor"
+      title="Habits"
+      description="Client habit definitions and completion history remain with this profile."
+    >
       <div className="cd-habit-list">
         {client.habits.map((habit) => (
           <div className="cd-habit-row" key={habit.id}>
@@ -660,19 +1035,19 @@ export function ClientHabitsEditor({ client }: { client: CoachClient }) {
       </div>
       <div className="cd-habit-form">
         <h3>{editing ? "Edit habit" : "Add habit"}</h3>
-        <label className="cd-field">
-          <span>Name</span>
-          <input
+        <FormGrid columns={2} className="cd-habit-form-fields">
+          <SharedInput
+            label="Name"
             value={draft.name}
+            size="md"
             onChange={(event) =>
               setDraft((current) => ({ ...current, name: event.target.value }))
             }
           />
-        </label>
-        <label className="cd-field">
-          <span>Frequency</span>
-          <input
+          <SharedInput
+            label="Frequency"
             value={draft.frequency}
+            size="md"
             onChange={(event) =>
               setDraft((current) => ({
                 ...current,
@@ -681,19 +1056,16 @@ export function ClientHabitsEditor({ client }: { client: CoachClient }) {
             }
             placeholder="Daily, weekdays, 3× per week"
           />
-        </label>
-        <label className="cd-field">
-          <span>Goal</span>
-          <input
+          <SharedInput
+            label="Goal"
             value={draft.goal}
+            size="md"
             onChange={(event) =>
               setDraft((current) => ({ ...current, goal: event.target.value }))
             }
           />
-        </label>
-        <label className="cd-field">
-          <span>Reason (optional)</span>
-          <textarea
+          <SharedTextArea
+            label="Reason (optional)"
             rows={2}
             value={draft.reason}
             onChange={(event) =>
@@ -703,7 +1075,7 @@ export function ClientHabitsEditor({ client }: { client: CoachClient }) {
               }))
             }
           />
-        </label>
+        </FormGrid>
         <div className="cd-dialog-actions">
           {editing && (
             <Button
@@ -733,6 +1105,6 @@ export function ClientHabitsEditor({ client }: { client: CoachClient }) {
           </Button>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }

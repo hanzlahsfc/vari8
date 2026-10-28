@@ -14,9 +14,11 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import type { CanvasRole } from "@/lib/auth/viewer";
 import { themeVariables } from "@/lib/canvas/ethereal-appearance";
+import { vari8Theme } from "@/lib/canvas/vari8-theme";
+import { Input as Vari8Input } from "../vari8/components";
 import { accentControlColors } from "./accent-contrast";
 import { AppearanceControls } from "./appearance-controls";
 import { CheckInsWorkspace } from "./check-ins";
@@ -62,8 +64,47 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
     navigate,
     notice,
     dismiss,
+    toast,
   } = useCoach();
   const [settings, setSettings] = useState(false);
+  const notifiedReminders = useRef(new Set<string>());
+  useEffect(() => {
+    if (!hydrated) return;
+    const checkReminders = () => {
+      const reminders = [
+        ...(state.coachTodos ?? []).map((todo) => ({
+          ...todo,
+          clientId: todo.clientId ?? "workspace",
+        })),
+        ...state.clients.flatMap((client) =>
+          client.coachTasks.map((todo) => ({
+            ...todo,
+            reminderAt:
+              "reminderAt" in todo && typeof todo.reminderAt === "string"
+                ? todo.reminderAt
+                : undefined,
+            clientId: client.id,
+          })),
+        ),
+      ];
+      const now = Date.now();
+      const due = reminders.find((todo) => {
+        const key = `${todo.clientId}:${todo.id}`;
+        return (
+          !todo.complete &&
+          todo.reminderAt &&
+          Date.parse(todo.reminderAt) <= now &&
+          !notifiedReminders.current.has(key)
+        );
+      });
+      if (!due) return;
+      notifiedReminders.current.add(`${due.clientId}:${due.id}`);
+      toast(`Reminder: ${due.title}`);
+    };
+    checkReminders();
+    const interval = window.setInterval(checkReminders, 30_000);
+    return () => window.clearInterval(interval);
+  }, [hydrated, state.coachTodos, state.clients, toast]);
   const selectedClient = state.clients.find((c) => c.id === route.client);
   const pending = state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
@@ -72,22 +113,39 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
     accent: state.preferences.accent,
     font: "sans",
   }) as Record<string, string>;
-  const actions = accentControlColors(theme["--accent"]);
+  const actionSurfaces = [
+    theme["--v8-surface-navigation"],
+    theme["--v8-surface"],
+    theme["--v8-surface-raised"],
+    theme["--v8-surface-inset"],
+  ];
+  const actions = accentControlColors(theme["--accent"], actionSurfaces);
   return (
     <div
-      className="coach-root"
+      className="coach-root v8-theme"
       data-mode={state.preferences.mode}
       data-sidebar-collapsed={Boolean(state.preferences.sidebarCollapsed)}
       style={
         {
+          ...vari8Theme({
+            mode: state.preferences.mode,
+            accent: state.preferences.accent,
+          }),
           "--cd-accent": theme["--accent"],
           "--cd-accent-text": theme["--accent-ink"],
+          "--cd-accent-link": theme["--accent-ink"],
           "--cd-accent-contrast": theme["--accent-contrast"],
           "--cd-accent-ring": theme["--accent-ring"],
           "--cd-chart-line": theme["--chart-line"],
+          "--nutrition-macro-protein": theme["--nutrition-macro-protein"],
+          "--nutrition-macro-carbs": theme["--nutrition-macro-carbs"],
+          "--nutrition-macro-fat": theme["--nutrition-macro-fat"],
           "--cd-action-bg": actions.background,
           "--cd-action-hover": actions.hoverBackground,
           "--cd-action-text": actions.foreground,
+          "--accent-action": actions.background,
+          "--accent-action-hover": actions.hoverBackground,
+          "--accent-action-text": actions.foreground,
         } as CSSProperties
       }
     >
@@ -95,6 +153,31 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
         Skip to workspace
       </a>
       <aside className="cd-sidebar">
+        <IconButton
+          label={
+            state.preferences.sidebarCollapsed
+              ? "Expand sidebar"
+              : "Collapse sidebar"
+          }
+          className="cd-sidebar-toggle"
+          aria-expanded={!state.preferences.sidebarCollapsed}
+          aria-controls="coach-navigation"
+          onClick={() =>
+            setState((s) => ({
+              ...s,
+              preferences: {
+                ...s.preferences,
+                sidebarCollapsed: !s.preferences.sidebarCollapsed,
+              },
+            }))
+          }
+        >
+          {state.preferences.sidebarCollapsed ? (
+            <PanelLeftOpen size={17} />
+          ) : (
+            <PanelLeftClose size={17} />
+          )}
+        </IconButton>
         <div className="cd-brand">
           {state.preferences.logo ? (
             <span className="cd-brand-logo">
@@ -169,31 +252,6 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
       <div className="cd-workspace">
         <header className="cd-utility-header">
           <div className="cd-breadcrumb">
-            <IconButton
-              label={
-                state.preferences.sidebarCollapsed
-                  ? "Expand sidebar"
-                  : "Collapse sidebar"
-              }
-              className="cd-icon-button cd-sidebar-toggle"
-              aria-expanded={!state.preferences.sidebarCollapsed}
-              aria-controls="coach-navigation"
-              onClick={() =>
-                setState((s) => ({
-                  ...s,
-                  preferences: {
-                    ...s.preferences,
-                    sidebarCollapsed: !s.preferences.sidebarCollapsed,
-                  },
-                }))
-              }
-            >
-              {state.preferences.sidebarCollapsed ? (
-                <PanelLeftOpen size={17} />
-              ) : (
-                <PanelLeftClose size={17} />
-              )}
-            </IconButton>
             {state.preferences.logo && (
               <span className="cd-mobile-logo">
                 <Image
@@ -293,6 +351,7 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
           <span>{notice.text}</span>
           {notice.undo && (
             <Button
+              size="sm"
               onClick={() => {
                 notice.undo?.();
                 dismiss();
@@ -321,21 +380,19 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
             }
           />
           <h3>Availability</h3>
-          <label className="cd-field">
-            Shown in your workspace
-            <input
-              value={state.preferences.availability}
-              onChange={(e) =>
-                setState((s) => ({
-                  ...s,
-                  preferences: {
-                    ...s.preferences,
-                    availability: e.target.value,
-                  },
-                }))
-              }
-            />
-          </label>
+          <Vari8Input
+            label="Shown in your workspace"
+            value={state.preferences.availability}
+            onChange={(e) =>
+              setState((s) => ({
+                ...s,
+                preferences: {
+                  ...s.preferences,
+                  availability: e.target.value,
+                },
+              }))
+            }
+          />
           <h3>In-app notification preferences</h3>
           <Toggle
             label="Unread message attention"

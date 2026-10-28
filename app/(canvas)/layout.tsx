@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { MotionProvider } from "@/components/canvas/motion-provider";
 import "@/components/canvas/app/globals.css";
+import "@/components/canvas/app/vari8-tokens.css";
 import "@/components/canvas/app/tracker.css";
 import "@/components/canvas/app/weight.css";
 import "@/components/canvas/ethereal/foundation-components.css";

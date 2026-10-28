@@ -2,9 +2,15 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { BookOpen, Copy, Pencil, Search, Trash2, Undo2, X } from "lucide-react";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import { useEffect, useId, useRef, useState } from "react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import {
+  Button,
+  IconButton,
+  Input,
+  Select,
+} from "@/components/canvas/vari8/components";
 import {
   calculateMealNutrients,
   calculatePortionNutrients,
@@ -124,7 +130,17 @@ export function SavedMealLibrary({
         }
       }}
     >
-      <Dialog.Trigger ref={setAnchor} className="mp-button mp-library-trigger">
+      <Dialog.Trigger
+        ref={setAnchor}
+        render={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mp-library-trigger"
+          />
+        }
+      >
         <BookOpen size={14} />
         Saved meals · {meals.length}
       </Dialog.Trigger>
@@ -153,9 +169,12 @@ export function SavedMealLibrary({
             </div>
             <Dialog.Close
               ref={closeButton}
-              className="mp-icon-button"
-              aria-label="Close saved meals"
-              title="Close saved meals"
+              render={
+                <IconButton
+                  label="Close saved meals"
+                  aria-label="Close saved meals"
+                />
+              }
             >
               <X size={16} />
             </Dialog.Close>
@@ -164,17 +183,18 @@ export function SavedMealLibrary({
             <div className="mp-library-feedback" role="status">
               <span>{message}</span>
               {deleted && (
-                <button
+                <Button
                   type="button"
-                  className="mp-button"
+                  variant="ghost"
+                  size="sm"
                   onClick={undoDelete}
                 >
                   <Undo2 size={14} /> Undo delete
-                </button>
+                </Button>
               )}
-              <button
+              <IconButton
+                label="Dismiss notification"
                 type="button"
-                className="mp-icon-button"
                 aria-label="Dismiss library notification"
                 title="Dismiss notification"
                 onClick={() => {
@@ -183,7 +203,7 @@ export function SavedMealLibrary({
                 }}
               >
                 <X size={14} />
-              </button>
+              </IconButton>
             </div>
           )}
           <div className="mp-library-body">
@@ -193,8 +213,11 @@ export function SavedMealLibrary({
             >
               <div className="mp-library-search">
                 <Search size={15} aria-hidden="true" />
-                <input
-                  aria-label="Search saved meals"
+                <Input
+                  label="Search saved meals"
+                  className="mp-library-search-input"
+                  size="sm"
+                  type="search"
                   placeholder="Search meals or foods…"
                   value={query}
                   onChange={(event) => {
@@ -207,30 +230,32 @@ export function SavedMealLibrary({
               <p className="mp-library-count">
                 {filtered.length} of {meals.length} saved meals
               </p>
-              <label className="mp-library-mobile-picker">
-                <span>Saved meal</span>
-                <select
+              <div className="mp-library-mobile-picker">
+                <Select
+                  label="Saved meal"
+                  size="sm"
                   value={selected?.id ?? ""}
                   disabled={!filtered.length}
-                  onChange={(event) => select(event.target.value)}
-                >
-                  {!filtered.length && (
-                    <option value="">No meals available</option>
-                  )}
-                  {filtered.map((saved) => (
-                    <option key={saved.id} value={saved.id}>
-                      {saved.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  onValueChange={select}
+                  options={
+                    filtered.length
+                      ? filtered.map((saved) => ({
+                          value: saved.id,
+                          label: saved.name,
+                        }))
+                      : [{ value: "", label: "No meals available" }]
+                  }
+                />
+              </div>
               <ul className="mp-library-list">
                 {filtered.map((saved) => {
                   const nutrients = calculateMealNutrients(saved.meal, foodMap);
                   return (
                     <li key={saved.id}>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
                         aria-pressed={selected?.id === saved.id}
                         onClick={() => select(saved.id)}
                       >
@@ -239,7 +264,7 @@ export function SavedMealLibrary({
                           {saved.meal.portions.length} foods ·{" "}
                           {calories.format(nutrients.calories)} kcal
                         </span>
-                      </button>
+                      </Button>
                     </li>
                   );
                 })}
@@ -285,10 +310,11 @@ export function SavedMealLibrary({
                           setDeleted(null);
                         }}
                       >
-                        <label htmlFor={nameId}>Meal name</label>
-                        <input
+                        <Input
+                          label="Meal name"
                           ref={nameInput}
                           id={nameId}
+                          size="sm"
                           value={draft}
                           maxLength={120}
                           aria-invalid={Boolean(error)}
@@ -311,52 +337,53 @@ export function SavedMealLibrary({
                           </p>
                         )}
                         <div className="mp-library-actions">
-                          <button
-                            type="submit"
-                            className="mp-button mp-primary"
-                          >
+                          <Button type="submit" variant="primary" size="sm">
                             Save name
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            className="mp-button"
+                            variant="ghost"
+                            size="sm"
                             onClick={() => {
                               setRenaming(false);
                               setError("");
                             }}
                           >
                             Cancel
-                          </button>
+                          </Button>
                         </div>
                       </form>
                     ) : (
                       <>
                         <h3>{selected.name}</h3>
                         <div className="mp-library-actions">
-                          <button
+                          <Button
                             type="button"
-                            className="mp-button"
+                            variant="secondary"
+                            size="sm"
                             onClick={() => {
                               setDraft(selected.name);
                               setRenaming(true);
                             }}
                           >
                             <Pencil size={13} /> Rename
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            className="mp-button"
+                            variant="secondary"
+                            size="sm"
                             onClick={duplicate}
                           >
                             <Copy size={13} /> Duplicate
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             type="button"
-                            className="mp-button mp-library-delete"
+                            variant="destructive"
+                            size="sm"
                             onClick={remove}
                           >
                             <Trash2 size={13} /> Delete
-                          </button>
+                          </Button>
                         </div>
                       </>
                     )}
@@ -490,13 +517,14 @@ export function SavedMealLibrary({
                       : "Use the save icon on a meal in your plan to keep its foods, portions, and alternatives here."}
                   </p>
                   {query && (
-                    <button
+                    <Button
                       type="button"
-                      className="mp-button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setQuery("")}
                     >
                       Clear search
-                    </button>
+                    </Button>
                   )}
                 </div>
               )}

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 165 modules with exports, 1604 exported symbols.
+Counts: 168 modules with exports, 1633 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -246,6 +246,15 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/canvas/utils.ts`
 
 - `export { cn } from "cn"`
+
+## `lib/canvas/vari8-theme.ts`
+
+- `export const VARI8_SURFACES = [ "canvas", "surface-navigation", "surface", "surface-subtle", "surface-raised", "surface-inset", "surface-interactive", "surface-selected", "surface-featured", "surfa...`
+- `export type Vari8Mode = "light" | "dark"`
+- `export type Vari8Theme = Record<`--v8-${Vari8Role}`, string>`
+- `export function contrastRatio(first: string, second: string): number`
+- `export function normalizeAccent(value: string): string | null`
+- `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
 
 ## `lib/catalog.ts`
 
@@ -1868,6 +1877,21 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function parseCommentDate(input: unknown): string | null`
 - `export async function saveTrackerComment(caller: TrackerCommentCaller, input: { clientProfileId: string; entryDate: unknown; parameterId: string; body: unknown; }, deps: TrackerCommentDeps = {}): P...`
 
+## `lib/training/volume.ts`
+
+- `export const MUSCLE_GROUPS = [ { id: "chest", label: "Chest" }, { id: "back", label: "Back" }, { id: "shoulders", label: "Shoulders" }, { id: "biceps", label: "Biceps" }, { id: "triceps", label: "T...`
+- `export const MUSCLE_GROUP_IDS: readonly MuscleGroup[]`
+- `export const MUSCLE_GROUP_ID_SET: ReadonlySet<string>`
+- `export type MuscleGroup = (typeof MUSCLE_GROUPS)[number]["id"]`
+- `export type PrescribedSetLike = { id?: string; reps?: number; repsMax?: number; tempo?: string; type?: string; rest?: string; instructions?: string; coachNote?: string; }`
+- `export type ScheduledWorkout = { week: number; exercises: { id: string; sets: number }[]; }`
+- `export type VolumeExerciseInput = { id: string; muscle?: string; sets?: number; setRows?: readonly PrescribedSetLike[]; }`
+- `export type VolumeSessionInput = { exercises: readonly VolumeExerciseInput[]; }`
+- `export function programMuscleVolume(sessions: readonly VolumeSessionInput[], week: number)`
+- `export function volumeExerciseId(id: string, muscle?: string): string`
+- `export function weeklyMuscleVolume(workouts: readonly ScheduledWorkout[], week: number)`
+- `export function workingSetCount(exercise: VolumeExerciseInput): number`
+
 ## `lib/trainingprogram/boundary.ts`
 
 - `export type TrainingSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_found" | "conflict" | "consent_missing" | "policy_not_configured" | "service_un...`
@@ -1902,12 +1926,13 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/trainingprogram/payload.ts`
 
 - `export type BoundaryMap<V> = Record<string, V>`
-- `export type MaterializedExercise = { id: string; name: string; catalogItemId?: string; sets?: number; reps?: string; tempo?: string; setType?: string; rest?: string; instructions?: string; progress...`
+- `export type MaterializedExercise = { id: string; name: string; catalogItemId?: string; libraryItemId?: string; muscle?: string; secondaryMuscles?: string[]; generalNotes?: string; sets?: number; se...`
 - `export type MaterializedProgram = { programMode: "WEEK_BASED" | "EVERGREEN"; startDate: string; weekCount: number; weeks: MaterializedWeek[]; }`
 - `export type MaterializedSession = { id: string; name: string; exercises: MaterializedExercise[]; }`
 - `export type MaterializedWeek = { week: number; sessions: MaterializedSession[]; }`
+- `export type SetRowView = { id: string } & Partial<Omit<PrescribedSet, "id">>`
 - `export const TRAINING_FIELD_KEYS = [ "sets", "fixedReps", "repRanges", "tempo", "setType", "restPause", "instructions", "progressionNotes", ] as const`
-- `export type TrainingDraft = { programMode: "WEEK_BASED" | "EVERGREEN"; sessions: { id: string; name: string }[]; exercises: { id: string; sessionId: string; name: string; catalogItemId?: string; }[...`
+- `export type TrainingDraft = { programMode: "WEEK_BASED" | "EVERGREEN"; sessions: { id: string; name: string }[]; exercises: { id: string; sessionId: string; name: string; catalogItemId?: string; li...`
 - `export class TrainingError extends Error (3 members)`
 - `export type TrainingFieldConfig = Record<TrainingFieldKey, boolean>`
 - `export type TrainingFieldKey = (typeof TRAINING_FIELD_KEYS)[number]`
@@ -1964,6 +1989,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function resolveTrainingActivation(zone: string, effectiveDate: string): | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export async function saveTrainingProgramDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId?: string; expectedRevision: number; title?: string; startDate?:...`
 - `export async function setTrainingProgramTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; programId: string; timezone: string; }, deps: TrainingDeps = {}): Promi...`
+
+## `lib/trainingprogram/validators.ts`
+
+- `export type ExerciseLibraryItemInput = z.infer< typeof exerciseLibraryItemInputSchema >`
+- `export type LoggedExercise = z.infer<typeof loggedExerciseSchema>`
+- `export type PrescribedSet = z.infer<typeof prescribedSetSchema>`
+- `export type SessionSetLog = z.infer<typeof sessionSetLogSchema>`
+- `export type SetLogEntry = z.infer<typeof setLogEntrySchema>`
+- `export const exerciseLibraryItemInputSchema = z .object({ name: z.string().trim().min(1).max(TRAINING_LIMITS.exerciseNameMax), muscle: z.enum(MUSCLE_GROUP_IDS as [string, ...string[]]), secondaryMu...`
+- `export const loggedExerciseSchema = z .object({ exerciseId: idString, sets: z.array(setLogEntrySchema).min(1).max(40), }) .strict()`
+- `export const prescribedSetSchema = z .object({ id: idString, reps: z.number().int().min(1).max(999), repsMax: z.number().int().min(1).max(999).optional(), tempo: z.string().max(TRAINING_LIMITS.temp...`
+- `export const sessionSetLogSchema = z .object({ programId: idString.optional(), versionId: idString.optional(), sessionId: idString, week: z.number().int().min(1).max(TRAINING_LIMITS.weekCountMax), ...`
+- `export const setLogEntrySchema = z .object({ setId: idString.optional(), actualReps: z.number().int().min(0).max(999), load: z.number().min(0).max(9999).optional(), loadUnit: z.string().max(8).opti...`
 
 ## `lib/trainingprogram/weeks.ts`
 

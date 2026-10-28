@@ -29,6 +29,12 @@ import {
   saveDashboardDraft,
   saveDashboardRecords,
 } from "@/components/canvas/data/dashboard";
+import {
+  Button,
+  IconButton,
+  Input,
+  Select,
+} from "@/components/canvas/vari8/components";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { BuilderGallery } from "./gallery";
 import {
@@ -59,6 +65,7 @@ import {
   upgradeAdditionalFixture,
   upgradeHabitFixture,
   type WidgetInstance,
+  type WidgetKind,
 } from "./model";
 import { DetailContent, WidgetContent } from "./widget-content";
 import { widgetDetailKey } from "./widget-geometry";
@@ -99,6 +106,7 @@ function isValidDraft(value: unknown): value is Draft {
   )
     return false;
   const ids = new Set<string>();
+  const kindById = new Map<string, WidgetKind>();
   for (const widget of value.widgets) {
     if (
       !isObject(widget) ||
@@ -110,6 +118,7 @@ function isValidDraft(value: unknown): value is Draft {
     )
       return false;
     ids.add(widget.id);
+    kindById.set(widget.id, widget.kind as WidgetKind);
     const settings = widget.settings;
     if (
       typeof settings.title !== "string" ||
@@ -141,7 +150,7 @@ function isValidDraft(value: unknown): value is Draft {
     )
       return false;
     const columns = columnsFor(key as Breakpoint);
-    for (const rect of Object.values(
+    for (const [id, rect] of Object.entries(
       value.layouts[key] as Record<string, unknown>,
     )) {
       if (
@@ -152,7 +161,8 @@ function isValidDraft(value: unknown): value is Draft {
         (rect.w as number) < 1 ||
         (rect.h as number) < 1 ||
         (rect.x as number) + (rect.w as number) > columns ||
-        (rect.h as number) < minimumHeight(key as Breakpoint) ||
+        (rect.h as number) <
+          minimumHeight(key as Breakpoint, kindById.get(id)) ||
         (key === "mobile" && rect.w !== columns) ||
         !sizeNames.includes(rect.size as SizeName)
       )
@@ -274,9 +284,9 @@ function LocalDialog({
     >
       <header>
         <h2>{title}</h2>
-        <button type="button" aria-label="Close detail" onClick={onClose}>
+        <IconButton label="Close detail" onClick={onClose}>
           <X size={20} />
-        </button>
+        </IconButton>
       </header>
       {children}
     </dialog>
@@ -501,7 +511,7 @@ export function DashboardBuilder() {
             sizedRect,
             cols,
             minimumWidthSpan(cols, width),
-            minimumHeight(bp),
+            minimumHeight(bp, widget?.kind),
           )
         : null;
       const next = {
@@ -580,7 +590,10 @@ export function DashboardBuilder() {
       if (!widget) return;
       rect.w =
         bp === "mobile" ? cols : g.base.w + Math.round(dx / (track + 16));
-      rect.h = Math.max(minimumHeight(bp), g.base.h + Math.round(dy / 80));
+      rect.h = Math.max(
+        minimumHeight(bp, widget.kind),
+        g.base.h + Math.round(dy / 80),
+      );
       rect.size = classifyFootprint(rect.w, rect.h, bp, width);
     }
     propose({ ...g, pointerY: e.clientY }, rect);
@@ -644,7 +657,10 @@ export function DashboardBuilder() {
         );
         if (g.type === "move") rect.y = Math.max(0, g.base.y + verticalSteps);
         else {
-          rect.h = Math.max(minimumHeight(bp), g.base.h + verticalSteps);
+          const kind = draftRef.current.widgets.find(
+            (item) => item.id === g.id,
+          )?.kind;
+          rect.h = Math.max(minimumHeight(bp, kind), g.base.h + verticalSteps);
           rect.size = classifyFootprint(rect.w, rect.h, bp, width);
         }
         propose(g, rect);
@@ -698,14 +714,18 @@ export function DashboardBuilder() {
       const step = e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 1;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight")
         rect.w = bp === "mobile" ? cols : rect.w + step;
-      else rect.h = Math.max(minimumHeight(bp), rect.h + step);
+      else
+        rect.h = Math.max(
+          minimumHeight(bp, byId.get(g.id)?.kind),
+          rect.h + step,
+        );
       rect.size = classifyFootprint(rect.w, rect.h, bp, width);
     }
     propose(g, rect);
   };
   const applySize = (widget: WidgetInstance, size: SizeName) => {
     const current = currentLayout[widget.id];
-    const preset = footprint(size, bp, width);
+    const preset = footprint(size, bp, width, widget.kind);
     const max = maximumFootprint(widget.kind, bp);
     if (preset.w > max.w || preset.h > max.h) {
       setAnnouncement(
@@ -724,7 +744,7 @@ export function DashboardBuilder() {
       rect,
       cols,
       minimumWidthSpan(cols, width),
-      minimumHeight(bp),
+      minimumHeight(bp, widget.kind),
     );
     if (!next) {
       setAnnouncement("This preset does not fit. Move the card left first.");
@@ -832,7 +852,12 @@ export function DashboardBuilder() {
             }
           : {
               ...oldRect,
-              ...footprint(replacement.settings.size, key, canvasWidth),
+              ...footprint(
+                replacement.settings.size,
+                key,
+                canvasWidth,
+                replacement.kind,
+              ),
             };
         rect.x = Math.min(rect.x, columnsFor(key) - rect.w);
         layouts[key] =
@@ -842,7 +867,7 @@ export function DashboardBuilder() {
             rect,
             columnsFor(key),
             minimumWidthSpan(columnsFor(key), canvasWidth),
-            minimumHeight(key),
+            minimumHeight(key, replacement.kind),
           ) ?? layouts[key];
       }
       commit(
@@ -881,7 +906,7 @@ export function DashboardBuilder() {
                 custom,
                 columnsFor(key),
                 minimumWidthSpan(columnsFor(key), canvasWidth),
-                minimumHeight(key),
+                minimumHeight(key, widget.kind),
               ) ?? next;
           }
         }
@@ -910,7 +935,7 @@ export function DashboardBuilder() {
       if (updated.settings.size !== old.settings.size) {
         const rect = {
           ...currentLayout[old.id],
-          ...footprint(updated.settings.size, bp, width),
+          ...footprint(updated.settings.size, bp, width, updated.kind),
         };
         rect.x = Math.min(rect.x, cols - rect.w);
         const result = resolvePlacement(
@@ -919,7 +944,7 @@ export function DashboardBuilder() {
           rect,
           cols,
           minimumWidthSpan(cols, width),
-          minimumHeight(bp),
+          minimumHeight(bp, updated.kind),
         );
         if (result)
           next = { ...next, layouts: { ...next.layouts, [bp]: result } };
@@ -948,11 +973,10 @@ export function DashboardBuilder() {
     >
       <header className="db-heading">
         <div>
-          <label className="db-name-label" htmlFor="dashboard-name">
-            Dashboard name
-          </label>
-          <input
+          <Input
+            label="Dashboard name"
             id="dashboard-name"
+            className="db-name-input"
             value={name}
             maxLength={80}
             onChange={(e) => setName(e.target.value)}
@@ -976,39 +1000,35 @@ export function DashboardBuilder() {
         <div className="db-action-group">
           {!clientPreview && (
             <>
-              <button
-                className="db-primary"
-                type="button"
+              <Button
+                variant="primary"
                 onClick={() => setGallery({ mode: "add" })}
                 disabled={!ready}
               >
                 <Plus size={17} />
                 Add widget
-              </button>
-              <button
-                type="button"
-                aria-label="Undo"
-                title="Undo"
+              </Button>
+              <IconButton
+                label="Undo"
                 disabled={!history.current.past.length}
                 onClick={() => travel("undo")}
               >
                 <Undo2 size={17} />
-              </button>
-              <button
-                type="button"
-                aria-label="Redo"
-                title="Redo"
+              </IconButton>
+              <IconButton
+                label="Redo"
                 disabled={!history.current.future.length}
                 onClick={() => travel("redo")}
               >
                 <Redo2 size={17} />
-              </button>
+              </IconButton>
             </>
           )}
         </div>
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           className="db-client-switch"
-          type="button"
           aria-pressed={clientPreview}
           onClick={() => {
             cancelGesture();
@@ -1017,12 +1037,14 @@ export function DashboardBuilder() {
         >
           <Eye size={16} />
           {clientPreview ? "Back to editor" : "Client preview"}
-        </button>
+        </Button>
         {!clientPreview && (
           <details
             className="db-dashboard-menu"
             onClick={(event) => {
-              if ((event.target as HTMLElement).closest("button"))
+              if (
+                (event.target as HTMLElement).closest("button:not(.v8-select)")
+              )
                 event.currentTarget.removeAttribute("open");
             }}
             onKeyDown={(event) => {
@@ -1036,8 +1058,10 @@ export function DashboardBuilder() {
               <MoreHorizontal size={19} />
             </summary>
             <div>
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                className="db-menu-action"
                 onClick={() =>
                   commitLayout(
                     arrange(
@@ -1066,10 +1090,15 @@ export function DashboardBuilder() {
               >
                 <LayoutGrid size={15} />
                 Auto arrange
-              </button>
-              <button type="button" onClick={() => setReset(true)}>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="db-menu-action"
+                onClick={() => setReset(true)}
+              >
                 Reset dashboard
-              </button>
+              </Button>
             </div>
           </details>
         )}
@@ -1111,17 +1140,16 @@ export function DashboardBuilder() {
               </p>
               {!clientPreview && (
                 <>
-                  <button
-                    className="db-primary"
-                    type="button"
+                  <Button
+                    variant="primary"
                     onClick={() => setGallery({ mode: "add" })}
                   >
                     <Plus size={17} />
                     Choose your first widgets
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="link"
                     className="db-example"
-                    type="button"
                     onClick={() =>
                       add(
                         (
@@ -1156,7 +1184,7 @@ export function DashboardBuilder() {
                     }
                   >
                     Load example layout
-                  </button>
+                  </Button>
                 </>
               )}
             </motion.div>
@@ -1175,7 +1203,7 @@ export function DashboardBuilder() {
               catalogue.find((entry) => entry.id === widget.kind)?.sizes ?? [],
             );
             const matchingPreset = availableSizes.find((size) => {
-              const preset = footprint(size, bp, width);
+              const preset = footprint(size, bp, width, widget.kind);
               return preset.w === rect.w && preset.h === rect.h;
             });
             return (
@@ -1184,6 +1212,8 @@ export function DashboardBuilder() {
                 id={`widget-${id}`}
                 tabIndex={-1}
                 className="db-card"
+                data-kind={widget.kind}
+                data-client-preview={clientPreview}
                 data-size={classifyFootprint(rect.w, rect.h, bp, width)}
                 data-affected={!!changed}
                 data-moving={gesture?.id === id}
@@ -1197,31 +1227,44 @@ export function DashboardBuilder() {
               >
                 <header className="db-card-header">
                   <h2 title={titleFor(widget)}>
-                    <button
-                      type="button"
-                      className="db-source-title"
-                      aria-label={`Open ${titleFor(widget)} source details`}
-                      onClick={() => setDetail(widgetDetailKey(widget))}
-                    >
-                      {titleFor(widget)}
-                    </button>
+                    {widgetDetailKey(widget) ? (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="db-source-title"
+                        aria-label={`Open ${titleFor(widget)} source details`}
+                        onClick={() => {
+                          const key = widgetDetailKey(widget);
+                          if (key) setDetail(key);
+                        }}
+                      >
+                        {titleFor(widget)}
+                      </Button>
+                    ) : (
+                      <span className="db-source-title">
+                        {titleFor(widget)}
+                      </span>
+                    )}
                   </h2>
                   {!clientPreview && (
                     <div className="db-card-tools">
-                      <button
-                        type="button"
+                      <IconButton
+                        size="lg"
                         className="db-move"
-                        aria-label={`Move ${titleFor(widget)}`}
+                        label={`Move ${titleFor(widget)}`}
                         title="Move · Arrows to preview, Enter to commit"
                         onPointerDown={(e) => startGesture(id, "move", e)}
                         onKeyDown={(e) => handleKeys(e, id, "move")}
                       >
                         <Grip size={16} />
-                      </button>
+                      </IconButton>
                       <details
                         className="db-card-menu"
                         onKeyDown={(event) => {
-                          if (event.key === "Escape") {
+                          if (
+                            event.key === "Escape" &&
+                            !(event.target as HTMLElement).closest(".v8-select")
+                          ) {
                             event.currentTarget.removeAttribute("open");
                             event.currentTarget
                               .querySelector("summary")
@@ -1229,13 +1272,19 @@ export function DashboardBuilder() {
                           }
                         }}
                         onClick={(e) => {
-                          if ((e.target as HTMLElement).closest("button"))
+                          if (
+                            (e.target as HTMLElement).closest(
+                              "button:not(.v8-select)",
+                            )
+                          )
                             e.currentTarget.removeAttribute("open");
                         }}
                         onKeyUp={(e) => {
                           if (
                             (e.key === "Enter" || e.key === " ") &&
-                            (e.target as HTMLElement).closest("button")
+                            (e.target as HTMLElement).closest(
+                              "button:not(.v8-select)",
+                            )
                           )
                             e.currentTarget.removeAttribute("open");
                         }}
@@ -1246,7 +1295,10 @@ export function DashboardBuilder() {
                           <MoreHorizontal size={17} />
                         </summary>
                         <div>
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
                             type="button"
                             onClick={() =>
                               setGallery({
@@ -1259,8 +1311,11 @@ export function DashboardBuilder() {
                             }
                           >
                             Configure
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
                             type="button"
                             onClick={() => {
                               document
@@ -1271,29 +1326,33 @@ export function DashboardBuilder() {
                             }}
                           >
                             Move with keyboard
-                          </button>
-                          <label>
-                            Resize
-                            <select
-                              aria-label={`Resize ${titleFor(widget)}`}
-                              value={matchingPreset ?? "custom"}
-                              onChange={(e) =>
-                                applySize(widget, e.target.value as SizeName)
-                              }
-                            >
-                              {!matchingPreset && (
-                                <option value="custom" disabled>
-                                  Custom · {rect.w} × {rect.h}
-                                </option>
-                              )}
-                              {availableSizes.map((size) => (
-                                <option key={size} value={size}>
-                                  {size}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <button
+                          </Button>
+                          <Select
+                            label={`Resize ${titleFor(widget)}`}
+                            value={matchingPreset ?? "custom"}
+                            options={[
+                              ...(!matchingPreset
+                                ? [
+                                    {
+                                      value: "custom",
+                                      label: `Custom · ${rect.w} × ${rect.h}`,
+                                      disabled: true,
+                                    },
+                                  ]
+                                : []),
+                              ...availableSizes.map((size) => ({
+                                value: size,
+                                label: size,
+                              })),
+                            ]}
+                            onValueChange={(value) =>
+                              applySize(widget, value as SizeName)
+                            }
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
                             type="button"
                             onClick={() => {
                               document
@@ -1313,8 +1372,11 @@ export function DashboardBuilder() {
                             }}
                           >
                             Set exact dimensions
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
                             type="button"
                             onClick={() =>
                               add(
@@ -1338,8 +1400,11 @@ export function DashboardBuilder() {
                             }
                           >
                             Duplicate
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
                             type="button"
                             onClick={() =>
                               setGallery({
@@ -1355,13 +1420,25 @@ export function DashboardBuilder() {
                             }
                           >
                             Replace
-                          </button>
-                          <button type="button" onClick={() => reorder(id, -1)}>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
+                            type="button"
+                            onClick={() => reorder(id, -1)}
+                          >
                             Move earlier in reading order
-                          </button>
-                          <button type="button" onClick={() => reorder(id, 1)}>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="db-menu-action"
+                            type="button"
+                            onClick={() => reorder(id, 1)}
+                          >
                             Move later in reading order
-                          </button>
+                          </Button>
                           <fieldset className="db-step-buttons">
                             <legend className="db-sr">
                               Move one grid step
@@ -1374,22 +1451,27 @@ export function DashboardBuilder() {
                                 ["Right", 1, 0],
                               ] as const
                             ).map(([label, x, y]) => (
-                              <button
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="db-step-action"
                                 type="button"
                                 key={label}
                                 onClick={() => moveStep(id, x, y)}
                               >
                                 {label}
-                              </button>
+                              </Button>
                             ))}
                           </fieldset>
-                          <button
+                          <Button
+                            variant="destructive"
+                            size="sm"
                             className="db-remove"
                             type="button"
                             onClick={() => remove(id)}
                           >
                             Remove
-                          </button>
+                          </Button>
                         </div>
                       </details>
                     </div>
@@ -1469,61 +1551,57 @@ export function DashboardBuilder() {
             {gesture.valid
               ? "Ready to place"
               : gesture.rect.w < minimumWidthSpan(cols, width) ||
-                  gesture.rect.h < minimumHeight(bp)
-                ? `Minimum ${minimumWidthSpan(cols, width)} columns × ${minimumHeight(bp)} rows`
+                  gesture.rect.h < minimumHeight(bp, byId.get(gesture.id)?.kind)
+                ? `Minimum ${minimumWidthSpan(cols, width)} columns × ${minimumHeight(bp, byId.get(gesture.id)?.kind)} rows`
                 : `Maximum ${maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w} columns × ${maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h} rows; keep within canvas`}
           </span>
           {gesture.type === "resize" && (
             <div className="db-size-fields">
-              <label>
-                Width (columns)
-                <input
-                  aria-label="Widget width in columns"
-                  type="number"
-                  min={bp === "mobile" ? cols : minimumWidthSpan(cols, width)}
-                  max={
-                    maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w
-                  }
-                  step={1}
-                  value={gesture.rect.w}
-                  disabled={bp === "mobile"}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (Number.isInteger(value))
-                      propose(gesture, { ...gesture.rect, w: value });
-                  }}
-                />
-              </label>
-              <label>
-                Height (rows)
-                <input
-                  aria-label="Widget height in rows"
-                  type="number"
-                  min={minimumHeight(bp)}
-                  max={
-                    maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h
-                  }
-                  step={1}
-                  value={gesture.rect.h}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (Number.isInteger(value))
-                      propose(gesture, { ...gesture.rect, h: value });
-                  }}
-                />
-              </label>
+              <Input
+                label="Widget width in columns"
+                aria-label="Widget width in columns"
+                className="db-size-input"
+                type="number"
+                min={bp === "mobile" ? cols : minimumWidthSpan(cols, width)}
+                max={
+                  maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w
+                }
+                step={1}
+                value={gesture.rect.w}
+                disabled={bp === "mobile"}
+                size="sm"
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isInteger(value))
+                    propose(gesture, { ...gesture.rect, w: value });
+                }}
+              />
+              <Input
+                label="Widget height in rows"
+                aria-label="Widget height in rows"
+                className="db-size-input"
+                type="number"
+                min={minimumHeight(bp, byId.get(gesture.id)?.kind)}
+                max={
+                  maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h
+                }
+                step={1}
+                value={gesture.rect.h}
+                size="sm"
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isInteger(value))
+                    propose(gesture, { ...gesture.rect, h: value });
+                }}
+              />
             </div>
           )}
-          <button type="button" onClick={() => cancelGesture()}>
+          <Button variant="secondary" onClick={() => cancelGesture()}>
             Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={!gesture.valid}
-            className="db-primary"
-          >
+          </Button>
+          <Button variant="primary" type="submit" disabled={!gesture.valid}>
             Confirm {gesture.type}
-          </button>
+          </Button>
         </form>
       )}
       <p className="db-footnote">
@@ -1534,9 +1612,9 @@ export function DashboardBuilder() {
       <div className="db-toast" role="status" aria-live="polite">
         {announcement}
         {announcement.includes("removed") && (
-          <button type="button" onClick={() => travel("undo")}>
+          <Button variant="ghost" size="sm" onClick={() => travel("undo")}>
             Undo
-          </button>
+          </Button>
         )}
       </div>
       {gallery && (
@@ -1581,12 +1659,11 @@ export function DashboardBuilder() {
             records remain available. You can undo this reset.
           </p>
           <div className="db-dialog-actions">
-            <button type="button" onClick={() => setReset(false)}>
+            <Button variant="secondary" onClick={() => setReset(false)}>
               Keep dashboard
-            </button>
-            <button
-              className="db-primary"
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => {
                 commit(
                   emptyDraft(),
@@ -1596,7 +1673,7 @@ export function DashboardBuilder() {
               }}
             >
               Reset dashboard
-            </button>
+            </Button>
           </div>
         </LocalDialog>
       )}

@@ -168,7 +168,7 @@ for (const mode of ["dark", "light"] as const) {
     await expect(page.locator(".eg-root")).toHaveAttribute("data-mode", mode);
     const home = await computed(page, ".eg-root");
     expect(home["background-color"]).toBe(
-      mode === "dark" ? "rgb(5, 5, 5)" : "rgb(244, 244, 244)",
+      mode === "dark" ? "rgb(8, 8, 8)" : "rgb(245, 245, 245)",
     );
     expect(home["font-family"]).toContain("Ethereal Geist");
     expect(await fontLoaded(page)).toBe(true);

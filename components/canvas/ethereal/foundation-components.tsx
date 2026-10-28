@@ -10,7 +10,7 @@ import {
   Tabs,
   TextInput,
 } from "@/components/canvas/ethereal/ui";
-import { Button } from "@/components/canvas/ui/button";
+import { Button, Select } from "@/components/canvas/vari8/components";
 
 function NumericField({
   id,
@@ -32,6 +32,7 @@ function NumericField({
         <TextInput
           id={id}
           className="foundation-number"
+          data-size="sm"
           type="text"
           inputMode="numeric"
           value={value}
@@ -113,19 +114,18 @@ export function FoundationComponents({
           </div>
           <div className="foundation-actions">
             <Button
-              className="app-button"
+              variant="primary"
               onClick={() => onNotify("Primary action selected.")}
             >
               <Check size={14} /> Primary action
             </Button>
             <Button
-              variant="outline"
-              className="app-button"
+              variant="secondary"
               onClick={() => onNotify("Secondary action selected.")}
             >
               Secondary
             </Button>
-            <Button variant="outline" className="app-button" disabled>
+            <Button variant="secondary" disabled>
               Disabled
             </Button>
           </div>
@@ -164,21 +164,21 @@ export function FoundationComponents({
                   : "Add a complete email address."}
               </span>
             </label>
-            <label className="foundation-label" htmlFor="foundation-metric">
-              Metric
-              <select
+            <div className="foundation-label">
+              <Select
                 id="foundation-metric"
-                className="form-select"
+                label="Metric"
                 value={metric}
                 aria-invalid={!metric}
                 aria-describedby="foundation-metric-hint"
-                onChange={(event) => setMetric(event.target.value)}
-              >
-                <option value="">Choose a metric</option>
-                <option value="bodyweight">Bodyweight</option>
-                <option value="sleep">Sleep</option>
-                <option value="steps">Steps</option>
-              </select>
+                onValueChange={setMetric}
+                options={[
+                  { value: "", label: "Choose a metric" },
+                  { value: "bodyweight", label: "Bodyweight" },
+                  { value: "sleep", label: "Sleep" },
+                  { value: "steps", label: "Steps" },
+                ]}
+              />
               <span
                 id="foundation-metric-hint"
                 className={!metric ? "foundation-error" : "foundation-valid"}
@@ -186,7 +186,7 @@ export function FoundationComponents({
                 {!metric ? <X size={13} /> : <CheckCircle2 size={13} />}
                 {metric ? "Metric selected." : "Choose one to continue."}
               </span>
-            </label>
+            </div>
           </div>
         </section>
 
@@ -251,6 +251,7 @@ export function FoundationComponents({
                 <TextInput
                   id="foundation-pressure"
                   className="foundation-number"
+                  data-size="sm"
                   type="text"
                   inputMode="numeric"
                   autoComplete="off"
@@ -300,8 +301,7 @@ export function FoundationComponents({
               <strong>No saved note</strong>
               <span>Write a short note to add context.</span>
               <Button
-                variant="outline"
-                className="app-button"
+                variant="secondary"
                 onClick={() => setFeedbackVisible(true)}
               >
                 Restore confirmation

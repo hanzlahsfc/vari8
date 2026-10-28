@@ -1,3 +1,18 @@
+## 2026-10-28 - Merge: newest Vari8-Beta tip into the full package branch
+
+- Merged `origin/Vari8-Beta` tip `07183902be14053b868a1fe47773b6aba6b2beda`
+  into `promote/full-package-a`, bringing in the merged PR 225 off
+  lookup and PR 228 label entry catalogue work together with the earlier
+  promoted slices. Documentation conflicts resolved by union plus index
+  regeneration; the parity comparer keeps both the geometry bound
+  recorder rule and the changed pixel budget, and the comparer component
+  pins were re-recorded for the merged files. The nutrition accuracy gate
+  script now carries the manifest documented invocation. Three visual
+  reference tests remain bound to the Beta canvas capture contract of 35
+  recipes while the merged canvas has 37 recipes and one added step
+  scope; that reactivation decision is recorded for review outside the
+  repository. All other gates green on the merge head.
+
 ## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
 
 - Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
@@ -18,6 +33,18 @@
   `Vari8-Beta` via `promote/hp-nutrition-source-adapters`: BLS and
   CIQUAL food source adapters, shared source helpers, dedupe decision
   handling, the dry-run script, workbook fixtures and unit tests.
+
+## 2026-10-28 - Merge: Vari8-Beta tip into the full package branch
+
+- Merged `origin/Vari8-Beta` tip `a90eaf283f357e3d3aa7f4d3abb8a5ab01e2ae45`
+  into `promote/full-package-a` so the package branch carries the nine
+  newest Beta promotions: parity HTTPS harness, daily numeric series,
+  check-in review read model, coach notes and tasks, workspace
+  preferences, invitations, habits, dashboard configuration and
+  template definitions. Three generated documentation conflicts
+  resolved by union plus index regeneration; no product file
+  conflicted. Gate battery, fresh database lifecycle and browser pass
+  rerun on the merge head; all green.
 
 ## 2026-10-28 - Promotion: template definitions report (PR-M4)
 
@@ -74,6 +101,65 @@
   `promote/hp-parity-https`: production parity served over HTTPS, shared
   PID/PGID/start listener-ownership predicate, bounded mutation proof and
   retained superseded evidence.
+
+## 2026-10-28 - Vari8-Beta d1c40810 merged into the verified full-package line on promote/full-package-a
+
+- Merge commit `91f9491f` on branch `promote/full-package-a` (worktree
+  `.worktrees/promote-a`). Parents: `b5ec89ea` (the verified full-package
+  line, unchanged) and `d1c40810` (`origin/Vari8-Beta` tip at fetch time).
+- The Vari8-Beta side adds PR #162 (supplement plan service, schema and
+  actions), PR #193 (check-in enablement: trial seed sign-in, client
+  rating controls, walkthrough runbook), PR #199 (https e2e harness
+  contract, lane ports, boot-check classification) and PR #201 (k6
+  load-gate tooling with lifecycle proofs), plus boot checks, logging
+  and RBAC matrix coverage for `supplementPlans`.
+- Conflicts: three, all documentation. `docs/STATUS.md` resolved as a
+  union of both entry histories, newest first. `docs/index/DATA-MODEL.md`
+  and `docs/index/SYMBOLS.md` regenerated with `npm run index` from the
+  merged schema and source tree. No unclassifiable conflict occurred.
+- Gates on this head: `npm ci` root 0 and frontend 0, `npx prisma
+generate` 0, `npx prisma validate` 0, `npm run format:check` 0,
+  `npm run typecheck` 0, `npm run lint` 0 errors and 89 warnings,
+  `npm run test` 0 (107 files, 1289 tests), `npm run test:integration` 0
+  (66 files, 923 tests, disposable lane database `app_fp_w2p0`),
+  `npm run build` 0, `npm run index` 0, `npm run index:check` 0,
+  `cd frontend && npm run lint` 0, `cd frontend && npm run check` 0.
+- `npm run test:e2e` initially reported four failures, all in colour
+  assertions written before the canvas token update: the specs expected
+  the earlier wash values while the shipped tokens are `#F5F5F5` /
+  `#080808`. `app/auth.css` also still repeated the earlier light wash
+  and had no dark token mirror for the auth routes, which never mount
+  the canvas appearance store; the dark wash, card surface, text and
+  hairlines on the coach-facing sign-in pages therefore rendered
+  without their canvas values. The mirror now repeats the current v8
+  values in both modes and the affected e2e expectations were updated
+  to the shipped tokens. `npm run test:e2e` exit 0: 16 passed, 8
+  skipped (mail-delivery gated), 0 failed.
+- Fresh lane database `app_fp_w2p0` on 127.0.0.1:5433: `npx prisma
+migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV=test MEDIA_STORAGE_ADAPTER=local npm run seed:dev` ran
+  twice, both exit 0 and idempotent; row counts converged (users 7,
+  client profiles 15, check-in instances 119, nutrition items 584,
+  media objects 4). The lane database was dropped after verification.
+- Browser pass on the production build (`npx next start`), real seeded
+  sign-ins at 1440x900 and 390x844: coach sign-in to clients list,
+  client profile overview, meal plan, training program, check-in
+  review queue and forms; owner sign-in to the admin surface; client
+  sign-in to check-ins and daily entry. Every surface returned 200
+  with zero console errors at both widths.
+- UI map on the same server validated with the UI-SYSTEM harness,
+  exit 0. Sheets-path diff against the merge base is 0 lines; the
+  fidelity harness selftest passes all four cases.
+- Parity note: `npm run parity` self-serves a production `next start`
+  with an http `BETTER_AUTH_URL`; the boot check added upstream on
+  Vari8-Beta (tracked as issue #202) refuses that origin, so the
+  canonical self-spawn path cannot boot on this head. The same check
+  was recorded upstream as a harness defect, not an app defect.
+  `PARITY_DEV=1 npm run parity` ran end to end: 74 screens at both
+  widths, all main captures bit exact or inside budget, 19 residual
+  diffs confined to inner scroll regions, consistent with the
+  dev-timing noise the runner documents. The merge adds no diff under
+  `app/(canvas)`, `lib/canvas`, `components/canvas` or `frontend/`
+  relative to the verified base.
 
 ## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
 
@@ -405,6 +491,71 @@ app-db-1` adapter.
 - The scoped repair/evidence commits were pushed to
   `origin/beta/k6-gate`; independent review remains pending. Issue #178
   stays open with capacity/staging unchanged.
+
+## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
+
+- Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `09b1424`
+  (`Vari8-Beta` with #160 merged, so `frontend/` carries `51fa6a2`). Source
+  `origin/FRONTEND` `51fa6a2` (`frontend/src`), base `fe5780d`, per
+  `Vari8-evidence/CANVAS-PORT-MAP-2026-10-22.md`.
+- Mechanical copy is rerunnable: `node tools/port-canvas/port.mjs` (git show from
+  `51fa6a2`, `@/components|@/lib|@/data|@/styles` rewrite, `motion/react`
+  `useReducedMotion` to `@/lib/canvas/reduced-motion`, relative `../lib` to
+  `@/lib/canvas`, hand-merge files excluded). 121 files written, 8 hand merges
+  produced by `port.mjs --merge` (git merge-file, three conflicts resolved by
+  hand: store data seam, coach-app viewer plumbing, mealplan and dashboard
+  import blocks), `app/(canvas)/layout.tsx` keeps the scoped root layout plus the
+  one `vari8-tokens.css` line.
+- Data seam defect the map did not predict, found by the seam test and fixed:
+  `plans.activityTargets`, `plans.supplements` and `demoSeeds` were dropped
+  between save and reload. Training slice now owns activityTargets and demoSeeds,
+  nutrition slice owns supplements. Second defect: `adoptAmaraTrainingExample`
+  wrote `activityTargets: undefined`, which becomes `[]` after a JSON round trip,
+  so migrate was not idempotent; one `?? []`.
+- Update onto `09b1424`: one conflict, `docs/STATUS.md`, resolved newest entry
+  first. Merging the new base also surfaced a real base breakage, fixed here:
+  `tests/unit/system-index.test.ts` still expected `MotionProvider` to wrap
+  `/, /coach, /ethereal`, but #160 added `frontend/src/app/dev/design-system`,
+  so the generator row now names four routes. `docs/index/*.md` regenerated
+  (`npm run index`, `npm run index:check` clean).
+- Parity gate now applies D32's own pass rule. `tools/parity/compare.mjs` gains
+  `d32Budget`, 0.1 percent of each screen's captured area (1296 px at 1440x900,
+  329 px at 390x844), so a plain `npm run parity` is no longer a stricter
+  bit-exact gate than the decision it implements. `PARITY_MAX_DIFF_PIXELS` stays
+  as an absolute override. `tests/unit/parity-budget.test.ts` fails if the
+  default goes back to zero or the env input stops being validated.
+- `npm run parity` on this head, no env overrides: exit 0, 0 problems, 74
+  screens. The five residuals that were 1/255 shade inside the active Clients
+  pill still measure 340 px in four 1440 shots and 228 px in
+  `s07-exercise-library`, inside the 1296 px budget; geometry, text and page
+  size stay bit exact on every screen. Named in the parity report per screen.
+- Baseline reproducibility, measured: `PARITY_APP=frontend npm run parity --
+--update-baseline` on this head reproduces 73 of 74 shots byte for byte. The
+  one difference is `390/s11-client-preview` scroll step at 247,330: the bottom
+  two rows of that 324x54 strip (648 px, channel delta 34), which the root app
+  matches exactly against the committed baseline. The committed baseline is
+  therefore kept unchanged.
+- Recorder truth text: the `RULED` entry for "Record demo video feedback" to
+  "Record video feedback" now has its owner row. D32's truth-text table gains
+  `S02-25`, which mirrors the row D36 already lists for PR-MEDIA ("Recorder
+  records for real, same UI"). No copy changed.
+- Check-ins ordering rule: PR #147 is still open at `c0b0291`. The ported file is
+  kept and the merge is clean on this head. `git merge-tree --write-tree HEAD
+origin/beta/pr-w6-checkins` exits 0 with no conflict output; in the merged
+  blob `loadCheckins`, `sendFeedback`, `workspaceId`, `SegmentedControl` and
+  `TextArea` are all present, and `ParameterValue`, `cd-tabs` and conflict
+  markers are absent. Re-check before merging #147, as the PR body says.
+- Gates on this head, in the worktree: `npm run typecheck` 0, `npm run lint` 0
+  errors and 89 warnings (same classes as the base), `npm run test` 0 (99 files,
+  1120 tests), `npm run build` 0, `npm run index:check` 0.
+- Live check on the production build, signed in as the workspace owner, 1440x900
+  and 390x844, both widths: wrote an activity target (steps Minimum 8,500) and an
+  ESN Vitamin D3+K2 supplement through the planners, reloaded, read both back
+  from the reloaded screen, then read the client profile Plans tab target
+  summary and the read-only client plan preview. Zero console errors.
+- Evidence: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (8 screenshots at both
+  widths plus `parity-report.html`). The earlier copy inside the repo has been
+  moved there.
 
 ## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
 

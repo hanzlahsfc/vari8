@@ -20,6 +20,7 @@ import {
   seedState,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
+import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import { normalizeTemplateSetups } from "./template-setup";
 
 type Store = {
@@ -91,7 +92,8 @@ export function CoachProvider({
       const stored = readCoachState();
       if (stored !== undefined) {
         const parsed: unknown = migrateCoachState(stored);
-        if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
+        if (isCoachState(parsed))
+          setState(normalizeTemplateSetups(adoptAmaraTrainingExample(parsed)));
         else {
           preserveRaw.current = true;
           setStorageOk(false);

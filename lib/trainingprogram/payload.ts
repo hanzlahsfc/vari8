@@ -15,7 +15,9 @@
  * fields are hidden on every client path, never purged (P4 §6).
  */
 
+import { MUSCLE_GROUP_ID_SET } from "../training/volume";
 import { TRAINING_LIMITS } from "./limits";
+import { prescribedSetSchema, type PrescribedSet } from "./validators";
 
 export class TrainingError extends Error {
   readonly code: string;
@@ -134,6 +136,18 @@ function reqClosedObject(v: unknown): Record<string, unknown> {
   return v as Record<string, unknown>;
 }
 
+/** Canvas `secondaryMuscles`: a bounded list of canvas muscle-group ids. */
+function normalizeMuscleList(v: unknown): string[] | undefined {
+  if (v === undefined || v === null) return undefined;
+  if (!Array.isArray(v) || v.length > TRAINING_LIMITS.maxSecondaryMuscles)
+    throw new TrainingError("invalid_input");
+  return v.map((m) => {
+    if (typeof m !== "string" || !MUSCLE_GROUP_ID_SET.has(m))
+      throw new TrainingError("invalid_input");
+    return m;
+  });
+}
+
 function byteLen(v: unknown): number {
   return Buffer.byteLength(JSON.stringify(v), "utf8");
 }
@@ -152,6 +166,11 @@ export type TrainingDraft = {
     sessionId: string;
     name: string;
     catalogItemId?: string;
+    /** PR-M6 canvas exercise metadata (types.ts:42-52). */
+    libraryItemId?: string;
+    muscle?: string;
+    secondaryMuscles?: string[];
+    generalNotes?: string;
   }[];
   /** week → ordered session ids present that week. */
   sessionOrder: BoundaryMap<string[]>;
@@ -165,6 +184,13 @@ export type TrainingDraft = {
   sessionNames: Record<string, BoundaryMap<string>>;
   /** "sessionId/exerciseId/payloadKey" → (week → value). */
   fieldCells: Record<string, BoundaryMap<string | number>>;
+  /**
+   * PR-M6: "sessionId/exerciseId" → (week → ordered prescribed set
+   * rows). The canvas per-set shape (TrainingSet): reps, repsMax,
+   * tempo, type, rest, instructions, plus the P05 coachNote. No
+   * prescribed load per set (owner ruling O12).
+   */
+  setRows: Record<string, BoundaryMap<PrescribedSet[]>>;
 };
 
 export function emptyTrainingDraft(
@@ -180,6 +206,7 @@ export function emptyTrainingDraft(
     exercisePresence: {},
     sessionNames: {},
     fieldCells: {},
+    setRows: {},
   };
 }
 
@@ -255,6 +282,7 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
     "exercisePresence",
     "sessionNames",
     "fieldCells",
+    "setRows",
   ]);
   if (Object.keys(obj).some((k) => !allowed.has(k)))
     throw new TrainingError("invalid_input");
@@ -288,7 +316,17 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
     const o = reqClosedObject(e);
     if (
       Object.keys(o).some(
-        (k) => !["id", "sessionId", "name", "catalogItemId"].includes(k),
+        (k) =>
+          ![
+            "id",
+            "sessionId",
+            "name",
+            "catalogItemId",
+            "libraryItemId",
+            "muscle",
+            "secondaryMuscles",
+            "generalNotes",
+          ].includes(k),
       )
     )
       throw new TrainingError("invalid_input");
@@ -302,11 +340,27 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
       o.catalogItemId,
       TRAINING_LIMITS.catalogItemIdMax,
     );
+    const libraryItemId = optText(
+      o.libraryItemId,
+      TRAINING_LIMITS.catalogItemIdMax,
+    );
+    const muscle = optText(o.muscle, 32);
+    if (muscle !== undefined && !MUSCLE_GROUP_ID_SET.has(muscle))
+      throw new TrainingError("invalid_input");
+    const secondaryMuscles = normalizeMuscleList(o.secondaryMuscles);
+    const generalNotes = optText(
+      o.generalNotes,
+      TRAINING_LIMITS.generalNotesMax,
+    );
     return {
       id: reqId(o.id),
       sessionId,
       name: reqText(o.name, TRAINING_LIMITS.exerciseNameMax),
       ...(catalogItemId !== undefined ? { catalogItemId } : {}),
+      ...(libraryItemId !== undefined ? { libraryItemId } : {}),
+      ...(muscle !== undefined ? { muscle } : {}),
+      ...(secondaryMuscles !== undefined ? { secondaryMuscles } : {}),
+      ...(generalNotes !== undefined ? { generalNotes } : {}),
     };
   });
   const exerciseIds = new Set(exercises.map((e) => e.id));
@@ -323,6 +377,7 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
     exercisePresence: {},
     sessionNames: {},
     fieldCells: {},
+    setRows: {},
   };
 
   // Order boundaries may only reference declared sessions/exercises.
@@ -425,6 +480,32 @@ export function normalizeTrainingDraft(raw: unknown): TrainingDraft {
     draft.fieldCells[key] = norm;
   }
 
+  // PR-M6: ordered per-set prescription rows. Keys address declared
+  // "sessionId/exerciseId" nodes; each week value is a nonempty ordered
+  // list of validated set rows.
+  const sr = reqClosedObject(obj.setRows ?? {});
+  for (const [key, bm] of Object.entries(sr)) {
+    const [sid, eid] = key.split("/");
+    if (!sid || !eid || !sessionIds.has(sid) || !exerciseIds.has(eid))
+      throw new TrainingError("invalid_input");
+    const norm: BoundaryMap<PrescribedSet[]> = {};
+    for (const [wk, v] of Object.entries(reqClosedObject(bm))) {
+      reqWeekKey(wk);
+      if (
+        !Array.isArray(v) ||
+        v.length < 1 ||
+        v.length > TRAINING_LIMITS.setsMax
+      )
+        throw new TrainingError("invalid_input");
+      norm[wk] = v.map((row) => {
+        const parsed = prescribedSetSchema.safeParse(row);
+        if (!parsed.success) throw new TrainingError("invalid_input");
+        return parsed.data;
+      });
+    }
+    draft.setRows[key] = norm;
+  }
+
   if (byteLen(draft) > TRAINING_LIMITS.payloadMaxBytes)
     throw new TrainingError("invalid_input");
   return draft;
@@ -449,11 +530,22 @@ function isPresent(
   return resolveBoundary(bm, week) === true;
 }
 
+/** A stored row is a full PrescribedSet; client projection may strip
+ * per-toggle fields — the id always survives. */
+export type SetRowView = { id: string } & Partial<Omit<PrescribedSet, "id">>;
+
 export type MaterializedExercise = {
   id: string;
   name: string;
   catalogItemId?: string;
+  /** PR-M6 canvas exercise metadata — always-on like `note`. */
+  libraryItemId?: string;
+  muscle?: string;
+  secondaryMuscles?: string[];
+  generalNotes?: string;
   sets?: number;
+  /** PR-M6: ordered prescribed set rows (canvas TrainingSet[]). */
+  setRows?: SetRowView[];
   reps?: string;
   tempo?: string;
   setType?: string;
@@ -531,12 +623,27 @@ export function materializeWeeks(
       for (const e of orderedEx) {
         const ex: MaterializedExercise = { id: e.id, name: e.name };
         if (e.catalogItemId !== undefined) ex.catalogItemId = e.catalogItemId;
+        if (e.libraryItemId !== undefined) ex.libraryItemId = e.libraryItemId;
+        if (e.muscle !== undefined) ex.muscle = e.muscle;
+        if (e.secondaryMuscles !== undefined)
+          ex.secondaryMuscles = e.secondaryMuscles;
+        if (e.generalNotes !== undefined) ex.generalNotes = e.generalNotes;
         for (const key of ADDRESSABLE_CELL_KEYS) {
           const v = resolveBoundary(
             draft.fieldCells[`${s.id}/${e.id}/${key}`] ?? {},
             w,
           );
           if (v !== undefined) (ex as Record<string, unknown>)[key] = v;
+        }
+        // Ordered set rows win over a scalar `sets` cell when both
+        // resolve: the count is derived so the two never disagree.
+        const rows = resolveBoundary(
+          (draft.setRows ?? {})[`${s.id}/${e.id}`] ?? {},
+          w,
+        );
+        if (rows !== undefined) {
+          ex.setRows = rows;
+          ex.sets = rows.length;
         }
         materialized.push(ex);
       }
@@ -561,9 +668,13 @@ export function validatePublishCompleteness(
     for (const s of wk.sessions)
       for (const ex of s.exercises) {
         any = true;
-        if (cfg.sets && ex.sets === undefined)
+        if (cfg.sets && ex.sets === undefined && ex.setRows === undefined)
           throw new TrainingError("publish_incomplete");
-        if ((cfg.fixedReps || cfg.repRanges) && ex.reps === undefined)
+        if (
+          (cfg.fixedReps || cfg.repRanges) &&
+          ex.reps === undefined &&
+          ex.setRows === undefined
+        )
           throw new TrainingError("publish_incomplete");
       }
   if (!any) throw new TrainingError("publish_incomplete");
@@ -591,8 +702,37 @@ export function projectForClient(
           const out: MaterializedExercise = { id: ex.id, name: ex.name };
           for (const [k, v] of Object.entries(ex)) {
             if (k === "id" || k === "name") continue;
-            if (k === "catalogItemId" || enabled.has(k))
+            // Exercise metadata is structural (like catalogItemId) — never
+            // a toggled prescription field. setRows projects below.
+            if (k === "setRows") continue;
+            if (
+              k === "catalogItemId" ||
+              k === "libraryItemId" ||
+              k === "muscle" ||
+              k === "secondaryMuscles" ||
+              k === "generalNotes" ||
+              enabled.has(k)
+            )
               (out as Record<string, unknown>)[k] = v;
+          }
+          // Ordered set rows ride the Sets toggle; each row's fields
+          // follow their own toggles verbatim (P4 §6). coachNote is the
+          // P05 client-visible instruction, always kept.
+          if (ex.setRows !== undefined && enabled.has("sets")) {
+            out.setRows = ex.setRows.map((row) => {
+              const r: SetRowView = { id: row.id };
+              if (enabled.has("reps")) {
+                r.reps = row.reps;
+                if (row.repsMax !== undefined) r.repsMax = row.repsMax;
+              }
+              if (enabled.has("tempo")) r.tempo = row.tempo;
+              if (enabled.has("setType")) r.type = row.type;
+              if (enabled.has("rest")) r.rest = row.rest;
+              if (enabled.has("instructions"))
+                r.instructions = row.instructions;
+              if (row.coachNote !== undefined) r.coachNote = row.coachNote;
+              return r;
+            });
           }
           return out;
         }),

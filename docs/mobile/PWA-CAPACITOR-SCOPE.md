@@ -32,7 +32,7 @@ Ruling O1 (WIRING-SPEC "Owner rulings", 2026-10-20) fixes the transport split:
 same origin, `/api/v1` JSON routes, cookie session for web and PWA, bearer
 token for Capacitor apps, one shared fetch client owned by PR-W0.
 
-Already built, and unchanged by this card:
+Already built:
 
 - `lib/auth/server.ts`: Better Auth with the `bearer()` plugin. A session
   token presented as `Authorization: Bearer <token>` resolves to the same
@@ -45,6 +45,12 @@ Already built, and unchanged by this card:
 - `lib/api/v1.ts`: every v1 route authenticates cookie or bearer, validates
   params with Zod, then authorizes on the caller's ACTIVE membership,
   workspace role and capability scope. Denial is an undifferentiated 403.
+- `app/api/v1/auth/refresh/route.ts` (AUTH-ROTATE): bearer-only rotation.
+  Spends the presented token before issuing a replacement, re-checks the
+  account inside the handler (this route is not a Better Auth endpoint, so
+  the ACTIVE hook does not run for it), throttles per token hash and per
+  account, and records spent token hashes in a family ledger so a replay
+  revokes the whole family. The shell contract is below.
 
 ## Capacitor 8 native scope (decision package)
 
@@ -69,16 +75,27 @@ Existing behavior (installed Better Auth 1.7.10, `lib/auth/server.ts`):
   session cookie, and the same session resolution runs as for web. The
   server side of this contract is already shipped (above); the shell needs
   no new auth API to consume it.
-- Expiry and refresh: sessions are rolling. When a session is older than
-  `updateAge` (1 day), `updateSession` extends `expiresAt` and `updatedAt`
-  on the same row (`expiresIn` 7 days). `session.token` does not change:
-  the bearer value is stable for the session lifetime and keeps resolving
-  until the row expires or is deleted. No token rotation exists today, and
-  none is introduced by this card.
+- Expiry and refresh (AUTH-ROTATE, shipped): a bearer token now rotates.
+  `POST /api/v1/auth/refresh` takes `Authorization: Bearer <token>` and
+  returns `{ token, expiresAt, rotateAt }`. The presented token is spent
+  server side in the same request (the session row is deleted before the
+  replacement is created), so a token is single use. `expiresAt` is 7 days
+  absolute from issue with no rolling extension, and `rotateAt` is 80 percent
+  of that life: the shell rotates on reaching `rotateAt`, with a few minutes
+  of jitter so a fleet does not rotate in lockstep. A cookie session is
+  never accepted here and is never rotated by this route.
+- Failures the shell must handle: 401 means the token is expired, spent,
+  revoked, its account deactivated or its workspace membership gone. Clear
+  the stored token and return to sign-in. That includes presenting a token
+  that was already rotated out: the server treats it as a replay, deletes
+  every session in that token's family (including the newest token), and
+  answers 401, so a second device replaying an old value logs the family out.
+  429 means the refresh throttle (20 per 10 minutes per account) tripped:
+  back off and retry later, do not sign out.
 - Expiry and revocation: an expired row is deleted on next resolution, so
   the bearer credential simply stops resolving. Sign-out deletes the row
-  server side; `/api/auth/revoke-session` and `/api/auth/revoke-sessions`
-  do the same for targeted or all sessions, and a deactivated account's
+  server side; `/api/auth/revoke-session` and `/api/auth/revoke-sessions` do
+  the same for targeted or all sessions, and a deactivated account's
   sessions are deleted on any session-bearing path.
 - Failure: a 401 means the token is expired, revoked or malformed; the
   shell clears the stored value and returns to sign-in. A 403 means

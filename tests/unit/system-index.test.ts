@@ -277,8 +277,8 @@ describe("system index generator", () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      // Imported by the root layout, which wraps /, /coach, /dev/design-system
-      // and /ethereal.
+      // Imported by the root layout, which wraps /, /coach, /dev/design-system (the frontend
+      // design system playground, dev only) and /ethereal.
       expect(row).toBe(
         "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /dev/design-system, /ethereal |",
       );

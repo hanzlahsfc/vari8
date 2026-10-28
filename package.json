@@ -24,7 +24,7 @@
     "db:fresh": "tsx scripts/db-fresh.ts",
     "verify": "npm run typecheck && npm run lint && npm run test",
     "parity": "node tools/parity/run.mjs",
-    "check:nutrition-sources": "tsx scripts/check-nutrition-source-accuracy.ts --manifest tests/fixtures/nutrition/MANIFEST.json"
+    "check:nutrition-sources": "tsx scripts/check-nutrition-source-accuracy.ts --input bls=tests/fixtures/nutrition/bls-4.0-sample.xlsx --expected bls=tests/fixtures/nutrition/expected-bls.json --input ciqual=tests/fixtures/nutrition/ciqual-2025-sample.xlsx --expected ciqual=tests/fixtures/nutrition/expected-ciqual.json --manifest tests/fixtures/nutrition/MANIFEST.json"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

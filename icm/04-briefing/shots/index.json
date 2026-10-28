@@ -1309,8 +1309,10 @@
       "clicks": [
         "Clients",
         "EA Emma Anders Lifestyle",
-        "Open chat 1",
-        "Training program",
+        "Edit plans",
+        "Create",
+        "Add session",
+        "Add exercise",
         "Manage library"
       ],
       "rowsTotal": 31,
@@ -1781,6 +1783,28 @@
           "word": "switch on",
           "elements": 1
         }
+      ]
+    },
+    {
+      "file": "s13-supplements.png",
+      "screen": "Supplement plan editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Edit plans",
+        "Set up plan"
+      ]
+    },
+    {
+      "file": "s12-activity-targets.png",
+      "screen": "Activity targets editor",
+      "route": "/coach",
+      "clicks": [
+        "Clients",
+        "EA Emma Anders Lifestyle",
+        "Edit plans",
+        "Set targets"
       ]
     }
   ],

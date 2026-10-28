@@ -197,13 +197,36 @@ model Session {
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
   ipAddress String?  @map("ip_address")
   userAgent String?  @map("user_agent")
+  // AUTH-ROTATE: rotation family. NULL for a session created by sign-in (it
+  // starts a new family, whose id is that session's own id); every session
+  // minted by POST /api/v1/auth/refresh carries the family of the token it
+  // replaced. Replaying a spent token deletes the whole family.
+  familyId  String?  @map("family_id")
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
   @@map("sessions")
+}
+
+// AUTH-ROTATE: tombstones for bearer tokens that have been rotated out, keyed
+// on the SHA-256 digest (a raw token is never stored here or anywhere else).
+// A refresh request presenting a tombstoned token is a replay: the whole
+// family's sessions are deleted. `expiresAt` is the spent session's own
+// expiry, so a row is dead evidence once the token it names could no longer
+// resolve anyway.
+model SpentRefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique @map("token_hash")
+  familyId  String   @map("family_id")
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([familyId])
+  @@map("spent_refresh_tokens")
 }
 
 // PR-05 (Better Auth): credential accounts carry the scrypt password hash;

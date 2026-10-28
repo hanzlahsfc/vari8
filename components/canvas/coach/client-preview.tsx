@@ -26,14 +26,23 @@ import {
   TODAY,
   type Variant,
 } from "./model";
-import { weeklyMuscleVolume } from "./muscle-volume";
+import { phaseForDate, phasePlanRanges } from "./plans/phase-planning";
+import { TrainingPrescription } from "./plans/training/editor";
 import { ActiveClientNutrition, ActiveClientTraining } from "./plans/workspace";
 import { weeklyRoadmapRows } from "./roadmap-preview";
 import { useCoach } from "./store";
+import { SupplementPlanView } from "./supplements/plan-view";
+import {
+  type ActivityMetric,
+  type ActivitySegment,
+  formatActivityTarget,
+} from "./targets/model";
+import { TargetSummary } from "./targets/target-summary";
+import { useLocalToday } from "./targets/use-local-today";
 import { templateSetup } from "./template-setup";
 import { FormPreview } from "./templates";
 import { trackerOverviewIds } from "./tracker-setup";
-import { Avatar, Empty, Select } from "./ui";
+import { Avatar, Empty } from "./ui";
 import "./client-preview.css";
 
 const foodMap = new Map<string, Food>(
@@ -169,6 +178,7 @@ function TrackerTab({
   client: CoachClient;
   example?: boolean;
 }) {
+  const liveToday = useLocalToday();
   const [initialHistory] = useState(() =>
     example
       ? createExampleHistory(trackerConfig(configuration), TODAY)
@@ -185,6 +195,13 @@ function TrackerTab({
       config={trackerConfig(configuration)}
       entries={entries}
       clientName={client.name}
+      renderTargets={({ date, view }) => (
+        <TargetSummary
+          versions={client.plans?.activityTargets ?? []}
+          date={date}
+          mode={view === "Today" ? "day" : "week"}
+        />
+      )}
       clientInitials={
         client.initials ||
         client.name
@@ -193,7 +210,7 @@ function TrackerTab({
           .slice(0, 2)
           .join("")
       }
-      asOf={TODAY}
+      asOf={example ? TODAY : liveToday}
       parameterGroups={groups}
       comments={comments}
       textValues={textValues}
@@ -228,6 +245,18 @@ function TrackerTab({
   );
 }
 
+const SEGMENT_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const segmentDay = (date: string) =>
+  SEGMENT_DAYS[(new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7];
+const segmentDayRange = (segment: ActivitySegment) =>
+  segment.start === segment.end
+    ? segmentDay(segment.start)
+    : `${segmentDay(segment.start)}–${segmentDay(segment.end)}`;
+const ACTIVITY_COLUMN_LABELS: Record<ActivityMetric, string> = {
+  steps: "Steps target",
+  cardio: "Cardio target",
+};
+
 function RoadmapTab({
   configuration,
   client,
@@ -235,21 +264,18 @@ function RoadmapTab({
   configuration: Variant;
   client: CoachClient;
 }) {
+  const liveToday = useLocalToday();
   const rows = useMemo(
-    () => weeklyRoadmapRows(configuration, client),
-    [configuration, client],
+    () => weeklyRoadmapRows(configuration, client, { asOf: liveToday }),
+    [configuration, client, liveToday],
   );
+  const planning = configuration.roadmapActivityTargets ?? [];
   const showPhases = configuration.roadmapPhases !== false;
-  const phaseChoices = useMemo(() => {
-    const options = configuration.phaseOptions ?? [];
-    return options.includes(client.phase)
-      ? options
-      : [...options, client.phase];
-  }, [configuration.phaseOptions, client.phase]);
-  const [phases, setPhases] = useState<Record<string, string>>({});
-  const currentWeek = monday(TODAY);
-  const displayedCurrentPhase = phases[currentWeek] ?? client.phase;
-  if (!configuration.roadmap.length)
+  const currentWeek = monday(liveToday);
+  const displayedCurrentPhase =
+    phaseForDate(client.phasePlan, liveToday) ?? client.phase;
+  const savedPhaseRanges = phasePlanRanges(client.phasePlan);
+  if (!configuration.roadmap.length && !planning.length)
     return (
       <Empty title="No weekly metrics configured">
         This template does not summarize any weekly metrics.
@@ -270,86 +296,125 @@ function RoadmapTab({
           Weekly rows appear once {client.name} has logged entries.
         </Empty>
       ) : (
-        <div className="cd-table-scroll">
-          <table className="cd-table cd-roadmap-table">
-            <thead>
-              <tr>
-                {showPhases && <th className="cd-phase-col">Phase</th>}
-                <th>Week</th>
-                {configuration.roadmap.map((metric) => (
-                  <th key={metric.source}>
-                    {ALL_PARAMETERS.find((p) => p.id === metric.source)?.name}
-                    <small>{metric.calculation}</small>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => {
-                const isCurrent = row.start === currentWeek;
-                const phase =
-                  phases[row.start] ?? (isCurrent ? client.phase : "");
-                return (
-                  <tr key={row.start}>
-                    {showPhases && (
-                      <td
-                        className={`cd-phase-cell${isCurrent ? " is-current" : ""}`}
-                      >
-                        <span
-                          className={`cd-phase-marker${phase ? " is-set" : ""}`}
-                          aria-hidden="true"
-                        />
-                        <Select
-                          label={`Phase for week of ${formatDate(row.start)}`}
-                          value={phase}
-                          options={[
-                            { value: "", label: "Not set" },
-                            ...phaseChoices,
-                          ]}
-                          onChange={(value) =>
-                            setPhases((current) => ({
-                              ...current,
-                              [row.start]: value,
-                            }))
-                          }
-                        />
-                      </td>
-                    )}
-                    <td>
-                      {formatDate(row.start)}–{formatDate(row.end)}
-                      {isCurrent && (
-                        <small className="cd-current-week">Current week</small>
+        <>
+          {showPhases && savedPhaseRanges.length > 0 && (
+            <section
+              className="cd-saved-phase-ranges"
+              aria-label="Saved phase plan"
+            >
+              {savedPhaseRanges.map((range) => (
+                <span key={range.id}>
+                  {range.name}
+                  <small>
+                    {formatDate(range.startDate)}–{formatDate(range.endDate)}
+                  </small>
+                </span>
+              ))}
+            </section>
+          )}
+          <div className="cd-table-scroll">
+            <table className="cd-table cd-roadmap-table">
+              <thead>
+                <tr>
+                  {showPhases && <th className="cd-phase-col">Phase</th>}
+                  <th>Week</th>
+                  {configuration.roadmap.map((metric) => (
+                    <th key={metric.source}>
+                      {ALL_PARAMETERS.find((p) => p.id === metric.source)?.name}
+                      <small>{metric.calculation}</small>
+                    </th>
+                  ))}
+                  {planning.map((metric) => (
+                    <th key={`activity-${metric}`}>
+                      {ACTIVITY_COLUMN_LABELS[metric]}
+                      <small>Prescription</small>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const isCurrent = row.start === currentWeek;
+                  const phase =
+                    phaseForDate(client.phasePlan, row.start) ??
+                    (isCurrent ? client.phase : "");
+                  return (
+                    <tr key={row.start}>
+                      {showPhases && (
+                        <td
+                          className={`cd-phase-cell${isCurrent ? " is-current" : ""}`}
+                        >
+                          <span
+                            className={`cd-phase-marker${phase ? " is-set" : ""}`}
+                            aria-hidden="true"
+                          />
+                          <span className="cd-phase-value">
+                            {phase || "Not set"}
+                          </span>
+                        </td>
                       )}
-                    </td>
-                    {row.metrics.map((metric) => (
-                      <td key={metric.source}>
-                        {metric.value === null ? (
-                          <span className="cd-muted">Not recorded</span>
-                        ) : (
-                          <strong>
-                            {metric.calculation === "Adherence"
-                              ? `${Math.round(metric.value)}%`
-                              : `${Number(metric.value.toFixed(1))} ${metric.unit}`}
-                          </strong>
-                        )}
-                        {metric.comparison && metric.target !== null && (
-                          <small>
-                            Target: {Number(metric.target.toFixed(1))}{" "}
-                            {metric.unit}
+                      <td>
+                        {formatDate(row.start)}–{formatDate(row.end)}
+                        {isCurrent && (
+                          <small className="cd-current-week">
+                            Current week
                           </small>
                         )}
                       </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      {row.metrics.map((metric) => (
+                        <td key={metric.source}>
+                          {metric.value === null ? (
+                            <span className="cd-muted">Not recorded</span>
+                          ) : (
+                            <strong>
+                              {metric.calculation === "Adherence"
+                                ? `${Math.round(metric.value)}%`
+                                : `${Number(metric.value.toFixed(1))} ${metric.unit}`}
+                            </strong>
+                          )}
+                          {metric.comparison && metric.target !== null && (
+                            <small>
+                              Target: {Number(metric.target.toFixed(1))}{" "}
+                              {metric.unit}
+                            </small>
+                          )}
+                        </td>
+                      ))}
+                      {row.activityTargets.map((entry) => (
+                        <td key={`activity-${entry.metric}`}>
+                          <ul className="cd-target-segments">
+                            {entry.segments.map((segment) => (
+                              <li key={segment.start}>
+                                <span className="cd-segment-days">
+                                  {segmentDayRange(segment)}
+                                </span>
+                                {!segment.version ? (
+                                  <span className="cd-muted">No target</span>
+                                ) : segment.version.target === null ? (
+                                  <span className="cd-muted">Stopped</span>
+                                ) : (
+                                  <strong>
+                                    {formatActivityTarget(segment.version)}
+                                  </strong>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <p className="cd-caption">
-        Weekly rows use {client.name}’s observed tracker entries only. Missing
-        or unsupported data is shown as not recorded, never estimated.
+        Weekly observations use {client.name}’s recorded tracker entries.
+        Missing or unsupported data is shown as not recorded, never estimated.
+        {planning.length > 0 &&
+          " Planning rows show saved target prescriptions by their effective dates, including weeks with no recorded entries."}
       </p>
     </section>
   );
@@ -572,130 +637,88 @@ function IllustrativeNutritionTab({
   );
 }
 
-const BODY_REGIONS: Record<string, { side: "front" | "back"; path: string }[]> =
-  {
-    shoulders: [
-      {
-        side: "front",
-        path: "M20 44 q6 -10 14 -6 q2 8 -4 14 q-10 2 -10 -8 z",
-      },
-      { side: "front", path: "M80 44 q-6 -10 -14 -6 q-2 8 4 14 q10 2 10 -8 z" },
-      {
-        side: "back",
-        path: "M20 44 q6 -10 14 -6 q2 8 -4 14 q-10 2 -10 -8 z",
-      },
-      { side: "back", path: "M80 44 q-6 -10 -14 -6 q-2 8 4 14 q10 2 10 -8 z" },
-    ],
-    chest: [
-      { side: "front", path: "M34 42 q16 -6 16 0 l0 14 q-10 4 -18 -2 z" },
-      { side: "front", path: "M66 42 q-16 -6 -16 0 l0 14 q10 4 18 -2 z" },
-    ],
-    back: [
-      { side: "back", path: "M30 38 q20 -8 40 0 l-4 30 q-16 -8 -32 0 z" },
-      { side: "back", path: "M36 72 q14 -4 28 0 l-2 18 q-12 -4 -24 0 z" },
-    ],
-    biceps: [
-      { side: "front", path: "M17 56 q7 -4 10 2 l-2 22 q-7 3 -10 -3 z" },
-      { side: "front", path: "M83 56 q-7 -4 -10 2 l2 22 q7 3 10 -3 z" },
-    ],
-    triceps: [
-      { side: "back", path: "M16 56 q7 -4 10 2 l-2 22 q-7 3 -10 -3 z" },
-      { side: "back", path: "M84 56 q-7 -4 -10 2 l2 22 q7 3 10 -3 z" },
-    ],
-    core: [
-      {
-        side: "front",
-        path: "M38 60 l24 0 q3 20 -3 34 l-18 0 q-6 -14 -3 -34 z",
-      },
-    ],
-    glutes: [
-      { side: "back", path: "M34 96 q16 -4 16 2 l-2 16 q-12 3 -16 -4 z" },
-      { side: "back", path: "M66 96 q-16 -4 -16 2 l2 16 q12 3 16 -4 z" },
-    ],
-    quadriceps: [
-      { side: "front", path: "M34 100 q13 -3 14 2 l-2 50 q-10 3 -13 -3 z" },
-      { side: "front", path: "M66 100 q-13 -3 -14 2 l2 50 q10 3 13 -3 z" },
-    ],
-    hamstrings: [
-      { side: "back", path: "M35 118 q12 -3 13 2 l-2 36 q-9 3 -12 -3 z" },
-      { side: "back", path: "M65 118 q-12 -3 -13 2 l2 36 q9 3 12 -3 z" },
-    ],
-    calves: [
-      { side: "back", path: "M36 162 q10 -3 11 2 l-2 26 q-8 3 -10 -3 z" },
-      { side: "back", path: "M64 162 q-10 -3 -11 2 l2 26 q8 3 10 -3 z" },
-    ],
+function illustrativeTrainingPlan(
+  clientId: string,
+): import("./plans/types").TrainingPlan {
+  const set = (id: string, reps: number) => ({
+    id,
+    reps,
+    tempo: "2-0-2",
+    type: "Working",
+    rest: "90 sec",
+    instructions: "",
+  });
+  return {
+    id: "sample-training-plan",
+    clientId,
+    name: "Sample strength plan",
+    startDate: TODAY,
+    program: "Week-based",
+    weeks: 4,
+    overrides: {
+      "1": [
+        {
+          id: "sample-session-a",
+          name: "Session A · Upper",
+          exercises: [
+            {
+              id: "sample-bench",
+              name: "Bench press",
+              muscle: "chest",
+              instructions: "",
+              progression: "Add reps, then load",
+              sets: [
+                set("sample-bench-1", 8),
+                set("sample-bench-2", 8),
+                set("sample-bench-3", 6),
+              ],
+            },
+            {
+              id: "sample-row",
+              name: "Seated row",
+              muscle: "back",
+              instructions: "",
+              progression: "Add reps, then load",
+              sets: [set("sample-row-1", 10), set("sample-row-2", 10)],
+            },
+          ],
+        },
+        {
+          id: "sample-session-b",
+          name: "Session B · Lower",
+          exercises: [
+            {
+              id: "sample-squat",
+              name: "Goblet squat",
+              muscle: "quadriceps",
+              instructions: "",
+              progression: "Add reps, then load",
+              sets: [
+                set("sample-squat-1", 10),
+                set("sample-squat-2", 10),
+                set("sample-squat-3", 8),
+              ],
+            },
+            {
+              id: "sample-hip-thrust",
+              name: "Hip thrust",
+              muscle: "glutes",
+              instructions: "",
+              progression: "Add reps, then load",
+              sets: [
+                set("sample-hip-thrust-1", 10),
+                set("sample-hip-thrust-2", 10),
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    rotation: {
+      mode: "cycle",
+      sessionIds: ["sample-session-a", "sample-session-b"],
+    },
   };
-
-function BodyMap({
-  groups,
-}: {
-  groups: { id: string; label: string; sets: number; intensity: number }[];
-}) {
-  const intensity = (id: string) =>
-    groups.find((group) => group.id === id)?.intensity ?? 0;
-  const sets = (id: string) => groups.find((g) => g.id === id)?.sets ?? 0;
-  const fillFor = (id: string) =>
-    intensity(id) === 0
-      ? "var(--cd-field)"
-      : `color-mix(in srgb, var(--cd-action-bg) ${25 + Math.round(intensity(id) * 75)}%, var(--cd-field))`;
-  const figure = (side: "front" | "back") => (
-    <svg
-      viewBox="0 0 100 200"
-      role="img"
-      aria-label={`${side === "front" ? "Front" : "Back"} body muscle map`}
-      className="cd-body-figure"
-    >
-      <circle cx="50" cy="17" r="9" className="cd-body-outline" />
-      <path
-        className="cd-body-outline"
-        d="M30 34 q20 -8 40 0 q6 30 4 62 q1 34 -4 60 l-6 34 l-7 0 l-4 -32 l-3 -26 l-3 26 l-4 32 l-7 0 l-6 -34 q-5 -26 -4 -60 q-2 -32 4 -62 z"
-      />
-      <path
-        className="cd-body-outline"
-        d="M30 38 q-12 4 -15 16 l3 30 q2 10 6 20 l5 -2 q-3 -12 -3 -22 l3 -22 z"
-      />
-      <path
-        className="cd-body-outline"
-        d="M70 38 q12 4 15 16 l-3 30 q-2 10 -6 20 l-5 -2 q3 -12 3 -22 l-3 -22 z"
-      />
-      {Object.entries(BODY_REGIONS).map(([id, paths]) =>
-        paths
-          .filter((region) => region.side === side)
-          .map((region) => (
-            <path
-              key={`${id}-${region.path.slice(0, 12)}`}
-              d={region.path}
-              className="cd-body-region"
-              style={{ fill: fillFor(id) }}
-            >
-              <title>
-                {groups.find((g) => g.id === id)?.label}: {sets(id)} sets / week
-              </title>
-            </path>
-          )),
-      )}
-    </svg>
-  );
-  return (
-    <div className="cd-body-map">
-      <div className="cd-body-figures">
-        {figure("front")}
-        {figure("back")}
-      </div>
-      <ul className="cd-body-legend">
-        {groups.map((group) => (
-          <li key={group.id}>
-            <span
-              className="cd-body-swatch"
-              style={{ background: fillFor(group.id) }}
-            />
-            <span>{group.label}</span>
-            <strong>{group.sets}</strong>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 function TrainingTab(props: {
@@ -709,6 +732,7 @@ function TrainingTab(props: {
     <ActiveClientTraining client={props.client} />
   );
 }
+
 function IllustrativeTrainingTab({
   configuration,
   client,
@@ -716,125 +740,14 @@ function IllustrativeTrainingTab({
   configuration: Variant;
   client: CoachClient;
 }) {
-  const { state } = useCoach();
-  const records = useMemo(
-    () => recordsForCoach(configuration, client, state),
-    [configuration, client, state],
-  );
-  const fields = configuration.training.fields;
-  const week = records.coachingPlan?.currentWeek ?? 6;
-  const schedule = [...records.workoutSchedule].sort(
-    (a, b) => a.week - b.week || a.date.localeCompare(b.date),
-  );
-  const volume = useMemo(
-    () => weeklyMuscleVolume(records.workoutSchedule, week),
-    [records.workoutSchedule, week],
-  );
-  const heatmap = configuration.training.presentation === "Heatmap";
-  const prescriptionFor = (session: (typeof schedule)[number]) =>
-    records.prescriptions.find(
-      (p) => p.week === session.week && p.name === session.name,
-    ) ?? records.prescriptions.find((p) => p.week === session.week);
-  const volumeBlock = configuration.training.volume && (
-    <div className="cd-volume-block">
-      <h3>
-        Muscle groups / week
-        <small>Sample program · Week {week} · planned working sets</small>
-      </h3>
-      {heatmap ? (
-        <BodyMap groups={volume.groups} />
-      ) : (
-        <div className="cd-table-scroll">
-          <table className="cd-table">
-            <thead>
-              <tr>
-                <th>Muscle group</th>
-                <th>Working sets / week</th>
-              </tr>
-            </thead>
-            <tbody>
-              {volume.groups.map((group) => (
-                <tr key={group.id}>
-                  <td>{group.label}</td>
-                  <td>{group.sets}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Total</td>
-                <td>{volume.totalSets}</td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
-      {volume.unassignedSets > 0 && (
-        <p className="cd-caption">
-          {volume.unassignedSets} sets are not assigned to a muscle group.
-        </p>
-      )}
-    </div>
-  );
+  const plan = useMemo(() => illustrativeTrainingPlan(client.id), [client.id]);
   return (
     <section className="cd-preview-section" aria-label="Training program">
-      <h2>Training program</h2>
-      <p className="cd-muted">
-        {client.plan.program} · week {week}
-        {" of "}
-        {client.plan.program === "Week-based" ? client.plan.weeks : "ongoing"} ·
-        Sample program
+      <TrainingPrescription value={plan} configuration={configuration} />
+      <p className="cd-caption">
+        Isolated sample prescription. It does not change {client.name}’s saved
+        plan.
       </p>
-      {heatmap && volumeBlock}
-      {schedule.map((session) => {
-        const prescription = prescriptionFor(session);
-        const exerciseNote = (id: string) =>
-          prescription?.exercises.find((x) => x.id === id)?.note;
-        const hasNotes = session.exercises.some((x) => exerciseNote(x.id));
-        return (
-          <div className="cd-logbook cd-preview-session" key={session.date}>
-            <h3>
-              {session.name}
-              <small>
-                Week {session.week} ·{" "}
-                {formatDate(session.date, {
-                  weekday: "short",
-                  day: "numeric",
-                  month: "short",
-                })}
-              </small>
-            </h3>
-            {session.exercises.map((exercise) => (
-              <div className="cd-prescription" key={exercise.id}>
-                <strong>{exercise.name}</strong>
-                {fields.includes("Sets") && <span>{exercise.sets} sets</span>}
-                {(fields.includes("Fixed reps") ||
-                  fields.includes("Rep ranges")) && (
-                  <span>{exercise.reps} reps</span>
-                )}
-                {fields.includes("Set type") && <span>Working set</span>}
-                {fields.includes("Tempo") && <span>Tempo · not specified</span>}
-                {fields.includes("Rest / pause") && (
-                  <span>Rest · not specified</span>
-                )}
-                {fields.includes("Detailed instructions") &&
-                  exerciseNote(exercise.id) && (
-                    <span>{exerciseNote(exercise.id)}</span>
-                  )}
-              </div>
-            ))}
-            {fields.includes("Detailed instructions") &&
-              !hasNotes &&
-              client.plan.instructions && (
-                <p className="cd-muted">{client.plan.instructions}</p>
-              )}
-            {fields.includes("Progression notes") && (
-              <p className="cd-muted">Progression · not specified</p>
-            )}
-          </div>
-        );
-      })}
-      {!heatmap && volumeBlock}
     </section>
   );
 }
@@ -884,7 +797,11 @@ export function ClientPreview({
       "Check-In",
     ].includes(v),
   );
-  const allTabs = configuration.habits ? [...tabs, "Habits"] : tabs;
+  const allTabs = [
+    ...tabs,
+    ...(client?.plans?.supplements ? ["Supplements"] : []),
+    ...(configuration.habits ? ["Habits"] : []),
+  ];
   const [tab, setTab] = useState(initialTab ?? allTabs[0] ?? "");
   const [habitDone, setHabitDone] = useState<Record<string, boolean>>({});
   const active = allTabs.includes(tab) ? tab : allTabs[0];
@@ -954,6 +871,18 @@ export function ClientPreview({
                 client={athlete}
                 illustrative={!client}
               />
+            )}
+            {active === "Supplements" && (
+              <section
+                className="cd-preview-section"
+                aria-label="Supplement plan"
+              >
+                <h2>Supplements</h2>
+                <SupplementPlanView
+                  plan={client?.plans?.supplements}
+                  clientName={athlete.name}
+                />
+              </section>
             )}
             {active === "Check-In" && (
               <CheckInTab configuration={configuration} client={athlete} />

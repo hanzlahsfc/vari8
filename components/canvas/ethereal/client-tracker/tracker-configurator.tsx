@@ -1,8 +1,9 @@
 "use client";
 
-import { motion } from "motion/react";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import { motion } from "motion/react";
+import { useId, useMemo, useState } from "react";
+import { Checkbox, Input, Select } from "@/components/canvas/vari8/components";
 import {
   categories,
   parameters,
@@ -186,15 +187,17 @@ export function TrackerConfigurator({
               <h2>Add measures</h2>
               <p>Search by measure, category or unit.</p>
             </div>
-            <label className="ct-measure-search">
-              <span className="ct-visually-hidden">Search measures</span>
-              <input
+            <div className="ct-measure-search">
+              <Input
+                label="Search measures"
+                className="ct-measure-search-input"
                 type="search"
+                size="sm"
                 value={measureQuery}
                 onChange={(event) => setMeasureQuery(event.currentTarget.value)}
                 placeholder="Search measures…"
               />
-            </label>
+            </div>
           </div>
           {filteredCategories.length > 0 ? (
             filteredCategories.map((category) => (
@@ -305,37 +308,38 @@ export function TrackerConfigurator({
                 No measures in the daily overview.
               </p>
             )}
-            <label className="ct-overview-add">
-              <span className="ct-visually-hidden">
-                Add a measure to daily overview
-              </span>
-              <select
+            <div className="ct-overview-add">
+              <Select
+                label="Add a measure to daily overview"
+                className="ct-overview-add-select"
+                size="sm"
                 value=""
                 disabled={
                   overview.length >= 4 ||
                   eligibleSelected.length <= overview.length
                 }
-                onChange={(event) =>
-                  addOverviewParameter(event.currentTarget.value)
-                }
-              >
-                <option value="">
-                  {overview.length >= 4
-                    ? "Overview is full"
-                    : "Add overview measure…"}
-                </option>
-                {eligibleSelected
-                  .filter(
-                    (parameter) =>
-                      !overview.some((item) => item.id === parameter.id),
-                  )
-                  .map((parameter) => (
-                    <option key={parameter.id} value={parameter.id}>
-                      {parameter.label} · {parameterUnit(parameter, config)}
-                    </option>
-                  ))}
-              </select>
-            </label>
+                onValueChange={addOverviewParameter}
+                options={[
+                  {
+                    value: "",
+                    label:
+                      overview.length >= 4
+                        ? "Overview is full"
+                        : "Add overview measure…",
+                    disabled: true,
+                  },
+                  ...eligibleSelected
+                    .filter(
+                      (parameter) =>
+                        !overview.some((item) => item.id === parameter.id),
+                    )
+                    .map((parameter) => ({
+                      value: parameter.id,
+                      label: `${parameter.label} · ${parameterUnit(parameter, config)}`,
+                    })),
+                ]}
+              />
+            </div>
           </section>
 
           <div className="ct-unit-controls">
@@ -434,63 +438,46 @@ function CategoryGroup({
   onToggleParameter: (parameterId: string) => void;
   inputPrefix: string;
 }) {
-  const categoryCheckbox = useRef<HTMLInputElement>(null);
   const checkedCount = categoryParameters.filter((parameter) =>
     selected.has(parameter.id),
   ).length;
   const checked = checkedCount === categoryParameters.length;
   const indeterminate = checkedCount > 0 && !checked;
 
-  useEffect(() => {
-    if (categoryCheckbox.current)
-      categoryCheckbox.current.indeterminate = indeterminate;
-  }, [indeterminate]);
-
   return (
     <section className="ct-category">
-      <label className="ct-category-heading">
-        <span className="ct-category-check">
-          <input
-            ref={categoryCheckbox}
-            type="checkbox"
-            checked={checked}
-            aria-checked={indeterminate ? "mixed" : checked}
-            aria-label={`Select all ${label.toLowerCase()} measures shown`}
-            onChange={(event) =>
-              onToggleCategory(
-                event.currentTarget.checked,
-                categoryParameters.map((parameter) => parameter.id),
-              )
-            }
-          />
-          <span className="ct-checkmark" aria-hidden="true" />
-        </span>
-        <div className="ct-category-copy">
-          <h2>{label}</h2>
-          <p>{description}</p>
-        </div>
+      <div className="ct-category-heading">
+        <Checkbox
+          className="ct-category-check"
+          label={label}
+          description={description}
+          checked={checked}
+          indeterminate={indeterminate}
+          ariaLabel={`Select all ${label.toLowerCase()} measures shown`}
+          onCheckedChange={(nextChecked) =>
+            onToggleCategory(
+              nextChecked,
+              categoryParameters.map((parameter) => parameter.id),
+            )
+          }
+        />
         <span className="ct-category-count">
           {checkedCount}/{categoryParameters.length}
         </span>
-      </label>
+      </div>
       <div className="ct-parameter-list">
         {categoryParameters.map((parameter) => (
-          <label className="ct-parameter" key={parameter.id}>
-            <span className="ct-individual-check">
-              <input
-                id={`${inputPrefix}-${parameter.id}`}
-                type="checkbox"
-                checked={selected.has(parameter.id)}
-                onChange={() => onToggleParameter(parameter.id)}
-              />
-              <span className="ct-checkmark" aria-hidden="true" />
-            </span>
-            <span className="ct-parameter-copy">
-              <span>{parameter.label}</span>
-              <small>{parameterUnit(parameter, config)}</small>
-            </span>
+          <div className="ct-parameter" key={parameter.id}>
+            <Checkbox
+              className="ct-individual-check"
+              id={`${inputPrefix}-${parameter.id}`}
+              label={parameter.label}
+              description={parameterUnit(parameter, config)}
+              checked={selected.has(parameter.id)}
+              onCheckedChange={() => onToggleParameter(parameter.id)}
+            />
             <span className="ct-summary-kind">{summaryLabel(parameter)}</span>
-          </label>
+          </div>
         ))}
       </div>
     </section>
@@ -517,19 +504,15 @@ function UnitControl({
           ? "Words"
           : value;
   return (
-    <label className="ct-unit-control">
-      <span>{label}</span>
-      <select
+    <div className="ct-unit-control">
+      <Select
+        label={label}
+        size="sm"
         value={optionsValue}
-        onChange={(event) => onChange(event.currentTarget.value)}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
+        onValueChange={onChange}
+        options={options.map((option) => ({ value: option, label: option }))}
+      />
+    </div>
   );
 }
 

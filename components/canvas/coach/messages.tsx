@@ -16,6 +16,8 @@ import {
   X,
 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { SegmentedControl } from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
 import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import { uploadCanvasMedia } from "./media-card";
@@ -196,17 +198,16 @@ export function MessagesWorkspace() {
             onChange={setSearch}
             placeholder="Search conversations"
           />
-          <div className="cd-tabs">
-            {["All", "Unread", "Flagged"].map((f) => (
-              <Button
-                key={f}
-                aria-pressed={filter === f}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Conversation filter"
+            value={filter}
+            onValueChange={setFilter}
+            className="cd-conversation-filter"
+            options={["All", "Unread", "Flagged"].map((f) => ({
+              value: f,
+              label: f,
+            }))}
+          />
           <div className="cd-conversation-list">
             {shownClients.map((c) => {
               const m = lastMessage(c.id);
@@ -433,17 +434,10 @@ export function MessagesWorkspace() {
                               </span>
                             )}
                             {m.from === "client" && (
-                              <button
-                                type="button"
-                                className="cd-icon-button cd-message-flag"
-                                aria-label={
-                                  m.priority
-                                    ? "Remove priority flag"
-                                    : client.priorityMessages
-                                      ? "Flag message as priority"
-                                      : "Priority flags disabled for this athlete"
-                                }
-                                title={
+                              <IconButton
+                                size="sm"
+                                className="cd-message-flag"
+                                label={
                                   m.priority
                                     ? "Remove priority flag"
                                     : client.priorityMessages
@@ -457,7 +451,7 @@ export function MessagesWorkspace() {
                                 onClick={() => flag(m)}
                               >
                                 <Flag size={12} />
-                              </button>
+                              </IconButton>
                             )}
                           </div>
                         </div>
@@ -649,10 +643,12 @@ export function MessagesWorkspace() {
                       <Sparkles size={18} />
                     </IconButton>
                   </div>
-                  <textarea
+                  <TextArea
+                    label={`Message ${client.name}`}
+                    className="cd-composer-textarea"
+                    size="sm"
                     ref={composer}
                     rows={2}
-                    aria-label={`Message ${client.name}`}
                     placeholder="Write a message…"
                     value={draft.text}
                     onChange={(e) => setDraft({ text: e.target.value })}

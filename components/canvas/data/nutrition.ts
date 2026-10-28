@@ -1,7 +1,7 @@
 // Nutrition domain provider (PR-W0). Owns the per-client nutrition plan
-// lifecycles (meal-plan and IIFYM versions) of the coach store and the
-// ethereal meal-plan workspace key. PR-W7 wires this domain to the server;
-// it edits this file only.
+// lifecycles (meal-plan and IIFYM versions) and the supplement plan of the
+// coach store, plus the ethereal meal-plan workspace key. PR-W7 wires this
+// domain to the server; it edits this file only.
 
 import type { CoachState } from "../coach/model";
 import { emptyClientPlans, type ClientPlans } from "../coach/plans/types";
@@ -10,14 +10,29 @@ import { type CoachSlice, readStorage, writeJson } from "./provider";
 
 export const NUTRITION_KEY = "coach-data-nutrition-v1";
 
-type NutritionSlice = Record<string, ClientPlans["nutrition"]>;
+type NutritionEntry = {
+  nutrition: ClientPlans["nutrition"];
+  /** Supplement plan owned alongside nutrition (targets belong to training). */
+  supplements?: ClientPlans["supplements"];
+};
+type NutritionSlice = Record<string, NutritionEntry>;
 
 export const nutritionSlice: CoachSlice = {
   key: NUTRITION_KEY,
   extract: (state): NutritionSlice =>
     Object.fromEntries(
       state.clients.flatMap((client) =>
-        client.plans ? [[client.id, client.plans.nutrition]] : [],
+        client.plans
+          ? [
+              [
+                client.id,
+                {
+                  nutrition: client.plans.nutrition,
+                  supplements: client.plans.supplements,
+                },
+              ],
+            ]
+          : [],
       ),
     ),
   merge: (slice, state) => {
@@ -25,9 +40,10 @@ export const nutritionSlice: CoachSlice = {
       throw new Error("Invalid nutrition slice");
     const data = slice as NutritionSlice;
     for (const client of state.clients) {
-      const nutrition = data[client.id];
-      if (nutrition !== undefined)
-        (client.plans ??= emptyClientPlans()).nutrition = nutrition;
+      const entry = data[client.id];
+      if (entry?.nutrition !== undefined)
+        (client.plans ??= emptyClientPlans()).nutrition = entry.nutrition;
+      if (client.plans) client.plans.supplements = entry?.supplements;
     }
   },
 };

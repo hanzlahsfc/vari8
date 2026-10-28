@@ -29,11 +29,11 @@
     },
     "legacyCompare": {
       "path": "tools/parity/compare.mjs",
-      "sha256": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a"
+      "sha256": "d795096b526b530bd666a8eda1c3cd3432266afa0ee76b2dba2a50788047bc3b"
     },
     "capture": {
       "path": "tools/parity/capture.mjs",
-      "sha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a"
+      "sha256": "9d04de796614b0eb3bb4c7437f95fa15a4190562eb6137de6a636966c9ef980b"
     },
     "captureMetadata": {
       "path": "tools/parity/reference/capture-metadata.mjs",

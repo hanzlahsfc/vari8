@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type FormEvent,
@@ -9,13 +10,23 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import {
+  Button,
+  Checkbox,
+  IconButton,
+  Input,
+  Select,
+  Toggle,
+} from "@/components/canvas/vari8/components";
+import { TextArea } from "@/components/canvas/vari8/inputs";
 import { supportedSizes } from "./grid";
 import {
   catalogue,
+  type DashboardContentSettings,
   defaultSettings,
   type SizeName,
   type SourceRecords,
+  safeResourceUrl,
   sourceOptions,
   summaryOptions,
   type WidgetInstance,
@@ -67,6 +78,13 @@ const categoryOrder = [
   "Shortcuts",
 ];
 
+function optionsFromValues(
+  values: readonly string[],
+  labelFor: (value: string) => string = (value) => value,
+) {
+  return values.map((value) => ({ value, label: labelFor(value) }));
+}
+
 const browseDescriptions: Record<WidgetKind, string> = {
   BN21: "Track weight, waist, or steps.",
   BN01: "Follow bodyweight readings over time.",
@@ -88,7 +106,20 @@ const browseDescriptions: Record<WidgetKind, string> = {
   CU02: "Review your coaching week and selected indicators.",
   CU09: "Compare separately labelled weekly trends.",
   CU10: "See the current phase and coaching week.",
+  CU17: "Add a clear divider between dashboard sections.",
+  CU18: "Share an update with an optional resource link.",
 };
+
+function contentDefaults(kind: "CU17" | "CU18"): DashboardContentSettings {
+  return (
+    defaultSettings(kind).content ?? {
+      body: "",
+      tone: "neutral",
+      actionLabel: "",
+      actionUrl: "",
+    }
+  );
+}
 
 export function BuilderGallery({
   mode,
@@ -240,6 +271,24 @@ export function BuilderGallery({
       setError("Add a title before saving this widget.");
       return;
     }
+    if (editing.kind === "CU18") {
+      const content = editing.settings.content;
+      if (!content?.body.trim()) {
+        setError("Add announcement text before saving this widget.");
+        return;
+      }
+      if (
+        (content.actionLabel.trim() !== "") !==
+        (content.actionUrl.trim() !== "")
+      ) {
+        setError("Add both a link label and URL, or leave both empty.");
+        return;
+      }
+      if (content.actionUrl && !safeResourceUrl(content.actionUrl)) {
+        setError("Use a valid http or https link for this resource.");
+        return;
+      }
+    }
     if (
       [
         "BN15",
@@ -343,50 +392,49 @@ export function BuilderGallery({
                   : "Choose widgets to add. Each starts with its desktop default layout and settings."}
             </p>
           </div>
-          <button
-            type="button"
+          <IconButton
+            size="lg"
             className="eg-gallery-close"
+            label="Close widget gallery"
             onClick={dismiss}
-            aria-label="Close widget gallery"
           >
             <CloseIcon />
-          </button>
+          </IconButton>
         </header>
 
         <div className="eg-gallery-main">
           <section className="eg-gallery-library" aria-label="Widget library">
             <div className="eg-gallery-filters">
               <div className="eg-gallery-filter-row">
-                <label className="eg-gallery-search">
+                <div className="eg-gallery-search">
                   <SearchIcon />
-                  <input
+                  <Input
+                    label="Search widgets"
                     ref={searchRef}
-                    aria-label="Search widgets"
+                    className="eg-gallery-search-input"
+                    size="sm"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search by name, source or measure"
                   />
                   {search && (
-                    <button
-                      type="button"
+                    <IconButton
+                      size="sm"
+                      label="Clear search"
+                      className="eg-gallery-clear"
                       onClick={() => setSearch("")}
-                      aria-label="Clear search"
                     >
                       ×
-                    </button>
+                    </IconButton>
                   )}
-                </label>
-                <label>
-                  <span>Category</span>
-                  <select
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value)}
-                  >
-                    {categories.map((name) => (
-                      <option key={name}>{name}</option>
-                    ))}
-                  </select>
-                </label>
+                </div>
+                <Select
+                  label="Category"
+                  size="sm"
+                  value={category}
+                  options={optionsFromValues(categories)}
+                  onValueChange={setCategory}
+                />
               </div>
             </div>
 
@@ -462,7 +510,9 @@ export function BuilderGallery({
                                     )}
                                   </div>
                                 </div>
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="lg"
                                   type="button"
                                   className="eg-gallery-tile-action"
                                   aria-label={`${mode === "replace" ? "Choose" : selected ? "Remove" : "Select"} ${item.name}. ${item.category}. ${browseDescriptions[item.id]}`}
@@ -485,7 +535,9 @@ export function BuilderGallery({
             ) : (
               <div className="eg-gallery-empty">
                 <p>No widgets match your search.</p>
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   type="button"
                   onClick={() => {
                     setSearch("");
@@ -493,7 +545,7 @@ export function BuilderGallery({
                   }}
                 >
                   Reset filters
-                </button>
+                </Button>
               </div>
             )}
           </section>
@@ -513,7 +565,9 @@ export function BuilderGallery({
                 aria-label={`Configure ${activeItem.name}`}
               >
                 <div className="eg-gallery-config-heading">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     type="button"
                     className="eg-gallery-back"
                     onClick={() => {
@@ -523,7 +577,7 @@ export function BuilderGallery({
                     }}
                   >
                     <BackIcon /> Widget library
-                  </button>
+                  </Button>
                   <h3>
                     {mode === "replace"
                       ? "Confirm replacement"
@@ -532,171 +586,251 @@ export function BuilderGallery({
                   <p>{activeItem.description}</p>
                 </div>
                 <form className="eg-gallery-form" onSubmit={saveConfiguration}>
-                  <label className="eg-gallery-field">
-                    <span>Title</span>
-                    <input
-                      ref={titleInputRef}
-                      required
-                      maxLength={48}
-                      value={editing.settings.title}
+                  <Input
+                    label={
+                      editing.kind === "CU17" ? "Section heading" : "Title"
+                    }
+                    ref={titleInputRef}
+                    required
+                    maxLength={48}
+                    value={editing.settings.title}
+                    onChange={(event) =>
+                      changeSettings({ title: event.target.value })
+                    }
+                  />
+                  {editing.kind === "CU17" && (
+                    <TextArea
+                      label="Supporting line · optional"
+                      size="sm"
+                      rows={2}
+                      maxLength={180}
+                      value={editing.settings.content?.body ?? ""}
                       onChange={(event) =>
-                        changeSettings({ title: event.target.value })
+                        changeSettings({
+                          content: {
+                            ...contentDefaults("CU17"),
+                            ...editing.settings.content,
+                            body: event.target.value,
+                          },
+                        })
                       }
                     />
-                  </label>
-                  <label className="eg-gallery-field">
-                    <span>Source</span>
-                    <select
-                      value={editing.settings.source}
-                      onChange={(event) => {
-                        const next = event.target.value;
-                        const available = summaryOptions(editing.kind, next);
-                        changeSettings({
-                          source: next,
-                          summary: available.includes(editing.settings.summary)
-                            ? editing.settings.summary
-                            : (available[0] ?? ""),
-                          ...(editing.kind === "BN21"
-                            ? {
-                                unit:
-                                  next === "steps"
-                                    ? "steps"
-                                    : next === "bodyweight"
-                                      ? "kg"
-                                      : "cm",
-                              }
-                            : {}),
-                        });
-                      }}
-                    >
-                      {configurableSources.map(({ value, label, disabled }) => (
-                        <option key={value} value={value} disabled={disabled}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {["BN15", "BN19"].includes(editing.kind) && (
-                    <label className="eg-gallery-field">
-                      <span>Graph format</span>
-                      <select
-                        value={
-                          editing.settings.option === "active"
-                            ? editing.kind === "BN15"
-                              ? "circles"
-                              : "single"
-                            : editing.settings.option
-                        }
+                  )}
+                  {editing.kind === "CU18" && (
+                    <>
+                      <TextArea
+                        label="Announcement"
+                        rows={4}
+                        maxLength={2000}
+                        required
+                        value={editing.settings.content?.body ?? ""}
                         onChange={(event) =>
                           changeSettings({
-                            option: event.target.value,
-                            ...(editing.kind === "BN19" &&
-                            ["line", "stacked"].includes(event.target.value)
-                              ? {
-                                  target: true,
-                                  summary: "actual-target",
-                                  period: [
-                                    "week",
-                                    "month",
-                                    "6month",
-                                    "year",
-                                  ].includes(editing.settings.period)
-                                    ? editing.settings.period
-                                    : "month",
-                                }
-                              : editing.kind === "BN19"
-                                ? { period: "today" }
-                                : {}),
+                            content: {
+                              ...contentDefaults("CU18"),
+                              ...editing.settings.content,
+                              body: event.target.value,
+                            },
                           })
                         }
-                      >
-                        {editing.kind === "BN15" ? (
-                          <>
-                            <option value="circles">Three circles</option>
-                            <option value="lines">Three target lines</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="line">
-                              Consumed and target lines
-                            </option>
-                            <option value="stacked">
-                              Stacked daily columns
-                            </option>
-                            <option value="single">
-                              Single-day target card
-                            </option>
-                          </>
-                        )}
-                      </select>
-                    </label>
+                      />
+                      <Select
+                        label="Emphasis"
+                        value={editing.settings.content?.tone ?? "accent"}
+                        options={[
+                          { value: "neutral", label: "Quiet" },
+                          { value: "accent", label: "Accent" },
+                          { value: "important", label: "Important" },
+                        ]}
+                        onValueChange={(tone) =>
+                          changeSettings({
+                            content: {
+                              ...contentDefaults("CU18"),
+                              ...editing.settings.content,
+                              tone:
+                                tone === "neutral" || tone === "important"
+                                  ? tone
+                                  : "accent",
+                            },
+                          })
+                        }
+                      />
+                      <Input
+                        label="Resource link label"
+                        maxLength={64}
+                        value={editing.settings.content?.actionLabel ?? ""}
+                        onChange={(event) =>
+                          changeSettings({
+                            content: {
+                              ...contentDefaults("CU18"),
+                              ...editing.settings.content,
+                              actionLabel: event.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Open the guide"
+                      />
+                      <Input
+                        label="Resource URL"
+                        type="url"
+                        maxLength={2048}
+                        value={editing.settings.content?.actionUrl ?? ""}
+                        onChange={(event) =>
+                          changeSettings({
+                            content: {
+                              ...contentDefaults("CU18"),
+                              ...editing.settings.content,
+                              actionUrl: event.target.value,
+                            },
+                          })
+                        }
+                        placeholder="https://…"
+                      />
+                    </>
+                  )}
+                  <Select
+                    label="Source"
+                    value={editing.settings.source}
+                    options={configurableSources}
+                    onValueChange={(next) => {
+                      const available = summaryOptions(editing.kind, next);
+                      changeSettings({
+                        source: next,
+                        summary: available.includes(editing.settings.summary)
+                          ? editing.settings.summary
+                          : (available[0] ?? ""),
+                        ...(editing.kind === "BN21"
+                          ? {
+                              unit:
+                                next === "steps"
+                                  ? "steps"
+                                  : next === "bodyweight"
+                                    ? "kg"
+                                    : "cm",
+                            }
+                          : {}),
+                      });
+                    }}
+                  />
+                  {["BN15", "BN19"].includes(editing.kind) && (
+                    <Select
+                      label="Graph format"
+                      options={
+                        editing.kind === "BN15"
+                          ? [
+                              { value: "circles", label: "Three circles" },
+                              {
+                                value: "lines",
+                                label: "Three target lines",
+                              },
+                            ]
+                          : [
+                              {
+                                value: "line",
+                                label: "Consumed and target lines",
+                              },
+                              {
+                                value: "stacked",
+                                label: "Stacked daily columns",
+                              },
+                              {
+                                value: "single",
+                                label: "Single-day target card",
+                              },
+                            ]
+                      }
+                      value={
+                        editing.settings.option === "active"
+                          ? editing.kind === "BN15"
+                            ? "circles"
+                            : "single"
+                          : editing.settings.option
+                      }
+                      onValueChange={(option) =>
+                        changeSettings({
+                          option,
+                          ...(editing.kind === "BN19" &&
+                          ["line", "stacked"].includes(option)
+                            ? {
+                                target: true,
+                                summary: "actual-target",
+                                period: [
+                                  "week",
+                                  "month",
+                                  "6month",
+                                  "year",
+                                ].includes(editing.settings.period)
+                                  ? editing.settings.period
+                                  : "month",
+                              }
+                            : editing.kind === "BN19"
+                              ? { period: "today" }
+                              : {}),
+                        })
+                      }
+                    />
                   )}
                   {editing.kind === "BN19" && (
-                    <label className="eg-gallery-field">
-                      <span>Nutrient</span>
-                      <select
-                        value={editing.settings.fields[0] ?? "protein"}
-                        onChange={(event) =>
-                          changeSettings({
-                            fields: [event.target.value],
-                            unit:
-                              event.target.value === "calories" ? "kcal" : "g",
-                          })
-                        }
-                      >
-                        <option value="protein">Protein</option>
-                        <option value="carbs">Carbohydrate</option>
-                        <option value="fat">Fat</option>
-                        <option value="calories">Energy</option>
-                      </select>
-                    </label>
+                    <Select
+                      label="Nutrient"
+                      value={editing.settings.fields[0] ?? "protein"}
+                      options={[
+                        { value: "protein", label: "Protein" },
+                        { value: "carbs", label: "Carbohydrate" },
+                        { value: "fat", label: "Fat" },
+                        { value: "calories", label: "Energy" },
+                      ]}
+                      onValueChange={(field) =>
+                        changeSettings({
+                          fields: [field],
+                          unit: field === "calories" ? "kcal" : "g",
+                        })
+                      }
+                    />
                   )}
                   {editing.kind === "BN08" && (
-                    <label className="eg-gallery-field">
-                      <span>Change display</span>
-                      <select
-                        value={editing.settings.option}
-                        onChange={(event) =>
-                          changeSettings({ option: event.target.value })
-                        }
-                      >
-                        <option value="absolute">
-                          Change in {editing.settings.unit}
-                        </option>
-                        <option value="percentage">Percentage change</option>
-                      </select>
-                    </label>
+                    <Select
+                      label="Change display"
+                      value={editing.settings.option}
+                      options={[
+                        {
+                          value: "absolute",
+                          label: `Change in ${editing.settings.unit}`,
+                        },
+                        { value: "percentage", label: "Percentage change" },
+                      ]}
+                      onValueChange={(option) => changeSettings({ option })}
+                    />
                   )}
                   {editing.kind === "TL21" && (
-                    <label className="eg-gallery-field">
-                      <span>Presentation</span>
-                      <select
-                        value={
-                          editing.settings.option === "contributions"
-                            ? "contributions"
-                            : "list"
-                        }
-                        onChange={(event) => {
-                          const presentation = event.target.value;
-                          changeSettings({
-                            option: presentation,
-                            period:
-                              presentation === "contributions"
-                                ? ["4w", "6w"].includes(editing.settings.period)
-                                  ? editing.settings.period
-                                  : "4w"
-                                : editing.kind === "TL21"
-                                  ? "today"
-                                  : editing.settings.period,
-                          });
-                        }}
-                      >
-                        <option value="list">List</option>
-                        <option value="contributions">
-                          Contribution graph
-                        </option>
-                      </select>
-                    </label>
+                    <Select
+                      label="Presentation"
+                      value={
+                        editing.settings.option === "contributions"
+                          ? "contributions"
+                          : "list"
+                      }
+                      options={[
+                        { value: "list", label: "List" },
+                        {
+                          value: "contributions",
+                          label: "Contribution graph",
+                        },
+                      ]}
+                      onValueChange={(presentation) => {
+                        changeSettings({
+                          option: presentation,
+                          period:
+                            presentation === "contributions"
+                              ? ["4w", "6w"].includes(editing.settings.period)
+                                ? editing.settings.period
+                                : "4w"
+                              : editing.kind === "TL21"
+                                ? "today"
+                                : editing.settings.period,
+                        });
+                      }}
+                    />
                   )}
                   <div className="eg-gallery-config-preview">
                     <div className="eg-gallery-config-preview-heading">
@@ -727,101 +861,86 @@ export function BuilderGallery({
                       {["TL21", "TL22"].includes(editing.kind) &&
                         (editing.kind === "TL22" ||
                           editing.settings.option === "contributions") && (
-                          <label className="eg-gallery-field">
-                            <span>Contribution history</span>
-                            <select
-                              value={editing.settings.historyPeriod ?? "auto"}
-                              onChange={(event) =>
-                                changeSettings({
-                                  historyPeriod: event.target
-                                    .value as WidgetSettings["historyPeriod"],
-                                })
-                              }
-                            >
-                              <option value="auto">
-                                Automatic · fits card width
-                              </option>
-                              <option value="3m">3 months</option>
-                              <option value="6m">6 months</option>
-                              <option
-                                value="1y"
-                                disabled={
+                          <Select
+                            label="Contribution history"
+                            value={editing.settings.historyPeriod ?? "auto"}
+                            options={[
+                              {
+                                value: "auto",
+                                label: "Automatic · fits card width",
+                              },
+                              { value: "3m", label: "3 months" },
+                              { value: "6m", label: "6 months" },
+                              {
+                                value: "1y",
+                                label:
                                   (previewDimensions?.width ?? 512) - 34 < 413
-                                }
-                              >
-                                {(previewDimensions?.width ?? 512) - 34 < 413
-                                  ? "1 year · widen the card first"
-                                  : "1 year"}
-                              </option>
-                            </select>
-                          </label>
+                                    ? "1 year · widen the card first"
+                                    : "1 year",
+                                disabled:
+                                  (previewDimensions?.width ?? 512) - 34 < 413,
+                              },
+                            ]}
+                            onValueChange={(historyPeriod) =>
+                              changeSettings({
+                                historyPeriod:
+                                  historyPeriod as WidgetSettings["historyPeriod"],
+                              })
+                            }
+                          />
                         )}
                       {currentSummaries.length > 1 &&
                         !(
                           editing.kind === "BN19" &&
                           ["line", "stacked"].includes(editing.settings.option)
                         ) && (
-                          <label className="eg-gallery-field">
-                            <span>Summary</span>
-                            <select
-                              value={editing.settings.summary}
-                              onChange={(event) =>
-                                changeSettings({ summary: event.target.value })
-                              }
-                            >
-                              {currentSummaries.map((value) => (
-                                <option key={value} value={value}>
-                                  {editing.kind === "CU03" && value === "both"
-                                    ? "Open and completed"
-                                    : settingLabel(value)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                          <Select
+                            label="Summary"
+                            value={editing.settings.summary}
+                            options={optionsFromValues(
+                              currentSummaries,
+                              (value) =>
+                                editing.kind === "CU03" && value === "both"
+                                  ? "Open and completed"
+                                  : settingLabel(value),
+                            )}
+                            onValueChange={(summary) =>
+                              changeSettings({ summary })
+                            }
+                          />
                         )}
                       <div className="eg-gallery-field-pair">
                         {currentPeriods.length > 0 && (
-                          <label className="eg-gallery-field">
-                            <span>
-                              {["TL21", "TL22"].includes(editing.kind)
+                          <Select
+                            label={
+                              ["TL21", "TL22"].includes(editing.kind)
                                 ? "Summary period"
-                                : "Period"}
-                            </span>
-                            <select
-                              value={editing.settings.period}
-                              onChange={(event) =>
-                                changeSettings({ period: event.target.value })
-                              }
-                            >
-                              {currentPeriods.map(({ value, label }) => (
-                                <option key={value} value={value}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-                        <label className="eg-gallery-field">
-                          <span>Card size</span>
-                          <select
-                            value={editing.settings.size}
-                            disabled={mode === "replace"}
-                            onChange={(event) =>
-                              changeSettings({
-                                size: event.target.value as SizeName,
-                              })
+                                : "Period"
                             }
-                          >
-                            {supportedSizes(
-                              activeItem.id,
-                              activeItem.sizes,
-                            ).map((value) => (
-                              <option key={value} value={value}>
-                                {value} · {sizeMeasures[value].label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            value={editing.settings.period}
+                            options={currentPeriods}
+                            onValueChange={(period) =>
+                              changeSettings({ period })
+                            }
+                          />
+                        )}
+                        <Select
+                          label="Card size"
+                          value={editing.settings.size}
+                          disabled={mode === "replace"}
+                          options={supportedSizes(
+                            activeItem.id,
+                            activeItem.sizes,
+                          ).map((value) => ({
+                            value,
+                            label: `${value} · ${sizeMeasures[value].label}`,
+                          }))}
+                          onValueChange={(size) =>
+                            changeSettings({
+                              size: size as SizeName,
+                            })
+                          }
+                        />
                       </div>
                       {mode === "replace" && (
                         <p className="eg-gallery-config-note">
@@ -838,22 +957,17 @@ export function BuilderGallery({
                       <div className="eg-gallery-field-pair">
                         {unitChoices(editing.kind, editing.settings.source)
                           .length > 1 && (
-                          <label className="eg-gallery-field">
-                            <span>Unit</span>
-                            <select
-                              value={editing.settings.unit}
-                              onChange={(event) =>
-                                changeSettings({ unit: event.target.value })
-                              }
-                            >
-                              {unitChoices(
+                          <Select
+                            label="Unit"
+                            value={editing.settings.unit}
+                            options={optionsFromValues(
+                              unitChoices(
                                 editing.kind,
                                 editing.settings.source,
-                              ).map((value) => (
-                                <option key={value}>{value}</option>
-                              ))}
-                            </select>
-                          </label>
+                              ),
+                            )}
+                            onValueChange={(unit) => changeSettings({ unit })}
+                          />
                         )}
                       </div>
                       {editing.kind !== "BN19" &&
@@ -863,29 +977,27 @@ export function BuilderGallery({
                             <div className="eg-gallery-checkboxes">
                               {fieldChoices(editing.kind, records).map(
                                 (field) => (
-                                  <label key={field}>
-                                    <input
-                                      type="checkbox"
-                                      checked={editing.settings.fields.includes(
-                                        field,
-                                      )}
-                                      onChange={(event) => {
-                                        const next = event.target.checked
-                                          ? [...editing.settings.fields, field]
-                                          : editing.settings.fields.filter(
-                                              (value) => value !== field,
-                                            );
-                                        changeSettings({ fields: next });
-                                      }}
-                                    />
-                                    <span>
-                                      {["TL21", "TL22"].includes(editing.kind)
+                                  <Checkbox
+                                    key={field}
+                                    label={
+                                      ["TL21", "TL22"].includes(editing.kind)
                                         ? (records.habits.find(
                                             (habit) => habit.id === field,
                                           )?.name ?? field)
-                                        : field}
-                                    </span>
-                                  </label>
+                                        : field
+                                    }
+                                    checked={editing.settings.fields.includes(
+                                      field,
+                                    )}
+                                    onCheckedChange={(checked) => {
+                                      const next = checked
+                                        ? [...editing.settings.fields, field]
+                                        : editing.settings.fields.filter(
+                                            (value) => value !== field,
+                                          );
+                                      changeSettings({ fields: next });
+                                    }}
+                                  />
                                 ),
                               )}
                             </div>
@@ -903,10 +1015,11 @@ export function BuilderGallery({
                                           )?.name ?? field)
                                         : field}
                                     </span>
-                                    <button
+                                    <IconButton
+                                      size="sm"
                                       type="button"
+                                      label={`Move ${field} earlier`}
                                       disabled={index === 0}
-                                      aria-label={`Move ${field} earlier`}
                                       onClick={() => {
                                         const fields = [
                                           ...editing.settings.fields,
@@ -919,14 +1032,15 @@ export function BuilderGallery({
                                       }}
                                     >
                                       ↑
-                                    </button>
-                                    <button
+                                    </IconButton>
+                                    <IconButton
+                                      size="sm"
                                       type="button"
+                                      label={`Move ${field} later`}
                                       disabled={
                                         index ===
                                         editing.settings.fields.length - 1
                                       }
-                                      aria-label={`Move ${field} later`}
                                       onClick={() => {
                                         const fields = [
                                           ...editing.settings.fields,
@@ -939,7 +1053,7 @@ export function BuilderGallery({
                                       }}
                                     >
                                       ↓
-                                    </button>
+                                    </IconButton>
                                   </li>
                                 ))}
                               </ol>
@@ -948,82 +1062,67 @@ export function BuilderGallery({
                         )}
                       {["TL21", "CU16"].includes(editing.kind) &&
                         editing.settings.fields.map((field) => (
-                          <label
-                            className="eg-gallery-field"
+                          <Input
                             key={`label-${field}`}
-                          >
-                            <span>
-                              Display label ·{" "}
-                              {["TL21", "TL22"].includes(editing.kind)
+                            label={`Display label · ${
+                              ["TL21", "TL22"].includes(editing.kind)
                                 ? (records.habits.find(
                                     (habit) => habit.id === field,
                                   )?.name ?? field)
-                                : field}
-                            </span>
-                            <input
-                              maxLength={64}
-                              value={editing.settings.labels?.[field] ?? ""}
-                              placeholder="Use source label"
-                              onChange={(event) =>
-                                changeSettings({
-                                  labels: {
-                                    ...editing.settings.labels,
-                                    [field]: event.target.value,
-                                  },
-                                })
-                              }
-                            />
-                          </label>
-                        ))}
-                      {editing.kind === "CU04" && (
-                        <label className="eg-gallery-target-toggle">
-                          <input
-                            type="checkbox"
-                            checked={editing.settings.option !== "recurring"}
+                                : field
+                            }`}
+                            maxLength={64}
+                            value={editing.settings.labels?.[field] ?? ""}
+                            placeholder="Use source label"
                             onChange={(event) =>
                               changeSettings({
-                                option: event.target.checked
-                                  ? "all"
-                                  : "recurring",
+                                labels: {
+                                  ...editing.settings.labels,
+                                  [field]: event.target.value,
+                                },
                               })
                             }
                           />
-                          <span>Include additional scheduled check-ins</span>
-                        </label>
+                        ))}
+                      {editing.kind === "CU04" && (
+                        <Toggle
+                          label="Include additional scheduled check-ins"
+                          checked={editing.settings.option !== "recurring"}
+                          onCheckedChange={(checked) =>
+                            changeSettings({
+                              option: checked ? "all" : "recurring",
+                            })
+                          }
+                        />
                       )}
                       {targetAvailable(editing.kind) &&
                         !(
                           editing.kind === "BN19" &&
                           ["line", "stacked"].includes(editing.settings.option)
                         ) && (
-                          <label className="eg-gallery-target-toggle">
-                            <input
-                              type="checkbox"
-                              checked={
-                                ["BN15", "BN19", "CU02", "CU09"].includes(
-                                  editing.kind,
-                                ) && editing.settings.target
-                              }
-                              disabled={
-                                !["BN15", "BN19", "CU02", "CU09"].includes(
-                                  editing.kind,
-                                )
-                              }
-                              onChange={(event) =>
-                                changeSettings({ target: event.target.checked })
-                              }
-                            />
-                            <span>
-                              <strong>Show target</strong>
-                              <small>
-                                {["BN15", "BN19"].includes(editing.kind)
-                                  ? "Keep fixed, range and minimum plan targets visible."
-                                  : ["CU02", "CU09"].includes(editing.kind)
-                                    ? "Show each source metric’s own applicable target."
-                                    : "This fixture has no numeric target assigned to this source."}
-                              </small>
-                            </span>
-                          </label>
+                          <Toggle
+                            label="Show target"
+                            checked={
+                              ["BN15", "BN19", "CU02", "CU09"].includes(
+                                editing.kind,
+                              ) && editing.settings.target
+                            }
+                            disabled={
+                              !["BN15", "BN19", "CU02", "CU09"].includes(
+                                editing.kind,
+                              )
+                            }
+                            description={
+                              ["BN15", "BN19"].includes(editing.kind)
+                                ? "Keep fixed, range and minimum plan targets visible."
+                                : ["CU02", "CU09"].includes(editing.kind)
+                                  ? "Show each source metric’s own applicable target."
+                                  : "This fixture has no numeric target assigned to this source."
+                            }
+                            onCheckedChange={(target) =>
+                              changeSettings({ target })
+                            }
+                          />
                         )}
                     </div>
                   </details>
@@ -1033,9 +1132,9 @@ export function BuilderGallery({
                     </p>
                   )}
                   <div className="eg-gallery-form-actions">
-                    <button type="submit" className="eg-gallery-primary">
+                    <Button type="submit" variant="primary">
                       {mode === "replace" ? "Replace widget" : "Save changes"}
-                    </button>
+                    </Button>
                   </div>
                 </form>
               </motion.aside>
@@ -1066,30 +1165,34 @@ export function BuilderGallery({
                       {widget.settings.title ||
                         catalogue.find((item) => item.id === widget.kind)?.name}
                     </span>
-                    <button
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       type="button"
                       onClick={() => removeStaged(widget.id)}
                       aria-label={`Remove ${widget.settings.title}`}
                     >
                       Remove
-                    </button>
+                    </Button>
                   </div>
                 ))}
               </div>
             )}
           </div>
           <div className="eg-gallery-footer-actions">
-            <button
+            <Button
+              variant="secondary"
+              size="sm"
               type="button"
-              className="eg-gallery-secondary"
               onClick={dismiss}
             >
               Cancel
-            </button>
+            </Button>
             {mode === "add" && (
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 type="button"
-                className="eg-gallery-primary"
                 onClick={commitStaged}
                 disabled={!staged.length}
               >
@@ -1097,7 +1200,7 @@ export function BuilderGallery({
                 {staged.length
                   ? `${staged.length} widget${staged.length === 1 ? "" : "s"}`
                   : "widgets"}
-              </button>
+              </Button>
             )}
           </div>
         </footer>

@@ -84,14 +84,6 @@
   font-size: var(--font-size-sm);
 }
 
-.invite-form .auth-input:focus-visible,
-.invite-form .auth-button:focus-visible,
-.reset-form .auth-input:focus-visible,
-.reset-form .auth-button:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-}
-
 .invite-form__submit,
 .reset-form__submit {
   min-height: 44px;
