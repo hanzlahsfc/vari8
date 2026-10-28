@@ -283,10 +283,11 @@ describe("system index generator", () => {
     for (const row of rows) {
       // Imported by the root layout, which wraps /, /client, /coach,
       // /coach/settings (the W2-T1 settings-surface demo mount),
+      // /coach/states,
       // /dev/design-system (the frontend design system playground, dev only)
       // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /dev/design-system, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /coach/states, /dev/design-system, /ethereal |",
       );
     }
   });
