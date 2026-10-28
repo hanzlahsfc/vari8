@@ -109,7 +109,8 @@ describe("parseLabelEntry", () => {
 
   it("barcode is optional; supplied values must satisfy GTIN checksums", () => {
     // absent → null, no validation
-    const { barcode: _omit, ...noBarcode } = BASE;
+    const noBarcode = { ...BASE };
+    delete (noBarcode as Record<string, unknown>).barcode;
     expect(
       parseLabelEntry({ ...noBarcode, nutrients: [macros()] }).barcode,
     ).toBeNull();
