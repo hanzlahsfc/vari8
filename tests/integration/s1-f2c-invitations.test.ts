@@ -358,7 +358,7 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     );
   }
 
-  it("new CLIENT acceptance creates user, ACTIVE member, linked ClientProfile", async () => {
+  it("new CLIENT acceptance creates user + ACTIVE member, NO ClientProfile (O6)", async () => {
     const { ws, session: sess } = await ownerFixture();
     const r = await invite(sess, ws.id, "newclient@example.test", "CLIENT");
     const res = await acceptAs(null, ws.id, r.delivery.rawToken, {
@@ -377,10 +377,13 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
     });
     expect(m.status).toBe("ACTIVE");
     expect(m.role).toBe("CLIENT");
-    const p = await prisma.clientProfile.findFirstOrThrow({
-      where: { workspaceId: ws.id, userId: u.id },
-    });
-    expect(p.name).toBe("New Client");
+    // O6 (owner, 2026-10-20): the submitted onboarding form creates the client
+    // record — acceptance creates only the account and membership.
+    expect(
+      await prisma.clientProfile.findFirst({
+        where: { workspaceId: ws.id, userId: u.id },
+      }),
+    ).toBeNull();
     const token = await prisma.accessToken.findUniqueOrThrow({
       where: { id: r.invitationId },
     });
@@ -501,12 +504,12 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
       where: { id: existing.id },
     });
     expect(u.passwordHash).toBe("scrypt$fixture");
-    // ClientProfile created under this workspace only.
+    // O6: acceptance creates no ClientProfile — the onboarding submission does.
     expect(
       await prisma.clientProfile.count({
         where: { userId: existing.id },
       }),
-    ).toBe(1);
+    ).toBe(0);
   });
 
   it("same user may join a second workspace without any data crossing", async () => {
@@ -521,11 +524,11 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
       where: { userId: shared.id },
     });
     expect(memberships).toHaveLength(2);
+    // O6: acceptance creates no ClientProfile in either workspace.
     const profiles = await prisma.clientProfile.findMany({
       where: { userId: shared.id },
     });
-    expect(profiles).toHaveLength(2);
-    expect(new Set(profiles.map((p) => p.workspaceId)).size).toBe(2);
+    expect(profiles).toHaveLength(0);
   });
 
   it("membership state machine: INVITED→ACTIVE, same-role idempotent, diff-role closed", async () => {
@@ -539,7 +542,7 @@ describe.skipIf(!enabled)("S1-F2C invitation orchestration (real PG)", () => {
       where: { id: m1.id },
     });
     expect(m1After.status).toBe("ACTIVE");
-    // ACTIVE same-role is idempotent — no duplicate membership/profile.
+    // ACTIVE same-role is idempotent — no duplicate membership.
     const u2 = await user({ email: "same@example.test" });
     await member(ws.id, u2.id, "CLIENT", "ACTIVE");
     const r2 = await invite(sess, ws.id, "same@example.test", "CLIENT");

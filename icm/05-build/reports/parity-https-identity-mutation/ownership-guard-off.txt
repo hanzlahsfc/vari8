@@ -1,0 +1,21 @@
+Command: npx -y -p node@24.22.1 sh -c 'npx vitest run tests/unit/parity-https.test.ts'
+Exit: 1 (expected mutation bite)
+
+Result:
+Test Files  1 failed (1)
+     Tests  1 failed | 16 passed (17)
+
+Failed test:
+tests/unit/parity-https.test.ts > owned-process identity > never signals a same-PGID process without ownership proof
+
+Assertion:
+expected [] to deeply equal [
+  [700, "SIGTERM"],
+  [200, "SIGTERM"],
+  [700, "SIGKILL"],
+  [200, "SIGKILL"],
+]
+
+Interpretation:
+Removing the token/ownership predicate made same-PGID unverified identities
+eligible for SIGTERM and SIGKILL. The identity guard bites as intended.

@@ -1,7 +1,7 @@
 # PR-03A build: Apply the TEST-AUDIT cuts
 
 Card slug `pr-03-test-audit`. Board `vari8`. Track Foundation. Depends on none. Builder: swe-2-max, outside the graph. Issue #59.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03a` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3707. May touch `db/`: no; the local check fails if `db/` changes.
+Repo `hanzlahsfc/vari8`. Worktree `/home/nexuslink/vari8-worktrees/pr-03-test-audit`, branch `beta/pr-03-test-audit` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr03a` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3707. May touch `db/`: no; the local check fails if `db/` changes.
 
 ## State
 
