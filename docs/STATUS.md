@@ -1,3 +1,63 @@
+## 2026-10-28 - Vari8-Beta d1c40810 merged into the verified full-package line on promote/full-package-a
+
+- Merge commit `91f9491f` on branch `promote/full-package-a` (worktree
+  `.worktrees/promote-a`). Parents: `b5ec89ea` (the verified full-package
+  line, unchanged) and `d1c40810` (`origin/Vari8-Beta` tip at fetch time).
+- The Vari8-Beta side adds PR #162 (supplement plan service, schema and
+  actions), PR #193 (check-in enablement: trial seed sign-in, client
+  rating controls, walkthrough runbook), PR #199 (https e2e harness
+  contract, lane ports, boot-check classification) and PR #201 (k6
+  load-gate tooling with lifecycle proofs), plus boot checks, logging
+  and RBAC matrix coverage for `supplementPlans`.
+- Conflicts: three, all documentation. `docs/STATUS.md` resolved as a
+  union of both entry histories, newest first. `docs/index/DATA-MODEL.md`
+  and `docs/index/SYMBOLS.md` regenerated with `npm run index` from the
+  merged schema and source tree. No unclassifiable conflict occurred.
+- Gates on this head: `npm ci` root 0 and frontend 0, `npx prisma
+  generate` 0, `npx prisma validate` 0, `npm run format:check` 0,
+  `npm run typecheck` 0, `npm run lint` 0 errors and 89 warnings,
+  `npm run test` 0 (107 files, 1289 tests), `npm run test:integration` 0
+  (66 files, 923 tests, disposable lane database `app_fp_w2p0`),
+  `npm run build` 0, `npm run index` 0, `npm run index:check` 0,
+  `cd frontend && npm run lint` 0, `cd frontend && npm run check` 0.
+- `npm run test:e2e` initially reported four failures, all in colour
+  assertions written before the canvas token update: the specs expected
+  the earlier wash values while the shipped tokens are `#F5F5F5` /
+  `#080808`. `app/auth.css` also still repeated the earlier light wash
+  and had no dark token mirror for the auth routes, which never mount
+  the canvas appearance store; the dark wash, card surface, text and
+  hairlines on the coach-facing sign-in pages therefore rendered
+  without their canvas values. The mirror now repeats the current v8
+  values in both modes and the affected e2e expectations were updated
+  to the shipped tokens. `npm run test:e2e` exit 0: 16 passed, 8
+  skipped (mail-delivery gated), 0 failed.
+- Fresh lane database `app_fp_w2p0` on 127.0.0.1:5433: `npx prisma
+  migrate deploy` applied all 40 migrations on an empty database, exit
+  0. `APP_ENV=test MEDIA_STORAGE_ADAPTER=local npm run seed:dev` ran
+  twice, both exit 0 and idempotent; row counts converged (users 7,
+  client profiles 15, check-in instances 119, nutrition items 584,
+  media objects 4). The lane database was dropped after verification.
+- Browser pass on the production build (`npx next start`), real seeded
+  sign-ins at 1440x900 and 390x844: coach sign-in to clients list,
+  client profile overview, meal plan, training program, check-in
+  review queue and forms; owner sign-in to the admin surface; client
+  sign-in to check-ins and daily entry. Every surface returned 200
+  with zero console errors at both widths.
+- UI map on the same server validated with the UI-SYSTEM harness,
+  exit 0. Sheets-path diff against the merge base is 0 lines; the
+  fidelity harness selftest passes all four cases.
+- Parity note: `npm run parity` self-serves a production `next start`
+  with an http `BETTER_AUTH_URL`; the boot check added upstream on
+  Vari8-Beta (tracked as issue #202) refuses that origin, so the
+  canonical self-spawn path cannot boot on this head. The same check
+  was recorded upstream as a harness defect, not an app defect.
+  `PARITY_DEV=1 npm run parity` ran end to end: 74 screens at both
+  widths, all main captures bit exact or inside budget, 19 residual
+  diffs confined to inner scroll regions, consistent with the
+  dev-timing noise the runner documents. The merge adds no diff under
+  `app/(canvas)`, `lib/canvas`, `components/canvas` or `frontend/`
+  relative to the verified base.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head
