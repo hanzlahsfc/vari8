@@ -107,15 +107,18 @@ function auditSample(
           : String(raw).trim();
       // separate buckets: missing-null vs qualified-null vs qualified
       // bound vs exact — never conflated
-      if (
-        nut.qualifier === "traces" ||
-        nut.qualifier === "lod" ||
-        nut.qualifier === "loq" ||
-        nut.qualifier === "lod_or_loq"
-      ) {
+      // exact qualifier verification — the marker AND (for bounds) the
+      // numeric bound must match verbatim; a mismatched marker is bad
+      const QUAL_NULL_MARKERS: Record<string, string[]> = {
+        traces: ["traces", "TR"],
+        lod: ["<LOD"],
+        loq: ["<LOQ"],
+        lod_or_loq: ["<LOD or <LOQ"],
+      };
+      if (nut.qualifier && QUAL_NULL_MARKERS[nut.qualifier]) {
         if (
           nut.value === null &&
-          /^(TR|traces|<LOD|<LOQ|<LOD or <LOQ)/.test(rawT)
+          QUAL_NULL_MARKERS[nut.qualifier].includes(rawT)
         ) {
           qualifiedNull++;
         } else
@@ -126,9 +129,10 @@ function auditSample(
             `qualified-null ${nut.qualifier}?`,
           ]);
       } else if (nut.qualifier === "lt" || nut.qualifier === "gt") {
-        const norm = rawT.replace(/^[<>]/, "").replace(",", ".");
+        const sign = nut.qualifier === "lt" ? "<" : ">";
+        const norm = rawT.slice(1).replace(",", ".");
         if (
-          rawT.startsWith("<") &&
+          rawT.startsWith(sign) &&
           Math.abs(Number(norm) - (nut.value ?? NaN)) < 1e-12
         )
           qualifiedBound++;

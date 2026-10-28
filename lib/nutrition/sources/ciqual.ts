@@ -47,6 +47,7 @@ const META_HEADER = [
   "alim_nom_sci",
 ];
 // <name> (<unit>\n100 g) — headers fold lines with \r\n.
+const ALLOWED_TAIL = new Set(["Facteur de Jones"]);
 const NUTRIENT_HEADER = /^(.+) \(([^()\r\n]+)[\r\n/ ]*100[\r\n ]*g\)\s*$/;
 
 type NutrientColumn = { code: string; name: string; unit: string; col: number };
@@ -86,7 +87,10 @@ function parseCiqualHeader(cells: string[]): {
       // any remaining header carrying a per-100g unit is a parse error
       const tail = cells.slice(i);
       if (
-        tail.some((c) => /\([^()]*\)?.{0,3}100[\r\n ]*g\)?\s*$/.test(c ?? ""))
+        tail
+          .map((c) => (c ?? "").replace(/\s+/g, " ").trim())
+          .filter((c) => c !== "")
+          .some((c) => !ALLOWED_TAIL.has(c))
       )
         throw new SourceAdapterError(
           "unexpected_header",
