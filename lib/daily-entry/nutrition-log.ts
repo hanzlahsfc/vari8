@@ -210,7 +210,8 @@ export async function saveNutritionLog(
           return { status: "no_op" };
 
         const row = {
-          protein: macros.protein === null ? null : new Prisma.Decimal(macros.protein),
+          protein:
+            macros.protein === null ? null : new Prisma.Decimal(macros.protein),
           carbohydrate:
             macros.carbohydrate === null
               ? null
@@ -256,6 +257,8 @@ export type NutritionLogDay = {
   protein: number | null;
   carbohydrate: number | null;
   fat: number | null;
+  dayType: string | null;
+  planFollowed: boolean | null;
 };
 
 export type NutritionLogSurface =
@@ -274,13 +277,16 @@ function toDay(row: {
   protein: unknown;
   carbohydrate: unknown;
   fat: unknown;
+  dayType: string | null;
+  planFollowed: boolean | null;
 }): NutritionLogDay {
   return {
     entryDate: row.entryDate.toISOString().slice(0, 10),
     protein: row.protein === null ? null : Number(row.protein),
-    carbohydrate:
-      row.carbohydrate === null ? null : Number(row.carbohydrate),
+    carbohydrate: row.carbohydrate === null ? null : Number(row.carbohydrate),
     fat: row.fat === null ? null : Number(row.fat),
+    dayType: row.dayType,
+    planFollowed: row.planFollowed,
   };
 }
 
@@ -355,7 +361,17 @@ export async function loadNutritionLogSurface(
         entryDate: entryDateObj,
       },
     },
-    select: { nutritionLog: { select: { protein: true, carbohydrate: true, fat: true } } },
+    select: {
+      nutritionLog: {
+        select: {
+          protein: true,
+          carbohydrate: true,
+          fat: true,
+          dayType: true,
+          planFollowed: true,
+        },
+      },
+    },
   });
   const logRow = entry?.nutritionLog ?? null;
 
@@ -363,7 +379,14 @@ export async function loadNutritionLogSurface(
     where: { workspaceId: input.workspaceId, clientProfileId: profile.id },
     orderBy: { entryDate: "desc" },
     take: NUTRITION_LOG_HISTORY_LIMIT,
-    select: { entryDate: true, protein: true, carbohydrate: true, fat: true },
+    select: {
+      entryDate: true,
+      protein: true,
+      carbohydrate: true,
+      fat: true,
+      dayType: true,
+      planFollowed: true,
+    },
   });
 
   return {
@@ -373,13 +396,12 @@ export async function loadNutritionLogSurface(
       logRow === null
         ? null
         : {
-            protein:
-              logRow.protein === null ? null : Number(logRow.protein),
+            protein: logRow.protein === null ? null : Number(logRow.protein),
             carbohydrate:
-              logRow.carbohydrate === null
-                ? null
-                : Number(logRow.carbohydrate),
+              logRow.carbohydrate === null ? null : Number(logRow.carbohydrate),
             fat: logRow.fat === null ? null : Number(logRow.fat),
+            dayType: logRow.dayType,
+            planFollowed: logRow.planFollowed,
           },
     history: historyRows.map(toDay),
   };
@@ -490,7 +512,14 @@ export async function listStaffNutritionLogs(
       },
     },
     orderBy: { entryDate: "desc" },
-    select: { entryDate: true, protein: true, carbohydrate: true, fat: true },
+    select: {
+      entryDate: true,
+      protein: true,
+      carbohydrate: true,
+      fat: true,
+      dayType: true,
+      planFollowed: true,
+    },
   });
   return {
     state: "ready",
