@@ -1,3 +1,51 @@
+## 2026-10-28 - W2-N9 temporary nutrition plan table + routes on `w2/n9`
+
+- Gap: the canvas attaches dated short nutrition plans (refeed windows,
+  diet breaks, event weeks) on top of the running meal plan, but the
+  backend had no table, no write path and no client read for them.
+- Schema + migration `20261027000024_temporary_nutrition_plan`: one row per
+  temporary plan (no draft/publish chain), closed enum columns
+  `TemporaryNutritionKind` (REFEED/DIET_BREAK/CUSTOM) and
+  `TemporaryNutritionSource` (MEAL_PLAN/IIFYM), opaque `plan` JSONB never
+  re-validated per source, CHECKs for non-blank label and ordered range,
+  composite coherence FKs matching the meal_plan family. Reviewed via
+  `prisma migrate diff --from-migrations`: no missing columns, indexes or
+  keys; only the schema-invisible composite FKs every table carries.
+- Service (`lib/mealplan/service.ts`): `createTemporaryNutritionPlan`,
+  `listStaffTemporaryNutritionPlans`, `listOwnTemporaryNutritionPlans`,
+  `deleteTemporaryNutritionPlan` under the shared lock protocol (mplan +
+  member advisories -> member FOR UPDATE -> in-tx authorize -> assignment
+  -> profile -> consent -> mutation -> audit LAST). Validation mirrors the
+  frontend `validateTemporaryNutrition`: closed kind/source labels,
+  non-blank label, real calendar dates, ordered range, inclusive span of
+  at most 28 days. The amendment rule - same-source date intersection on
+  create - is enforced inside the serializable per-client transaction;
+  different sources may overlap. `MealPlanError` codes reuse the closed
+  vocabulary (invalid_input 400, plan_not_accessible 403).
+- Routes: `meal-plans/temporary` GET (requireOwnClientProfile before any
+  row lookup, `own` -> own rows, staff -> requested client's rows) + POST
+  (staff plan.write), `meal-plans/temporary/[temporaryPlanId]` DELETE
+  (staff plan.write, foreign/missing id reads as denied, never 404).
+  Audit resourceType `temporary_nutrition_plan` added to the closed union.
+- Tests: `tests/integration/api-v1-mealplan-temporary.test.ts` (7 tests,
+  real PG + real sign-in): staff create+list round-trip with all eight
+  wire fields and the REFEED enum row, four invalid_input rejects with
+  zero-row proof, same-source overlap 400 vs cross-source/adjacent 200,
+  client own-scope read, foreign clientProfileId 403 with zero READ
+  audits, delete-once then 403, unauthenticated 401. Mutation-proved:
+  removing the overlap guard fails exactly the overlap test; removing the
+  own-scope compare fails exactly the foreign-id test.
+- Gates: typecheck 0; eslint 0 errors (96 pre-existing warnings); next
+  build 0; `npm run index` + `index:check` 0; frontend biome check (pinned
+  2.5.15) 0; prettier on changed files clean; unit vitest green after
+  index regen; added-lines U+2013/U+2014 scan 0/0; integration suite needs
+  `ENABLE_MEAL_PLANS=1` for the dev consent registry (same as W2-N7).
+- Delegation: the integration test file was scaffolded by a DeepSeek
+  flash child and reviewed line-by-line; schema, migration, service,
+  routes, mutation proofs and gates ran in this lane.
+- Client `ClientPlans.nutrition.temporary` merge is the explicit
+  follow-up; no publish/version semantics by design.
+
 ## 2026-10-28 - W2-N7 client own meal plan view route (audit row N7) on `w2/n7`
 
 - Gap: GET `.../clients/[clientProfileId]/meal-plans` declared `plan.read`

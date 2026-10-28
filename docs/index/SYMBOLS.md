@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 171 modules with exports, 1703 exported symbols.
+Counts: 171 modules with exports, 1710 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1517,6 +1517,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mealplan/service.ts`
 
+- `export type CreateTemporaryNutritionInput = { workspaceId: string; clientProfileId: string; kind: unknown; label: unknown; startDate: unknown; endDate: unknown; source: unknown; plan: unknown; }`
 - `export type MealPlanActivation = | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export type MealPlanDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
 - `export type { MealPlanDraft } from "./payload"`
@@ -1530,8 +1531,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type { MealTargets } from "./payload"`
 - `export type OwnMealPlanView = { current: { versionSeq: number; effectiveDate: string; effectiveTimezone: string; payload: MealPlanDraft; } | null; upcoming: { versionSeq: number; effectiveDate: str...`
 - `export type StaffMealPlanView = { plan: { id: string; title: string; timezone: string | null; draftRevision: number; draft: MealPlanDraft; } | null; versions: MealPlanVersionHeader[]; nextCursor: n...`
+- `export const TEMPORARY_NUTRITION_MAX_DAYS = 28`
 - `export type { TargetValue } from "./payload"`
+- `export type TemporaryNutritionWire = { id: string; kind: keyof typeof TEMPORARY_KIND_FROM_WIRE; label: string; startDate: string; endDate: string; source: keyof typeof TEMPORARY_SOURCE_FROM_WIRE; p...`
 - `export type { VariantSchedule } from "./payload"`
+- `export async function createTemporaryNutritionPlan(session: SessionLike, input: CreateTemporaryNutritionInput, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutritionWire }>`
+- `export async function deleteTemporaryNutritionPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string; temporaryPlanId: string; }, deps: MealPlanDeps = {}): Promise<{ delet...`
+- `export async function listOwnTemporaryNutritionPlans(session: SessionLike, input: { workspaceId: string }, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutritionWire[] }>`
+- `export async function listStaffTemporaryNutritionPlans(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutriti...`
 - `export function parseEffectiveDate(raw: unknown, now: Date = new Date()): string`
 - `export async function publishMealPlanVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; effectiveDate: string; }, deps: MealPlanDeps = {}...`
 - `export async function readOwnMealPlan(session: SessionLike, input: { workspaceId: string }, deps: MealPlanDeps = {}): Promise<OwnMealPlanView>`

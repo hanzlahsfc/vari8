@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 60 backend pages, 81 API routes, 14 layouts, 7 canvas pages.
+Counts: 60 backend pages, 83 API routes, 14 layouts, 7 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -121,6 +121,8 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/[temporaryPlanId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/[temporaryPlanId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/route.ts` | - | none detected |

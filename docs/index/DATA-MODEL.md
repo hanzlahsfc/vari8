@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: `db/schema.prisma`.
-Counts: 82 models, 40 enums, 832 scalar fields, 504 relation fields.
+Counts: 83 models, 42 enums, 842 scalar fields, 510 relation fields.
 
 `Kind` is derived from the field type: `scalar` (Prisma scalar), `enum` (schema enum), `relation`
 (another model's name; a field carrying `@relation(fields: ...)` is the foreign-key side, one
@@ -14,129 +14,132 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 | Model | Fields | Relations | Source |
 |---|---|---|---|
-| [`AccessToken`](#accesstoken) | 16 | 3 | `db/schema.prisma:669` |
+| [`AccessToken`](#accesstoken) | 16 | 3 | `db/schema.prisma:674` |
 | [`Account`](#account) | 14 | 1 | `db/schema.prisma:234` |
-| [`ActivityTarget`](#activitytarget) | 18 | 3 | `db/schema.prisma:2590` |
-| [`AuditEvent`](#auditevent) | 19 | 4 | `db/schema.prisma:624` |
-| [`CheckInAnswerMedia`](#checkinanswermedia) | 7 | 3 | `db/schema.prisma:2888` |
-| [`CheckInFeedback`](#checkinfeedback) | 13 | 4 | `db/schema.prisma:1759` |
-| [`CheckInForm`](#checkinform) | 20 | 7 | `db/schema.prisma:1532` |
-| [`CheckInFormVersion`](#checkinformversion) | 13 | 5 | `db/schema.prisma:1564` |
-| [`CheckInInstance`](#checkininstance) | 25 | 8 | `db/schema.prisma:1601` |
-| [`CheckInReview`](#checkinreview) | 11 | 4 | `db/schema.prisma:1730` |
-| [`CheckInScheduleRule`](#checkinschedulerule) | 27 | 9 | `db/schema.prisma:1810` |
-| [`CheckInSubmission`](#checkinsubmission) | 21 | 11 | `db/schema.prisma:1657` |
-| [`CheckInSubmissionAnswer`](#checkinsubmissionanswer) | 15 | 4 | `db/schema.prisma:1697` |
-| [`ClientAssignment`](#clientassignment) | 11 | 2 | `db/schema.prisma:581` |
-| [`ClientDashboardLayout`](#clientdashboardlayout) | 12 | 3 | `db/schema.prisma:1856` |
-| [`ClientGoal`](#clientgoal) | 14 | 4 | `db/schema.prisma:2553` |
-| [`ClientPhase`](#clientphase) | 10 | 2 | `db/schema.prisma:2440` |
-| [`ClientPlan`](#clientplan) | 17 | 3 | `db/schema.prisma:2686` |
-| [`ClientProfile`](#clientprofile) | 58 | 46 | `db/schema.prisma:505` |
-| [`ClientSetup`](#clientsetup) | 8 | 3 | `db/schema.prisma:1184` |
-| [`ClientSetupPin`](#clientsetuppin) | 27 | 10 | `db/schema.prisma:1206` |
-| [`ClientTask`](#clienttask) | 20 | 5 | `db/schema.prisma:1886` |
-| [`ClientWeekNote`](#clientweeknote) | 11 | 3 | `db/schema.prisma:2461` |
-| [`CoachNote`](#coachnote) | 15 | 3 | `db/schema.prisma:2411` |
-| [`CoachProfile`](#coachprofile) | 6 | 1 | `db/schema.prisma:493` |
-| [`CoachTask`](#coachtask) | 16 | 4 | `db/schema.prisma:2483` |
-| [`CoachingTemplate`](#coachingtemplate) | 22 | 6 | `db/schema.prisma:1079` |
-| [`CoachingTemplateVersion`](#coachingtemplateversion) | 14 | 6 | `db/schema.prisma:1114` |
-| [`CoachingTemplateVersionParameter`](#coachingtemplateversionparameter) | 8 | 4 | `db/schema.prisma:1143` |
-| [`ConsentRecord`](#consentrecord) | 10 | 2 | `db/schema.prisma:604` |
-| [`Conversation`](#conversation) | 10 | 4 | `db/schema.prisma:2778` |
-| [`DailyEntry`](#dailyentry) | 13 | 5 | `db/schema.prisma:1268` |
-| [`DailyEntryRevision`](#dailyentryrevision) | 16 | 5 | `db/schema.prisma:1300` |
-| [`DailyEntryRevisionValue`](#dailyentryrevisionvalue) | 14 | 2 | `db/schema.prisma:1337` |
-| [`ExerciseCatalogItem`](#exercisecatalogitem) | 15 | 1 | `db/schema.prisma:800` |
-| [`ExerciseImportRowOutcome`](#exerciseimportrowoutcome) | 8 | 1 | `db/schema.prisma:859` |
-| [`ExerciseImportRun`](#exerciseimportrun) | 16 | 1 | `db/schema.prisma:833` |
-| [`ExerciseLibraryItem`](#exerciselibraryitem) | 17 | 4 | `db/schema.prisma:2658` |
-| [`Habit`](#habit) | 14 | 4 | `db/schema.prisma:1929` |
-| [`HabitLog`](#habitlog) | 8 | 2 | `db/schema.prisma:1977` |
-| [`HabitSchedule`](#habitschedule) | 6 | 1 | `db/schema.prisma:1961` |
-| [`IifymPlan`](#iifymplan) | 20 | 6 | `db/schema.prisma:2714` |
-| [`IifymPlanVersion`](#iifymplanversion) | 16 | 4 | `db/schema.prisma:2743` |
-| [`MealPlan`](#mealplan) | 20 | 6 | `db/schema.prisma:2002` |
-| [`MealPlanVersion`](#mealplanversion) | 16 | 4 | `db/schema.prisma:2036` |
-| [`MediaAssignment`](#mediaassignment) | 10 | 4 | `db/schema.prisma:2363` |
-| [`MediaObject`](#mediaobject) | 21 | 10 | `db/schema.prisma:2326` |
-| [`MemberPreference`](#memberpreference) | 9 | 2 | `db/schema.prisma:476` |
-| [`Message`](#message) | 16 | 5 | `db/schema.prisma:2798` |
-| [`MessageAttachment`](#messageattachment) | 7 | 3 | `db/schema.prisma:2824` |
-| [`MessageDraft`](#messagedraft) | 13 | 4 | `db/schema.prisma:2838` |
-| [`MessageDraftAttachment`](#messagedraftattachment) | 7 | 3 | `db/schema.prisma:2860` |
-| [`MessageRead`](#messageread) | 5 | 2 | `db/schema.prisma:2874` |
-| [`NutritionCatalogItem`](#nutritioncatalogitem) | 14 | 0 | `db/schema.prisma:722` |
-| [`NutritionImportRowOutcome`](#nutritionimportrowoutcome) | 8 | 1 | `db/schema.prisma:776` |
-| [`NutritionImportRun`](#nutritionimportrun) | 16 | 1 | `db/schema.prisma:750` |
-| [`NutritionLog`](#nutritionlog) | 19 | 5 | `db/schema.prisma:1370` |
-| [`OnboardingForm`](#onboardingform) | 19 | 6 | `db/schema.prisma:884` |
-| [`OnboardingFormAssignment`](#onboardingformassignment) | 19 | 7 | `db/schema.prisma:947` |
-| [`OnboardingFormVersion`](#onboardingformversion) | 11 | 4 | `db/schema.prisma:912` |
-| [`OnboardingSubmission`](#onboardingsubmission) | 20 | 9 | `db/schema.prisma:1416` |
-| [`OnboardingSubmissionAnswer`](#onboardingsubmissionanswer) | 11 | 2 | `db/schema.prisma:1456` |
-| [`OnboardingSubmissionReview`](#onboardingsubmissionreview) | 11 | 4 | `db/schema.prisma:1482` |
-| [`ParameterDefinition`](#parameterdefinition) | 31 | 8 | `db/schema.prisma:1026` |
-| [`ProgressPhotoEntry`](#progressphotoentry) | 13 | 4 | `db/schema.prisma:2386` |
+| [`ActivityTarget`](#activitytarget) | 18 | 3 | `db/schema.prisma:2635` |
+| [`AuditEvent`](#auditevent) | 19 | 4 | `db/schema.prisma:629` |
+| [`CheckInAnswerMedia`](#checkinanswermedia) | 7 | 3 | `db/schema.prisma:2933` |
+| [`CheckInFeedback`](#checkinfeedback) | 13 | 4 | `db/schema.prisma:1764` |
+| [`CheckInForm`](#checkinform) | 20 | 7 | `db/schema.prisma:1537` |
+| [`CheckInFormVersion`](#checkinformversion) | 13 | 5 | `db/schema.prisma:1569` |
+| [`CheckInInstance`](#checkininstance) | 25 | 8 | `db/schema.prisma:1606` |
+| [`CheckInReview`](#checkinreview) | 11 | 4 | `db/schema.prisma:1735` |
+| [`CheckInScheduleRule`](#checkinschedulerule) | 27 | 9 | `db/schema.prisma:1815` |
+| [`CheckInSubmission`](#checkinsubmission) | 21 | 11 | `db/schema.prisma:1662` |
+| [`CheckInSubmissionAnswer`](#checkinsubmissionanswer) | 15 | 4 | `db/schema.prisma:1702` |
+| [`ClientAssignment`](#clientassignment) | 11 | 2 | `db/schema.prisma:586` |
+| [`ClientDashboardLayout`](#clientdashboardlayout) | 12 | 3 | `db/schema.prisma:1861` |
+| [`ClientGoal`](#clientgoal) | 14 | 4 | `db/schema.prisma:2598` |
+| [`ClientPhase`](#clientphase) | 10 | 2 | `db/schema.prisma:2485` |
+| [`ClientPlan`](#clientplan) | 17 | 3 | `db/schema.prisma:2731` |
+| [`ClientProfile`](#clientprofile) | 59 | 47 | `db/schema.prisma:508` |
+| [`ClientSetup`](#clientsetup) | 8 | 3 | `db/schema.prisma:1189` |
+| [`ClientSetupPin`](#clientsetuppin) | 27 | 10 | `db/schema.prisma:1211` |
+| [`ClientTask`](#clienttask) | 20 | 5 | `db/schema.prisma:1891` |
+| [`ClientWeekNote`](#clientweeknote) | 11 | 3 | `db/schema.prisma:2506` |
+| [`CoachNote`](#coachnote) | 15 | 3 | `db/schema.prisma:2456` |
+| [`CoachProfile`](#coachprofile) | 6 | 1 | `db/schema.prisma:496` |
+| [`CoachTask`](#coachtask) | 16 | 4 | `db/schema.prisma:2528` |
+| [`CoachingTemplate`](#coachingtemplate) | 22 | 6 | `db/schema.prisma:1084` |
+| [`CoachingTemplateVersion`](#coachingtemplateversion) | 14 | 6 | `db/schema.prisma:1119` |
+| [`CoachingTemplateVersionParameter`](#coachingtemplateversionparameter) | 8 | 4 | `db/schema.prisma:1148` |
+| [`ConsentRecord`](#consentrecord) | 10 | 2 | `db/schema.prisma:609` |
+| [`Conversation`](#conversation) | 10 | 4 | `db/schema.prisma:2823` |
+| [`DailyEntry`](#dailyentry) | 13 | 5 | `db/schema.prisma:1273` |
+| [`DailyEntryRevision`](#dailyentryrevision) | 16 | 5 | `db/schema.prisma:1305` |
+| [`DailyEntryRevisionValue`](#dailyentryrevisionvalue) | 14 | 2 | `db/schema.prisma:1342` |
+| [`ExerciseCatalogItem`](#exercisecatalogitem) | 15 | 1 | `db/schema.prisma:805` |
+| [`ExerciseImportRowOutcome`](#exerciseimportrowoutcome) | 8 | 1 | `db/schema.prisma:864` |
+| [`ExerciseImportRun`](#exerciseimportrun) | 16 | 1 | `db/schema.prisma:838` |
+| [`ExerciseLibraryItem`](#exerciselibraryitem) | 17 | 4 | `db/schema.prisma:2703` |
+| [`Habit`](#habit) | 14 | 4 | `db/schema.prisma:1934` |
+| [`HabitLog`](#habitlog) | 8 | 2 | `db/schema.prisma:1982` |
+| [`HabitSchedule`](#habitschedule) | 6 | 1 | `db/schema.prisma:1966` |
+| [`IifymPlan`](#iifymplan) | 20 | 6 | `db/schema.prisma:2759` |
+| [`IifymPlanVersion`](#iifymplanversion) | 16 | 4 | `db/schema.prisma:2788` |
+| [`MealPlan`](#mealplan) | 20 | 6 | `db/schema.prisma:2007` |
+| [`MealPlanVersion`](#mealplanversion) | 16 | 4 | `db/schema.prisma:2041` |
+| [`MediaAssignment`](#mediaassignment) | 10 | 4 | `db/schema.prisma:2408` |
+| [`MediaObject`](#mediaobject) | 21 | 10 | `db/schema.prisma:2371` |
+| [`MemberPreference`](#memberpreference) | 9 | 2 | `db/schema.prisma:479` |
+| [`Message`](#message) | 16 | 5 | `db/schema.prisma:2843` |
+| [`MessageAttachment`](#messageattachment) | 7 | 3 | `db/schema.prisma:2869` |
+| [`MessageDraft`](#messagedraft) | 13 | 4 | `db/schema.prisma:2883` |
+| [`MessageDraftAttachment`](#messagedraftattachment) | 7 | 3 | `db/schema.prisma:2905` |
+| [`MessageRead`](#messageread) | 5 | 2 | `db/schema.prisma:2919` |
+| [`NutritionCatalogItem`](#nutritioncatalogitem) | 14 | 0 | `db/schema.prisma:727` |
+| [`NutritionImportRowOutcome`](#nutritionimportrowoutcome) | 8 | 1 | `db/schema.prisma:781` |
+| [`NutritionImportRun`](#nutritionimportrun) | 16 | 1 | `db/schema.prisma:755` |
+| [`NutritionLog`](#nutritionlog) | 19 | 5 | `db/schema.prisma:1375` |
+| [`OnboardingForm`](#onboardingform) | 19 | 6 | `db/schema.prisma:889` |
+| [`OnboardingFormAssignment`](#onboardingformassignment) | 19 | 7 | `db/schema.prisma:952` |
+| [`OnboardingFormVersion`](#onboardingformversion) | 11 | 4 | `db/schema.prisma:917` |
+| [`OnboardingSubmission`](#onboardingsubmission) | 20 | 9 | `db/schema.prisma:1421` |
+| [`OnboardingSubmissionAnswer`](#onboardingsubmissionanswer) | 11 | 2 | `db/schema.prisma:1461` |
+| [`OnboardingSubmissionReview`](#onboardingsubmissionreview) | 11 | 4 | `db/schema.prisma:1487` |
+| [`ParameterDefinition`](#parameterdefinition) | 31 | 8 | `db/schema.prisma:1031` |
+| [`ProgressPhotoEntry`](#progressphotoentry) | 13 | 4 | `db/schema.prisma:2431` |
 | [`RateLimit`](#ratelimit) | 4 | 0 | `db/schema.prisma:272` |
-| [`SavedMeal`](#savedmeal) | 21 | 6 | `db/schema.prisma:2621` |
+| [`SavedMeal`](#savedmeal) | 21 | 6 | `db/schema.prisma:2666` |
 | [`Session`](#session) | 10 | 1 | `db/schema.prisma:193` |
 | [`SpentRefreshToken`](#spentrefreshtoken) | 5 | 0 | `db/schema.prisma:221` |
-| [`SupplementPlan`](#supplementplan) | 15 | 5 | `db/schema.prisma:2907` |
-| [`SupplementPlanItem`](#supplementplanitem) | 23 | 3 | `db/schema.prisma:2938` |
-| [`TrackerComment`](#trackercomment) | 13 | 4 | `db/schema.prisma:2508` |
-| [`TrackerDayNote`](#trackerdaynote) | 11 | 3 | `db/schema.prisma:2532` |
-| [`TrainingProgram`](#trainingprogram) | 32 | 9 | `db/schema.prisma:2080` |
-| [`TrainingProgramVersion`](#trainingprogramversion) | 19 | 6 | `db/schema.prisma:2139` |
-| [`TrainingSessionBooking`](#trainingsessionbooking) | 19 | 6 | `db/schema.prisma:2175` |
-| [`TrainingSessionLog`](#trainingsessionlog) | 18 | 5 | `db/schema.prisma:2215` |
-| [`TrainingSetLog`](#trainingsetlog) | 13 | 3 | `db/schema.prisma:2251` |
+| [`SupplementPlan`](#supplementplan) | 15 | 5 | `db/schema.prisma:2952` |
+| [`SupplementPlanItem`](#supplementplanitem) | 23 | 3 | `db/schema.prisma:2983` |
+| [`TemporaryNutritionPlan`](#temporarynutritionplan) | 15 | 3 | `db/schema.prisma:2089` |
+| [`TrackerComment`](#trackercomment) | 13 | 4 | `db/schema.prisma:2553` |
+| [`TrackerDayNote`](#trackerdaynote) | 11 | 3 | `db/schema.prisma:2577` |
+| [`TrainingProgram`](#trainingprogram) | 32 | 9 | `db/schema.prisma:2125` |
+| [`TrainingProgramVersion`](#trainingprogramversion) | 19 | 6 | `db/schema.prisma:2184` |
+| [`TrainingSessionBooking`](#trainingsessionbooking) | 19 | 6 | `db/schema.prisma:2220` |
+| [`TrainingSessionLog`](#trainingsessionlog) | 18 | 5 | `db/schema.prisma:2260` |
+| [`TrainingSetLog`](#trainingsetlog) | 13 | 3 | `db/schema.prisma:2296` |
 | [`User`](#user) | 28 | 17 | `db/schema.prisma:133` |
 | [`Verification`](#verification) | 6 | 0 | `db/schema.prisma:259` |
-| [`Workspace`](#workspace) | 78 | 61 | `db/schema.prisma:281` |
-| [`WorkspaceMember`](#workspacemember) | 77 | 68 | `db/schema.prisma:369` |
+| [`Workspace`](#workspace) | 79 | 62 | `db/schema.prisma:281` |
+| [`WorkspaceMember`](#workspacemember) | 78 | 69 | `db/schema.prisma:370` |
 
 ## Enums
 
 - `AccessTokenPurpose` (`db/schema.prisma:116`): WORKSPACE_INVITE, PASSWORD_RESET
-- `ActivityTargetKind` (`db/schema.prisma:2575`): MINIMUM, MAXIMUM, RANGE, FIXED, CARDIO
-- `AppearanceDensity` (`db/schema.prisma:2296`): COMFORTABLE, COMPACT
-- `AppearanceFont` (`db/schema.prisma:2288`): SANS, SERIF, CONDENSED, MONO, ROUNDED
-- `AppearanceMode` (`db/schema.prisma:2283`): LIGHT, DARK
+- `ActivityTargetKind` (`db/schema.prisma:2620`): MINIMUM, MAXIMUM, RANGE, FIXED, CARDIO
+- `AppearanceDensity` (`db/schema.prisma:2341`): COMFORTABLE, COMPACT
+- `AppearanceFont` (`db/schema.prisma:2333`): SANS, SERIF, CONDENSED, MONO, ROUNDED
+- `AppearanceMode` (`db/schema.prisma:2328`): LIGHT, DARK
 - `AssignmentRole` (`db/schema.prisma:44`): PRIMARY, COACH
 - `AssignmentStatus` (`db/schema.prisma:49`): ACTIVE, REMOVED
 - `AuditAction` (`db/schema.prisma:91`): READ, CREATE, UPDATE, DELETE, EXPORT, GRANT, REVOKE, INVITE, ASSIGN, DENY, LOGIN, PASSWORD_RESET
 - `AuditResult` (`db/schema.prisma:111`): ALLOW, DENY
 - `AuditScope` (`db/schema.prisma:106`): WORKSPACE, ACCOUNT
-- `CheckInAnswerKind` (`db/schema.prisma:1520`): SHORT_TEXT, LONG_TEXT, NUMBER, DATE, SINGLE_CHOICE, MULTI_CHOICE, RATING, VISUAL
-- `CheckInFormStatus` (`db/schema.prisma:1512`): ACTIVE, ARCHIVED
-- `CheckInScheduleRuleStatus` (`db/schema.prisma:1785`): ACTIVE, PAUSED, ENDED
-- `CheckInWeekday` (`db/schema.prisma:1791`): MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
-- `ClientSetupPinStatus` (`db/schema.prisma:1171`): ACTIVE, CANCELLED
+- `CheckInAnswerKind` (`db/schema.prisma:1525`): SHORT_TEXT, LONG_TEXT, NUMBER, DATE, SINGLE_CHOICE, MULTI_CHOICE, RATING, VISUAL
+- `CheckInFormStatus` (`db/schema.prisma:1517`): ACTIVE, ARCHIVED
+- `CheckInScheduleRuleStatus` (`db/schema.prisma:1790`): ACTIVE, PAUSED, ENDED
+- `CheckInWeekday` (`db/schema.prisma:1796`): MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY
+- `ClientSetupPinStatus` (`db/schema.prisma:1176`): ACTIVE, CANCELLED
 - `ClientTaskStatus` (`db/schema.prisma:54`): OPEN, COMPLETED, CANCELLED
-- `CoachNoteVisibility` (`db/schema.prisma:2302`): PRIVATE, GENERAL
-- `CoachingTemplateStatus` (`db/schema.prisma:1021`): ACTIVE, ARCHIVED
+- `CoachNoteVisibility` (`db/schema.prisma:2347`): PRIVATE, GENERAL
+- `CoachingTemplateStatus` (`db/schema.prisma:1026`): ACTIVE, ARCHIVED
 - `ConsentKind` (`db/schema.prisma:77`): PRIVACY_NOTICE, HEALTH_DATA, CYCLE, PHOTOS, BLOODWORK, PED_HRT
 - `ConsentSource` (`db/schema.prisma:86`): CLIENT_SELF, COACH_ATTESTED
 - `ExerciseImportOutcome` (`db/schema.prisma:127`): IMPORTED, REJECTED, DUPLICATE
 - `HabitLogStatus` (`db/schema.prisma:63`): DONE, SKIPPED
-- `MediaKind` (`db/schema.prisma:2312`): IMAGE, VIDEO, AUDIO, DOCUMENT
+- `MediaKind` (`db/schema.prisma:2357`): IMAGE, VIDEO, AUDIO, DOCUMENT
 - `MemberRole` (`db/schema.prisma:29`): WORKSPACE_OWNER, COACH, ASSISTANT_COACH, SUPPORT, CLIENT
 - `MemberStatus` (`db/schema.prisma:37`): INVITED, ACTIVE, SUSPENDED, REMOVED
-- `MessageSenderKind` (`db/schema.prisma:2307`): CLIENT, STAFF
+- `MessageSenderKind` (`db/schema.prisma:2352`): CLIENT, STAFF
 - `NutritionImportOutcome` (`db/schema.prisma:121`): IMPORTED, REJECTED, DUPLICATE
-- `OnboardingAnswerKind` (`db/schema.prisma:1407`): SHORT_TEXT, LONG_TEXT, NUMBER, DATE, SINGLE_CHOICE, MULTI_CHOICE
-- `OnboardingAssignmentStatus` (`db/schema.prisma:940`): ACTIVE, SUPERSEDED, CANCELLED
-- `OnboardingFormStatus` (`db/schema.prisma:879`): ACTIVE, ARCHIVED
-- `ParameterDataClassification` (`db/schema.prisma:1014`): GENERAL_HEALTH, CYCLE, BLOODWORK, PED_HRT
-- `ParameterKind` (`db/schema.prisma:989`): MEASUREMENT, RATING, TIME, DURATION, OPTION, TEXT, BLOOD_PRESSURE, LOCATION_RATING, CONTEXT, MULTI_CHOICE
-- `ParameterStatus` (`db/schema.prisma:1009`): ACTIVE, ARCHIVED
-- `PinTransitionKind` (`db/schema.prisma:1179`): UPGRADE, ROLLBACK
-- `PlanNutritionVariant` (`db/schema.prisma:2319`): TRAINING_DAY, REST_DAY
+- `OnboardingAnswerKind` (`db/schema.prisma:1412`): SHORT_TEXT, LONG_TEXT, NUMBER, DATE, SINGLE_CHOICE, MULTI_CHOICE
+- `OnboardingAssignmentStatus` (`db/schema.prisma:945`): ACTIVE, SUPERSEDED, CANCELLED
+- `OnboardingFormStatus` (`db/schema.prisma:884`): ACTIVE, ARCHIVED
+- `ParameterDataClassification` (`db/schema.prisma:1019`): GENERAL_HEALTH, CYCLE, BLOODWORK, PED_HRT
+- `ParameterKind` (`db/schema.prisma:994`): MEASUREMENT, RATING, TIME, DURATION, OPTION, TEXT, BLOOD_PRESSURE, LOCATION_RATING, CONTEXT, MULTI_CHOICE
+- `ParameterStatus` (`db/schema.prisma:1014`): ACTIVE, ARCHIVED
+- `PinTransitionKind` (`db/schema.prisma:1184`): UPGRADE, ROLLBACK
+- `PlanNutritionVariant` (`db/schema.prisma:2364`): TRAINING_DAY, REST_DAY
 - `PlatformRole` (`db/schema.prisma:13`): USER, PLATFORM_ADMIN
-- `RatingScheme` (`db/schema.prisma:1003`): SCALE_1_10, SCALE_1_5, WORD_LABELS
+- `RatingScheme` (`db/schema.prisma:1008`): SCALE_1_10, SCALE_1_5, WORD_LABELS
 - `SupplementItemStatus` (`db/schema.prisma:71`): MUST_HAVE, OPTIONAL, NONE
+- `TemporaryNutritionKind` (`db/schema.prisma:2078`): REFEED, DIET_BREAK, CUSTOM
+- `TemporaryNutritionSource` (`db/schema.prisma:2084`): MEAL_PLAN, IIFYM
 - `UserStatus` (`db/schema.prisma:18`): ACTIVE, DEACTIVATED, INVITED
 - `WorkspaceStatus` (`db/schema.prisma:24`): ACTIVE, SUSPENDED
 
@@ -144,7 +147,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### AccessToken
 
-`db/schema.prisma:669` - 16 fields, 3 relations. Constraints: `@@index([workspaceId, purpose, targetEmail, intendedRole], map: "access_token_invite_target_idx")`, `@@index([userId, purpose], map: "access_token_user_id_purpose_idx")`, `@@index([expiresAt], map: "access_token_expires_at_idx")`, `@@index([workspaceId, purpose, id], map: "access_token_ws_invite_list_idx")`, `@@map("access_token")`.
+`db/schema.prisma:674` - 16 fields, 3 relations. Constraints: `@@index([workspaceId, purpose, targetEmail, intendedRole], map: "access_token_invite_target_idx")`, `@@index([userId, purpose], map: "access_token_user_id_purpose_idx")`, `@@index([expiresAt], map: "access_token_expires_at_idx")`, `@@index([workspaceId, purpose, id], map: "access_token_ws_invite_list_idx")`, `@@map("access_token")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -188,7 +191,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ActivityTarget
 
-`db/schema.prisma:2590` - 18 fields, 3 relations. Constraints: `@@unique([clientProfileId, metric, effectiveFrom], map: "activity_target_client_metric_day_key")`, `@@unique([id, workspaceId], map: "activity_target_id_workspace_id_key")`, `@@index([workspaceId, clientProfileId, metric, effectiveFrom], map: "activity_target_workspace_client_idx")`, `@@map("activity_target")`.
+`db/schema.prisma:2635` - 18 fields, 3 relations. Constraints: `@@unique([clientProfileId, metric, effectiveFrom], map: "activity_target_client_metric_day_key")`, `@@unique([id, workspaceId], map: "activity_target_id_workspace_id_key")`, `@@index([workspaceId, clientProfileId, metric, effectiveFrom], map: "activity_target_workspace_client_idx")`, `@@map("activity_target")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -213,7 +216,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### AuditEvent
 
-`db/schema.prisma:624` - 19 fields, 4 relations. Constraints: `@@index([workspaceId, at])`, `@@index([workspaceId, id])`, `@@index([subjectUserId, at])`, `@@index([subjectUserId, id], map: "audit_event_subject_user_id_id_idx")`, `@@map("audit_event")`.
+`db/schema.prisma:629` - 19 fields, 4 relations. Constraints: `@@index([workspaceId, at])`, `@@index([workspaceId, id])`, `@@index([subjectUserId, at])`, `@@index([subjectUserId, id], map: "audit_event_subject_user_id_id_idx")`, `@@map("audit_event")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -239,7 +242,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInAnswerMedia
 
-`db/schema.prisma:2888` - 7 fields, 3 relations. Constraints: `@@id([answerId, mediaObjectId])`, `@@map("checkin_answer_media")`.
+`db/schema.prisma:2933` - 7 fields, 3 relations. Constraints: `@@id([answerId, mediaObjectId])`, `@@map("checkin_answer_media")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -253,7 +256,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInFeedback
 
-`db/schema.prisma:1759` - 13 fields, 4 relations. Constraints: `@@unique([submissionId, clientRequestId])`, `@@index([submissionId, sentAt, id])`, `@@index([workspaceId, clientProfileId])`, `@@map("checkin_feedback")`.
+`db/schema.prisma:1764` - 13 fields, 4 relations. Constraints: `@@unique([submissionId, clientRequestId])`, `@@index([submissionId, sentAt, id])`, `@@index([workspaceId, clientProfileId])`, `@@map("checkin_feedback")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -273,7 +276,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInForm
 
-`db/schema.prisma:1532` - 20 fields, 7 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("checkin_form")`.
+`db/schema.prisma:1537` - 20 fields, 7 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("checkin_form")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -300,7 +303,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInFormVersion
 
-`db/schema.prisma:1564` - 13 fields, 5 relations. Constraints: `@@unique([formId, versionSeq])`, `@@unique([id, workspaceId, formId])`, `@@unique([formId, publishOriginRevision], map: "checkin_form_version_publish_origin_key")`, `@@map("checkin_form_version")`.
+`db/schema.prisma:1569` - 13 fields, 5 relations. Constraints: `@@unique([formId, versionSeq])`, `@@unique([id, workspaceId, formId])`, `@@unique([formId, publishOriginRevision], map: "checkin_form_version_publish_origin_key")`, `@@map("checkin_form_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -320,7 +323,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInInstance
 
-`db/schema.prisma:1601` - 25 fields, 8 relations. Constraints: `@@unique([id, workspaceId, clientProfileId, formId, formVersionId], map: "checkin_instance_wide_coherence_key")`, `@@unique([workspaceId, clientProfileId, formId, dueAt], map: "checkin_instance_duplicate_schedule_key")`, `@@unique([originRuleId, occurrenceDate], map: "checkin_instance_occurrence_key")`, `@@index([workspaceId, clientProfileId, dueAt])`, `@@index([workspaceId, id])`, `@@index([formVersionId])`, `@@index([originRuleId])`, `@@map("checkin_instance")`.
+`db/schema.prisma:1606` - 25 fields, 8 relations. Constraints: `@@unique([id, workspaceId, clientProfileId, formId, formVersionId], map: "checkin_instance_wide_coherence_key")`, `@@unique([workspaceId, clientProfileId, formId, dueAt], map: "checkin_instance_duplicate_schedule_key")`, `@@unique([originRuleId, occurrenceDate], map: "checkin_instance_occurrence_key")`, `@@index([workspaceId, clientProfileId, dueAt])`, `@@index([workspaceId, id])`, `@@index([formVersionId])`, `@@index([originRuleId])`, `@@map("checkin_instance")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -352,7 +355,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInReview
 
-`db/schema.prisma:1730` - 11 fields, 4 relations. Constraints: `@@unique([submissionId])`, `@@index([workspaceId, clientProfileId])`, `@@map("checkin_review")`.
+`db/schema.prisma:1735` - 11 fields, 4 relations. Constraints: `@@unique([submissionId])`, `@@index([workspaceId, clientProfileId])`, `@@map("checkin_review")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -370,7 +373,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInScheduleRule
 
-`db/schema.prisma:1810` - 27 fields, 9 relations. Constraints: `@@unique([id, workspaceId, clientProfileId], map: "checkin_schedule_rule_coherence_key")`, `@@index([workspaceId, clientProfileId, status])`, `@@map("checkin_schedule_rule")`.
+`db/schema.prisma:1815` - 27 fields, 9 relations. Constraints: `@@unique([id, workspaceId, clientProfileId], map: "checkin_schedule_rule_coherence_key")`, `@@index([workspaceId, clientProfileId, status])`, `@@map("checkin_schedule_rule")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -404,7 +407,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInSubmission
 
-`db/schema.prisma:1657` - 21 fields, 11 relations. Constraints: `@@unique([instanceId])`, `@@unique([id, workspaceId, clientProfileId], map: "checkin_submission_coherence_key")`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@index([workspaceId, submittedAt, id])`, `@@map("checkin_submission")`.
+`db/schema.prisma:1662` - 21 fields, 11 relations. Constraints: `@@unique([instanceId])`, `@@unique([id, workspaceId, clientProfileId], map: "checkin_submission_coherence_key")`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@index([workspaceId, submittedAt, id])`, `@@map("checkin_submission")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -432,7 +435,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CheckInSubmissionAnswer
 
-`db/schema.prisma:1697` - 15 fields, 4 relations. Constraints: `@@unique([submissionId, fieldId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId])`, `@@map("checkin_submission_answer")`.
+`db/schema.prisma:1702` - 15 fields, 4 relations. Constraints: `@@unique([submissionId, fieldId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId])`, `@@map("checkin_submission_answer")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -454,7 +457,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientAssignment
 
-`db/schema.prisma:581` - 11 fields, 2 relations. Constraints: `@@unique([clientProfileId, coachMemberId])`, `@@index([workspaceId])`, `@@index([coachMemberId, status])`, `@@index([clientProfileId, status])`, `@@map("client_assignment")`.
+`db/schema.prisma:586` - 11 fields, 2 relations. Constraints: `@@unique([clientProfileId, coachMemberId])`, `@@index([workspaceId])`, `@@index([coachMemberId, status])`, `@@index([clientProfileId, status])`, `@@map("client_assignment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -472,7 +475,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientDashboardLayout
 
-`db/schema.prisma:1856` - 12 fields, 3 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([clientProfileId])`, `@@map("client_dashboard_layout")`.
+`db/schema.prisma:1861` - 12 fields, 3 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([clientProfileId])`, `@@map("client_dashboard_layout")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -491,7 +494,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientGoal
 
-`db/schema.prisma:2553` - 14 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([clientProfileId, parameterId, targetDate])`, `@@map("client_goal")`.
+`db/schema.prisma:2598` - 14 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([clientProfileId, parameterId, targetDate])`, `@@map("client_goal")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -512,7 +515,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientPhase
 
-`db/schema.prisma:2440` - 10 fields, 2 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("client_phase")`.
+`db/schema.prisma:2485` - 10 fields, 2 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("client_phase")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -529,7 +532,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientPlan
 
-`db/schema.prisma:2686` - 17 fields, 3 relations. Constraints: `@@unique([id, workspaceId])`, `@@map("client_plan")`.
+`db/schema.prisma:2731` - 17 fields, 3 relations. Constraints: `@@unique([id, workspaceId])`, `@@map("client_plan")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -553,7 +556,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientProfile
 
-`db/schema.prisma:505` - 58 fields, 46 relations. Constraints: `@@unique([workspaceId, userId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId])`, `@@index([workspaceId, archivedAt])`, `@@map("client_profile")`.
+`db/schema.prisma:508` - 59 fields, 47 relations. Constraints: `@@unique([workspaceId, userId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId])`, `@@index([workspaceId, archivedAt])`, `@@map("client_profile")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -615,10 +618,11 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 | `mediaObjects` | `MediaObject[]` | relation | `@relation("MediaObjectClient")` |
 | `mediaAssignments` | `MediaAssignment[]` | relation | `@relation("MediaAssignmentClient")` |
 | `savedMeals` | `SavedMeal[]` | relation | `@relation("SavedMealClient")` |
+| `temporaryNutritionPlans` | `TemporaryNutritionPlan[]` | relation | `@relation("TemporaryNutritionClient")` |
 
 ### ClientSetup
 
-`db/schema.prisma:1184` - 8 fields, 3 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@index([clientProfileId])`, `@@map("client_setup")`.
+`db/schema.prisma:1189` - 8 fields, 3 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@index([clientProfileId])`, `@@map("client_setup")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -633,7 +637,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientSetupPin
 
-`db/schema.prisma:1206` - 27 fields, 10 relations. Constraints: `@@unique([clientSetupId, seq])`, `@@unique([id, clientSetupId])`, `@@unique([id, workspaceId, templateVersionId])`, `@@unique([id, clientProfileId])`, `@@index([workspaceId, id])`, `@@index([clientProfileId, status])`, `@@index([templateId, status])`, `@@index([templateVersionId])`, `@@map("client_setup_pin")`.
+`db/schema.prisma:1211` - 27 fields, 10 relations. Constraints: `@@unique([clientSetupId, seq])`, `@@unique([id, clientSetupId])`, `@@unique([id, workspaceId, templateVersionId])`, `@@unique([id, clientProfileId])`, `@@index([workspaceId, id])`, `@@index([clientProfileId, status])`, `@@index([templateId, status])`, `@@index([templateVersionId])`, `@@map("client_setup_pin")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -667,7 +671,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientTask
 
-`db/schema.prisma:1886` - 20 fields, 5 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId, dueDate])`, `@@index([workspaceId, clientProfileId, status])`, `@@map("client_task")`.
+`db/schema.prisma:1891` - 20 fields, 5 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId, dueDate])`, `@@index([workspaceId, clientProfileId, status])`, `@@map("client_task")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -694,7 +698,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ClientWeekNote
 
-`db/schema.prisma:2461` - 11 fields, 3 relations. Constraints: `@@unique([clientProfileId, weekStart])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("client_week_note")`.
+`db/schema.prisma:2506` - 11 fields, 3 relations. Constraints: `@@unique([clientProfileId, weekStart])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("client_week_note")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -712,7 +716,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachNote
 
-`db/schema.prisma:2411` - 15 fields, 3 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("coach_note")`.
+`db/schema.prisma:2456` - 15 fields, 3 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("coach_note")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -734,7 +738,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachProfile
 
-`db/schema.prisma:493` - 6 fields, 1 relations. Constraints: `@@map("coach_profile")`.
+`db/schema.prisma:496` - 6 fields, 1 relations. Constraints: `@@map("coach_profile")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -747,7 +751,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachTask
 
-`db/schema.prisma:2483` - 16 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("coach_task")`.
+`db/schema.prisma:2528` - 16 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("coach_task")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -770,7 +774,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachingTemplate
 
-`db/schema.prisma:1079` - 22 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("coaching_template")`.
+`db/schema.prisma:1084` - 22 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("coaching_template")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -799,7 +803,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachingTemplateVersion
 
-`db/schema.prisma:1114` - 14 fields, 6 relations. Constraints: `@@unique([templateId, versionSeq])`, `@@unique([templateId, publishOriginRevision])`, `@@unique([id, workspaceId])`, `@@unique([id, templateId, workspaceId])`, `@@map("coaching_template_version")`.
+`db/schema.prisma:1119` - 14 fields, 6 relations. Constraints: `@@unique([templateId, versionSeq])`, `@@unique([templateId, publishOriginRevision])`, `@@unique([id, workspaceId])`, `@@unique([id, templateId, workspaceId])`, `@@map("coaching_template_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -820,7 +824,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### CoachingTemplateVersionParameter
 
-`db/schema.prisma:1143` - 8 fields, 4 relations. Constraints: `@@id([versionId, parameterId])`, `@@index([parameterId])`, `@@map("coaching_template_version_parameter")`.
+`db/schema.prisma:1148` - 8 fields, 4 relations. Constraints: `@@id([versionId, parameterId])`, `@@index([parameterId])`, `@@map("coaching_template_version_parameter")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -835,7 +839,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ConsentRecord
 
-`db/schema.prisma:604` - 10 fields, 2 relations. Constraints: `@@index([clientProfileId, kind, version, revokedAt])`, `@@map("consent_record")`.
+`db/schema.prisma:609` - 10 fields, 2 relations. Constraints: `@@index([clientProfileId, kind, version, revokedAt])`, `@@map("consent_record")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -852,7 +856,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### Conversation
 
-`db/schema.prisma:2778` - 10 fields, 4 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, lastMessageAt])`, `@@map("conversation")`.
+`db/schema.prisma:2823` - 10 fields, 4 relations. Constraints: `@@unique([workspaceId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, lastMessageAt])`, `@@map("conversation")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -869,7 +873,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### DailyEntry
 
-`db/schema.prisma:1268` - 13 fields, 5 relations. Constraints: `@@unique([workspaceId, clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([clientProfileId, entryDate])`, `@@map("daily_entry")`.
+`db/schema.prisma:1273` - 13 fields, 5 relations. Constraints: `@@unique([workspaceId, clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([clientProfileId, entryDate])`, `@@map("daily_entry")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -889,7 +893,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### DailyEntryRevision
 
-`db/schema.prisma:1300` - 16 fields, 5 relations. Constraints: `@@unique([dailyEntryId, seq])`, `@@unique([id, dailyEntryId])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@index([clientSetupPinId])`, `@@index([clientProfileId])`, `@@index([dailyEntryId, declaredAt])`, `@@map("daily_entry_revision")`.
+`db/schema.prisma:1305` - 16 fields, 5 relations. Constraints: `@@unique([dailyEntryId, seq])`, `@@unique([id, dailyEntryId])`, `@@unique([id, workspaceId])`, `@@unique([id, clientProfileId])`, `@@index([clientSetupPinId])`, `@@index([clientProfileId])`, `@@index([dailyEntryId, declaredAt])`, `@@map("daily_entry_revision")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -912,7 +916,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### DailyEntryRevisionValue
 
-`db/schema.prisma:1337` - 14 fields, 2 relations. Constraints: `@@id([revisionId, parameterId])`, `@@index([parameterId])`, `@@map("daily_entry_revision_value")`.
+`db/schema.prisma:1342` - 14 fields, 2 relations. Constraints: `@@id([revisionId, parameterId])`, `@@index([parameterId])`, `@@map("daily_entry_revision_value")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -933,7 +937,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ExerciseCatalogItem
 
-`db/schema.prisma:800` - 15 fields, 1 relations. Constraints: `@@index([muscleGroup])`, `@@index([equipment])`, `@@map("exercise_catalog_item")`.
+`db/schema.prisma:805` - 15 fields, 1 relations. Constraints: `@@index([muscleGroup])`, `@@index([equipment])`, `@@map("exercise_catalog_item")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -955,7 +959,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ExerciseImportRowOutcome
 
-`db/schema.prisma:859` - 8 fields, 1 relations. Constraints: `@@unique([importRunId, sourceRow])`, `@@index([importRunId, outcome])`, `@@map("exercise_import_row_outcome")`.
+`db/schema.prisma:864` - 8 fields, 1 relations. Constraints: `@@unique([importRunId, sourceRow])`, `@@index([importRunId, outcome])`, `@@map("exercise_import_row_outcome")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -970,7 +974,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ExerciseImportRun
 
-`db/schema.prisma:833` - 16 fields, 1 relations. Constraints: `@@index([sourceFingerprint])`, `@@map("exercise_import_run")`.
+`db/schema.prisma:838` - 16 fields, 1 relations. Constraints: `@@index([sourceFingerprint])`, `@@map("exercise_import_run")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -993,7 +997,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ExerciseLibraryItem
 
-`db/schema.prisma:2658` - 17 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, archivedAt])`, `@@map("exercise_library_item")`.
+`db/schema.prisma:2703` - 17 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, archivedAt])`, `@@map("exercise_library_item")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1017,7 +1021,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### Habit
 
-`db/schema.prisma:1929` - 14 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("habits")`.
+`db/schema.prisma:1934` - 14 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("habits")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1038,7 +1042,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### HabitLog
 
-`db/schema.prisma:1977` - 8 fields, 2 relations. Constraints: `@@unique([habitId, date])`, `@@map("habit_logs")`.
+`db/schema.prisma:1982` - 8 fields, 2 relations. Constraints: `@@unique([habitId, date])`, `@@map("habit_logs")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1053,7 +1057,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### HabitSchedule
 
-`db/schema.prisma:1961` - 6 fields, 1 relations. Constraints: `@@unique([habitId, effectiveFrom])`, `@@map("habit_schedules")`.
+`db/schema.prisma:1966` - 6 fields, 1 relations. Constraints: `@@unique([habitId, effectiveFrom])`, `@@map("habit_schedules")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1066,7 +1070,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### IifymPlan
 
-`db/schema.prisma:2714` - 20 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("iifym_plan")`.
+`db/schema.prisma:2759` - 20 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("iifym_plan")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1093,7 +1097,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### IifymPlanVersion
 
-`db/schema.prisma:2743` - 16 fields, 4 relations. Constraints: `@@unique([iifymPlanId, versionSeq])`, `@@unique([iifymPlanId, publishOriginRevision], map: "iifym_plan_version_publish_origin_key")`, `@@unique([id, workspaceId, iifymPlanId])`, `@@index([iifymPlanId, effectiveDate, versionSeq])`, `@@index([iifymPlanId, activationInstant])`, `@@map("iifym_plan_version")`.
+`db/schema.prisma:2788` - 16 fields, 4 relations. Constraints: `@@unique([iifymPlanId, versionSeq])`, `@@unique([iifymPlanId, publishOriginRevision], map: "iifym_plan_version_publish_origin_key")`, `@@unique([id, workspaceId, iifymPlanId])`, `@@index([iifymPlanId, effectiveDate, versionSeq])`, `@@index([iifymPlanId, activationInstant])`, `@@map("iifym_plan_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1116,7 +1120,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MealPlan
 
-`db/schema.prisma:2002` - 20 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("meal_plan")`.
+`db/schema.prisma:2007` - 20 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("meal_plan")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1143,7 +1147,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MealPlanVersion
 
-`db/schema.prisma:2036` - 16 fields, 4 relations. Constraints: `@@unique([mealPlanId, versionSeq])`, `@@unique([mealPlanId, publishOriginRevision], map: "meal_plan_version_publish_origin_key")`, `@@unique([id, workspaceId, mealPlanId])`, `@@index([mealPlanId, effectiveDate, versionSeq])`, `@@index([mealPlanId, activationInstant])`, `@@map("meal_plan_version")`.
+`db/schema.prisma:2041` - 16 fields, 4 relations. Constraints: `@@unique([mealPlanId, versionSeq])`, `@@unique([mealPlanId, publishOriginRevision], map: "meal_plan_version_publish_origin_key")`, `@@unique([id, workspaceId, mealPlanId])`, `@@index([mealPlanId, effectiveDate, versionSeq])`, `@@index([mealPlanId, activationInstant])`, `@@map("meal_plan_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1166,7 +1170,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MediaAssignment
 
-`db/schema.prisma:2363` - 10 fields, 4 relations. Constraints: `@@unique([mediaObjectId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("media_assignment")`.
+`db/schema.prisma:2408` - 10 fields, 4 relations. Constraints: `@@unique([mediaObjectId, clientProfileId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, clientProfileId])`, `@@map("media_assignment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1183,7 +1187,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MediaObject
 
-`db/schema.prisma:2326` - 21 fields, 10 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, createdAt])`, `@@index([workspaceId, clientProfileId])`, `@@map("media_object")`.
+`db/schema.prisma:2371` - 21 fields, 10 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, createdAt])`, `@@index([workspaceId, clientProfileId])`, `@@map("media_object")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1211,7 +1215,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MemberPreference
 
-`db/schema.prisma:476` - 9 fields, 2 relations. Constraints: `@@unique([workspaceId, memberId, key])`, `@@index([memberId])`, `@@map("member_preference")`.
+`db/schema.prisma:479` - 9 fields, 2 relations. Constraints: `@@unique([workspaceId, memberId, key])`, `@@index([memberId])`, `@@map("member_preference")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1227,7 +1231,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### Message
 
-`db/schema.prisma:2798` - 16 fields, 5 relations. Constraints: `@@unique([conversationId, clientRequestId])`, `@@unique([id, workspaceId])`, `@@index([conversationId, sentAt, id])`, `@@map("message")`.
+`db/schema.prisma:2843` - 16 fields, 5 relations. Constraints: `@@unique([conversationId, clientRequestId])`, `@@unique([id, workspaceId])`, `@@index([conversationId, sentAt, id])`, `@@map("message")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1250,7 +1254,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MessageAttachment
 
-`db/schema.prisma:2824` - 7 fields, 3 relations. Constraints: `@@id([messageId, mediaObjectId])`, `@@map("message_attachment")`.
+`db/schema.prisma:2869` - 7 fields, 3 relations. Constraints: `@@id([messageId, mediaObjectId])`, `@@map("message_attachment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1264,7 +1268,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MessageDraft
 
-`db/schema.prisma:2838` - 13 fields, 4 relations. Constraints: `@@unique([conversationId, authorUserId])`, `@@unique([id, workspaceId])`, `@@map("message_draft")`.
+`db/schema.prisma:2883` - 13 fields, 4 relations. Constraints: `@@unique([conversationId, authorUserId])`, `@@unique([id, workspaceId])`, `@@map("message_draft")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1284,7 +1288,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MessageDraftAttachment
 
-`db/schema.prisma:2860` - 7 fields, 3 relations. Constraints: `@@id([draftId, mediaObjectId])`, `@@map("message_draft_attachment")`.
+`db/schema.prisma:2905` - 7 fields, 3 relations. Constraints: `@@id([draftId, mediaObjectId])`, `@@map("message_draft_attachment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1298,7 +1302,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### MessageRead
 
-`db/schema.prisma:2874` - 5 fields, 2 relations. Constraints: `@@id([messageId, userId])`, `@@index([userId])`, `@@map("message_read")`.
+`db/schema.prisma:2919` - 5 fields, 2 relations. Constraints: `@@id([messageId, userId])`, `@@index([userId])`, `@@map("message_read")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1310,7 +1314,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### NutritionCatalogItem
 
-`db/schema.prisma:722` - 14 fields, 0 relations. Constraints: `@@index([category])`, `@@map("nutrition_catalog_item")`.
+`db/schema.prisma:727` - 14 fields, 0 relations. Constraints: `@@index([category])`, `@@map("nutrition_catalog_item")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1331,7 +1335,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### NutritionImportRowOutcome
 
-`db/schema.prisma:776` - 8 fields, 1 relations. Constraints: `@@unique([importRunId, sourceRow])`, `@@index([importRunId, outcome])`, `@@map("nutrition_import_row_outcome")`.
+`db/schema.prisma:781` - 8 fields, 1 relations. Constraints: `@@unique([importRunId, sourceRow])`, `@@index([importRunId, outcome])`, `@@map("nutrition_import_row_outcome")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1346,7 +1350,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### NutritionImportRun
 
-`db/schema.prisma:750` - 16 fields, 1 relations. Constraints: `@@index([sourceFingerprint])`, `@@map("nutrition_import_run")`.
+`db/schema.prisma:755` - 16 fields, 1 relations. Constraints: `@@index([sourceFingerprint])`, `@@map("nutrition_import_run")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1369,7 +1373,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### NutritionLog
 
-`db/schema.prisma:1370` - 19 fields, 5 relations. Constraints: `@@unique([dailyEntryId])`, `@@unique([workspaceId, clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@index([clientProfileId, entryDate])`, `@@map("nutrition_log")`.
+`db/schema.prisma:1375` - 19 fields, 5 relations. Constraints: `@@unique([dailyEntryId])`, `@@unique([workspaceId, clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@index([clientProfileId, entryDate])`, `@@map("nutrition_log")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1395,7 +1399,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingForm
 
-`db/schema.prisma:884` - 19 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("onboarding_form")`.
+`db/schema.prisma:889` - 19 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("onboarding_form")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1421,7 +1425,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingFormAssignment
 
-`db/schema.prisma:947` - 19 fields, 7 relations. Constraints: `@@unique([id, workspaceId, clientProfileId, formId, formVersionId])`, `@@index([workspaceId, id])`, `@@index([clientProfileId, status])`, `@@index([formId, status])`, `@@index([formVersionId])`, `@@map("onboarding_form_assignment")`.
+`db/schema.prisma:952` - 19 fields, 7 relations. Constraints: `@@unique([id, workspaceId, clientProfileId, formId, formVersionId])`, `@@index([workspaceId, id])`, `@@index([clientProfileId, status])`, `@@index([formId, status])`, `@@index([formVersionId])`, `@@map("onboarding_form_assignment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1447,7 +1451,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingFormVersion
 
-`db/schema.prisma:912` - 11 fields, 4 relations. Constraints: `@@unique([formId, versionSeq])`, `@@unique([id, formId])`, `@@index([formId, publishOriginRevision])`, `@@map("onboarding_form_version")`.
+`db/schema.prisma:917` - 11 fields, 4 relations. Constraints: `@@unique([formId, versionSeq])`, `@@unique([id, formId])`, `@@index([formId, publishOriginRevision])`, `@@map("onboarding_form_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1465,7 +1469,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingSubmission
 
-`db/schema.prisma:1416` - 20 fields, 9 relations. Constraints: `@@unique([assignmentId])`, `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@map("onboarding_submission")`.
+`db/schema.prisma:1421` - 20 fields, 9 relations. Constraints: `@@unique([assignmentId])`, `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@map("onboarding_submission")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1492,7 +1496,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingSubmissionAnswer
 
-`db/schema.prisma:1456` - 11 fields, 2 relations. Constraints: `@@unique([submissionId, fieldId])`, `@@index([workspaceId])`, `@@map("onboarding_submission_answer")`.
+`db/schema.prisma:1461` - 11 fields, 2 relations. Constraints: `@@unique([submissionId, fieldId])`, `@@index([workspaceId])`, `@@map("onboarding_submission_answer")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1510,7 +1514,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### OnboardingSubmissionReview
 
-`db/schema.prisma:1482` - 11 fields, 4 relations. Constraints: `@@unique([submissionId])`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@map("onboarding_submission_review")`.
+`db/schema.prisma:1487` - 11 fields, 4 relations. Constraints: `@@unique([submissionId])`, `@@index([workspaceId, clientProfileId])`, `@@index([workspaceId, id])`, `@@map("onboarding_submission_review")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1528,7 +1532,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ParameterDefinition
 
-`db/schema.prisma:1026` - 31 fields, 8 relations. Constraints: `@@unique([workspaceId, key])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("parameter_definition")`.
+`db/schema.prisma:1031` - 31 fields, 8 relations. Constraints: `@@unique([workspaceId, key])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@map("parameter_definition")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1566,7 +1570,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### ProgressPhotoEntry
 
-`db/schema.prisma:2386` - 13 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([clientProfileId, takenOn])`, `@@index([workspaceId, clientProfileId])`, `@@map("progress_photo_entry")`.
+`db/schema.prisma:2431` - 13 fields, 4 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([clientProfileId, takenOn])`, `@@index([workspaceId, clientProfileId])`, `@@map("progress_photo_entry")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1597,7 +1601,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### SavedMeal
 
-`db/schema.prisma:2621` - 21 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, sortOrder])`, `@@index([workspaceId, clientProfileId])`, `@@map("saved_meal")`.
+`db/schema.prisma:2666` - 21 fields, 6 relations. Constraints: `@@unique([id, workspaceId])`, `@@index([workspaceId, sortOrder])`, `@@index([workspaceId, clientProfileId])`, `@@map("saved_meal")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1654,7 +1658,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### SupplementPlan
 
-`db/schema.prisma:2907` - 15 fields, 5 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("supplement_plan")`.
+`db/schema.prisma:2952` - 15 fields, 5 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@map("supplement_plan")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1676,7 +1680,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### SupplementPlanItem
 
-`db/schema.prisma:2938` - 23 fields, 3 relations. Constraints: `@@unique([planId, position])`, `@@unique([id, workspaceId])`, `@@index([planId])`, `@@index([workspaceId])`, `@@map("supplement_plan_item")`.
+`db/schema.prisma:2983` - 23 fields, 3 relations. Constraints: `@@unique([planId, position])`, `@@unique([id, workspaceId])`, `@@index([planId])`, `@@index([workspaceId])`, `@@map("supplement_plan_item")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1704,9 +1708,31 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 | `workspace` | `Workspace` | relation | `@relation(fields: [workspaceId], references: [id], onDelete: Restrict)` |
 | `clientProfile` | `ClientProfile` | relation | `@relation("SupplementPlanItemClient", fields: [clientProfileId], references: [id], onDelete: Restrict)` |
 
+### TemporaryNutritionPlan
+
+`db/schema.prisma:2089` - 15 fields, 3 relations. Constraints: `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId, clientProfileId])`, `@@map("temporary_nutrition_plan")`.
+
+| Field | Type | Kind | Attributes |
+|---|---|---|---|
+| `id` | `String` | scalar | `@id @default(cuid())` |
+| `workspaceId` | `String` | scalar | `@map("workspace_id")` |
+| `clientProfileId` | `String` | scalar | `@map("client_profile_id")` |
+| `kind` | `TemporaryNutritionKind` | enum | - |
+| `label` | `String` | scalar | - |
+| `startDate` | `DateTime` | scalar | `@map("start_date") @db.Date` |
+| `endDate` | `DateTime` | scalar | `@map("end_date") @db.Date` |
+| `source` | `TemporaryNutritionSource` | enum | - |
+| `plan` | `Json` | scalar | - |
+| `createdByMemberId` | `String` | scalar | `@map("created_by_member_id")` |
+| `createdAt` | `DateTime` | scalar | `@default(now()) @map("created_at") @db.Timestamptz(6)` |
+| `updatedAt` | `DateTime` | scalar | `@updatedAt @map("updated_at") @db.Timestamptz(6)` |
+| `workspace` | `Workspace` | relation | `@relation(fields: [workspaceId], references: [id], onDelete: Restrict)` |
+| `clientProfile` | `ClientProfile` | relation | `@relation("TemporaryNutritionClient", fields: [clientProfileId], references: [id], onDelete: Restrict)` |
+| `createdByMember` | `WorkspaceMember` | relation | `@relation("TemporaryNutritionCreator", fields: [createdByMemberId], references: [id], onDelete: Restrict)` |
+
 ### TrackerComment
 
-`db/schema.prisma:2508` - 13 fields, 4 relations. Constraints: `@@unique([clientProfileId, entryDate, parameterId])`, `@@unique([id, workspaceId])`, `@@map("tracker_comment")`.
+`db/schema.prisma:2553` - 13 fields, 4 relations. Constraints: `@@unique([clientProfileId, entryDate, parameterId])`, `@@unique([id, workspaceId])`, `@@map("tracker_comment")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1726,7 +1752,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrackerDayNote
 
-`db/schema.prisma:2532` - 11 fields, 3 relations. Constraints: `@@unique([clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@map("tracker_day_note")`.
+`db/schema.prisma:2577` - 11 fields, 3 relations. Constraints: `@@unique([clientProfileId, entryDate])`, `@@unique([id, workspaceId])`, `@@map("tracker_day_note")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1744,7 +1770,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrainingProgram
 
-`db/schema.prisma:2080` - 32 fields, 9 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@index([replacesProgramId])`, `@@map("training_program")`.
+`db/schema.prisma:2125` - 32 fields, 9 relations. Constraints: `@@unique([id, workspaceId])`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId])`, `@@index([replacesProgramId])`, `@@map("training_program")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1783,7 +1809,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrainingProgramVersion
 
-`db/schema.prisma:2139` - 19 fields, 6 relations. Constraints: `@@unique([programId, versionSeq])`, `@@unique([programId, publishOriginRevision], map: "training_program_version_publish_origin_key")`, `@@unique([id, workspaceId, programId])`, `@@index([programId, activationInstant])`, `@@map("training_program_version")`.
+`db/schema.prisma:2184` - 19 fields, 6 relations. Constraints: `@@unique([programId, versionSeq])`, `@@unique([programId, publishOriginRevision], map: "training_program_version_publish_origin_key")`, `@@unique([id, workspaceId, programId])`, `@@index([programId, activationInstant])`, `@@map("training_program_version")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1809,7 +1835,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrainingSessionBooking
 
-`db/schema.prisma:2175` - 19 fields, 6 relations. Constraints: `@@index([programId, scheduledDate])`, `@@index([workspaceId, clientProfileId, scheduledDate], map: "training_session_booking_client_scope_date_idx")`, `@@map("training_session_booking")`.
+`db/schema.prisma:2220` - 19 fields, 6 relations. Constraints: `@@index([programId, scheduledDate])`, `@@index([workspaceId, clientProfileId, scheduledDate], map: "training_session_booking_client_scope_date_idx")`, `@@map("training_session_booking")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1835,7 +1861,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrainingSessionLog
 
-`db/schema.prisma:2215` - 18 fields, 5 relations. Constraints: `@@unique([workspaceId, clientProfileId, programId, sessionId, bookedWeek, performedDate], map: "training_session_log_natural_key")`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId, clientProfileId, performedDate], map: "training_session_log_client_date_idx")`, `@@map("training_session_log")`.
+`db/schema.prisma:2260` - 18 fields, 5 relations. Constraints: `@@unique([workspaceId, clientProfileId, programId, sessionId, bookedWeek, performedDate], map: "training_session_log_natural_key")`, `@@unique([id, workspaceId, clientProfileId])`, `@@index([workspaceId, clientProfileId, performedDate], map: "training_session_log_client_date_idx")`, `@@map("training_session_log")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1860,7 +1886,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### TrainingSetLog
 
-`db/schema.prisma:2251` - 13 fields, 3 relations. Constraints: `@@unique([sessionLogId, exerciseId, setKey], map: "training_set_log_set_key")`, `@@index([workspaceId, clientProfileId], map: "training_set_log_client_idx")`, `@@map("training_set_log")`.
+`db/schema.prisma:2296` - 13 fields, 3 relations. Constraints: `@@unique([sessionLogId, exerciseId, setKey], map: "training_set_log_set_key")`, `@@index([workspaceId, clientProfileId], map: "training_set_log_client_idx")`, `@@map("training_set_log")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1928,7 +1954,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### Workspace
 
-`db/schema.prisma:281` - 78 fields, 61 relations. Constraints: `@@map("workspace")`.
+`db/schema.prisma:281` - 79 fields, 62 relations. Constraints: `@@map("workspace")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -1980,6 +2006,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 | `habits` | `Habit[]` | relation | - |
 | `mealPlans` | `MealPlan[]` | relation | - |
 | `mealPlanVersions` | `MealPlanVersion[]` | relation | - |
+| `temporaryNutritionPlans` | `TemporaryNutritionPlan[]` | relation | - |
 | `trainingPrograms` | `TrainingProgram[]` | relation | - |
 | `trainingProgramVersions` | `TrainingProgramVersion[]` | relation | - |
 | `trainingSessionBookings` | `TrainingSessionBooking[]` | relation | - |
@@ -2013,7 +2040,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 
 ### WorkspaceMember
 
-`db/schema.prisma:369` - 77 fields, 68 relations. Constraints: `@@unique([workspaceId, userId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@index([workspaceId, role])`, `@@index([userId])`, `@@map("workspace_member")`.
+`db/schema.prisma:370` - 78 fields, 69 relations. Constraints: `@@unique([workspaceId, userId])`, `@@unique([id, workspaceId])`, `@@index([workspaceId, status])`, `@@index([workspaceId, role])`, `@@index([userId])`, `@@map("workspace_member")`.
 
 | Field | Type | Kind | Attributes |
 |---|---|---|---|
@@ -2072,6 +2099,7 @@ without it is the back-relation). Migrations live in `db/migrations/`; never edi
 | `mealPlanVersionsPublished` | `MealPlanVersion[]` | relation | `@relation("MealPlanVersionPublisher")` |
 | `supplementPlansCreated` | `SupplementPlan[]` | relation | `@relation("SupplementPlanCreator")` |
 | `supplementPlansSaved` | `SupplementPlan[]` | relation | `@relation("SupplementPlanSaver")` |
+| `temporaryNutritionPlansCreated` | `TemporaryNutritionPlan[]` | relation | `@relation("TemporaryNutritionCreator")` |
 | `trainingProgramsCreated` | `TrainingProgram[]` | relation | `@relation("TrainingProgramCreator")` |
 | `trainingProgramsDraftsSaved` | `TrainingProgram[]` | relation | `@relation("TrainingProgramDraftSaver")` |
 | `trainingProgramsTimezonesSet` | `TrainingProgram[]` | relation | `@relation("TrainingProgramTimezoneSetter")` |
