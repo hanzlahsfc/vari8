@@ -72,9 +72,7 @@ export function SettingsSurface({
                 <Input
                   label="Display name"
                   value={draftName}
-                  onChange={(event) =>
-                    setDraftName(event.currentTarget.value)
-                  }
+                  onChange={(event) => setDraftName(event.currentTarget.value)}
                   disabled={saving}
                 />
                 <dl className="v8-settings__facts">
