@@ -104,7 +104,6 @@ const TEMPLATE_CARD = {
   containing: "Strength & balance",
 };
 const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
-const PLAN_CARD = { within: ".cp-card" };
 // Recipe labels that flip on async state: when the capture's own clicks already wrote a
 // draft for the shot's client (the debounced plan sync PUTs it), a rerun of the same
 // recipe meets "Edit plan" where a fresh seed showed "Set up plan". Both labels open the
@@ -134,17 +133,27 @@ export const STEP_SCOPES = {
       target: '[aria-label="Move down"]',
     },
   },
+  "s04-habit-editor": {
+    Habits: { within: ".cp-side" },
+    "Edit habits": { within: ".cp-detail", containing: "Habits" },
+  },
   "s06-mealplan-editor": {
-    "Edit plan": { ...PLAN_CARD, containing: "Nutrition" },
+    "Edit plan": { within: ".cp-detail", containing: "Nutrition" },
   },
   "s07-exercise-library": {
-    // Chloe Park's page also shows a "Set up plan" action on the Supplements card; the
-    // Training card scope keeps the step to one match.
-    "Set up plan": { ...PLAN_CARD, containing: "Training" },
-    "Edit plan": { ...PLAN_CARD, containing: "Training" },
+    // The module rail opens the Training detail; its action button then reads
+    // "Set up plan" on a fresh seed and "Edit plan" once a draft exists.
+    Training: { within: ".cp-side" },
+    "Set up plan": { within: ".cp-detail", containing: "Training" },
+    "Edit plan": { within: ".cp-detail", containing: "Training" },
+  },
+  "s12-activity-targets": {
+    "Activity targets": { within: ".cp-side" },
+    "Set targets": { within: ".cp-detail", containing: "Activity targets" },
   },
   "s13-supplements": {
-    "Set up plan": { ...PLAN_CARD, containing: "Supplements" },
+    Supplements: { within: ".cp-side" },
+    "Set up plan": { within: ".cp-detail", containing: "Supplements" },
   },
   "s06-template-nutrition": {
     "02 Tracker": TEMPLATE_NAV,

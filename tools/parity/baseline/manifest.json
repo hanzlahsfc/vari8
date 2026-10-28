@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:4921",
+  "baseUrl": "http://127.0.0.1:64649",
   "fixedNow": "2026-10-19T10:00:00+02:00",
   "timezone": "Europe/Vienna",
   "screens": [
@@ -184,12 +184,12 @@
           ]
         }
       ],
-      "sha256": "7f06ff334a16ed8fb34e9879317eb04dcbe67a0760eb64203674cf7892ca797b",
+      "sha256": "ba9463d98e939eb935a66900bf27aa19fa874a42d12d7264a11cd1541b148e67",
       "size": {
-        "width": 390,
-        "height": 1518
+        "width": 548,
+        "height": 1009
       },
-      "elements": 134,
+      "elements": 145,
       "pageErrors": []
     },
     {
@@ -251,7 +251,7 @@
           ]
         }
       ],
-      "sha256": "b26cb59f37fc1b013af280fadeaeb33ad65bb6afa5a4cb755425fbb656032f37",
+      "sha256": "b6cdbcba4745db24dd83cc2403487c679597ee0639ed007840cace509e5f4688",
       "size": {
         "width": 390,
         "height": 844
@@ -318,7 +318,7 @@
           ]
         }
       ],
-      "sha256": "f8b881883e9909e72186044c7a3ac12986c00921b9bc7e40604ee259af913ac5",
+      "sha256": "8d1334b3385175bce02e89148a3eac2234fe1e035d3cde98ceb9e872b1222353",
       "size": {
         "width": 390,
         "height": 1676
@@ -732,11 +732,19 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Habits",
+          "matches": 1,
+          "tag": "div",
+          "seen": "habits",
+          "scoped": true,
+          "recipe": "Habits"
+        },
+        {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
           "seen": "edit habits",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Edit habits"
         }
       ],
@@ -1139,6 +1147,14 @@
           "recipe": "Plans"
         },
         {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
           "label": "Edit plan",
           "matches": 1,
           "tag": "button",
@@ -1149,12 +1165,12 @@
       ],
       "png": "390/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "1f94a702707af6d7072cf50f81d225c370af0206fe411eb1731fa139e742debf",
+      "sha256": "8059775e74fba7db359939eb476a57e5409ba974c45d5f3111156b53a32e6b5a",
       "size": {
         "width": 390,
-        "height": 1524
+        "height": 1529
       },
-      "elements": 152,
+      "elements": 153,
       "pageErrors": []
     },
     {
@@ -1320,6 +1336,14 @@
           "seen": "edit plans",
           "scoped": false,
           "recipe": "Edit plans"
+        },
+        {
+          "label": "Training",
+          "matches": 1,
+          "tag": "div",
+          "seen": "training",
+          "scoped": true,
+          "recipe": "Training"
         },
         {
           "label": "Set up plan",
@@ -2246,7 +2270,7 @@
       ],
       "png": "390/s10-appearance.png",
       "scrolls": [],
-      "sha256": "f9914ae86cd7e7ae96f5df3fb1e594ae7309e3f3db807cec64e84a89ff0adb67",
+      "sha256": "289f4e9a8899556803862a97e5a93d04498a74daf3ccef2143d1fcaefeb8de59",
       "size": {
         "width": 390,
         "height": 4880
@@ -2280,7 +2304,7 @@
       "clicks": [],
       "png": "390/s10-mealplan-studio.png",
       "scrolls": [],
-      "sha256": "9c76369adcafc8da8d3b2b1dd29fcc7b977e6f1c0f99efcc243ab66f47fc546a",
+      "sha256": "eddfd4e1277a6a1e34b3b50cc33f335cc2aa1fcc0b61d5c6fe5fcebf0c4cf869",
       "size": {
         "width": 390,
         "height": 3593
@@ -2372,13 +2396,38 @@
         }
       ],
       "png": "390/s11-client-preview.png",
-      "scrolls": [],
-      "sha256": "fc9386e79f444457f8ab8e7ed39279644817bb9f0ce037ca05342333f13d96da",
+      "scrolls": [
+        {
+          "scroller": "div#124",
+          "x": 0,
+          "y": 0,
+          "png": "390/s11-client-preview.s124-0-0.png",
+          "box": [
+            16,
+            252,
+            358,
+            54
+          ]
+        },
+        {
+          "scroller": "div#124",
+          "x": 197,
+          "y": 0,
+          "png": "390/s11-client-preview.s124-197-0.png",
+          "box": [
+            16,
+            252,
+            358,
+            54
+          ]
+        }
+      ],
+      "sha256": "5285469bea4fd445067a4d723a11f03361cc04d42aad5f2d6047a21c690108f0",
       "size": {
         "width": 390,
-        "height": 844
+        "height": 2299
       },
-      "elements": 51,
+      "elements": 277,
       "pageErrors": []
     },
     {
@@ -2411,6 +2460,14 @@
           "seen": "edit plans",
           "scoped": false,
           "recipe": "Edit plans"
+        },
+        {
+          "label": "Supplements",
+          "matches": 1,
+          "tag": "div",
+          "seen": "supplements",
+          "scoped": true,
+          "recipe": "Supplements"
         },
         {
           "label": "Set up plan",
@@ -2463,11 +2520,19 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Activity targets",
+          "matches": 1,
+          "tag": "div",
+          "seen": "activity targets",
+          "scoped": true,
+          "recipe": "Activity targets"
+        },
+        {
           "label": "Set targets",
           "matches": 1,
           "tag": "button",
           "seen": "set targets",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Set targets"
         }
       ],
@@ -2575,12 +2640,12 @@
       ],
       "png": "1440/s01-profile-plans.png",
       "scrolls": [],
-      "sha256": "b701c1452c373eb16bd5ca1a45d803c4c5ead5fce02ad86ff8325506439ed98c",
+      "sha256": "4e7eb0b5126ff22775dc33a368a3fe392988553b7e5d7f6e9e79792cfb11d90b",
       "size": {
         "width": 1440,
-        "height": 906
+        "height": 900
       },
-      "elements": 157,
+      "elements": 169,
       "pageErrors": []
     },
     {
@@ -3123,11 +3188,19 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Habits",
+          "matches": 1,
+          "tag": "div",
+          "seen": "habits",
+          "scoped": true,
+          "recipe": "Habits"
+        },
+        {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
           "seen": "edit habits",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Edit habits"
         }
       ],
@@ -3406,6 +3479,14 @@
           "recipe": "Plans"
         },
         {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
           "label": "Edit plan",
           "matches": 1,
           "tag": "button",
@@ -3416,12 +3497,12 @@
       ],
       "png": "1440/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "adfcc77fde989283ef3a98a725b769cac1684de6bd43de542a7a086b97a10d9c",
+      "sha256": "5943785a15c10b9ac71563f86dfc7e04c8c6a0f70eda2668829a320fb54c4bc4",
       "size": {
         "width": 1440,
-        "height": 1127
+        "height": 1165
       },
-      "elements": 178,
+      "elements": 179,
       "pageErrors": []
     },
     {
@@ -3562,6 +3643,14 @@
           "seen": "edit plans",
           "scoped": false,
           "recipe": "Edit plans"
+        },
+        {
+          "label": "Training",
+          "matches": 1,
+          "tag": "div",
+          "seen": "training",
+          "scoped": true,
+          "recipe": "Training"
         },
         {
           "label": "Set up plan",
@@ -4330,7 +4419,7 @@
       ],
       "png": "1440/s10-appearance.png",
       "scrolls": [],
-      "sha256": "01ca7828136758f424c28f3d70c14918914666bb23cc248e97ea449f13131d4d",
+      "sha256": "e33776721a047d66eb54d4140a64e590ec7c881b4e78eb7ee6f0f50f5b21da56",
       "size": {
         "width": 1440,
         "height": 2545
@@ -4364,7 +4453,7 @@
       "clicks": [],
       "png": "1440/s10-mealplan-studio.png",
       "scrolls": [],
-      "sha256": "cc609b99718533f2c6f19036cedce5ee6c490b3a40534ea9fa9c0091c1374b04",
+      "sha256": "b5cf6044f48b7268157dfdf68df8797f8f5e321dead9391fe35b399726bb8fa7",
       "size": {
         "width": 1440,
         "height": 2511
@@ -4497,6 +4586,14 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Supplements",
+          "matches": 1,
+          "tag": "div",
+          "seen": "supplements",
+          "scoped": true,
+          "recipe": "Supplements"
+        },
+        {
           "label": "Set up plan",
           "matches": 1,
           "tag": "button",
@@ -4547,11 +4644,19 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Activity targets",
+          "matches": 1,
+          "tag": "div",
+          "seen": "activity targets",
+          "scoped": true,
+          "recipe": "Activity targets"
+        },
+        {
           "label": "Set targets",
           "matches": 1,
           "tag": "button",
           "seen": "set targets",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Set targets"
         }
       ],
