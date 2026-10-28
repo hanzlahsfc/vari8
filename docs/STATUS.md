@@ -53,6 +53,7 @@
   `promote/hp-parity-https`: production parity served over HTTPS, shared
   PID/PGID/start listener-ownership predicate, bounded mutation proof and
   retained superseded evidence.
+
 ## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 425 — exact contract, portable paths, complete execution provenance
 
 - Contract compatibility is a closed, named `retained-v1-to-approved-v2` transition. Version 2 and retained v1 are exact schemas; missing/unknown fields, changed `authority`, changed `implementedAlternative`, administrative differences and empty/subset/unknown allowance sets fail. Exact allowance rule identities/labels are checked against the comparer. Historical provenance is unchanged. Focused reference tests cover every SWE-2 probe plus the positive v1/v2 cases: **16/16**.
