@@ -122,6 +122,16 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     },
     orderBy: { createdAt: "asc" },
   });
+  // Coach-note authorship: tracker notes are written as an assigned-scope
+  // COACH member, never the owner (coachNotes write matrix).
+  const noteStaff = await prisma.workspaceMember.findFirstOrThrow({
+    where: {
+      workspaceId: workspace.id,
+      role: "COACH",
+      status: "ACTIVE",
+    },
+    orderBy: { createdAt: "asc" },
+  });
   // Workspace preferences -> the workspace settings columns.
   const prefs = WORKSPACE.preferences ?? {};
   const prefData: Prisma.WorkspaceUpdateInput = {
@@ -808,105 +818,208 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       kind: "MEASUREMENT" | "OPTION" | "TEXT";
       unit?: string;
       options?: string[];
+      /** Canvas display precision for the cell value. */
+      decimals?: 0 | 1 | 2;
+      /** Canvas column aggregate. */
+      summary?: "avg" | "sum" | "count" | "none";
     }[] = [
-      { key: "weight", label: "Bodyweight", kind: "MEASUREMENT", unit: "kg" },
+      {
+        key: "weight",
+        label: "Bodyweight",
+        kind: "MEASUREMENT",
+        unit: "kg",
+        decimals: 1,
+        summary: "avg",
+      },
       {
         key: "sleep",
         label: "Sleep duration",
         kind: "MEASUREMENT",
         unit: "hours",
+        decimals: 1,
+        summary: "avg",
       },
-      { key: "energy", label: "Energy outside gym", kind: "MEASUREMENT" },
+      {
+        key: "energy",
+        label: "Energy outside gym",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "steps",
         label: "Step count",
         kind: "MEASUREMENT",
         unit: "steps",
+        decimals: 0,
+        summary: "sum",
       },
       {
         key: "calories",
         label: "Energy intake",
         kind: "MEASUREMENT",
         unit: "kcal",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "protein",
         label: "Protein intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 0,
+        summary: "sum",
       },
       {
         key: "carbs",
         label: "Carbohydrate intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "fat", label: "Fat intake", kind: "MEASUREMENT", unit: "g" },
+      {
+        key: "fat",
+        label: "Fat intake",
+        kind: "MEASUREMENT",
+        unit: "g",
+        decimals: 0,
+        summary: "sum",
+      },
       {
         key: "cardio-duration",
         label: "Cardio duration",
         kind: "MEASUREMENT",
         unit: "minutes",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "water", label: "Water intake", kind: "MEASUREMENT", unit: "L" },
+      {
+        key: "water",
+        label: "Water intake",
+        kind: "MEASUREMENT",
+        unit: "L",
+        decimals: 1,
+        summary: "sum",
+      },
       {
         key: "rhr",
         label: "Resting heart rate",
         kind: "MEASUREMENT",
         unit: "bpm",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "fbg",
         label: "Fasted blood glucose",
         kind: "MEASUREMENT",
         unit: "mmol/L",
+        decimals: 1,
+        summary: "avg",
       },
       {
         key: "bp",
         label: "Blood pressure",
         kind: "TEXT",
         unit: "mmHg",
+        decimals: 0,
+        summary: "none",
       },
       {
         key: "bleeding-level",
         label: "Bleeding level",
         kind: "OPTION",
         options: ["None", "Light", "Medium", "Heavy"],
+        decimals: 0,
+        summary: "none",
       },
-      { key: "cramps", label: "Cramps", kind: "MEASUREMENT" },
-      { key: "pms-symptoms", label: "PMS symptoms", kind: "TEXT" },
+      {
+        key: "cramps",
+        label: "Cramps",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "pms-symptoms",
+        label: "PMS symptoms",
+        kind: "TEXT",
+        decimals: 0,
+        summary: "none",
+      },
       {
         key: "salt-intake",
         label: "Salt intake",
         kind: "MEASUREMENT",
         unit: "g",
+        decimals: 1,
+        summary: "sum",
       },
       {
         key: "caffeine-intake",
         label: "Caffeine intake",
         kind: "MEASUREMENT",
         unit: "mg",
+        decimals: 0,
+        summary: "sum",
       },
-      { key: "hunger", label: "Hunger", kind: "MEASUREMENT" },
-      { key: "bloating", label: "Bloating", kind: "MEASUREMENT" },
-      { key: "sleep-quality", label: "Sleep quality", kind: "MEASUREMENT" },
+      {
+        key: "hunger",
+        label: "Hunger",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "bloating",
+        label: "Bloating",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
+      {
+        key: "sleep-quality",
+        label: "Sleep quality",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "muscle-soreness",
         label: "Muscle soreness / DOMS",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
-      { key: "stress", label: "Stress", kind: "MEASUREMENT" },
+      {
+        key: "stress",
+        label: "Stress",
+        kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
+      },
       {
         key: "energy-in-gym",
         label: "Energy in the gym",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
       {
         key: "mood-in-gym",
         label: "Mood in the gym",
         kind: "MEASUREMENT",
+        decimals: 0,
+        summary: "avg",
       },
-      { key: "daily-note", label: "Client daily note", kind: "TEXT" },
+      {
+        key: "daily-note",
+        label: "Client daily note",
+        kind: "TEXT",
+        decimals: 0,
+        summary: "none",
+      },
     ];
     const entries = data.tracking?.entries ?? [];
     if (entries.length) {
@@ -987,6 +1100,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
                   : [],
               validation: null,
               dataClassification: "GENERAL_HEALTH",
+              // Canvas tracker cell rendering hints (w2-fe2 seed fixture).
+              decimals: spec.decimals ?? 0,
+              summary: spec.summary ?? "none",
               revision: 1,
             },
           ]),
@@ -1171,6 +1287,72 @@ export default async function seed(ctx: SeedContext): Promise<void> {
               updatedByMemberId: clientMemberId,
             },
           });
+      }
+
+      // Coach notes on the tracker surface: two cell comments and one day
+      // note on fixed dates inside the seeded span. Deterministic ids and a
+      // fixed body, upserted on the natural key, so a second run only
+      // refreshes the row (no now()-derived seeded columns).
+      const cellNotes = [
+        {
+          index: 5,
+          paramKey: "weight",
+          body: "Weekly average is trending down. Keep the morning weigh-in before food.",
+        },
+        {
+          index: 30,
+          paramKey: "sleep",
+          body: "Sleep is clustering near seven hours. Lights out thirty minutes earlier this week.",
+        },
+      ];
+      for (const note of cellNotes) {
+        const raw = entries[note.index]?.date;
+        const day = raw ? dayUtc(raw) : null;
+        if (!day) continue;
+        const iso = day.toISOString().slice(0, 10);
+        await prisma.trackerComment.upsert({
+          where: {
+            clientProfileId_entryDate_parameterId: {
+              clientProfileId: profile.id,
+              entryDate: day,
+              parameterId: paramIds[note.paramKey],
+            },
+          },
+          update: { body: note.body, authorMemberId: noteStaff.id },
+          create: {
+            id: `seed-demo-tc-${iso}-${note.paramKey}`,
+            workspaceId: workspace.id,
+            clientProfileId: profile.id,
+            entryDate: day,
+            parameterId: paramIds[note.paramKey],
+            body: note.body,
+            authorMemberId: noteStaff.id,
+          },
+        });
+      }
+      const dayNoteRaw = entries[10]?.date;
+      const dayNoteDate = dayNoteRaw ? dayUtc(dayNoteRaw) : null;
+      if (dayNoteDate) {
+        const iso = dayNoteDate.toISOString().slice(0, 10);
+        const body =
+          "Day check: hydration and steps on plan. One session moved to Thursday.";
+        await prisma.trackerDayNote.upsert({
+          where: {
+            clientProfileId_entryDate: {
+              clientProfileId: profile.id,
+              entryDate: dayNoteDate,
+            },
+          },
+          update: { body, authorMemberId: noteStaff.id },
+          create: {
+            id: `seed-demo-tdn-${iso}`,
+            workspaceId: workspace.id,
+            clientProfileId: profile.id,
+            entryDate: dayNoteDate,
+            body,
+            authorMemberId: noteStaff.id,
+          },
+        });
       }
     }
 

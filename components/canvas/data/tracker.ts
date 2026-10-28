@@ -576,3 +576,190 @@ export function remoteRawFromText(
   }
   return value;
 }
+
+// ---------------------------------------------------------------------------
+// W2-FE2: staff tracker span + coach notes over /api/v1. The signed-in coach
+// path (no ?demo) hydrates client.tracking from the values route and persists
+// the tab's note keys through the tracker-notes route; the local draft slice
+// above stays the demo-mode source.
+// ---------------------------------------------------------------------------
+
+export type StaffTrackerValueRowWire = {
+  parameterKey: string;
+  kind: string;
+  display: string;
+};
+
+export type StaffTrackerValuesWire =
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      clientName: string;
+      entries: { entryDate: string; values: StaffTrackerValueRowWire[] }[];
+      cellNotes: { entryDate: string; parameterKey: string; body: string }[];
+      dayNotes: { entryDate: string; body: string }[];
+      parameters: { key: string; kind: string }[];
+    };
+
+export function fetchStaffTrackerValues(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffTrackerValuesWire> {
+  return apiFetch<StaffTrackerValuesWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/values`,
+  );
+}
+
+export function putStaffTrackerNote(
+  workspaceId: string,
+  clientProfileId: string,
+  note: { entryDate: string; parameterKey?: string; body: string },
+): Promise<{ state: string }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tracker-notes`,
+    { method: "PUT", body: note },
+  );
+}
+
+export function deleteStaffTrackerNote(
+  workspaceId: string,
+  clientProfileId: string,
+  note: { entryDate: string; parameterKey?: string },
+): Promise<{ state: string }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tracker-notes`,
+    { method: "DELETE", body: note },
+  );
+}
+
+/**
+ * Seeded server parameter keys carry the `p_demo_`/`p_seed_` fixture prefix;
+ * the canvas field key the tab renders is the remainder. The authoritative
+ * field-key mapping arrives with the w2-a5 template read; until then this
+ * prefix strip is the contract between the seed and the tab.
+ */
+export const staffFieldKey = (parameterKey: string): string =>
+  parameterKey.replace(/^p_(?:demo|seed)_/, "");
+
+const NUMERIC_WIRE_KINDS = new Set([
+  "MEASUREMENT",
+  "RATING",
+  "LOCATION_RATING",
+  "DURATION",
+]);
+
+export type StaffTrackingHydration = {
+  tracking: { entries: TrackerEntry[]; text: Record<string, string> };
+  /** fieldKey -> server parameterKey learned from the payload. */
+  parameterKeys: Record<string, string>;
+  /** `${date}:note:${fieldKey}` / `${date}:coach-note` -> body, post-sync baseline. */
+  noteText: Record<string, string>;
+};
+
+/**
+ * Map the wire span into the `client.tracking` shape the tab reads. Numeric
+ * kinds land in entry values; TEXT/OPTION-family displays land in the
+ * `${date}:${fieldKey}` text slots; staff notes land in the `note:` and
+ * `coach-note` slots the popover reads.
+ */
+export function staffTrackerToTracking(
+  wire: StaffTrackerValuesWire,
+): StaffTrackingHydration | null {
+  if (wire.state !== "ready") return null;
+  const entries: TrackerEntry[] = [];
+  const text: Record<string, string> = {};
+  const parameterKeys: Record<string, string> = {};
+  const noteText: Record<string, string> = {};
+  for (const parameter of wire.parameters)
+    parameterKeys[staffFieldKey(parameter.key)] = parameter.key;
+  for (const entry of wire.entries) {
+    const values: Record<string, number | null> = {};
+    for (const row of entry.values) {
+      const fieldKey = staffFieldKey(row.parameterKey);
+      parameterKeys[fieldKey] = row.parameterKey;
+      if (NUMERIC_WIRE_KINDS.has(row.kind)) {
+        const parsed = Number(row.display);
+        if (row.display !== "" && Number.isFinite(parsed))
+          values[fieldKey] = parsed;
+      } else if (row.display !== "") {
+        text[`${entry.entryDate}:${fieldKey}`] = row.display;
+      }
+    }
+    entries.push({ date: entry.entryDate, values });
+  }
+  for (const note of wire.cellNotes) {
+    const fieldKey = staffFieldKey(note.parameterKey);
+    parameterKeys[fieldKey] = note.parameterKey;
+    const key = `${note.entryDate}:note:${fieldKey}`;
+    text[key] = note.body;
+    noteText[key] = note.body;
+  }
+  for (const note of wire.dayNotes) {
+    const key = `${note.entryDate}:coach-note`;
+    text[key] = note.body;
+    noteText[key] = note.body;
+  }
+  return { tracking: { entries, text }, parameterKeys, noteText };
+}
+
+/** The subset of tracking.text keys the note writer owns (not value texts). */
+export function staffNoteText(
+  text: Record<string, string>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, body] of Object.entries(text)) {
+    const sep = key.indexOf(":");
+    if (sep < 0) continue;
+    const rest = key.slice(sep + 1);
+    if (rest === "coach-note" || rest.startsWith("note:")) out[key] = body;
+  }
+  return out;
+}
+
+/**
+ * Merge a staff hydration over the client's local tracking: server entries
+ * and text win outright, except note keys that resolve to no server
+ * parameter - those belong to derived columns and stay local-only.
+ * Mapped note keys the server no longer returns are dropped, so a note
+ * deleted by another coach cannot resurrect through the sync diff.
+ */
+export function mergeStaffTracking(
+  local: { entries?: TrackerEntry[]; text?: Record<string, string> } | null | undefined,
+  hydration: StaffTrackingHydration,
+): { entries: TrackerEntry[]; text: Record<string, string> } {
+  const keep: Record<string, string> = {};
+  for (const [key, body] of Object.entries(local?.text ?? {})) {
+    const sep = key.indexOf(":");
+    if (sep < 0) continue;
+    const rest = key.slice(sep + 1);
+    if (rest !== "coach-note" && !rest.startsWith("note:")) continue;
+    if (staffNoteKeyToWire(key, hydration.parameterKeys) === null)
+      keep[key] = body;
+  }
+  return {
+    entries: hydration.tracking.entries,
+    text: { ...keep, ...hydration.tracking.text },
+  };
+}
+
+/**
+ * Split a stored note key into the wire write shape. Returns null when the
+ * column's field key resolves to no server parameter - derived cells (Day,
+ * Session, Weigh-in, ...) keep their note in local tracking.text only,
+ * exactly as they did before this route existed.
+ */
+export function staffNoteKeyToWire(
+  key: string,
+  parameterKeys: Record<string, string>,
+): { entryDate: string; parameterKey?: string } | null {
+  const sep = key.indexOf(":");
+  const entryDate = key.slice(0, sep);
+  const rest = key.slice(sep + 1);
+  if (rest === "coach-note") return { entryDate };
+  const fieldKey = rest.slice("note:".length);
+  const parameterKey = Object.hasOwn(parameterKeys, fieldKey)
+    ? parameterKeys[fieldKey]
+    : undefined;
+  if (!parameterKey) return null;
+  return { entryDate, parameterKey };
+}
