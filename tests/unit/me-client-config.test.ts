@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   clientConfigFromDefinition,
+  clientEntriesFromRows,
   clientPlansPresence,
 } from "../../app/(canvas)/me/client-config";
 
@@ -58,6 +59,76 @@ describe("clientConfigFromDefinition", () => {
     const config = clientConfigFromDefinition("not-json-shaped");
     expect(config.views.length).toBe(6);
     expect(config.habits).toBe(false);
+  });
+
+  it("maps the published fields, roadmap rows and planning columns verbatim", () => {
+    const config = clientConfigFromDefinition({
+      sections: [],
+      parameters: {},
+      fields: [
+        { id: "weight", unit: "kg" },
+        { id: "steps", unit: "steps" },
+        { id: "not-a-parameter", unit: "x" },
+      ],
+      roadmap: [
+        { source: "weight", calculation: "Weekly average", comparison: true },
+        { source: "bogus", calculation: "Trend", comparison: false },
+      ],
+      roadmapActivityTargets: ["steps", "cardio"],
+    });
+    expect(config.fields).toEqual([
+      { id: "weight", unit: "kg" },
+      { id: "steps", unit: "steps" },
+    ]);
+    expect(config.roadmap).toEqual([
+      { source: "weight", calculation: "Weekly average", comparison: true },
+    ]);
+    expect(config.roadmapActivityTargets).toEqual(["steps", "cardio"]);
+  });
+
+  it("keeps the roadmap slots empty when the definition predates them", () => {
+    const config = clientConfigFromDefinition({
+      sections: [],
+      parameters: {},
+    });
+    expect(config.fields).toEqual([]);
+    expect(config.roadmap).toEqual([]);
+    expect(config.roadmapActivityTargets).toBeUndefined();
+  });
+});
+
+describe("clientEntriesFromRows", () => {
+  it("keeps the declared date plus the recorded roadmap fields only", () => {
+    const entries = clientEntriesFromRows([
+      {
+        entryDate: "2026-10-12",
+        values: {
+          weight: 75,
+          sleep: 6.6,
+          water: 4.3,
+          steps: 9000,
+          calories: 1810,
+          protein: 153,
+        },
+      },
+    ]);
+    expect(entries).toEqual([
+      {
+        date: "2026-10-12",
+        weight: 75,
+        sleep: 6.6,
+        steps: 9000,
+        calories: 1810,
+      },
+    ]);
+  });
+
+  it("drops rows whose values carry no recorded field", () => {
+    expect(
+      clientEntriesFromRows([
+        { entryDate: "2026-10-12", values: { water: 2 } },
+      ]),
+    ).toEqual([{ date: "2026-10-12" }]);
   });
 });
 
