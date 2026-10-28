@@ -123,37 +123,38 @@ describe.skipIf(!enabled)(
       expect(clientMembership.status).toBe("ACTIVE");
       expect((await member(second.id, staff2.id)).role).toBe("COACH");
 
-      // The canvas client profile is linked to the seeded canvas demo
-      // client user (`33-checkins.seed.ts`, PR-M8); the credential client
-      // intentionally has no profile (own-scope media is 403 by design).
-      const emma = await prisma.user.findUniqueOrThrow({
-        where: { email: "emma.anders@canvas-demo.test" },
-      });
+      // The demo user keeps its credential but owns no profile: the seed
+      // repair links Emma Anders' profile to the SEED-FIX credential client
+      // (`00-workspace.seed.ts`), so the demo-user bind in
+      // `33-checkins.seed.ts` must not steal it (w2-c4m).
       const profile = await prisma.clientProfile.findFirstOrThrow({
-        where: { workspaceId: canvas.id, userId: emma.id },
+        where: { workspaceId: canvas.id, userId: client.id },
       });
       expect(profile.name).toBe("Emma Anders");
+      const demoUser = await prisma.user.findUniqueOrThrow({
+        where: { email: "emma.anders@canvas-demo.test" },
+      });
       expect(
         await prisma.clientProfile.count({
-          where: { workspaceId: canvas.id, userId: client.id },
+          where: { workspaceId: canvas.id, userId: demoUser.id },
         }),
       ).toBe(0);
     });
 
     it("the first canvas demo client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
-      // The trial client walkthrough signs in as the first canvas demo
-      // client — `33-checkins.seed.ts` gives her a credential reusing
-      // SEED_CLIENT_PASSWORD — because the SEED-FIX credential client
-      // deliberately has no profile.
-      const emma = await expectCredential(
-        "emma.anders@canvas-demo.test",
+      // The walkthrough client is the SEED-FIX credential client: the seed
+      // repair links Emma Anders' profile (and its check-in history) to it.
+      // emma.anders@canvas-demo.test keeps sign-in and submission ownership
+      // only.
+      const client = await expectCredential(
+        SEED_ENV.SEED_CLIENT_EMAIL,
         SEED_ENV.SEED_CLIENT_PASSWORD,
       );
       const canvas = await prisma.workspace.findUniqueOrThrow({
         where: { slug: "canvas-demo" },
       });
       const profile = await prisma.clientProfile.findFirstOrThrow({
-        where: { workspaceId: canvas.id, userId: emma.id },
+        where: { workspaceId: canvas.id, userId: client.id },
       });
       expect(profile.name).toBe("Emma Anders");
       // Without instances the sign-in client has nothing to submit — the
