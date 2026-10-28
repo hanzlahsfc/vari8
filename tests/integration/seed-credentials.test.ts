@@ -141,7 +141,7 @@ describe.skipIf(!enabled)(
       ).toBe(0);
     });
 
-    it("the first canvas demo client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
+    it("the seeded walkthrough client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
       // The walkthrough client is the SEED-FIX credential client: the seed
       // repair links Emma Anders' profile (and its check-in history) to it.
       // emma.anders@canvas-demo.test keeps sign-in and submission ownership
