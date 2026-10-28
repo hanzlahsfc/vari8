@@ -1,3 +1,15 @@
+## 2026-10-29 - Integration: full contributor line merged into the stage line
+
+- Merged the preview head carrying all landed stages, then the complete
+  Vari8-Beta contributor line (PRs 212 to 220, 223, 224, 226, 228 by
+  Hanzlah) into the stage branch. End state: notes lifecycle with soft
+  delete and restore, coach task lifecycle with undo window, tracker
+  day notes, member preferences plus workspace appearance, invitation
+  management API, habit reasons and frequency masks, numeric daily
+  series, widened dashboard adapter, and the loopback TLS parity
+  harness all run alongside the existing canvas-facing surfaces.
+  Verification evidence lives outside the repository.
+
 ## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
 
 - Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
