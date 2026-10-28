@@ -1,0 +1,219 @@
+{
+  "role": "combined",
+  "contract": {
+    "id": "D32-owner-written-v1",
+    "authority": "icm/03-plan/DECISIONS.md#d32; owner overriding rule; precedence over implementation/review receipts",
+    "status": "owner-adopted proposal; not activated",
+    "referenceSource": "c78311042edcc2f96350a132c682782d8da1b6a7",
+    "referenceFrontendTree": "36ceaf8eadc010369ed48ab5158682f2bf9d55de",
+    "candidateSource": "90c16bee63e2609ebc4f09e91459332390562464",
+    "harnessDependency": "90c16bee63e2609ebc4f09e91459332390562464 (unmerged PR #203)",
+    "clock": "2026-10-19T09:00:00+02:00",
+    "timezone": "Europe/Vienna",
+    "geometryPx": 1,
+    "maxChangedFraction": 0.001,
+    "pixelmatchThreshold": 0.1,
+    "pixelmatchIncludeAA": false,
+    "deviceScaleFactor": 1,
+    "viewports": {
+      "390": {
+        "width": 390,
+        "height": 844
+      },
+      "1440": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    "expectedScreens": 70,
+    "s04State": "Habits",
+    "allowances": [
+      "S11-03",
+      "D18",
+      "S11-04",
+      "S03-18"
+    ],
+    "implementedAlternative": {
+      "clock": "2026-10-19T10:00:00+02:00",
+      "geometryPx": 0.5,
+      "channelTolerance": 0,
+      "maxDiffPixels": 0
+    },
+    "portability": "Pinned macOS arm64 environment only; independent same-host runs do not certify Linux or hosted CI portability. No Actions are run.",
+    "referenceRootTree": "5a65471694d945b6b6041aa78b6a5d04d5f39a7c",
+    "candidateRootTree": "6fd7353e4734632c49c6d9e28427dd2c5c8a1556",
+    "ownerDecision": "Prompt 417: D32-owner-written-v1 adopted; S03-18 keeps “Record video feedback” with the demonstrated 39px narrower button; proposed reference remains unactivated pending PR #203 and independent review",
+    "contractVersion": 2
+  },
+  "inputs": {
+    "vari8Beta": "d1c4081022f2ac21070b28f284248fad2ef04839",
+    "pr203": "90c16bee63e2609ebc4f09e91459332390562464",
+    "pr206": "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
+    "prep": {
+      "branch": "beta/p203-p206-combined-verification",
+      "head": "f4527ae70bb9722bf203019a5709491bcc3eebd0"
+    }
+  },
+  "source": {
+    "sha": "f4527ae70bb9722bf203019a5709491bcc3eebd0",
+    "tree": "899b72e08d7d128a76941e2313ee7e694c08aa19",
+    "frontendTree": "54a005db99a29f59cdcbed8ebafce1c796ed3300",
+    "dirtyTracked": "",
+    "untracked": "",
+    "rootLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "appLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "pathspec": [
+      "app/**",
+      "components/**",
+      "db/**",
+      "frontend/**",
+      "icm/04-briefing/**",
+      "lib/**",
+      "public/**",
+      "scripts/**",
+      "tests/**",
+      "themes/**",
+      "tools/parity/** excluding tools/parity/out/** and tools/parity/reference/combined/**",
+      "tools/local-tls-proxy.mjs",
+      "auth.ts",
+      "package.json",
+      "package-lock.json",
+      "next.config.*",
+      "playwright.config.*",
+      "tsconfig*.json",
+      "vitest*.config.*",
+      "eslint.config.*",
+      "postcss.config.*",
+      "middleware.ts",
+      "instrumentation.ts"
+    ],
+    "materialTreeSha256": "a8ebcb7506617dc5ba60f6d858f8b3e19753b6f310f7378b3d55761405454255"
+  },
+  "dependencies": {
+    "lockSha256": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "installedLockSha256": "f9c064f3b034dbe0d899a7c917fdb7ba4453dc27e0cb913fe7cc63b694a8e109",
+    "mismatches": [],
+    "installedTreeSha256": "c5073def90a71e1a6a94921b769ece4fd48044084ff16a190048ab05f21d795e",
+    "hashedFiles": 48225
+  },
+  "environment": {
+    "os": {
+      "type": "Darwin",
+      "release": "27.0.0",
+      "arch": "arm64",
+      "version": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n"
+    },
+    "node": "v24.22.1",
+    "nodeExecutable": "/Users/apple/.npm/_npx/ef8b185be06dfeb4/node_modules/node/bin/node",
+    "nodeSha256": "6f32069480ec14d52b6d7b1f3c7124cfbbc46203abf5ddf5c65b127435f3f329",
+    "playwright": "1.63.0",
+    "browser": {
+      "executable": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+      "sha256": "a0bfe7b4da4787b66058477d696cd1d09065d25f06a548947722b9af77ee8282",
+      "version": {
+        "protocolVersion": "1.3",
+        "product": "HeadlessChrome/153.0.8010.12",
+        "revision": "@971a7443b0c9b0a9b2860529b33331b76077ec62",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "jsVersion": "15.3.76.4"
+      },
+      "command": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-ofXzFV --remote-debugging-pipe --no-startup-window",
+      "system": {
+        "gpu": {
+          "devices": [
+            {
+              "vendorId": 65535,
+              "deviceId": 65535,
+              "vendorString": "Google Inc. (Google)",
+              "deviceString": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+              "driverVendor": "SwANGLE",
+              "driverVersion": "5.0.0"
+            }
+          ],
+          "auxAttributes": {
+            "amdSwitchable": false,
+            "canSupportThreadedTextureMailbox": false,
+            "directRenderingVersion": "",
+            "displayType": "ANGLE_SWIFTSHADER",
+            "glExtensions": "GL_AMD_performance_monitor GL_ANGLE_base_vertex_base_instance_shader_builtin GL_ANGLE_blob_cache GL_ANGLE_client_arrays GL_ANGLE_clip_cull_distance GL_ANGLE_compressed_texture_etc GL_ANGLE_copy_texture_3d GL_ANGLE_depth_texture GL_ANGLE_framebuffer_blit GL_ANGLE_framebuffer_multisample GL_ANGLE_get_image GL_ANGLE_get_serialized_context_string GL_ANGLE_get_tex_level_parameter GL_ANGLE_instanced_arrays GL_ANGLE_memory_object_flags GL_ANGLE_memory_size GL_ANGLE_multi_draw GL_ANGLE_pack_reverse_row_order GL_ANGLE_polygon_mode GL_ANGLE_program_binary_readiness_query GL_ANGLE_program_cache_control GL_ANGLE_read_only_depth_stencil_feedback_loops GL_ANGLE_relaxed_vertex_attribute_type GL_ANGLE_renderability_validation GL_ANGLE_request_extension GL_ANGLE_rgbx_internal_format GL_ANGLE_robust_client_memory GL_ANGLE_robust_fragment_shader_output GL_ANGLE_robust_resource_initialization GL_ANGLE_shader_pixel_local_storage GL_ANGLE_shader_pixel_local_storage_coherent GL_ANGLE_stencil_texturing GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 GL_ANGLE_texture_multisample GL_ANGLE_texture_usage GL_ANGLE_translated_shader_source GL_ANGLE_vulkan_image GL_ANGLE_yuv_internal_format GL_APPLE_clip_distance GL_ARM_rgba8 GL_ARM_shader_framebuffer_fetch GL_CHROMIUM_bind_generates_resource GL_CHROMIUM_bind_uniform_location GL_CHROMIUM_copy_compressed_texture GL_CHROMIUM_copy_texture GL_CHROMIUM_lose_context GL_EXT_EGL_image_array GL_EXT_EGL_image_external_wrap_modes GL_EXT_EGL_image_storage GL_EXT_base_instance GL_EXT_blend_minmax GL_EXT_buffer_storage GL_EXT_clear_texture GL_EXT_clip_control GL_EXT_clip_cull_distance GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_compressed_ETC1_RGB8_sub_texture GL_EXT_conservative_depth GL_EXT_copy_image GL_EXT_debug_label GL_EXT_debug_marker GL_EXT_depth_clamp GL_EXT_discard_framebuffer GL_EXT_disjoint_timer_query GL_EXT_draw_buffers GL_EXT_draw_buffers_indexed GL_EXT_draw_elements_base_vertex GL_EXT_float_blend GL_EXT_frag_depth GL_EXT_instanced_arrays GL_EXT_map_buffer_range GL_EXT_memory_object GL_EXT_memory_object_fd GL_EXT_occlusion_query_boolean GL_EXT_polygon_offset_clamp GL_EXT_read_format_bgra GL_EXT_robustness GL_EXT_sRGB GL_EXT_sRGB_write_control GL_EXT_semaphore GL_EXT_separate_shader_objects GL_EXT_shader_framebuffer_fetch GL_EXT_shader_framebuffer_fetch_non_coherent GL_EXT_shader_non_constant_global_initializers GL_EXT_shader_texture_lod GL_EXT_shadow_samplers GL_EXT_texture_border_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_rgtc GL_EXT_texture_compression_s3tc_srgb GL_EXT_texture_filter_anisotropic GL_EXT_texture_format_BGRA8888 GL_EXT_texture_lod_bias GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_rg GL_EXT_texture_sRGB_R8 GL_EXT_texture_sRGB_RG8 GL_EXT_texture_sRGB_decode GL_EXT_texture_shadow_lod GL_EXT_texture_storage GL_EXT_texture_type_2_10_10_10_REV GL_EXT_unpack_subimage GL_KHR_blend_equation_advanced GL_KHR_debug GL_KHR_robust_buffer_access_behavior GL_KHR_robustness GL_KHR_texture_compression_astc_ldr GL_NV_fence GL_NV_framebuffer_blit GL_NV_pack_subimage GL_NV_pixel_buffer_object GL_NV_polygon_mode GL_NV_read_depth GL_NV_read_depth_stencil GL_NV_read_stencil GL_NV_shader_noperspective_interpolation GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_EGL_image_external_essl3 GL_OES_EGL_sync GL_OES_compressed_ETC1_RGB8_texture GL_OES_compressed_paletted_texture GL_OES_copy_image GL_OES_depth24 GL_OES_depth32 GL_OES_depth_texture GL_OES_depth_texture_cube_map GL_OES_draw_buffers_indexed GL_OES_draw_elements_base_vertex GL_OES_element_index_uint GL_OES_fbo_render_mipmap GL_OES_get_program_binary GL_OES_mapbuffer GL_OES_packed_depth_stencil GL_OES_required_internalformat GL_OES_rgb8_rgba8 GL_OES_sample_shading GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_standard_derivatives GL_OES_surfaceless_context GL_OES_texture_3D GL_OES_texture_border_clamp GL_OES_texture_float GL_OES_texture_float_linear GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_texture_npot GL_OES_texture_stencil8 GL_OES_texture_storage_multisample_2d_array GL_OES_vertex_array_object GL_OES_vertex_half_float GL_OES_vertex_type_10_10_10_2 GL_OVR_multiview GL_OVR_multiview2 GL_QCOM_texture_lod_bias ",
+            "glImplementationParts": "(gl=egl-angle,angle=swiftshader)",
+            "glRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+            "glResetNotificationStrategy": 33362,
+            "glVendor": "Google Inc. (Google)",
+            "glVersion": "OpenGL ES 3.0 (ANGLE 2.1.28646 git hash: a6bc9eff8444)",
+            "glWsExtensions": "",
+            "glWsVendor": "",
+            "glWsVersion": "",
+            "inProcessGpu": false,
+            "initializationTime": 0.074565,
+            "isAsan": false,
+            "isClangCoverage": false,
+            "jpegDecodeAcceleratorSupported": false,
+            "maxMsaaSamples": "4",
+            "optimus": false,
+            "passthroughCmdDecoder": true,
+            "pixelShaderVersion": "3.00",
+            "processCrashCount": 0,
+            "sandboxed": false,
+            "skiaBackendType": "None",
+            "subpixelFontRendering": true,
+            "targetCpuBits": 64,
+            "vertexShaderVersion": "3.00",
+            "visibilityCallbackCallCount": 0
+          },
+          "featureStatus": {
+            "2d_canvas": "unavailable_software",
+            "direct_rendering_display_compositor": "disabled_off_ok",
+            "gpu_compositing": "disabled_software",
+            "multiple_raster_threads": "enabled_on",
+            "opengl": "disabled_off",
+            "rasterization": "disabled_software",
+            "raw_draw": "disabled_off_ok",
+            "skia_graphite": "disabled_off",
+            "trees_in_viz": "disabled_off",
+            "video_decode": "disabled_software",
+            "video_encode": "disabled_software",
+            "webgl": "unavailable_software",
+            "webgpu": "unavailable_software",
+            "webnn": "unavailable_software"
+          },
+          "driverBugWorkarounds": [],
+          "videoDecoding": [],
+          "videoEncoding": []
+        },
+        "modelName": "MacBookPro",
+        "modelVersion": "17.1",
+        "commandLine": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-ofXzFV --remote-debugging-pipe --no-startup-window --use-mock-keychain --use-gl=angle --use-angle=swiftshader-webgl --allow-pre-commit-input"
+      }
+    },
+    "capture": {
+      "deviceScaleFactor": 1,
+      "locale": "en-US",
+      "colorScheme": "light",
+      "reducedMotion": "reduce",
+      "serviceWorkers": "block",
+      "fullPage": true,
+      "animations": "disabled",
+      "caret": "hide",
+      "launchArgs": [
+        "--disable-partial-raster"
+      ],
+      "storageSeed": {},
+      "randomSeed": "0x2545f491",
+      "settle": "networkidle; fonts.ready; DOM quiet 400ms / 3000ms cap"
+    }
+  },
+  "adapter": {
+    "dependency": "90c16bee63e2609ebc4f09e91459332390562464",
+    "originalCaptureSha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a",
+    "adapterSha256": "fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c",
+    "transformations": [
+      "portable checkout root discovery",
+      "D32 09:00 clock",
+      "post-image semantic/font/state/scroller metadata; role/name append to geometry; no screenshot selectors/settings change"
+    ]
+  },
+  "recipeIndexSha256": "552ace26910b09461d65b23b2c46e0aef52588b964ef175f1fd9486f8d2dbe80",
+  "toolingSource": "f4527ae70bb9722bf203019a5709491bcc3eebd0",
+  "buildId": "SGeooXImw4llXbZ1nL62P"
+}
