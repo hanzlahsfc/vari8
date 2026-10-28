@@ -1,7 +1,7 @@
 // Imported cell values for the legacy sheets view. This file is the imported
 // workbook record: labels, dates, seed values and formula shapes as the export
 // captured them (formula string literals stay withheld as STR). Bound cells are
-// overlaid at render time by bind.ts — the values here are what the sheet
+// overlaid at render time by bind.ts. The values here are what the sheet
 // shows for imported rows only, read only and greyed.
 
 export type SheetCell = {

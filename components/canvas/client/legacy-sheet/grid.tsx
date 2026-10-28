@@ -6,9 +6,9 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import type { SheetCells } from "./imported";
-import { sheetFill, sheetGeom } from "./styles";
 import {
   cellAddress,
   colLabel,
@@ -26,6 +26,15 @@ import {
   visibleCols,
   visibleRows,
 } from "./model";
+import {
+  sheetFill,
+  sheetGeom,
+  sheetMerges,
+  sheetPage,
+  sheetSurface,
+  sheetTypo,
+} from "./styles";
+import { sheetValue } from "./workbook-values";
 
 const keyOf = (row: number, col: number) => `${row}:${col}`;
 
@@ -55,6 +64,37 @@ export function SheetGrid({
   const freeze = useMemo(() => freezeSplit(tab), [tab]);
   const cellRefs = useRef(new Map<string, HTMLDivElement>());
   const wantsFocus = useRef(false);
+  // The active-cell ring appears after the user actually selects a cell;
+  // the initial render matches the workbook's printed state (no ring).
+  const [touched, setTouched] = useState(false);
+  // The freeze split hairlines exist only once the sheet is scrolled; the
+  // un-scrolled render matches the workbook's printed state exactly.
+  const [scrolled, setScrolled] = useState(false);
+
+  // Workbook merge truth when the sheet carries a merge list (even an
+  // empty one); otherwise the model's curated ranges apply. Indexed once
+  // per tab because some sheets declare tens of thousands of merges.
+  const mergeIndex = useMemo(() => {
+    const list = sheetMerges(tab.slug);
+    if (list === undefined) return undefined;
+    const anchors = new Map<string, RangeRef>();
+    const covered = new Map<string, RangeRef>();
+    for (const [r1, c1, r2, c2] of list) {
+      const m = { r1, c1, r2, c2 };
+      anchors.set(`${r1}:${c1}`, m);
+      for (let r = r1; r <= r2; r++)
+        for (let c = c1; c <= c2; c++) covered.set(`${r}:${c}`, m);
+    }
+    return { anchors, covered };
+  }, [tab.slug]);
+  const coverMerge = (row: number, col: number): RangeRef | null =>
+    mergeIndex
+      ? (mergeIndex.covered.get(keyOf(row, col)) ?? null)
+      : mergeCovering(tab, row, col);
+
+  // Cells outside the LO page window are never painted; the renderer still
+  // draws their box so the sheet surface stays continuous, but no content.
+  const page = sheetPage(tab.slug);
 
   // Sticky offsets for the frozen bands: cumulative px of the visible
   // tracks inside the frozen region.
@@ -86,6 +126,7 @@ export function SheetGrid({
 
   const select = (next: RangeRef) => {
     wantsFocus.current = true;
+    setTouched(true);
     onSelectionChange(next);
   };
 
@@ -110,8 +151,9 @@ export function SheetGrid({
     const onInput =
       event.target instanceof HTMLElement && event.target.tagName === "INPUT";
     if (!onInput) event.preventDefault();
-    const merge = mergeCovering(tab, row, col);
+    const merge = coverMerge(row, col);
     if (!onInput) wantsFocus.current = true;
+    setTouched(true);
     onSelectionChange(
       merge ? { ...merge } : { r1: row, c1: col, r2: row, c2: col },
     );
@@ -190,7 +232,7 @@ export function SheetGrid({
   // Body cells. Merge interiors are skipped; anchors span the merge.
   rows.forEach((r, ri) => {
     for (const c of cols) {
-      const merge = mergeCovering(tab, r, c);
+      const merge = coverMerge(r, c);
       if (merge && (merge.r1 !== r || merge.c1 !== c)) continue;
       const spanRows = merge
         ? rows.filter((x) => x >= merge.r1 && x <= merge.r2).length
@@ -207,6 +249,7 @@ export function SheetGrid({
       };
       const fill = sheetFill(tab.slug, r, trackIndex(cols, c) - 1);
       if (fill) style["--ls-fill"] = fill;
+      const typo = sheetTypo(tab.slug, r, trackIndex(cols, c) - 1);
       if (frozenRow)
         style["--ls-t"] =
           `calc(var(--ls-head) + ${sticky.rowTop.get(r) ?? 0}px)`;
@@ -218,6 +261,12 @@ export function SheetGrid({
       if (r === freeze.rows) classes.push("ls-split-row");
       if (c === freeze.cols) classes.push("ls-split-col");
       if (cell?.vertical) classes.push("ls-cell--v");
+      if (cell?.kind === "number") classes.push("ls-cell--num");
+      if (typo?.h) classes.push(`ls-cell--h-${typo.h}`);
+      if (typo?.v) classes.push(`ls-cell--va-${typo.v}`);
+      if (typo?.b) classes.push("ls-cell--bold");
+      if (typo?.c) style.color = typo.c;
+      if (typo?.sz) style.fontSize = `${((typo.sz * 4) / 3).toFixed(2)}px`;
       if (cell?.kind === "formula") classes.push("ls-cell--fx");
       if (cell?.editable) classes.push("ls-cell--edit");
       if (cell?.valueSource === "imported") classes.push("ls-cell--imported");
@@ -233,12 +282,17 @@ export function SheetGrid({
       if (cell?.notCalculated) tips.push(NOT_CALCULATED_BADGE);
       if (cell?.value !== undefined && cell.value !== "")
         tips.push(provenanceBadge(cell));
+      const painted =
+        page === undefined ||
+        (ri < page.rows && trackIndex(cols, c) - 1 < page.cols);
+      const wv =
+        !painted || cell?.editable ? undefined : sheetValue(tab.slug, r, c);
       const display =
         cell?.kind === "checkbox"
-          ? cell.value === "TRUE"
+          ? wv === "TRUE" || (wv === undefined && cell?.value === "TRUE")
             ? "\u2713"
             : ""
-          : (cell?.value ?? "");
+          : (wv ?? "");
       emitted.push(
         // biome-ignore lint/a11y/useSemanticElements: a td cell cannot express merge spans or frozen panes; the div grid uses roving focus and arrow keys like the calendar grid.
         <div
@@ -288,24 +342,41 @@ export function SheetGrid({
     }
   });
 
+  const surface = sheetSurface(tab.slug);
+  const scrollStyle: Record<string, string> = {};
+  if (surface) scrollStyle["--ls-surface"] = surface;
   return (
-    <div className="ls-scroll">
+    <div
+      className={`ls-scroll${scrolled ? " ls-scroll--scrolled" : ""}`}
+      style={scrollStyle}
+      onScroll={(event) => {
+        const el = event.currentTarget;
+        const next = el.scrollTop > 2 || el.scrollLeft > 2;
+        if (next !== scrolled) setScrolled(next);
+      }}
+    >
       {/* biome-ignore lint/a11y/useSemanticElements: the sheet grid emulates a spreadsheet; a table cannot express merge spans or frozen panes. */}
       <div
         role="grid"
         aria-label={`${tab.name}, read only emulation`}
         aria-rowcount={rows.length}
         aria-colcount={cols.length}
-        className={`ls-grid${tab.gridlines ? " ls-grid--lines" : ""}`}
+        className={`ls-grid${tab.gridlines ? " ls-grid--lines" : ""}${touched ? " ls-grid--touched" : ""}`}
         style={gridStyle}
         onKeyDown={onKeyDown}
       >
         {emitted}
         {(() => {
-          const lines = sheetGeom(tab.slug)?.lines;
-          if (!lines?.length) return null;
+          const g = sheetGeom(tab.slug);
+          const lines = g?.lines;
+          const edges = g?.edges;
+          if (!lines?.length && !edges?.length) return null;
           const w = cols.reduce((s, c) => s + colWidthPx(tab, c), 0);
           const h = rows.reduce((s, r) => s + rowHeightPx(tab, r), 0);
+          // Coincident strokes exist in the extracted geometry, so a pure
+          // content key collides; an occurrence count keeps keys unique.
+          const edgeKeys = new Map<string, number>();
+          const lineKeys = new Map<string, number>();
           return (
             <div
               aria-hidden
@@ -315,9 +386,44 @@ export function SheetGrid({
                 gridColumn: `2 / span ${cols.length}`,
               }}
             >
-              <svg width={w} height={h}>
-                {lines.map((line, li) => {
+              <svg aria-hidden="true" width={w} height={h}>
+                {edges?.map((e) => {
+                  const [x1, y1, x2, y2, ew, ec, dash] = e;
+                  const ek = e.join(",");
+                  const en = edgeKeys.get(ek) ?? 0;
+                  edgeKeys.set(ek, en + 1);
+                  const horiz = Math.abs(y1 - y2) < 0.05;
+                  const vert = Math.abs(x1 - x2) < 0.05;
+                  if (!dash && (horiz || vert))
+                    return (
+                      <rect
+                        key={`e-r-${ek}#${en}`}
+                        x={horiz ? Math.min(x1, x2) : x1 - ew / 2}
+                        y={vert ? Math.min(y1, y2) : y1 - ew / 2}
+                        width={horiz ? Math.abs(x2 - x1) : ew}
+                        height={vert ? Math.abs(y2 - y1) : ew}
+                        fill={ec}
+                        shapeRendering="crispEdges"
+                      />
+                    );
+                  return (
+                    <line
+                      key={`e-l-${ek}#${en}`}
+                      x1={x1}
+                      y1={y1}
+                      x2={x2}
+                      y2={y2}
+                      stroke={ec}
+                      strokeWidth={ew}
+                      strokeDasharray={dash ? "1 2" : undefined}
+                    />
+                  );
+                })}
+                {lines?.map((line) => {
                   const [lw, lc, pts] = line;
+                  const lk = line.join(",");
+                  const ln = lineKeys.get(lk) ?? 0;
+                  lineKeys.set(lk, ln + 1);
                   const [a, b] = [pts[0], pts[pts.length - 1]];
                   const horizontal = Math.abs(a[1] - b[1]) < 0.05;
                   const vertical = Math.abs(a[0] - b[0]) < 0.05;
@@ -326,7 +432,7 @@ export function SheetGrid({
                   if (horizontal || vertical)
                     return (
                       <rect
-                        key={li}
+                        key={`l-r-${lk}#${ln}`}
                         x={horizontal ? Math.min(a[0], b[0]) : a[0] - lw / 2}
                         y={vertical ? Math.min(a[1], b[1]) : a[1] - lw / 2}
                         width={horizontal ? Math.abs(b[0] - a[0]) : lw}
@@ -337,7 +443,7 @@ export function SheetGrid({
                     );
                   return (
                     <polyline
-                      key={li}
+                      key={`l-p-${lk}#${ln}`}
                       points={pts.map((p) => p.join(",")).join(" ")}
                       fill="none"
                       stroke={lc}
