@@ -1,3 +1,33 @@
+## 2026-10-28 - w2-fe3: FRONTEND PR 211 merged, canvas port landed, gates green
+
+- Lane `w2/fe3` off `ad257ba`. Merge `6eda6fa` (parents `ad257ba` +
+  `8e6503f`); `frontend/` byte-identical to the PR 211 tip (empty diff).
+- Canvas twin: 39 files ported via `tools/port-canvas/port.mjs`; 8 local-delta
+  files three-way merged (client route, athlete overview, timeline tab,
+  coach css, model, plans setup, store, mealplan workspace). New hand-merge
+  entries recorded in the port map.
+- `/client` renders the PR 211 `ClientDesktop`/`MobileApp` pair (900 px
+  breakpoint, `?view=phone` toggle); `/me` keeps the session-wired
+  `ClientApp` shell on `own` identity.
+- Demo export re-pointed to revision 11 (client-007, workspace.json,
+  README, provenance); `public/demo/physique` assets carried over from the
+  frontend public tree.
+- Parity: click recipes re-derived for the module-rail plans UI, baseline
+  recaptured from the tip (74/74). Root compare exits 1 with 64 diffs,
+  classified: truth text (workspace/role/counts), flag-boundary 403
+  surfaces (checkins, iifym, supplements; inherited, zero backend diff),
+  seeded-data divergence, union deltas (Legacy sheet, extra widget), and
+  local-only features (temporary nutrition plans, no backend model).
+- Gates: `typecheck` 0, `lint` 0 (105 inherited warnings), `test` 0
+  (131 files, 1501 tests), `build` 0, `index`/`index:check` 0, frontend
+  `lint` 0, frontend `test` 0 (322 tests), frontend `typecheck` 0, dash
+  gate 0 authored lines. Lane DB `app_fp_w2fe3` fresh deploy + double
+  seed idempotent, dropped after capture.
+- Browser pass (real logins, prod build): coach roster, Amara tracker and
+  plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
+  login, `/client` mobile and desktop. Evidence under
+  `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
+
 ## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
 
 - Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
