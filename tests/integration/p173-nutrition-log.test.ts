@@ -90,7 +90,15 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
       });
     const session: SessionLike = { user: { id: clientUser.id } };
     const staffSession: SessionLike = { user: { id: ownerUser.id } };
-    return { ws, ownerMember, clientMember, clientUser, profile, session, staffSession };
+    return {
+      ws,
+      ownerMember,
+      clientMember,
+      clientUser,
+      profile,
+      session,
+      staffSession,
+    };
   }
 
   /** Two template pins on one setup stand in for the meal-plan and
@@ -176,6 +184,8 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 180,
         carbohydrate: null,
         fat: null,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(720);
     });
@@ -202,6 +212,8 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(1940);
     });
@@ -223,7 +235,13 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         deps(),
       );
       if (surface.state !== "ready") throw new Error(surface.state);
-      expect(surface.log).toEqual({ protein: 0, carbohydrate: 0, fat: 0 });
+      expect(surface.log).toEqual({
+        protein: 0,
+        carbohydrate: 0,
+        fat: 0,
+        dayType: null,
+        planFollowed: null,
+      });
       expect(caloriesFromMacros(surface.log!)).toBe(0);
     });
 
@@ -257,6 +275,8 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: null,
         fat: 60,
+        dayType: null,
+        planFollowed: null,
       });
       // Hand check: 150*4 + 60*9 = 600 + 540 = 1140.
       expect(caloriesFromMacros(surface.log!)).toBe(1140);
@@ -330,6 +350,8 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        dayType: null,
+        planFollowed: null,
       });
     });
 
@@ -382,7 +404,11 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
           {
             workspaceId: c.ws.id,
             entryDate: DATE,
-            macros: { protein: Number.POSITIVE_INFINITY, carbohydrate: null, fat: null },
+            macros: {
+              protein: Number.POSITIVE_INFINITY,
+              carbohydrate: null,
+              fat: null,
+            },
           },
           deps(),
         ),
@@ -467,6 +493,8 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 180,
         carbohydrate: null,
         fat: null,
+        dayType: null,
+        planFollowed: null,
       });
       // Hand check: 180*4 = 720 on the partial day.
       expect(
@@ -523,8 +551,7 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
   describe("mode switch", () => {
     it("switching the client's pinned template keeps earlier log entries", async () => {
       const c = await seedClient();
-      const { setup, pinMealPlan, vMacroCounting } =
-        await seedSetupWithPins(c);
+      const { setup, pinMealPlan, vMacroCounting } = await seedSetupWithPins(c);
       await saveNutritionLog(
         c.session,
         {
@@ -564,8 +591,96 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(1940);
+    });
+  });
+
+  describe("day type and plan followed (w2-t12)", () => {
+    it("stores and reads back day-type and plan-followed", async () => {
+      const c = await seedClient();
+      const entry = await prisma.dailyEntry.create({
+        data: {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          entryDate: new Date(DATE),
+          createdByMemberId: c.clientMember.id,
+        },
+      });
+      await prisma.nutritionLog.create({
+        data: {
+          dailyEntryId: entry.id,
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          entryDate: new Date(DATE),
+          protein: 150,
+          carbohydrate: 200,
+          fat: 60,
+          dayType: "Rest day",
+          planFollowed: true,
+          createdByMemberId: c.clientMember.id,
+          updatedByMemberId: c.clientMember.id,
+        },
+      });
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        dayType: "Rest day",
+        planFollowed: true,
+      });
+      expect(surface.history[0]).toEqual({
+        entryDate: DATE,
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        dayType: "Rest day",
+        planFollowed: true,
+      });
+
+      const staff = await listStaffNutritionLogs(
+        c.staffSession,
+        {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          from: DATE,
+          to: DATE,
+        },
+        deps(),
+      );
+      if (staff.state !== "ready") throw new Error(staff.state);
+      expect(staff.items).toHaveLength(1);
+      expect(staff.items[0].dayType).toBe("Rest day");
+      expect(staff.items[0].planFollowed).toBe(true);
+    });
+
+    it("a macro-only save keeps day-type and plan-followed null", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 100, carbohydrate: null, fat: null },
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.dayType).toBeNull();
+      expect(surface.log?.planFollowed).toBeNull();
     });
   });
 });

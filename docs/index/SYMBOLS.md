@@ -870,7 +870,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { DailyEntryError } from "./gate"`
 - `export const MAX_MACRO_GRAMS = 10000`
 - `export const NUTRITION_LOG_HISTORY_LIMIT = 30`
-- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; }`
+- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; dayType: string | null; planFollowed: boolean | null; }`
 - `export type NutritionLogSurface = | { state: "ready"; entryDate: string; log: Omit<NutritionLogDay, "entryDate"> | null; history: NutritionLogDay[]; } | { state: "not_applicable" } | { state: "cons...`
 - `export type NutritionMacroValues = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
 - `export const STAFF_NUTRITION_LOG_MAX_SPAN_DAYS = 366`
@@ -921,7 +921,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const DAILY_ENTRY_TEXT_MAX = 5000`
 - `export type OrdinalValue = { ordinal: number; raw: string }`
-- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; options: Array<{ optionId: string; label:...`
+- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; decimals: number | null; summary: string ...`
 - `export function resolveDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ResolveOk | ResolveErr`
 - `export function validateDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ValidateOk | ValidateErr`
 
