@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 139 modules with exports, 1376 exported symbols.
+Counts: 140 modules with exports, 1382 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1289,6 +1289,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function resolveMealPlanActivation(zone: string, effectiveDate: string): MealPlanActivation`
 - `export async function saveMealPlanDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, ...`
 - `export async function setMealPlanTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<{ planId: string }>`
+
+## `lib/nutrition/actuals.ts`
+
+- `export type MacroActuals = { protein: number | null; carbs: number | null; fat: number | null; }`
+- `export type NutritionLogRecord = MacroActuals & { calories: number | null; }`
+- `export function applyActualsPatch(record: MacroActuals, patch: Partial<MacroActuals>): MacroActuals`
+- `export function deriveActualCalories(actuals: MacroActuals): number | null`
+- `export const emptyActuals = (): MacroActuals =>`
+- `export function toNutritionLogRecord(actuals: MacroActuals): NutritionLogRecord`
 
 ## `lib/nutrition/foods.ts`
 
