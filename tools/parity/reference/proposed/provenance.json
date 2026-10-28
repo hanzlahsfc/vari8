@@ -4,11 +4,11 @@
   "contract": {
     "id": "D32-owner-written-v1",
     "authority": "icm/03-plan/DECISIONS.md#d32; owner overriding rule; precedence over implementation/review receipts",
-    "status": "proposed-for-independent-review",
+    "status": "owner-adopted proposal; not activated",
     "referenceSource": "c78311042edcc2f96350a132c682782d8da1b6a7",
     "referenceFrontendTree": "36ceaf8eadc010369ed48ab5158682f2bf9d55de",
-    "candidateSource": "90c16bee63e2609ebc4f09e91459332390562464",
-    "harnessDependency": "90c16bee63e2609ebc4f09e91459332390562464 (unmerged PR #203)",
+    "candidateSource": "940ebd3c3c1e669570f55c9269bc2dc0f41da4a7",
+    "harnessDependency": "940ebd3c3c1e669570f55c9269bc2dc0f41da4a7 (merged capture harness)",
     "clock": "2026-10-19T09:00:00+02:00",
     "timezone": "Europe/Vienna",
     "geometryPx": 1,
@@ -26,12 +26,13 @@
         "height": 900
       }
     },
-    "expectedScreens": 70,
+    "expectedScreens": 74,
     "s04State": "Habits",
     "allowances": [
       "S11-03",
       "D18",
-      "S11-04"
+      "S11-04",
+      "S03-18"
     ],
     "implementedAlternative": {
       "clock": "2026-10-19T10:00:00+02:00",
@@ -41,7 +42,9 @@
     },
     "portability": "Pinned macOS arm64 environment only; independent same-host runs do not certify Linux or hosted CI portability. No Actions are run.",
     "referenceRootTree": "5a65471694d945b6b6041aa78b6a5d04d5f39a7c",
-    "candidateRootTree": "6fd7353e4734632c49c6d9e28427dd2c5c8a1556"
+    "candidateRootTree": "2800d996ce348aa01c168d68c9442e53f9d584dc",
+    "ownerDecision": "Prompt 417: D32-owner-written-v1 adopted; S03-18 keeps “Record video feedback” with the demonstrated 39px narrower button; proposed reference remains unactivated pending PR #203 and independent review",
+    "contractVersion": 2
   },
   "source": {
     "sha": "c78311042edcc2f96350a132c682782d8da1b6a7",

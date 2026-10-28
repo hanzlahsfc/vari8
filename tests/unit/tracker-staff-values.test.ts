@@ -283,16 +283,23 @@ describe("writeStaffTrackerNote", () => {
     const dayDeletes: unknown[] = [];
     const db = {
       ...fakeAuthDb("COACH", { id: "a1" }),
+      $transaction: async (fn: (tx: unknown) => unknown, _opts?: unknown) =>
+        fn(db),
+      auditEvent: { create: async () => ({}) },
       trackerDayNote: {
-        upsert: async () => ({}),
-        deleteMany: async (args: unknown) => {
+        findUnique: async () => null,
+        create: async () => ({ id: "dn1" }),
+        update: async () => ({ id: "dn1" }),
+        delete: async (args: unknown) => {
           dayDeletes.push(args);
           return {};
         },
       },
       trackerComment: {
-        upsert: async () => ({}),
-        deleteMany: async () => ({}),
+        findUnique: async () => null,
+        create: async () => ({ id: "c1" }),
+        update: async () => ({ id: "c1" }),
+        delete: async () => ({}),
       },
       parameterDefinition: { findFirst: async () => null },
     };
@@ -306,20 +313,27 @@ describe("writeStaffTrackerNote", () => {
     expect(dayDeletes).toHaveLength(0);
   });
 
-  it("lets an assigned coach reach the day-note upsert", async () => {
-    const upserts: unknown[] = [];
+  it("lets an assigned coach reach the day-note create", async () => {
+    const creates: unknown[] = [];
     const db = {
       ...fakeAuthDb("COACH", { id: "a1" }),
+      $transaction: async (fn: (tx: unknown) => unknown, _opts?: unknown) =>
+        fn(db),
+      auditEvent: { create: async () => ({}) },
       trackerDayNote: {
-        upsert: async (args: unknown) => {
-          upserts.push(args);
-          return {};
+        findUnique: async () => null,
+        create: async (args: unknown) => {
+          creates.push(args);
+          return { id: "dn1" };
         },
-        deleteMany: async () => ({}),
+        update: async () => ({ id: "dn1" }),
+        delete: async () => ({}),
       },
       trackerComment: {
-        upsert: async () => ({}),
-        deleteMany: async () => ({}),
+        findUnique: async () => null,
+        create: async () => ({ id: "c1" }),
+        update: async () => ({ id: "c1" }),
+        delete: async () => ({}),
       },
       parameterDefinition: { findFirst: async () => null },
     };
@@ -327,6 +341,6 @@ describe("writeStaffTrackerNote", () => {
       db: db as never,
     });
     expect(out).toEqual({ state: "ok" });
-    expect(upserts).toHaveLength(1);
+    expect(creates).toHaveLength(1);
   });
 });

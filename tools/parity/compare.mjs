@@ -59,14 +59,6 @@ export const RULED = [
     added: { stem: "s11-preferences", tag: "button", text: "Sign out" },
   },
   {
-    rule: "D32 truth text: the canvas records a real stream, not a demo",
-    text: {
-      tag: "button",
-      base: "Record demo video feedback",
-      now: "Record video feedback",
-    },
-  },
-  {
     rule: "S11-04 real workspace name in the shell label (O15)",
     text: {
       tag: "div",

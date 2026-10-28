@@ -1201,7 +1201,7 @@ export async function writeStaffTrackerNote(
             resourceType: "tracker_day_note",
             resourceId: existing.id,
             subjectClientProfileId: input.clientProfileId,
-            meta: { changed: true, entryDate: input.entryDate },
+            meta: { changed: true, date: input.entryDate },
           });
           return;
         }
@@ -1227,7 +1227,7 @@ export async function writeStaffTrackerNote(
           resourceType: "tracker_day_note",
           resourceId: row.id,
           subjectClientProfileId: input.clientProfileId,
-          meta: { changed: true, entryDate: input.entryDate },
+          meta: { changed: true, date: input.entryDate },
         });
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
@@ -1266,7 +1266,7 @@ export async function writeStaffTrackerNote(
           resourceType: "tracker_comment",
           resourceId: existing.id,
           subjectClientProfileId: input.clientProfileId,
-          meta: { changed: true, entryDate: input.entryDate },
+          meta: { changed: true, date: input.entryDate },
         });
         return;
       }
@@ -1293,7 +1293,7 @@ export async function writeStaffTrackerNote(
         resourceType: "tracker_comment",
         resourceId: row.id,
         subjectClientProfileId: input.clientProfileId,
-        meta: { changed: true, entryDate: input.entryDate },
+        meta: { changed: true, date: input.entryDate },
       });
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

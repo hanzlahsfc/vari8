@@ -77,9 +77,9 @@ export function validateCombinedRun({
     !provenance.source.appLock
   )
     throw new Error("incomplete environment/dependency/source provenance");
-  if (shots.length !== 35 || manifest.screens.length !== 70)
+  if (shots.length !== 37 || manifest.screens.length !== 74)
     throw new Error(
-      "incomplete capture set; expected 35 recipes and 70 screens",
+      "incomplete capture set; expected 37 recipes and 74 screens",
     );
   const expected = new Set(
     shots.flatMap((s) =>

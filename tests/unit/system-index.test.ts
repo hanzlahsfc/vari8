@@ -286,7 +286,7 @@ describe("system index generator", () => {
       // /dev/design-system (the frontend design system playground, dev only)
       // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /dev/design-system, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /coach/states, /dev/design-system, /ethereal |",
       );
     }
   });

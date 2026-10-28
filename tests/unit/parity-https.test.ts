@@ -245,7 +245,7 @@ describe("combined-run artifact validation", () => {
     const shots = JSON.parse(
       fs.readFileSync("icm/04-briefing/shots/index.json", "utf8"),
     ).shots;
-    const screens = Array.from({ length: 70 }, (_, i) => ({ id: `fake-${i}` }));
+    const screens = Array.from({ length: 74 }, (_, i) => ({ id: `fake-${i}` }));
     expect(() =>
       validateCombinedRun({
         directory: "/tmp/fake-combined-run",

@@ -111,8 +111,7 @@ async function liveRevision(
   taskId: string,
 ): Promise<number> {
   const current = await readCoachTaskFromRoute(caller, { taskId });
-  if (!current.ok) unwrap(current);
-  return current.value.revision;
+  return unwrap(current).revision;
 }
 
 export const PATCH = defineApiV1Route({

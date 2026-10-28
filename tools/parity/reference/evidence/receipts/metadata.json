@@ -5,12 +5,12 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "5308b28614d09ae418c2281dc7fa4bf9a77c1a749fb3771b3ed3e3ae6587e246"
+      "sha256": "ff87e7b3a20ec9403e5de680758bbe5d4e8dc2235d57280dc0338e94a4334531"
     },
     "components": {
       "reference": {
         "path": "tools/parity/reference/reference.mjs",
-        "sha256": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674"
+        "sha256": "b93f285c22457c889bc98f3c61a8cbd540cea309fc1cfbe8d1c3b6b3f6931fce"
       },
       "referenceCompare": {
         "path": "tools/parity/reference/compare.mjs",
@@ -18,11 +18,11 @@
       },
       "legacyCompare": {
         "path": "tools/parity/compare.mjs",
-        "sha256": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a"
+        "sha256": "a1ee34bfee18400606b020ad7824a157cad26c938416190379a34ad6a40615e1"
       },
       "capture": {
         "path": "tools/parity/capture.mjs",
-        "sha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a"
+        "sha256": "e9cbead4a3142373c8cf56f04c0c77d0166617ddd157a3f19da30108520d8f54"
       },
       "captureMetadata": {
         "path": "tools/parity/reference/capture-metadata.mjs",
@@ -30,7 +30,7 @@
       },
       "parityRunner": {
         "path": "tools/parity/run.mjs",
-        "sha256": "b28f66589184caf7da01ea43eb6661e96b7432f414400652359d7ebc8bf404f9"
+        "sha256": "f67820a4602b38d9b650c1301730f99c8f74ed08c2a521ff6c5ac772f77986e7"
       },
       "safePaths": {
         "path": "tools/parity/safe-paths.mjs",
@@ -38,7 +38,7 @@
       },
       "combinedRun": {
         "path": "tools/parity/reference/combined-run.mjs",
-        "sha256": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679"
+        "sha256": "9b6991bd3d18de8569027ee7a458555d5ed190b1cb11ddd44ef0ce5574617ffb"
       },
       "combinedPins": {
         "path": "tools/parity/reference/combined-pins.mjs",
@@ -76,7 +76,7 @@
     "locks": {
       "root": {
         "path": "package-lock.json",
-        "sha256": "b014fb81ddd3c10b14b3119eb7f7add4e9e3751c5c1d538861c0cf300c4f780c"
+        "sha256": "3ee4d891de92466789045256e974f3f2e88779d6fec3b39b064240b5e71215a7"
       },
       "reference": {
         "path": "tools/parity/reference/package-lock.json",
@@ -103,7 +103,7 @@
     },
     "contract": {
       "path": "tools/parity/reference/contract.json",
-      "sha256": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363"
+      "sha256": "b36b9b9b6336d2ce04204fae2e5f32381a9b67f36ac168a0c991e66e81ffa3f9"
     }
   },
   "contractId": "D32-owner-written-v1",
