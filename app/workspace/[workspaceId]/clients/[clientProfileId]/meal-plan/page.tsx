@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { requireSessionUser } from "@/lib/auth/route-guard";
 import { isMealPlansEnabled } from "@/lib/mealplan/gate";
 import { readStaffMealPlanFromAction } from "@/lib/mealplan/boundary";
+import { collectMealPlanFoodIds } from "@/lib/mealplan/payload";
+import { loadNutritionFoodMap } from "@/lib/nutrition/foods";
 import { prisma } from "@/lib/db";
 
 import { MealPlanEditor } from "@/components/mealplan/meal-plan-editor";
@@ -58,6 +60,15 @@ export default async function StaffClientMealPlanPage({
       })
     : null;
 
+  // Catalog foods for the draft's portion references so the shared
+  // nutrition math (D29) renders the same totals the canvas computes.
+  const draftFoods =
+    result.ok && result.value.plan !== null
+      ? await loadNutritionFoodMap(
+          collectMealPlanFoodIds(result.value.plan.draft),
+        )
+      : undefined;
+
   return (
     <div className="tracker-page" data-testid="staff-mealplan-page">
       <header className="tracker-page__header">
@@ -84,6 +95,7 @@ export default async function StaffClientMealPlanPage({
             clientProfileId={clientProfileId}
             plan={result.value.plan}
             canWrite={result.value.canWrite}
+            foods={draftFoods ? [...draftFoods.values()] : undefined}
           />
           <MealPlanVersionHistory
             workspaceId={workspaceId}

@@ -60,9 +60,11 @@ export type {
   MealPlanDraft,
   MealPlanVariant,
   MealPlanMeal,
-  MealPlanTarget,
-  MealPlanTargetMode,
-  MealPlanMacroTargets,
+  MealPlanPortion,
+  MealPlanSwap,
+  MealTargets,
+  TargetValue,
+  VariantSchedule,
 } from "./payload";
 
 export type MealPlanDeps = {
