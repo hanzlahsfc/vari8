@@ -23,7 +23,8 @@
     "seed:dev": "tsx scripts/seed/index.ts",
     "db:fresh": "tsx scripts/db-fresh.ts",
     "verify": "npm run typecheck && npm run lint && npm run test",
-    "parity": "node tools/parity/run.mjs"
+    "parity": "node tools/parity/run.mjs",
+    "check:nutrition-sources": "tsx scripts/check-nutrition-source-accuracy.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",

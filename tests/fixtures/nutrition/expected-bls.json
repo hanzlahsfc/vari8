@@ -1,0 +1,5578 @@
+{
+  "C131000": {
+    "sourceRow": 2,
+    "sourceId": "C131000",
+    "name": "Hafer ganzes Korn, roh",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1443",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "343",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "11.45",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "11.375",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "7.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "53.7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "9.3000000000000007",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "2.23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "1.3420000000000001",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "1.3420000000000001",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "2.7E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "<LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "1.4999999999999999E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "2.92",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "2.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "2.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.67400000000000004",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.17",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "5.5369999999999999",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "2.37",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.71",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "960",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "13",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "33",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "33",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "0.02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "119",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "412",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "56.2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "116",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "342",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "5.16",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "3.66",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "8",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "484",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "6160",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "95",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "2.58",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "70",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "1.08",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "1.05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "0.03",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "1.08",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "52.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "9.3000000000000007",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "4.9000000000000004",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "4.4000000000000004",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "1.43",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "0.04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "1.28",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "2.5139999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "5.3999999999999999E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "2.46",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "2.86",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0.12",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "0.12",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "2.74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "2.74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "4.1100000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.65600000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.77200000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "1.0075000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.32300000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "2.5465",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.70850000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.22500000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.46800000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "0.86950000000000005",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.495",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.1905",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.60499999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.79900000000000004",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.66",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.42399999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.19",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.42399999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.64249999999999996",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.724",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C133000": {
+    "sourceRow": 3,
+    "sourceId": "C133000",
+    "name": "Hafer Flocken",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1465",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "348",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "10.07",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "13.22",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "6.65",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "53.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "10.983000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "1.835",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "<LOD",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "0.8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "0.8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "2.7E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "1.4999999999999999E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "2.92",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "2.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "2.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.56200000000000006",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "2.8000000000000001E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "4.1669999999999998",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "1.0900000000000001",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "98",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "20",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "92.8",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "92.8",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "<LOD or <LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "4.9500000000000004E-3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "1.98",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "61",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "381.92700000000002",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "44",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "121.30500000000001",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "325.01",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "4.4366300000000001",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "3.6421399999999999",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "0.79073499999999997",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "409.61",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "4934.3599999999997",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "80",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "2.5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "70",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "<LOD or <LOQ",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "<LOD or <LOQ",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "0.74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "0.71",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "0.03",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "0.74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "52.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "10.983000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "6.1879999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "4.7949999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "1.34",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "3.6999999999999998E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "0.10299999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "2.359",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "5.0999999999999997E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "2.3079999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "2.6819999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0.112",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "0.112",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "2.57",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "2.57",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "5.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.79",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.87",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "1.29",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "3.08",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.85",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.61",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "1.1299999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.24",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.78",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.84",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.71",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.53",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.19",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.56999999999999995",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.81",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "2.1150000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C141000": {
+    "sourceRow": 4,
+    "sourceId": "C141000",
+    "name": "Gerste ganzes Korn, roh",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1403",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "332",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "12.7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "11.244",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "2.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "62.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "8.6999999999999993",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "2.14",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "0.31",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "0.31",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "2.2000000000000002",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "2.2000000000000002",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.03",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "7.3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "4.8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.68",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "560",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "8.61",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "68",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "68",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "<LOD or <LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "4.4999999999999998E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "18",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "23",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "510",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "34.6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "114",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "342",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "5.64",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "2.71",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "524",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "1680",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "120",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "3.16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "57.4",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "1.51",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "0.99",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "0.52",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "1.71",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "60.9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "8.6999999999999993",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "6.9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "1.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.53",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "0.04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.45",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "0.04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "0.25",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "0.02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "0.23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "1.26",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "1.1499999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "1.1499999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "3.8580000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.54800000000000004",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.53449999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.71850000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.17599999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "3.0310000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.53149999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.22850000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.44850000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "0.79500000000000004",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.38950000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.24249999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.60199999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "1.3919999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.48799999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.40500000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.34100000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.59650000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.72",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C243000": {
+    "sourceRow": 5,
+    "sourceId": "C243000",
+    "name": "Gerste Mehl",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1434",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "340",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "6.06",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "11.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "62.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "13",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "1.4",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "0.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "0.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "2.2000000000000002",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "2.2000000000000002",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.11",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "7.9",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.14499999999999999",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "300",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "8.61",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "18",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "18",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "0.02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "23",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "321",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "32",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "82",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "247",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "2.6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "2.5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "340",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "1110",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "120",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "3.16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "57.4",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "1.51",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "0.99",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "0.52",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "1.71",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "60.9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "2.31",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "13.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "10",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.35",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.35",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "0.91",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "0.91",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "0.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "3.56",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.40899999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.52600000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.65500000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.23200000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "2.74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.38",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.23599999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.38300000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "0.71299999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.39100000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.20200000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.58899999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "1.25",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.443",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.35599999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.17499999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.30099999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.51500000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C341000": {
+    "sourceRow": 6,
+    "sourceId": "C341000",
+    "name": "Mais roh",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1418",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "336",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "11.192",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "8.6560000000000006",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "3.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "62.84",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "7.7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "1.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "33",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "198",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "0.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "0.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.36",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "2.7879999999999998",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.65",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "400",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "129",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "129",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "<LOD or <LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "1.4999999999999999E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "270",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "8.34",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "91.2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "213",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "0.68",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "2.6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "240",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "396",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "43",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.19",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "1.39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "61.45",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "7.7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "6.5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.63300000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.47",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "0.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "7.2999999999999995E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "1.1359999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "3.5999999999999997E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "1.1000000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "1.67",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0.04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "0.04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "1.63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "1.63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "3.5609999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.74399999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.44224999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.60724999999999996",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.31125000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "1.7470000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.34625",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.23724999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.36199999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "1.2024999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.25074999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.18575",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.46024999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.87024999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.44274999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.33174999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "7.7249999999999999E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.39350000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.45350000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.385",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C443000": {
+    "sourceRow": 7,
+    "sourceId": "C443000",
+    "name": "Mais Mehl",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1395",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "330",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "12",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "8.6630000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "2.82",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "62.84",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "9.42",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "1.1599999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "33",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "198",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "1.5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "0.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "0.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.44",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.13",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "3.0379999999999998",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "1.93",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.55000000000000004",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "60",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "7",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "10.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "10.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "<LOD or <LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "2E-3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "120",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "18",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "47",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "256",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "2.4",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "0.68",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "2.6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "82",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "170",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "43",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.19",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "1.2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "1.39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "61.45",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "9.42",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "7.31",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "2.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.36",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.28000000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "7.0000000000000007E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "0.01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "0.88",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "0.01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "0.87",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "1.4350000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "2.5000000000000001E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "2.5000000000000001E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "1.41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "1.41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "3.4049999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.3725",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.58099999999999996",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.191",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "1.762",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.36",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.23400000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.35849999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "1.0825",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.28149999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.17349999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.93",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.52",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.35099999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "6.6500000000000004E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.35949999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.44750000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.3859999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C352000": {
+    "sourceRow": 8,
+    "sourceId": "C352000",
+    "name": "Reis poliert, roh",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1488",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "351",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "11.88",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "7.931",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "0.62",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "77.099999999999994",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "2.5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "0.44",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "5.2999999999999999E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "5.2999999999999999E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "6.0000000000000001E-3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "7.2999999999999995E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "6.0000000000000001E-3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "7.1999999999999995E-2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "0.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "0.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "<LOD",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.126",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "5.0000000000000001E-3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "2.8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "1.3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.63",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "48",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "11.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "11.3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "<LOD or <LOQ",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "3.9419999999999997E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "15.77",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "106.62",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "40.479999999999997",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "113.52",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "0.29149000000000003",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "3.0331100000000002",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "6.19",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "251.23",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "701.93",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "50",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "4",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "30",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.13",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "0.15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "0.15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "<LOD or <LOQ",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "0.28000000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "76.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "2.5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "0.9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "1.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.13",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.11799999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "1.2E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "0.22500000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "0.22500000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "0.23200000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "1.2E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "1.2E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "0.22",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "0.22",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "2.88",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.56999999999999995",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.78",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "1.58",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.17",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.34",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "0.66",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.28999999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.17",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.42",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.28000000000000003",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.09",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.26",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.49",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.44",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "C359000": {
+    "sourceRow": 9,
+    "sourceId": "C359000",
+    "name": "Reis parboiled, poliert, roh",
+    "nutrients": {
+      "ENERCJ": {
+        "value": "1413",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERCC": {
+        "value": "333",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "WATER": {
+        "value": "10.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROT625": {
+        "value": "8.125",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAT": {
+        "value": "1.03",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHO": {
+        "value": "72.099999999999994",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBT": {
+        "value": "1.4",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OA": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASH": {
+        "value": "1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VITA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAA": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETOL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CARTB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CAROTPAXB": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITD": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CHOCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ERGCAL": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITE": {
+        "value": "0.03",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHA": {
+        "value": "0.03",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHB": {
+        "value": "0.02",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHG": {
+        "value": "0.17",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCPHD": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "TOCTRA": {
+        "value": "0.05",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITK": {
+        "value": "0.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK1": {
+        "value": "0.1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITK2": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "THIA": {
+        "value": "0.23",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "RIBF": {
+        "value": "0.05",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIAEQ": {
+        "value": "3.0670000000000002",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NIA": {
+        "value": "1.3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PANTAC": {
+        "value": "0.8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITB6": {
+        "value": "450",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BIOT": {
+        "value": "3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOL": {
+        "value": "11",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLFD": {
+        "value": "11",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLAC": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITB12": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITC": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "NACL": {
+        "value": "5.0000000000000001E-3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NA": {
+        "value": "2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CLD": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "K": {
+        "value": "180",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CA": {
+        "value": "6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MG": {
+        "value": "102",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "P": {
+        "value": "169",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "S": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FE": {
+        "value": "0.80500000000000005",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZN": {
+        "value": "1.89",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ID": {
+        "value": "0.8",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CU": {
+        "value": "355",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MN": {
+        "value": "2860",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FD": {
+        "value": "50",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "CR": {
+        "value": "2",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MO": {
+        "value": "40",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACEAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CITAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TARAC": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MANTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SORTL": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "XYLTL": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MNSAC": {
+        "value": "0.13",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUS": {
+        "value": "0.11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUS": {
+        "value": "0.02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "DISAC": {
+        "value": "0.21",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCS": {
+        "value": "0.21",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACS": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUGAR": {
+        "value": "0.34",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "OLSAC": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "STARCH": {
+        "value": "71.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBLMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMW": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBINS": {
+        "value": "0.6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBSOL": {
+        "value": "0.8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBHMWI": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FASAT": {
+        "value": "0.29399999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F4:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F6:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F8:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F10:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F12:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F15:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:0": {
+        "value": "0.27700000000000002",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F17:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:0": {
+        "value": "1.7000000000000001E-2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F24:0": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAMS": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F14:1CN5": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F16:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN7": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:1CN9": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPU": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:4CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:5CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:5CN3": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F22:6CN3": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAPUN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:2C9T11": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F18:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:2CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:3CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "F20:4CN6": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FAX": {
+        "value": "0.57999999999999996",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHORL": {
+        "value": "0",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "AAE9": {
+        "value": "2.86",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALA": {
+        "value": "0.44600000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ARG": {
+        "value": "0.62",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ASP": {
+        "value": "0.745",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CYSTE": {
+        "value": "0.122",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLU": {
+        "value": "1.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLY": {
+        "value": "0.35599999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "HIS": {
+        "value": "0.17799999999999999",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ILE": {
+        "value": "0.34",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LEU": {
+        "value": "0.63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LYS": {
+        "value": "0.252",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MET": {
+        "value": "0.184",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PHE": {
+        "value": "0.40899999999999997",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PRO": {
+        "value": "0.41899999999999998",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SER": {
+        "value": "0.38",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "THR": {
+        "value": "0.26600000000000001",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TRP": {
+        "value": "0.106",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "TYR": {
+        "value": "0.22",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "VAL": {
+        "value": "0.49",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "NT": {
+        "value": "1.3",
+        "unit": "g",
+        "basis": "per 100 g"
+      }
+    }
+  }
+}
