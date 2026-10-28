@@ -11,10 +11,10 @@
  * - visibility: the canvas has no per-widget audience field; the
  *   persisted config requires one. Canvas widgets render on the client
  *   dashboard, so drafts convert with `visibility: "client"` unless the
- *   caller overrides; converting back strips the field (it is
- *   backend-only provenance, so a stored "staff" widget loses its
- *   marking on the way out — canvas drafts only ever carry client-
- *   visible widgets).
+ *   caller overrides; a marking already present on a widget is kept so
+ *   a stored "staff" widget can never be silently demoted. Converting
+ *   back refuses a config that carries any staff-marked widget (canvas
+ *   drafts only ever carry client-visible widgets).
  * - labels / historyPeriod: optional on the canvas, preserved verbatim
  *   (absent stays absent) so a draft converts back unchanged.
  * - per-breakpoint rectangles and caps: enforced by the same
@@ -52,7 +52,7 @@ export function draftToConfig(
     ...draft,
     widgets: draft.widgets.map((w) =>
       isObj(w) && isObj(w.settings)
-        ? { ...w, settings: { ...w.settings, visibility } }
+        ? { ...w, settings: { visibility, ...w.settings } }
         : w,
     ),
   };
@@ -66,6 +66,8 @@ export function draftToConfig(
 export function configToDraft(config: unknown): DraftResult {
   const validated = validateDashboardConfig(config);
   if (!validated.ok) return { ok: false, reason: validated.reason };
+  if (validated.config.widgets.some((w) => w.settings.visibility !== "client"))
+    return { ok: false, reason: "widget_visibility" };
   const draft: DashboardDraft = {
     version: 1,
     name: validated.config.name,

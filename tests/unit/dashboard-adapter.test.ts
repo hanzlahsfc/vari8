@@ -95,4 +95,36 @@ describe("canvas draft -> persisted config", () => {
       expect(widget.settings.labels).toEqual({});
     }
   });
+
+  it("preserves an explicit staff visibility marking from the draft", () => {
+    const staffMarked = {
+      ...CANVAS_CLIENT_DASHBOARD_DRAFT,
+      widgets: CANVAS_CLIENT_DASHBOARD_DRAFT.widgets.map((w, i) => ({
+        ...w,
+        settings:
+          i === 0 ? { ...w.settings, visibility: "staff" } : { ...w.settings },
+      })),
+    };
+    const r = draftToConfig(staffMarked);
+    if (!r.ok) throw new Error(`conversion failed: ${r.reason}`);
+    expect(r.config.widgets[0].settings.visibility).toBe("staff");
+    for (const widget of r.config.widgets.slice(1))
+      expect(widget.settings.visibility).toBe("client");
+  });
+
+  it("refuses a stored config carrying a staff-marked widget", () => {
+    const toConfig = draftToConfig(CANVAS_CLIENT_DASHBOARD_DRAFT);
+    if (!toConfig.ok) throw new Error(`setup failed: ${toConfig.reason}`);
+    const staffConfig = {
+      ...toConfig.config,
+      widgets: toConfig.config.widgets.map((w, i) =>
+        i === 0
+          ? { ...w, settings: { ...w.settings, visibility: "staff" } }
+          : w,
+      ),
+    };
+    const back = configToDraft(staffConfig);
+    expect(back.ok).toBe(false);
+    if (!back.ok) expect(back.reason).toBe("widget_visibility");
+  });
 });
