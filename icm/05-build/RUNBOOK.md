@@ -62,6 +62,21 @@ It upserts "Liliana Mansfeld", status ACTIVE, role WORKSPACE_OWNER of one worksp
 
 Node: `/usr/bin/node` is v26.7.0; `frontend/.nvmrc` says 24. TEST-AUDIT ran green on 26. `REQUIRE_NODE24=1` makes the gate refuse other versions once `mise install node@24` has run.
 
+## Trial check-ins (CHECKIN-ENABLE)
+
+The check-in loop ships flag-gated. To turn it on for a trial workspace, set `ENABLE_CHECK_INS=1` in that environment and restart — every check-in route returns 404 before any database read while it is unset. `.env.example` documents the flag; nothing else is deployed differently.
+
+On a seeded lane (`npm run db:fresh` or `npm run seed:dev` against `app_<lane>`) `canvas-demo` is the trial workspace: `33-checkins.seed.ts` publishes the "Weekly check-in" form, attaches recurring weekly rules to all 15 canvas clients, and generates the occurrence horizon. Sign-in identities for the walkthrough:
+
+- Coach: `SEED_COACH_EMAIL` / `SEED_COACH_PASSWORD`.
+- Client: `emma.anders@canvas-demo.test` / `SEED_CLIENT_PASSWORD` — the first canvas demo client owns Emma Anders's profile and its seeded check-in history. The SEED-FIX credential client (`SEED_CLIENT_EMAIL`) deliberately has no profile (own-scope media denial is asserted by design) and cannot submit check-ins.
+
+The loop, all under `/workspace/[workspaceId]/`:
+
+- Staff **Clients → [client] → Check-Ins** (`clients/[clientProfileId]/checkins`): schedule a one-off instance from a published form, manage recurrence rules, see scheduled/submitted states.
+- Client **Check-Ins** (`check-ins`): own-scope list and fill form. A submission after the due instant is marked late; required fields gate Submit client-side and server-side. Optional `visual` fields render no control — media answers are out of this slice.
+- Staff **Check-Ins → Review queue** (`checkins/review-queue`): answer-free submission headers only. Acknowledging removes the row; a repeat ack returns `already_reviewed`. Staff write text feedback the client reads on the submitted check-in.
+
 ## Local check (D13)
 
 Both `verify-local.sh` and `integrate.sh` read the database password from `POSTGRES_PASSWORD` and stop with exit 2 when it is unset; no default is compiled in. Load it without printing it: `set -a; . /home/nexuslink/NEXUS_AI_CENTER/04_PROJECTS/Vari8/.env; set +a`.

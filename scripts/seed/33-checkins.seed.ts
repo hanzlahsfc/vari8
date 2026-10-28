@@ -1,5 +1,6 @@
 import { CHECKIN_SCHEDULE_HORIZON_DAYS } from "../../lib/checkin/schedules";
 import { resolveLocalInstant } from "../../lib/checkin/timezone";
+import { hashPassword } from "../../lib/password";
 import type { SeedContext } from "./index";
 
 /**
@@ -475,6 +476,34 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   // ── submission-emma (Full, recurring 2026-10-12) ──
 
   const emma = await demoClientUser(0, "emma.anders");
+  // CHECKIN-ENABLE — the trial client walkthrough signs in as the first
+  // canvas demo client, who owns `clients[0]` (Emma Anders) and its seeded
+  // check-in history. Same Better Auth credential shape as
+  // `00-workspace.seed.ts` (`providerId="credential"`, `accountId=user.id`,
+  // `password=hashPassword`), reusing SEED_CLIENT_PASSWORD so the 8-var seed
+  // env contract stays unchanged. The SEED-FIX credential client keeps no
+  // profile — its own-scope media denial is asserted by design.
+  const clientPassword = process.env.SEED_CLIENT_PASSWORD;
+  if (!clientPassword)
+    throw new Error(
+      "SEED_CLIENT_PASSWORD is required for the demo client credential",
+    );
+  const clientPasswordHash = await hashPassword(clientPassword);
+  await prisma.account.upsert({
+    where: {
+      providerId_accountId: {
+        providerId: "credential",
+        accountId: emma.userId,
+      },
+    },
+    update: { password: clientPasswordHash },
+    create: {
+      userId: emma.userId,
+      accountId: emma.userId,
+      providerId: "credential",
+      password: clientPasswordHash,
+    },
+  });
   for (const [n, label] of [
     [1, "Front · 12 October"],
     [2, "Side · 12 October"],

@@ -1,0 +1,40 @@
+Prompt 410 start-identity mutation (Codex builder; not independent review)
+
+Final formatted baseline commit: bd036ece2a758a1d725e511077b9e93c4c5cc2ad
+Baseline tools/parity/local-https.mjs blob: 3e9ff1a3b4a380b5f718db144af545bed3f659bb
+Baseline SHA-256: 6c885487e5c523f61fabb3d4dc3f0a4152e408cd278e01a87da4cd9374bf0cb9
+
+Patch: start-identity-off.diff; generated from git diff against the clean
+formatted baseline, not an older repair commit. It only removes start
+identity checks from the canonical predicate and final signal recheck.
+
+Initial semantic mutant at a3b5217:
+Command: Node v24.22.1; npx vitest run tests/unit/parity-https.test.ts
+Exit: 1
+Result: 1 failed / 19 passed (20 total).
+Failure: rechecks identity before escalation and never signals a reused process
+Expected: [[700, "SIGTERM"]]
+Received: [[700, "SIGTERM"], [700, "SIGKILL"]]
+Assertion location: tests/unit/parity-https.test.ts:302:18
+
+git apply --reverse --check start-identity-off.diff: exit 0
+git apply --reverse start-identity-off.diff: exit 0
+git diff --exit-code -- tools/parity/local-https.mjs: exit 0
+git apply --check start-identity-off.diff (restored baseline): exit 0
+Final formatted baseline patch independently reapplied:
+Command: npx vitest run tests/unit/parity-https.test.ts -t 'rechecks identity before escalation'
+Exit: 1; 1 failed / 19 skipped. Same literal unexpected SIGKILL failure.
+git apply --reverse --check: 0; git apply --reverse: 0
+git diff --exit-code -- tools/parity/local-https.mjs: 0
+git apply --check on restored baseline: 0
+Restored SHA-256: 6c885487e5c523f61fabb3d4dc3f0a4152e408cd278e01a87da4cd9374bf0cb9
+
+The final-baseline adjustment was JSDoc inspector typing only. The patch
+was regenerated from git diff -U1 to avoid whitespace-only patch context
+while preserving exactly the same two guard removals.
+
+The original truncated patch is retained as start-identity-off.superseded.txt.
+It was not applicable; previous statements implying that exact artifact
+was applicable are superseded by this fresh baseline and receipt.
+
+Final restored focused rerun: 1 file / 20 passed, exit 0, 1.69s.

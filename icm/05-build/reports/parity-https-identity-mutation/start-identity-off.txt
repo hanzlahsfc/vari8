@@ -1,0 +1,16 @@
+Command: npx -y -p node@24.22.1 sh -c 'npx vitest run tests/unit/parity-https.test.ts'
+Exit: 1 (expected mutation bite)
+
+Result:
+Test Files  1 failed (1)
+     Tests  1 failed | 18 passed (19)
+
+Failed test:
+tests/unit/parity-https.test.ts > owned-process identity > rechecks identity before escalation and never signals a reused process
+
+Assertion:
+expected [[700, "SIGTERM"]] but received [[700, "SIGTERM"], [700, "SIGKILL"]]
+
+Interpretation:
+Removing the process-start match from both ownership and signal recheck allowed
+a same-PID/same-PGID identity with a different start time to receive SIGKILL.
