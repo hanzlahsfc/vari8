@@ -50,3 +50,7 @@ icm/05-build/graph-summary.json
 # PR-01: Lilly's canvas carried from frontend/ (Biome-formatted there); CSS stays byte for byte.
 components/canvas/
 lib/canvas/
+
+# Byte-verbatim copy of frontend/src/data/demo-export at a pinned commit (w2-s13);
+# reformatting would break the diff -r copy proof.
+scripts/seed/demo-export/

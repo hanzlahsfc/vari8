@@ -1316,7 +1316,7 @@
         },
         {
           "question": "Progress photos",
-          "answer": "Uploaded check-in photos"
+          "answer": "Uploaded front and side photos for 2026-08-23"
         }
       ],
       "metrics": [
@@ -1388,7 +1388,7 @@
         },
         {
           "question": "Progress photos",
-          "answer": "Uploaded check-in photos"
+          "answer": "Uploaded front and side photos for 2026-09-20"
         }
       ],
       "metrics": [
@@ -1902,7 +1902,7 @@
     "clientAppDemo": 1,
     "trainingLogDemo": 1,
     "athleteProfileDemo": 1,
-    "athleteDataDemo": 9
+    "athleteDataDemo": 11
   },
   "trainingLogs": [
     {
