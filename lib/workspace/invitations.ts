@@ -8,6 +8,7 @@ import {
   type SessionLike,
 } from "../auth/guard";
 import { normalizeEmail } from "../email";
+import { mailDeliveryConfigured } from "../mail";
 import { hashPassword } from "../password";
 import { validatePasswordSetup } from "../password-policy";
 import type { RawAccessToken } from "../tokens/crypto";
@@ -37,12 +38,18 @@ import { normalizeLimit, validateName } from "./clients";
  * - `acceptWorkspaceInvitation` claims atomically (exactly one concurrent
  *   winner), re-authorizes the issuer's CURRENT membership, and drives the
  *   membership state machine — including fresh-vs-stale restoration for
- *   SUSPENDED/REMOVED members.
+ *   SUSPENDED/REMOVED members. Under owner ruling O6 (2026-10-20) acceptance
+ *   creates only the user account and the membership for a CLIENT invite —
+ *   the submitted onboarding form creates the client record, so no
+ *   `ClientProfile` is written here. Staff invites still create the
+ *   `CoachProfile` on acceptance.
  *
  * The raw token leaves the service exactly once — inside the
  * `InvitationDeliveryPayload` returned after commit. It is never stored,
- * logged, audited, or included in errors. No email provider, URL, route, or
- * UI exists; `assertInvitationOrchestrationExternallyExposable` fails closed.
+ * logged, audited, or included in errors. PR-SV4 routed create/list/revoke
+ * through `/api/v1` (`lib/workspace/invitation-api.ts`); the exposure gate
+ * `assertInvitationOrchestrationExternallyExposable` still fails closed —
+ * it throws while no mail delivery adapter is registered.
  */
 
 const MAX_TARGET_EMAIL_LENGTH = 254;
@@ -665,19 +672,12 @@ export async function acceptWorkspaceInvitation(
             acceptedAs = "RESTORED";
           }
 
-          // Ensure exactly one coherent profile type; never overwrite an
-          // existing name/displayName (idempotent accept).
-          if (intendedRole === "CLIENT") {
-            if (!clientProfile) {
-              const name =
-                input.name !== undefined ? validateName(input.name) : user.name;
-              if (!name) throw new InvitationError("invalid_input");
-              await tx.clientProfile.create({
-                data: { workspaceId: workspace.id, userId: user.id, name },
-                select: { id: true },
-              });
-            }
-          } else if (!coachProfile) {
+          // Ensure at most one coherent profile type. O6 (owner, 2026-10-20):
+          // for a CLIENT invite acceptance creates NO ClientProfile — the
+          // submitted onboarding form creates the client record. Staff
+          // invites still create the CoachProfile on acceptance; never
+          // overwrite an existing displayName (idempotent accept).
+          if (intendedRole !== "CLIENT" && !coachProfile) {
             const name =
               input.name !== undefined ? validateName(input.name) : user.name;
             if (!name) throw new InvitationError("invalid_input");
@@ -760,9 +760,15 @@ function mapInvitationError(error: unknown): never {
 }
 
 /**
- * T3: the routing slice exists now - `lib/workspace/invite-links.ts` fronts
- * issue through the client-setups action and lookup through the rate-limited
- * public route, both mapping only safe copy. The orchestration itself stays
- * internal: `app/**` still never imports this module (the boundary scan in
- * `tests/unit/invitations.test.ts` keeps that pin).
+ * Fail-closed exposure gate. The PR-SV4 routing slice added the reviewed
+ * `/api/v1` routes, the PR-05 mail delivery port and a per-issuer rate
+ * limit. What remains fail-closed is delivery configuration: while no mail
+ * adapter is registered (production without `MAIL_DELIVERY_ADAPTER`), the
+ * create path must refuse — an invitation that cannot be delivered is never
+ * minted. Not a no-op auditor: the API boundary calls this before creating.
  */
+export function assertInvitationOrchestrationExternallyExposable(): void {
+  if (!mailDeliveryConfigured()) {
+    throw new InvitationError("invitations_not_exposable");
+  }
+}

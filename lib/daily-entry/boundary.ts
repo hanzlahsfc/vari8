@@ -169,8 +169,12 @@ export async function readDailyEntryNumericSeriesFromApi(
     if (error instanceof DailyEntryError) {
       if (error.code === "invalid_input")
         throw new ApiError(400, "invalid_input");
-      if (error.code === "not_available" || error.code === "ineligible")
-        throw new ApiError(404, "not_found");
+      // Same never-404 vocabulary as the workspace daily-entries routes:
+      // not_available is a 403 denial class, ineligible a 409 state.
+      if (error.code === "not_available")
+        throw new ApiError(403, "not_available");
+      if (error.code === "ineligible")
+        throw new ApiError(409, "ineligible");
     }
     throw error;
   }

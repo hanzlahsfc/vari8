@@ -6,10 +6,10 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { auth } from "../../lib/auth/server";
 import { DAILY_ENTRY_DEV_CONSENT } from "../../lib/daily-entry/service";
 import { hashPassword } from "../../lib/password";
-import { GET } from "../../app/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series/route";
+import { GET } from "../../app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/daily-entries/series/route";
 
 /**
- * PR-SV2 — GET /api/v1/daily-entries/:ws/:client/series on a dedicated
+ * PR-SV2 — GET /api/v1/workspaces/:ws/clients/:client/daily-entries/series on a dedicated
  * disposable PostgreSQL database (INTEGRATION_DATABASE_URL). Calls the
  * route the way a client does (real Request, bearer credential from a real
  * sign-in) and asserts the literal JSON contract, latest-revision
@@ -28,7 +28,7 @@ function call(
 ) {
   return GET(
     new Request(
-      `${BASE}/api/v1/daily-entries/${workspaceId}/${clientProfileId}/series${qs}`,
+      `${BASE}/api/v1/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/series${qs}`,
       { headers },
     ),
     { params: Promise.resolve({ workspaceId, clientProfileId }) },
@@ -36,7 +36,7 @@ function call(
 }
 
 describe.skipIf(!enabled)(
-  "GET /api/v1/daily-entries/:ws/:client/series (real PG)",
+  "GET /api/v1/workspaces/:ws/clients/:client/daily-entries/series (real PG)",
   () => {
     let prisma: PrismaClient;
     let n = 0;
@@ -466,7 +466,7 @@ describe.skipIf(!enabled)(
       ]);
     });
 
-    it("returns 404 for non-numeric, non-GENERAL_HEALTH or foreign parameters", async () => {
+    it("returns 403 for non-numeric, non-GENERAL_HEALTH or foreign parameters", async () => {
       const fx = await seed();
       const foreign = await seed();
       const token = await signInToken(fx.owner.email);
@@ -482,8 +482,10 @@ describe.skipIf(!enabled)(
           `?parameterId=${parameterId}&from=2026-10-01&to=2026-10-31`,
           { authorization: `Bearer ${token}` },
         );
-        expect(res.status).toBe(404);
-        expect(await res.json()).toEqual({ error: { code: "not_found" } });
+        expect(res.status).toBe(403);
+        expect(await res.json()).toEqual({
+          error: { code: "not_available" },
+        });
       }
     });
 

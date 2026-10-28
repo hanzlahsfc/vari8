@@ -72,17 +72,22 @@ export const PATCH = defineApiV1Route({
     if (body.name === undefined && body.preferences === undefined)
       throw new ApiError(400, "invalid_input");
     try {
-      if (body.name !== undefined)
-        await prisma.user.update({
-          where: { id: viewer.userId },
-          data: { name: body.name },
-        });
-      if (body.preferences !== undefined)
-        await updateMemberPreferences(
-          workspace.workspaceId,
-          workspace.memberId,
-          body.preferences,
-        );
+      // One transaction: a preference validation or write failure must not
+      // leave the display name changed without the requested preferences.
+      await prisma.$transaction(async (tx) => {
+        if (body.name !== undefined)
+          await tx.user.update({
+            where: { id: viewer.userId },
+            data: { name: body.name },
+          });
+        if (body.preferences !== undefined)
+          await updateMemberPreferences(
+            workspace.workspaceId,
+            workspace.memberId,
+            body.preferences,
+            { db: tx },
+          );
+      });
     } catch (error) {
       if (error instanceof PreferenceError)
         throw new ApiError(400, "invalid_input");

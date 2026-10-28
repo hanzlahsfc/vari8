@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import { sanitizeAuditMeta } from "../../lib/audit";
 import {
+  assertInvitationOrchestrationExternallyExposable,
   InvitationError,
   invitationResource,
   isInvitableRole,
@@ -54,6 +55,28 @@ describe("S1-F2C invitation helpers", () => {
       expect(() => sanitizeAuditMeta({ targetRole: bad as never })).toThrow(
         "audit_metadata_forbidden",
       );
+    }
+  });
+
+  it("orchestration exposure gate fails closed without a mail adapter", () => {
+    // PR-SV4: the routing slice exists, so the gate now checks real delivery
+    // configuration — it must throw only while no adapter resolves.
+    const prev = process.env.MAIL_DELIVERY_ADAPTER;
+    try {
+      process.env.MAIL_DELIVERY_ADAPTER = "no-such-adapter";
+      expect(() =>
+        assertInvitationOrchestrationExternallyExposable(),
+      ).toThrowError(
+        expect.objectContaining({ code: "invitations_not_exposable" }),
+      );
+      // The dev-file adapter is the implicit default outside production.
+      delete process.env.MAIL_DELIVERY_ADAPTER;
+      expect(() =>
+        assertInvitationOrchestrationExternallyExposable(),
+      ).not.toThrow();
+    } finally {
+      if (prev === undefined) delete process.env.MAIL_DELIVERY_ADAPTER;
+      else process.env.MAIL_DELIVERY_ADAPTER = prev;
     }
   });
 

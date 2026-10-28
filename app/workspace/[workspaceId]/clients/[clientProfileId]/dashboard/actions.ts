@@ -86,20 +86,38 @@ import {
   editHabitFromAction,
   archiveHabitFromAction,
   readStaffHabits,
+  readHabitCompletions,
   readHabitConsistency,
 } from "@/lib/habits/boundary";
+import { frequencyToWeekdayMask } from "@/lib/habits/frequency";
+
+/** Canvas frequency labels ("Daily", "Weekdays", ...) resolve to the
+ * stored ISO weekday mask through the shared mapping. */
+function weekdaysFromInput(input: {
+  weekdays?: unknown;
+  frequency?: unknown;
+}): unknown {
+  if (input.weekdays !== undefined) return input.weekdays;
+  if (input.frequency === undefined) return undefined;
+  return frequencyToWeekdayMask(input.frequency);
+}
 
 export async function createClientHabit(input: {
   workspaceId: string;
   clientProfileId: string;
   name: unknown;
   target: unknown;
+  reason?: unknown;
   startDate: unknown;
-  weekdays: unknown;
+  weekdays?: unknown;
+  frequency?: unknown;
   endDate?: unknown;
 }) {
   const { userId } = await requireSessionUser();
-  return createHabitFromAction({ user: { id: userId } }, input);
+  return createHabitFromAction(
+    { user: { id: userId } },
+    { ...input, weekdays: weekdaysFromInput(input) },
+  );
 }
 
 export async function editClientHabit(input: {
@@ -108,11 +126,19 @@ export async function editClientHabit(input: {
   habitId: string;
   name?: unknown;
   target?: unknown;
-  schedule?: { weekdays?: unknown; endDate?: unknown };
+  reason?: unknown;
+  schedule?: { weekdays?: unknown; frequency?: unknown; endDate?: unknown };
   expectedRevision: number;
 }) {
   const { userId } = await requireSessionUser();
-  return editHabitFromAction({ user: { id: userId } }, input);
+  const schedule =
+    input.schedule === undefined
+      ? undefined
+      : { ...input.schedule, weekdays: weekdaysFromInput(input.schedule) };
+  return editHabitFromAction(
+    { user: { id: userId } },
+    { ...input, schedule },
+  );
 }
 
 export async function archiveClientHabit(input: {
@@ -131,6 +157,14 @@ export async function readClientHabits(input: {
 }) {
   const { userId } = await requireSessionUser();
   return readStaffHabits({ user: { id: userId } }, input);
+}
+
+export async function readClientHabitCompletions(input: {
+  workspaceId: string;
+  clientProfileId: string;
+}) {
+  const { userId } = await requireSessionUser();
+  return readHabitCompletions({ user: { id: userId } }, input);
 }
 
 export async function readClientHabitConsistency(input: {

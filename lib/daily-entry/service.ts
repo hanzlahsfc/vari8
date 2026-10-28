@@ -582,7 +582,7 @@ function valueRow(
   }
 }
 
-type StoredValue = {
+export type StoredValue = {
   parameterId: string;
   kind: string;
   valueNumeric: unknown;
@@ -664,14 +664,25 @@ export type StaffDailyEntryListResult =
 
 /** Renders a revision's stored values through an immutable version snapshot.
  * Parameters outside the snapshot — or not GENERAL_HEALTH — are dropped;
- * OPTION values resolve to their snapshot labels. Display strings only. */
-function renderRevisionDisplayRows(
+ * OPTION values resolve to their snapshot labels. Display strings only.
+ * Rows render in the snapshot's item order regardless of stored order
+ * (PR-SV5 stable ordering; exported for the ordering contract test). */
+export function renderRevisionDisplayRows(
   values: readonly StoredValue[],
   snapshot: readonly SnapshotParam[],
   def: VersionDefinition,
 ): DailyEntryHistoryRow[] {
   const paramById = new Map(snapshot.map((p) => [p.parameterId, p]));
+  // Stable ordering (PR-SV5): DB row order is arbitrary — render in the
+  // immutable template version's item order.
+  const orderOf = new Map(snapshot.map((p, i) => [p.parameterId, i]));
   return (values ?? [])
+    .slice()
+    .sort(
+      (a, b) =>
+        (orderOf.get(a.parameterId) ?? Number.MAX_SAFE_INTEGER) -
+        (orderOf.get(b.parameterId) ?? Number.MAX_SAFE_INTEGER),
+    )
     .map((v) => {
       const p = paramById.get(v.parameterId);
       if (!p || p.dataClassification !== "GENERAL_HEALTH") return null;
@@ -1171,32 +1182,56 @@ export async function writeStaffTrackerNote(
     typeof input.parameterKey === "string" ? input.parameterKey.trim() : null;
 
   if (parameterKey === null) {
-    if (body === "") {
-      await db.trackerDayNote.deleteMany({
-        where: {
-          workspaceId: input.workspaceId,
-          clientProfileId: input.clientProfileId,
-          entryDate,
-        },
-      });
-      return { state: "ok" };
-    }
-    await db.trackerDayNote.upsert({
-      where: {
-        clientProfileId_entryDate: {
-          clientProfileId: input.clientProfileId,
-          entryDate,
-        },
+    await db.$transaction(
+      async (tx) => {
+        const existing = await tx.trackerDayNote.findUnique({
+          where: {
+            clientProfileId_entryDate: {
+              clientProfileId: input.clientProfileId,
+              entryDate,
+            },
+          },
+          select: { id: true, body: true },
+        });
+        if (body === "") {
+          if (!existing) return;
+          await tx.trackerDayNote.delete({ where: { id: existing.id } });
+          await writeAuditEvent(tx, ctx, {
+            action: "DELETE",
+            resourceType: "tracker_day_note",
+            resourceId: existing.id,
+            subjectClientProfileId: input.clientProfileId,
+            meta: { changed: true, entryDate: input.entryDate },
+          });
+          return;
+        }
+        if (existing && existing.body === body) return;
+        const row = existing
+          ? await tx.trackerDayNote.update({
+              where: { id: existing.id },
+              data: { body, authorMemberId: member.id },
+              select: { id: true },
+            })
+          : await tx.trackerDayNote.create({
+              data: {
+                workspaceId: input.workspaceId,
+                clientProfileId: input.clientProfileId,
+                entryDate,
+                body,
+                authorMemberId: member.id,
+              },
+              select: { id: true },
+            });
+        await writeAuditEvent(tx, ctx, {
+          action: existing ? "UPDATE" : "CREATE",
+          resourceType: "tracker_day_note",
+          resourceId: row.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: true, entryDate: input.entryDate },
+        });
       },
-      update: { body, authorMemberId: member.id },
-      create: {
-        workspaceId: input.workspaceId,
-        clientProfileId: input.clientProfileId,
-        entryDate,
-        body,
-        authorMemberId: member.id,
-      },
-    });
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     return { state: "ok" };
   }
 
@@ -1211,35 +1246,58 @@ export async function writeStaffTrackerNote(
     throw new DailyEntryError("invalid_input");
   }
 
-  if (body === "") {
-    await db.trackerComment.deleteMany({
-      where: {
-        workspaceId: input.workspaceId,
-        clientProfileId: input.clientProfileId,
-        entryDate,
-        parameterId: parameter.id,
-      },
-    });
-    return { state: "ok" };
-  }
-  await db.trackerComment.upsert({
-    where: {
-      clientProfileId_entryDate_parameterId: {
-        clientProfileId: input.clientProfileId,
-        entryDate,
-        parameterId: parameter.id,
-      },
+  await db.$transaction(
+    async (tx) => {
+      const existing = await tx.trackerComment.findUnique({
+        where: {
+          clientProfileId_entryDate_parameterId: {
+            clientProfileId: input.clientProfileId,
+            entryDate,
+            parameterId: parameter.id,
+          },
+        },
+        select: { id: true, body: true },
+      });
+      if (body === "") {
+        if (!existing) return;
+        await tx.trackerComment.delete({ where: { id: existing.id } });
+        await writeAuditEvent(tx, ctx, {
+          action: "DELETE",
+          resourceType: "tracker_comment",
+          resourceId: existing.id,
+          subjectClientProfileId: input.clientProfileId,
+          meta: { changed: true, entryDate: input.entryDate },
+        });
+        return;
+      }
+      if (existing && existing.body === body) return;
+      const row = existing
+        ? await tx.trackerComment.update({
+            where: { id: existing.id },
+            data: { body, authorMemberId: member.id },
+            select: { id: true },
+          })
+        : await tx.trackerComment.create({
+            data: {
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+              entryDate,
+              parameterId: parameter.id,
+              body,
+              authorMemberId: member.id,
+            },
+            select: { id: true },
+          });
+      await writeAuditEvent(tx, ctx, {
+        action: existing ? "UPDATE" : "CREATE",
+        resourceType: "tracker_comment",
+        resourceId: row.id,
+        subjectClientProfileId: input.clientProfileId,
+        meta: { changed: true, entryDate: input.entryDate },
+      });
     },
-    update: { body, authorMemberId: member.id },
-    create: {
-      workspaceId: input.workspaceId,
-      clientProfileId: input.clientProfileId,
-      entryDate,
-      parameterId: parameter.id,
-      body,
-      authorMemberId: member.id,
-    },
-  });
+    { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+  );
   return { state: "ok" };
 }
 
@@ -1404,7 +1462,21 @@ export async function readStaffDailyEntryDetail(
  * the dailyTracking authorization context for the audit. Used by the
  * public detail service and by P-025-D6's Check-In tracker context.
  */
-export async function readStaffDailyEntryDetailTx(
+export type StaffDailyEntryLoad = {
+  /** Internal row id — audit resource target only, never leaves the tx
+   *  boundary in the public detail shape. */
+  entryId: string;
+  detail: StaffDailyEntryDetail;
+};
+
+/**
+ * Audit-free detail loader shared by `readStaffDailyEntryDetailTx`
+ * (which writes its own `READ daily_entry` audit) and the Check-In
+ * review packet embedded in the submission detail read (which carries
+ * one `checkin_submission` audit for the whole view instead — see
+ * `readCheckInSubmissionDetail`).
+ */
+export async function loadStaffDailyEntryDetailTx(
   tx: Prisma.TransactionClient,
   input: {
     workspaceId: string;
@@ -1412,7 +1484,7 @@ export async function readStaffDailyEntryDetailTx(
     entryDate: string;
     ctx: Awaited<ReturnType<typeof authorize>>;
   },
-): Promise<StaffDailyEntryDetail> {
+): Promise<StaffDailyEntryLoad> {
   // Entry + coherent current pointer + count.
   const entry = await tx.dailyEntry.findUnique({
     where: {
@@ -1478,23 +1550,38 @@ export async function readStaffDailyEntryDetailTx(
     version.definition as VersionDefinition,
   );
 
+  return {
+    entryId: entry.id,
+    detail: {
+      entryDate: input.entryDate,
+      revisionSeq: revision.seq,
+      revisionCount,
+      declaredAt: revision.declaredAt.toISOString(),
+      values,
+    },
+  };
+}
+
+export async function readStaffDailyEntryDetailTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    ctx: Awaited<ReturnType<typeof authorize>>;
+  },
+): Promise<StaffDailyEntryDetail> {
+  const { entryId, detail } = await loadStaffDailyEntryDetailTx(tx, input);
   // Structural READ audit — last, inside the same transaction; a failed
   // write rolls the detail read's audit (and result) back.
   await writeAuditEvent(tx, input.ctx, {
     action: "READ",
     resourceType: "daily_entry",
-    resourceId: entry.id,
+    resourceId: entryId,
     subjectClientProfileId: input.clientProfileId,
     meta: { changed: false },
   });
-
-  return {
-    entryDate: input.entryDate,
-    revisionSeq: revision.seq,
-    revisionCount,
-    declaredAt: revision.declaredAt.toISOString(),
-    values,
-  };
+  return detail;
 }
 
 // ── Read surface (form + history payload for the client's own page) ───────

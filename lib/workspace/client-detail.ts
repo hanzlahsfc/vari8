@@ -14,6 +14,7 @@ import type { PrismaClient } from "@prisma/client";
 
 import { ApiError, type ApiWorkspaceContext } from "@/lib/api/v1";
 import { prisma } from "@/lib/db";
+import { RESTORE_WINDOW_MS } from "../notes/service";
 import type { PrismaLike } from "./access";
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -283,12 +284,18 @@ async function reconcileNotes(
       }
     }
   }
-  await tx.coachNote.deleteMany({
+  const removedAt = new Date();
+  await tx.coachNote.updateMany({
     where: {
       workspaceId,
       clientProfileId,
       visibility,
       id: { notIn: [...keep] },
+      deletedAt: null,
+    },
+    data: {
+      deletedAt: removedAt,
+      restoreUntil: new Date(removedAt.getTime() + RESTORE_WINDOW_MS),
     },
   });
 }

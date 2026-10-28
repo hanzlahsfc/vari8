@@ -1,3 +1,287 @@
+## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
+
+- Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-catalogue-accuracy-gate`: merged PR 223
+  nutrition source accuracy gate; wired services where they apply.
+
+## 2026-10-28 - Promotion: meal plan payload and IIFYM actuals
+
+- Promoted `beta/pr-m5-mealplan-payload` (PR 114) by Hanzlah and
+  `beta/iifym-actuals` (PR 221) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-iifym-actuals`: merged PR 221 IIFYM actuals and PR 114
+  meal-plan payload; the meal-plan screens consume the payload end to
+  end, and the actuals helpers carry the nullable-macro semantics.
+
+## 2026-10-28 - Promotion: nutrition source adapters (BLS + CIQUAL, issue 182)
+
+- Promoted `beta/nutrition-source-adapters` (PR 222) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-nutrition-source-adapters`: BLS and
+  CIQUAL food source adapters, shared source helpers, dedupe decision
+  handling, the dry-run script, workbook fixtures and unit tests.
+
+## 2026-10-28 - Promotion: template definitions report (PR-M4)
+
+- Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m4-template-definitions`: the PR-M4
+  template definitions build report.
+
+## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
+
+- Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m9-dashboard-config`: dashboard config
+  schema, adapter and the dashboard editor surface.
+
+## 2026-10-28 - Promotion: habits service (PR-M7)
+
+- Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-m7-habits`: habits service with frequency semantics
+  and completion tracking.
+
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
+## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
+
+- `retrieve-archived.mjs` rewritten: trusted hardcoded `ARCHIVES` registry is the only authority (editable `ARCHIVED.json` stubs cross-checked, not obeyed); name/traversal/tag/commit-shape validation before any git/fs op; `git fetch --depth 1 <remote> refs/tags/<tag>` into a scratch `.fetch` repo inside the task-owned destination; pinned commit + `artifactIndexSha256` verified, then every indexed artifact extracted and sha256-checked; existing/unowned destinations and unsafe indexed paths refused; arg-based `execFileSync` only (no shell).
+- `retrieve-archived.test.mjs` (11 probes, all pass): traversal/absolute/unsupported names refused; wrong-commit tag refused with cleanup; existing destination refused and left untouched; no dest leaks on failures. Remote availability proven via `git ls-remote` (tag → `0293c69`); full-extract run recorded in PR body.
+- Material inputs unchanged (all files under excluded `combined/`); p437 remains the current gate (`verified: true`).
+
+## 2026-10-26 — Prompt 438 — evidence-only closure: p436 archived, final identity published
+
+- Superseded `p436-run` preserved via pushed tag **`evidence/p436-run-superseded`** (`0293c69`, the last revision carrying the complete package) + committed `combined/p436-run/ARCHIVED.json` stub (SUPERSEDED status, reason, source commit/tree/material `a7a8a54`/`612bff3`/`d59f4ce`, artifact-index sha `5a8790c3…`) + executable check `combined/retrieve-archived.mjs` → `verified: true` (tag present on origin, index hash matches pinned). No artifact relabeling or reconstruction.
+- Material inputs byte-identical to the reviewed p437 capture (only `combined/**` evidence-path additions; `verify-combined` re-run: `verified: true`, canonical 70/70, strict 68/70). Gates: `tsc` 0 carried, `index:check` OK carried, `git diff --check 43b63ed..HEAD` **0**, prettier clean on new files. No behavioral suites repeated (none required — no code/test/config/material changes).
+- PR body updated with full final head/tree SHAs and the historical-vs-final distinction.
+
+## 2026-10-26 — Prompt 436 — formatter compliance, raw-log metadata, transition plan
+
+- `comparer.json` reformatted with prettier (bytes changed; `metadata.json` manifest pin re-pinned — no claim of unchanged bytes). Material invalidation triggered one required replacement capture: `p437-run` supersedes p436. Capture `fe95b79d91f23c6cfb356c212966517c56d6924e` / tree `4650681eb47c9a377da50fee0ecc06860efcf707` / material `4e560cc98862a78795edce1beffae6eebaa5a1811895a4d8cdafb8e95c60f2a4`; canonical **70/70**, strict **68/70**, 242 indexed / 233 capture artifacts, `verified: true`.
+- Raw-log metadata completed: `receipts/server.raw.log.gz` carries `rawSha256` of the decompressed bytes + role; `receipts/server.log` carries `normalized: true`, the exact transform (`strip trailing [ \t]+ before each newline + single trailing newline`) and `sourceOf`. Verified: gzip round-trips to the raw bytes; normalizing the raw yields the committed file byte-for-byte; the transform is idempotent. No `.gitattributes` exemption exists — base-to-head `git diff --check` passes purely through normalization.
+- PR body now carries the full proposed transition plan: #203 head `90c16bee…`, #206 head `43b63ed0…`, #207 head below, exact capture/final identities, owner-authorized gate, ordered retargets, recapture triggers, separately-approved baseline activation. **Proposed plan only — no merge/retarget/activation authorized.**
+- Gates on Node 24.22.1 this round: focused **55/55**, `tsc --noEmit` 0, `git diff --check 43b63ed..HEAD` 0, prettier check on evidence files clean, verify-combined `verified: true` in-tree. Unit/integration/E2E carried from the p434 round (unchanged product code since; recorded basis — material changes were formatter-only whitespace in evidence manifests, no runtime paths). index:check recorded below.
+
+## 2026-10-26 — Prompt 434 — full verification, hygiene rework, p436-run evidence
+
+- **Hygiene:** `.gitattributes` whitespace exemption removed entirely; raw `server.log` originals now preserved as `receipts/server.raw.log.gz` (gzip, byte-exact, sha256 + `rawSha256` pinned in `artifact-index.json`) in p429/p431/p436 — committed `server.log` remains the normalized copy. ESLint exclusion narrowed from `combined/**` to `combined/*/adapter/**` + `combined/*/receipts/**` (immutable packaged evidence only — adapters are never executed by the runner; each run regenerates into `out/`). `git diff --check 43b63ed..HEAD` exits **0** with no whitespace exemptions.
+- **Material-side fixes:** `tools/parity/reference/evidence/comparer.json` and `receipts/metadata.json` re-pinned after the run.mjs/source-identity/verify-combined changes (the focused pin test caught the stale `parityRunner` hash).
+- **Fresh evidence `p436-run`** (p433/p434 superseded — post-capture material commits correctly invalidated each): capture `a7a8a54cc3efe0aadedb34963e6fcebf8a02fd99` / tree `612bff34c8f3fcf2581f887bb378ff88abf1fa14` / material `d59f4cef1a9a269958169409271ec5cb4e8b82b5e100851fa87bf463c00c7691`; canonical **70/70**, strict **68/70**, **242 indexed / 233 capture artifacts**.
+- **Clean-checkout proof** in detached `/tmp/vari8 p436 ünicode` (spaces + non-ASCII): fresh `npm ci` (root + reference), `verify-combined` → `verified: true`, canonical 70/70 strict 68/70 recomputed; dirty probes (`auth.ts` edit + untracked `themes/t.css`) → verifier fails `dirty material inputs`; worktree restored clean afterward.
+- **Gates on Node 24.22.1:** focused suite **55/55** (`parity-https.test.ts` **39** — was 29, +10 material/dirty probes — + `visual-reference.test.ts` 16; the earlier "45/45" was the same combined suite pre-additions), full unit **106 files / 1305 tests**, real disposable-DB integration **64 files / 913 tests** on `app_p436i` (local postgresql@16 :5434), `tsc --noEmit` 0, ESLint **0 errors / 81 warnings**, `git diff --check` base-to-head 0. E2E subset result recorded separately.
+- Final head `0dc1765`+docs; no merge, retarget, activation, deployment, Actions, Slack/Hermes, or issue closure. Stop for DeepSeek scoped cross-review.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 433 — material-input and dirty-state closure
+
+- DeepSeek's scoped review (PR #207 comment 6412128271) found four gaps; all are closed in `7e8c7c9`..`02235bd`. **Material coverage:** `auth.ts`, `themes/**` and `tools/local-tls-proxy.mjs` added to `MATERIAL_PATHSPEC`/prefixes; `tools/parity/local-https.mjs`, `tools/local-tls-proxy.mjs` and `auth.ts` added to the receipt tool/input pin set. Generated outputs are excluded through named `MATERIAL_EXCLUSIONS` (`tools/parity/out/`, `tools/parity/reference/combined/`, `tools/parity/reference/node_modules/`) — evidence never hashes itself. **Dirty-state:** `dirtyMaterialPaths`/`assertCleanMaterialCheckout` refuse modified-or-untracked material inputs at combined verification (capture already refused a dirty tree via `snapshotSource`); `verify-combined` now fails on a dirty checkout. Committed-change probes prove each named file moves the material hash; dirty-file probes for auth.ts, a theme file, the TLS proxy and local-https all fail. **Lint/whitespace:** packaged combined evidence is excluded from ESLint (historical adapter bytes and receipts preserved — the generator already strips `HERE`); lint is back to **0 errors / 81 warnings** (was 82 with the lane-introduced warning). `server.log` files in p429/p431/p433 are normalized copies with `server.raw.log` originals kept alongside and labelled in `artifact-index.json`; all three logs were normalized with gzipped raw originals preserved; the earlier `.gitattributes` exemption was later removed entirely — no exemption exists and base-to-head `git diff --check` passes solely through actual normalization.
+- Fresh combined run `p434-run` on disposable `app_p433` (local postgresql@16 :5434, docker unavailable), Node 24.22.1, HTTPS `58135`, capture source `02235bd` / material verified at verify time; earlier `p433-run` was correctly invalidated by a post-capture material commit and superseded: 70 screens, 0 failures, canonical **70/70**, strict **68/70**. Package `tools/parity/reference/combined/p434-run`: **242 indexed artifacts / 233 capture artifacts**, `verified: true` in-tree.
+- Gates on Node 24.22.1: focused parity suite **39/39** (includes the new material/dirty probes), `tsc --noEmit` 0, ESLint **0/81**, `git diff --check` base-to-head 0, prettier clean on touched files. Unit/integration/E2E suites and a detached clean-checkout verify were not rerun this round — the material pathspec only grew and the dirty check only adds refusal paths, but that is a recorded gap, not a claim of coverage.
+- No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, issue closure or shared-resource change. `#203`-first remains conditional on owner approval; stop for DeepSeek scoped cross-review.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 431 — provenance-bound combined evidence
+
+- DeepSeek review of PR #207 found unbound final-head provenance, unenforced tool pins, builder-path adapter imports and an incomplete transition plan. The repair adds a non-circular source identity contract: capture source commit/tree and a material-input tree hash are recorded at capture time; `receipts/source-compatibility.json` records the exact post-capture paths that may differ at the reviewed/package head. `verify-combined` proves the source commit exists and its Git tree matches, verifies the current material input tree hash, and rejects any unlisted post-capture delta. Git commit/path review remains the root of trust; hashes do not claim to stop a deliberate coordinated rewrite of code and manifests.
+- The generated D32 adapter is now portable: it discovers the checkout root upward from its own location and dynamically resolves `tools/parity/reference/capture-metadata.mjs`; no checkout path is embedded. Two detached checkouts (`/tmp/vari8 p431 clean`, `/tmp/vari8 p431 ünicode`) generated byte-identical adapter bytes and the same hash `fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c`.
+- Fresh combined run `p431-run-9` on disposable `app_p431`, Node 24.22.1, HTTPS `58132`, capture source `082e57c5d7e6a7a36e6afd5f3ddc752e9f667ae6` / tree `238b59cb992dd0ce9638b67bea0e64b2d5b49f94`: 70 screens, 0 failures, canonical **70/70**, strict **68/70**, old active baseline **70 failures**. Manifest `543842fc…`, execution receipt `770fa363…`, package `tools/parity/reference/combined/p431-run` has 243 indexed artifacts. Earlier failed attempts are preserved locally: malformed generated adapter (`p431-run`) and receipt pin-path failure (`p431-run-2`).
+- Required checks on Node 24.22.1 after tooling freeze: focused **45/45**; unit **106 files / 1295 tests**; real disposable-DB integration **64 files / 913 tests, 0 skipped**; combined package verifier **243 indexed artifacts / 233 capture artifacts** and clean-checkout verification from `/tmp/vari8 p431 clean` and `/tmp/vari8 p431 ünicode`; exact E2E subset `tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts` **10 passed / 7 mail-dependent skipped**; format, typecheck, index, build, and `git diff --check` exit 0. Full ESLint exits 0 with **82 warnings** after removing the new unused generated-adapter declaration; tamper probes for appended no-op comparer, edited runner/comparer receipt hashes and edited provenance `source.tree` all fail closed.
+- Complete transition sequence: review/land #203 under the owner-authorized proposed-reference gate; retarget/land #206 onto the resulting `Vari8-Beta`; retarget/land #207 so its runner/verifier/evidence package enters after #203+#206; rerun combined capture/verification after every material-input or retarget change; separately approve baseline activation; then rerun post-activation. No merge/retarget/activation/deployment/Actions/Slack-Hermes/shared-resource change is made.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 429 — repaired combined-gate safety and durable evidence
+
+- DeepSeek’s scoped review found unsafe custom paths, arbitrary capture-module execution, inaccessible fresh evidence and missing provenance. The repair replaces `PARITY_CAPTURE_MODULE` with a fixed generated D32 adapter, canonicalizes output/reference paths through symlinks and existing parents, rejects empty/broad/equal/nested/ancestor-overlap output paths, requires a task-owned output marker before writes, forbids baseline-update mode, validates the proposed package before server start and validates real 70-screen capture artifacts/provenance before comparing.
+- A failed first attempt (`tools/parity/out/p429-run`, exit 2) is recorded: `NODE_ENV=development` made the production `next build` fail in `/_global-error`; no server/capture/compare started. The bounded rerun used `app_p429`, `APP_ENV=development`, Node 24.22.1, HTTPS proxy `58130`, and task-owned `tools/parity/out/p429-run-2` at clean prep head `1bdc044b3793afbf9068355abef68f322ef305f9` / tree `6fde40aeb89af1b40e97911fb37b1dd10d556bda`.
+- Durable evidence now lives in `tools/parity/reference/combined/p429-run`: 242 indexed artifacts plus `artifact-index.json`; adapter `74e3b932…`, capture manifest `792b8c49…`, execution receipt `1b59b1b6…`, combined provenance `02749662…`, canonical `f92a5d30…`, strict `cef4510d…`. `verify-combined.mjs` revalidates provenance, manifests, artifact hashes, actual capture evidence and recomputes canonical **70/70** / strict **68/70**. A detached checkout at `f40eb47` under `/tmp/vari8 p429 clean` verified the same package after fresh `npm ci` + reference `npm ci` with a clean worktree. Old active baseline diagnostic is separately packaged and remains **70 failures / exit 1**.
+- Historical package evidence remains separate: `verify-evidence.mjs` verified **482** artifacts and `recompare.mjs` remains canonical **70/70** / strict **68/70**.
+- Checks on Node 24.22.1: focused **42/42**, unit **106 files / 1292 tests**, real-DB integration **64 files / 913 tests** on disposable `app_p429` (no skipped suite), format/typecheck/ESLint/index/build/diff exit 0 (82 pre-existing lint warnings), and the canonical verify-local E2E subset `invite-acceptance.spec.ts password-reset.spec.ts auth.spec.ts` reports **10 passed / 7 skipped**. The 7 skips are the documented mail-dependent cases, not a full 24-test E2E result.
+- Draft PR #207 (`beta/visual-reference-establishment` <- `beta/p203-p206-combined-verification`, head `2bee45a`) is the tracked review unit: https://github.com/hanzlahsfc/vari8/pull/207. Remaining action is DeepSeek scoped cross-review of the labelled prep branch/PR and its packaged evidence, then the separate #203 landing, #206 retarget, baseline-activation and post-activation approvals. No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, or shared-resource change.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 427 — authorized combined-result verification
+
+- Owner authorized combined #203+#206 result verification and accepted the disclosed SWE-2/DeepSeek cross-review arrangement. This is a task-specific governance disposition, not a general review-rule change or independent SHIP.
+- Preparation branch `beta/p203-p206-combined-verification` starts at #206 `43b63ed`, which contains #203 `90c16be`; `Vari8-Beta` `d1c4081` is an ancestor, so there were no current-base conflicts. Product/app files are unchanged from #203; the only prep change is explicit `PARITY_REFERENCE_DIR`, `PARITY_OUT_DIR`, `PARITY_CAPTURE_MODULE` and `PARITY_COMPARER=reference` plumbing. The active `tools/parity/baseline` was not overwritten.
+- Fresh combined-app capture in disposable `app_p427`, Node 24.22.1, HTTPS proxy `58129`, D32 adapter `74e3b932…`: 70 screens, 0 failures, manifest `f1e337a…`; proposed canonical **70/70 exit 0**, strict diagnostic **68/70** with the two S03 pixel failures. The packaged recomparison remains **70/70** canonical / **68/70** strict; `verify-evidence` verified **482** artifacts. Old active baseline comparison against the same fresh capture is **FAIL 70/70**, recorded as old-reference diagnostic only.
+- Fresh checks on Node 24.22.1: focused **37/37**, unit **106 files / 1287 tests**, integration **64 files / 913 tests**, format, typecheck, ESLint, index, `git diff --check` and flow E2E **10 passed / 7 skipped** exit 0. The prep mechanism refuses `--update-baseline` with `PARITY_REFERENCE_DIR` and requires an explicit reference dir for `PARITY_COMPARER=reference`.
+- Exact executable transition: independently review this labelled prep branch and receipts; land #203 after accepting the owner-authorized combined proposed-reference gate; retarget #206 to the resulting `Vari8-Beta`; separately approve baseline activation; then rerun the same proposed-reference capture/gate after activation. No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, or shared-resource change.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 425 — exact contract, portable paths, complete execution provenance
+
+- Contract compatibility is a closed, named `retained-v1-to-approved-v2` transition. Version 2 and retained v1 are exact schemas; missing/unknown fields, changed `authority`, changed `implementedAlternative`, administrative differences and empty/subset/unknown allowance sets fail. Exact allowance rule identities/labels are checked against the comparer. Historical provenance is unchanged. Focused reference tests cover every SWE-2 probe plus the positive v1/v2 cases: **16/16**.
+- `comparer.json` is now a reviewed execution-pin manifest (`visual-reference-comparer-v2`, SHA `8bc2935…`) covering `reference.mjs`, both comparers, `capture.mjs`, `capture-metadata.mjs`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`, both lockfiles, direct dependency pins and the contract. `receipts/metadata.json` is `receiptVersion: 2`, hashes the manifest and copies its pins; omitted/tampered components and dependency changes fail. No self-hash loop; generated receipts are excluded and documented.
+- `recompare.mjs` uses `fileURLToPath`. Clean detached checkout at code commit `11bfe70` under a path with spaces and non-ASCII characters: 482 artifacts verified, canonical **70/70**, strict **68/70**, two byte-identical recomparisons, clean worktree, no p414 input.
+- Counts unchanged: candidate 237, reference 245, evidence 246, artifact index 482, old baseline 242 unchanged, map 272. Candidate captures use synthetic app data but retain local paths/process IDs/command lines in provenance; no credentials/tokens/keys/auth secrets found. No capture, threshold, reference or S03-18 behavior change.
+- Fresh checks on Node 24.22.1: unit **106 files / 1286 tests**, focused **16/16**, format/index/type/lint/build/diff pass; lint 0 errors/81 warnings. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 scoped validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 423 — contract self-validation and durable evidence package
+
+- Contract compatibility now separates immutable material settings from adoption metadata: retained v1 provenance is accepted only when source/tree/clock/timezone/geometry/pixel/viewport/device-scale/expected-screen material fields match; unknown versions and unknown allowances fail. Original provenance is unchanged. Focused tests cover adoption-only acceptance and material/unknown rejections.
+- Candidate captures and recomparison tooling are committed under `tools/parity/reference/evidence/`: candidate 237 files, reference 245, evidence directory 246, artifact index 482 hashes, old baseline 242 unchanged, map 272. `verify-evidence.mjs` fails on missing/tampered artifacts and validates both runs/contract/receipt provenance; `recompare.mjs` uses only the committed reference+candidate package.
+- New recomparison receipts (not original receipts, not new captures): canonical **70/70**, strict **68/70**; metadata records comparer `6ea1115…`, legacy comparer `56a709a…`, contract `4a29fd5…`, dependency versions/integrities and input hashes. Historical 68/70 receipt preserved; original receipt comparer provenance remains missing and disclosed.
+- Existing S11-03/D18/S11-04 applied allowances remain unchanged; D18/S11-04 apply on s03@1440 alongside S03-18. No tolerance/mask expansion or capture semantics change.
+- Fresh focused 13/13, unit 106 files/1283, format/index/type/lint/build/diff checks pass. Clean detached checkout at `c93f33b` with fresh Node 24 installs: verifier 482 artifacts/canonical 70/70/strict 68/70, recompare byte-stable, no p414 input. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 417 — owner decisions recorded; activation still held
+
+- Owner adopted `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch
+  threshold 0.1 and changed-pixel fraction <=0.001. The legacy 10:00/.5px/zero settings remain a
+  separate strict diagnostic only.
+- Owner accepted the real-recorder copy `Record video feedback`, including the demonstrated 39px
+  narrower button. Recorded as exact S03-18 truth-text/geometry rule; unrelated text, movement,
+  added/removed elements and pixel differences still fail.
+- `tools/parity/reference/proposed/` contains 245 files: 244 mapped proposed artifacts plus the
+  mapping file. The 272-entry map remains, including 28 honest old-only paths with no proposed
+  counterpart because their historical offsets/artifacts differ.
+- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, unit 1281/1281, format/index/typecheck/lint and
+  `git diff --check` exit 0. Post-decision recomputation from existing artifacts: canonical **70/70**, strict diagnostic
+  **68/70** (s03 pixels only); historical 68/70 receipt preserved. Exact S03-18 rule is stem-scoped,
+  text/exact-width based, and adds no pixel mask/global tolerance. Unit **106 files / 1281 tests**;
+  focused 11/11; format/index/type/lint/diff pass.
+- Scope remains the historical/current-Beta reference only. FRONTEND `9491897` and Marcel's
+  unpublished full-package pipeline are not certified or imported. Baseline activation, merge and
+  issue #202 resolution remain held behind independent review and unmerged PR #203 `90c16be`.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 — historical reference proposal packaged; s03 copy decision outstanding
+
+- Authority/contract: historical frontend `c78311042edcc2f96350a132c682782d8da1b6a7`; frontend tree
+  `36ceaf8eadc010369ed48ab5158682f2bf9d55de`; owner D32 09:00 Vienna clock, 1px geometry, 0.1%
+  changed pixels / pixelmatch 0.1. The legacy 10:00/.5px/zero-pixel contract is retained only as a
+  separately reported strict diagnostic.
+- Two independent historical runs each captured all 70 screens with zero failures/retries; image,
+  geometry and scroll artifacts were byte-identical (`hashMismatches: []`, stability 70/70 canonical
+  and strict). Original baselines remain unchanged; old hashes and the old→proposed map are packaged
+  under `tools/parity/reference/proposed/`.
+- Current root comparison is **68/70** canonical and strict. Both `s03-checkin-review` widths fail
+  geometry/text/role/name because the button changed from “Record demo video feedback” to “Record
+  video feedback” and narrowed 39px (`244.5 → 205.5`); pixels remain within budget.
+- The copy was introduced by PR-MEDIA `21d8fc0` and wired by `e355c59`. No owner D32 truth-text row
+  or issue-#205 allowance covers it; both failures remain explicit and an exact owner decision is
+  requested. No mask, tolerance change or baseline refresh was made.
+- Tooling: Node v24.22.1; unit **106 files / 1280 tests**, exit 0; typecheck/lint/format/index/build
+  checks recorded; reference tests and two 70/70 reference runs valid. No full 70 rerun for packaging.
+- PR #206 remains draft/stacked on unmerged PR #203 `90c16be`; issue #202 remains open. Stop for
+  independent review; no parity PASS, merge, deployment, Actions, Slack/Hermes or website change.
+
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
+
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
 ## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
 
 - Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
@@ -507,6 +791,7 @@
 - `npm run check` in `frontend/`: tests 319/319, agent-context:check,
   typecheck, lint (300 files) and build all exit 0. Published-only test files
   were renormalized to Biome format; no tests removed or weakened.
+
 
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 

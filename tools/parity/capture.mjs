@@ -21,22 +21,11 @@ export const TIMEZONE = "Europe/Vienna";
 // Same storage seed for every capture. Empty on purpose: the canvas seeds its demo state from code.
 export const STORAGE_SEED = {};
 
-// Self-signed TLS fronts on loopback (run.mjs spawns one for the production build, and a
-// caller-run PARITY_URL front counts the same) cannot pass certificate verification and do
+// A self-signed HTTPS front on loopback (run.mjs runs one for the production build, and a
+// caller-run PARITY_URL front counts the same) cannot pass certificate verification and does
 // not need to: run.mjs enforces port ownership instead. Off-loopback origins stay strict.
 export const loopbackHttps = (baseUrl) =>
   /^https:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?(\/|$)/.test(baseUrl);
-
-let dispatcherPromise = null;
-// A fetch dispatcher that skips certificate verification, or null for plain http and for
-// https origins outside loopback.
-export function insecureLoopbackDispatcher(baseUrl) {
-  if (!loopbackHttps(baseUrl)) return null;
-  dispatcherPromise ??= import("undici").then(
-    ({ Agent }) => new Agent({ connect: { rejectUnauthorized: false } }),
-  );
-  return dispatcherPromise;
-}
 
 const FREEZE_CSS = `
 *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
@@ -103,7 +92,6 @@ const TEMPLATE_CARD = {
   within: "article.cd-template-card",
   containing: "Strength & balance",
 };
-const VIEW_TOGGLE = { within: ".cd-view-settings", target: "[role=switch]" };
 const PLAN_CARD = { within: ".cp-card" };
 // Recipe labels that flip on async state: when the capture's own clicks already wrote a
 // draft for the shot's client (the debounced plan sync PUTs it), a rerun of the same
@@ -112,6 +100,275 @@ const PLAN_CARD = { within: ".cp-card" };
 const STEP_ALTERNATES = {
   "s07-exercise-library": { "Set up plan": ["Edit plan"] },
 };
+const REQUIRED_QUERY_VALUE = "*";
+const COACH_QUERY_KEYS = [
+  "section",
+  "client",
+  "tab",
+  "plan",
+  "review",
+  "editor",
+];
+const STEP_ALIASES = {
+  "s04-template-habits": { "Training Program": "Training" },
+};
+
+export const CAPTURE_EXPECTATIONS = {
+  "s01-roster": {
+    query: { section: "clients" },
+    marker: "Filter athletes",
+  },
+  "s01-profile-overview": {
+    query: { section: "clients", client: "client-013" },
+    marker: "Chloe Park",
+    state: "Overview",
+  },
+  "s01-profile-plans": {
+    query: { section: "clients", client: "client-013", tab: "Plans" },
+    marker: "Plans & targets",
+    state: "Plans",
+  },
+  "s01-profile-checkins": {
+    query: { section: "clients", client: "client-013", tab: "Check-ins" },
+    marker: "Check-in calendar",
+    state: "Check-ins",
+  },
+  "s01-profile-notes": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      tab: "Notes & tasks",
+    },
+    marker: "Notes & tasks",
+    state: "Notes & tasks",
+  },
+  "s01-profile-onboarding": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      tab: "Onboarding",
+    },
+    marker: "Onboarding",
+    state: "Onboarding",
+  },
+  "s02-messages": {
+    query: { section: "messages" },
+    marker: "Conversations",
+  },
+  "s02-thread": {
+    query: { section: "messages", client: "client-013" },
+    marker: "Your coaching conversation",
+  },
+  "s02-thread-attachments": {
+    query: { section: "messages", client: "client-013" },
+    marker: "Choose photo, video or file",
+  },
+  "s02-notes-todos": {
+    query: { section: "notes" },
+    marker: "Notes & to-dos",
+  },
+  "s03-checkins-board": {
+    query: { section: "check-ins" },
+    marker: "Awaiting feedback",
+  },
+  "s03-add-extra": {
+    query: { section: "check-ins" },
+    marker: "Add an extra check-in date",
+    state: "Add an extra check-in date",
+  },
+  "s03-checkin-review": {
+    query: {
+      section: "check-ins",
+      client: "client-001",
+      review: "submission-emma",
+    },
+    marker: "Tracker & progress",
+  },
+  "s04-habit-editor": {
+    query: {
+      section: "clients",
+      client: "client-010",
+      plan: "habits",
+      tab: "Plans",
+    },
+    marker: "Client habit definitions",
+  },
+  "s04-template-habits": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Include Habit Tracker",
+    state: "Habits",
+  },
+  "s05-templates": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "A thoughtful starting point for every athlete",
+  },
+  "s05-template-editor": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Tabs",
+    state: "Tabs",
+  },
+  "s05-tracker-setup": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Daily log",
+    state: "Tracker",
+  },
+  "s05-client-setup": {
+    query: { section: "clients", client: "client-015" },
+    marker: "Assign a setup to Eva Fischer",
+    state: "Assign a setup to Eva Fischer",
+  },
+  "s06-mealplan-editor": {
+    query: {
+      section: "clients",
+      client: "client-013",
+      plan: "nutrition",
+      tab: "Plans",
+    },
+    marker: "Meal plan",
+  },
+  "s06-template-nutrition": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Nutrition",
+    state: "Nutrition",
+  },
+  "s07-training-editor": {
+    query: { section: "clients", client: "client-001", plan: "training" },
+    marker: "Training program",
+  },
+  "s07-exercise-library": {
+    query: { section: "clients", client: "client-001", plan: "training" },
+    marker: "Add an exercise",
+  },
+  "s08-builder": {
+    hash: "#dashboard",
+    marker: "A canvas for your coaching",
+    state: "Dashboard",
+  },
+  "s08-widget-gallery": {
+    hash: "#dashboard",
+    marker: "Choose widgets to add",
+    state: "Add widgets",
+  },
+  "s08-template-dashboard": {
+    query: { section: "templates", editor: REQUIRED_QUERY_VALUE },
+    marker: "Dashboard",
+    state: "Dashboard",
+  },
+  "s09-tracker-today": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Today",
+    state: "Client preview",
+  },
+  "s09-tracker-week": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Week",
+    state: "Client preview",
+  },
+  "s09-tracker-trends": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Trends",
+    state: "Client preview",
+  },
+  "s09-tracker-config": {
+    hash: "#tracker",
+    marker: "Client tracker",
+    state: "Tracker",
+  },
+  "s10-appearance": {
+    hash: "#appearance",
+    marker: "Make it yours",
+    state: "Appearance",
+  },
+  "s10-clients-studio": {
+    hash: "#clients",
+    marker: "active clients",
+    state: "Clients",
+  },
+  "s10-mealplan-studio": {
+    hash: "#mealplan",
+    marker: "Demo workspace",
+    state: "Meal plans",
+  },
+  "s11-preferences": {
+    forbiddenQuery: COACH_QUERY_KEYS,
+    marker: "Workspace preferences",
+    state: "Workspace preferences",
+  },
+  "s11-client-preview": {
+    query: { section: "clients", client: "client-001" },
+    marker: "Client preview",
+    state: "Client preview",
+  },
+};
+
+const AUTH_OR_ERROR_CONTENT =
+  /(sign in|forbidden|unauthorized|not authorized|access denied|page could not be found)/i;
+
+const shotStem = (shot) => shot.file.replace(/\.(png|webp)$/, "");
+
+export function expectedCaptureMarker(shot) {
+  const stem = shotStem(shot);
+  return (
+    CAPTURE_EXPECTATIONS[stem]?.marker ??
+    shot.clicks[shot.clicks.length - 1] ??
+    shot.screen
+  );
+}
+
+const includesText = (haystack, needle) =>
+  haystack
+    .replace(/\s+/g, " ")
+    .toLowerCase()
+    .includes(needle.replace(/\s+/g, " ").toLowerCase());
+
+/**
+ * @param {{file:string,route:string,screen:string,clicks:string[]}} shot
+ * @param {{url:string,text:string,state?:string[]}} page
+ * @param {{requireMarker?:boolean,expectedScreen?:boolean}} [options]
+ */
+export function captureProblem(
+  shot,
+  { url, text, state = [] },
+  { requireMarker = true, expectedScreen = true } = {},
+) {
+  const stem = shotStem(shot);
+  const contract = CAPTURE_EXPECTATIONS[stem] ?? {};
+  const expected = new URL(`https://capture.invalid${shot.route}`);
+  const actual = new URL(url);
+  if (expectedScreen) {
+    const expectedHash = contract.hash ?? expected.hash;
+    if (actual.pathname !== expected.pathname || actual.hash !== expectedHash)
+      return `expected capture route ${expected.pathname}${expectedHash}, got ${actual.pathname}${actual.hash}`;
+    for (const key of contract.forbiddenQuery ?? [])
+      if (actual.searchParams.has(key))
+        return `unexpected capture query parameter "${key}"`;
+    for (const [key, expectedValue] of Object.entries(contract.query ?? {})) {
+      const actualValue = actual.searchParams.get(key);
+      if (
+        expectedValue === REQUIRED_QUERY_VALUE
+          ? !actual.searchParams.has(key)
+          : actualValue !== expectedValue
+      )
+        return `expected capture query ${key}=${expectedValue}, got ${actualValue ?? "missing"}`;
+    }
+  } else if (actual.pathname !== expected.pathname) {
+    return `expected capture route ${expected.pathname}, got ${actual.pathname}${actual.hash}`;
+  }
+  if (AUTH_OR_ERROR_CONTENT.test(text))
+    return "capture reached an authentication, authorization, or error page";
+  const marker = expectedCaptureMarker(shot);
+  if (requireMarker && marker && !includesText(text, marker))
+    return `expected capture content marker "${marker}"`;
+  const stateText = state.join("\n");
+  if (
+    requireMarker &&
+    contract.state &&
+    !includesText(stateText, contract.state)
+  )
+    return `expected selected capture state "${contract.state}"`;
+  return null;
+}
+
 export const STEP_SCOPES = {
   "s01-profile-checkins": { "Check-ins": { within: ".cd-profile-tabs" } },
   "s04-template-habits": Object.fromEntries(
@@ -123,7 +380,7 @@ export const STEP_SCOPES = {
       "Training Program",
       "Check-In",
       "Habits",
-    ].map((label) => [label, VIEW_TOGGLE]),
+    ].map((label) => [label, TEMPLATE_NAV]),
   ),
   "s05-tracker-setup": {
     "01 Tabs": TEMPLATE_NAV,
@@ -391,20 +648,11 @@ async function captureScrollers(page, outDir, vp, stem) {
 
 // Under CPU load Chromium can drop a navigation or a screenshot mid-run. One retry of the capture is allowed
 // (never of a comparison): relaunch the browser, wait for the server to answer again, then replay the same shot.
-async function waitForServer(baseUrl, ms = 60000) {
-  const dispatcher = await insecureLoopbackDispatcher(baseUrl);
+async function waitForServer(baseUrl, checkUrl, ms = 60000) {
   const t0 = Date.now();
   for (;;) {
     try {
-      if (
-        (
-          await fetch(`${baseUrl}/coach`, {
-            signal: AbortSignal.timeout(5000),
-            ...(dispatcher ? { dispatcher } : {}),
-          })
-        ).ok
-      )
-        return true;
+      if (await checkUrl(`${baseUrl}/coach`)) return true;
     } catch {}
     if (Date.now() - t0 > ms) return false;
     await new Promise((r) => setTimeout(r, 1000));
@@ -418,6 +666,9 @@ export async function captureAll({
   serverMine = null,
   // Session cookies for every capture context (run.mjs signs in to the root app); none for the frontend/ baseline.
   cookies = [],
+  checkUrl = async (url) =>
+    (await fetch(url, { signal: AbortSignal.timeout(5000) })).ok,
+  ignoreHTTPSErrors = false,
 }) {
   const index = JSON.parse(await readFile(INDEX_PATH, "utf8"));
   // --disable-partial-raster: partial raster re-rasters only the invalidated part of a tile, so the anti-aliased
@@ -465,7 +716,7 @@ export async function captureAll({
             }
             await browser.close().catch(() => {});
             browser = await launch();
-            if (!(await waitForServer(baseUrl))) {
+            if (!(await waitForServer(baseUrl, checkUrl))) {
               lastErr = new Error(
                 `server at ${baseUrl} stopped answering; retry not attempted`,
               );
@@ -485,7 +736,7 @@ export async function captureAll({
               colorScheme: "light",
               reducedMotion: "reduce",
               serviceWorkers: "block",
-              ignoreHTTPSErrors: loopbackHttps(baseUrl),
+              ignoreHTTPSErrors: ignoreHTTPSErrors || loopbackHttps(baseUrl),
             });
             if (cookies?.length) await ctx.addCookies(cookies);
             await ctx.addInitScript(initScript(STORAGE_SEED));
@@ -499,17 +750,57 @@ export async function captureAll({
             });
             await page.addStyleTag({ content: FREEZE_CSS });
             await settle(page);
+            const pageState = async () => ({
+              url: page.url(),
+              text: await page.locator("body").innerText(),
+              state: await page.evaluate(() => {
+                const label = (el) =>
+                  (
+                    el.innerText ||
+                    el.getAttribute("aria-label") ||
+                    el.getAttribute("title") ||
+                    ""
+                  )
+                    .replace(/\s+/g, " ")
+                    .trim();
+                const selected = [
+                  ...document.querySelectorAll(
+                    '[data-active="true"], [data-state="active"], [aria-current], [aria-selected="true"], [aria-pressed="true"], dialog[open], details[open] > summary, [data-page]',
+                  ),
+                ]
+                  .map((el) => el.getAttribute("aria-label") || label(el))
+                  .filter(Boolean);
+                return [...new Set(selected)];
+              }),
+            });
+            const initialProblem = captureProblem(shot, await pageState(), {
+              requireMarker: false,
+              expectedScreen: false,
+            });
+            if (initialProblem) throw new Error(initialProblem);
             const clickLog = [];
-            for (const label of shot.clicks)
-              clickLog.push(
-                await clickByText(page, label, {
+            for (const label of shot.clicks) {
+              const result = await clickByText(
+                page,
+                STEP_ALIASES[stem]?.[label] ?? label,
+                {
                   fallback: vp === "390",
                   scope: STEP_SCOPES[stem]?.[label] ?? null,
                   alternates: STEP_ALTERNATES[stem]?.[label] ?? [],
-                }),
+                },
               );
+              clickLog.push({ ...result, recipe: label });
+            }
             await page.evaluate(() => window.scrollTo(0, 0));
             await settle(page);
+            const started = Date.now();
+            let finalProblem = null;
+            do {
+              finalProblem = captureProblem(shot, await pageState());
+              if (!finalProblem) break;
+              await page.waitForTimeout(50);
+            } while (Date.now() - started < 3000);
+            if (finalProblem) throw new Error(finalProblem);
             const png = await page.screenshot({
               fullPage: true,
               animations: "disabled",
@@ -535,6 +826,8 @@ export async function captureAll({
               stem,
               route: shot.route,
               screen: shot.screen,
+              finalUrl: page.url(),
+              marker: expectedCaptureMarker(shot),
               clicks: clickLog,
               png: rel.split(path.sep).join("/"),
               scrolls,

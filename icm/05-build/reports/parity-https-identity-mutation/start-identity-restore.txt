@@ -1,0 +1,23 @@
+Post-mutation restore verification — process-start registry
+
+Command: npx -y -p node@24.22.1 sh -c 'npx vitest run tests/unit/parity-https.test.ts'
+Exit: 0
+Result: 1 file passed; 19/19 tests passed.
+
+Immediate post-restore baseline SHA-256:
+f05d57bdc1539e5bb76e5cb295f4b7581357682cb4e75256a4512782a141a621  tools/parity/local-https.mjs
+f61bde3e3c29604944e3cee0cfd098da0741211b057a4f827052a06fe63654b7  tools/parity/run.mjs
+a71e11af13bd1b98493919dd88105d8ec8713d678800d86f3b3e25d750144698  tests/unit/parity-https.test.ts
+2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a  tools/parity/capture.mjs
+
+Final SHA-256 after the reviewed ownership-validation and deterministic-leader
+hardening (mutation sections remained byte-identically restored):
+9309f4de41d2ad2bc9f36b2e67af778ac8f9f775dbdad2ae01f289e0f4bf2fb3  tools/parity/local-https.mjs
+53d3bd8102002cff50721bdefce9db1f64d3ace43a78edf55c29a0f2ed2e59ac  tools/parity/run.mjs
+d430db3a311dffc08149f8e14c9e4589d287122a83a11410fdeffb9f9b6250aa  tests/unit/parity-https.test.ts
+2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a  tools/parity/capture.mjs
+
+Real-chain proof:
+Direct `node node_modules/next/dist/bin/next start` produced listener PID
+76370, the same PID/PGID recorded in ownership. `stopOwnedProcessGroup`
+returned []; no listener or owned process remained.

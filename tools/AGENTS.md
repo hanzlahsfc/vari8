@@ -2,6 +2,7 @@
 
 <!-- BEGIN GENERATED: scripts/index/generate.ts (npm run index) -->
 Purpose: No curated purpose yet; inspect the directory.
+Top-level files: local-tls-proxy.mjs
 Read next: docs/index/README.md while working in here.
 Rules: see the repo-root AGENTS.md and CONTEXT.md.
 <!-- END GENERATED -->

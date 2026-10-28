@@ -356,7 +356,7 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
     expect(afterReopen.completedByMemberId).toBeNull();
   });
 
-  it("DELETE soft deletes with a seven day restore window and hides the row", async () => {
+  it("DELETE soft deletes with a D24 restore window and hides the row", async () => {
     const { ws, member, email } = await workspaceWith("COACH");
     const token = await signInToken(email);
     const created = (await (
@@ -383,7 +383,7 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
     expect(row.deletedAt).not.toBeNull();
     expect(row.restoreUntil).not.toBeNull();
     expect(row.restoreUntil!.getTime() - row.deletedAt!.getTime()).toBe(
-      7 * 86400000,
+      30_000,
     );
 
     const list = await listCall(ws.id, authed(token));

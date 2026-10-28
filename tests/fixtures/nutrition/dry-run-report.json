@@ -1,0 +1,145 @@
+{
+  "kind": "nutrition-source-dry-run-v2",
+  "sources": {
+    "bls": {
+      "provenance": {
+        "source": "bls-4.0-2025",
+        "sourceUrl": "https://blsdb.de/",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourceVersion": "4.0 (2025, DOI 10.25826/Data20251217-134202-0)",
+        "sourceSha256": "524bbefe25b691f5cb3de7a9f3e27fa2967aebfeabf217d99414ba7806e78c60"
+      },
+      "counts": {
+        "scanned": 7140,
+        "ignoredEmpty": 0,
+        "accepted": 7140,
+        "rejected": 0,
+        "duplicates": 0
+      },
+      "rejected": [],
+      "duplicates": [],
+      "importerProjection": {
+        "acceptedRecords": 7140
+      },
+      "audit": {
+        "sampled": 50,
+        "fields": 6900,
+        "exact": 5165,
+        "missingNull": 1624,
+        "qualifiedNull": 111,
+        "qualifiedBound": 0,
+        "mismatches": [],
+        "fieldExactPct": 1
+      }
+    },
+    "ciqual": {
+      "provenance": {
+        "source": "ciqual-2025",
+        "sourceUrl": "https://doi.org/10.57745/RDMHWY",
+        "licence": "Licence Ouverte / Open Licence 2.0",
+        "licenceUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "sourceVersion": "2025-11-03 (Table Ciqual 2025, ANSES)",
+        "sourceSha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0"
+      },
+      "counts": {
+        "scanned": 3484,
+        "ignoredEmpty": 0,
+        "accepted": 3484,
+        "rejected": 0,
+        "duplicates": 0
+      },
+      "rejected": [],
+      "duplicates": [],
+      "importerProjection": {
+        "acceptedRecords": 3484
+      },
+      "audit": {
+        "sampled": 50,
+        "fields": 3700,
+        "exact": 1981,
+        "missingNull": 1382,
+        "qualifiedNull": 44,
+        "qualifiedBound": 293,
+        "mismatches": [],
+        "fieldExactPct": 1
+      }
+    }
+  },
+  "crossSourceDedupeReview": {
+    "note": "review candidates for a human — never merged or deleted; the committed decision is reapplied during regeneration when --dedupe-decision is supplied",
+    "count": 2,
+    "candidates": [
+      {
+        "name": "gin",
+        "rows": [
+          {
+            "name": "Gin",
+            "sourceId": "P722000",
+            "source": "bls-4.0-2025"
+          },
+          {
+            "name": "Gin",
+            "sourceId": "1002",
+            "source": "ciqual-2025"
+          }
+        ]
+      },
+      {
+        "name": "salami",
+        "rows": [
+          {
+            "name": "Salami",
+            "sourceId": "W140000",
+            "source": "bls-4.0-2025"
+          },
+          {
+            "name": "Salami",
+            "sourceId": "30350",
+            "source": "ciqual-2025"
+          }
+        ]
+      }
+    ],
+    "reviewOutcome": {
+      "status": "decided",
+      "decision": {
+        "kind": "cross-source-dedupe-decision-v1",
+        "verdict": "retain separate source records",
+        "decisionMaker": "Hanzlah",
+        "decidedAt": "2026-10-28",
+        "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/222#issuecomment-6475240775",
+        "attribution": "Supplied by Hanzlah in chat and transmitted by the orchestrator — not a manually posted GitHub comment.",
+        "scope": "Covers ONLY the two reported candidate pairs. Cross-source duplicate detection is not exhaustive and this record does not claim it.",
+        "pairs": [
+          {
+            "name": "Gin",
+            "rows": [
+              {
+                "source": "bls-4.0-2025",
+                "sourceId": "P722000"
+              },
+              {
+                "source": "ciqual-2025",
+                "sourceId": "1002"
+              }
+            ]
+          },
+          {
+            "name": "Salami",
+            "rows": [
+              {
+                "source": "bls-4.0-2025",
+                "sourceId": "W140000"
+              },
+              {
+                "source": "ciqual-2025",
+                "sourceId": "30350"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -10,7 +10,7 @@
 
 import { z } from "zod";
 
-import { defineApiV1Route } from "@/lib/api/v1";
+import { ApiError, defineApiV1Route } from "@/lib/api/v1";
 import {
   readClientDetail,
   writeClientDetail,
@@ -57,7 +57,13 @@ export const PUT = defineApiV1Route({
   capability: "notes.write",
   params: paramsSchema,
   handler: async ({ workspace, params, request }) => {
-    const body = putBodySchema.parse(await request.json());
+    let payload: unknown;
+    try {
+      payload = await request.json();
+    } catch {
+      throw new ApiError(400, "invalid_input");
+    }
+    const body = putBodySchema.parse(payload);
     return writeClientDetail(workspace, params.clientProfileId, body);
   },
 });

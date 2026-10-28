@@ -1,0 +1,97 @@
+{
+  "kind": "nutrition-source-fixture-manifest-v1",
+  "fixtures": [
+    {
+      "path": "tests/fixtures/nutrition/bls-4.0-sample.xlsx",
+      "sha256": "d1fd7911c83eab6d0443752622efb552cba05cf73907951ef4ed928172778997",
+      "rows": "1..9 (header + 8 data rows) verbatim slice of sheet 'BLS_4_0_Daten_2025_DE'",
+      "source": {
+        "distribution": "https://blsdb.de/ (zip BLS_4_0_2025_DE.zip)",
+        "innerFile": "BLS_4_0_Daten_2025_DE/BLS_4_0_Daten_2025_DE.xlsx",
+        "innerFileSha256": "524bbefe25b691f5cb3de7a9f3e27fa2967aebfeabf217d99414ba7806e78c60",
+        "retrieved": "2026-10-28",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "doi": "10.25826/Data20251217-134202-0"
+      }
+    },
+    {
+      "path": "tests/fixtures/nutrition/ciqual-2025-sample.xlsx",
+      "sha256": "f49f3a7481dabb931e7f723ea22f96b6fde9e0b509ec6e748bdc240015490057",
+      "rows": "1..9 (header + 8 data rows) verbatim slice of sheet 'composition nutritionnelle'",
+      "source": {
+        "distribution": "https://doi.org/10.57745/RDMHWY (entrepot.recherche.data.gouv.fr)",
+        "file": "Table Ciqual 2025_FR_2025_11_03.xlsx",
+        "fileSha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0",
+        "retrieved": "2026-10-28",
+        "licence": "Licence Ouverte / Open Licence 2.0",
+        "licenceUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "doi": "10.57745/RDMHWY"
+      }
+    }
+  ],
+  "dryRun": {
+    "command": "npx tsx scripts/dry-run-nutrition-source.ts --input bls=<full-export> --input ciqual=<full-export> --out <dir>",
+    "report": {
+      "path": "tests/fixtures/nutrition/dry-run-report.json",
+      "sha256": "bf6d2a85d178a4ea3b5e5c6e9bc6d15bcd9d71fd9eba7307fe401a4320ed8e58",
+      "generated": "2026-10-28",
+      "note": "committed audit evidence \u2014 independent re-read of raw cells vs candidates; full-export inputs are not committed (distribution paths + sha256 below reproduce them exactly)"
+    },
+    "candidates": {
+      "bls": {
+        "file": "candidates-bls.json",
+        "sha256": "c06b307835d7e0be90b7d2f8b397aae998073510ff2c2c1ba4e97cbb8701e628",
+        "accepted": 7140
+      },
+      "ciqual": {
+        "file": "candidates-ciqual.json",
+        "sha256": "c1a49410fb95640a5a202014b685fa9a04de8a1a0b348bbfc5ccf283bd15e622",
+        "accepted": 3484
+      },
+      "note": "full candidates outputs reproducible via the committed script + pinned export hashes; not committed (multi-MB)"
+    }
+  },
+  "dedupeDecision": {
+    "path": "tests/fixtures/nutrition/dedupe-review-decision.json",
+    "sha256": "2550d89e97b29db27c38fbea2865e2c5ddba8f13bd8193bcb251ab999cf16788"
+  },
+  "accuracyGate": {
+    "command": "npx tsx scripts/check-nutrition-source-accuracy.ts --input bls=<xlsx> --expected bls=expected-bls.json [--input ciqual=... --expected ciqual=...] [--out <dir>] [--manifest tests/fixtures/nutrition/MANIFEST.json]",
+    "packageScript": "npm run check:nutrition-sources",
+    "expected": {
+      "bls": {
+        "file": "expected-bls.json",
+        "sha256": "ccf38458f4951baa165c9f6f36d9c2e7d8da488769ed04347c5d49af1e360778"
+      },
+      "ciqual": {
+        "file": "expected-ciqual.json",
+        "sha256": "064a4469622e14e77f1085644251f8156991a3586796ece0250ebb73a399f4a7"
+      },
+      "extraction": "tests/fixtures/nutrition/extract-expected.py \u2014 independent raw-XML extraction, NOT the TS adapters"
+    },
+    "corruptFixtures": {
+      "corrupt0": "ciqual-2025-sample-corrupt0.xlsx",
+      "corruptnum": "ciqual-2025-sample-corruptnum.xlsx",
+      "corruptqual": "ciqual-2025-sample-corruptqual.xlsx"
+    },
+    "hashes": {
+      "expected-bls.json": "ccf38458f4951baa165c9f6f36d9c2e7d8da488769ed04347c5d49af1e360778",
+      "expected-ciqual.json": "064a4469622e14e77f1085644251f8156991a3586796ece0250ebb73a399f4a7",
+      "ciqual-2025-sample-corrupt0.xlsx": "a813a1a5076d6279c154322420da9e8efc96d6d9fd379c6f5794d4c71d77ede7",
+      "ciqual-2025-sample-corruptnum.xlsx": "352564154dfbde15359c0d0d19699227b8e2aa10a35fd59486786141c955e5a7",
+      "ciqual-2025-sample-corruptqual.xlsx": "3e25f1f8fff2a5bf0b78c3e0c9fb50ddad2589de1e1f744e2dcbf00011df9462",
+      "expected-ciqual-omit.json": "a479022da16291f78743ae39511d8604b88490f82239b1a37b56dc7b4de3640e",
+      "expected-ciqual-wrongunit.json": "fb72687b0ac604ddf47ad2e9e0289a5d21677940c76728bfc64c43c044bcf786",
+      "expected-ciqual-wrongbasis.json": "a6770fa62766c2df0726110fc7ee51a24730fd7e253a953f5853e36dab543740",
+      "expected-ciqual-dup.json": "0fbc0a8fda6075e572a4c6e21dcd8010cf17240418f956d41733edcf84e5f12d"
+    },
+    "pendingOn181": "duplicate-barcode served-view check, last_verified_at served-row provenance, licence attribution rendering \u2014 all require #181's schema/served projection; not implemented here",
+    "corruptExpected": {
+      "omit": "expected-ciqual-omit.json",
+      "wrongunit": "expected-ciqual-wrongunit.json",
+      "wrongbasis": "expected-ciqual-wrongbasis.json",
+      "dup": "expected-ciqual-dup.json"
+    }
+  }
+}
