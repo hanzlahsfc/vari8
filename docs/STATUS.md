@@ -1,3 +1,48 @@
+## 2026-10-28 - W2-N7 client own meal plan view route (audit row N7) on `w2/n7`
+
+- Gap: GET `.../clients/[clientProfileId]/meal-plans` declared `plan.read`
+  (client scope `own`) but always called `readStaffMealPlan`, which denies
+  anything but workspace/assigned scope, so a bound client could never read
+  its own published plan over the API.
+- Change (route.ts only): the GET handler now calls
+  `requireOwnClientProfile(viewer, workspace, params.clientProfileId)` before
+  any read. Scope `own` is bound to the caller's own client profile id and a
+  foreign `clientProfileId` is a plain 403; only then does the handler branch:
+  `own` serves `readOwnMealPlan` (`{current, upcoming}` with the published
+  payload and version metadata, no draft), every other scope keeps
+  `readStaffMealPlan` verbatim. PUT is untouched (staff `plan.write` only).
+- Tests: new `tests/integration/api-v1-mealplan-own.test.ts` (4 tests, real
+  PG + real sign-in): own read 200 with literal own-shape assertions and no
+  staff keys, the named test "denies a foreign clientProfileId with 403
+  before any read" (403 plus zero READ audit rows on the foreign subject),
+  staff keeps the staff shape, unauthenticated 401. Mutation-proved: with the
+  compare removed the foreign request returns 200 and the named test fails.
+  Regression: `api-v1-plans.test.ts` 6/6 stays green (its client role matrix
+  case uses an unbound profile, still 403 through the same compare).
+- Gates: typecheck 0; eslint on diff files 0 (repo lint 0 errors / 96
+  pre-existing warnings); prettier on diff files clean; `next build` 0;
+  `npm run index` 0 and `index:check` 0 (generated output unchanged); unit
+  vitest 132 files / 1509 tests 0; integration suite 4/4 + regression 6/6;
+  fresh `prisma migrate deploy` on lane DB `app_fp_w2n7` clean. No migration
+  consumed (reserved dir `20261027000022` unused; no schema need).
+- Live proof on `app_fp_w2n7` (seeded `VARI8_SEED_DEMO=1`, real sign-in via
+  /api/auth/sign-in/email, dev server 127.0.0.1:5455): own client GET 200
+  with `current.versionSeq=1` + full payload + `upcoming=null`; same client
+  on a foreign clientProfileId 403 forbidden; staff coach GET 200 staff
+  shape; no credentials 401 unauthenticated. Request/status lines under
+  `Vari8-evidence/FULL-PACKAGE-2/W2N7/`. Server stopped; `pg_database` shows
+  `lane_present|0` (lane-teardown.txt). Exported method set of the route
+  file: GET, PUT (unchanged, matches this claim). Zero U+2013/U+2014 in added
+  lines.
+- Unmapped client fields: resolved macro totals (kcal/protein/carbs/fat) are
+  not in the response; the client derives them from `payload` portions plus
+  the food catalog, which this route intentionally does not join. The
+  "temporary plan" badge is an audit N1 feature with no `MealPlanDraft`
+  field; not derivable. `upcoming` is metadata-only by service design.
+- Screenshot: none applies; no mounted surface on this base consumes the
+  route (the canvas client-app meal plan is demo data).
+
+
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
 - Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
