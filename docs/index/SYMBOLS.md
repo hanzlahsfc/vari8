@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 154 modules with exports, 1528 exported symbols.
+Counts: 159 modules with exports, 1548 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1421,6 +1421,41 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type NutritionSourceField = (typeof NUTRITION_SOURCE_FIELDS)[number]`
 - `export type NutritionSourceRecord = { sourceRow: number; sourceNo: number; name: string; amount: number | null; unit: string | null; calories: number | null; protein: number | null; carbs: number |...`
 - `export function extractNutritionSource(html: string, meta: { sourceName: string; sourceFingerprint: string }): NutritionSource`
+
+## `lib/nutrition/sources/bls.ts`
+
+- `export const BLS_PROVENANCE: Omit<SourceProvenance, "sourceSha256">`
+- `export async function parseBlsExport(bytes: Buffer): Promise<{ provenance: SourceProvenance; classified: ClassifiedSource }>`
+
+## `lib/nutrition/sources/ciqual.ts`
+
+- `export const CIQUAL_PROVENANCE: Omit<SourceProvenance, "sourceSha256">`
+- `export async function parseCiqualExport(bytes: Buffer): Promise<{ provenance: SourceProvenance; classified: ClassifiedSource }>`
+
+## `lib/nutrition/sources/common.ts`
+
+- `export type ClassifiedSource = { sourceName: string; sourceFingerprint: string; scannedRowCount: number; ignoredEmptyRowCount: number; sourceRowCount: number; accepted: SourceCandidate[]; rejected:...`
+- `export type NutrientMeasure = { code: string; name: string; unit: string; basis: string; value: number | null; qualifier?: "lt" | "gt" | "traces" | "lod" | "loq" | "lod_or_loq"; origin?: string | n...`
+- `export const SUPPORTED_UNITS = new Set(["kJ", "kcal", "g", "mg", "µg", "IU"])`
+- `export class SourceAdapterError extends Error (1 members)`
+- `export type SourceCandidate = { sourceId: string; sourceRow: number; name: string; nameAlt: string | null; group: string | null; sourceNote?: string | null; nutrients: NutrientMeasure[]; provenance...`
+- `export type SourceProvenance = { source: string; sourceUrl: string; licence: string; licenceUrl: string; sourceVersion: string; sourceSha256: string; }`
+- `export type SourceRejectedReason = | "empty_row" | "missing_source_id" | "missing_name" | "invalid_numeric" | "unsupported_unit" | "duplicate_source_id"`
+- `export type SourceRejectedRow = { sourceRow: number; sourceId: string | null; reasonCode: SourceRejectedReason; reasonField?: string; reasonDetail?: string; }`
+- `export function candidateFingerprint(candidate: Omit<SourceCandidate, "rowFingerprint">): string`
+- `export function parseSourceNumeric(raw: string | null | undefined): | { value: number | null; qualifier?: "lt" | "gt" | "traces" | "lod" | "loq" | "lod_or_loq"; } | undefined`
+- `export function sha256Hex(bytes: Buffer | string): string`
+- `export function toNutritionSource(classified: ClassifiedSource, nutritionCodes: { calories?: string; protein?: string; carbs?: string; fats?: string; }): NutritionSource & { candidates: SourceCandi...`
+
+## `lib/nutrition/sources/dedupe.ts`
+
+- `export interface DedupeCandidate (2 members)`
+- `export function applyDedupeDecision(candidates: DedupeCandidate[], decisionFile: string): { status: "decided"; decision: Decision }`
+
+## `lib/nutrition/sources/xlsx.ts`
+
+- `export type XlsxCell = string | number | boolean | Date | null`
+- `export async function readSheet(bytes: Buffer, sheet: string | number): Promise<XlsxCell[][]>`
 
 ## `lib/onboarding/assignments-boundary.ts`
 
