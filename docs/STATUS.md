@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
 ## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
 
 - Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
