@@ -252,3 +252,17 @@ state under . Fresh locked validation/gates still required.
 - STOP after #206. #207 untouched (base `beta/visual-reference-
   establishment` still `43b63ed`; next checkpoint = retarget to the new
   Beta tip + changed-head review).
+
+## P495 — #207 merged; sequence complete
+
+- #207 head `0b95d511` (parents 04902f1d + 7d4c93c7) verified: standard
+  gates all PASS under Node 24.22.1, diff-check 0, IN-TREE combined
+  capture canonical 70/70 / strict 68 / retried=0 (no overlay/grafts).
+- Package 64dbfca on refs/heads/evidence/p495-combined — verify-combined
+  verified:true from clean checkout (241/233 artifacts, source
+  0b95d511/08754c9b/7cbd0f95).
+- MERGE `6739193428caf08ed5beea35bb735ef6c5eb8342`: P1=7d4c93c7 (Beta)
+  P2=0b95d511 (reviewed head) TREE=08754c9b (=tested). Baseline
+  640f4375 intact post-merge. Draft→ready→merge under canonical lock.
+- #203 → #206 → #207 sequence complete. Activation/deployment never
+  authorized or performed. Lock `/tmp/vari8-worktrees/.locks/Vari8-Beta.lock`.
