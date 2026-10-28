@@ -1,0 +1,103 @@
+{
+  "kind": "nutrition-source-dry-run-v2",
+  "sources": {
+    "bls": {
+      "provenance": {
+        "source": "bls-4.0-2025",
+        "sourceUrl": "https://blsdb.de/",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "sourceVersion": "4.0 (2025, DOI 10.25826/Data20251217-134202-0)",
+        "sourceSha256": "524bbefe25b691f5cb3de7a9f3e27fa2967aebfeabf217d99414ba7806e78c60"
+      },
+      "counts": {
+        "scanned": 7140,
+        "ignoredEmpty": 0,
+        "accepted": 7140,
+        "rejected": 0,
+        "duplicates": 0
+      },
+      "rejected": [],
+      "duplicates": [],
+      "importerProjection": {
+        "acceptedRecords": 7140
+      },
+      "audit": {
+        "sampled": 50,
+        "fields": 6900,
+        "exact": 5165,
+        "nullOk": 1735,
+        "mismatches": [],
+        "fieldExactPct": 1,
+        "nullPreservedPct": 0.2514492753623188
+      }
+    },
+    "ciqual": {
+      "provenance": {
+        "source": "ciqual-2025",
+        "sourceUrl": "https://doi.org/10.57745/RDMHWY",
+        "licence": "Licence Ouverte / Open Licence 2.0",
+        "licenceUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "sourceVersion": "2025-11-03 (Table Ciqual 2025, ANSES)",
+        "sourceSha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0"
+      },
+      "counts": {
+        "scanned": 3484,
+        "ignoredEmpty": 0,
+        "accepted": 3484,
+        "rejected": 0,
+        "duplicates": 0
+      },
+      "rejected": [],
+      "duplicates": [],
+      "importerProjection": {
+        "acceptedRecords": 3484
+      },
+      "audit": {
+        "sampled": 50,
+        "fields": 3700,
+        "exact": 2274,
+        "nullOk": 1426,
+        "mismatches": [],
+        "fieldExactPct": 1,
+        "nullPreservedPct": 0.3854054054054054
+      }
+    }
+  },
+  "crossSourceDedupeReview": {
+    "note": "review candidates for a human — never merged or deleted",
+    "count": 2,
+    "candidates": [
+      {
+        "name": "gin",
+        "rows": [
+          {
+            "name": "Gin",
+            "sourceId": "P722000",
+            "source": "bls-4.0-2025"
+          },
+          {
+            "name": "Gin",
+            "sourceId": "1002",
+            "source": "ciqual-2025"
+          }
+        ]
+      },
+      {
+        "name": "salami",
+        "rows": [
+          {
+            "name": "Salami",
+            "sourceId": "W140000",
+            "source": "bls-4.0-2025"
+          },
+          {
+            "name": "Salami",
+            "sourceId": "30350",
+            "source": "ciqual-2025"
+          }
+        ]
+      }
+    ]
+  }
+}

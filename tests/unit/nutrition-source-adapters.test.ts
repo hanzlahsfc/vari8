@@ -1,8 +1,8 @@
 // CATALOGUE-FOOD-ADAPTERS (#182, D11) — adapter behavior against
 // traceable fixtures: verbatim row slices (rows 1–9) of the authentic
-// exports — BLS `BLS_4_0_Daten_2025_DE.xlsx` (sha256 of zip
-// 0b7c8... see sources record) and CIQUAL `Table Ciqual
-// 2025_FR_2025_11_03.xlsx` (sha256 5555c572…, DOI 10.57745/RDMHWY).
+// exports. Full provenance chain (fixture sha256, parent distribution
+// sha256, row ranges, retrieval date, licence/DOI, dry-run evidence):
+// tests/fixtures/nutrition/MANIFEST.json + dry-run-report.json
 
 import { readFileSync } from "node:fs";
 
