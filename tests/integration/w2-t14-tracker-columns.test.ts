@@ -405,6 +405,66 @@ describe.skipIf(!enabled)("w2-t14 tracker column groups (real PG)", () => {
     expect(again).toEqual(result);
   });
 
+  it("orders items inside one section and one group by declared order, not array order", async () => {
+    // Mutation guard for the item sort: both items share the section and the
+    // group while the definition array holds `late` (order 20) before `early`
+    // (order 5), so only the declared (order ?? 0) sort emits `early` first.
+    const s = await seedClient({
+      definition: {
+        title: "pair",
+        sections: [
+          {
+            sectionId: "sec_pair",
+            label: "Pair",
+            items: [
+              {
+                itemId: "z_late",
+                parameterId: "pd_late",
+                parameterKey: "late",
+                required: false,
+                order: 20,
+              },
+              {
+                itemId: "a_early",
+                parameterId: "pd_early",
+                parameterKey: "early",
+                required: false,
+                order: 5,
+              },
+            ],
+          },
+        ],
+        parameters: {
+          pd_late: PARAM("late", "MEASUREMENT", {
+            label: "Late metric",
+            group: "Probe",
+          }),
+          pd_early: PARAM("early", "MEASUREMENT", {
+            label: "Early metric",
+            group: "Probe",
+          }),
+        },
+      },
+    });
+    const result = (await loadOwnTrackerColumns(
+      s.clientSession,
+      {
+        workspaceId: s.ws.id,
+      },
+      { db: prisma, registry: DEV_REGISTRY },
+    )) as ReadyResult;
+    expect(result.state).toBe("ready");
+    expect(result.groups).toEqual([
+      {
+        group: "Probe",
+        columns: [
+          expect.objectContaining({ key: "early", order: 5 }),
+          expect.objectContaining({ key: "late", order: 20 }),
+        ],
+      },
+    ]);
+  });
+
   it("staff read returns the same pinned groups for a named client", async () => {
     const s = await seedClient({ staff: true });
     const own = (await loadOwnTrackerColumns(
