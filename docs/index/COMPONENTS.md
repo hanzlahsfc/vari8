@@ -7,7 +7,7 @@ Source: TypeScript compiler API over `frontend/src/**`. A component is an export
 function, or a const whose initializer is a function, whose body contains JSX.
 `Imported by` lists the canvas route entries that reach the component through imports;
 a layout's imports count for every route beneath it.
-Counts: 178 components in 94 files.
+Counts: 186 components in 99 files.
 
 Rows are grouped by canvas surface: the coach workspace at `/coach`, the ethereal
 canvas at `/ethereal` and `/`. A screen element shared by both surfaces is listed in
@@ -33,14 +33,14 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Avatar` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `BuilderGallery` | `frontend/src/components/coach/builder/gallery.tsx` | /client, /coach |
 | `Button` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `Button` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Button` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `ChartPeriodControl` | `frontend/src/components/coach/builder/chart-period-control.tsx` | /client, /coach |
 | `CheckInForm` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
 | `CheckInSummary` | `frontend/src/components/client-app/check-in.tsx` | /client, /coach |
 | `CheckInTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `CheckInsWorkspace` | `frontend/src/components/coach/check-ins.tsx` | /coach |
-| `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `ClientApp` | `frontend/src/components/client-app/client-app.tsx` | /client, /coach |
 | `ClientGoalsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
 | `ClientHabitsEditor` | `frontend/src/components/coach/plans/setup-ui.tsx` | /client, /coach |
@@ -68,30 +68,30 @@ its surface section and open the file in the second column. Canvas screens: see
 | `DemoRecorder` | `frontend/src/components/coach/media.tsx` | /coach |
 | `DetailContent` | `frontend/src/components/coach/builder/widget-content.tsx` | /client, /coach |
 | `Dialog` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `DropdownMenu` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `EditorHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `DropdownMenu` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `EditorHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `Empty` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `ExerciseLibraryDialog` | `frontend/src/components/coach/plans/training/library-dialog.tsx` | /client, /coach |
 | `ExtraDateDialog` | `frontend/src/components/coach/clients.tsx` | /coach |
-| `FormGrid` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `FormGrid` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `FormPreview` | `frontend/src/components/coach/templates.tsx` | /coach |
 | `HabitsTab` | `frontend/src/components/coach/habits-tab.tsx` | /client, /coach |
 | `IconButton` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `IconButton` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `IconButton` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `IifymEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /client, /coach |
 | `IifymPlanPreview` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /client, /coach |
 | `IllustrativeTrainingTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `IndividualPlanWorkspace` | `frontend/src/components/coach/plans/workspace.tsx` | /client, /coach |
-| `Input` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Input` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `MediaCard` | `frontend/src/components/coach/media.tsx` | /coach |
 | `MediaLibrary` | `frontend/src/components/coach/media.tsx` | /coach |
 | `MessagesWorkspace` | `frontend/src/components/coach/messages.tsx` | /coach |
-| `Modal` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Modal` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `MonthPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
-| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |
+| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /coach/states, /dev/design-system, /ethereal |
 | `MultiSelect` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `MuscleHeatmap` | `frontend/src/components/coach/muscle-heatmap.tsx` | /client, /coach |
-| `Navigation` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Navigation` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `NotesWorkspace` | `frontend/src/components/coach/notes.tsx` | /coach |
 | `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /client, /coach |
 | `NutritionHistory` | `frontend/src/components/coach/builder/nutrition-history.tsx` | /client, /coach |
@@ -99,7 +99,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `NutritionTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `NutritionWidgetContent` | `frontend/src/components/coach/builder/nutrition-content.tsx` | /client, /coach |
 | `OtherTargetDialog` | `frontend/src/components/coach/plans/plan-cards-support.tsx` | /client, /coach |
-| `PageHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `PageHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `PageTitle` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `ParameterValue` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `PreviewDialog` | `frontend/src/components/coach/templates.tsx` | /coach |
@@ -108,19 +108,19 @@ its surface section and open the file in the second column. Canvas screens: see
 | `RoadmapTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `SearchBox` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `SearchableSelect` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
-| `Section` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
-| `SegmentedControl` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Section` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `SegmentedControl` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `Select` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `Select` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Select` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `SessionLogger` | `frontend/src/components/client-app/training-log/session-logger.tsx` | /client, /coach |
 | `SmoothTrend` | `frontend/src/components/coach/builder/smooth-trend.tsx` | /client, /coach |
 | `Status` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `Status` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Status` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `SupplementEditor` | `frontend/src/components/coach/supplements/editor.tsx` | /client, /coach |
 | `SupplementPlanView` | `frontend/src/components/coach/supplements/plan-view.tsx` | /client, /coach |
 | `Surface` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `Table` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Tabs` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Table` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Tabs` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `TargetSummary` | `frontend/src/components/coach/targets/target-summary.tsx` | /client, /coach |
 | `TemplateEditor` | `frontend/src/components/coach/templates.tsx` | /coach |
 | `TemplateLibrary` | `frontend/src/components/coach/templates.tsx` | /coach |
@@ -133,9 +133,9 @@ its surface section and open the file in the second column. Canvas screens: see
 | `TimePicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `TodayView` | `frontend/src/components/coach/client-tracker-preview/today-view.tsx` | /, /client, /coach, /ethereal |
 | `Toggle` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
-| `Toggle` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Toolbar` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
-| `Tooltip` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Toggle` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Toolbar` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Tooltip` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `TrackerCell` | `frontend/src/components/coach/client-tracker-preview/tracker-cell.tsx` | /, /client, /coach, /ethereal |
 | `TrackerTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `TrackingView` | `frontend/src/components/coach/client-tracker-preview/tracking-view.tsx` | /, /client, /coach, /ethereal |
@@ -145,6 +145,7 @@ its surface section and open the file in the second column. Canvas screens: see
 | `TrainingTab` | `frontend/src/components/client-app/views.tsx` | /client, /coach |
 | `Transition` | `frontend/src/components/coach/ui.tsx` | /client, /coach |
 | `TrendsView` | `frontend/src/components/coach/client-tracker-preview/trends-view.tsx` | /, /client, /coach, /ethereal |
+| `TriageContent` | `frontend/src/components/coach/builder/triage-content.tsx` | /, /client, /coach, /ethereal |
 | `WeekPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `WeekView` | `frontend/src/components/coach/client-tracker-preview/week-view.tsx` | /, /client, /coach, /ethereal |
 | `WidgetContent` | `frontend/src/components/coach/builder/widget-content.tsx` | /client, /coach |
@@ -160,10 +161,10 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Avatar` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `BodyweightTrend` | `frontend/src/components/ethereal/tracker-components.tsx` | /, /ethereal |
 | `BuilderGallery` | `frontend/src/components/ethereal/builder/gallery.tsx` | /, /ethereal |
-| `Button` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Button` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Card` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `ChartPeriodControl` | `frontend/src/components/ethereal/builder/chart-period-control.tsx` | /, /ethereal |
-| `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Checkbox` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `CheckboxControl` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `ClientPlanPreview` | `frontend/src/components/ethereal/mealplan/client-plan-preview.tsx` | /, /ethereal |
 | `ClientProfile` | `frontend/src/components/ethereal/clients/client-profile.tsx` | /, /ethereal |
@@ -176,41 +177,41 @@ its surface section and open the file in the second column. Canvas screens: see
 | `DateRangePicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `DateTimePicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `DetailContent` | `frontend/src/components/ethereal/builder/widget-content.tsx` | /, /ethereal |
-| `DropdownMenu` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `EditorHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `DropdownMenu` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `EditorHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `EtherealApp` | `frontend/src/components/ethereal/coaching-app.tsx` | /, /ethereal |
-| `FormGrid` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `FormGrid` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `FoundationComponents` | `frontend/src/components/ethereal/foundation-components.tsx` | /, /ethereal |
-| `IconButton` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Input` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `IconButton` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Input` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `LabelTag` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `MealplanWorkspace` | `frontend/src/components/ethereal/mealplan/mealplan-workspace.tsx` | /, /ethereal |
-| `Modal` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Modal` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `MonthPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
-| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |
+| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /coach/states, /dev/design-system, /ethereal |
 | `MultiSelect` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
-| `Navigation` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Navigation` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `NutritionHistory` | `frontend/src/components/ethereal/builder/nutrition-history.tsx` | /, /ethereal |
 | `NutritionTargets` | `frontend/src/components/ethereal/tracker-components.tsx` | /, /ethereal |
 | `NutritionWidgetContent` | `frontend/src/components/ethereal/builder/nutrition-content.tsx` | /, /ethereal |
-| `PageHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `PageHeader` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `PlanOverview` | `frontend/src/components/ethereal/mealplan/plan-overview.tsx` | /, /ethereal |
 | `ProgressWidgetContent` | `frontend/src/components/ethereal/builder/progress-content.tsx` | /, /ethereal |
 | `SavedMealLibrary` | `frontend/src/components/ethereal/mealplan/saved-meal-library.tsx` | /, /ethereal |
 | `SearchableSelect` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
-| `Section` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
+| `Section` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `Segmented` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
-| `SegmentedControl` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Select` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `SegmentedControl` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Select` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `SelectControl` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `SmoothTrend` | `frontend/src/components/ethereal/builder/smooth-trend.tsx` | /, /ethereal |
-| `Status` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Status` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `StatusLabel` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `SwapFoodPicker` | `frontend/src/components/ethereal/mealplan/swap-food-picker.tsx` | /, /ethereal |
 | `SwitchControl` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
-| `Table` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Table` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `Tabs` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
-| `Tabs` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Tabs` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `TextArea` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `TextInput` | `frontend/src/components/ethereal/ui.tsx` | /, /ethereal |
 | `TextTrackerCell` | `frontend/src/components/coach/client-tracker-preview/tracker-cell.tsx` | /, /client, /coach, /ethereal |
@@ -218,14 +219,15 @@ its surface section and open the file in the second column. Canvas screens: see
 | `TimeInput` | `frontend/src/components/coach/client-tracker-preview/time-input.tsx` | /, /client, /coach, /ethereal |
 | `TimePicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `TodayView` | `frontend/src/components/coach/client-tracker-preview/today-view.tsx` | /, /client, /coach, /ethereal |
-| `Toggle` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
-| `Toolbar` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /ethereal |
-| `Tooltip` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /ethereal |
+| `Toggle` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Toolbar` | `frontend/src/components/vari8/layouts.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
+| `Tooltip` | `frontend/src/components/vari8/components.tsx` | /, /client, /coach, /coach/settings, /coach/states, /ethereal |
 | `TrackerCell` | `frontend/src/components/coach/client-tracker-preview/tracker-cell.tsx` | /, /client, /coach, /ethereal |
 | `TrackerConfigurator` | `frontend/src/components/ethereal/client-tracker/tracker-configurator.tsx` | /, /ethereal |
 | `TrackingView` | `frontend/src/components/coach/client-tracker-preview/tracking-view.tsx` | /, /client, /coach, /ethereal |
 | `TrackingView` | `frontend/src/components/ethereal/client-tracker/tracking-view.tsx` | /, /ethereal |
 | `TrendsView` | `frontend/src/components/coach/client-tracker-preview/trends-view.tsx` | /, /client, /coach, /ethereal |
+| `TriageContent` | `frontend/src/components/coach/builder/triage-content.tsx` | /, /client, /coach, /ethereal |
 | `VariantSchedule` | `frontend/src/components/ethereal/mealplan/variant-schedule.tsx` | /, /ethereal |
 | `WeekPicker` | `frontend/src/components/vari8/inputs.tsx` | /, /client, /coach, /ethereal |
 | `WeekView` | `frontend/src/components/coach/client-tracker-preview/week-view.tsx` | /, /client, /coach, /ethereal |
@@ -239,10 +241,17 @@ its surface section and open the file in the second column. Canvas screens: see
 | `Button` | `frontend/src/components/ui/button.tsx` | - |
 | `ClientPhotos` | `frontend/src/components/client-app/photos.tsx` | - |
 | `ClientRoute` | `frontend/src/components/client-app/client-route.tsx` | /client |
+| `CoachDashboardSurface` | `frontend/src/components/coach/builder/dashboard-surface.tsx` | - |
 | `CoachingWorkspaceSample` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
+| `EmptyState` | `frontend/src/components/vari8/states.tsx` | /coach/states |
+| `ErrorState` | `frontend/src/components/vari8/states.tsx` | /coach/states |
+| `FirstRunChecklist` | `frontend/src/components/coach/first-run-checklist.tsx` | - |
 | `InputShowcase` | `frontend/src/components/vari8/input-showcase.tsx` | - |
 | `LayoutShowcase` | `frontend/src/components/vari8/playground-compositions.tsx` | - |
 | `LegacySheetDialog` | `frontend/src/components/client/legacy-sheet/dialog.tsx` | - |
+| `LoadingState` | `frontend/src/components/vari8/states.tsx` | /coach/states |
 | `PhotoGallery` | `frontend/src/components/client-app/photos.tsx` | - |
+| `SettingsSurface` | `frontend/src/components/vari8/settings-surface.tsx` | /coach/settings |
 | `SheetGrid` | `frontend/src/components/client/legacy-sheet/grid.tsx` | - |
+| `Skeleton` | `frontend/src/components/vari8/states.tsx` | /coach/states |
 | `Vari8Playground` | `frontend/src/components/vari8/playground.tsx` | - |

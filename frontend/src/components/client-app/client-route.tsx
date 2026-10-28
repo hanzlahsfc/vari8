@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import {
+  type Appearance,
+  themeVariables,
+  type WorkspaceAppearance,
+} from "@/lib/ethereal-appearance";
 import { coachThemeStyle } from "../coach/coach-theme";
 import type { CoachClient, Variant } from "../coach/model";
 import { CoachProvider, useCoach } from "../coach/store";
@@ -23,7 +28,7 @@ export type ClientSession = {
   workspaceName: string;
   configuration: Variant;
   client: CoachClient;
-  appearance?: { mode?: "light" | "dark"; accent?: string };
+  appearance?: WorkspaceAppearance;
 };
 
 export function ClientRoute({ session }: { session?: ClientSession }) {
@@ -50,12 +55,26 @@ function ClientRouteInner({ session }: { session?: ClientSession }) {
           demoClient.assignment.variantId,
         )
       : undefined);
-  const preferences = { ...state.preferences, ...session?.appearance };
+  const appearance: Appearance = {
+    mode: session?.appearance?.mode ?? state.preferences.mode,
+    accent: session?.appearance?.accent ?? state.preferences.accent,
+    font: session?.appearance?.font ?? "sans",
+    density: session?.appearance?.density ?? "comfortable",
+    logoMediaId: session?.appearance?.logoMediaId ?? null,
+  };
+  const logoUrl = state.preferences.logo?.dataUrl ?? null;
   return (
     <div
-      className="coach-root v8-theme client-app-route"
-      data-mode={preferences.mode}
-      style={coachThemeStyle(preferences)}
+      className={`coach-root v8-theme client-app-route${appearance.density === "compact" ? " eg-density-compact" : ""}`}
+      data-mode={appearance.mode}
+      style={{
+        ...themeVariables(appearance),
+        ...coachThemeStyle({
+          ...state.preferences,
+          mode: appearance.mode,
+          accent: appearance.accent,
+        }),
+      }}
     >
       {session && client && configuration ? (
         <>
@@ -114,6 +133,10 @@ function ClientRouteInner({ session }: { session?: ClientSession }) {
               aria-label="Coach workspace"
               href={`/coach?section=clients&client=${client.id}`}
             >
+              {logoUrl ? (
+                // biome-ignore lint/performance/noImgElement: workspace logo is a dynamic signed url
+                <img className="client-app-logo" src={logoUrl} alt="" />
+              ) : null}
               <span className="client-app-coach-link__full">
                 Coach workspace
               </span>

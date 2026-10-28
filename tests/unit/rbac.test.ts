@@ -59,7 +59,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   dailyTracking: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "denied"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
@@ -71,7 +72,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   mealPlans: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "assigned"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
@@ -94,7 +96,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   checkinsCoachReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "assigned"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
@@ -281,7 +284,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   checkinInstances: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "workspace"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],

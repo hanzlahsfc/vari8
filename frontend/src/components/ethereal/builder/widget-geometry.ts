@@ -69,6 +69,7 @@ export function widgetDetailKey(widget: WidgetInstance): string | null {
       return `destination:${s.fields[0] || "Tracker"}`;
     case "CU17":
     case "CU18":
+    case "CU19":
       return null;
   }
 }

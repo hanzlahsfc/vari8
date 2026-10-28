@@ -361,6 +361,7 @@ model Workspace {
   checkinAnswerMedia      CheckInAnswerMedia[]
   activityTargets         ActivityTarget[]
   progressPhotoEntries    ProgressPhotoEntry[]
+  memberPreferences       MemberPreference[]
 
   @@map("workspace")
 }
@@ -384,6 +385,7 @@ model WorkspaceMember {
   user      User      @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   coachProfile CoachProfile?
+  preferences  MemberPreference[]
   assignments  ClientAssignment[] @relation("ClientAssignmentCoach")
 
   onboardingFormsCreated       OnboardingForm[]           @relation("OnboardingFormCreator")
@@ -465,6 +467,27 @@ model WorkspaceMember {
   @@index([workspaceId, role])
   @@index([userId])
   @@map("workspace_member")
+}
+
+// W2-T1 (R9/R10): per-member server preference rows behind the workspace
+// settings surface. One row per (workspace, member, key); notification
+// delivery reads the row at send time. A missing row means the key's
+// default (enabled).
+model MemberPreference {
+  id          String   @id @default(cuid())
+  workspaceId String   @map("workspace_id")
+  memberId    String   @map("member_id")
+  key         String
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workspace Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  member    WorkspaceMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, memberId, key])
+  @@index([memberId])
+  @@map("member_preference")
 }
 
 model CoachProfile {
@@ -2181,26 +2204,26 @@ model TrainingSessionBooking {
 // (P01/O5): actuals travel as a validated JSONB SetLogEntry, never one
 // column per field. Terminal states are explicit rows, not zeros.
 model TrainingSessionLog {
-  id                  String    @id @default(cuid())
+  id              String    @id @default(cuid())
   // Denormalized tenant/client stamps — part of the composite coherence
   // targets (raw-SQL FKs, established convention).
-  workspaceId         String    @map("workspace_id")
-  clientProfileId     String    @map("client_profile_id")
-  programId           String    @map("program_id")
+  workspaceId     String    @map("workspace_id")
+  clientProfileId String    @map("client_profile_id")
+  programId       String    @map("program_id")
   // Immutable prescription pin: the version governing the performed date
   // at start. A later publish leaves this row beside the old payload.
-  pinnedVersionId     String    @map("pinned_version_id")
-  sessionId           String    @map("session_id")
-  bookedWeek          Int       @map("booked_week")
+  pinnedVersionId String    @map("pinned_version_id")
+  sessionId       String    @map("session_id")
+  bookedWeek      Int       @map("booked_week")
   // Declared local calendar date the session was performed (anchor zone).
-  performedDate       DateTime  @map("performed_date") @db.Date
+  performedDate   DateTime  @map("performed_date") @db.Date
   // IN_PROGRESS | COMPLETED | PARTIAL | SKIPPED (raw CHECK).
-  status              String    @default("IN_PROGRESS")
-  startedAt           DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  status          String    @default("IN_PROGRESS")
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
   // Terminal instant for every non-IN_PROGRESS state (raw pairing CHECK).
-  completedAt         DateTime? @map("completed_at") @db.Timestamptz(6)
-  createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  completedAt     DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   workspace     Workspace              @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   clientProfile ClientProfile          @relation("TrainingSessionLogClient", fields: [clientProfileId], references: [id], onDelete: Restrict)

@@ -1001,6 +1001,9 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
     const w2 = await ws();
     const coach2 = await user();
     await member(w2.id, coach2.id, "COACH");
+    // Cross-workspace denial now lands at the service tenant lookup: the
+    // guard returns workspace scope, and the profile lock is workspace
+    // scoped, so the failure is still non-disclosing.
     await expect(
       readStaffMealPlanVersion(
         session(coach2.id),
@@ -1011,7 +1014,7 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
         },
         deps(),
       ),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    ).rejects.toMatchObject({ code: "plan_not_accessible" });
 
     // Draft edits after publish never mutate the committed payload.
     await saveMealPlanDraft(

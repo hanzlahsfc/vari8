@@ -6,6 +6,7 @@ import {
   getInviteLinkState,
   getInviteShellRole,
 } from "@/lib/workspace/invite-acceptance";
+import { lookupInviteDisplayName } from "@/lib/workspace/invite-links";
 
 import { InviteForm } from "./invite-form";
 
@@ -48,6 +49,13 @@ export default async function InvitePage({
           rawToken: params.token,
         })
       : null;
+  // T3: the ready state names the inviting workspace - the same minimal
+  // display-only lookup the public route serves, minus the rate limit (this
+  // is the server's own render, not an external read).
+  const inviteeName =
+    state.state === "ready"
+      ? await lookupInviteDisplayName(params.token)
+      : null;
   const Shell = role === "client" ? ClientAuthShell : CoachAuthShell;
   const signInHref = role === "client" ? "/me/login" : "/login";
 
@@ -77,6 +85,9 @@ export default async function InvitePage({
       <main className="app-main" data-testid="invite-page">
         <h1 className="app-title">Accept your invitation</h1>
         <p className="app-lede">
+          {inviteeName !== null
+            ? `You are invited to join ${inviteeName.name}. `
+            : ""}
           {signedIn
             ? "Confirm to join the workspace with your signed-in account."
             : "Set your name and a password to create your account."}
