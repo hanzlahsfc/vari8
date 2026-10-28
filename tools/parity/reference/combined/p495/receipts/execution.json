@@ -1,0 +1,2160 @@
+{
+  "kind": "combined-proposed-reference-verification",
+  "commands": [
+    {
+      "cwd": ".",
+      "argv": [
+        "node",
+        "tools/parity/run.mjs"
+      ],
+      "env": {
+        "PARITY_COMPARER": "reference",
+        "PARITY_REFERENCE_DIR": "/private/tmp/p495-207/wt/tools/parity/reference/proposed",
+        "PARITY_OUT_DIR": "/private/tmp/p495-207/wt/_evidence/p495",
+        "PARITY_PORT": "56724"
+      }
+    }
+  ],
+  "environmentVariables": {
+    "NODE_ENV": null,
+    "APP_ENV": "development",
+    "NEXT_TELEMETRY_DISABLED": null,
+    "MEDIA_STORAGE_ADAPTER": null,
+    "MEDIA_STORAGE_DIR": null,
+    "PARITY_COMPARER": "reference",
+    "PARITY_REFERENCE_DIR": "/private/tmp/p495-207/wt/tools/parity/reference/proposed",
+    "PARITY_OUT_DIR": "/private/tmp/p495-207/wt/_evidence/p495",
+    "PARITY_PORT": "56724"
+  },
+  "exits": {
+    "capture": 0,
+    "canonical": 0,
+    "strict": 1,
+    "parity": 0
+  },
+  "settings": {
+    "comparer": "reference",
+    "fixedNow": "2026-10-19T09:00:00+02:00",
+    "timezone": "Europe/Vienna",
+    "viewports": {
+      "390": {
+        "width": 390,
+        "height": 844
+      },
+      "1440": {
+        "width": 1440,
+        "height": 900
+      }
+    },
+    "geometryPx": 1,
+    "pixelmatchThreshold": 0.1,
+    "pixelmatchIncludeAA": false,
+    "maxChangedFraction": 0.001
+  },
+  "inputs": {
+    "vari8Beta": "d1c4081022f2ac21070b28f284248fad2ef04839",
+    "pr203": "90c16bee63e2609ebc4f09e91459332390562464",
+    "pr206": "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
+    "prep": {
+      "branch": "beta/p203-p206-combined-verification",
+      "head": "0b95d5114540f889d2cfc74d275a0531330ef24e"
+    }
+  },
+  "source": {
+    "sha": "0b95d5114540f889d2cfc74d275a0531330ef24e",
+    "tree": "08754c9b84767d5f5366cef26ee1cf212ffa5b6f",
+    "frontendTree": "54a005db99a29f59cdcbed8ebafce1c796ed3300",
+    "dirtyTracked": "",
+    "untracked": "",
+    "rootLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "appLock": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "pathspec": [
+      "app/**",
+      "components/**",
+      "db/**",
+      "frontend/**",
+      "icm/04-briefing/**",
+      "lib/**",
+      "public/**",
+      "scripts/**",
+      "tests/**",
+      "themes/**",
+      "tools/parity/** excluding tools/parity/out/** and tools/parity/reference/combined/**",
+      "tools/local-tls-proxy.mjs",
+      "auth.ts",
+      "package.json",
+      "package-lock.json",
+      "next.config.*",
+      "playwright.config.*",
+      "tsconfig*.json",
+      "vitest*.config.*",
+      "eslint.config.*",
+      "postcss.config.*",
+      "middleware.ts",
+      "instrumentation.ts"
+    ],
+    "materialTreeSha256": "7cbd0f9579d0607d1eb98583cf6bfcd2748dc15a8a83461937ab6087bf1b4593"
+  },
+  "productTree": {
+    "tree": "08754c9b84767d5f5366cef26ee1cf212ffa5b6f",
+    "diffFromPr203": "app/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series/route.ts\napp/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/restore/route.ts\napp/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/route.ts\napp/api/v1/workspaces/[workspaceId]/coach-tasks/route.ts\napp/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts\napp/api/v1/workspaces/[workspaceId]/invitations/route.ts\napp/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore/route.ts\napp/api/v1/workspaces/[workspaceId]/notes/[noteId]/route.ts\napp/api/v1/workspaces/[workspaceId]/notes/route.ts\napp/api/v1/workspaces/[workspaceId]/preferences/route.ts\napp/api/v1/workspaces/[workspaceId]/preferences/sidebar/route.ts\napp/workspace/[workspaceId]/clients/[clientProfileId]/dashboard/dashboard-editor.tsx\nlib/audit.ts\nlib/checkin/instances.ts\nlib/checkin/tracker-context.ts\nlib/coach-tasks/boundary.ts\nlib/coach-tasks/service.ts\nlib/daily-entry/boundary.ts\nlib/daily-entry/service.ts\nlib/dashboard/adapter.ts\nlib/dashboard/config-schema.ts\nlib/habits/boundary.ts\nlib/habits/frequency.ts\nlib/habits/service.ts\nlib/notes/boundary.ts\nlib/notes/service.ts\nlib/tracker-comments/boundary.ts\nlib/tracker-comments/service.ts\nlib/workspace/invitation-api.ts\nlib/workspace/invitations.ts\nlib/workspace/preferences.ts\nscripts/seed/21-appearance.seed.ts\nscripts/seed/22-notes.seed.ts\nscripts/seed/32-habits.seed.ts\nscripts/seed/36-dashboard.seed.ts"
+  },
+  "tooling": {
+    "runner": "b28f66589184caf7da01ea43eb6661e96b7432f414400652359d7ebc8bf404f9",
+    "comparer": "6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95",
+    "legacyComparer": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a",
+    "validator": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679",
+    "contract": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363",
+    "comparerManifest": "b79c225d8f8fe3de9fefc539c0f35a7a004d76c8448875512a11ca85a1fdc407",
+    "locks": {
+      "root": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+      "reference": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628"
+    },
+    "files": {
+      "tools/parity/run.mjs": "b28f66589184caf7da01ea43eb6661e96b7432f414400652359d7ebc8bf404f9",
+      "tools/parity/capture.mjs": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a",
+      "tools/parity/reference/capture-metadata.mjs": "2b025b7a79991652493989f4fa96c1569b98334e16eacc4e61fd476308dcf6a7",
+      "tools/parity/safe-paths.mjs": "a8729a1613ab5de8f3b2fa194c1aef081dc81f63205934e849d4eedab0cb8d2d",
+      "tools/parity/compare.mjs": "56a709a4c334526b5991b15868775bf3ed843e5552535a4b2e472090d4788e3a",
+      "tools/parity/reference/reference.mjs": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674",
+      "tools/parity/reference/combined-run.mjs": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679",
+      "tools/parity/reference/compare.mjs": "6ea1115863f8132e3243258c05ee3a9a984e61cb9c1a5c024e66be301bb5be95",
+      "tools/parity/reference/contract.json": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363",
+      "tools/parity/reference/environment.mjs": "ecf02d2c6b5a3db8c76739ffeb1346395a2f30a339c776d07967812e98884e97",
+      "tools/parity/reference/source-identity.mjs": "b83b9da81d060d559577fec633017a2daeb21495fedf4fc4473ef0170fe986be",
+      "tools/parity/reference/combined-pins.mjs": "ec5c2f362544370fc12cb8180969890f6365e3d8a9bbb91eca2e1656157db194",
+      "tools/parity/reference/package-combined.mjs": "0d9e35e8742394edb9438f70e32d926280fc9d953af1d32bb40778b309e616e5",
+      "tools/parity/reference/verify-combined.mjs": "5752fa446f2d64ad19d61267f15afab349acc05722b2a4d6046bf49bbccfddf3",
+      "tools/parity/reference/evidence/evidence-lib.mjs": "c4da822e3b11d3d10848dae4f8634c04520befaaec187e63a87dbfcd68402223",
+      "tools/parity/reference/evidence/comparer.json": "b79c225d8f8fe3de9fefc539c0f35a7a004d76c8448875512a11ca85a1fdc407",
+      "tools/parity/local-https.mjs": "6c885487e5c523f61fabb3d4dc3f0a4152e408cd278e01a87da4cd9374bf0cb9",
+      "tools/local-tls-proxy.mjs": "3159ec324c9238b1a75104d23689bf1ab87b8b7787c3ffa80120cc95fd46e573",
+      "auth.ts": "229a5d8c61531cf9e20f916c7382d5694d11f27467052c2c292a32493e779756",
+      "package.json": "9c4c37adb538cda3529a8f4e9d51b6c1b5fe11fd7d69f533f07de078c4569652",
+      "package-lock.json": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+      "tools/parity/reference/package.json": "9b8b558bd8c42a94f0a3effe3db5a1d1cd58c574641eba0899d6941a8deb732b",
+      "tools/parity/reference/package-lock.json": "24381568ffd2435ed2919d7cf7c6a342ccd4ea767c5a77dd1a80868dfd8fd628",
+      "icm/04-briefing/shots/index.json": "552ace26910b09461d65b23b2c46e0aef52588b964ef175f1fd9486f8d2dbe80"
+    },
+    "adapter": {
+      "dependency": "90c16bee63e2609ebc4f09e91459332390562464",
+      "originalCaptureSha256": "2cb445bcd4b0a5736b8b650ab6b7ec9f275d001528b04965bc31d1c8a513291a",
+      "adapterSha256": "fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c",
+      "transformations": [
+        "portable checkout root discovery",
+        "D32 09:00 clock",
+        "post-image semantic/font/state/scroller metadata; role/name append to geometry; no screenshot selectors/settings change"
+      ]
+    }
+  },
+  "environment": {
+    "os": {
+      "type": "Darwin",
+      "release": "27.0.0",
+      "arch": "arm64",
+      "version": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n"
+    },
+    "node": "v24.22.1",
+    "nodeExecutable": "/Users/apple/.npm/_npx/ef8b185be06dfeb4/node_modules/node/bin/node",
+    "nodeSha256": "6f32069480ec14d52b6d7b1f3c7124cfbbc46203abf5ddf5c65b127435f3f329",
+    "playwright": "1.63.0",
+    "browser": {
+      "executable": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+      "sha256": "a0bfe7b4da4787b66058477d696cd1d09065d25f06a548947722b9af77ee8282",
+      "version": {
+        "protocolVersion": "1.3",
+        "product": "HeadlessChrome/153.0.8010.12",
+        "revision": "@971a7443b0c9b0a9b2860529b33331b76077ec62",
+        "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "jsVersion": "15.3.76.4"
+      },
+      "command": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-2WLICS --remote-debugging-pipe --no-startup-window",
+      "system": {
+        "gpu": {
+          "devices": [
+            {
+              "vendorId": 65535,
+              "deviceId": 65535,
+              "vendorString": "Google Inc. (Google)",
+              "deviceString": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+              "driverVendor": "SwANGLE",
+              "driverVersion": "5.0.0"
+            }
+          ],
+          "auxAttributes": {
+            "amdSwitchable": false,
+            "canSupportThreadedTextureMailbox": false,
+            "directRenderingVersion": "",
+            "displayType": "ANGLE_SWIFTSHADER",
+            "glExtensions": "GL_AMD_performance_monitor GL_ANGLE_base_vertex_base_instance_shader_builtin GL_ANGLE_blob_cache GL_ANGLE_client_arrays GL_ANGLE_clip_cull_distance GL_ANGLE_compressed_texture_etc GL_ANGLE_copy_texture_3d GL_ANGLE_depth_texture GL_ANGLE_framebuffer_blit GL_ANGLE_framebuffer_multisample GL_ANGLE_get_image GL_ANGLE_get_serialized_context_string GL_ANGLE_get_tex_level_parameter GL_ANGLE_instanced_arrays GL_ANGLE_memory_object_flags GL_ANGLE_memory_size GL_ANGLE_multi_draw GL_ANGLE_pack_reverse_row_order GL_ANGLE_polygon_mode GL_ANGLE_program_binary_readiness_query GL_ANGLE_program_cache_control GL_ANGLE_read_only_depth_stencil_feedback_loops GL_ANGLE_relaxed_vertex_attribute_type GL_ANGLE_renderability_validation GL_ANGLE_request_extension GL_ANGLE_rgbx_internal_format GL_ANGLE_robust_client_memory GL_ANGLE_robust_fragment_shader_output GL_ANGLE_robust_resource_initialization GL_ANGLE_shader_pixel_local_storage GL_ANGLE_shader_pixel_local_storage_coherent GL_ANGLE_stencil_texturing GL_ANGLE_texture_compression_dxt3 GL_ANGLE_texture_compression_dxt5 GL_ANGLE_texture_multisample GL_ANGLE_texture_usage GL_ANGLE_translated_shader_source GL_ANGLE_vulkan_image GL_ANGLE_yuv_internal_format GL_APPLE_clip_distance GL_ARM_rgba8 GL_ARM_shader_framebuffer_fetch GL_CHROMIUM_bind_generates_resource GL_CHROMIUM_bind_uniform_location GL_CHROMIUM_copy_compressed_texture GL_CHROMIUM_copy_texture GL_CHROMIUM_lose_context GL_EXT_EGL_image_array GL_EXT_EGL_image_external_wrap_modes GL_EXT_EGL_image_storage GL_EXT_base_instance GL_EXT_blend_minmax GL_EXT_buffer_storage GL_EXT_clear_texture GL_EXT_clip_control GL_EXT_clip_cull_distance GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_compressed_ETC1_RGB8_sub_texture GL_EXT_conservative_depth GL_EXT_copy_image GL_EXT_debug_label GL_EXT_debug_marker GL_EXT_depth_clamp GL_EXT_discard_framebuffer GL_EXT_disjoint_timer_query GL_EXT_draw_buffers GL_EXT_draw_buffers_indexed GL_EXT_draw_elements_base_vertex GL_EXT_float_blend GL_EXT_frag_depth GL_EXT_instanced_arrays GL_EXT_map_buffer_range GL_EXT_memory_object GL_EXT_memory_object_fd GL_EXT_occlusion_query_boolean GL_EXT_polygon_offset_clamp GL_EXT_read_format_bgra GL_EXT_robustness GL_EXT_sRGB GL_EXT_sRGB_write_control GL_EXT_semaphore GL_EXT_separate_shader_objects GL_EXT_shader_framebuffer_fetch GL_EXT_shader_framebuffer_fetch_non_coherent GL_EXT_shader_non_constant_global_initializers GL_EXT_shader_texture_lod GL_EXT_shadow_samplers GL_EXT_texture_border_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_compression_dxt1 GL_EXT_texture_compression_rgtc GL_EXT_texture_compression_s3tc_srgb GL_EXT_texture_filter_anisotropic GL_EXT_texture_format_BGRA8888 GL_EXT_texture_lod_bias GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_rg GL_EXT_texture_sRGB_R8 GL_EXT_texture_sRGB_RG8 GL_EXT_texture_sRGB_decode GL_EXT_texture_shadow_lod GL_EXT_texture_storage GL_EXT_texture_type_2_10_10_10_REV GL_EXT_unpack_subimage GL_KHR_blend_equation_advanced GL_KHR_debug GL_KHR_robust_buffer_access_behavior GL_KHR_robustness GL_KHR_texture_compression_astc_ldr GL_NV_fence GL_NV_framebuffer_blit GL_NV_pack_subimage GL_NV_pixel_buffer_object GL_NV_polygon_mode GL_NV_read_depth GL_NV_read_depth_stencil GL_NV_read_stencil GL_NV_shader_noperspective_interpolation GL_OES_EGL_image GL_OES_EGL_image_external GL_OES_EGL_image_external_essl3 GL_OES_EGL_sync GL_OES_compressed_ETC1_RGB8_texture GL_OES_compressed_paletted_texture GL_OES_copy_image GL_OES_depth24 GL_OES_depth32 GL_OES_depth_texture GL_OES_depth_texture_cube_map GL_OES_draw_buffers_indexed GL_OES_draw_elements_base_vertex GL_OES_element_index_uint GL_OES_fbo_render_mipmap GL_OES_get_program_binary GL_OES_mapbuffer GL_OES_packed_depth_stencil GL_OES_required_internalformat GL_OES_rgb8_rgba8 GL_OES_sample_shading GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_standard_derivatives GL_OES_surfaceless_context GL_OES_texture_3D GL_OES_texture_border_clamp GL_OES_texture_float GL_OES_texture_float_linear GL_OES_texture_half_float GL_OES_texture_half_float_linear GL_OES_texture_npot GL_OES_texture_stencil8 GL_OES_texture_storage_multisample_2d_array GL_OES_vertex_array_object GL_OES_vertex_half_float GL_OES_vertex_type_10_10_10_2 GL_OVR_multiview GL_OVR_multiview2 GL_QCOM_texture_lod_bias ",
+            "glImplementationParts": "(gl=egl-angle,angle=swiftshader)",
+            "glRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0)",
+            "glResetNotificationStrategy": 33362,
+            "glVendor": "Google Inc. (Google)",
+            "glVersion": "OpenGL ES 3.0 (ANGLE 2.1.28646 git hash: a6bc9eff8444)",
+            "glWsExtensions": "",
+            "glWsVendor": "",
+            "glWsVersion": "",
+            "inProcessGpu": false,
+            "initializationTime": 0.064907,
+            "isAsan": false,
+            "isClangCoverage": false,
+            "jpegDecodeAcceleratorSupported": false,
+            "maxMsaaSamples": "4",
+            "optimus": false,
+            "passthroughCmdDecoder": true,
+            "pixelShaderVersion": "3.00",
+            "processCrashCount": 0,
+            "sandboxed": false,
+            "skiaBackendType": "None",
+            "subpixelFontRendering": true,
+            "targetCpuBits": 64,
+            "vertexShaderVersion": "3.00",
+            "visibilityCallbackCallCount": 0
+          },
+          "featureStatus": {
+            "2d_canvas": "unavailable_software",
+            "direct_rendering_display_compositor": "disabled_off_ok",
+            "gpu_compositing": "disabled_software",
+            "multiple_raster_threads": "enabled_on",
+            "opengl": "disabled_off",
+            "rasterization": "disabled_software",
+            "raw_draw": "disabled_off_ok",
+            "skia_graphite": "disabled_off",
+            "trees_in_viz": "disabled_off",
+            "video_decode": "disabled_software",
+            "video_encode": "disabled_software",
+            "webgl": "unavailable_software",
+            "webgpu": "unavailable_software",
+            "webnn": "unavailable_software"
+          },
+          "driverBugWorkarounds": [],
+          "videoDecoding": [],
+          "videoEncoding": []
+        },
+        "modelName": "MacBookPro",
+        "modelVersion": "17.1",
+        "commandLine": "/Users/apple/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --disable-partial-raster --user-data-dir=/var/folders/4b/rdd0tnl55gjfb4txrnfx9vq40000gn/T/playwright_chromiumdev_profile-2WLICS --remote-debugging-pipe --no-startup-window --use-mock-keychain --use-gl=angle --use-angle=swiftshader-webgl --allow-pre-commit-input"
+      }
+    },
+    "capture": {
+      "deviceScaleFactor": 1,
+      "locale": "en-US",
+      "colorScheme": "light",
+      "reducedMotion": "reduce",
+      "serviceWorkers": "block",
+      "fullPage": true,
+      "animations": "disabled",
+      "caret": "hide",
+      "launchArgs": [
+        "--disable-partial-raster"
+      ],
+      "storageSeed": {},
+      "randomSeed": "0x2545f491",
+      "settle": "networkidle; fonts.ready; DOM quiet 400ms / 3000ms cap"
+    }
+  },
+  "dependencies": {
+    "lockSha256": "52eb97cec84ca242db420047181606fd6d5b7050302dd8753ac249210f9eab75",
+    "installedLockSha256": "f9c064f3b034dbe0d899a7c917fdb7ba4453dc27e0cb913fe7cc63b694a8e109",
+    "mismatches": [],
+    "installedTreeSha256": "87971d7b66fbb95868ba99a25ca2754f82dcbd42a545a00cfdd532e252efa07e",
+    "hashedFiles": 48225
+  },
+  "reference": {
+    "directory": "/private/tmp/p495-207/wt/tools/parity/reference/proposed",
+    "manifestSha256": "23bf72290f941460a84400121d5a55b947ebee3104aff565140d472d60537f0c",
+    "provenanceSha256": "ad1d385f2247738a3087bb855fe205d12dde3b56a12f496d256c3efc33033d66",
+    "artifactCount": 233,
+    "artifacts": [
+      {
+        "path": "390/s01-roster.png",
+        "sha256": "fc15682331a633a98e2b8d6074990c59aea90fcbbf3b677c099431d359994323"
+      },
+      {
+        "path": "390/s01-roster.geom.json.gz",
+        "sha256": "e0cc7288ddd8c60b8898e330d000bef045f8ee3c1417223979bcd5db224f69e2"
+      },
+      {
+        "path": "390/s01-roster.s143-0-0.png",
+        "sha256": "d2e9cce57f224f0581da731dc1cf4a09e98cf07aa5b17bab56666ad4a360f782"
+      },
+      {
+        "path": "390/s01-roster.s143-312-0.png",
+        "sha256": "85e03c7962b88054456be765d81871ba071664aeb1458ca50208a4ea49954cf6"
+      },
+      {
+        "path": "390/s01-roster.s143-468-0.png",
+        "sha256": "5b4a5414da355da6220bf250b6ba764dc67f2076187f30461f9e827f4188c4f5"
+      },
+      {
+        "path": "390/s01-profile-overview.png",
+        "sha256": "b70bbd6c48a4e913e4d0c739e97ca32dc1031e522fe41b97140a9e6238691585"
+      },
+      {
+        "path": "390/s01-profile-overview.geom.json.gz",
+        "sha256": "4c1cb09360ba8761732b441e7468463ed39177e6729f297ce3cf768097e350dd"
+      },
+      {
+        "path": "390/s01-profile-overview.s129-0-0.png",
+        "sha256": "4fdab8d662c6fb73f0a65d52cf44b19df62c618d436fb40236511cd8358eb208"
+      },
+      {
+        "path": "390/s01-profile-overview.s129-27-0.png",
+        "sha256": "dd2a46e9de3b038de305e7b1399312aa7531e751b6571a6da1b1670b5e75276f"
+      },
+      {
+        "path": "390/s01-profile-plans.png",
+        "sha256": "68c5f2c267f6774de9b4c01a7bc14e1df19aef7ddece4feaa6be1400deec5595"
+      },
+      {
+        "path": "390/s01-profile-plans.geom.json.gz",
+        "sha256": "48a3cb5360c074e83a6aa99e6482ce108f05f693148df7083728543799a37df8"
+      },
+      {
+        "path": "390/s01-profile-plans.s129-0-0.png",
+        "sha256": "774f291ade1f184626bebf98620f9789c4a3b02846d96cc4c96d143f52d64326"
+      },
+      {
+        "path": "390/s01-profile-plans.s129-27-0.png",
+        "sha256": "6a2781b6d9660001b521676428b1815c113ef43b07faccdb163254918c57e699"
+      },
+      {
+        "path": "390/s01-profile-checkins.png",
+        "sha256": "6e6f5585802a489a0e0d2394725d14bebc5041fa119eb7c6495d8fe8364afc74"
+      },
+      {
+        "path": "390/s01-profile-checkins.geom.json.gz",
+        "sha256": "e7b4c99146dec489076eec026742a5c4ed277585bc465a9f37e3731232dd16ff"
+      },
+      {
+        "path": "390/s01-profile-checkins.s129-0-0.png",
+        "sha256": "a75624a5ff47bab77de1b8d184d03a2b77c81b4b6b1fb3905bbd98b60a8d4604"
+      },
+      {
+        "path": "390/s01-profile-checkins.s129-27-0.png",
+        "sha256": "e2bf7e916f75b24ebea2afcb471493a36c1cf94d92b70332e9259e2e277d42ea"
+      },
+      {
+        "path": "390/s01-profile-notes.png",
+        "sha256": "91f567ac7b5781c4e0662b63c06d78aca979f2182bfba620f1787ec138c01649"
+      },
+      {
+        "path": "390/s01-profile-notes.geom.json.gz",
+        "sha256": "e3fc4de21c4ae703ac2296732a76dbd7ff688490c48b966d27c8fc26b6c7947d"
+      },
+      {
+        "path": "390/s01-profile-notes.s129-0-0.png",
+        "sha256": "38c30c9eca0dca4555a3e2fe00e6892bdf44ee763e92c5cc28697176a8dc51a4"
+      },
+      {
+        "path": "390/s01-profile-notes.s129-27-0.png",
+        "sha256": "3a3f487c0378600bc5e52fead30a1c3db7c98ebf87035b4df61d50e7285d4848"
+      },
+      {
+        "path": "390/s01-profile-onboarding.png",
+        "sha256": "514e1eb27963a4f719389e5163baf009da896a7c609e67017fb06f59600fe791"
+      },
+      {
+        "path": "390/s01-profile-onboarding.geom.json.gz",
+        "sha256": "e18bfa0b91dfbf17550dda457a9f7a0195e5a2def8c4d25ac3c3eecc57ba265d"
+      },
+      {
+        "path": "390/s01-profile-onboarding.s129-0-0.png",
+        "sha256": "39b225bf7f94e0decb5deb283bc15e495089d5a3c6509d529596c63d70eec754"
+      },
+      {
+        "path": "390/s01-profile-onboarding.s129-27-0.png",
+        "sha256": "38e5628d654cd6c64f4c88378595e813a3b816f4d0e6a4726bfb57f19a893ffa"
+      },
+      {
+        "path": "390/s02-messages.png",
+        "sha256": "576d5d45518e82f4d67592f8f618a2805911adc97561abc9596e550f90d82f9b"
+      },
+      {
+        "path": "390/s02-messages.geom.json.gz",
+        "sha256": "bf2b1a0048b42fb670f40053eecd3dd2187a9e1b0c5291cdf3b94b5015eb2c5c"
+      },
+      {
+        "path": "390/s02-messages.s115-0-0.png",
+        "sha256": "caa1a775155d6eab5674e5fec439c491ec7f3c13bf6c90a72f05adabaa2fe69f"
+      },
+      {
+        "path": "390/s02-messages.s115-0-454.png",
+        "sha256": "8799e10563e780255267f5c5c5c87859508920044d5c5b9ba546b2b06f2b69c1"
+      },
+      {
+        "path": "390/s02-messages.s115-0-844.png",
+        "sha256": "e3b99bc10ace3d2fd84f919a23c6c472de3724f32b2a7d7297ac17b7e1fca1a0"
+      },
+      {
+        "path": "390/s02-thread.png",
+        "sha256": "d431836c9f67f0923aad104165049773e77a3bd1307391fe6ff871b7b7415eda"
+      },
+      {
+        "path": "390/s02-thread.geom.json.gz",
+        "sha256": "9d31f6e97a26fd99267f573628f5404f7dd849e3bcdb6cf9232d7068745069a0"
+      },
+      {
+        "path": "390/s02-thread-attachments.png",
+        "sha256": "a47b7a2151e5ecedcac9534b4f8726c1ab2440dd707510338d60a49fe63833d4"
+      },
+      {
+        "path": "390/s02-thread-attachments.geom.json.gz",
+        "sha256": "f50f14ae41772c3799eac792e621a32bd94eabc9893606bb9bcea16c91ecca88"
+      },
+      {
+        "path": "390/s02-notes-todos.png",
+        "sha256": "14b7786958cc0fda546df651c07ea28ba2d02bcb7042098b794d8f99d77d7e3b"
+      },
+      {
+        "path": "390/s02-notes-todos.geom.json.gz",
+        "sha256": "197be382af28b84e567d9887f0536bfe6d2c9726c366a31b675412624f03c290"
+      },
+      {
+        "path": "390/s03-checkins-board.png",
+        "sha256": "0e549c45d6f2d9b199c2a971e20b0a4f21aea04b96a70118eb9a0242411f52f7"
+      },
+      {
+        "path": "390/s03-checkins-board.geom.json.gz",
+        "sha256": "625e88bdd8e2bb86daf07b3e342bc9f49e1b974813e5fccade3d7979c0355ff4"
+      },
+      {
+        "path": "390/s03-add-extra.png",
+        "sha256": "af1dabd2e09c531a0d79b07e0db6ce99c8f6083b03a12b379dad8ed9bd9194c6"
+      },
+      {
+        "path": "390/s03-add-extra.geom.json.gz",
+        "sha256": "d6f175e52f4e28da4c41e4a55c2bc490407f23c89b5c49bf3bec347f57ff012f"
+      },
+      {
+        "path": "390/s03-checkin-review.png",
+        "sha256": "7599e03dbe4bddb465dd83b52a30f81bd2c6b1669fb60a1862b6a01136591f30"
+      },
+      {
+        "path": "390/s03-checkin-review.geom.json.gz",
+        "sha256": "6b564d2fe14838811c35ece713223d3a2b19ffbb9b3de7733d4aa96ae04f6332"
+      },
+      {
+        "path": "390/s04-habit-editor.png",
+        "sha256": "1374d8dfa06f858c0ebe86b1fa2fe417642e42c1e1d4e477bab22dc36313196a"
+      },
+      {
+        "path": "390/s04-habit-editor.geom.json.gz",
+        "sha256": "eeebb27b6431898933649f5fd6a6c692a863cd01a12ef4ab652b87525dd72312"
+      },
+      {
+        "path": "390/s04-template-habits.png",
+        "sha256": "5984dd57cdc4875581dc125c340a2fea8295abf2547dcef754359ddc09edbcf7"
+      },
+      {
+        "path": "390/s04-template-habits.geom.json.gz",
+        "sha256": "01c5d8d399b56f0891cdd770d84298ca512d97b9c2ba5083094f28a9c3ff9b47"
+      },
+      {
+        "path": "390/s04-template-habits.s120-0-0.png",
+        "sha256": "a57e3c9361510a30dbb8d0f2755fc5a1897e713aab10d0248d5d7c159892e331"
+      },
+      {
+        "path": "390/s04-template-habits.s120-323-0.png",
+        "sha256": "5a6105cf57966e1cfc9ad569efd13262211c69f1947824395f1c30bf461ce0bd"
+      },
+      {
+        "path": "390/s05-templates.png",
+        "sha256": "f9ea73d8f3d98a801f9dd6779687b81b637f7d7a86d5d767ad39dc6abfbfad7e"
+      },
+      {
+        "path": "390/s05-templates.geom.json.gz",
+        "sha256": "9ab5ade41ba4eb1b0c60232770c8ca3b61b73e4f547ecd03c7e17256bb55c3a8"
+      },
+      {
+        "path": "390/s05-template-editor.png",
+        "sha256": "9c98fb9f8fe4ca4d1f42eb8ab0eb63580cc1e38f094ced1eb0d27b9b6f8e432c"
+      },
+      {
+        "path": "390/s05-template-editor.geom.json.gz",
+        "sha256": "9d2a450da838c6d57591d59dfe21762077355ef70aaacf501b9323817f36ecad"
+      },
+      {
+        "path": "390/s05-template-editor.s120-0-0.png",
+        "sha256": "9a079dd605042add18ebab3f90b349d59bffbdfe9c154da869576ec0dd1ec622"
+      },
+      {
+        "path": "390/s05-template-editor.s120-323-0.png",
+        "sha256": "d36a2b0dfaa51d18e720b4e3c347721de1b0440b121820eb114bf4af8dd1710b"
+      },
+      {
+        "path": "390/s05-tracker-setup.png",
+        "sha256": "a1ffc9810856c075742eabc0a48bfc4ec10563c4173e7ddfa7e24f5a9dd05211"
+      },
+      {
+        "path": "390/s05-tracker-setup.geom.json.gz",
+        "sha256": "83cc62021bf079a554f58d5535ae1c64a7d717f410e0993c9fbcaed1eb22ae66"
+      },
+      {
+        "path": "390/s05-tracker-setup.s120-0-0.png",
+        "sha256": "523c6841cdc6f62d4ad41743a253ab7aa846ccc4fd3c5a6705d36fba9c853131"
+      },
+      {
+        "path": "390/s05-tracker-setup.s120-323-0.png",
+        "sha256": "9d8cd192fa3dadbf5ecf0fae2646e357bc8ff7a8ecdd5c317c9c5326e655bbf9"
+      },
+      {
+        "path": "390/s05-client-setup.png",
+        "sha256": "87371e16e51be67ee56dd2928143e4a223c1aaf6a1c3142a15b6606fcf579b4b"
+      },
+      {
+        "path": "390/s05-client-setup.geom.json.gz",
+        "sha256": "a41a2249f3195e836f613b9b8c9c931bb5bff7f60ef0a64d5a8e8d405c685595"
+      },
+      {
+        "path": "390/s05-client-setup.s129-0-0.png",
+        "sha256": "769f4296f08624f8f22775a6cd830680a0cfdbdc274e76e81919e7f14959df54"
+      },
+      {
+        "path": "390/s05-client-setup.s129-27-0.png",
+        "sha256": "8c573b96a60af9c043f6c3b9eb91462ae9354a0a0b50207fe7a035be192ca539"
+      },
+      {
+        "path": "390/s06-mealplan-editor.png",
+        "sha256": "3348b8785ef473c1786a5322ff48af96b7a594bbebd9f11b3da2626ca9638531"
+      },
+      {
+        "path": "390/s06-mealplan-editor.geom.json.gz",
+        "sha256": "d15b8d6ba7f7c51254cc17540f0b7b802f4c92dcfad81f3fdc9234073c8777eb"
+      },
+      {
+        "path": "390/s06-template-nutrition.png",
+        "sha256": "e702255537ca1f02a01fb9e74f669e2ec30fb671bb753b9106ddab2d5677884b"
+      },
+      {
+        "path": "390/s06-template-nutrition.geom.json.gz",
+        "sha256": "9eb06c2a6fb04f959ccc99ae56e8b1b912ef44f4c87d245d6c61b063ca5e5fda"
+      },
+      {
+        "path": "390/s06-template-nutrition.s120-0-0.png",
+        "sha256": "c35e6f39fe5c741145b204b2c3ce876f690b3891e311dde84fedcdee76d7870d"
+      },
+      {
+        "path": "390/s06-template-nutrition.s120-323-0.png",
+        "sha256": "419bb02529b4e8ac101e6e9ffb87308d8a7a77a00149672e87de5e42f583b507"
+      },
+      {
+        "path": "390/s07-training-editor.png",
+        "sha256": "3104ff00c17947d0eac675ebb07f9db239b490ce51918f19e5ed5375d70d0f46"
+      },
+      {
+        "path": "390/s07-training-editor.geom.json.gz",
+        "sha256": "a5f3ef78f62fa3662233569f70db8e70e9aaaa91453f062917176028d3a3862b"
+      },
+      {
+        "path": "390/s07-exercise-library.png",
+        "sha256": "c6b4a27f916b47a44056d0c175da34f867431b207cf0a01274e0d8969b6d3407"
+      },
+      {
+        "path": "390/s07-exercise-library.geom.json.gz",
+        "sha256": "c15f93064fa617a424592dc5e82b8b914c02a25edbd44d21855946794776c1fc"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-0.png",
+        "sha256": "470517d64a2b0348d7b1f58ee1b750f298c8c48c57424a4af7f8f56f59468361"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-84.png",
+        "sha256": "4d5099af9e1e9d0c401e86bbd1754b727a0e952c4142e76c3991abb8b9be808c"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-102.png",
+        "sha256": "3129d0a706c13a030bb1e9587479e9170a7058a2de6637b291521917600794e2"
+      },
+      {
+        "path": "390/s08-builder.png",
+        "sha256": "5f0e6c3b1e0f80a84394c0bbdc7b0801519deaa609958430df678f95e808c34f"
+      },
+      {
+        "path": "390/s08-builder.geom.json.gz",
+        "sha256": "755eda89728c9e057500aeed28066a67ce8433934b0e5cc0d256f03f16557270"
+      },
+      {
+        "path": "390/s08-builder.s12-0-0.png",
+        "sha256": "3eded9ca44f5286eff8bf8b33e69c9b0a326c3d28e312551423e327bdcfae50c"
+      },
+      {
+        "path": "390/s08-builder.s12-5-0.png",
+        "sha256": "c898fc2fae01b87ee8cc1e99b67728f7f9c608b105efa12c6c8649983561c4b6"
+      },
+      {
+        "path": "390/s08-widget-gallery.png",
+        "sha256": "ba997fd73e7a44031a45cd48486e5d1d7986c57ec19c3b45981bd5347c8d8f44"
+      },
+      {
+        "path": "390/s08-widget-gallery.geom.json.gz",
+        "sha256": "184effb848b920cfbde1f8fa6305b6a02ae0c337a3b57a25390d792842fa7ccd"
+      },
+      {
+        "path": "390/s08-widget-gallery.s12-0-0.png",
+        "sha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s12-5-0.png",
+        "sha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-0.png",
+        "sha256": "70437b8c61bf2339d01a65fdf6bf7f400ff52bdf6bb319f6a3efcf0fd673fe89"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-650.png",
+        "sha256": "fa449341aba8d8ac0e4a0f1b44a14f2756cf05117e494f52200b2d6f7a6b23ce"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-1300.png",
+        "sha256": "a9dd451ea2f6a99e4759329cf03e4616f98fe54eeae33e53f5a6e489490bcbff"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-1950.png",
+        "sha256": "4a871a2bfc2499df0592630a492436eecbd391972c2253af3db2e5ed0e95af6c"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-2600.png",
+        "sha256": "ebdb3aff4453aafcedee283bbec1ce5fe0c6b717ab7651f9cc8139d16357c304"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-3250.png",
+        "sha256": "f7d6f4e147597905f83f929ac790e3417464efc1dd1f0fb68f3926cbd4e7925a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-3900.png",
+        "sha256": "e73e9ec1c3b87e8b990a1ea02749622d93a205845fda299e3b605fc6930aa041"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-4550.png",
+        "sha256": "3d6f4acd9037e92b25ce5c18595f555a39a75332b3edab1b7bb9b06d0fba583d"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-5200.png",
+        "sha256": "c97ae06936205a189b7171e9400353a20830906b5ba80e7634d757bc6c53282a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-5850.png",
+        "sha256": "96fb6a29c04c1d0aa5ead86f7a82998af3aaf59687880b7f9a46c1ace583f5ed"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-6271.png",
+        "sha256": "82c9f773ebe93ea211811a470251289fe0a00a387cb5dc75f3e33f2eed681d32"
+      },
+      {
+        "path": "390/s08-template-dashboard.png",
+        "sha256": "00cb15bbee4824abd15a0cb3bfddcbabb4ccbe757cb0f58359b9bbb35878b9bf"
+      },
+      {
+        "path": "390/s08-template-dashboard.geom.json.gz",
+        "sha256": "1bc5e4672e44d396322e3775767dae34ecb72f9f5f199879384603057528e6ff"
+      },
+      {
+        "path": "390/s08-template-dashboard.s120-0-0.png",
+        "sha256": "e1c6fbf0a02a33495b28c880897258e70d809055a86a5f71a1b211958069f47c"
+      },
+      {
+        "path": "390/s08-template-dashboard.s120-323-0.png",
+        "sha256": "c5915f3ecaa52caeae18893ab4be686ad3e74c5b511ac2d1947ee03bdbc67a48"
+      },
+      {
+        "path": "390/s09-tracker-today.png",
+        "sha256": "a0828131c1c75272de29596ff426cfe1f662859d6f8f797a20f612308b3b5c0a"
+      },
+      {
+        "path": "390/s09-tracker-today.geom.json.gz",
+        "sha256": "fc1fbbd9ecb7f818bcd78ec9c55ed5a563c6a119d0514eda3ee093d780360a46"
+      },
+      {
+        "path": "390/s09-tracker-today.s236-0-0.png",
+        "sha256": "783eed8c004722f27736447df6751a82ef7cd854d30066aac661f51dde9fa949"
+      },
+      {
+        "path": "390/s09-tracker-today.s236-0-619.png",
+        "sha256": "b318b290d00d5a0ad7a33fbe6c84538d2234f029218fd4f2adbbad59600ffdad"
+      },
+      {
+        "path": "390/s09-tracker-today.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-today.s251-300-0.png",
+        "sha256": "231e10d0ca9ff9560216ec2e1e50c41cdc0c8b19df5fa6cc164c9f14362780a7"
+      },
+      {
+        "path": "390/s09-tracker-week.png",
+        "sha256": "2b885e31c8642ae09862f6323db2716e0999ed29e708f70ee3c16be1faf65103"
+      },
+      {
+        "path": "390/s09-tracker-week.geom.json.gz",
+        "sha256": "8aa95e918d4d1fd4c5373f45368ee909dd78b6e78be780adc0ce20681c27aa32"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-0.png",
+        "sha256": "ea5fa83d59b5905f731fc98d9dfb18ad4890bc701001e45dbe137c0450d243b7"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-810.png",
+        "sha256": "e98316f7497513ff0ac438f8e5904862afb3b565fb18eee55bb41152bb398e3d"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-1451.png",
+        "sha256": "eb3d95daea34f18ba2c01bc657733ab805412b15299565c928b443fdd512bb88"
+      },
+      {
+        "path": "390/s09-tracker-week.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-week.s251-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "390/s09-tracker-trends.png",
+        "sha256": "23578e5ed820227219756efe7f2317f84b7b77a30f257ba29e573865e6cc7601"
+      },
+      {
+        "path": "390/s09-tracker-trends.geom.json.gz",
+        "sha256": "8adde293d4239494fbd08b766cad2f986c8d36f8815308ea9dc2e6a09a78cf7e"
+      },
+      {
+        "path": "390/s09-tracker-trends.s236-0-0.png",
+        "sha256": "6818d2e7659242bd4a59fcc04a39b07326b54b2500a3f118e1986ab6f0a1dd4d"
+      },
+      {
+        "path": "390/s09-tracker-trends.s236-0-232.png",
+        "sha256": "6c2f971a032cef8a465fa0ee95fbb73a1ece507585f9582394780c347916a4b7"
+      },
+      {
+        "path": "390/s09-tracker-trends.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-trends.s251-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "390/s09-tracker-config.png",
+        "sha256": "e33ff45e90e0fa767f555d41fd5761674811380d9f9face16b7c89d565950dad"
+      },
+      {
+        "path": "390/s09-tracker-config.geom.json.gz",
+        "sha256": "17e5f709c4efb2cd08e37438328cf6cab98fd31de2aa343aff0246bbca6219c7"
+      },
+      {
+        "path": "390/s10-appearance.png",
+        "sha256": "45f84fcbdd621a1b4d6f08104f7aec20f35c6ae731661845dcde60dd0b8d5b5b"
+      },
+      {
+        "path": "390/s10-appearance.geom.json.gz",
+        "sha256": "09585e4cc5a7f6fe57cb005456dbd4f7471a51a2800ea29a11a7d408ddef1a01"
+      },
+      {
+        "path": "390/s10-clients-studio.png",
+        "sha256": "d42ee2836abb236af04cd068aa744a27e7503cbf9978b8b8c85a0578df880919"
+      },
+      {
+        "path": "390/s10-clients-studio.geom.json.gz",
+        "sha256": "315d8cf16de199da8af4e5841f0b29d113527d1c92e352067b6e7403d7df9419"
+      },
+      {
+        "path": "390/s10-mealplan-studio.png",
+        "sha256": "bc9d4734f94dbea03d197b7abfd684f0ebbace2d5c7894df58e1604df043d59c"
+      },
+      {
+        "path": "390/s10-mealplan-studio.geom.json.gz",
+        "sha256": "786f5066375ad0fdd904bb13c2cf4e2f5f9610c36f19e7dc5a03c71ec059e387"
+      },
+      {
+        "path": "390/s11-preferences.png",
+        "sha256": "19301e7dd45e4a33e1f9a0526e8e675e45f6269a224f4e60590dc7ce8462e238"
+      },
+      {
+        "path": "390/s11-preferences.geom.json.gz",
+        "sha256": "4111d478eae177d509b0049eec403356287e4d6010f3efad3d460c5124753db6"
+      },
+      {
+        "path": "390/s11-preferences.s236-0-0.png",
+        "sha256": "2ca1278380e26f80ff37746ad21deec0626a448e5aabc23e11798b8e718dbcaa"
+      },
+      {
+        "path": "390/s11-preferences.s236-0-297.png",
+        "sha256": "dc99f454509fc0e86989b740daef314782a859e09e2811712e6696af57f974d4"
+      },
+      {
+        "path": "390/s11-client-preview.png",
+        "sha256": "60a5666fcedfe7e9e59e71882665fd96deb61f9785e9dd3d8238a8c3a2548d8a"
+      },
+      {
+        "path": "390/s11-client-preview.geom.json.gz",
+        "sha256": "0db74db42664dcb9b27e99741e5a3c22db193a0ca1ac051a4a81199fa41ba116"
+      },
+      {
+        "path": "390/s11-client-preview.s130-0-0.png",
+        "sha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77"
+      },
+      {
+        "path": "390/s11-client-preview.s130-27-0.png",
+        "sha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77"
+      },
+      {
+        "path": "390/s11-client-preview.s218-0-0.png",
+        "sha256": "af9831e54550a2f07c946258fcc923cfc2eade4d0d3f6f24d531c2b97cf91dd3"
+      },
+      {
+        "path": "390/s11-client-preview.s218-0-567.png",
+        "sha256": "30d30f8d33e4502f80671c03fcf182f0b541d8845f0d4522872e025b75dc9f43"
+      },
+      {
+        "path": "390/s11-client-preview.s233-0-0.png",
+        "sha256": "d52b108bfced5785b93824ab8ff5f18790368f526d21a7278116832a7d7ca39f"
+      },
+      {
+        "path": "390/s11-client-preview.s233-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "1440/s01-roster.png",
+        "sha256": "916d705b0a82b0393a61a6acf6fcf01189a1bed4e3a869b6f3c3e940bf90a112"
+      },
+      {
+        "path": "1440/s01-roster.geom.json.gz",
+        "sha256": "49a9ae7402fee3ec9aa4d590e955f19404664df184eb8c6a3ac59e345758c03e"
+      },
+      {
+        "path": "1440/s01-profile-overview.png",
+        "sha256": "96538189ab0d731e1018713ddbabb8762f19443c766084d49cc4472864b4883d"
+      },
+      {
+        "path": "1440/s01-profile-overview.geom.json.gz",
+        "sha256": "2532ce13fae6f8294510e9d754bfaa0f0fc304f6b29cfef0478db102ee833a46"
+      },
+      {
+        "path": "1440/s01-profile-plans.png",
+        "sha256": "a07ef4c66ef125a711378884e1d2aeecf8c661439a36c237d6627cc6825c29c7"
+      },
+      {
+        "path": "1440/s01-profile-plans.geom.json.gz",
+        "sha256": "0afeba5d5edb26e70f83cb99c7df5a0b2130080f03a56c2b27603a6b38b36971"
+      },
+      {
+        "path": "1440/s01-profile-checkins.png",
+        "sha256": "2a0fd789e9e909597e98fa17d67aea8c708d85df2d29d360266d6a2025cfc5d6"
+      },
+      {
+        "path": "1440/s01-profile-checkins.geom.json.gz",
+        "sha256": "f309cda09697116c1fcdb966d6ad8f5fad2bc718a5df380a7e79d9cfd8bb9c9e"
+      },
+      {
+        "path": "1440/s01-profile-notes.png",
+        "sha256": "dcd5f86092bfb5e0a929a6d742cd399e4772bea0009beb6dc59bceda4647dd0f"
+      },
+      {
+        "path": "1440/s01-profile-notes.geom.json.gz",
+        "sha256": "1a4794dc9ddf344b2a75551c5f1f3501737d08803b232cd0a76c718a0bdeae76"
+      },
+      {
+        "path": "1440/s01-profile-onboarding.png",
+        "sha256": "2e8d131518043cebac5535fa72840d4fdf4b841a377c0ce2b11d5ce6b4f187fd"
+      },
+      {
+        "path": "1440/s01-profile-onboarding.geom.json.gz",
+        "sha256": "9dcf9a343c9ae75ac26e82a4dfa13e57be4d80b99a0c9d5681ee2acad74fb9e7"
+      },
+      {
+        "path": "1440/s02-messages.png",
+        "sha256": "bd66d4387a645f60504eb1362c7a7e7518e38adce45ae2e573e31c1ee04ed214"
+      },
+      {
+        "path": "1440/s02-messages.geom.json.gz",
+        "sha256": "d8033c21d3a2cfc97f1f6273a0a0fd2199aca493ea69fb0868aaf440767cf2d8"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-0.png",
+        "sha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-552.png",
+        "sha256": "3754a7450d7d87ce228809aaa029ef1c679501603b725743b01da75cc5694c41"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-746.png",
+        "sha256": "798a9b06217e579d19edc1b8c5e9b085a342a0c2075b58b4562a051691dde2f4"
+      },
+      {
+        "path": "1440/s02-thread.png",
+        "sha256": "795036544be5bc982075bb732f2b3f276e55cfb2277d443d69cbed8a7b63f6fa"
+      },
+      {
+        "path": "1440/s02-thread.geom.json.gz",
+        "sha256": "873626399fedd14e228fe04a3457e23a54cd272f37d78e04415ef6a4d0a5f8f9"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-0.png",
+        "sha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-552.png",
+        "sha256": "b77acc616e4d346d90f3863d90719973d601b78391af8a3c6ef76b8617af9263"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-746.png",
+        "sha256": "c39a139bbaf531e948f9d838108cf755bf751fb7e9a4739954d1c728517fd7ab"
+      },
+      {
+        "path": "1440/s02-thread-attachments.png",
+        "sha256": "c99024cb9e3afd23a7a3a886a5fef1b12a9ad6a65934927dd49a64dc160d5ba9"
+      },
+      {
+        "path": "1440/s02-thread-attachments.geom.json.gz",
+        "sha256": "dc7c7c4cfda05d7b9e8a5eb9fea9cb92904dcda432addbd1478728e5adfc1e84"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-0.png",
+        "sha256": "548a2a92529357381c0d11acd415648d93f2d6b6b45d664b41a582bcc912312f"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-552.png",
+        "sha256": "53066600b91c23b181c7c57848bed098d6a50b790a230f6b474504ce4e166f0b"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-746.png",
+        "sha256": "42f087d23e07fd0d318a79f473b5d96e2c36304061b45ef47b83597e024c3dd7"
+      },
+      {
+        "path": "1440/s02-notes-todos.png",
+        "sha256": "766770a2366801dcce67d9b6681a8a39faf7ab6996db8eb8f579941f278b5e3c"
+      },
+      {
+        "path": "1440/s02-notes-todos.geom.json.gz",
+        "sha256": "a2634672750ab0937eeb3227138c7ae19eb951513abb6fe89645cff7e8a535ac"
+      },
+      {
+        "path": "1440/s03-checkins-board.png",
+        "sha256": "6ff28a7a9e7253141a5d41f92301f7f7e064212fad24ffd42ea277ae36cd1286"
+      },
+      {
+        "path": "1440/s03-checkins-board.geom.json.gz",
+        "sha256": "24790c8e4b73e32befab7a98d7588c72e63279d4c31521c917f7204ecc432431"
+      },
+      {
+        "path": "1440/s03-add-extra.png",
+        "sha256": "459e545365c8cb8db0e3dc2df7fb65c55c69d6c96e90f2404d0b29dc9062def1"
+      },
+      {
+        "path": "1440/s03-add-extra.geom.json.gz",
+        "sha256": "f2133747454dd54df674cdfefffcaf168686ed41d4f938babad0e3c81c28e522"
+      },
+      {
+        "path": "1440/s03-checkin-review.png",
+        "sha256": "4aaee7ea3b3be72cd5190530ef88fbe2c663a87974ba2960ad02367f9519544e"
+      },
+      {
+        "path": "1440/s03-checkin-review.geom.json.gz",
+        "sha256": "71a75e4c9e5c94a2f355a4f8018912c6c6a222f5e82c8e0a308b19ea6af28c6a"
+      },
+      {
+        "path": "1440/s04-habit-editor.png",
+        "sha256": "255932a8d1cc6d81f2f6712d78412998322e5af7f8fca7d3eb8dac06a1c5d863"
+      },
+      {
+        "path": "1440/s04-habit-editor.geom.json.gz",
+        "sha256": "4b06c4b5dbbc01f6a80f5a167b440c40705a2ceb911f3ab8e4c5e251124498ff"
+      },
+      {
+        "path": "1440/s04-template-habits.png",
+        "sha256": "93cea5f5987bafadde68ad378ed7d5a0a988bbba38522182f7eb5135979293b2"
+      },
+      {
+        "path": "1440/s04-template-habits.geom.json.gz",
+        "sha256": "b46aa72f52fdc2890fb3bf68a47f78fe9e293bd0509501d2678c89ff35cac02a"
+      },
+      {
+        "path": "1440/s05-templates.png",
+        "sha256": "d63ee5d50ee161d69cc302bc08db0117aa89ca3c136755dba4782692f3983790"
+      },
+      {
+        "path": "1440/s05-templates.geom.json.gz",
+        "sha256": "82e4d150d50e2cf0e3bc7a59b48ea35a871634edffb87b49d4812a6e7f971265"
+      },
+      {
+        "path": "1440/s05-template-editor.png",
+        "sha256": "ccedb83033cf748c1c53351cca16d0dfe55deae1dd9f3bfbdfa234fdd734f35c"
+      },
+      {
+        "path": "1440/s05-template-editor.geom.json.gz",
+        "sha256": "6c80e025762c3f7a0054b5e4385a03835c394d538b8baf403a74f0d8cc7a90c6"
+      },
+      {
+        "path": "1440/s05-tracker-setup.png",
+        "sha256": "a78f729f901dfbde294cc32350ff5e639be7c165c23ae71298ec125eb2c66a78"
+      },
+      {
+        "path": "1440/s05-tracker-setup.geom.json.gz",
+        "sha256": "02ee357663bfe90ecbe9b4a2123cd1d7ac64c1aa18fcf80b2d34a883dddd4673"
+      },
+      {
+        "path": "1440/s05-client-setup.png",
+        "sha256": "75dd9eaa5b7b026ce82f65d5452ef48e6ade29520e83eef1f98b7ab0faf2538d"
+      },
+      {
+        "path": "1440/s05-client-setup.geom.json.gz",
+        "sha256": "77a8b1a76b393e369e432775333afa39e72d04b2cf54cff3c348c2994ca9f9b5"
+      },
+      {
+        "path": "1440/s06-mealplan-editor.png",
+        "sha256": "0acb2f1119fc85c33c4f11094e6e4a364d1efe2dbc81473c7a17803dd2b2475e"
+      },
+      {
+        "path": "1440/s06-mealplan-editor.geom.json.gz",
+        "sha256": "f31963f6f221ed8727e6d4d1ebaf9e709fb883b7c6fde7bcb3e872d7ebc434c0"
+      },
+      {
+        "path": "1440/s06-template-nutrition.png",
+        "sha256": "45b8f572215942a14b9141bb28c3c025bbf40fec80504d973772bfb266b3ca0a"
+      },
+      {
+        "path": "1440/s06-template-nutrition.geom.json.gz",
+        "sha256": "abd5d1bd2b3a1c68a7f6f2d6fe3178b50169f163ad8f11a8684142059348aa99"
+      },
+      {
+        "path": "1440/s07-training-editor.png",
+        "sha256": "de2beba49980204539562a73688b793a7d4ab7c7bca235cdd1901c71df95055f"
+      },
+      {
+        "path": "1440/s07-training-editor.geom.json.gz",
+        "sha256": "a5319ee004e55e62fb6d0f46641acb4b9be8844529ee23d257cd8486de980e7a"
+      },
+      {
+        "path": "1440/s07-exercise-library.png",
+        "sha256": "e8549dce1c608874a6d691df11f92c7b5d30f71bdb12d837f56de86d18cd4b2c"
+      },
+      {
+        "path": "1440/s07-exercise-library.geom.json.gz",
+        "sha256": "18e672af863461ec4af0d201124737eadb58c37c3d5f1b8bc8fb965b480e0042"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-0.png",
+        "sha256": "e39b26e078ff01f1bf7b85eb58fff3b8e6b78aefb8c95cf21a8c2d1c30c2a846"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-84.png",
+        "sha256": "ef5974599e0f2287f05cd270f65bb2b9ca33e720c51020b5371c5cb21839feee"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-102.png",
+        "sha256": "ed8be1112534668b2f3fee231d5b4c80793050d4cd3fbc58c99782118cbf6d9c"
+      },
+      {
+        "path": "1440/s08-builder.png",
+        "sha256": "38b90ea2b787e52a3541e569bddb7736fe917852bd5fd45ffcc76af3dd93615c"
+      },
+      {
+        "path": "1440/s08-builder.geom.json.gz",
+        "sha256": "e894b0ce380f64107871d9eb22196f22abd9c7efcbda803508d4d955b32229ee"
+      },
+      {
+        "path": "1440/s08-widget-gallery.png",
+        "sha256": "383da1878c2071e7d43d59c385ad50a2663f7124b4c41af9f60568faab64a210"
+      },
+      {
+        "path": "1440/s08-widget-gallery.geom.json.gz",
+        "sha256": "d5eca585384614824ed5795aaf325b9c73acec69a50884d01fc1947d36cef430"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-0.png",
+        "sha256": "ecc4a2923d490ff9c3965d9c251604bb159f32c0af475a77eeef525bf7b45c79"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-661.png",
+        "sha256": "38439b50e647001d21204204f193bab08722b6be8e5fd245e9e01f3f7556bc01"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-1322.png",
+        "sha256": "6c356d61f977c635bc73b1340731db8947e559cef521d028b616f4cf42350447"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-1983.png",
+        "sha256": "424f40226062235a93a51f246568c3007fbe0f7f66af1c4b2f8c55c77cdd22f3"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-2644.png",
+        "sha256": "87490711532660abc940a758ae18021c3a0158ab4f551d548537827ba09dd732"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-3137.png",
+        "sha256": "9de57126dbb9f882752dedc1c03014365fa11276686b237037e20d0d1761937e"
+      },
+      {
+        "path": "1440/s08-template-dashboard.png",
+        "sha256": "ce7bef66f1cb6e103bd7b68546033f8c6240ec3fb88c6bda79ff65a2e9bb0ff1"
+      },
+      {
+        "path": "1440/s08-template-dashboard.geom.json.gz",
+        "sha256": "c878941314b8ee08ae29330eb9462240aeb5663e3cba671adbb8b5b358c3e73a"
+      },
+      {
+        "path": "1440/s09-tracker-today.png",
+        "sha256": "413d302ae4150abe68b087dd2f3b9d7cdfe80294fd74361da625e6ae6ad53b9f"
+      },
+      {
+        "path": "1440/s09-tracker-today.geom.json.gz",
+        "sha256": "b0ef4325d2aa9708d9e0dbf875befb329e7c1498d319b3527b2571e64d21ce1b"
+      },
+      {
+        "path": "1440/s09-tracker-today.s236-0-0.png",
+        "sha256": "a6e626060ac4f74eb56cf3fa13aea31c7cc63eb33fc3c827fa7959f90e224e27"
+      },
+      {
+        "path": "1440/s09-tracker-today.s236-0-330.png",
+        "sha256": "3429ef3d9472e2d890289bd13646de9276ad1686d74153e4119aef1644ce3130"
+      },
+      {
+        "path": "1440/s09-tracker-week.png",
+        "sha256": "aab40837ba86d9abd2ae95ae10c128c2414e64b49deee903369ce3e1b75bf4e8"
+      },
+      {
+        "path": "1440/s09-tracker-week.geom.json.gz",
+        "sha256": "c597bee969a9c1fa17c218a0ab9c81fd9ed096d124fc8aebb4f89c11784b42ac"
+      },
+      {
+        "path": "1440/s09-tracker-week.s236-0-0.png",
+        "sha256": "c21ad00147ca12acf9639688d2c2a806a821687897dfe64e09ff3a552bc421ac"
+      },
+      {
+        "path": "1440/s09-tracker-week.s236-0-82.png",
+        "sha256": "240ee9ebfa7f463ebad01d8a3ab24102f8cf8ce06ac874dfa32339c518524010"
+      },
+      {
+        "path": "1440/s09-tracker-trends.png",
+        "sha256": "36584cf3b11bc90351ca5e2efa6bdf76edb2c60f200ce891414d9fdb6da3d87b"
+      },
+      {
+        "path": "1440/s09-tracker-trends.geom.json.gz",
+        "sha256": "4b43693e3df7f2079282e1851c05f87d8521a52ba33b2f172036ce765681831b"
+      },
+      {
+        "path": "1440/s09-tracker-config.png",
+        "sha256": "99256ba47294882c753eb611da258d0c0fc715e978db510defd26f1a846f1cbc"
+      },
+      {
+        "path": "1440/s09-tracker-config.geom.json.gz",
+        "sha256": "9d5c3ca79471834c4066ee6354067c7fefe53122a310aa4bb07dce71b02fa5b9"
+      },
+      {
+        "path": "1440/s10-appearance.png",
+        "sha256": "a5a7c55a0575736fdc809614c2fb3048fcb8aee50825f450fa5561f8803d31fa"
+      },
+      {
+        "path": "1440/s10-appearance.geom.json.gz",
+        "sha256": "a6703675f73c71bebfb1e5da966118bd3a28409c1866f1f9da688f894e90ea77"
+      },
+      {
+        "path": "1440/s10-clients-studio.png",
+        "sha256": "64ce8ff95100937222fe3fbf05d499509fc7166149edbd863946f26694ee2b28"
+      },
+      {
+        "path": "1440/s10-clients-studio.geom.json.gz",
+        "sha256": "d314272566e2373b48afe3758809f9a3237cca5f44ad53fd4ddb501beb6d1c2c"
+      },
+      {
+        "path": "1440/s10-mealplan-studio.png",
+        "sha256": "c1628c1122cdd77c3702fecc510743e87af1272254fcd35c7ef74b590b2e9fb3"
+      },
+      {
+        "path": "1440/s10-mealplan-studio.geom.json.gz",
+        "sha256": "251706f2a35af91569164059e5f18f0ab25b5d9f0def8dee0b7b5e4c77610f78"
+      },
+      {
+        "path": "1440/s11-preferences.png",
+        "sha256": "b6f2dee8751b424533c3ae8ba079a3bbc9cf802153361f75892af3d21f405ef5"
+      },
+      {
+        "path": "1440/s11-preferences.geom.json.gz",
+        "sha256": "5b85b21adaa86817d296d3b491cbd9c5138c893f61afe0d44cc66f851d3ab55d"
+      },
+      {
+        "path": "1440/s11-preferences.s236-0-0.png",
+        "sha256": "134f8bf156e1caa479495d35b65af48f75dc3d08e9e270b2d37a91be29baf1d4"
+      },
+      {
+        "path": "1440/s11-preferences.s236-0-240.png",
+        "sha256": "d37f0d6e20380b478d94c3f690d46f891f51e9d5b2d47bac2eca0fed405e8839"
+      },
+      {
+        "path": "1440/s11-client-preview.png",
+        "sha256": "b678dad6d65b9b40440be648ee93c4e535d11b80e1d16929fbde40b95b38d481"
+      },
+      {
+        "path": "1440/s11-client-preview.geom.json.gz",
+        "sha256": "518f9d15244a82e4bc912e6dab07b7542a2f9e6bb93dd857d9a23a4bb4be4a53"
+      },
+      {
+        "path": "1440/s11-client-preview.s218-0-0.png",
+        "sha256": "260d9760071f3500fd82641b7c4e1729c18ce2aaf4812192f474496d0864492e"
+      },
+      {
+        "path": "1440/s11-client-preview.s218-0-3.png",
+        "sha256": "14b8eb3ce2dbd675576fd6b4526e544b2973efc2188dc0ee843e1a0051c81267"
+      }
+    ]
+  },
+  "capture": {
+    "directory": "/private/tmp/p495-207/wt/_evidence/p495/current",
+    "manifestSha256": "bde8f1974f701f33a8422b557fa42f6f9e0566791053bb55038f99b1f37d86f2",
+    "screens": 70,
+    "failures": 0,
+    "retried": 0,
+    "artifactCount": 233,
+    "artifacts": [
+      {
+        "path": "390/s01-roster.png",
+        "sha256": "fc15682331a633a98e2b8d6074990c59aea90fcbbf3b677c099431d359994323"
+      },
+      {
+        "path": "390/s01-roster.geom.json.gz",
+        "sha256": "e0cc7288ddd8c60b8898e330d000bef045f8ee3c1417223979bcd5db224f69e2"
+      },
+      {
+        "path": "390/s01-roster.s143-0-0.png",
+        "sha256": "d2e9cce57f224f0581da731dc1cf4a09e98cf07aa5b17bab56666ad4a360f782"
+      },
+      {
+        "path": "390/s01-roster.s143-312-0.png",
+        "sha256": "85e03c7962b88054456be765d81871ba071664aeb1458ca50208a4ea49954cf6"
+      },
+      {
+        "path": "390/s01-roster.s143-468-0.png",
+        "sha256": "5b4a5414da355da6220bf250b6ba764dc67f2076187f30461f9e827f4188c4f5"
+      },
+      {
+        "path": "390/s01-profile-overview.png",
+        "sha256": "b70bbd6c48a4e913e4d0c739e97ca32dc1031e522fe41b97140a9e6238691585"
+      },
+      {
+        "path": "390/s01-profile-overview.geom.json.gz",
+        "sha256": "4c1cb09360ba8761732b441e7468463ed39177e6729f297ce3cf768097e350dd"
+      },
+      {
+        "path": "390/s01-profile-overview.s129-0-0.png",
+        "sha256": "4fdab8d662c6fb73f0a65d52cf44b19df62c618d436fb40236511cd8358eb208"
+      },
+      {
+        "path": "390/s01-profile-overview.s129-27-0.png",
+        "sha256": "dd2a46e9de3b038de305e7b1399312aa7531e751b6571a6da1b1670b5e75276f"
+      },
+      {
+        "path": "390/s01-profile-plans.png",
+        "sha256": "68c5f2c267f6774de9b4c01a7bc14e1df19aef7ddece4feaa6be1400deec5595"
+      },
+      {
+        "path": "390/s01-profile-plans.geom.json.gz",
+        "sha256": "48a3cb5360c074e83a6aa99e6482ce108f05f693148df7083728543799a37df8"
+      },
+      {
+        "path": "390/s01-profile-plans.s129-0-0.png",
+        "sha256": "774f291ade1f184626bebf98620f9789c4a3b02846d96cc4c96d143f52d64326"
+      },
+      {
+        "path": "390/s01-profile-plans.s129-27-0.png",
+        "sha256": "6a2781b6d9660001b521676428b1815c113ef43b07faccdb163254918c57e699"
+      },
+      {
+        "path": "390/s01-profile-checkins.png",
+        "sha256": "6e6f5585802a489a0e0d2394725d14bebc5041fa119eb7c6495d8fe8364afc74"
+      },
+      {
+        "path": "390/s01-profile-checkins.geom.json.gz",
+        "sha256": "e7b4c99146dec489076eec026742a5c4ed277585bc465a9f37e3731232dd16ff"
+      },
+      {
+        "path": "390/s01-profile-checkins.s129-0-0.png",
+        "sha256": "a75624a5ff47bab77de1b8d184d03a2b77c81b4b6b1fb3905bbd98b60a8d4604"
+      },
+      {
+        "path": "390/s01-profile-checkins.s129-27-0.png",
+        "sha256": "e2bf7e916f75b24ebea2afcb471493a36c1cf94d92b70332e9259e2e277d42ea"
+      },
+      {
+        "path": "390/s01-profile-notes.png",
+        "sha256": "91f567ac7b5781c4e0662b63c06d78aca979f2182bfba620f1787ec138c01649"
+      },
+      {
+        "path": "390/s01-profile-notes.geom.json.gz",
+        "sha256": "e3fc4de21c4ae703ac2296732a76dbd7ff688490c48b966d27c8fc26b6c7947d"
+      },
+      {
+        "path": "390/s01-profile-notes.s129-0-0.png",
+        "sha256": "38c30c9eca0dca4555a3e2fe00e6892bdf44ee763e92c5cc28697176a8dc51a4"
+      },
+      {
+        "path": "390/s01-profile-notes.s129-27-0.png",
+        "sha256": "3a3f487c0378600bc5e52fead30a1c3db7c98ebf87035b4df61d50e7285d4848"
+      },
+      {
+        "path": "390/s01-profile-onboarding.png",
+        "sha256": "514e1eb27963a4f719389e5163baf009da896a7c609e67017fb06f59600fe791"
+      },
+      {
+        "path": "390/s01-profile-onboarding.geom.json.gz",
+        "sha256": "e18bfa0b91dfbf17550dda457a9f7a0195e5a2def8c4d25ac3c3eecc57ba265d"
+      },
+      {
+        "path": "390/s01-profile-onboarding.s129-0-0.png",
+        "sha256": "39b225bf7f94e0decb5deb283bc15e495089d5a3c6509d529596c63d70eec754"
+      },
+      {
+        "path": "390/s01-profile-onboarding.s129-27-0.png",
+        "sha256": "38e5628d654cd6c64f4c88378595e813a3b816f4d0e6a4726bfb57f19a893ffa"
+      },
+      {
+        "path": "390/s02-messages.png",
+        "sha256": "576d5d45518e82f4d67592f8f618a2805911adc97561abc9596e550f90d82f9b"
+      },
+      {
+        "path": "390/s02-messages.geom.json.gz",
+        "sha256": "bf2b1a0048b42fb670f40053eecd3dd2187a9e1b0c5291cdf3b94b5015eb2c5c"
+      },
+      {
+        "path": "390/s02-messages.s115-0-0.png",
+        "sha256": "caa1a775155d6eab5674e5fec439c491ec7f3c13bf6c90a72f05adabaa2fe69f"
+      },
+      {
+        "path": "390/s02-messages.s115-0-454.png",
+        "sha256": "8799e10563e780255267f5c5c5c87859508920044d5c5b9ba546b2b06f2b69c1"
+      },
+      {
+        "path": "390/s02-messages.s115-0-844.png",
+        "sha256": "e3b99bc10ace3d2fd84f919a23c6c472de3724f32b2a7d7297ac17b7e1fca1a0"
+      },
+      {
+        "path": "390/s02-thread.png",
+        "sha256": "d431836c9f67f0923aad104165049773e77a3bd1307391fe6ff871b7b7415eda"
+      },
+      {
+        "path": "390/s02-thread.geom.json.gz",
+        "sha256": "9d31f6e97a26fd99267f573628f5404f7dd849e3bcdb6cf9232d7068745069a0"
+      },
+      {
+        "path": "390/s02-thread-attachments.png",
+        "sha256": "a47b7a2151e5ecedcac9534b4f8726c1ab2440dd707510338d60a49fe63833d4"
+      },
+      {
+        "path": "390/s02-thread-attachments.geom.json.gz",
+        "sha256": "f50f14ae41772c3799eac792e621a32bd94eabc9893606bb9bcea16c91ecca88"
+      },
+      {
+        "path": "390/s02-notes-todos.png",
+        "sha256": "14b7786958cc0fda546df651c07ea28ba2d02bcb7042098b794d8f99d77d7e3b"
+      },
+      {
+        "path": "390/s02-notes-todos.geom.json.gz",
+        "sha256": "197be382af28b84e567d9887f0536bfe6d2c9726c366a31b675412624f03c290"
+      },
+      {
+        "path": "390/s03-checkins-board.png",
+        "sha256": "0e549c45d6f2d9b199c2a971e20b0a4f21aea04b96a70118eb9a0242411f52f7"
+      },
+      {
+        "path": "390/s03-checkins-board.geom.json.gz",
+        "sha256": "625e88bdd8e2bb86daf07b3e342bc9f49e1b974813e5fccade3d7979c0355ff4"
+      },
+      {
+        "path": "390/s03-add-extra.png",
+        "sha256": "af1dabd2e09c531a0d79b07e0db6ce99c8f6083b03a12b379dad8ed9bd9194c6"
+      },
+      {
+        "path": "390/s03-add-extra.geom.json.gz",
+        "sha256": "d6f175e52f4e28da4c41e4a55c2bc490407f23c89b5c49bf3bec347f57ff012f"
+      },
+      {
+        "path": "390/s03-checkin-review.png",
+        "sha256": "6fef747d2a9388801fa293d2f08f2699a33ae9f17f6d38ce521d81e7d15625cf"
+      },
+      {
+        "path": "390/s03-checkin-review.geom.json.gz",
+        "sha256": "f6852e9cfe501e43c6c252d2c0821a7975e15a66963d51f0e45f5af99224235a"
+      },
+      {
+        "path": "390/s04-habit-editor.png",
+        "sha256": "1374d8dfa06f858c0ebe86b1fa2fe417642e42c1e1d4e477bab22dc36313196a"
+      },
+      {
+        "path": "390/s04-habit-editor.geom.json.gz",
+        "sha256": "eeebb27b6431898933649f5fd6a6c692a863cd01a12ef4ab652b87525dd72312"
+      },
+      {
+        "path": "390/s04-template-habits.png",
+        "sha256": "5984dd57cdc4875581dc125c340a2fea8295abf2547dcef754359ddc09edbcf7"
+      },
+      {
+        "path": "390/s04-template-habits.geom.json.gz",
+        "sha256": "01c5d8d399b56f0891cdd770d84298ca512d97b9c2ba5083094f28a9c3ff9b47"
+      },
+      {
+        "path": "390/s04-template-habits.s120-0-0.png",
+        "sha256": "a57e3c9361510a30dbb8d0f2755fc5a1897e713aab10d0248d5d7c159892e331"
+      },
+      {
+        "path": "390/s04-template-habits.s120-323-0.png",
+        "sha256": "5a6105cf57966e1cfc9ad569efd13262211c69f1947824395f1c30bf461ce0bd"
+      },
+      {
+        "path": "390/s05-templates.png",
+        "sha256": "f9ea73d8f3d98a801f9dd6779687b81b637f7d7a86d5d767ad39dc6abfbfad7e"
+      },
+      {
+        "path": "390/s05-templates.geom.json.gz",
+        "sha256": "9ab5ade41ba4eb1b0c60232770c8ca3b61b73e4f547ecd03c7e17256bb55c3a8"
+      },
+      {
+        "path": "390/s05-template-editor.png",
+        "sha256": "9c98fb9f8fe4ca4d1f42eb8ab0eb63580cc1e38f094ced1eb0d27b9b6f8e432c"
+      },
+      {
+        "path": "390/s05-template-editor.geom.json.gz",
+        "sha256": "9d2a450da838c6d57591d59dfe21762077355ef70aaacf501b9323817f36ecad"
+      },
+      {
+        "path": "390/s05-template-editor.s120-0-0.png",
+        "sha256": "9a079dd605042add18ebab3f90b349d59bffbdfe9c154da869576ec0dd1ec622"
+      },
+      {
+        "path": "390/s05-template-editor.s120-323-0.png",
+        "sha256": "d36a2b0dfaa51d18e720b4e3c347721de1b0440b121820eb114bf4af8dd1710b"
+      },
+      {
+        "path": "390/s05-tracker-setup.png",
+        "sha256": "a1ffc9810856c075742eabc0a48bfc4ec10563c4173e7ddfa7e24f5a9dd05211"
+      },
+      {
+        "path": "390/s05-tracker-setup.geom.json.gz",
+        "sha256": "83cc62021bf079a554f58d5535ae1c64a7d717f410e0993c9fbcaed1eb22ae66"
+      },
+      {
+        "path": "390/s05-tracker-setup.s120-0-0.png",
+        "sha256": "523c6841cdc6f62d4ad41743a253ab7aa846ccc4fd3c5a6705d36fba9c853131"
+      },
+      {
+        "path": "390/s05-tracker-setup.s120-323-0.png",
+        "sha256": "9d8cd192fa3dadbf5ecf0fae2646e357bc8ff7a8ecdd5c317c9c5326e655bbf9"
+      },
+      {
+        "path": "390/s05-client-setup.png",
+        "sha256": "87371e16e51be67ee56dd2928143e4a223c1aaf6a1c3142a15b6606fcf579b4b"
+      },
+      {
+        "path": "390/s05-client-setup.geom.json.gz",
+        "sha256": "a41a2249f3195e836f613b9b8c9c931bb5bff7f60ef0a64d5a8e8d405c685595"
+      },
+      {
+        "path": "390/s05-client-setup.s129-0-0.png",
+        "sha256": "769f4296f08624f8f22775a6cd830680a0cfdbdc274e76e81919e7f14959df54"
+      },
+      {
+        "path": "390/s05-client-setup.s129-27-0.png",
+        "sha256": "8c573b96a60af9c043f6c3b9eb91462ae9354a0a0b50207fe7a035be192ca539"
+      },
+      {
+        "path": "390/s06-mealplan-editor.png",
+        "sha256": "3348b8785ef473c1786a5322ff48af96b7a594bbebd9f11b3da2626ca9638531"
+      },
+      {
+        "path": "390/s06-mealplan-editor.geom.json.gz",
+        "sha256": "d15b8d6ba7f7c51254cc17540f0b7b802f4c92dcfad81f3fdc9234073c8777eb"
+      },
+      {
+        "path": "390/s06-template-nutrition.png",
+        "sha256": "e702255537ca1f02a01fb9e74f669e2ec30fb671bb753b9106ddab2d5677884b"
+      },
+      {
+        "path": "390/s06-template-nutrition.geom.json.gz",
+        "sha256": "9eb06c2a6fb04f959ccc99ae56e8b1b912ef44f4c87d245d6c61b063ca5e5fda"
+      },
+      {
+        "path": "390/s06-template-nutrition.s120-0-0.png",
+        "sha256": "c35e6f39fe5c741145b204b2c3ce876f690b3891e311dde84fedcdee76d7870d"
+      },
+      {
+        "path": "390/s06-template-nutrition.s120-323-0.png",
+        "sha256": "419bb02529b4e8ac101e6e9ffb87308d8a7a77a00149672e87de5e42f583b507"
+      },
+      {
+        "path": "390/s07-training-editor.png",
+        "sha256": "3104ff00c17947d0eac675ebb07f9db239b490ce51918f19e5ed5375d70d0f46"
+      },
+      {
+        "path": "390/s07-training-editor.geom.json.gz",
+        "sha256": "a5f3ef78f62fa3662233569f70db8e70e9aaaa91453f062917176028d3a3862b"
+      },
+      {
+        "path": "390/s07-exercise-library.png",
+        "sha256": "c6b4a27f916b47a44056d0c175da34f867431b207cf0a01274e0d8969b6d3407"
+      },
+      {
+        "path": "390/s07-exercise-library.geom.json.gz",
+        "sha256": "c15f93064fa617a424592dc5e82b8b914c02a25edbd44d21855946794776c1fc"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-0.png",
+        "sha256": "470517d64a2b0348d7b1f58ee1b750f298c8c48c57424a4af7f8f56f59468361"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-84.png",
+        "sha256": "4d5099af9e1e9d0c401e86bbd1754b727a0e952c4142e76c3991abb8b9be808c"
+      },
+      {
+        "path": "390/s07-exercise-library.s178-0-102.png",
+        "sha256": "3129d0a706c13a030bb1e9587479e9170a7058a2de6637b291521917600794e2"
+      },
+      {
+        "path": "390/s08-builder.png",
+        "sha256": "5f0e6c3b1e0f80a84394c0bbdc7b0801519deaa609958430df678f95e808c34f"
+      },
+      {
+        "path": "390/s08-builder.geom.json.gz",
+        "sha256": "755eda89728c9e057500aeed28066a67ce8433934b0e5cc0d256f03f16557270"
+      },
+      {
+        "path": "390/s08-builder.s12-0-0.png",
+        "sha256": "3eded9ca44f5286eff8bf8b33e69c9b0a326c3d28e312551423e327bdcfae50c"
+      },
+      {
+        "path": "390/s08-builder.s12-5-0.png",
+        "sha256": "c898fc2fae01b87ee8cc1e99b67728f7f9c608b105efa12c6c8649983561c4b6"
+      },
+      {
+        "path": "390/s08-widget-gallery.png",
+        "sha256": "ba997fd73e7a44031a45cd48486e5d1d7986c57ec19c3b45981bd5347c8d8f44"
+      },
+      {
+        "path": "390/s08-widget-gallery.geom.json.gz",
+        "sha256": "184effb848b920cfbde1f8fa6305b6a02ae0c337a3b57a25390d792842fa7ccd"
+      },
+      {
+        "path": "390/s08-widget-gallery.s12-0-0.png",
+        "sha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s12-5-0.png",
+        "sha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-0.png",
+        "sha256": "70437b8c61bf2339d01a65fdf6bf7f400ff52bdf6bb319f6a3efcf0fd673fe89"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-650.png",
+        "sha256": "fa449341aba8d8ac0e4a0f1b44a14f2756cf05117e494f52200b2d6f7a6b23ce"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-1300.png",
+        "sha256": "a9dd451ea2f6a99e4759329cf03e4616f98fe54eeae33e53f5a6e489490bcbff"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-1950.png",
+        "sha256": "4a871a2bfc2499df0592630a492436eecbd391972c2253af3db2e5ed0e95af6c"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-2600.png",
+        "sha256": "ebdb3aff4453aafcedee283bbec1ce5fe0c6b717ab7651f9cc8139d16357c304"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-3250.png",
+        "sha256": "f7d6f4e147597905f83f929ac790e3417464efc1dd1f0fb68f3926cbd4e7925a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-3900.png",
+        "sha256": "e73e9ec1c3b87e8b990a1ea02749622d93a205845fda299e3b605fc6930aa041"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-4550.png",
+        "sha256": "3d6f4acd9037e92b25ce5c18595f555a39a75332b3edab1b7bb9b06d0fba583d"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-5200.png",
+        "sha256": "c97ae06936205a189b7171e9400353a20830906b5ba80e7634d757bc6c53282a"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-5850.png",
+        "sha256": "96fb6a29c04c1d0aa5ead86f7a82998af3aaf59687880b7f9a46c1ace583f5ed"
+      },
+      {
+        "path": "390/s08-widget-gallery.s92-0-6271.png",
+        "sha256": "82c9f773ebe93ea211811a470251289fe0a00a387cb5dc75f3e33f2eed681d32"
+      },
+      {
+        "path": "390/s08-template-dashboard.png",
+        "sha256": "00cb15bbee4824abd15a0cb3bfddcbabb4ccbe757cb0f58359b9bbb35878b9bf"
+      },
+      {
+        "path": "390/s08-template-dashboard.geom.json.gz",
+        "sha256": "1bc5e4672e44d396322e3775767dae34ecb72f9f5f199879384603057528e6ff"
+      },
+      {
+        "path": "390/s08-template-dashboard.s120-0-0.png",
+        "sha256": "e1c6fbf0a02a33495b28c880897258e70d809055a86a5f71a1b211958069f47c"
+      },
+      {
+        "path": "390/s08-template-dashboard.s120-323-0.png",
+        "sha256": "c5915f3ecaa52caeae18893ab4be686ad3e74c5b511ac2d1947ee03bdbc67a48"
+      },
+      {
+        "path": "390/s09-tracker-today.png",
+        "sha256": "a0828131c1c75272de29596ff426cfe1f662859d6f8f797a20f612308b3b5c0a"
+      },
+      {
+        "path": "390/s09-tracker-today.geom.json.gz",
+        "sha256": "fc1fbbd9ecb7f818bcd78ec9c55ed5a563c6a119d0514eda3ee093d780360a46"
+      },
+      {
+        "path": "390/s09-tracker-today.s236-0-0.png",
+        "sha256": "783eed8c004722f27736447df6751a82ef7cd854d30066aac661f51dde9fa949"
+      },
+      {
+        "path": "390/s09-tracker-today.s236-0-619.png",
+        "sha256": "b318b290d00d5a0ad7a33fbe6c84538d2234f029218fd4f2adbbad59600ffdad"
+      },
+      {
+        "path": "390/s09-tracker-today.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-today.s251-300-0.png",
+        "sha256": "231e10d0ca9ff9560216ec2e1e50c41cdc0c8b19df5fa6cc164c9f14362780a7"
+      },
+      {
+        "path": "390/s09-tracker-week.png",
+        "sha256": "2b885e31c8642ae09862f6323db2716e0999ed29e708f70ee3c16be1faf65103"
+      },
+      {
+        "path": "390/s09-tracker-week.geom.json.gz",
+        "sha256": "8aa95e918d4d1fd4c5373f45368ee909dd78b6e78be780adc0ce20681c27aa32"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-0.png",
+        "sha256": "ea5fa83d59b5905f731fc98d9dfb18ad4890bc701001e45dbe137c0450d243b7"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-810.png",
+        "sha256": "e98316f7497513ff0ac438f8e5904862afb3b565fb18eee55bb41152bb398e3d"
+      },
+      {
+        "path": "390/s09-tracker-week.s236-0-1451.png",
+        "sha256": "eb3d95daea34f18ba2c01bc657733ab805412b15299565c928b443fdd512bb88"
+      },
+      {
+        "path": "390/s09-tracker-week.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-week.s251-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "390/s09-tracker-trends.png",
+        "sha256": "23578e5ed820227219756efe7f2317f84b7b77a30f257ba29e573865e6cc7601"
+      },
+      {
+        "path": "390/s09-tracker-trends.geom.json.gz",
+        "sha256": "8adde293d4239494fbd08b766cad2f986c8d36f8815308ea9dc2e6a09a78cf7e"
+      },
+      {
+        "path": "390/s09-tracker-trends.s236-0-0.png",
+        "sha256": "6818d2e7659242bd4a59fcc04a39b07326b54b2500a3f118e1986ab6f0a1dd4d"
+      },
+      {
+        "path": "390/s09-tracker-trends.s236-0-232.png",
+        "sha256": "6c2f971a032cef8a465fa0ee95fbb73a1ece507585f9582394780c347916a4b7"
+      },
+      {
+        "path": "390/s09-tracker-trends.s251-0-0.png",
+        "sha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37"
+      },
+      {
+        "path": "390/s09-tracker-trends.s251-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "390/s09-tracker-config.png",
+        "sha256": "e33ff45e90e0fa767f555d41fd5761674811380d9f9face16b7c89d565950dad"
+      },
+      {
+        "path": "390/s09-tracker-config.geom.json.gz",
+        "sha256": "17e5f709c4efb2cd08e37438328cf6cab98fd31de2aa343aff0246bbca6219c7"
+      },
+      {
+        "path": "390/s10-appearance.png",
+        "sha256": "45f84fcbdd621a1b4d6f08104f7aec20f35c6ae731661845dcde60dd0b8d5b5b"
+      },
+      {
+        "path": "390/s10-appearance.geom.json.gz",
+        "sha256": "09585e4cc5a7f6fe57cb005456dbd4f7471a51a2800ea29a11a7d408ddef1a01"
+      },
+      {
+        "path": "390/s10-clients-studio.png",
+        "sha256": "d42ee2836abb236af04cd068aa744a27e7503cbf9978b8b8c85a0578df880919"
+      },
+      {
+        "path": "390/s10-clients-studio.geom.json.gz",
+        "sha256": "315d8cf16de199da8af4e5841f0b29d113527d1c92e352067b6e7403d7df9419"
+      },
+      {
+        "path": "390/s10-mealplan-studio.png",
+        "sha256": "bc9d4734f94dbea03d197b7abfd684f0ebbace2d5c7894df58e1604df043d59c"
+      },
+      {
+        "path": "390/s10-mealplan-studio.geom.json.gz",
+        "sha256": "786f5066375ad0fdd904bb13c2cf4e2f5f9610c36f19e7dc5a03c71ec059e387"
+      },
+      {
+        "path": "390/s11-preferences.png",
+        "sha256": "19301e7dd45e4a33e1f9a0526e8e675e45f6269a224f4e60590dc7ce8462e238"
+      },
+      {
+        "path": "390/s11-preferences.geom.json.gz",
+        "sha256": "ebdd28ce768f5e73426a9a715fdf5fc360e6e93eceba9b604c2a06803b11c919"
+      },
+      {
+        "path": "390/s11-preferences.s236-0-0.png",
+        "sha256": "2ca1278380e26f80ff37746ad21deec0626a448e5aabc23e11798b8e718dbcaa"
+      },
+      {
+        "path": "390/s11-preferences.s236-0-297.png",
+        "sha256": "5c9f360016f15cbb72839e8140dc966b73a25c734cf4a7820d74633b3997f795"
+      },
+      {
+        "path": "390/s11-client-preview.png",
+        "sha256": "60a5666fcedfe7e9e59e71882665fd96deb61f9785e9dd3d8238a8c3a2548d8a"
+      },
+      {
+        "path": "390/s11-client-preview.geom.json.gz",
+        "sha256": "0db74db42664dcb9b27e99741e5a3c22db193a0ca1ac051a4a81199fa41ba116"
+      },
+      {
+        "path": "390/s11-client-preview.s130-0-0.png",
+        "sha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77"
+      },
+      {
+        "path": "390/s11-client-preview.s130-27-0.png",
+        "sha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77"
+      },
+      {
+        "path": "390/s11-client-preview.s218-0-0.png",
+        "sha256": "af9831e54550a2f07c946258fcc923cfc2eade4d0d3f6f24d531c2b97cf91dd3"
+      },
+      {
+        "path": "390/s11-client-preview.s218-0-567.png",
+        "sha256": "30d30f8d33e4502f80671c03fcf182f0b541d8845f0d4522872e025b75dc9f43"
+      },
+      {
+        "path": "390/s11-client-preview.s233-0-0.png",
+        "sha256": "d52b108bfced5785b93824ab8ff5f18790368f526d21a7278116832a7d7ca39f"
+      },
+      {
+        "path": "390/s11-client-preview.s233-300-0.png",
+        "sha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd"
+      },
+      {
+        "path": "1440/s01-roster.png",
+        "sha256": "728b6b0a41e191a50df231375e9a9cc966395f72a7595d06badaf97442a25ea8"
+      },
+      {
+        "path": "1440/s01-roster.geom.json.gz",
+        "sha256": "bd050bc936001c3c8940ffcf85b7ec32a9e3661d76e4eca970152807b36f9d45"
+      },
+      {
+        "path": "1440/s01-profile-overview.png",
+        "sha256": "f00620660d7699f23cbfbfa760aea91f2f2aea9da177547a1bbf56c86050b0c1"
+      },
+      {
+        "path": "1440/s01-profile-overview.geom.json.gz",
+        "sha256": "621d6e21d14a99d7afafd191bbd546b00498070ba704a63efa9d20fa0d64f474"
+      },
+      {
+        "path": "1440/s01-profile-plans.png",
+        "sha256": "3ce205ad7fbb8153661c5b491afd0ea869402d3ce60dc9eb83dcc93c28088757"
+      },
+      {
+        "path": "1440/s01-profile-plans.geom.json.gz",
+        "sha256": "c9a0a5c4c9d43d342452ba140a6bd4fcccae83681025606ce5ad35a2ceee459e"
+      },
+      {
+        "path": "1440/s01-profile-checkins.png",
+        "sha256": "afc6fcb806a3e494f9746a650d458217b91e05d80d19a5a90ff9bc41bc29b9ce"
+      },
+      {
+        "path": "1440/s01-profile-checkins.geom.json.gz",
+        "sha256": "cd46480244b01c3462902ca79814583f5efa3b22bb3de7edb7459298c2fcf215"
+      },
+      {
+        "path": "1440/s01-profile-notes.png",
+        "sha256": "3d9fb0acef237bd9d24d7f0aba4358ff5f442645bfb76d9b52bd7ebf383505e0"
+      },
+      {
+        "path": "1440/s01-profile-notes.geom.json.gz",
+        "sha256": "732acf44ccba2daa8ccc8195df877361cd9bc95450388fc22824ba6ec3121496"
+      },
+      {
+        "path": "1440/s01-profile-onboarding.png",
+        "sha256": "7fb2e9f8078bc4d49328110097caac2c6b3c8ccf44cb9066e5bb39c6028f0a3e"
+      },
+      {
+        "path": "1440/s01-profile-onboarding.geom.json.gz",
+        "sha256": "0aed9033d382c7bf5951b7e5943ba38e0788727542e2bebe1b737d82dde15ddc"
+      },
+      {
+        "path": "1440/s02-messages.png",
+        "sha256": "a9f97e6633c569acbbf1775bea80e37b41f64b57478478c718c9cb212ca161a7"
+      },
+      {
+        "path": "1440/s02-messages.geom.json.gz",
+        "sha256": "6fc20a2a8b42510a6e125a227e8fc2905e7a522615d425ac3c21c89b38c2c1e9"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-0.png",
+        "sha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-552.png",
+        "sha256": "3754a7450d7d87ce228809aaa029ef1c679501603b725743b01da75cc5694c41"
+      },
+      {
+        "path": "1440/s02-messages.s115-0-746.png",
+        "sha256": "798a9b06217e579d19edc1b8c5e9b085a342a0c2075b58b4562a051691dde2f4"
+      },
+      {
+        "path": "1440/s02-thread.png",
+        "sha256": "68d3a760ed5328930e7d82f476e8127a869a2037406320b08ad08d49497288eb"
+      },
+      {
+        "path": "1440/s02-thread.geom.json.gz",
+        "sha256": "ade77c97fb168da0b66b3b16001697a7d7eec1a4ff76c3ad7e3cc24ae7d45d7a"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-0.png",
+        "sha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-552.png",
+        "sha256": "b77acc616e4d346d90f3863d90719973d601b78391af8a3c6ef76b8617af9263"
+      },
+      {
+        "path": "1440/s02-thread.s115-0-746.png",
+        "sha256": "c39a139bbaf531e948f9d838108cf755bf751fb7e9a4739954d1c728517fd7ab"
+      },
+      {
+        "path": "1440/s02-thread-attachments.png",
+        "sha256": "a1fa8e03d6cdce2015cc386898f87cc6575e5dcb19eb7ee7ddc22ab6781ca69b"
+      },
+      {
+        "path": "1440/s02-thread-attachments.geom.json.gz",
+        "sha256": "10f9aaa4c71ffd4ba16179257af1a70ee3b3c15a465e7c2cb455093a654eeb81"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-0.png",
+        "sha256": "548a2a92529357381c0d11acd415648d93f2d6b6b45d664b41a582bcc912312f"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-552.png",
+        "sha256": "53066600b91c23b181c7c57848bed098d6a50b790a230f6b474504ce4e166f0b"
+      },
+      {
+        "path": "1440/s02-thread-attachments.s115-0-746.png",
+        "sha256": "42f087d23e07fd0d318a79f473b5d96e2c36304061b45ef47b83597e024c3dd7"
+      },
+      {
+        "path": "1440/s02-notes-todos.png",
+        "sha256": "b19741460e5fb46fc2ff23b66174dcccf954b189fa246b0d7cf1c112fe8a7aed"
+      },
+      {
+        "path": "1440/s02-notes-todos.geom.json.gz",
+        "sha256": "18916d703eed856d285bfdfa4363918cb7589a0852bd3f3755c26c643ae74862"
+      },
+      {
+        "path": "1440/s03-checkins-board.png",
+        "sha256": "49f40040e01a3f9871350f69b6f68f8580f4a499ec2706784a92ee6ca58a58c2"
+      },
+      {
+        "path": "1440/s03-checkins-board.geom.json.gz",
+        "sha256": "411294ac1271e8df765f3b750ff5d39543fe1e57351c23f05390d348de69be37"
+      },
+      {
+        "path": "1440/s03-add-extra.png",
+        "sha256": "ee024dd1db4ec225c187cdd0199cdb2db97ea831dd6c1ce55d47ad403730929f"
+      },
+      {
+        "path": "1440/s03-add-extra.geom.json.gz",
+        "sha256": "914fa55fc6e11f5673c477810ed391eea7cbf0319bd35504260bedcbf2c9dc5d"
+      },
+      {
+        "path": "1440/s03-checkin-review.png",
+        "sha256": "09ebb96e5233d795b422058f2bff6b2e741d421cc3af6f1c5fe602f1c3199192"
+      },
+      {
+        "path": "1440/s03-checkin-review.geom.json.gz",
+        "sha256": "67b53bfe91a917e2beb69e19ec5e4265e145d99e751b9127550f99893ce44383"
+      },
+      {
+        "path": "1440/s04-habit-editor.png",
+        "sha256": "0e06df96745ecdf15b61a0855f2a9531102adf953d0dfab57ff994b7685f7aa0"
+      },
+      {
+        "path": "1440/s04-habit-editor.geom.json.gz",
+        "sha256": "53241ff0bb6c3997f6d5aa4f5bde34c9c122641e83f138222ad99feaa6cb7df6"
+      },
+      {
+        "path": "1440/s04-template-habits.png",
+        "sha256": "aa1eeae84944c27fb910923983a754fccf7c85019bc7aaee505a6f62d5d7d1c0"
+      },
+      {
+        "path": "1440/s04-template-habits.geom.json.gz",
+        "sha256": "df3fa756368a9ba8fcda5b031b5718985b56df1695d4c3cad89c899e0979043c"
+      },
+      {
+        "path": "1440/s05-templates.png",
+        "sha256": "633f8acaa68639735a47ec51ebb28b6e42e0e705ca402b03fc7dd05580853d26"
+      },
+      {
+        "path": "1440/s05-templates.geom.json.gz",
+        "sha256": "dd015d5144a5ffa9386475e4c4213cf9560970f44289dbf650278e78204dbedb"
+      },
+      {
+        "path": "1440/s05-template-editor.png",
+        "sha256": "5cc03c92db15304bc527f8b09962d1b576966c3c9f4ab9b9eab709cfb58c1b09"
+      },
+      {
+        "path": "1440/s05-template-editor.geom.json.gz",
+        "sha256": "5f24c5f2f1f09ec8bd9731c9db4dbdb45abc93cbfb38791d878bf9c1461a3e1b"
+      },
+      {
+        "path": "1440/s05-tracker-setup.png",
+        "sha256": "90a9a4d30d1894794e6c6cc0ef22ca147d2f9e0915672c670f927a3e731d52c3"
+      },
+      {
+        "path": "1440/s05-tracker-setup.geom.json.gz",
+        "sha256": "cb932196a7c19117e20e256c76825047f1867a0e8c50688de17f63a06728e4f6"
+      },
+      {
+        "path": "1440/s05-client-setup.png",
+        "sha256": "d8db63d4044a7883ad929268f2c40ecc5a8cdf0ae63ebf849f9690ef7abe87df"
+      },
+      {
+        "path": "1440/s05-client-setup.geom.json.gz",
+        "sha256": "309b3079e0f80e5cabbeb928ae2f20b4fa6e70179d035d85f375a832ea254f7d"
+      },
+      {
+        "path": "1440/s06-mealplan-editor.png",
+        "sha256": "f2edbcd2e9db5a6993abff9145568942a91fbb4e65cd4d90fcc09ac4cc9670e6"
+      },
+      {
+        "path": "1440/s06-mealplan-editor.geom.json.gz",
+        "sha256": "18576ff886923d370081fe78128a46a9e05c3b9651c15f0234eaee0507769b94"
+      },
+      {
+        "path": "1440/s06-template-nutrition.png",
+        "sha256": "9a80eabe06a61551070a471e99e055fcd54d1200899c7142df8ee1ddfbefe3ee"
+      },
+      {
+        "path": "1440/s06-template-nutrition.geom.json.gz",
+        "sha256": "3e8584ead50edf4111be388c076846c8d3e9200be195a9a2f02dbe0f45e3adca"
+      },
+      {
+        "path": "1440/s07-training-editor.png",
+        "sha256": "2ed0cf57749e7f33092c0119480af8c8020c229024b6ace164b043fa1a940521"
+      },
+      {
+        "path": "1440/s07-training-editor.geom.json.gz",
+        "sha256": "e88cb1860a40abe6712d3bfcaab584a6baf97267faadafc1e204f465c331cda1"
+      },
+      {
+        "path": "1440/s07-exercise-library.png",
+        "sha256": "cc4d9adb2b515d7a6f31a4921ea2fea94fe91ac1c7d397a5b47130d1f5396737"
+      },
+      {
+        "path": "1440/s07-exercise-library.geom.json.gz",
+        "sha256": "4ee7a370e9e6a89e3412043ff6b6540fb20f8e9ce940b259faaf6e31e1c20cd2"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-0.png",
+        "sha256": "e39b26e078ff01f1bf7b85eb58fff3b8e6b78aefb8c95cf21a8c2d1c30c2a846"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-84.png",
+        "sha256": "ef5974599e0f2287f05cd270f65bb2b9ca33e720c51020b5371c5cb21839feee"
+      },
+      {
+        "path": "1440/s07-exercise-library.s178-0-102.png",
+        "sha256": "ed8be1112534668b2f3fee231d5b4c80793050d4cd3fbc58c99782118cbf6d9c"
+      },
+      {
+        "path": "1440/s08-builder.png",
+        "sha256": "38b90ea2b787e52a3541e569bddb7736fe917852bd5fd45ffcc76af3dd93615c"
+      },
+      {
+        "path": "1440/s08-builder.geom.json.gz",
+        "sha256": "e894b0ce380f64107871d9eb22196f22abd9c7efcbda803508d4d955b32229ee"
+      },
+      {
+        "path": "1440/s08-widget-gallery.png",
+        "sha256": "383da1878c2071e7d43d59c385ad50a2663f7124b4c41af9f60568faab64a210"
+      },
+      {
+        "path": "1440/s08-widget-gallery.geom.json.gz",
+        "sha256": "d5eca585384614824ed5795aaf325b9c73acec69a50884d01fc1947d36cef430"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-0.png",
+        "sha256": "ecc4a2923d490ff9c3965d9c251604bb159f32c0af475a77eeef525bf7b45c79"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-661.png",
+        "sha256": "38439b50e647001d21204204f193bab08722b6be8e5fd245e9e01f3f7556bc01"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-1322.png",
+        "sha256": "6c356d61f977c635bc73b1340731db8947e559cef521d028b616f4cf42350447"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-1983.png",
+        "sha256": "424f40226062235a93a51f246568c3007fbe0f7f66af1c4b2f8c55c77cdd22f3"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-2644.png",
+        "sha256": "87490711532660abc940a758ae18021c3a0158ab4f551d548537827ba09dd732"
+      },
+      {
+        "path": "1440/s08-widget-gallery.s92-0-3137.png",
+        "sha256": "9de57126dbb9f882752dedc1c03014365fa11276686b237037e20d0d1761937e"
+      },
+      {
+        "path": "1440/s08-template-dashboard.png",
+        "sha256": "5948395a0404313d0ac76b4f16227314a219527c1fae7d5bb4f1c8b016ed8ef3"
+      },
+      {
+        "path": "1440/s08-template-dashboard.geom.json.gz",
+        "sha256": "2220cb15ed5bc6622c2d45f3f6dac30ba76f3b4a86c6922b61905fc5ee310084"
+      },
+      {
+        "path": "1440/s09-tracker-today.png",
+        "sha256": "f71bb3cfd41e5b7d40893c71a1649370a766b75211c6738cf7716f1f81067167"
+      },
+      {
+        "path": "1440/s09-tracker-today.geom.json.gz",
+        "sha256": "687465f33e49db43f6a1eaec21c25121d2c2f7d05fd30eaf16260bb4d0521f6b"
+      },
+      {
+        "path": "1440/s09-tracker-today.s236-0-0.png",
+        "sha256": "a6e626060ac4f74eb56cf3fa13aea31c7cc63eb33fc3c827fa7959f90e224e27"
+      },
+      {
+        "path": "1440/s09-tracker-today.s236-0-330.png",
+        "sha256": "3429ef3d9472e2d890289bd13646de9276ad1686d74153e4119aef1644ce3130"
+      },
+      {
+        "path": "1440/s09-tracker-week.png",
+        "sha256": "2cdcf7b497a50933b73c9c7f02193128cf61f6119b59335ea2b935438f524646"
+      },
+      {
+        "path": "1440/s09-tracker-week.geom.json.gz",
+        "sha256": "63da3d7e413979581084626999c4026dd84c93b6937621e1b97bef453387e6bf"
+      },
+      {
+        "path": "1440/s09-tracker-week.s236-0-0.png",
+        "sha256": "c21ad00147ca12acf9639688d2c2a806a821687897dfe64e09ff3a552bc421ac"
+      },
+      {
+        "path": "1440/s09-tracker-week.s236-0-82.png",
+        "sha256": "240ee9ebfa7f463ebad01d8a3ab24102f8cf8ce06ac874dfa32339c518524010"
+      },
+      {
+        "path": "1440/s09-tracker-trends.png",
+        "sha256": "2368d3447a82fc88563cb9bf5d15dfeab5530b99c2481dad1719f92ceffa5781"
+      },
+      {
+        "path": "1440/s09-tracker-trends.geom.json.gz",
+        "sha256": "99818a348a4472626e107354bc87f3b4e7a5a40fbeb767d173c2ea06efe83f22"
+      },
+      {
+        "path": "1440/s09-tracker-config.png",
+        "sha256": "99256ba47294882c753eb611da258d0c0fc715e978db510defd26f1a846f1cbc"
+      },
+      {
+        "path": "1440/s09-tracker-config.geom.json.gz",
+        "sha256": "9d5c3ca79471834c4066ee6354067c7fefe53122a310aa4bb07dce71b02fa5b9"
+      },
+      {
+        "path": "1440/s10-appearance.png",
+        "sha256": "a5a7c55a0575736fdc809614c2fb3048fcb8aee50825f450fa5561f8803d31fa"
+      },
+      {
+        "path": "1440/s10-appearance.geom.json.gz",
+        "sha256": "a6703675f73c71bebfb1e5da966118bd3a28409c1866f1f9da688f894e90ea77"
+      },
+      {
+        "path": "1440/s10-clients-studio.png",
+        "sha256": "64ce8ff95100937222fe3fbf05d499509fc7166149edbd863946f26694ee2b28"
+      },
+      {
+        "path": "1440/s10-clients-studio.geom.json.gz",
+        "sha256": "d314272566e2373b48afe3758809f9a3237cca5f44ad53fd4ddb501beb6d1c2c"
+      },
+      {
+        "path": "1440/s10-mealplan-studio.png",
+        "sha256": "c1628c1122cdd77c3702fecc510743e87af1272254fcd35c7ef74b590b2e9fb3"
+      },
+      {
+        "path": "1440/s10-mealplan-studio.geom.json.gz",
+        "sha256": "251706f2a35af91569164059e5f18f0ab25b5d9f0def8dee0b7b5e4c77610f78"
+      },
+      {
+        "path": "1440/s11-preferences.png",
+        "sha256": "55a4af64fc66c26155711369015541248ba0bcd1f97dcef542b5dbd11bfb674e"
+      },
+      {
+        "path": "1440/s11-preferences.geom.json.gz",
+        "sha256": "4babda0bdc7caad8f83a30de50a20a4a80fabc1a9d093403724833e08eaff908"
+      },
+      {
+        "path": "1440/s11-preferences.s236-0-0.png",
+        "sha256": "134f8bf156e1caa479495d35b65af48f75dc3d08e9e270b2d37a91be29baf1d4"
+      },
+      {
+        "path": "1440/s11-preferences.s236-0-240.png",
+        "sha256": "4bc351b95cd11ac1d641730c38bc2813ba00a7acd59fbb7f4096f8ad739b78b1"
+      },
+      {
+        "path": "1440/s11-client-preview.png",
+        "sha256": "a2ef1dbe3ded0f68eb38f448c539665f851dbd3554bc31d8201c4237f9d04711"
+      },
+      {
+        "path": "1440/s11-client-preview.geom.json.gz",
+        "sha256": "c5bf167d4ed62a0508af6be71e256d4b16d522bf84abd936585f61a111ddd7d6"
+      },
+      {
+        "path": "1440/s11-client-preview.s218-0-0.png",
+        "sha256": "260d9760071f3500fd82641b7c4e1729c18ce2aaf4812192f474496d0864492e"
+      },
+      {
+        "path": "1440/s11-client-preview.s218-0-3.png",
+        "sha256": "14b8eb3ce2dbd675576fd6b4526e544b2973efc2188dc0ee843e1a0051c81267"
+      }
+    ]
+  },
+  "results": {
+    "canonical": {
+      "passed": 70,
+      "failed": 0,
+      "total": 70,
+      "sha256": "f92a5d30bb951a5068cd4bd9bb732466ab1fc99110008ec650bb87fb139aeaca"
+    },
+    "strict": {
+      "passed": 68,
+      "failed": 2,
+      "total": 70,
+      "sha256": "cef4510d28f1f31c944d7c3a289657ec22b2f2171287c9f0dfcce801e3d57286"
+    }
+  }
+}
