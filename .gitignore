@@ -36,6 +36,10 @@ next-env.d.ts
 /playwright-report/
 /coverage/
 
+# Local acceptance evidence written inside a worktree by a build card
+# (screenshots, probe scripts, command transcripts). Never committed.
+/_evidence/
+
 # Explicit allow-rule: the redacted extraction output IS committed. (Root-anchored
 # ignores above already leave it alone; this documents the intent and is defensive.)
 !/spec/sheets/
@@ -55,3 +59,4 @@ icm/03-plan/*.log
 
 # W0 program generator bytecode
 icm/05-build/tools/__pycache__/
+tools/load/out/

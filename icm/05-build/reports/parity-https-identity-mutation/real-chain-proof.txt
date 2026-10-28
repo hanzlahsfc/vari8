@@ -1,0 +1,25 @@
+Bounded real Next server proof — Node v24.22.1, macOS arm64
+
+Measured npm-wrapper defect:
+Command chain: npx next start -p 55981 -H 127.0.0.1
+Observed processes:
+- 74096 pgid 74096, command `npm exec next start ...`
+- 74142 pgid 74096, ppid 74096, command `next-server (v16.3.8)`
+Environment-token booleans from `ps eww`: hasName=false, hasExact=false on both.
+stopOwnedProcessGroup correctly reported unverified residue:
+- unverified process(es) 74096, 74142 remain in group 74096
+- listener 55981 is owned by unverified process(es) 74142
+- process 74096 did not exit
+The listener was then manually removed after measurement.
+
+Repaired direct launcher:
+Command chain: node node_modules/next/dist/bin/next start -p 55984 -H 127.0.0.1
+Observed process:
+- 76370 pgid 76370, ppid supervisor, command `next-server (v16.3.8)`
+Ownership registry recorded PID/PGID/start:
+- { pid: 76370, pgid: 76370, start: 'Sun Oct 25 02:23:42 2026' }
+Listener: ['76370']
+stopOwnedProcessGroup: []
+Post-cleanup: listeners=[]; child exitCode=143.
+
+No process environment or token text was printed.

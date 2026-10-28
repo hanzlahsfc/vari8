@@ -1,7 +1,7 @@
 # PR-05 build: Better Auth, versioned API and the ROLES table
 
 Card slug `pr-05-auth-api`. Board `vari8`. Track Foundation. Depends on none. Builder: swe-2-max, outside the graph. Issue #58.
-Repo `hanzlahsfc/The-great-tracker-`. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr05` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3728. May touch `db/`: yes (D34 schema writer).
+Repo `hanzlahsfc/vari8`. Worktree `/home/nexuslink/vari8-worktrees/pr-05-auth-api`, branch `beta/pr-05-auth-api` off the latest `origin/Vari8-Beta`. The pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding: push early and often, PR against `Vari8-Beta`, never merge your own PR, never touch `docs/STATUS.md`, no em dashes. Lane database `app_pr05` on 127.0.0.1:5433 user `app` (export `POSTGRES_PASSWORD` first, RUNBOOK 'Local check'); dev port 3728. May touch `db/`: yes (D34 schema writer).
 
 ## State
 

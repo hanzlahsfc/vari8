@@ -1,0 +1,59 @@
+{
+  "kind": "nutrition-source-fixture-manifest-v1",
+  "fixtures": [
+    {
+      "path": "tests/fixtures/nutrition/bls-4.0-sample.xlsx",
+      "sha256": "d1fd7911c83eab6d0443752622efb552cba05cf73907951ef4ed928172778997",
+      "rows": "1..9 (header + 8 data rows) verbatim slice of sheet 'BLS_4_0_Daten_2025_DE'",
+      "source": {
+        "distribution": "https://blsdb.de/ (zip BLS_4_0_2025_DE.zip)",
+        "innerFile": "BLS_4_0_Daten_2025_DE/BLS_4_0_Daten_2025_DE.xlsx",
+        "innerFileSha256": "524bbefe25b691f5cb3de7a9f3e27fa2967aebfeabf217d99414ba7806e78c60",
+        "retrieved": "2026-10-28",
+        "licence": "CC BY 4.0",
+        "licenceUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "doi": "10.25826/Data20251217-134202-0"
+      }
+    },
+    {
+      "path": "tests/fixtures/nutrition/ciqual-2025-sample.xlsx",
+      "sha256": "f49f3a7481dabb931e7f723ea22f96b6fde9e0b509ec6e748bdc240015490057",
+      "rows": "1..9 (header + 8 data rows) verbatim slice of sheet 'composition nutritionnelle'",
+      "source": {
+        "distribution": "https://doi.org/10.57745/RDMHWY (entrepot.recherche.data.gouv.fr)",
+        "file": "Table Ciqual 2025_FR_2025_11_03.xlsx",
+        "fileSha256": "5555c572fa3735991298d832d0427788fa69a11b4fd20a5d580d58942369fbb0",
+        "retrieved": "2026-10-28",
+        "licence": "Licence Ouverte / Open Licence 2.0",
+        "licenceUrl": "https://www.etalab.gouv.fr/licence-ouverte-open-licence/",
+        "doi": "10.57745/RDMHWY"
+      }
+    }
+  ],
+  "dryRun": {
+    "command": "npx tsx scripts/dry-run-nutrition-source.ts --input bls=<full-export> --input ciqual=<full-export> --out <dir>",
+    "report": {
+      "path": "tests/fixtures/nutrition/dry-run-report.json",
+      "sha256": "bf6d2a85d178a4ea3b5e5c6e9bc6d15bcd9d71fd9eba7307fe401a4320ed8e58",
+      "generated": "2026-10-28",
+      "note": "committed audit evidence \u2014 independent re-read of raw cells vs candidates; full-export inputs are not committed (distribution paths + sha256 below reproduce them exactly)"
+    },
+    "candidates": {
+      "bls": {
+        "file": "candidates-bls.json",
+        "sha256": "c06b307835d7e0be90b7d2f8b397aae998073510ff2c2c1ba4e97cbb8701e628",
+        "accepted": 7140
+      },
+      "ciqual": {
+        "file": "candidates-ciqual.json",
+        "sha256": "c1a49410fb95640a5a202014b685fa9a04de8a1a0b348bbfc5ccf283bd15e622",
+        "accepted": 3484
+      },
+      "note": "full candidates outputs reproducible via the committed script + pinned export hashes; not committed (multi-MB)"
+    }
+  },
+  "dedupeDecision": {
+    "path": "tests/fixtures/nutrition/dedupe-review-decision.json",
+    "sha256": "2550d89e97b29db27c38fbea2865e2c5ddba8f13bd8193bcb251ab999cf16788"
+  }
+}

@@ -1,0 +1,35 @@
+(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.integration.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.
+
+ RUN  v5.0.2 /Users/apple/Devin/vari8-worktrees/k6-gate
+
+ ✓ tests/integration/k6-gate-provision.test.ts (23 tests) 56517ms
+   ✓ K6-GATE provision/cleanup safety (real PG, task-owned lane) (23)
+     ✓ refuses destructive commands with no lane ownership file 1321ms
+     ✓ there is no adoption path — lane-init does not exist 1255ms
+     ✓ creates the fixture workspace with 0600 manifest perms 1465ms
+     ✓ SIGTERM during fixture cleanup completes scoped deletion only 2041ms
+     ✓ a manifest with a mismatched targetId refuses 1244ms
+     ✓ lane-create failure drops only the DB it created 2291ms
+     ✓ SIGTERM while PostgreSQL reports CREATE DATABASE active removes only its lane 1225ms
+     ✓ CREATE failure during termination never drops another database 348ms
+     ✓ an already-existing database is refused and preserved 317ms
+     ✓ marker-install failure drops only the DB created by that call 4678ms
+     ✓ SIGTERM after create/migrate drops only its own DB and exits nonzero 13104ms
+     ✓ the shipping CLI ignores K6_GATE_FAULT entirely 4746ms
+     ✓ a tampered manifest deletes nothing — victims survive 1359ms
+     ✓ a stale manifest (fixture ids pointing at nothing) refuses 2305ms
+     ✓ forged lane file token refuses destructive cleanup 1333ms
+     ✓ stale lane file for another database refuses 2311ms
+     ✓ an unmarked pre-existing lane-named DB refuses 4236ms
+     ✓ shared database names are refused even when confirmed 3599ms
+     ✓ a failed manifest write rolls the fixture rows back 1396ms
+     ✓ legitimate cleanup removes exactly the fixture set 1328ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  18:49:56
+   Duration  56.67s (tests 100%)
+
+COMMAND_EXIT=0

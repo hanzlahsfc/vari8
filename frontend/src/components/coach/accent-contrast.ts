@@ -1,8 +1,8 @@
 const DEFAULT_ACCENT = "#EB91B8";
 const MIN_TEXT_CONTRAST = 4.5;
-const MAX_WHITE_DARKENING = 0.06;
 const WHITE = "#FFFFFF";
 const BLACK = "#000000";
+const MIN_SURFACE_CONTRAST = 3;
 
 function normalizeColor(value: string) {
   const raw = value.trim().replace(/^#/, "");
@@ -42,31 +42,45 @@ function mix(color: string, destination: string, amount: number) {
     .join("")}`.toUpperCase();
 }
 
-export function accentControlColors(value: string) {
+export function accentControlColors(value: string, surfaces: string[] = []) {
   const accent = normalizeColor(value);
-  let background = accent;
-  let foreground = BLACK;
-  if (contrastRatio(accent, WHITE) >= MIN_TEXT_CONTRAST) {
-    foreground = WHITE;
-  } else if (
-    contrastRatio(mix(accent, BLACK, MAX_WHITE_DARKENING), WHITE) >=
-    MIN_TEXT_CONTRAST
-  ) {
-    foreground = WHITE;
-    let low = 0;
-    let high = MAX_WHITE_DARKENING;
-    for (let step = 0; step < 24; step += 1) {
-      const middle = (low + high) / 2;
-      if (contrastRatio(mix(accent, BLACK, middle), WHITE) >= MIN_TEXT_CONTRAST)
-        high = middle;
-      else low = middle;
+  const candidates: { background: string; amount: number }[] = [
+    { background: accent, amount: 0 },
+  ];
+  for (const destination of [BLACK, WHITE]) {
+    for (let step = 1; step <= 200; step += 1) {
+      const amount = step / 200;
+      candidates.push({ background: mix(accent, destination, amount), amount });
     }
-    background = mix(accent, BLACK, high);
   }
-  const hoverBackground = mix(
-    background,
-    foreground === WHITE ? BLACK : WHITE,
-    foreground === WHITE ? 0.06 : 0.08,
-  );
+  const isReadable = (background: string) => {
+    const foregroundContrast = Math.max(
+      contrastRatio(background, WHITE),
+      contrastRatio(background, BLACK),
+    );
+    return (
+      foregroundContrast >= MIN_TEXT_CONTRAST &&
+      surfaces.every(
+        (surface) => contrastRatio(background, surface) >= MIN_SURFACE_CONTRAST,
+      )
+    );
+  };
+  const background =
+    candidates
+      .filter((candidate) => isReadable(candidate.background))
+      .sort((first, second) => first.amount - second.amount)[0]?.background ??
+    (contrastRatio(accent, WHITE) >= contrastRatio(accent, BLACK)
+      ? WHITE
+      : BLACK);
+  const foreground =
+    contrastRatio(background, WHITE) >= contrastRatio(background, BLACK)
+      ? WHITE
+      : BLACK;
+  const hoverCandidates = [
+    mix(background, foreground === WHITE ? BLACK : WHITE, 0.04),
+    mix(background, foreground === WHITE ? BLACK : WHITE, 0.08),
+    mix(background, foreground, 0.04),
+  ];
+  const hoverBackground = hoverCandidates.find(isReadable) ?? background;
   return { background, hoverBackground, foreground };
 }

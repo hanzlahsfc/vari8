@@ -1,0 +1,14 @@
+{
+  "pid": 9239,
+  "port": 55941,
+  "ownership": {
+    "pgid": "9239",
+    "processes": [
+      {
+        "pid": 9239,
+        "pgid": 9239,
+        "start": "Sun Oct 25 13:02:09 2026"
+      }
+    ]
+  }
+}

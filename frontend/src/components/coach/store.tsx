@@ -20,6 +20,7 @@ import {
   seedState,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
+import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import { normalizeTemplateSetups } from "./template-setup";
 
 type Store = {
@@ -81,7 +82,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed: unknown = migrateCoachState(JSON.parse(raw));
-        if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
+        if (isCoachState(parsed))
+          setState(normalizeTemplateSetups(adoptAmaraTrainingExample(parsed)));
         else {
           preserveRaw.current = true;
           setStorageOk(false);

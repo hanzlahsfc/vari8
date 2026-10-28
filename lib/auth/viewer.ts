@@ -155,3 +155,14 @@ export async function getClientViewer(
     clientProfileId: profile.id,
   };
 }
+
+/**
+ * O17: the page a signed-out principal lands on. A client returns to the
+ * client sign-in, everyone else keeps the staff one.
+ */
+export async function signOutPath(
+  userId: string | undefined | null,
+): Promise<string> {
+  if (!userId) return "/login";
+  return (await getClientViewer(userId)) ? "/me/login" : "/login";
+}

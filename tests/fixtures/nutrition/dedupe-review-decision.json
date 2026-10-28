@@ -1,0 +1,25 @@
+{
+  "kind": "cross-source-dedupe-decision-v1",
+  "verdict": "retain separate source records",
+  "decisionMaker": "Hanzlah",
+  "decidedAt": "2026-10-28",
+  "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/222#issuecomment-6475240775",
+  "attribution": "Supplied by Hanzlah in chat and transmitted by the orchestrator — not a manually posted GitHub comment.",
+  "scope": "Covers ONLY the two reported candidate pairs. Cross-source duplicate detection is not exhaustive and this record does not claim it.",
+  "pairs": [
+    {
+      "name": "Gin",
+      "rows": [
+        { "source": "bls-4.0-2025", "sourceId": "P722000" },
+        { "source": "ciqual-2025", "sourceId": "1002" }
+      ]
+    },
+    {
+      "name": "Salami",
+      "rows": [
+        { "source": "bls-4.0-2025", "sourceId": "W140000" },
+        { "source": "ciqual-2025", "sourceId": "30350" }
+      ]
+    }
+  ]
+}
