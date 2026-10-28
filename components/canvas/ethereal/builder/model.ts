@@ -1,7 +1,3 @@
-// Twin note (W2-T5): the frontend twin imports this relatively because
-// root tsc compiles it for the m6 tests; canvas resolves the alias.
-import type { TriageRow } from "@/lib/canvas/attention";
-
 export type SizeName = "Compact" | "Regular" | "Wide" | "Tall" | "Expanded";
 
 export type WidgetKind =
@@ -26,8 +22,7 @@ export type WidgetKind =
   | "CU10"
   | "CU16"
   | "CU17"
-  | "CU18"
-  | "CU19";
+  | "CU18";
 
 export type DashboardContentSettings = {
   body: string;
@@ -285,9 +280,6 @@ export interface SourceRecords {
   checkIns: CheckInSubmission[];
   feedback: CoachFeedback[];
   messages: ClientMessage[];
-  // W2-T5 (R11): derived coach-roster triage rows for the CU19 widget.
-  // Optional so saved records stay readable.
-  triage?: TriageRow[];
 }
 
 const allSizes: SizeName[] = ["Compact", "Regular", "Wide", "Tall", "Expanded"];
@@ -515,16 +507,6 @@ export const catalogue: CatalogueEntry[] = [
     aliases: "announcement coach note message resource action link update",
     defaultSize: "Regular",
     sizes: ["Compact", "Regular", "Wide", "Tall"],
-  },
-  {
-    id: "CU19",
-    name: "Attention triage",
-    category: "Coaching",
-    description:
-      "List clients who need attention with the reasons the roster flags them.",
-    aliases: "triage attention clients overdue check-in unread roster coach",
-    defaultSize: "Tall",
-    sizes: allSizes,
   },
 ];
 
@@ -783,17 +765,6 @@ const defaults: Record<WidgetKind, WidgetSettings> = {
       actionUrl: "",
     },
   },
-  CU19: {
-    title: "Needs attention",
-    source: "roster:attention",
-    summary: "enabled",
-    period: "",
-    target: false,
-    size: "Tall",
-    fields: [],
-    option: "default",
-    unit: "",
-  },
 };
 
 export function defaultSettings(kind: WidgetKind): WidgetSettings {
@@ -855,7 +826,6 @@ export function sourceOptions(
     CU18: [
       { value: "content:announcement", label: "Coach-authored announcement" },
     ],
-    CU19: [{ value: "roster:attention", label: "Client attention derivation" }],
   };
   return options[kind];
 }
@@ -2130,35 +2100,8 @@ export function getPublishedMilestones(
   );
 }
 
-// W2-T5 (R11): sample triage rows for the standalone builder surface.
-// Synthetic names only; real rows derive from the workspace roster.
-const triageFixture: TriageRow[] = [
-  {
-    clientId: "client-001",
-    name: "Emma Anders",
-    reasons: ["check-in awaiting feedback", "1 overdue task"],
-    priority: 5,
-    attentionCount: 2,
-  },
-  {
-    clientId: "client-014",
-    name: "Theo Grant",
-    reasons: ["check-in overdue", "2 unread messages"],
-    priority: 4,
-    attentionCount: 3,
-  },
-  {
-    clientId: "client-010",
-    name: "Ethan Cole",
-    reasons: ["2 overdue tasks", "1 pending task"],
-    priority: 3,
-    attentionCount: 3,
-  },
-];
-
-export const initialRecords = {
-  ...upgradeAdditionalFixture(upgradeHabitFixture(baseInitialRecords)),
-  triage: triageFixture,
-};
+export const initialRecords = upgradeAdditionalFixture(
+  upgradeHabitFixture(baseInitialRecords),
+);
 
 export const fixture = initialRecords;

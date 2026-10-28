@@ -18,7 +18,21 @@ import {
   weeklyAverage,
   weeklySum,
 } from "./compute";
-import type { SheetCell, SheetCells } from "./imported";
+// Cell types inlined from the deleted imported.ts record; the bind and
+// compute helpers stay canvas native for the sheet import pipeline.
+type SheetCell = {
+  kind: "text" | "number" | "checkbox" | "formula";
+  value?: string;
+  formulaText?: string;
+  formulaShape?: "recovered";
+  formulaWrap?: "udf";
+  valueSource?: "synthetic" | "imported" | "store" | "computed";
+  notCalculated?: boolean;
+  editable?: boolean;
+  vertical?: boolean;
+};
+
+type SheetCells = Record<string, SheetCell>;
 
 /** Tracker entry keys the day-row cells bind to (tracker.ts store seam). */
 export const TRACKER_CELL_KEYS = {

@@ -17,6 +17,6 @@ export const metadata: Metadata = {
 };
 
 export default async function EtherealPage() {
-  const viewer = await requireCanvasAccess();
-  return <EtherealApp workspaceId={viewer.workspace.id} />;
+  await requireCanvasAccess();
+  return <EtherealApp />;
 }

@@ -97,7 +97,7 @@ export function MobileLogbook({
     }));
   const ex = log.exercises[exIdx];
   const curSet = ex.sets.findIndex((s) => !s.done);
-  // eslint-disable-next-line react-hooks/purity -- elapsed time is read once per render for the live session clock.
+  // eslint-disable-next-line react-hooks/purity
   const elapsed = Date.now() - Date.parse(log.startedAt);
   const allDone = log.exercises.every((e) => e.sets.every((s) => s.done));
   const rest = (() => {

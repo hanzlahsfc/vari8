@@ -24,7 +24,6 @@ import {
   needsAttention,
   type WorkspaceClient,
 } from "./model";
-import { matchingSearch } from "./roster-search";
 import "./client-roster.css";
 
 type RosterFilter = "all" | "attention" | "unread";
@@ -45,6 +44,14 @@ function initials(client: WorkspaceClient) {
       .join("")
       .slice(0, 2)
   );
+}
+
+export function matchingSearch(client: WorkspaceClient, query: string) {
+  const normalized = query.trim().toLocaleLowerCase();
+  if (!normalized) return true;
+  return [client.name, client.label, client.phase, client.template]
+    .filter(Boolean)
+    .some((value) => value.toLocaleLowerCase().includes(normalized));
 }
 
 function isClientDate(value: string | null | undefined): value is string {

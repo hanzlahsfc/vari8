@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { CoachDashboardSurface } from "@/components/canvas/coach/builder/dashboard-surface";
+import { CoachDashboardClient } from "./dashboard-client";
 
 import { requireCanvasAccess } from "../../require-canvas-access";
 
@@ -17,7 +17,7 @@ export default async function CoachDashboardPage() {
   const viewer = await requireCanvasAccess();
   return (
     <Suspense>
-      <CoachDashboardSurface workspaceId={viewer.workspace.id} />
+      <CoachDashboardClient workspaceId={viewer.workspace.id} />
     </Suspense>
   );
 }

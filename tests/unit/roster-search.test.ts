@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { matchingSearch } from "../../components/canvas/ethereal/clients/roster-search";
+import { matchingSearch } from "../../components/canvas/ethereal/clients/client-roster";
 
 /**
  * T3 roster free-text search - the exact predicate the roster filter calls
