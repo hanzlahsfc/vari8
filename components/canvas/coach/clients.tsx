@@ -25,6 +25,7 @@ import {
 } from "../data/notes";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
+import { AthleteTrackerTab } from "./athlete/tracker-tab";
 import {
   addDays,
   assignTemplate,
@@ -381,6 +382,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
     <>
       {tab === "Overview" && <AthleteOverview client={c} />}
       {tab === "Timeline" && <AthleteTimelineTab client={c} />}
+      {tab === "Tracker" && <AthleteTrackerTab client={c} />}
       {tab === "Plans" && (
         <>
           <ClientPlansSummary
@@ -702,6 +704,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         items={[
           "Overview",
           "Timeline",
+          "Tracker",
           "Plans",
           "Check-ins",
           "Notes & tasks",

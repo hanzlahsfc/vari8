@@ -34,6 +34,10 @@ import { TextArea } from "../vari8/inputs";
 import { bindDashboardUnits } from "./builder/coach-dashboard";
 import { ClientPreview } from "./client-preview";
 import {
+  defaultDecimals,
+  defaultSummary,
+} from "./client-tracker-preview/preview-model";
+import {
   ALL_PARAMETERS,
   assignTemplate,
   CORE_VIEWS,
@@ -1004,10 +1008,17 @@ function TrackerConfig({
               const canConfigureChoices =
                 parameter.inputType === "choice" ||
                 parameter.inputType === "multi-choice";
+              const canConfigureDecimals =
+                !parameter.inputType &&
+                !parameter.units.some((unit) =>
+                  ["1–10", "1–5", "Word labels"].includes(unit),
+                );
               const hasSettings =
                 canConfigureUnit ||
                 canConfigureChoices ||
-                parameter.id === "period-start";
+                canConfigureDecimals ||
+                parameter.id === "period-start" ||
+                true; // week summary is available on every field
               const isOpen = detailsOpen[field.id] ?? false;
               return (
                 <article className="cd-tracker-selected-row" key={field.id}>
@@ -1143,6 +1154,62 @@ function TrackerConfig({
                           placeholder="Separate labels with commas"
                         />
                       )}
+                      {canConfigureDecimals && (
+                        <div className="cd-tracker-decimals">
+                          <span className="v8-field__label">Decimals</span>
+                          <SegmentedControl
+                            label="Decimals"
+                            value={String(
+                              field.decimals ?? defaultDecimals(parameter),
+                            )}
+                            onValueChange={(value) =>
+                              update((v) => ({
+                                ...v,
+                                fields: v.fields.map((item) =>
+                                  item.id === field.id
+                                    ? {
+                                        ...item,
+                                        decimals: Number(value) as 0 | 1 | 2,
+                                      }
+                                    : item,
+                                ),
+                              }))
+                            }
+                            options={[
+                              { value: "0", label: "0" },
+                              { value: "1", label: "1" },
+                              { value: "2", label: "2" },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      <Select
+                        label="Week summary"
+                        value={field.summary ?? defaultSummary(parameter)}
+                        options={[
+                          { value: "avg", label: "Average" },
+                          { value: "sum", label: "Total" },
+                          { value: "count", label: "Count" },
+                          { value: "none", label: "None" },
+                        ]}
+                        onChange={(value) =>
+                          update((v) => ({
+                            ...v,
+                            fields: v.fields.map((item) =>
+                              item.id === field.id
+                                ? {
+                                    ...item,
+                                    summary: value as
+                                      | "avg"
+                                      | "sum"
+                                      | "count"
+                                      | "none",
+                                  }
+                                : item,
+                            ),
+                          }))
+                        }
+                      />
                     </div>
                   )}
                 </article>

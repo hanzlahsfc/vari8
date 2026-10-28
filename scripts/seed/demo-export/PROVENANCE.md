@@ -4,8 +4,12 @@ Copied byte-verbatim into this seed fixture directory for Stage 11
 (`fp/stage-11`). The snapshot is Lilly's deterministic demo coaching export,
 read only by the opt-in demo seed (`VARI8_SEED_DEMO=1`).
 
-- Source ref: `trackc/merge-frontend-9491897` (local ref, no fetch)
-- Source commit: `9491897b9dbd1a13855854ae2a2d5fa8d8ae8230`
+Re-pointed for w2/fe1 (PR 210, demo export revision 9): `README.md`,
+`workspace.json` and `clients/client-007.json` refreshed from the merged
+FRONTEND tip; the other files were byte-identical at both refs.
+
+- Source ref: `import/frontend-tip` (fetched via explicit import refspec)
+- Source commit: `a3f620a56bf3165b6775c8f0bd4acabae21935bc`
 - Source path: `frontend/src/data/demo-export/` on that ref
 - Upstream generator: `frontend/scripts/export-demo.mjs`
   (`npm run export:demo` on the frontend tree)
