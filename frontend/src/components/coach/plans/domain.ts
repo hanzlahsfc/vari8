@@ -11,6 +11,8 @@ import {
   validateTargets,
 } from "../../ethereal/mealplan/model";
 import type { CoachClient, CoachState } from "../model";
+import { isSupplementPlan } from "../supplements/model";
+import { isActivityTargetVersion } from "../targets/model";
 import { defaultExerciseLibrary } from "./training/library-model";
 import {
   type ClientPlans,
@@ -102,28 +104,20 @@ export function archiveLifecycle<T>(
 }
 export function emptyMealPlan(clientId: string, date: string): MealPlan {
   const option = id("option");
-  const rest = id("option");
   return {
     id: id("nutrition"),
     clientId,
     name: "Individual meal plan",
     startDate: date,
-    variants: [
-      { id: option, label: "Training Day", meals: [] },
-      { id: rest, label: "Rest Day", meals: [] },
-    ],
+    variants: [{ id: option, label: "Daily plan", meals: [] }],
     activeVariantId: option,
-    schedule: {
-      mode: "weekly",
-      days: { 1: rest, 2: rest, 3: rest, 4: rest, 5: rest, 6: rest, 7: rest },
-    },
+    schedule: { mode: "manual", selectedVariantId: option },
     archivedPlans: [],
     reusableMeals: [],
   };
 }
 export function emptyIifymPlan(clientId: string, date: string): IifymPlan {
   const option = id("option");
-  const rest = id("option");
   return {
     id: id("targets"),
     clientId,
@@ -132,19 +126,11 @@ export function emptyIifymPlan(clientId: string, date: string): IifymPlan {
     options: [
       {
         id: option,
-        label: "Training Day",
-        targets: { style: "calories", calories: { kind: "fixed", value: 0 } },
-      },
-      {
-        id: rest,
-        label: "Rest Day",
+        label: "Daily plan",
         targets: { style: "calories", calories: { kind: "fixed", value: 0 } },
       },
     ],
-    schedule: {
-      mode: "weekly",
-      days: { 1: rest, 2: rest, 3: rest, 4: rest, 5: rest, 6: rest, 7: rest },
-    },
+    schedule: { mode: "manual", selectedVariantId: option },
   };
 }
 export function emptyTrainingPlan(
@@ -159,6 +145,18 @@ export function emptyTrainingPlan(
     program: "Evergreen",
     weeks: 8,
     overrides: { "1": [] },
+    rotation: {
+      mode: "weekly",
+      weekdays: {
+        Monday: [],
+        Tuesday: [],
+        Wednesday: [],
+        Thursday: [],
+        Friday: [],
+        Saturday: [],
+        Sunday: [],
+      },
+    },
   };
 }
 export function scheduledOption(
@@ -429,6 +427,24 @@ const iifym = (v: unknown) =>
           target((o.targets as Record<string, unknown>)[k]),
       ),
   );
+const trainingRotation = (v: unknown) =>
+  record(v) &&
+  (v.mode === "weekly"
+    ? record(v.weekdays) &&
+      Object.entries(v.weekdays).every(
+        ([day, ids]) =>
+          [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ].includes(day) && array(ids, string),
+      )
+    : v.mode === "cycle" &&
+      array(v.sessionIds, (id) => id === null || string(id)));
 const training = (v: unknown) =>
   record(v) &&
   string(v.id) &&
@@ -437,6 +453,7 @@ const training = (v: unknown) =>
   string(v.startDate) &&
   ["Evergreen", "Week-based"].includes(String(v.program)) &&
   number(v.weeks) &&
+  (v.rotation === undefined || trainingRotation(v.rotation)) &&
   record(v.overrides) &&
   Object.entries(v.overrides).every(
     ([k, sessions]) =>
@@ -495,6 +512,9 @@ export function isClientPlans(v: unknown): v is ClientPlans {
     lifecycle(v.nutrition.mealPlan, isMealPlan) &&
     lifecycle(v.nutrition.iifym, iifym) &&
     lifecycle(v.training, training) &&
+    (v.activityTargets === undefined ||
+      array(v.activityTargets, isActivityTargetVersion)) &&
+    (v.supplements === undefined || isSupplementPlan(v.supplements)) &&
     array(
       v.goals,
       (g) =>
@@ -513,6 +533,8 @@ export function plansOwnedBy(
   clientId: string,
 ): boolean {
   if (!plans) return true;
+  if (plans.supplements && plans.supplements.clientId !== clientId)
+    return false;
   return [
     plans.nutrition.mealPlan,
     plans.nutrition.iifym,

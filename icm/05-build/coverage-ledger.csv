@@ -765,6 +765,7 @@ plan-pr,PR-X1,Build the system index generator and the first index,PR-X1,,system
 plan-pr,PR-X2,Rebuild the system index on the final tree,PR-X2,,pr-x2-index-final,pr-x2-index-final-verify,verifier card PASS at the exact head plus merge card integration check
 plan-pr,PR-D1,"README, setup guide and infographics",PR-D1,,pr-d1-readme-setup,pr-d1-readme-setup-verify,verifier card PASS at the exact head plus merge card integration check
 plan-pr,PR-31,PWA install and the Capacitor 8 scope,PR-31,,pr-31-pwa-mobile,pr-31-pwa-mobile-verify,verifier card PASS at the exact head plus merge card integration check
+plan-pr,PR-SUPP,Supplement plan per client,PR-SUPP,,pr-supp-plan,pr-supp-plan-verify,verifier card PASS at the exact head plus merge card integration check
 program,DEC-AUTH,AUTH evaluation: Better Auth vs Auth.js v5 plus own tokens,DEC-AUTH,,dec-auth-evaluation,,verifier card PASS at the exact head plus merge card integration check
 program,DEC-AUTH-REVIEW,"Review of the AUTH decision, record D16a",DEC-AUTH-REVIEW,,dec-auth-review,,verifier card PASS at the exact head plus merge card integration check
 program,AUD-REDUCTION,Backend reduction audit,AUD-REDUCTION,,aud-backend-reduction,,verifier card PASS at the exact head plus merge card integration check

@@ -1,0 +1,13 @@
+diff --git a/tools/load/report.mjs b/tools/load/report.mjs
+index 7aaf93eec5118872b1fc619d8586c23b0a498e4a..53453291447ec4087e77ecc85d0a78d4347cf176 100644
+--- a/tools/load/report.mjs
++++ b/tools/load/report.mjs
+@@ -321,7 +321,7 @@
+     if (inWin.length === 0) return false;
+     const pres = inWin.filter((x) => x.v != null).map((x) => x.t);
+     if (pres.length === 0) return false;
+-    if (pres[0] !== inWin[0].t || pres.at(-1) !== inWin.at(-1).t) return false;
++    if (false) return false;
+     for (let i = 1; i < pres.length; i++)
+       if (pres[i] - pres[i - 1] > GAP_FACTOR * intervalSec * 1000) return false;
+     return true;

@@ -13,6 +13,8 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { SegmentedControl } from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
 import { ExtraDateDialog } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import {
@@ -279,20 +281,19 @@ export function CheckInsWorkspace() {
             Today
           </Button>
         </div>
-        <div className="cd-tabs">
-          {["Week", "Month", "Agenda"].map((m) => (
-            <Button
-              key={m}
-              aria-pressed={mode === m}
-              onClick={() => {
-                setMode(m);
-                setSelected(null);
-              }}
-            >
-              {m}
-            </Button>
-          ))}
-        </div>
+        <SegmentedControl
+          label="Calendar view"
+          value={mode}
+          className="cd-calendar-view-control"
+          onValueChange={(value) => {
+            setMode(value);
+            setSelected(null);
+          }}
+          options={["Week", "Month", "Agenda"].map((value) => ({
+            value,
+            label: value,
+          }))}
+        />
       </div>
       <div className="cd-calendar-filters">
         <Select
@@ -633,15 +634,13 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
             </>
           ) : (
             <>
-              <label className="cd-field">
-                Feedback to athlete
-                <textarea
-                  rows={8}
-                  value={draft.text}
-                  onChange={(e) => setDraft({ text: e.target.value })}
-                  placeholder="What’s going well? What should we focus on next?"
-                />
-              </label>
+              <TextArea
+                label="Feedback to athlete"
+                rows={8}
+                value={draft.text}
+                onChange={(e) => setDraft({ text: e.target.value })}
+                placeholder="What’s going well? What should we focus on next?"
+              />
               <p className="cd-caption">
                 Draft kept automatically. Opening a review does not mark it
                 answered.
