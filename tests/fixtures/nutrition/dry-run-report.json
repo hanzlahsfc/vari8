@@ -67,7 +67,7 @@
     }
   },
   "crossSourceDedupeReview": {
-    "note": "review candidates for a human — never merged or deleted",
+    "note": "review candidates for a human — never merged or deleted; the committed decision is reapplied during regeneration when --dedupe-decision is supplied",
     "count": 2,
     "candidates": [
       {

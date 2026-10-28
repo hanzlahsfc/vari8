@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 
 import { parseBlsExport } from "../lib/nutrition/sources/bls";
 import { parseCiqualExport } from "../lib/nutrition/sources/ciqual";
+import { applyDedupeDecision } from "../lib/nutrition/sources/dedupe";
 import {
   sha256Hex,
   toNutritionSource,
@@ -246,16 +247,11 @@ async function main() {
       ]),
     ),
     crossSourceDedupeReview: {
-      note: "review candidates for a human — never merged or deleted",
+      note: "review candidates for a human — never merged or deleted; the committed decision is reapplied during regeneration when --dedupe-decision is supplied",
       count: crossDedupe.length,
       candidates: crossDedupe.slice(0, 200),
       reviewOutcome: DECISION_FILE
-        ? {
-            status: "decided",
-            // durable record lives in version control — regeneration
-            // reads it back, it cannot be silently erased
-            decision: JSON.parse(readFileSync(DECISION_FILE, "utf8")),
-          }
+        ? applyDedupeDecision(crossDedupe, DECISION_FILE)
         : {
             status: "pending_human_review",
             requiredBy:

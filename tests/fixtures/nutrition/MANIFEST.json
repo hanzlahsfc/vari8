@@ -34,7 +34,7 @@
     "command": "npx tsx scripts/dry-run-nutrition-source.ts --input bls=<full-export> --input ciqual=<full-export> --out <dir>",
     "report": {
       "path": "tests/fixtures/nutrition/dry-run-report.json",
-      "sha256": "85700a83827bc2ff82244cecde54afecda8efd8892cd3e19fb6ebcd2a0aabe13",
+      "sha256": "bf6d2a85d178a4ea3b5e5c6e9bc6d15bcd9d71fd9eba7307fe401a4320ed8e58",
       "generated": "2026-10-28",
       "note": "committed audit evidence \u2014 independent re-read of raw cells vs candidates; full-export inputs are not committed (distribution paths + sha256 below reproduce them exactly)"
     },
