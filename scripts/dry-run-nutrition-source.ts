@@ -34,6 +34,8 @@ const outI = process.argv.indexOf("--out");
 const OUT = outI > -1 ? process.argv[outI + 1] : undefined;
 const auditI = process.argv.indexOf("--audit");
 const AUDIT_N = auditI > -1 ? Number(process.argv[auditI + 1]) : 50;
+const decisionI = process.argv.indexOf("--dedupe-decision");
+const DECISION_FILE = decisionI > -1 ? process.argv[decisionI + 1] : undefined;
 if (inputs.length === 0) throw new Error("required --input <source>=<path>");
 
 const PARSERS: Record<
@@ -247,12 +249,19 @@ async function main() {
       note: "review candidates for a human — never merged or deleted",
       count: crossDedupe.length,
       candidates: crossDedupe.slice(0, 200),
-      reviewOutcome: {
-        status: "pending_human_review",
-        requiredBy:
-          "#182 C3 — the cross-source dedupe report is reviewed by a human, not the importer",
-        fields: ["verdict", "reviewer", "reviewedAt", "notes"],
-      },
+      reviewOutcome: DECISION_FILE
+        ? {
+            status: "decided",
+            // durable record lives in version control — regeneration
+            // reads it back, it cannot be silently erased
+            decision: JSON.parse(readFileSync(DECISION_FILE, "utf8")),
+          }
+        : {
+            status: "pending_human_review",
+            requiredBy:
+              "#182 C3 — the cross-source dedupe report is reviewed by a human, not the importer",
+            fields: ["verdict", "reviewer", "reviewedAt", "notes"],
+          },
     },
   };
 
