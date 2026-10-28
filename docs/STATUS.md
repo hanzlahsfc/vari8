@@ -1,3 +1,10 @@
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
 ## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
 
 - Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
