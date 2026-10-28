@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 55 backend pages, 9 API routes, 14 layouts, 3 canvas pages.
+Counts: 55 backend pages, 18 API routes, 14 layouts, 4 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -77,12 +77,21 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | Path | File | Methods | Auth (detected) |
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
+| `/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series` | `app/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
 | `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/restore` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/restore/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/invitations` | `app/api/v1/workspaces/[workspaceId]/invitations/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/invitations/[invitationId]` | `app/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes` | `app/api/v1/workspaces/[workspaceId]/notes/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes/[noteId]` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/preferences` | `app/api/v1/workspaces/[workspaceId]/preferences/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/preferences/sidebar` | `app/api/v1/workspaces/[workspaceId]/preferences/sidebar/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 | `/logout` | `app/logout/route.ts` | POST | getSession |
 
@@ -115,6 +124,7 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 |---|---|---|---|
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
+| `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 
 Canvas root layout (wraps every canvas page, no guard): `frontend/src/app/layout.tsx`

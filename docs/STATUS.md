@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
 ## 2026-10-28 - Promotion: workspace preferences (PR-M2)
 
 - Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
