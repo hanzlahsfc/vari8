@@ -7,9 +7,16 @@
  *     --input bls=tests/fixtures/nutrition/bls-4.0-sample.xlsx \
  *     --expected bls=tests/fixtures/nutrition/expected-bls.json \
  *     [--input ciqual=... --expected ciqual=...] [--out <dir>]
+ *     [--manifest tests/fixtures/nutrition/MANIFEST.json]
+ *
+ * --manifest binds every input and expected file's sha256 to the
+ * committed manifest hashes: identity, not only adapter-internal
+ * consistency. An unrecognised argument or an --expected without a
+ * matching --input fails the gate rather than being dropped.
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { basename } from "node:path";
 
 import {
   checkAccuracy,
@@ -29,15 +36,47 @@ const PARSERS = {
 
 const inputs: Record<string, string> = {};
 const expecteds: Record<string, string> = {};
-for (let i = 2; i < process.argv.length - 1; i++) {
-  const [name, ...rest] = process.argv[i + 1].split("=");
-  if (process.argv[i] === "--input") inputs[name] = rest.join("=");
-  if (process.argv[i] === "--expected") expecteds[name] = rest.join("=");
+let OUT: string | undefined;
+let MANIFEST: string | undefined;
+const pair = (flag: string, kv: string): [string, string] => {
+  const eq = kv.indexOf("=");
+  if (eq < 1) throw new Error(`bad ${flag} ${JSON.stringify(kv)}`);
+  return [kv.slice(0, eq), kv.slice(eq + 1)];
+};
+for (let i = 2; i < process.argv.length; i++) {
+  const arg = process.argv[i];
+  const val = () => {
+    const v = process.argv[++i];
+    if (v === undefined) throw new Error(`${arg} requires a value`);
+    return v;
+  };
+  if (arg === "--input") {
+    const [name, file] = pair(arg, val());
+    inputs[name] = file;
+  } else if (arg === "--expected") {
+    const [name, file] = pair(arg, val());
+    expecteds[name] = file;
+  } else if (arg === "--out") OUT = val();
+  else if (arg === "--manifest") MANIFEST = val();
+  else throw new Error(`unrecognised argument ${JSON.stringify(arg)}`);
 }
-const outI = process.argv.indexOf("--out");
-const OUT = outI > -1 ? process.argv[outI + 1] : undefined;
 if (!Object.keys(inputs).length)
   throw new Error("required --input <src>=<file> --expected <src>=<json>");
+for (const name of Object.keys(expecteds))
+  if (!inputs[name])
+    throw new Error(`--expected ${name} has no matching --input`);
+
+// fixture paths + accuracyGate.hashes both name files by basename
+const manifestHashes = (() => {
+  if (!MANIFEST) return undefined;
+  const man = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
+    fixtures?: { path: string; sha256: string }[];
+    accuracyGate?: { hashes?: Record<string, string> };
+  };
+  const map: Record<string, string> = {};
+  for (const f of man.fixtures ?? []) map[basename(f.path)] = f.sha256;
+  return { ...map, ...(man.accuracyGate?.hashes ?? {}) };
+})();
 
 async function main() {
   const report: Record<
@@ -55,13 +94,39 @@ async function main() {
     const parse = PARSERS[name as keyof typeof PARSERS];
     if (!parse) throw new Error(`unknown source ${name}`);
     if (!expecteds[name]) throw new Error(`missing --expected for ${name}`);
-    const expected = JSON.parse(
-      readFileSync(expecteds[name], "utf8"),
-    ) as Record<string, ExpectedRow>;
+    const expectedBytes = readFileSync(expecteds[name]);
+    const expected = JSON.parse(expectedBytes.toString("utf8")) as Record<
+      string,
+      ExpectedRow
+    >;
     const bytes = readFileSync(path);
     const { classified } = await parse(bytes);
     const fileSha = sha256Hex(bytes);
+    const manifestFailures: AccuracyCheck[] = [];
+    if (manifestHashes)
+      for (const [label, filePath, b] of [
+        ["input", path, bytes],
+        ["expected", expecteds[name], expectedBytes],
+      ] as const) {
+        const want = manifestHashes[basename(filePath)];
+        const got = sha256Hex(b);
+        if (!want)
+          manifestFailures.push({
+            kind: "hash_mismatch",
+            sourceId: name,
+            detail: `${label} file ${basename(filePath)} has no manifest hash entry`,
+          });
+        else if (want !== got)
+          manifestFailures.push({
+            kind: "hash_mismatch",
+            sourceId: name,
+            expected: want,
+            actual: got,
+            detail: `${label} file ${basename(filePath)} sha256 does not match the manifest`,
+          });
+      }
     const failures = [
+      ...manifestFailures,
       ...checkAccuracy(classified.accepted, expected),
       ...checkProvenance(classified.accepted),
       ...checkSourceHashBinding(classified.accepted, fileSha),

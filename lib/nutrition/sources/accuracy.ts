@@ -56,22 +56,19 @@ const QUAL_NULL: Record<string, string[]> = {
 function classifyExpected(raw: string | null): {
   value: number | null;
   qualifier?: string;
+  invalid?: boolean;
 } {
   const t = (raw ?? "").trim();
   for (const [q, markers] of Object.entries(QUAL_NULL))
     if (markers.includes(t)) return { value: null, qualifier: q };
   if (MISSING.has(t)) return { value: null };
-  if (t.startsWith("<"))
-    return {
-      value: Number(t.slice(1).trim().replace(",", ".")),
-      qualifier: "lt",
-    };
-  if (t.startsWith(">"))
-    return {
-      value: Number(t.slice(1).trim().replace(",", ".")),
-      qualifier: "gt",
-    };
-  return { value: Number(t.replace(",", ".")) };
+  const parse = (s: string) => {
+    const v = Number(s.trim().replace(",", "."));
+    return Number.isFinite(v) ? { value: v } : { value: null, invalid: true };
+  };
+  if (t.startsWith("<")) return { ...parse(t.slice(1)), qualifier: "lt" };
+  if (t.startsWith(">")) return { ...parse(t.slice(1)), qualifier: "gt" };
+  return parse(t);
 }
 
 /** Reject duplicate source-row identities before any indexing —
@@ -162,6 +159,30 @@ export function checkAccuracy(
           expected: expectedVal,
           actual: "missing nutrient",
           detail: `nutrient ${code} absent from candidate`,
+        });
+        continue;
+      }
+      // a non-numeric expected cell or non-finite candidate value must
+      // fail; NaN would otherwise compare "equal" and pass silently
+      if (expectedVal.invalid) {
+        failures.push({
+          kind: "value_mismatch",
+          sourceId: c.sourceId,
+          code,
+          expected: exp.value,
+          actual: actual.value,
+          detail: `nutrient ${code}: expected value ${JSON.stringify(exp.value)} is not numeric`,
+        });
+        continue;
+      }
+      if (actual.value !== null && !Number.isFinite(actual.value)) {
+        failures.push({
+          kind: "value_mismatch",
+          sourceId: c.sourceId,
+          code,
+          expected: expectedVal.value,
+          actual: actual.value,
+          detail: `nutrient ${code}: candidate value ${actual.value} is not finite`,
         });
         continue;
       }
