@@ -26,10 +26,11 @@
         "sampled": 50,
         "fields": 6900,
         "exact": 5165,
-        "nullOk": 1735,
+        "missingNull": 1624,
+        "qualifiedNull": 111,
+        "qualifiedBound": 0,
         "mismatches": [],
-        "fieldExactPct": 1,
-        "nullPreservedPct": 0.2514492753623188
+        "fieldExactPct": 1
       }
     },
     "ciqual": {
@@ -56,11 +57,12 @@
       "audit": {
         "sampled": 50,
         "fields": 3700,
-        "exact": 2274,
-        "nullOk": 1426,
+        "exact": 1981,
+        "missingNull": 1382,
+        "qualifiedNull": 44,
+        "qualifiedBound": 293,
         "mismatches": [],
-        "fieldExactPct": 1,
-        "nullPreservedPct": 0.3854054054054054
+        "fieldExactPct": 1
       }
     }
   },
@@ -98,6 +100,11 @@
           }
         ]
       }
-    ]
+    ],
+    "reviewOutcome": {
+      "status": "pending_human_review",
+      "requiredBy": "#182 C3 — the cross-source dedupe report is reviewed by a human, not the importer",
+      "fields": ["verdict", "reviewer", "reviewedAt", "notes"]
+    }
   }
 }

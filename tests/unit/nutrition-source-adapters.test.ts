@@ -78,9 +78,16 @@ describe("parseCiqualExport — authentic CIQUAL 2025 slice", () => {
     // decimal-comma cell "49,9" → 49.9
     const water = first.nutrients.find((n) => n.code === "EAU-G");
     expect(water?.value).toBeCloseTo(49.9, 5);
-    // "-" cell → null, not 0
+    // "-" cell → null, not 0; qualified values stay qualified
     const dashCells = first.nutrients.filter((n) => n.value === null);
     expect(dashCells.length).toBeGreaterThan(0);
+    for (const c of classified.accepted)
+      for (const n of c.nutrients)
+        expect(
+          n.value !== null ||
+            n.qualifier === undefined ||
+            ["traces", "lod", "loq", "lod_or_loq"].includes(n.qualifier),
+        ).toBe(true);
   });
 });
 
@@ -142,6 +149,14 @@ describe("fail-closed nutrient headers", () => {
     await expect(
       parseBlsExport(readFileSync(CIQUAL_FIXTURE)),
     ).rejects.toBeInstanceOf(SourceAdapterError);
+    // CIQUAL: a nutrient header stripped of its unit refuses
+    await expect(
+      parseCiqualExport(
+        readFileSync(
+          "tests/fixtures/nutrition/ciqual-2025-sample-badheader.xlsx",
+        ),
+      ),
+    ).rejects.toMatchObject({ code: "unexpected_header" });
   });
 });
 

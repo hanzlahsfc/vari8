@@ -92,7 +92,9 @@ function auditSample(
   const sample = candidates.slice(0, n);
   let fields = 0,
     exact = 0,
-    nullOk = 0;
+    missingNull = 0,
+    qualifiedNull = 0,
+    qualifiedBound = 0;
   const bad: unknown[] = [];
   for (const c of sample) {
     const row = rawRows[c.sourceRow - 1];
@@ -103,12 +105,40 @@ function auditSample(
         raw === null || raw === undefined || raw === ""
           ? ""
           : String(raw).trim();
-      const marker = rawT.startsWith("<") || MISSING.has(rawT);
-      if (nut.value === null) {
-        if (marker) nullOk++;
+      // separate buckets: missing-null vs qualified-null vs qualified
+      // bound vs exact — never conflated
+      if (
+        nut.qualifier === "traces" ||
+        nut.qualifier === "lod" ||
+        nut.qualifier === "loq" ||
+        nut.qualifier === "lod_or_loq"
+      ) {
+        if (
+          nut.value === null &&
+          /^(TR|traces|<LOD|<LOQ|<LOD or <LOQ)/.test(rawT)
+        ) {
+          qualifiedNull++;
+        } else
+          bad.push([
+            c.sourceId,
+            nut.code,
+            rawT,
+            `qualified-null ${nut.qualifier}?`,
+          ]);
+      } else if (nut.qualifier === "lt" || nut.qualifier === "gt") {
+        const norm = rawT.replace(/^[<>]/, "").replace(",", ".");
+        if (
+          rawT.startsWith("<") &&
+          Math.abs(Number(norm) - (nut.value ?? NaN)) < 1e-12
+        )
+          qualifiedBound++;
+        else
+          bad.push([c.sourceId, nut.code, rawT, `qualified ${nut.qualifier}`]);
+      } else if (nut.value === null) {
+        if (MISSING.has(rawT)) missingNull++;
         else bad.push([c.sourceId, nut.code, rawT, "expected null"]);
       } else {
-        const norm = rawT.replace(/^</, "").replace(",", ".");
+        const norm = rawT.replace(",", ".");
         if (Math.abs(Number(norm) - nut.value) < 1e-12) exact++;
         else bad.push([c.sourceId, nut.code, rawT, nut.value]);
       }
@@ -118,10 +148,15 @@ function auditSample(
     sampled: sample.length,
     fields,
     exact,
-    nullOk,
+    missingNull,
+    qualifiedNull,
+    qualifiedBound,
     mismatches: bad,
-    fieldExactPct: fields ? (exact + nullOk) / fields : 0,
-    nullPreservedPct: fields ? nullOk / fields : 0,
+    // 98% of fields exact per the acceptance rule: exact + verified
+    // representations (missing nulls and verbatim qualifiers) all pass
+    fieldExactPct: fields
+      ? (exact + missingNull + qualifiedNull + qualifiedBound) / fields
+      : 0,
   };
 }
 
@@ -156,6 +191,9 @@ async function main() {
       audit,
       importerRecords: importer.accepted.length,
     };
+    // provenance + rich measurements travel alongside the flat records
+    (importer as unknown as { candidates: SourceCandidate[] }).candidates =
+      classified.accepted;
   }
 
   // Cross-source dedupe — REVIEW LIST for a human; no merge, no delete.
@@ -208,6 +246,12 @@ async function main() {
       note: "review candidates for a human — never merged or deleted",
       count: crossDedupe.length,
       candidates: crossDedupe.slice(0, 200),
+      reviewOutcome: {
+        status: "pending_human_review",
+        requiredBy:
+          "#182 C3 — the cross-source dedupe report is reviewed by a human, not the importer",
+        fields: ["verdict", "reviewer", "reviewedAt", "notes"],
+      },
     },
   };
 

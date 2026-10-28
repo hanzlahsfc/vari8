@@ -34,19 +34,19 @@
     "command": "npx tsx scripts/dry-run-nutrition-source.ts --input bls=<full-export> --input ciqual=<full-export> --out <dir>",
     "report": {
       "path": "tests/fixtures/nutrition/dry-run-report.json",
-      "sha256": "dadd7e973486a576226d1df45c4807773ab41e458b9c187c5c06eb63be484964",
+      "sha256": "71b02190ae5d0139c9ff0f3b23ef370913acfc2e861702971021bb92aa780d26",
       "generated": "2026-10-28",
       "note": "committed audit evidence \u2014 independent re-read of raw cells vs candidates; full-export inputs are not committed (distribution paths + sha256 below reproduce them exactly)"
     },
     "candidates": {
       "bls": {
         "file": "candidates-bls.json",
-        "sha256": "21c268af530db1be3faac1da2c15b22f75ed78354febc2677cbaba7548bcea71",
+        "sha256": "c06b307835d7e0be90b7d2f8b397aae998073510ff2c2c1ba4e97cbb8701e628",
         "accepted": 7140
       },
       "ciqual": {
         "file": "candidates-ciqual.json",
-        "sha256": "ae9ab1bc955d7136cdef9efa7a58375897441d9b852595fe633ca79e14214fe3",
+        "sha256": "c1a49410fb95640a5a202014b685fa9a04de8a1a0b348bbfc5ccf283bd15e622",
         "accepted": 3484
       },
       "note": "full candidates outputs reproducible via the committed script + pinned export hashes; not committed (multi-MB)"

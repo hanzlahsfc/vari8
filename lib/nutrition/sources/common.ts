@@ -117,9 +117,11 @@ export function candidateFingerprint(
       sourceNote: candidate.sourceNote ?? null,
       nutrients: candidate.nutrients.map((n) => [
         n.code,
+        n.name,
         n.unit,
         n.basis,
         n.value,
+        n.qualifier ?? null,
         n.origin ?? null,
         n.reference ?? null,
       ]),
