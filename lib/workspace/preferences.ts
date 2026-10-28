@@ -106,7 +106,7 @@ export async function updateMemberPreferences(
   );
   if (ops.length > 0) {
     // deps.db set means the caller owns the atomic boundary (e.g. settings
-    // PATCH) — run the ops sequentially inside it; otherwise self-contain.
+    // PATCH) - run the ops sequentially inside it; otherwise self-contain.
     if (deps.db) for (const op of ops) await op;
     else await prisma.$transaction(ops);
   }

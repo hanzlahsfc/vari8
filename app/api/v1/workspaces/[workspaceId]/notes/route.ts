@@ -59,7 +59,7 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-// The route helper wraps the handler's return in Response.json — handlers
+// The route helper wraps the handler's return in Response.json - handlers
 // return data and map a closed failure to a thrown ApiError.
 function unwrap<T>(result: NoteSafeResult<T>): T {
   if (result.ok) return result.value;

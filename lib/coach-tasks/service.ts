@@ -130,7 +130,7 @@ async function lockProfile(
     workspaceId,
   );
   // A client outside the caller's workspace is a missing resource, not a
-  // role denial — closed not_available, never a disclosing reason.
+  // role denial - closed not_available, never a disclosing reason.
   if (!rows[0]) throw new CoachTaskError("not_available");
 }
 

@@ -11,9 +11,9 @@ import {
 } from "@/lib/coach-tasks/boundary";
 
 /**
- * /api/v1/workspaces/:workspaceId/coach-tasks/:taskId — one staff to-do.
+ * /api/v1/workspaces/:workspaceId/coach-tasks/:taskId - one staff to-do.
  *
- * PATCH  — { title?, complete?, completed?, expectedRevision? }: edits the
+ * PATCH  - { title?, complete?, completed?, expectedRevision? }: edits the
  *          title and/or sets explicit completion state (the canvas checkbox;
  *          idempotent replay-safe). `complete` and `title` calls answer with
  *          the flat { revision, complete?, changed } shape; the `completed`
@@ -22,11 +22,11 @@ import {
  *          enforced as CAS inside the write transaction; when it is absent
  *          the route resolves the live revision first so the serialized CAS
  *          check still runs.
- * DELETE — soft delete with the D24 undo window. A query
+ * DELETE - soft delete with the D24 undo window. A query
  *          ?expectedRevision= answers { revision, changed }; the canvas
  *          empty-body call answers { coachTask } with the pre-delete view.
  *
- * Capability `tasks.manage`: client deny — 403 before any lookup.
+ * Capability `tasks.manage`: client deny - 403 before any lookup.
  */
 
 export const dynamic = "force-dynamic";
@@ -67,7 +67,7 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-// The route helper wraps the handler's return in Response.json — handlers
+// The route helper wraps the handler's return in Response.json - handlers
 // return data and map a closed failure to a thrown ApiError. The workspace
 // API never answers 404 for a missing or deleted row; not_available
 // collapses to 403 the same way daily-entries/_result.ts maps it.
