@@ -6,7 +6,7 @@
  * screen, beside the card 09 actuals. Reads the own iifym-plans route;
  * the server resolves WHICH version applies, the screen resolves WHICH
  * option applies on the selected date via the shared canvas
- * `scheduledOption` (weekly weekday keys "1"–"7", Monday first).
+ * `scheduledOption` (weekly weekday keys "1"-"7", Monday first).
  *
  * One applicable target set renders per date. Macros-style targets show
  * protein/carbohydrate/fat and derive kcal at render (4/4/9 over the
@@ -20,13 +20,13 @@
 import { useEffect, useState } from "react";
 
 import { scheduledOption, targetNumber } from "../coach/plans/domain";
+import { Empty } from "../coach/ui";
 import {
   fetchOwnIifymPlan,
   type IifymPayloadWire,
-  type IifymTargetValueWire,
   type IifymTargetsWire,
+  type IifymTargetValueWire,
 } from "../data/nutrition";
-import { Empty } from "../coach/ui";
 
 const MACRO_FIELDS = [
   { id: "protein", label: "Protein" },
@@ -38,7 +38,7 @@ const NOT_SET = "Not set";
 
 function formatTarget(value: IifymTargetValueWire | undefined, unit: string) {
   if (!value) return NOT_SET;
-  if (value.kind === "range") return `${value.min}–${value.max} ${unit}`;
+  if (value.kind === "range") return `${value.min}-${value.max} ${unit}`;
   if (value.kind === "minimum") return `≥${value.value} ${unit}`;
   return `${value.value} ${unit}`;
 }
@@ -88,15 +88,14 @@ export function NutritionTargets({
           });
       })
       .catch(() => {
-        if (!cancelled)
-          setLoaded({ workspaceId, payload: null, error: true });
+        if (!cancelled) setLoaded({ workspaceId, payload: null, error: true });
       });
     return () => {
       cancelled = true;
     };
   }, [workspaceId]);
 
-  // Only a response for the current workspaceId counts — a stale load
+  // Only a response for the current workspaceId counts - a stale load
   // from a previous binding reads as loading, never as content.
   const current =
     loaded !== null && loaded.workspaceId === workspaceId ? loaded : null;
@@ -134,9 +133,7 @@ export function NutritionTargets({
 
   const schedule = payload.schedule;
   const ids = payload.options.map((option) => option.id);
-  const optionId = schedule
-    ? scheduledOption(schedule, ids, date)
-    : ids[0];
+  const optionId = schedule ? scheduledOption(schedule, ids, date) : ids[0];
   const option = payload.options.find((entry) => entry.id === optionId);
 
   if (!option)
@@ -169,7 +166,11 @@ export function NutritionTargets({
           MACRO_FIELDS.map((field) => (
             <div key={field.id}>
               <dt>{field.label}</dt>
-              <dd data-missing={targets[field.id] === undefined ? true : undefined}>
+              <dd
+                data-missing={
+                  targets[field.id] === undefined ? true : undefined
+                }
+              >
                 {formatTarget(targets[field.id], "g")}
               </dd>
             </div>
@@ -177,7 +178,9 @@ export function NutritionTargets({
         ) : (
           <div>
             <dt>Calories</dt>
-            <dd data-missing={targets.calories === undefined ? true : undefined}>
+            <dd
+              data-missing={targets.calories === undefined ? true : undefined}
+            >
               {formatTarget(targets.calories, "kcal")}
             </dd>
           </div>

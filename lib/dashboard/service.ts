@@ -24,6 +24,16 @@ import {
   type DashboardConfig,
 } from "./config-schema";
 
+// W2-T5 (R11): the coach attention triage read is derived in ./triage and
+// surfaced on this service so the lib/dashboard surface stays single-doored.
+export {
+  listWorkspaceAttentionTriage,
+  type AttentionTriageDeps,
+  type AttentionTriageItem,
+  type AttentionTriageResult,
+  type TriagePrismaLike,
+} from "./triage";
+
 export class DashboardError extends Error {
   constructor(
     public code:

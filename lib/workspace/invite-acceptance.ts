@@ -26,9 +26,10 @@ import { acceptWorkspaceInvitation, InvitationError } from "./invitations";
  *   Raw tokens, invited emails, hashes, ids, and internals never appear in
  *   returned messages.
  *
- * This slice exposes ACCEPTANCE only. Invitation creation/list/revoke remain
- * internal services with no route — `assertInvitationOrchestrationExternallyExposable`
- * still fails closed for them.
+ * This module exposes ACCEPTANCE only. Invitation issue and the public
+ * lookup live in the T3 seam `lib/workspace/invite-links.ts` (rate-limited
+ * route + authorized action); list/revoke remain internal services with no
+ * route.
  */
 
 export type InviteLinkState = { state: "ready" } | { state: "invalid" };

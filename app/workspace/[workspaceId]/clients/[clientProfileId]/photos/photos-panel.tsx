@@ -27,13 +27,9 @@ export function PhotosPanel({
   workspaceId: string;
   clientProfileId: string;
 }) {
-  const [entries, setEntries] = useState<ProgressPhotoEntryWire[] | null>(
-    null,
-  );
+  const [entries, setEntries] = useState<ProgressPhotoEntryWire[] | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [phase, setPhase] = useState<"loading" | "ready" | "error">(
-    "loading",
-  );
+  const [phase, setPhase] = useState<"loading" | "ready" | "error">("loading");
   const [status, setStatus] = useState("");
   const [removing, setRemoving] = useState<string | null>(null);
   const [firstId, setFirstId] = useState("");
@@ -100,12 +96,14 @@ export function PhotosPanel({
     setCompareError("");
     setPair(null);
     try {
-      setPair(await compareProgressPhotos(
-        workspaceId,
-        clientProfileId,
-        firstId,
-        secondId,
-      ));
+      setPair(
+        await compareProgressPhotos(
+          workspaceId,
+          clientProfileId,
+          firstId,
+          secondId,
+        ),
+      );
     } catch (error) {
       setCompareError(
         error instanceof ApiClientError && error.code === "not_found"
@@ -120,7 +118,8 @@ export function PhotosPanel({
     try {
       await deleteProgressPhoto(workspaceId, clientProfileId, entryId);
       setPair((current) =>
-        current && (current.first.id === entryId || current.second.id === entryId)
+        current &&
+        (current.first.id === entryId || current.second.id === entryId)
           ? null
           : current,
       );
@@ -132,8 +131,7 @@ export function PhotosPanel({
     }
   };
 
-  if (phase === "loading")
-    return <p role="status">Loading photos…</p>;
+  if (phase === "loading") return <p role="status">Loading photos…</p>;
   if (phase === "error")
     return (
       <div className="empty-state" role="status">
@@ -234,9 +232,7 @@ export function PhotosPanel({
                   />
                 )}
                 <div className="photos-gallery__meta">
-                  <span className="photos-gallery__date">
-                    {entry.takenOn}
-                  </span>
+                  <span className="photos-gallery__date">{entry.takenOn}</span>
                   {!entry.clientVisible ? (
                     <span className="photos-gallery__flag">
                       Hidden from client

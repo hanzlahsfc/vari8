@@ -37,6 +37,7 @@ import {
   unreadCount,
 } from "./model";
 import { ClientTrainingLogs } from "./client-training-logs";
+import { ClientMediaPanel } from "./media";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
@@ -679,6 +680,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           </Surface>
         </div>
       )}
+      {tab === "Media" && <ClientMediaPanel client={c} />}
     </>
   );
   return (
@@ -708,6 +710,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           "Plans",
           "Check-ins",
           "Notes & tasks",
+          "Media",
         ].map((value) => ({
           value,
           label: value,

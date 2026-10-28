@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import {
-  SettingsSurface,
   type PreferenceGroupView,
   type SettingsProfile,
+  SettingsSurface,
 } from "@/components/vari8/settings-surface";
 import { vari8Theme } from "@/lib/vari8-theme";
 
@@ -40,8 +40,7 @@ const DEFAULT_GROUPS: PreferenceGroupView[] = [
       {
         key: "attention.priority_messages",
         label: "Priority message attention",
-        description:
-          "Messages from priority clients count toward attention.",
+        description: "Messages from priority clients count toward attention.",
         enabled: true,
       },
     ],
@@ -108,17 +107,17 @@ export default function CoachSettingsDemoPage() {
     const enabled: Record<string, boolean> = {};
     for (const group of gs)
       for (const item of group.items) enabled[item.key] = item.enabled;
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ name, enabled }),
-    );
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, enabled }));
   };
 
   return (
     <main
       className="v8-theme"
       data-mode="dark"
-      style={{ ...vari8Theme({ mode: "dark", accent: "#EB91B8" }), padding: "2rem" }}
+      style={{
+        ...vari8Theme({ mode: "dark", accent: "#EB91B8" }),
+        padding: "2rem",
+      }}
     >
       <SettingsSurface
         profile={profile}

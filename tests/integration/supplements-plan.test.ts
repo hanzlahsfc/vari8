@@ -19,7 +19,10 @@ import {
 } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
+import { auth } from "../../lib/auth/server";
 import { createStaticConsentPolicy } from "../../lib/consent";
+import { hashPassword } from "../../lib/password";
+import { GET as getSupplementPlan } from "../../app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route";
 import {
   readOwnSupplementPlan,
   readStaffSupplementPlan,
@@ -670,5 +673,126 @@ describe.skipIf(!enabled)("PR-SUPP supplement plan (real PG)", () => {
     const err = new SupplementError("invalid_input");
     expect(err.code).toBe("invalid_input");
     expect(err).toBeInstanceOf(Error);
+  });
+
+  // ── Route: own-scope path binding (B3) ─────────────────────────────
+  //
+  // plan.read resolves "own" for a client, so the route must bind the
+  // path clientProfileId to the caller's own client profile: a foreign
+  // id refuses with the same closed 403 the capability gate emits, before
+  // any read. Real sign-in + real Request through the exported handler.
+
+  const BASE = "http://127.0.0.1:3000";
+  const PASSWORD = "fixture-pass-1";
+
+  async function loginUser() {
+    const email = `${uid()}@example.test`;
+    const u = await prisma.user.create({
+      data: {
+        email,
+        passwordHash: "fixture",
+        name: `Fixture ${uid()}`,
+        status: "ACTIVE",
+      },
+    });
+    await prisma.account.create({
+      data: {
+        userId: u.id,
+        accountId: u.id,
+        providerId: "credential",
+        password: await hashPassword(PASSWORD),
+      },
+    });
+    return { u, email };
+  }
+
+  async function signInToken(email: string) {
+    const res = await auth.handler(
+      new Request(`${BASE}/api/auth/sign-in/email`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-forwarded-for": `10.230.0.${++n}`,
+        },
+        body: JSON.stringify({ email, password: PASSWORD }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const token = res.headers.get("set-auth-token");
+    expect(token).toBeTruthy();
+    return token as string;
+  }
+
+  const getRoute = (
+    workspaceId: string,
+    clientProfileId: string,
+    token: string,
+  ) =>
+    getSupplementPlan(
+      new Request(
+        `${BASE}/api/v1/workspaces/${workspaceId}/clients/${clientProfileId}/supplement-plan`,
+        { headers: { authorization: `Bearer ${token}` } },
+      ),
+      { params: Promise.resolve({ workspaceId, clientProfileId }) },
+    );
+
+  it("route GET: a client reading its own path id gets its saved plan", async () => {
+    vi.stubEnv("ENABLE_SUPPLEMENTS", "1");
+    vi.stubEnv("APP_ENV", "test");
+    const { w, coachU, coachMember } = await setup();
+    const login = await loginUser();
+    await member(w.id, login.u.id, "CLIENT");
+    const ownCp = await profile(w.id, login.u.id);
+    await consent(ownCp.id);
+    await assignment(w.id, ownCp.id, coachMember.id);
+    await saveSupplementPlan(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: ownCp.id,
+        expectedRevision: 0,
+        name: "Plan",
+        items: [item],
+      },
+      deps(),
+    );
+    const res = await getRoute(w.id, ownCp.id, await signInToken(login.email));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      plan: { items: { timing?: string }[] } | null;
+    };
+    expect(body.plan?.items[0]?.timing).toBe("with breakfast");
+  });
+
+  it("route GET: a client requesting a foreign clientProfileId is refused before any read", async () => {
+    vi.stubEnv("ENABLE_SUPPLEMENTS", "1");
+    vi.stubEnv("APP_ENV", "test");
+    const { w, coachU, coachMember } = await setup();
+    const login = await loginUser();
+    await member(w.id, login.u.id, "CLIENT");
+    const ownCp = await profile(w.id, login.u.id);
+    await consent(ownCp.id);
+    await assignment(w.id, ownCp.id, coachMember.id);
+    await saveSupplementPlan(
+      session(coachU.id),
+      {
+        workspaceId: w.id,
+        clientProfileId: ownCp.id,
+        expectedRevision: 0,
+        name: "Plan",
+        items: [item],
+      },
+      deps(),
+    );
+    const foreignU = await user();
+    await member(w.id, foreignU.id, "CLIENT");
+    const foreignCp = await profile(w.id, foreignU.id);
+    const res = await getRoute(
+      w.id,
+      foreignCp.id,
+      await signInToken(login.email),
+    );
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: { code: "forbidden" } });
   });
 });
