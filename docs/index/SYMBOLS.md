@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 144 modules with exports, 1436 exported symbols.
+Counts: 144 modules with exports, 1444 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -357,12 +357,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInFeedbackItem = { id: string; sentAt: string; byName: string; body: string; }`
 - `export type CheckInFeedbackPage = { items: CheckInFeedbackItem[]; nextCursor: string | null; hasMore: boolean; }`
 - `export type { CheckInField }`
-- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; }`
+- `export type CheckInFlaggedSetNote = { exercise: string; set: number; date: string; text: string; }`
+- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; dailyRegistry?: ConsentPolicyRegistry; authorizeDaily?: typeof authorize; }`
 - `export class CheckInInstanceError extends Error (1 members)`
 - `export type CheckInInstanceErrorCode = | "invalid_input" | "not_available" | "already_submitted" | "instance_not_accessible" | "consent_missing" | "policy_not_configured" | "serialization_conflict"...`
 - `export type CheckInInstanceLifecycleInput = { cancelledAt: Date | null; cancelledByMemberId: string | null; hasSubmission: boolean; hasReview?: boolean; }`
 - `export type CheckInInstancePresentation = { state: CheckInInstanceState; late: boolean; }`
 - `export type CheckInInstanceState = "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED"`
+- `export type CheckInNutritionItem = Record<string, never>`
+- `export type CheckInReviewPhoto = Record<string, never>`
 - `export type GetOwnCheckInInstanceInput = { workspaceId: string; instanceId: string; }`
 - `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", rating: "RATING", visual: "...`
 - `export type ListCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; cursor?: string; limit?: number; }`
@@ -393,6 +396,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function buildCheckInReviewQueueWhere(scope: "workspace" | "assigned", ctx: { workspaceId: string; workspaceMemberId: string }, cursor: { submittedAt: Date; id: string } | undefined): Prisma...`
 - `export async function cancelCheckInInstance(session: SessionLike, input: CancelCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CancelCheckInInstanceResult>`
 - `export function canonicalizeCheckInAnswers(definition: CheckInDefinition, raw: readonly RawCheckInAnswerEntry[]): CanonicalCheckInAnswer[]`
+- `export async function checkConsentIntersection(tx: Prisma.TransactionClient, clientProfileId: string, pairs: Array<{ resource: "checkinsCoachReviews" | "dailyTracking"; registry: ConsentPolicyRegis...`
 - `export function deriveCheckInQueueCanReview(role: string, rowHasActiveAssignment: boolean): boolean`
 - `export async function getOwnCheckInInstance(session: SessionLike, input: GetOwnCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<OwnCheckInInstanceDetail>`
 - `export async function getOwnNextCheckInInstance(session: SessionLike, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<OwnNextCheckInInstance | null>`
@@ -415,6 +419,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function projectCheckInInstancePresentation(row: CheckInInstanceLifecycleInput & { dueAt: Date; submittedAt: Date | null; }, now: Date = new Date()): CheckInInstancePresentation`
 - `export function projectCheckInInstanceState(row: CheckInInstanceLifecycleInput): CheckInInstanceState`
 - `export async function readCheckInSubmissionDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: CheckInInstanceDeps = {}): Promise<Staf...`
+- `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
 - `export async function resolveCheckInFeedbackSend(session: SessionLike, input: ResolveCheckInFeedbackSendInput, deps: CheckInInstanceDeps = {}): Promise<ResolveCheckInFeedbackSendResult>`
 - `export async function scheduleCheckInInstance(session: SessionLike, input: ScheduleCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<ScheduleCheckInInstanceResult>`
 - `export async function sendCheckInFeedback(session: SessionLike, input: SendCheckInFeedbackInput, deps: CheckInInstanceDeps = {}): Promise<SendCheckInFeedbackResult>`
@@ -462,7 +467,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInTrackerContextInput = { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }`
 - `export type CheckInTrackerContextResult = StaffDailyEntryDetail`
 - `export async function readCheckInReviewTrackerContext(session: SessionLike, input: CheckInTrackerContextInput, deps: CheckInTrackerContextDeps = {}): Promise<StaffDailyEntryDetail>`
-- `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
 
 ## `lib/coaching/client-setup-boundary.ts`
 
@@ -765,15 +769,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
 - `export type StaffDailyEntryListItem = { entryDate: string; revisionCount: number; currentRevisionSeq: number | null; }`
 - `export type StaffDailyEntryListResult = | { state: "ready"; clientName: string; items: StaffDailyEntryListItem[]; nextCursor: string | null; } | { state: "consent_missing" }`
+- `export type StaffDailyEntryLoad = { entryId: string; detail: StaffDailyEntryDetail; }`
+- `export type StoredValue = { parameterId: string; kind: string; valueNumeric: unknown; valueRating: number | null; valueOptionId: string | null; valueText: string | null; }`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
+- `export async function loadStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
 - `export function parseDailyEntrySeriesRange(rawFrom: unknown, rawTo: unknown): { from: string; to: string }`
 - `export function parseDeclaredDate(raw: unknown): string`
 - `export function parseStaffEntryCursor(raw: unknown): string | null`
 - `export async function readDailyEntryNumericSeries(viewer: { userId: string }, workspace: { workspaceId: string; scope: "workspace" | "own" }, input: { clientProfileId: unknown; parameterId: unknown...`
 - `export async function readStaffDailyEntryDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntry...`
 - `export async function readStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
+- `export function renderRevisionDisplayRows(values: readonly StoredValue[], snapshot: readonly SnapshotParam[], def: VersionDefinition): DailyEntryHistoryRow[]`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
 
 ## `lib/daily-entry/validate.ts`
