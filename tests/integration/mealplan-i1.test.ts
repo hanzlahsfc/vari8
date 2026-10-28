@@ -149,27 +149,33 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
   }
 
   const draftPayload = (label = "Training day") => ({
+    name: "Nutrition plan",
+    startDate: "2026-10-19",
+    activeVariantId: "v_td",
+    schedule: { mode: "manual", selectedVariantId: "v_td" },
     variants: [
       {
         id: "v_td",
         label,
-        targetMode: "FIXED",
-        targets: {
-          kcal: { value: 2400 },
-          proteinG: { value: 180 },
-          carbsG: null,
-          fatG: { value: 70 },
+        dailyTarget: {
+          style: "macros",
+          protein: { kind: "minimum", value: 160 },
+          fat: { kind: "fixed", value: 70 },
         },
         meals: [
           {
-            order: 1,
-            name: "Breakfast",
+            id: "meal_b1",
+            label: "Breakfast",
             time: "08:00",
-            frequency: "Every day",
-            foodText: "Synthetic oats",
-            kcal: 352,
-            proteinG: 30,
-            fatG: 8,
+            frequency: "Daily",
+            portions: [
+              {
+                foodId: "food-057",
+                quantity: 50,
+                swaps: [{ foodId: "food-058", quantity: 50, note: "GF" }],
+              },
+              { foodId: "food-001", quantity: 150 },
+            ],
           },
         ],
       },
@@ -371,10 +377,13 @@ describe.skipIf(!enabled)("MEAL-PLAN-I1 (real PG)", () => {
       deps(),
     );
     expect(own.current?.versionSeq).toBe(1);
-    expect(own.current?.payload.variants[0]?.meals[0]?.kcal).toBe(352);
-    // Zero-vs-missing fidelity through the published snapshot.
     const m = own.current?.payload.variants[0]?.meals[0];
-    expect(m && "carbsG" in m).toBe(false);
+    expect(m?.portions[0]?.foodId).toBe("food-057");
+    expect(m?.portions[0]?.quantity).toBe(50);
+    // Present-vs-missing fidelity through the published snapshot: the
+    // first portion carries swaps, the second has no `swaps` key at all.
+    expect(m?.portions[0]?.swaps?.[0]?.foodId).toBe("food-058");
+    expect(m?.portions[1] && "swaps" in m.portions[1]).toBe(false);
     // No draft content ever reaches the client view.
     expect(JSON.stringify(own)).not.toContain('"draft"');
 

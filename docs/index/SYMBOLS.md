@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1557 exported symbols.
+Counts: 163 modules with exports, 1582 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1330,19 +1330,21 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mealplan/limits.ts`
 
-- `export const MEALPLAN_LIMITS = { titleMax: 80, maxVariants: 8, minPublishVariants: 1, maxMealsPerVariant: 24, minPublishMeals: 1, variantLabelMax: 80, variantIdMax: 64, mealNameMax: 80, mealTimeMax...`
+- `export const MEALPLAN_LIMITS = { titleMax: 80, planNameMax: 120, maxVariants: 8, minPublishVariants: 1, maxMealsPerVariant: 24, minPublishMeals: 1, variantLabelMax: 80, variantIdMax: 64, mealLabelM...`
 
 ## `lib/mealplan/payload.ts`
 
-- `export const MEALPLAN_TARGET_MODES = ["FIXED", "RANGE", "MINIMUM"] as const`
-- `export type MealPlanDraft = { variants: MealPlanVariant[] }`
+- `export type MealPlanDraft = { variants: MealPlanVariant[]; name?: string; startDate?: string; activeVariantId?: string; schedule?: VariantSchedule; }`
 - `export class MealPlanError extends Error (1 members)`
 - `export type MealPlanErrorCode = | "invalid_input" | "plan_not_accessible" | "stale_revision" | "timezone_required" | "unrepresentable_date" | "publish_incomplete" | "consent_missing" | "policy_not_...`
-- `export type MealPlanMacroTargets = { kcal: MealPlanTarget | null; proteinG: MealPlanTarget | null; carbsG: MealPlanTarget | null; fatG: MealPlanTarget | null; }`
-- `export type MealPlanMeal = { order: number; name: string; time?: string; frequency?: string; foodText: string; kcal?: number; proteinG?: number; carbsG?: number; fatG?: number; }`
-- `export type MealPlanTarget = { value: number } | { min: number; max: number } | { min: number }`
-- `export type MealPlanTargetMode = (typeof MEALPLAN_TARGET_MODES)[number]`
-- `export type MealPlanVariant = { id: string; label: string; targetMode: MealPlanTargetMode; targets: MealPlanMacroTargets; meals: MealPlanMeal[]; }`
+- `export type MealPlanMeal = { id: string; label: string; time: string; frequency?: string; portions: MealPlanPortion[]; target?: MealTargets; }`
+- `export type MealPlanPortion = { foodId: string; quantity: number; swaps?: MealPlanSwap[]; }`
+- `export type MealPlanSwap = { foodId: string; quantity: number; note?: string; }`
+- `export type MealPlanVariant = { id: string; label: string; meals: MealPlanMeal[]; dailyTarget?: MealTargets; }`
+- `export type { MealTargets }`
+- `export type { TargetValue }`
+- `export type { VariantSchedule }`
+- `export function collectMealPlanFoodIds(draft: MealPlanDraft): string[]`
 - `export function normalizeMealPlanPayload(input: unknown, opts: { forPublish: boolean }): MealPlanDraft`
 
 ## `lib/mealplan/service.ts`
@@ -1351,15 +1353,17 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type MealPlanDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
 - `export type { MealPlanDraft } from "./payload"`
 - `export { MealPlanError } from "./payload"`
-- `export type { MealPlanMacroTargets } from "./payload"`
 - `export type { MealPlanMeal } from "./payload"`
-- `export type { MealPlanTarget } from "./payload"`
-- `export type { MealPlanTargetMode } from "./payload"`
+- `export type { MealPlanPortion } from "./payload"`
+- `export type { MealPlanSwap } from "./payload"`
 - `export type { MealPlanVariant } from "./payload"`
 - `export type MealPlanVersionDetail = { id: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; activationInstant: string; payload: MealPlanDraft; publishedAt: string; }`
 - `export type MealPlanVersionHeader = { id: string; versionSeq: number; effectiveDate: string; effectiveTimezone: string; publishedAt: string; }`
+- `export type { MealTargets } from "./payload"`
 - `export type OwnMealPlanView = { current: { versionSeq: number; effectiveDate: string; effectiveTimezone: string; payload: MealPlanDraft; } | null; upcoming: { versionSeq: number; effectiveDate: str...`
 - `export type StaffMealPlanView = { plan: { id: string; title: string; timezone: string | null; draftRevision: number; draft: MealPlanDraft; } | null; versions: MealPlanVersionHeader[]; nextCursor: n...`
+- `export type { TargetValue } from "./payload"`
+- `export type { VariantSchedule } from "./payload"`
 - `export function parseEffectiveDate(raw: unknown, now: Date = new Date()): string`
 - `export async function publishMealPlanVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; effectiveDate: string; }, deps: MealPlanDeps = {}...`
 - `export async function readOwnMealPlan(session: SessionLike, input: { workspaceId: string }, deps: MealPlanDeps = {}): Promise<OwnMealPlanView>`
@@ -1395,11 +1399,41 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function restoreCoachNote(caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
 - `export async function updateCoachNoteBody(caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
 
+## `lib/nutrition/actuals.ts`
+
+- `export type MacroActuals = { protein: number | null; carbs: number | null; fat: number | null; }`
+- `export type NutritionLogRecord = MacroActuals & { calories: number | null; }`
+- `export function applyActualsPatch(record: MacroActuals, patch: Partial<MacroActuals>): MacroActuals`
+- `export function deriveActualCalories(actuals: MacroActuals): number | null`
+- `export const emptyActuals = (): MacroActuals =>`
+- `export function toNutritionLogRecord(actuals: MacroActuals): NutritionLogRecord`
+
+## `lib/nutrition/foods.ts`
+
+- `export async function loadNutritionFoodMap(foodIds: readonly string[], db: PrismaClient = defaultPrisma): Promise<Map<string, Food>>`
+
 ## `lib/nutrition/import.ts`
 
 - `export class NutritionImportError extends Error (1 members)`
 - `export type NutritionImportSummary = { runId: string; status: string; scannedRowCount: number; sourceRowCount: number; ignoredEmptyRowCount: number; acceptedCount: number; rejectedCount: number; du...`
 - `export async function importNutritionCatalog(client: PrismaClient, source: NutritionSource, now: Date = new Date()): Promise<NutritionImportSummary>`
+
+## `lib/nutrition/math.ts`
+
+- `export type Food = Nutrients & { id: string; name: string; amount: number; unit: string; }`
+- `export type MacroEnergyShares = Pick<Nutrients, "protein" | "carbs" | "fat">`
+- `export type MealLike = { portions: readonly PortionLike[] }`
+- `export type Nutrients = { calories: number; protein: number; carbs: number; fat: number; }`
+- `export type PortionLike = { foodId: string; quantity: number }`
+- `export type VariantLike = { meals: readonly MealLike[] }`
+- `export function addNutrients(a: Nutrients, b: Nutrients): Nutrients`
+- `export function calculateMealNutrients(meal: MealLike, foods: ReadonlyMap<string, Food>): Nutrients`
+- `export function calculatePortionNutrients(food: Food, quantity: number): Nutrients`
+- `export function calculateVariantNutrients(variant: VariantLike, foods: ReadonlyMap<string, Food>): Nutrients`
+- `export const emptyNutrients = (): Nutrients =>`
+- `export function iifymTargetNutrients(targets: MealTargets): Nutrients`
+- `export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares`
+- `export function targetNumber(target: TargetValue | undefined): number`
 
 ## `lib/nutrition/search.ts`
 
