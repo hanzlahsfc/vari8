@@ -27,19 +27,40 @@
 
 ## Gates (Node 24.22.1, this worktree)
 
-| cmd | exit |
-|---|---|
-| `npx vitest run tests/unit/nutrition-actuals.test.ts` | 0 — **7/7** |
-| `npx prettier --check` both files | 0 (after --write) |
-| `npx eslint` both files | 0 |
-| `npm run typecheck` | 0 |
-| `npm run index` + `index:check` | regenerated SYMBOLS.md, OK |
+| cmd                                                   | exit                       |
+| ----------------------------------------------------- | -------------------------- |
+| `npx vitest run tests/unit/nutrition-actuals.test.ts` | 0 — **7/7**                |
+| `npx prettier --check` both files                     | 0 (after --write)          |
+| `npx eslint` both files                               | 0                          |
+| `npm run typecheck`                                   | 0                          |
+| `npm run index` + `index:check`                       | regenerated SYMBOLS.md, OK |
 
 ## Deferred to slice 2 (slot + #114 required)
 
-- `NutritionLog` migration: 3 nullable `Double`/`Float` macro cols +
-  derived `calories` (never entered), keyed (workspace, client, date)
-  per DailyEntry conventions — drafted, pending slot.
+## P498 — slot still held (slice 2 blocked)
+
+- **Slot holder:** #158 `beta/auth-rotate` — `db/AGENTS.md` owner-decided
+  merge order (#162 then #158) + `PR-SV5.md` "#158 retains the next
+  schema slot". Verified live 2026-10-28: #158 OPEN, `20261022090000_
+  auth_rotate` absent from `Vari8-Beta` migrations.
+- **Release dependency:** #158 merging, or an explicit owner re-order.
+  Nothing else releases the reservation.
+- **Retained work:** `actuals.ts` + 7 tests (all real behavior);
+  slice-2 plan below ready unchanged once the slot frees.
+
+## Slice 2 (blocked — drafted contract)
+
+`NutritionLog` migration: three independent nullable `Float` columns
+`protein`/`carbohydrate`/`fat`, derived `calories Float?` stored (never
+entered), key `(workspaceId, clientProfileId, entryDate @db.Date)` —
+unique per DailyEntry conventions; `saveNutritionLog` inside the daily-
+entry transaction (`resolveOwnClient` + `withSerializedRetry`, consent
+gate unchanged); coach read `listNutritionLogs(from, to)` under the
+existing staff `checkinsCoachReviews`-style authorization + one audit
+row; mode-switch persistence = no write on plan-mode change (entries
+are independent of the plan-mode flag); foreign-workspace refuses via
+the shared workspace-scope check — unresolved policy: none found;
+authorization reuses existing dailyTracking/coach-review permission.
 - `saveNutritionLog` service + daily-entry save path hook; API routes
   (client write, coach range read `from`/`to` with existing
   `checkinsCoachReviews`-style staff authz + `checkin_submission`-style
@@ -48,11 +69,11 @@
 
 ## Acceptance coverage map
 
-| issue line | slice 1 | slice 2 |
-|---|---|---|
-| nullable independent macros, no kcal field | record shape ✓ | migration |
-| kcal 4/4/9 derived, partial day | ✓ tested | — |
-| zeros → 0 not null | ✓ tested | — |
-| protein-only → 4p, others not-recorded | ✓ tested | — |
-| mode switch keeps entries | patch rule ✓ | integration test |
-| coach date-range read | — | service+route+authz |
+| issue line                                 | slice 1        | slice 2             |
+| ------------------------------------------ | -------------- | ------------------- |
+| nullable independent macros, no kcal field | record shape ✓ | migration           |
+| kcal 4/4/9 derived, partial day            | ✓ tested       | —                   |
+| zeros → 0 not null                         | ✓ tested       | —                   |
+| protein-only → 4p, others not-recorded     | ✓ tested       | —                   |
+| mode switch keeps entries                  | patch rule ✓   | integration test    |
+| coach date-range read                      | —              | service+route+authz |
