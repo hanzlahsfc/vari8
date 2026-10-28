@@ -4,11 +4,23 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 161 modules with exports, 1598 exported symbols.
+Counts: 171 modules with exports, 1700 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
 Imported type names are shown without their `import("...")` prefix.
+
+## `frontend/src/lib/attention.ts`
+
+- `export type AttentionClientLike = { checkInStatus: string; checkIns: { status: string }[]; unreadCount: number; clientTasks: { status: string }[]; trainingFlags: number; }`
+- `export type AttentionSignals = { checkInOverdue: boolean; awaitingFeedbackCount: number; unreadCount: number; openTaskCount: number; overdueTaskCount: number; trainingFlags: number; }`
+- `export type TriageRow = { clientId: string; name: string; reasons: string[]; priority: number; attentionCount: number; }`
+- `export function attentionCount(signals: AttentionSignals): number`
+- `export function attentionPriority(signals: AttentionSignals): number`
+- `export function attentionReasons(signals: AttentionSignals): string[]`
+- `export function attentionSignalsFrom(client: AttentionClientLike): AttentionSignals`
+- `export function buildTriageRows(clients: (AttentionSignals & { clientId: string; name: string })[]): TriageRow[]`
+- `export function needsAttention(signals: AttentionSignals): boolean`
 
 ## `frontend/src/lib/coaching-data.ts`
 
@@ -28,14 +40,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `frontend/src/lib/ethereal-appearance.tsx`
 
-- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
-- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
-- `export type AppearanceMode = "light" | "dark"`
-- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export type { Appearance } from "./workspace-appearance"`
+- `export type { AppearanceDensity } from "./workspace-appearance"`
+- `export type { AppearanceFont } from "./workspace-appearance"`
+- `export type { AppearanceMode } from "./workspace-appearance"`
+- `export function AppearanceProvider({ children, workspace, }: { children: ReactNode; workspace?: WorkspaceAppearance | null; })`
+- `export type AppearanceThemeInput = { mode: AppearanceMode; accent: string; font: AppearanceFont; density?: Appearance["density"]; }`
+- `export type { WorkspaceAppearance } from "./workspace-appearance"`
 - `export const defaultAppearance: Appearance`
 - `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
-- `export function normalizeHex(value: string): string | null`
-- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export { normalizeHex } from "./workspace-appearance"`
+- `export function themeVariables(appearance: AppearanceThemeInput): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
 
 ## `frontend/src/lib/reduced-motion.ts`
@@ -54,6 +69,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `frontend/src/lib/workspace-appearance.ts`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; density: AppearanceDensity; logoMediaId: string | null; }`
+- `export type AppearanceDensity = "comfortable" | "compact"`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export type WorkspaceAppearance = { mode?: AppearanceMode; accent?: string; font?: AppearanceFont; density?: AppearanceDensity; logoMediaId?: string; }`
+- `export type WorkspaceAppearanceRow = { appearanceMode: unknown; appearanceAccent: unknown; appearanceFont: unknown; appearanceDensity: unknown; logoMediaId: unknown; }`
+- `export function mergeWorkspaceAppearance(local: Appearance, workspace?: WorkspaceAppearance | null): Appearance`
+- `export function normalizeHex(value: string): string | null`
+- `export function toWorkspaceAppearance(row: WorkspaceAppearanceRow): WorkspaceAppearance`
 
 ## `lib/activity-targets/boundary.ts`
 
@@ -244,6 +271,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
 - `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
 
+## `lib/canvas/attention.ts`
+
+- `export type AttentionClientLike = { checkInStatus: string; checkIns: { status: string }[]; unreadCount: number; clientTasks: { status: string }[]; trainingFlags: number; }`
+- `export type AttentionSignals = { checkInOverdue: boolean; awaitingFeedbackCount: number; unreadCount: number; openTaskCount: number; overdueTaskCount: number; trainingFlags: number; }`
+- `export type TriageRow = { clientId: string; name: string; reasons: string[]; priority: number; attentionCount: number; }`
+- `export function attentionCount(signals: AttentionSignals): number`
+- `export function attentionPriority(signals: AttentionSignals): number`
+- `export function attentionReasons(signals: AttentionSignals): string[]`
+- `export function attentionSignalsFrom(client: AttentionClientLike): AttentionSignals`
+- `export function buildTriageRows(clients: (AttentionSignals & { clientId: string; name: string })[]): TriageRow[]`
+- `export function needsAttention(signals: AttentionSignals): boolean`
+
 ## `lib/canvas/coaching-data.ts`
 
 - `export type Client = (typeof seed.clients)[number]`
@@ -262,14 +301,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/canvas/ethereal-appearance.tsx`
 
-- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
-- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
-- `export type AppearanceMode = "light" | "dark"`
-- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export type { Appearance } from "./workspace-appearance"`
+- `export type { AppearanceDensity } from "./workspace-appearance"`
+- `export type { AppearanceFont } from "./workspace-appearance"`
+- `export type { AppearanceMode } from "./workspace-appearance"`
+- `export function AppearanceProvider({ children, workspace, }: { children: ReactNode; workspace?: WorkspaceAppearance | null; })`
+- `export type AppearanceThemeInput = { mode: AppearanceMode; accent: string; font: AppearanceFont; density?: Appearance["density"]; }`
+- `export type { WorkspaceAppearance } from "./workspace-appearance"`
 - `export const defaultAppearance: Appearance`
 - `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
-- `export function normalizeHex(value: string): string | null`
-- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export { normalizeHex } from "./workspace-appearance"`
+- `export function themeVariables(appearance: AppearanceThemeInput): CSSProperties`
 - `export function useAppearance(): AppearanceContextValue`
 
 ## `lib/canvas/reduced-motion.ts`
@@ -288,6 +330,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function contrastRatio(first: string, second: string): number`
 - `export function normalizeAccent(value: string): string | null`
 - `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
+## `lib/canvas/workspace-appearance.ts`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; density: AppearanceDensity; logoMediaId: string | null; }`
+- `export type AppearanceDensity = "comfortable" | "compact"`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export type WorkspaceAppearance = { mode?: AppearanceMode; accent?: string; font?: AppearanceFont; density?: AppearanceDensity; logoMediaId?: string; }`
+- `export type WorkspaceAppearanceRow = { appearanceMode: unknown; appearanceAccent: unknown; appearanceFont: unknown; appearanceDensity: unknown; logoMediaId: unknown; }`
+- `export function mergeWorkspaceAppearance(local: Appearance, workspace?: WorkspaceAppearance | null): Appearance`
+- `export function normalizeHex(value: string): string | null`
+- `export function toWorkspaceAppearance(row: WorkspaceAppearanceRow): WorkspaceAppearance`
 
 ## `lib/catalog.ts`
 
@@ -517,6 +571,16 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInTrackerContextResult = StaffDailyEntryDetail`
 - `export async function readCheckInReviewTrackerContext(session: SessionLike, input: CheckInTrackerContextInput, deps: CheckInTrackerContextDeps = {}): Promise<StaffDailyEntryDetail>`
 - `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
+
+## `lib/coach-tasks/service.ts`
+
+- `export type CoachTaskDeps = { db?: PrismaLike }`
+- `export class CoachTaskError extends Error (1 members)`
+- `export type CoachTaskView = { id: string; clientProfileId: string | null; title: string; completedAt: string | null; completedByMemberId: string | null; createdByMemberId: string; revision: number; }`
+- `export async function createCoachTask(session: SessionLike, input: { workspaceId: string; clientProfileId?: unknown; title: unknown; }, deps: CoachTaskDeps = {}): Promise<{ coachTask: CoachTaskView }>`
+- `export async function deleteCoachTask(session: SessionLike, input: { workspaceId: string; coachTaskId: string; expectedRevision?: unknown; }, deps: CoachTaskDeps = {}): Promise<{ coachTask: CoachTa...`
+- `export async function listCoachTasks(session: SessionLike, input: { workspaceId: string; clientProfileId?: string }, deps: CoachTaskDeps = {}): Promise<{ coachTasks: CoachTaskView[] }>`
+- `export async function setCoachTaskCompleted(session: SessionLike, input: { workspaceId: string; coachTaskId: string; completed: unknown; expectedRevision?: unknown; }, deps: CoachTaskDeps = {}): Pr...`
 
 ## `lib/coaching/client-setup-boundary.ts`
 
@@ -833,10 +897,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
 - `export type StaffDailyEntryListItem = { entryDate: string; revisionCount: number; currentRevisionSeq: number | null; }`
 - `export type StaffDailyEntryListResult = | { state: "ready"; clientName: string; items: StaffDailyEntryListItem[]; nextCursor: string | null; } | { state: "consent_missing" }`
+- `export type StaffTrackerCellNote = StaffTrackerNote & { parameterKey: string; }`
+- `export type StaffTrackerNote = { entryDate: string; body: string; }`
+- `export type StaffTrackerValueRow = { parameterKey: string; kind: string; display: string; }`
+- `export type StaffTrackerValuesResult = | { state: "consent_missing" } | { state: "ready"; clientName: string; entries: { entryDate: string; values: StaffTrackerValueRow[] }[]; cellNotes: StaffTrack...`
 - `export async function advisoryLock(tx: Prisma.TransactionClient, key: string): Promise<void>`
 - `export async function checkRequiredConsent(tx: PrismaLike, clientProfileId: string, registry: ConsentPolicyRegistry, forUpdate: boolean): Promise<void>`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
+- `export async function listStaffTrackerValues(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DailyEntryDeps = {}): Promise<StaffTrackerValuesResult>`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
 - `export async function lockRow(tx: Prisma.TransactionClient, sql: string, ...params: string[]): Promise<void>`
 - `export function parseDeclaredDate(raw: unknown): string`
@@ -846,6 +915,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function resolveOwnClient(tx: Prisma.TransactionClient, workspaceId: string, userId: string): Promise<{ id: string } | null>`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
 - `export async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T>`
+- `export async function writeStaffTrackerNote(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string; parameterKey?: string | null; body: string | null; }, dep...`
 
 ## `lib/daily-entry/validate.ts`
 
@@ -949,6 +1019,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const widgetSummaryOptions = (kind: WidgetKind, source: string) =>`
 - `export const widgetTargetAvailable = (kind: WidgetKind) =>`
 
+## `lib/dashboard/first-run.ts`
+
+- `export const FIRST_RUN_TOTAL = 3`
+- `export type FirstRunChecklist = FirstRunFlags & { completed: number; total: number; visible: boolean; }`
+- `export type FirstRunFlags = { hasClient: boolean; hasForm: boolean; hasPlan: boolean; }`
+- `export function deriveFirstRunChecklist(flags: FirstRunFlags): FirstRunChecklist`
+- `export async function readFirstRunChecklist(session: SessionLike, input: { workspaceId: string }, client: PrismaClient | PrismaLike = prisma): Promise<FirstRunChecklist>`
+- `export async function readFirstRunFlags(session: SessionLike, input: { workspaceId: string }, client: PrismaLike = prisma): Promise<FirstRunFlags>`
+
 ## `lib/dashboard/gate.ts`
 
 - `export type DashboardEnv = RuntimeEnv & { ENABLE_CLIENT_DASHBOARD?: string; }`
@@ -966,13 +1045,26 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/dashboard/service.ts`
 
+- `export type { AttentionTriageDeps } from "./triage"`
+- `export type { AttentionTriageItem } from "./triage"`
+- `export type { AttentionTriageResult } from "./triage"`
 - `export type DashboardDeps = { db?: PrismaLike }`
 - `export class DashboardError extends Error (1 members)`
 - `export type StaffDashboardLayout = { layoutId: string; revision: number; configVersion: number; config: DashboardConfig; updatedByMemberId: string | null; updatedAt: string; }`
+- `export type { TriagePrismaLike } from "./triage"`
 - `export type UpdateDashboardInput = { workspaceId: string; clientProfileId: string; config: unknown; expectedRevision: number; }`
+- `export { listWorkspaceAttentionTriage } from "./triage"`
 - `export async function readOwnDashboardLayout(session: SessionLike, input: { workspaceId: string }, deps: DashboardDeps = {}): Promise<{ layout: Omit< StaffDashboardLayout, "updatedByMemberId" | "co...`
 - `export async function readStaffDashboardLayout(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DashboardDeps = {}): Promise<{ layout: StaffDashboardLayout | nul...`
 - `export async function updateClientDashboardLayout(session: SessionLike, input: UpdateDashboardInput, deps: DashboardDeps = {}): Promise<{ revision: number; config: DashboardConfig }>`
+
+## `lib/dashboard/triage.ts`
+
+- `export type AttentionTriageDeps = { db?: TriagePrismaLike; now?: Date; }`
+- `export type AttentionTriageItem = { clientProfileId: string; name: string; } & Omit<TriageRow, "clientId" | "name">`
+- `export type AttentionTriageResult = { items: AttentionTriageItem[] }`
+- `export type TriagePrismaLike = Pick< PrismaClient, "clientProfile" | "checkInInstance" | "clientTask" | "message" >`
+- `export async function listWorkspaceAttentionTriage(viewer: ApiViewer, workspace: ApiWorkspaceContext, deps: AttentionTriageDeps = {}): Promise<AttentionTriageResult>`
 
 ## `lib/db-types/client-plans.ts`
 
@@ -1111,7 +1203,12 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/email.ts`
 
+- `export const EMAIL_NOTIFICATION_KEYS = ["email.messages"] as const`
+- `export type EmailNotificationKey = (typeof EMAIL_NOTIFICATION_KEYS)[number]`
+- `export type NotificationDeps = { db?: NotifyPrisma; send?: (message: MailMessage) => Promise<void>; }`
 - `export function normalizeEmail(value: unknown): string`
+- `export async function notifyStaffOfClientMessage(input: { workspaceId: string; clientProfileId: string }, deps: NotificationDeps = {}): Promise<number>`
+- `export async function sendMemberNotificationMail(input: { workspaceId: string; memberId: string; key: EmailNotificationKey; message: MailMessage; }, deps: NotificationDeps = {}): Promise<"sent" | "...`
 
 ## `lib/exercise/import.ts`
 
@@ -1446,11 +1543,18 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/messages/service.ts`
 
-- `export type MessageDeps = { db?: PrismaLike }`
+- `export type MessageDeps = { db?: PrismaLike; notifyClientMessage?: (input: { workspaceId: string; clientProfileId: string; }) => Promise<unknown>; }`
 - `export class MessageError extends Error (1 members)`
 - `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export type StaffConversationView = { clientProfileId: string; clientName: string; lastMessageAt: string | null; lastMessagePreview: string | null; unreadCount: number; hasPriority: boolean; }`
+- `export type StaffMessageView = MessageView & { read: boolean; priority: boolean; links: unknown; }`
+- `export async function getStaffThread(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ clientProfileId: string; messages: StaffMessag...`
 - `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function listStaffConversations(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ conversations: StaffConversationView[] }>`
+- `export async function markStaffThreadRead(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
+- `export async function saveStaffDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown }, deps: MessageDeps = {}): Promise<{ draft: { body: string; revision...`
 - `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
+- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; }, deps: MessageDeps = {}): Promise<{ m...`
 
 ## `lib/nutrition/foods.ts`
 
@@ -1480,6 +1584,13 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function iifymTargetNutrients(targets: MealTargets): Nutrients`
 - `export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares`
 - `export function targetNumber(target: TargetValue | undefined): number`
+
+## `lib/nutrition/saved-meals.ts`
+
+- `export async function assignSavedMealToClient(workspace: ApiWorkspaceContext, savedMealId: string, clientProfileId: string)`
+- `export async function listAssignedMeals(viewer: ApiViewer, workspace: ApiWorkspaceContext, requestedClientProfileId?: string)`
+- `export async function listSavedMeals(workspace: ApiWorkspaceContext)`
+- `export async function upsertSavedMeal(workspace: ApiWorkspaceContext, savedMealId: string, input: { name: string; meal: SavedMealPayload; sortOrder?: number })`
 
 ## `lib/nutrition/search.ts`
 
@@ -2046,7 +2157,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type InvitationStatus = "active" | "consumed" | "revoked" | "expired"`
 - `export type InvitationSummary = { id: string; targetEmail: string; intendedRole: InvitableRole; expiresAt: Date; status: InvitationStatus; }`
 - `export async function acceptWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
-- `export function assertInvitationOrchestrationExternallyExposable(): never`
 - `export async function createWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; targetEmail: unknown; intendedRole: unknown }, client: PrismaClient = prisma): Promise<CreatedInv...`
 - `export function invitationResource(intendedRole: InvitableRole): "membersInvitations" | "clientInvitations"`
 - `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError)`
@@ -2062,6 +2172,28 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
 - `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
+
+## `lib/workspace/invite-links.ts`
+
+- `export const INVITE_LOOKUP_RULE: RateLimitRule`
+- `export type InviteLookupOutcome = typeof NOT_FOUND | { status: 200; body: { name: string } }`
+- `export type IssueInviteLinkResult = { ok: true; link: string; expiresAt: Date } | { ok: false; message: string }`
+- `export async function issueClientInviteLink(session: SessionLike, input: { workspaceId: unknown; targetEmail: unknown }, client: PrismaClient = prisma): Promise<IssueInviteLinkResult>`
+- `export async function lookupInviteDisplayName(rawToken: unknown, client: PrismaClient = prisma): Promise<{ name: string } | null>`
+- `export async function lookupInviteForRoute(input: { rawToken: unknown; headers: Headers }, client: PrismaClient = prisma): Promise<InviteLookupOutcome>`
+
+## `lib/workspace/preferences.ts`
+
+- `export const PREFERENCE_KEYS = [ "attention.unread_messages", "attention.priority_messages", "email.messages", ] as const`
+- `export type PreferenceDeps = { db?: WritePrisma }`
+- `export class PreferenceError extends Error (1 members)`
+- `export type PreferenceItem = { key: PreferenceKey; enabled: boolean }`
+- `export type PreferenceKey = (typeof PREFERENCE_KEYS)[number]`
+- `export type PreferenceReadDeps = { db?: ReadPrisma }`
+- `export function isPreferenceKey(value: unknown): value is PreferenceKey`
+- `export async function listMemberPreferences(workspaceId: string, memberId: string, deps: PreferenceReadDeps = {}): Promise<PreferenceItem[]>`
+- `export async function memberPreferenceEnabled(workspaceId: string, memberId: string, key: PreferenceKey, deps: PreferenceReadDeps = {}): Promise<boolean>`
+- `export async function updateMemberPreferences(workspaceId: string, memberId: string, updates: readonly { key: unknown; enabled: unknown }[], deps: PreferenceDeps = {}): Promise<PreferenceItem[]>`
 
 ## `lib/workspace/retention.ts`
 

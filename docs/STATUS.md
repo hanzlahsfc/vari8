@@ -1,3 +1,39 @@
+## 2026-10-27 - w2-c4 merge repair: preview trunk ad257ba union-merged
+
+- Preview rebuild tick 217 skipped verified c4 tip `d387260` because
+  merging into preview trunk `ad257ba` conflicted on six paths.
+  Repaired here via `git merge --no-ff --no-commit ad257ba` with union
+  keep-both resolutions; nothing from either side deleted.
+- `app/(canvas)/me/page.tsx`: trunk's `Promise.all` expanded to keep
+  all three trunk reads (`supplementPlan.count`, active
+  `activityTarget.count`, `readClientWorkspaceAppearance`) plus c4's
+  `activityTarget.findMany`, `dailyEntry.findMany` and own-bound
+  `readOwnMealPlan`/`readOwnIifymPlan` reads. `AppearanceProvider`
+  mount, client-session appearance wiring and `clientPlansPresence`
+  kept; c4's `versionsFromWire` activity targets and
+  `draftWireToMealPlan`/`iifymDraftWireToPlan` active-plan binding
+  kept.
+- `components/canvas/data/notes.ts`: comment hunk only; both sides'
+  doc comments and all exports/call paths retained.
+- `docs/STATUS.md`: newest-first union, zero deletions. The
+  `2026-10-26 - Wave 2 T1` preview entry and every c4-line entry all
+  present. `docs/index/*` regenerated with `npm run index`, never
+  hand-merged.
+- Merge follow-ups: deduped a doubled `useReducedMotion` import in
+  `components/canvas/ethereal/clients/client-roster.tsx` (both sides
+  added the identical import); `npx prisma generate` to sync the
+  client with the merged schema (`MemberPreference` et al.);
+  `tests/unit/system-index.test.ts` literal updated for trunk's
+  `/coach/states` route (the literal was stale on trunk);
+  `npx biome check --write` on three frontend files for inherited
+  import-order/format findings (coach/settings page, frontend
+  client-roster, settings-surface).
+- Gates on the merged tree: `npm run typecheck`, `npm run lint` (0
+  errors, 96 inherited warnings), `npx vitest run` (131 files / 1505
+  tests), `npm run index`, `npm run index:check`, `npm run build`,
+  `cd frontend && npm run lint`, all exit 0. Merge-authored lines
+  carry zero U+2013/U+2014 dashes.
+
 ## 2026-10-27 - w2-c4: client plans views (roadmap, nutrition, supplements, targets)
 
 - Branch `w2/c4` off `788714b` with `w2/a1` `269fd04` then `w2/a2`
@@ -216,6 +252,43 @@ false`, tenant-coherent FKs and indexes.
   supplements), training draft rename persists after reload.
   Role matrix: in-workspace 200 / foreign 403 / unauth 401.
   Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
+
+## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
+
+- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
+  keyed `(workspaceId, memberId, key)` with closed key registry
+  (`attention.unread_messages`, `attention.priority_messages`,
+  `email.messages`; default enabled when no row). Migration dir
+  `20261027000000_member_preferences` with `down.sql`.
+- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
+  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
+  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
+  pref check at send time, failures logged as `notification_delivery_failed`,
+  never roll back the message). `sendOwnMessage` notifies post-commit only on
+  a newly created row (idempotent replays do not re-mail).
+- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
+  `defineApiV1Route`; member-scoped to the caller's resolved membership,
+  non-member/denied 403.
+- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
+  (profile + preference groups). Component authored first in
+  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
+  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
+  demo mount at `frontend/src/app/coach/settings` (localStorage).
+- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
+  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
+  check on changed files 0), `test` 1 in full-parallel run
+  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
+  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
+  `index`/`index:check` 0, settings integration 5/5 on real PG.
+- Browser pass on prod build (`next start` http:4200 + tls-proxy
+  https:4298): coach real login, settings surface, `email.messages` off →
+  second session persists off, client message mails owner but not the
+  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
+  1440/390 + mailbox.jsonl in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
+  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
+- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
+  count 0 saved to `pg_database-absent.txt`.
 
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 

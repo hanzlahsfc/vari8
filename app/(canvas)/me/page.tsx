@@ -13,10 +13,12 @@ import {
   type ActivityTargetVersionWire,
   versionsFromWire,
 } from "@/components/canvas/data/activity-targets";
+import { AppearanceProvider } from "@/lib/canvas/ethereal-appearance";
 import { prisma } from "@/lib/db";
 import { readOwnIifymPlan } from "@/lib/iifym/service";
 import { readOwnMealPlan } from "@/lib/mealplan/service";
 
+import { readClientWorkspaceAppearance } from "./appearance";
 import {
   clientAssignmentFromConfig,
   clientConfigFromDefinition,
@@ -74,6 +76,7 @@ export default async function MePage() {
   const [
     supplementPlanCount,
     activityTargetRows,
+    activityTargetCount,
     workspaceAppearance,
     entryRows,
     ownMealPlan,
@@ -86,10 +89,10 @@ export default async function MePage() {
       where: { workspaceId: workspace.id, clientProfileId },
       orderBy: [{ effectiveFrom: "asc" }, { id: "asc" }],
     }),
-    prisma.workspace.findUnique({
-      where: { id: workspace.id },
-      select: { appearanceMode: true, appearanceAccent: true },
+    prisma.activityTarget.count({
+      where: { workspaceId: workspace.id, clientProfileId, stoppedAt: null },
     }),
+    readClientWorkspaceAppearance(workspace.id),
     prisma.dailyEntry.findMany({
       where: { workspaceId: workspace.id, clientProfileId },
       orderBy: { entryDate: "asc" },
@@ -200,7 +203,7 @@ export default async function MePage() {
 
   const presence = clientPlansPresence({
     hasSupplementPlan: supplementPlanCount > 0,
-    activityTargetCount: activityTargets.length,
+    activityTargetCount,
   });
 
   const client: CoachClient = {
@@ -246,24 +249,20 @@ export default async function MePage() {
   } as unknown as CoachClient;
 
   return (
-    <Suspense>
-      <ClientRoute
-        own={{ workspaceId: workspace.id, clientProfileId }}
-        session={{
-          clientName: viewer.name,
-          clientInitials: viewer.initials,
-          workspaceName: workspace.name,
-          configuration,
-          client,
-          appearance: {
-            mode:
-              workspaceAppearance?.appearanceMode === "LIGHT"
-                ? "light"
-                : "dark",
-            accent: workspaceAppearance?.appearanceAccent ?? undefined,
-          },
-        }}
-      />
-    </Suspense>
+    <AppearanceProvider workspace={workspaceAppearance}>
+      <Suspense>
+        <ClientRoute
+          own={{ workspaceId: workspace.id, clientProfileId }}
+          session={{
+            clientName: viewer.name,
+            clientInitials: viewer.initials,
+            workspaceName: workspace.name,
+            configuration,
+            client,
+            appearance: workspaceAppearance ?? undefined,
+          }}
+        />
+      </Suspense>
+    </AppearanceProvider>
   );
 }

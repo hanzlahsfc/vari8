@@ -101,7 +101,9 @@ enrichers.
 | `contestDate` | Show/goal date | Athlete profile countdown, roadmap | core |
 | `timelineEvents` | Coach-added week tags (deload, diet break, refeed) | Timeline tab, athlete profile timeline | core |
 | `schedules` | Weekly recurring check-in schedule (`effective`, `weekdays`) | Check-in calendar (`eventsBetween`), overdue logic | core |
-| `entries` / `tracking` | Daily metric log (`tracking.entries` falls back to `entries`; `tracking.text` holds per-field notes) | Tracker view, weight/metric charts, check-in summaries | core |
+| `entries` / `tracking` | Daily metric log (`tracking.entries` falls back to `entries`; `tracking.text` holds per-field notes: `${date}:${fieldId}` = client note, `${date}:coach-note` = coach day note, `${date}:note:${fieldId}` = per-cell coach note) | Tracker view, weight/metric charts, check-in summaries | core |
+| `assignment` variant `fields[].decimals`/`summary` | Optional `FieldConfig` overrides — `decimals?: 0\|1\|2` for numeric display, `summary?: "avg"\|"sum"\|"count"\|"none"` for the week band | Tracker tab column formatting + week summaries, template editor settings | core when present |
+| *(none — session state)* | Tracker tab expanded/collapsed weeks, pinned groups | Coach Tracker tab | browser-only UI state (not persisted) |
 | `habits`, `retiredHabits`, `habitLog` | Habit definitions + per-day completion dates | Habits tab, dashboard habit widget | core |
 | `clientTasks` | Athlete-visible to-dos (`dueDate`, `status`) | Client app tasks, coach client profile | core |
 | `coachTasks` | Legacy coach-side per-client tasks (empty in this snapshot) | — | legacy/optional |

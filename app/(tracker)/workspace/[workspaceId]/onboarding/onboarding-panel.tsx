@@ -257,10 +257,11 @@ function SubmittedView({
         Submitted on {submittedAt.slice(0, 10)} — this form was already
         submitted. Your original answers were kept and cannot be changed.
       </p>
-      <ul data-testid="onboarding-submitted-answers">
+      <ul className="onb-answers" data-testid="onboarding-submitted-answers">
         {answers.map((a) => (
-          <li key={a.fieldId}>
-            <strong>{a.label}</strong>: {a.display}
+          <li className="onb-answer" key={a.fieldId}>
+            <span className="onb-answer__label">{a.label}</span>
+            <span className="onb-answer__value">{a.display}</span>
           </li>
         ))}
       </ul>
@@ -372,7 +373,7 @@ function FillForm({
           Review your answers. Submitting is <strong>irreversible</strong>: you
           cannot change, resubmit, or delete them afterwards.
         </p>
-        <ul>
+        <ul className="onb-answers">
           {detail.fields
             .filter((f) => !isEmpty(f, values[f.fieldId]))
             .map((f) => {
@@ -390,8 +391,9 @@ function FillForm({
                         .join(", ")
                     : String(v);
               return (
-                <li key={f.fieldId}>
-                  <strong>{f.label}</strong>: {display}
+                <li className="onb-answer" key={f.fieldId}>
+                  <span className="onb-answer__label">{f.label}</span>
+                  <span className="onb-answer__value">{display}</span>
                 </li>
               );
             })}

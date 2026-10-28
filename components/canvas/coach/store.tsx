@@ -12,6 +12,7 @@ import {
   useState,
 } from "react";
 import { readCoachState, writeCoachState } from "../data";
+import { loadCheckins, mergeCheckinLoad } from "../data/checkins";
 import { ApiClientError } from "../data/http";
 import {
   draftWireToMealPlan,
@@ -27,6 +28,10 @@ import {
   saveStaffIifymDraft,
   saveStaffMealPlanDraft,
 } from "../data/nutrition";
+import {
+  loadPhysiquePhotos,
+  type PhysiqueColumn,
+} from "../data/progress-photos";
 import {
   canvasTrainingToDraftWire,
   draftWireToCanvasOverrides,
@@ -65,7 +70,20 @@ import {
   type TrainingPlan,
 } from "./plans/types";
 import type { MealPlan } from "../ethereal/mealplan/model";
-import { localToday } from "./targets/model";
+import {
+  deleteStaffTrackerNote,
+  fetchStaffTrackerValues,
+  mergeStaffTracking,
+  putStaffTrackerNote,
+  staffNoteKeyToWire,
+  staffNoteText,
+  staffTrackerToTracking,
+} from "../data/tracker";
+import {
+  fetchStaffTrainingLogs,
+  staffLogToSessionLog,
+} from "../data/training-logs";
+import { addLocalDays, localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
 
 /* -------------------------------------------------------------------------
@@ -515,6 +533,8 @@ type Store = {
   workspaceId?: string;
   /** PR-MEDIA: canvas client name -> media anchor clientProfileId (roster). */
   clientProfileIdFor: (clientName: string) => Promise<string | null>;
+  /** W2-A3: the client's backend progress photos as compare columns. */
+  physiquePhotosFor: (clientName: string) => Promise<PhysiqueColumn[]>;
 };
 const Context = createContext<Store | null>(null);
 export function useCoach() {
@@ -755,6 +775,16 @@ export function CoachProvider({
     },
     [workspaceId],
   );
+  // W2-A3: compare-column read for the viewed client's progress photos.
+  const physiquePhotosFor = useCallback(
+    async (clientName: string): Promise<PhysiqueColumn[]> => {
+      if (!workspaceId) return [];
+      const clientProfileId = await clientProfileIdFor(clientName);
+      if (!clientProfileId) return [];
+      return loadPhysiquePhotos(workspaceId, clientProfileId);
+    },
+    [workspaceId, clientProfileIdFor],
+  );
   // W2-A2: latest-state ref so the async plan effects read the current
   // store without re-firing on every state change.
   const stateRef = useRef(state);
@@ -847,6 +877,58 @@ export function CoachProvider({
       cancelled = true;
     };
   }, [hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+  // W2-A3: viewed-client check-in hydration after the seed + local merge
+  // ran. The profile Check-ins tab and the Overview Check-in card both
+  // render `state.submissions`/`client.schedules`; this is the load that
+  // makes them backend rows instead of local seeds. The merge names every
+  // other client as "failed" so their rows survive the patch untouched.
+  const checkinsHydrated = useRef(new Set<string>());
+  useEffect(() => {
+    if (!hydrated || !workspaceId || demo || !route.client) return;
+    const clientId = route.client;
+    if (checkinsHydrated.current.has(clientId)) return;
+    let cancelled = false;
+    void (async () => {
+      const client = stateRef.current.clients.find((c) => c.id === clientId);
+      if (!client) return;
+      try {
+        const today = localToday();
+        const loaded = await loadCheckins({
+          workspaceId,
+          // The instances read is bounded at 95 days; this window covers
+          // the Overview card (-21/+35) plus margin for the tab history.
+          from: addLocalDays(today, -42),
+          to: addLocalDays(today, 42),
+          clients: [{ id: client.id, name: client.name }],
+          profileIdFor: clientProfileIdFor,
+        });
+        if (cancelled || loaded.failed.includes(client.name)) return;
+        checkinsHydrated.current.add(clientId);
+        setState((s) => {
+          const merged = mergeCheckinLoad(
+            { extras: s.extras, submissions: s.submissions },
+            { extras: loaded.extras, submissions: loaded.submissions },
+            s.clients.filter((c) => c.id !== clientId).map((c) => c.id),
+          );
+          return {
+            ...s,
+            extras: merged.extras,
+            submissions: merged.submissions,
+            clients: s.clients.map((c) =>
+              c.id === clientId && loaded.schedules[c.id]
+                ? { ...c, schedules: loaded.schedules[c.id] }
+                : c,
+            ),
+          };
+        });
+      } catch {
+        // Backend unreachable or denied: the seeded state stays.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
   // Debounced draft sync: PUT the viewed client's drafts on change and
   // publish when the lifecycle marks the synced draft active.
   useEffect(() => {
@@ -875,6 +957,159 @@ export function CoachProvider({
     }, 800);
     return () => clearTimeout(timer);
   }, [state, hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
+
+  /* ------------------------------------------------------------------
+   * W2-FE2 tracker hydration + note sync for the viewed client.
+   *
+   * Signed-in (non-demo) path: the Tracker tab's values, texts and coach
+   * notes come from the server, not the local draft slice. One effect
+   * hydrates `client.tracking` and the client's session logs; it runs
+   * only while the viewed client's route is on the Tracker tab so the
+   * profile overview and onboarding surfaces never fetch tracker data.
+   * A second debounced effect diffs the `note:*`/`coach-note` text keys
+   * against the last synced baseline and PUTs/DELETEs the tracker-notes
+   * route once hydration has armed it.
+   * ------------------------------------------------------------------ */
+  const trackingHydrated = useRef(new Set<string>());
+  const trackingNotesSynced = useRef(new Map<string, Record<string, string>>());
+  const trackingParamKeys = useRef(new Map<string, Record<string, string>>());
+  const noteSyncChain = useRef(new Map<string, Promise<void>>());
+  useEffect(() => {
+    if (
+      !hydrated ||
+      !workspaceId ||
+      demo ||
+      !route.client ||
+      route.tab !== "Tracker"
+    )
+      return;
+    const clientId = route.client;
+    if (trackingHydrated.current.has(clientId)) return;
+    let cancelled = false;
+    void (async () => {
+      const client = stateRef.current.clients.find((c) => c.id === clientId);
+      if (!client) return;
+      try {
+        const clientProfileId = await clientProfileIdFor(client.name);
+        if (!clientProfileId || cancelled) return;
+        // Notes the user edits while the fetch is in flight must survive the
+        // merge; the delta over this snapshot is re-applied after it.
+        const beforeNotes = staffNoteText(client.tracking?.text ?? {});
+        const [values, logs] = await Promise.all([
+          fetchStaffTrackerValues(workspaceId, clientProfileId),
+          fetchStaffTrainingLogs(workspaceId, clientProfileId),
+        ]);
+        if (cancelled) return;
+        const hydration = staffTrackerToTracking(values);
+        // Arm sync only when a server baseline exists; a non-ready state
+        // (consent_missing) must not push local notes with no baseline.
+        if (hydration) {
+          trackingHydrated.current.add(clientId);
+          trackingParamKeys.current.set(clientId, hydration.parameterKeys);
+          trackingNotesSynced.current.set(clientId, hydration.noteText);
+        }
+        const remoteLogs = logs.logs
+          .filter((log) => log.status !== "SKIPPED")
+          .map((log) => staffLogToSessionLog(log, clientId));
+        const remoteLogIds = new Set(remoteLogs.map((log) => log.id));
+        setState((current) => ({
+          ...current,
+          clients: current.clients.map((c) => {
+            if (c.id !== clientId || !hydration) return c;
+            const merged = mergeStaffTracking(c.tracking, hydration);
+            const now = staffNoteText(c.tracking?.text ?? {});
+            for (const [key, body] of Object.entries(now))
+              if (beforeNotes[key] !== body) merged.text[key] = body;
+            for (const key of Object.keys(beforeNotes))
+              if (!(key in now)) delete merged.text[key];
+            return { ...c, tracking: merged };
+          }),
+          trainingLogs: [
+            ...(current.trainingLogs ?? []).filter(
+              (log) => !(log.clientId === clientId && remoteLogIds.has(log.id)),
+            ),
+            ...remoteLogs,
+          ],
+        }));
+      } catch {
+        trackingHydrated.current.delete(clientId);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    hydrated,
+    workspaceId,
+    demo,
+    route.client,
+    route.tab,
+    clientProfileIdFor,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated || !workspaceId || demo || !route.client) return;
+    const clientId = route.client;
+    const client = state.clients.find((c) => c.id === clientId);
+    if (!client || !trackingHydrated.current.has(clientId)) return;
+    const timer = setTimeout(() => {
+      // Serialize per client: each pass diffs the newest baseline after the
+      // previous run resolves, so overlapping debounces cannot reorder two
+      // writes to the same key.
+      const chain = noteSyncChain.current.get(clientId) ?? Promise.resolve();
+      const next = chain.then(async () => {
+        try {
+          const clientProfileId = await clientProfileIdFor(client.name);
+          if (!clientProfileId) return;
+          const baseline = trackingNotesSynced.current.get(clientId) ?? {};
+          const current = staffNoteText(
+            stateRef.current.clients.find((c) => c.id === clientId)?.tracking
+              ?.text ?? {},
+          );
+          const parameterKeys =
+            trackingParamKeys.current.get(clientId) ?? {};
+          // The baseline advances only past keys whose write resolved, so a
+          // failed note retries on the next pass instead of being dropped.
+          const synced = { ...baseline };
+          try {
+            for (const [key, body] of Object.entries(current)) {
+              if (synced[key] === body) continue;
+              const wire = staffNoteKeyToWire(key, parameterKeys);
+              if (!wire) continue;
+              await putStaffTrackerNote(workspaceId, clientProfileId, {
+                ...wire,
+                body,
+              });
+              synced[key] = body;
+            }
+            for (const key of Object.keys(baseline)) {
+              if (key in current) continue;
+              const wire = staffNoteKeyToWire(key, parameterKeys);
+              if (!wire) continue;
+              await deleteStaffTrackerNote(
+                workspaceId,
+                clientProfileId,
+                wire,
+              );
+              delete synced[key];
+            }
+          } catch {
+            trackingNotesSynced.current.set(clientId, synced);
+            setNotice({ text: "Tracker note could not be saved." });
+            return;
+          }
+          trackingNotesSynced.current.set(clientId, synced);
+        } catch {
+          setNotice({ text: "Tracker note could not be saved." });
+        }
+      });
+      noteSyncChain.current.set(
+        clientId,
+        next.catch(() => {}),
+      );
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [state, hydrated, workspaceId, demo, route.client, clientProfileIdFor]);
   return (
     <Context.Provider
       value={{
@@ -892,6 +1127,7 @@ export function CoachProvider({
         attach,
         workspaceId,
         clientProfileIdFor,
+        physiquePhotosFor,
       }}
     >
       {children}

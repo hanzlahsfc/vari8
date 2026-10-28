@@ -4,9 +4,10 @@
 // ruling O13 keeps their visibility split on the record.
 //
 // W2-A1: the workspace coachNotes list also syncs through /api/v1 via the
-// functions below. The slice still persists both lists so the localStorage
-// seam keeps its full-state round-trip: the local copy is the cache and
-// first paint, the remote reads overwrite it once they land.
+// functions below. W2-A4: the coach to-dos sync through the coach-tasks
+// routes. The slice still persists both lists so the localStorage seam keeps
+// its full-state round-trip: the local copy is the cache and first paint,
+// the remote reads overwrite it once they land.
 
 import type { CoachState } from "../coach/model";
 import { apiFetch } from "./http";
@@ -57,4 +58,90 @@ export function putWorkspaceCoachNotes(
     `/workspaces/${workspaceId}/notes`,
     { method: "PUT", body: { notes } },
   );
+}
+
+// --- W2-A4 remote coach to-dos (coach-tasks routes) ---
+
+export type CoachTaskView = {
+  id: string;
+  clientProfileId: string | null;
+  title: string;
+  completedAt: string | null;
+  completedByMemberId: string | null;
+  createdByMemberId: string;
+  revision: number;
+};
+
+/** A coach-tasks row as the canvas stores it (state.coachTodos entries). */
+export type CoachTodo = {
+  id: string;
+  title: string;
+  complete: boolean;
+  clientId?: string;
+  revision: number;
+};
+
+export function toCoachTodo(view: CoachTaskView): CoachTodo {
+  return {
+    id: view.id,
+    title: view.title,
+    complete: view.completedAt !== null,
+    clientId: view.clientProfileId ?? undefined,
+    revision: view.revision,
+  };
+}
+
+/**
+ * GET coach-tasks - without a client the workspace-level rows only, with one
+ * that client's rows. Soft-deleted rows never come back.
+ */
+export async function fetchCoachTasks(
+  workspaceId: string,
+  clientProfileId?: string,
+): Promise<CoachTodo[]> {
+  const suffix = clientProfileId
+    ? `?clientProfileId=${encodeURIComponent(clientProfileId)}`
+    : "";
+  const body = await apiFetch<{ coachTasks: CoachTaskView[] }>(
+    `/workspaces/${workspaceId}/coach-tasks${suffix}`,
+  );
+  return body.coachTasks.map(toCoachTodo);
+}
+
+/** POST coach-tasks - one workspace or client to-do. */
+export async function createCoachTask(
+  workspaceId: string,
+  title: string,
+  clientProfileId?: string,
+): Promise<CoachTodo> {
+  const body = await apiFetch<{ coachTask: CoachTaskView }>(
+    `/workspaces/${workspaceId}/coach-tasks`,
+    { method: "POST", body: { title, clientProfileId } },
+  );
+  return toCoachTodo(body.coachTask);
+}
+
+/** PATCH coach-tasks/:id - complete or reopen one to-do. */
+export async function setCoachTaskCompleted(
+  workspaceId: string,
+  coachTaskId: string,
+  completed: boolean,
+): Promise<CoachTodo> {
+  const body = await apiFetch<{ coachTask: CoachTaskView }>(
+    `/workspaces/${workspaceId}/coach-tasks/${encodeURIComponent(coachTaskId)}`,
+    { method: "PATCH", body: { completed } },
+  );
+  return toCoachTodo(body.coachTask);
+}
+
+/** DELETE coach-tasks/:id - soft delete with a seven day restore window. */
+export async function deleteCoachTask(
+  workspaceId: string,
+  coachTaskId: string,
+): Promise<CoachTodo> {
+  const body = await apiFetch<{ coachTask: CoachTaskView }>(
+    `/workspaces/${workspaceId}/coach-tasks/${encodeURIComponent(coachTaskId)}`,
+    { method: "DELETE", body: {} },
+  );
+  return toCoachTodo(body.coachTask);
 }

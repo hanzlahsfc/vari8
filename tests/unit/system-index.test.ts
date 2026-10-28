@@ -136,8 +136,10 @@ describe("system index generator", () => {
     // removes a page route, never by regenerating. 58 = 56 + the card-08
     // staff progress-photos page under clients/[clientProfileId]/photos
     // and the app/workspace/[workspaceId]/clients/[clientProfileId]/macro-targets
-    // coach page landed with card 10 (#175).
-    expect(routes).toContain("Counts: 58 backend pages");
+    // coach page landed with card 10 (#175). 60 = 58 + the T5 page
+    // app/(canvas)/coach/dashboard/page.tsx and the W2-T1
+    // app/workspace/[workspaceId]/settings page.
+    expect(routes).toContain("Counts: 60 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(
@@ -280,10 +282,12 @@ describe("system index generator", () => {
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
       // Imported by the root layout, which wraps /, /client, /coach,
+      // /coach/settings (the W2-T1 settings-surface demo mount),
+      // /coach/states (the W2-T2 states playground),
       // /dev/design-system (the frontend design system playground, dev only)
       // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /coach/settings, /coach/states, /dev/design-system, /ethereal |",
       );
     }
   });

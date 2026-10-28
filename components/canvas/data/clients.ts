@@ -156,6 +156,61 @@ export function putClientDetail(
   );
 }
 
+// --- W2-A4 staff client tasks (clients/:clientProfileId/tasks routes) ---
+
+export type StaffTaskView = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "OPEN" | "COMPLETED" | "CANCELLED";
+  dueState: "overdue" | "due-today" | "upcoming";
+  completedAt: string | null;
+  assignedByMemberId: string;
+  revision: number;
+};
+
+/** A client-task row as the coach profile card renders it. */
+export type StaffClientTask = {
+  id: string;
+  title: string;
+  dueDate: string;
+  status: "open" | "complete" | "cancelled";
+  revision: number;
+};
+
+export function toStaffClientTask(view: StaffTaskView): StaffClientTask {
+  return {
+    id: view.id,
+    title: view.title,
+    dueDate: view.dueDate,
+    status: view.status.toLowerCase() as StaffClientTask["status"],
+    revision: view.revision,
+  };
+}
+
+/** GET clients/:clientProfileId/tasks - the client's assigned task list. */
+export async function fetchStaffClientTasks(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffClientTask[]> {
+  const body = await apiFetch<{ tasks: StaffTaskView[]; hasMore: boolean }>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tasks`,
+  );
+  return body.tasks.map(toStaffClientTask);
+}
+
+/** POST clients/:clientProfileId/tasks - assign one task to the client. */
+export function assignStaffClientTask(
+  workspaceId: string,
+  clientProfileId: string,
+  input: { title: string; dueDate: string },
+): Promise<{ id: string; revision: number }> {
+  return apiFetch<{ id: string; revision: number }>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tasks`,
+    { method: "POST", body: input },
+  );
+}
+
 // --- Ethereal client workspace draft (coaching-clients-workspace-v1) ---
 
 export type Invitation = { name: string; email: string };
