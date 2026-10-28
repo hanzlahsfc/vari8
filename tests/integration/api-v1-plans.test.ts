@@ -81,8 +81,9 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
       data: { workspaceId: ws.id, name: `${tag} client` },
     });
     // The integration harness forces ENABLE_CONSENT_GATES=1, so the plan
-    // services resolve their dev consent registry: grant every kind+version
-    // the three gated domains require.
+    // services resolve their dev consent registry (unlocked by the domain
+    // flags beforeAll sets): grant every kind+version the three gated
+    // domains require.
     for (const [kind, version] of [
       ["PRIVACY_NOTICE", "meal-plan-dev-privacy-v1"],
       ["HEALTH_DATA", "meal-plan-dev-health-v1"],
@@ -195,7 +196,21 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
     progressionNotes: true,
   };
 
+  // The domain flags unlock the dev consent registries the harness's
+  // ENABLE_CONSENT_GATES=1 resolves through; without them every plan call
+  // fails closed with policy_not_configured before the consent rows matter.
+  const FLAG_KEYS = [
+    "ENABLE_MEAL_PLANS",
+    "ENABLE_TRAINING_PLANS",
+    "ENABLE_IIFYM_PLANS",
+  ] as const;
+  const savedFlags: (string | undefined)[] = [];
+
   beforeAll(async () => {
+    FLAG_KEYS.forEach((key, i) => {
+      savedFlags[i] = process.env[key];
+      process.env[key] = "1";
+    });
     execFileSync("npx", ["prisma", "migrate", "deploy"], {
       stdio: "pipe",
       env: { ...process.env, DATABASE_URL: url as string },
@@ -207,6 +222,10 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
   });
 
   afterAll(async () => {
+    FLAG_KEYS.forEach((key, i) => {
+      if (savedFlags[i] === undefined) delete process.env[key];
+      else process.env[key] = savedFlags[i];
+    });
     await prisma?.$disconnect();
   });
 
