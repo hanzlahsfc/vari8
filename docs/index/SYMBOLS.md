@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1557 exported symbols.
+Counts: 161 modules with exports, 1569 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1400,6 +1400,21 @@ Imported type names are shown without their `import("...")` prefix.
 - `export class NutritionImportError extends Error (1 members)`
 - `export type NutritionImportSummary = { runId: string; status: string; scannedRowCount: number; sourceRowCount: number; ignoredEmptyRowCount: number; acceptedCount: number; rejectedCount: number; du...`
 - `export async function importNutritionCatalog(client: PrismaClient, source: NutritionSource, now: Date = new Date()): Promise<NutritionImportSummary>`
+
+## `lib/nutrition/off.ts`
+
+- `export const OFF_ATTRIBUTION = "Contains data from Open Food Facts, available under the Open Database License (ODbL)"`
+- `export const OFF_LICENCE = "ODbL-1.0"`
+- `export const OFF_LICENCE_URL = "https://opendatacommons.org/licenses/odbl/1.0/"`
+- `export const OFF_PRODUCT_URL = "https://world.openfoodfacts.org/api/v2/product"`
+- `export type OffFetch = ( url: string, init: { signal?: AbortSignal }, ) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>`
+- `export class OffLookupError extends Error (1 members)`
+- `export type OffLookupResult = | { status: "found"; product: OffProduct } | { status: "not_found"; barcode: string }`
+- `export interface OffNutrient (4 members)`
+- `export interface OffProduct (6 members)`
+- `export interface OffProvenance (6 members)`
+- `export function isValidBarcode(barcode: string): boolean`
+- `export async function lookupOffProduct(barcode: string, options: { fetchImpl: OffFetch; timeoutMs?: number; baseUrl?: string; }): Promise<OffLookupResult>`
 
 ## `lib/nutrition/search.ts`
 
