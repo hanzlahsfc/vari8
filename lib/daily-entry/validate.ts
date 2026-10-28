@@ -13,6 +13,8 @@ export type SnapshotParam = {
   required: boolean;
   unit: string | null;
   ratingScheme: string | null;
+  decimals: number | null;
+  summary: string | null;
   options: Array<{ optionId: string; label: string }>;
   validation: { min: number | null; max: number | null } | null;
   dataClassification: string | null;
