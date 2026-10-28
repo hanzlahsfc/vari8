@@ -21,6 +21,9 @@ export type SnapshotParam = {
   snapshotRevision: number;
   sectionId: string;
   itemId: string;
+  /** Declared section-item order (resolved `(order ?? 0)`); the w2-t14
+   * tracker-columns read model re-emits it verbatim. */
+  itemOrder?: number;
 };
 
 export const DAILY_ENTRY_TEXT_MAX = 5000;
