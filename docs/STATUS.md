@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
+
+- Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-catalogue-accuracy-gate`: merged PR 223
+  nutrition source accuracy gate; wired services where they apply.
+
 ## 2026-10-28 - Promotion: meal plan payload and IIFYM actuals
 
 - Promoted `beta/pr-m5-mealplan-payload` (PR 114) by Hanzlah and
