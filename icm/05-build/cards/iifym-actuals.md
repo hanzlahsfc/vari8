@@ -41,8 +41,8 @@
 
 - **Slot holder:** #158 `beta/auth-rotate` — `db/AGENTS.md` owner-decided
   merge order (#162 then #158) + `PR-SV5.md` "#158 retains the next
-  schema slot". Verified live 2026-10-28: #158 OPEN, `20261022090000_
-  auth_rotate` absent from `Vari8-Beta` migrations.
+  schema slot". Verified live 2026-10-28: #158 OPEN, migration
+  `20261022090000_auth_rotate` absent from `Vari8-Beta`.
 - **Release dependency:** #158 merging, or an explicit owner re-order.
   Nothing else releases the reservation.
 - **Retained work:** `actuals.ts` + 7 tests (all real behavior);
@@ -61,6 +61,7 @@ row; mode-switch persistence = no write on plan-mode change (entries
 are independent of the plan-mode flag); foreign-workspace refuses via
 the shared workspace-scope check — unresolved policy: none found;
 authorization reuses existing dailyTracking/coach-review permission.
+
 - `saveNutritionLog` service + daily-entry save path hook; API routes
   (client write, coach range read `from`/`to` with existing
   `checkinsCoachReviews`-style staff authz + `checkin_submission`-style
