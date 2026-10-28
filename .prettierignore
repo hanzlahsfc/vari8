@@ -51,3 +51,12 @@ icm/05-build/graph-summary.json
 # PR-01: Lilly's canvas carried from frontend/ (Biome-formatted there); CSS stays byte for byte.
 components/canvas/
 lib/canvas/
+
+# Generated, hash-verified proposed reference evidence; never reformat pixels/receipts.
+tools/parity/reference/proposed/
+
+# Raw candidate capture artifacts are committed byte-exactly for reproducibility.
+tools/parity/reference/evidence/candidate/
+
+# Generated recomparison receipts preserve exact comparer output.
+tools/parity/reference/evidence/receipts/
