@@ -1,3 +1,59 @@
+## 2026-10-28 - Promotion: template definitions report (PR-M4)
+
+- Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m4-template-definitions`: the PR-M4
+  template definitions build report.
+
+## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
+
+- Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m9-dashboard-config`: dashboard config
+  schema, adapter and the dashboard editor surface.
+
+## 2026-10-28 - Promotion: habits service (PR-M7)
+
+- Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-m7-habits`: habits service with frequency semantics
+  and completion tracking.
+
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
 ## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
 
 - `retrieve-archived.mjs` rewritten: trusted hardcoded `ARCHIVES` registry is the only authority (editable `ARCHIVED.json` stubs cross-checked, not obeyed); name/traversal/tag/commit-shape validation before any git/fs op; `git fetch --depth 1 <remote> refs/tags/<tag>` into a scratch `.fetch` repo inside the task-owned destination; pinned commit + `artifactIndexSha256` verified, then every indexed artifact extracted and sha256-checked; existing/unowned destinations and unsafe indexed paths refused; arg-based `execFileSync` only (no shell).
