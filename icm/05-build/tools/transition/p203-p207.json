@@ -6,10 +6,13 @@
   },
   "authorization": {
     "mergeAuthorization": {
-      "source": "owner decision delivered in task prompt P447 (2026-10-26)",
-      "author": "Hanzlah (owner)",
-      "contains": "Integrate #203, #206, #207 in order under the disclosed cross-review arrangement, conditional on reviewed tooling and real gates.",
-      "pendingInput": "human-posted GitHub comment recording this exact decision \u2014 the executor must refuse until that record is verifiable"
+      "source": "owner instruction delivered in task chat, transmitted by the orchestrator",
+      "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/209#issuecomment-6453235842",
+      "author": "hanzlahsfc (orchestrator-recorded; not manually human-posted)",
+      "contains": "I authorize task-specific integration of #203, #206 and #207, in that order, using the disclosed cross-review arrangement and reviewed supervised procedure. Approved starting heads are #203 90c16bee63e2609ebc4f09e91459332390562464, #206 43b63ed0f41e6e92e93ecf72065c0190c9ef3dea, and #207 04902f1dc3d317e0959ae533f2f4c479a8fc55f9. Execution requires fresh gates against each actual integration result and prescribed revalidation of changed heads. Baseline activation and deployment are not authorized.",
+      "verification": "comment verified via gh api — author hanzlahsfc, body contains the quoted decision verbatim",
+      "changedHeadRevalidation": "approved starting heads are stale after the P482 merge; each step's derived head must be re-derived live before merge",
+      "activationProhibited": true
     },
     "scopedAcceptance": {
       "commentUrl": "https://github.com/hanzlahsfc/vari8/pull/207#issuecomment-6412128271",

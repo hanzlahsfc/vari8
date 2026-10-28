@@ -269,7 +269,19 @@ describe("integrate-transition single-step executor", () => {
   });
 
   it("refuses while the owner-comment input is still pending", () => {
-    const r = run([M(), "--pr", "203"]);
+    // the real manifest's record is fulfilled — inject pendingInput into a
+    // copy to exercise the pending-refusal path
+    const tmp = mkdtempSync(path.join(tmpdir(), "pmf-"));
+    const m = manifest();
+    m.authorization.mergeAuthorization = {
+      source: "test",
+      author: "hanzlahsfc",
+      contains: "x",
+      pendingInput: "human-posted comment",
+    };
+    const f = path.join(tmp, "m.json");
+    writeFileSync(f, JSON.stringify(m));
+    const r = run([f, "--pr", "203"]);
     expect(r.status).toBe(4);
     expect(r.stderr).toMatch(/pending/);
     expect(r.called).not.toContain("merged");
