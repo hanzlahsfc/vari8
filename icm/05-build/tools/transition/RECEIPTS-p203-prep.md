@@ -233,3 +233,22 @@ state under . Fresh locked validation/gates still required.
   (user `hanzlahsfc`) and honestly self-described as orchestrator-recorded —
   NOT the manifest-required manually-human-posted record. Integration stays
   BLOCKED on `mergeAuthorization.pendingInput`; no bypass performed.
+
+## P492 — #206 merged under recorded chat authorization
+
+- Authorization: `p203-p207.json` `mergeAuthorization` now records
+  orchestrator-transmitted `issuecomment-6453235842` (true origin, not
+  manually posted); pending-input record fulfilled; pending-refusal test
+  injects the record itself (27/27).
+- Lock: `/tmp/vari8-worktrees/.locks/Vari8-Beta.lock` held continuously
+  through revalidation, gates, merge and post-merge verification.
+- Gates on unmodified merge tree `5694851` (Node 24.22.1): format/index/
+  typecheck/lint 0err-82w/test **1340/1340**/build/diff-check — all pass.
+  Combined evidence: P486 composite `f4527ae` (product inputs proven
+  identical — zero diff outside tools/parity + .prettierignore).
+- MERGE `7d4c93c7fc0260e82870ea74fab3b5dec367abad`: P1=`a90eaf28`
+  (validated Beta tip) P2=`5694851` (reviewed #206 head) TREE=`febf60b`
+  (= tested). Baseline `640f4375` intact post-merge. Draft→ready→merge.
+- STOP after #206. #207 untouched (base `beta/visual-reference-
+  establishment` still `43b63ed`; next checkpoint = retarget to the new
+  Beta tip + changed-head review).
