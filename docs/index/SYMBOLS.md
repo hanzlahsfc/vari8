@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1548 exported symbols.
+Counts: 160 modules with exports, 1553 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1421,6 +1421,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type NutritionSourceField = (typeof NUTRITION_SOURCE_FIELDS)[number]`
 - `export type NutritionSourceRecord = { sourceRow: number; sourceNo: number; name: string; amount: number | null; unit: string | null; calories: number | null; protein: number | null; carbs: number |...`
 - `export function extractNutritionSource(html: string, meta: { sourceName: string; sourceFingerprint: string }): NutritionSource`
+
+## `lib/nutrition/sources/accuracy.ts`
+
+- `export interface AccuracyCheck (6 members)`
+- `export interface ExpectedRow (4 members)`
+- `export function assertAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): void`
+- `export function checkAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): AccuracyCheck[]`
+- `export function checkProvenance(candidates: SourceCandidate[]): AccuracyCheck[]`
 
 ## `lib/nutrition/sources/bls.ts`
 
