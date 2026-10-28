@@ -1,0 +1,101 @@
+/* Shared state primitives (W2-T2). Layout and tone only; all interactive
+   styling comes from the composed v8 controls. Motion collapses under
+   prefers-reduced-motion, matching the token contract. */
+
+.v8-empty-state,
+.v8-loading-state,
+.v8-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--v8-space-2);
+  padding: var(--v8-space-8) var(--v8-space-4);
+  text-align: center;
+  min-block-size: 10rem;
+}
+
+.v8-empty-state__icon {
+  display: inline-flex;
+  color: var(--v8-text-tertiary);
+  margin-block-end: var(--v8-space-1);
+}
+
+.v8-empty-state__icon svg {
+  inline-size: var(--v8-icon-size-lg);
+  block-size: var(--v8-icon-size-lg);
+}
+
+.v8-empty-state__title,
+.v8-error-state__title {
+  margin: 0;
+  font-size: var(--v8-font-size-card-heading);
+  line-height: var(--v8-line-height-card-heading);
+  font-weight: var(--v8-font-weight-medium);
+}
+
+.v8-error-state__title {
+  color: var(--v8-danger-text);
+}
+
+.v8-empty-state__description,
+.v8-loading-state__description,
+.v8-error-state__description {
+  margin: 0;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-sm);
+  max-inline-size: 32rem;
+}
+
+.v8-empty-state__action,
+.v8-error-state__action {
+  display: flex;
+  gap: var(--v8-space-2);
+  margin-block-start: var(--v8-space-3);
+}
+
+.v8-loading-state__spinner {
+  inline-size: var(--v8-icon-size-lg);
+  block-size: var(--v8-icon-size-lg);
+  border-radius: var(--v8-radius-pill);
+  border: 2px solid var(--v8-accent-subtle);
+  border-block-start-color: var(--v8-accent-primary);
+  animation: v8-state-spin 720ms linear infinite;
+}
+
+.v8-loading-state__label {
+  font-size: var(--v8-font-size-control);
+  color: var(--v8-text-secondary);
+}
+
+.v8-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  padding: var(--v8-space-4);
+  inline-size: 100%;
+}
+
+.v8-skeleton__line {
+  block-size: var(--v8-font-size-sm);
+  border-radius: var(--v8-radius-compact);
+  background: var(--v8-surface-interactive);
+  inline-size: 100%;
+}
+
+.v8-skeleton__line:last-child {
+  inline-size: 55%;
+}
+
+@keyframes v8-state-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v8-loading-state__spinner {
+    animation: none;
+    opacity: 0.65;
+  }
+}
