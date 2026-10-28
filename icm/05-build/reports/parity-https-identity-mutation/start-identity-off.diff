@@ -1,0 +1,13 @@
+diff --git a/tools/parity/local-https.mjs b/tools/parity/local-https.mjs
+index 3e9ff1a..c9080ec 100644
+--- a/tools/parity/local-https.mjs
++++ b/tools/parity/local-https.mjs
+@@ -151,3 +151,3 @@ const ownedIdentity = (ownership, entry) =>
+   ownership.processes.some(
+-    (owned) => owned.pid === Number(entry.pid) && owned.start === entry.start,
++    (owned) => owned.pid === Number(entry.pid),
+   );
+@@ -319,3 +319,2 @@ export async function stopOwnedProcessGroup(
+         !owned(current) ||
+-        current.start !== candidate.start ||
+         current.pid !== candidate.pid

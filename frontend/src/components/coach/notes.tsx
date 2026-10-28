@@ -1,11 +1,16 @@
 "use client";
 
-import { ArrowUpRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowUpRight, Bell, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { Checkbox, SegmentedControl, Tabs } from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
+import { Section } from "../vari8/layouts";
 import { type CoachState, uid } from "./model";
 import { useCoach } from "./store";
 import {
   Button,
+  DateField,
+  DateTimeField,
   Dialog,
   Empty,
   IconButton,
@@ -22,8 +27,16 @@ type Item = {
   clientId?: string;
   owner: string;
   complete?: boolean;
+  deadline?: string;
+  reminderAt?: string;
+  notes?: string;
+  priority?: "low" | "normal" | "high";
 };
 type Editor = { kind: "note" | "todo"; item?: Item };
+function parsePriority(value: string): NonNullable<Item["priority"]> {
+  if (value === "low" || value === "high") return value;
+  return "normal";
+}
 
 export function NotesWorkspace() {
   const { state, setState, navigate, toast } = useCoach();
@@ -33,6 +46,11 @@ export function NotesWorkspace() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [text, setText] = useState("");
   const [destination, setDestination] = useState("workspace");
+  const [tab, setTab] = useState<"todos" | "notes">("todos");
+  const [deadline, setDeadline] = useState("");
+  const [reminderAt, setReminderAt] = useState("");
+  const [todoNotes, setTodoNotes] = useState("");
+  const [priority, setPriority] = useState<Item["priority"]>("normal");
   const clients = state.clients.filter((c) => !c.archived);
   const notes: Item[] = [
     ...(state.coachNotes ?? []).map((n) => ({ ...n, owner: "Workspace" })),
@@ -45,6 +63,7 @@ export function NotesWorkspace() {
       ...t,
       text: t.title,
       owner: "Workspace",
+      clientId: t.clientId,
     })),
     ...clients.flatMap((c) =>
       c.coachTasks.map((t) => ({
@@ -65,6 +84,10 @@ export function NotesWorkspace() {
   const openEditor = (kind: Editor["kind"], item?: Item) => {
     setText(item?.text ?? "");
     setDestination(item?.clientId ?? (scope !== "all" ? scope : "workspace"));
+    setDeadline(item?.deadline ?? "");
+    setReminderAt(item?.reminderAt ?? "");
+    setTodoNotes(item?.notes ?? "");
+    setPriority(item?.priority ?? "normal");
     setEditor({ kind, item });
   };
   const change = (
@@ -105,10 +128,14 @@ export function NotesWorkspace() {
                               ? {
                                   ...t,
                                   title: item.text,
+                                  deadline: item.deadline,
+                                  reminderAt: item.reminderAt,
+                                  notes: item.notes,
+                                  priority: item.priority,
                                   complete:
                                     action === "toggle"
                                       ? !t.complete
-                                      : t.complete,
+                                      : (item.complete ?? t.complete),
                                 }
                               : t,
                           )
@@ -118,6 +145,10 @@ export function NotesWorkspace() {
                               id: item.id,
                               title: item.text,
                               complete: item.complete ?? false,
+                              deadline: item.deadline,
+                              reminderAt: item.reminderAt,
+                              notes: item.notes,
+                              priority: item.priority,
                             },
                           ],
                 },
@@ -146,7 +177,14 @@ export function NotesWorkspace() {
                   ? {
                       ...t,
                       title: item.text,
-                      complete: action === "toggle" ? !t.complete : t.complete,
+                      complete:
+                        action === "toggle"
+                          ? !t.complete
+                          : (item.complete ?? t.complete),
+                      deadline: item.deadline,
+                      reminderAt: item.reminderAt,
+                      notes: item.notes,
+                      priority: item.priority,
                     }
                   : t,
               )
@@ -156,6 +194,11 @@ export function NotesWorkspace() {
                   id: item.id,
                   title: item.text,
                   complete: item.complete ?? false,
+                  deadline: item.deadline,
+                  reminderAt: item.reminderAt,
+                  notes: item.notes,
+                  priority: item.priority,
+                  clientId: item.clientId,
                 },
               ],
     };
@@ -214,127 +257,165 @@ export function NotesWorkspace() {
           ]}
         />
       </div>
-      <div className="cd-notes-columns">
-        <Surface className="cd-notes-section">
-          <div className="cd-notes-heading">
-            <h2>To-dos</h2>
-            <span>
-              {todos.filter((t) => !t.complete && matches(t)).length} open
-            </span>
-          </div>
-          <fieldset
-            className="cd-tabs cd-notes-status"
-            aria-label="To-do status"
-          >
-            {["Open", "Completed", "All"].map((value) => (
-              <Button
-                type="button"
-                aria-pressed={status === value}
-                key={value}
-                onClick={() => setStatus(value)}
-              >
-                {value}
-              </Button>
-            ))}
-          </fieldset>
-          {visibleTodos.length ? (
-            <ul className="cd-notes-list">
-              {visibleTodos.map((t) => (
-                <li
-                  key={`${t.clientId ?? "workspace"}-${t.id}`}
-                  className="cd-notes-todo"
-                >
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={t.complete}
-                      onChange={() =>
-                        setState((s) => change(s, "todo", t, "toggle"))
-                      }
-                    />
-                    <span className={t.complete ? "is-complete" : ""}>
-                      {t.text}
+      <Tabs
+        label="Notes and to-dos"
+        value={tab}
+        onValueChange={(value) => setTab(value as "todos" | "notes")}
+        className="cd-notes-tabs cd-notes-columns"
+        items={[
+          {
+            value: "todos",
+            label: `To-dos (${todos.filter((t) => !t.complete && matches(t)).length})`,
+            content: (
+              <Surface className="cd-notes-section">
+                <Section
+                  title="To-dos"
+                  actions={
+                    <span>
+                      {todos.filter((t) => !t.complete && matches(t)).length}{" "}
+                      open
                     </span>
-                  </label>
-                  <div className="cd-notes-item-footer">
-                    {owner(t)}
-                    <div className="cd-actions">
-                      <IconButton
-                        label={`Edit to-do: ${t.text}`}
-                        onClick={() => openEditor("todo", t)}
-                      >
-                        <Pencil size={15} />
-                      </IconButton>
-                      <IconButton
-                        label={`Remove to-do: ${t.text}`}
-                        onClick={() => remove("todo", t)}
-                      >
-                        <Trash2 size={15} />
-                      </IconButton>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty
-              title="No to-dos here"
-              action={
-                <Button onClick={() => openEditor("todo")}>Add to-do</Button>
-              }
-            >
-              {search
-                ? "Try another search or scope."
-                : status === "Completed"
-                  ? "Completed to-dos will appear here."
-                  : "Add a follow-up for yourself or an athlete."}
-            </Empty>
-          )}
-        </Surface>
-        <Surface className="cd-notes-section">
-          <div className="cd-notes-heading">
-            <h2>Private notes</h2>
-            <span>{visibleNotes.length}</span>
-          </div>
-          {visibleNotes.length ? (
-            <ul className="cd-notes-list">
-              {visibleNotes.map((n) => (
-                <li key={`${n.clientId ?? "workspace"}-${n.id}`}>
-                  <p className="cd-notes-text">{n.text}</p>
-                  <div className="cd-notes-item-footer">
-                    {owner(n)}
-                    <div className="cd-actions">
-                      <IconButton
-                        label={`Edit note: ${n.text}`}
-                        onClick={() => openEditor("note", n)}
-                      >
-                        <Pencil size={15} />
-                      </IconButton>
-                      <IconButton
-                        label={`Remove note: ${n.text}`}
-                        onClick={() => remove("note", n)}
-                      >
-                        <Trash2 size={15} />
-                      </IconButton>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty
-              title="No notes here"
-              action={
-                <Button onClick={() => openEditor("note")}>Add note</Button>
-              }
-            >
-              {search
-                ? "Try another search or scope."
-                : "Keep a workspace note or link it to an athlete."}
-            </Empty>
-          )}
-        </Surface>
-      </div>
+                  }
+                >
+                  <SegmentedControl
+                    label="To-do status"
+                    value={status}
+                    onValueChange={setStatus}
+                    className="cd-notes-status"
+                    options={["Open", "Completed", "All"].map((value) => ({
+                      value,
+                      label: value,
+                    }))}
+                  />
+                  {visibleTodos.length ? (
+                    <ul className="cd-notes-list">
+                      {visibleTodos.map((t) => (
+                        <li
+                          key={`${t.clientId ?? "workspace"}-${t.id}`}
+                          className="cd-notes-todo"
+                        >
+                          <Checkbox
+                            label={t.text}
+                            className={`cd-notes-todo-checkbox ${t.complete ? "is-complete" : ""}`}
+                            checked={Boolean(t.complete)}
+                            onCheckedChange={() =>
+                              setState((s) => change(s, "todo", t, "toggle"))
+                            }
+                          />
+                          {t.notes && (
+                            <p className="cd-notes-text cd-todo-notes">
+                              {t.notes}
+                            </p>
+                          )}
+                          <div className="cd-notes-item-footer">
+                            {owner(t)}
+                            <span
+                              className={`cd-todo-priority is-${t.priority ?? "normal"}`}
+                            >
+                              {t.priority ?? "normal"}
+                            </span>
+                            {t.deadline && (
+                              <time dateTime={t.deadline}>
+                                Due {t.deadline}
+                              </time>
+                            )}
+                            {t.reminderAt && (
+                              <span title={`In-app reminder ${t.reminderAt}`}>
+                                <Bell size={13} /> Reminder
+                              </span>
+                            )}
+                            <div className="cd-actions">
+                              <IconButton
+                                label={`Edit to-do: ${t.text}`}
+                                onClick={() => openEditor("todo", t)}
+                              >
+                                <Pencil size={15} />
+                              </IconButton>
+                              <IconButton
+                                label={`Remove to-do: ${t.text}`}
+                                onClick={() => remove("todo", t)}
+                              >
+                                <Trash2 size={15} />
+                              </IconButton>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Empty
+                      title="No to-dos here"
+                      action={
+                        <Button onClick={() => openEditor("todo")}>
+                          Add to-do
+                        </Button>
+                      }
+                    >
+                      {search
+                        ? "Try another search or scope."
+                        : status === "Completed"
+                          ? "Completed to-dos will appear here."
+                          : "Add a follow-up for yourself or an athlete."}
+                    </Empty>
+                  )}
+                </Section>
+              </Surface>
+            ),
+          },
+          {
+            value: "notes",
+            label: `Private notes (${visibleNotes.length})`,
+            content: (
+              <Surface className="cd-notes-section">
+                <Section
+                  title="Private notes"
+                  actions={<span>{visibleNotes.length}</span>}
+                >
+                  {visibleNotes.length ? (
+                    <ul className="cd-notes-list">
+                      {visibleNotes.map((n) => (
+                        <li key={`${n.clientId ?? "workspace"}-${n.id}`}>
+                          <p className="cd-notes-text">{n.text}</p>
+                          <div className="cd-notes-item-footer">
+                            {owner(n)}
+                            <div className="cd-actions">
+                              <IconButton
+                                label={`Edit note: ${n.text}`}
+                                onClick={() => openEditor("note", n)}
+                              >
+                                <Pencil size={15} />
+                              </IconButton>
+                              <IconButton
+                                label={`Remove note: ${n.text}`}
+                                onClick={() => remove("note", n)}
+                              >
+                                <Trash2 size={15} />
+                              </IconButton>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Empty
+                      title="No notes here"
+                      action={
+                        <Button onClick={() => openEditor("note")}>
+                          Add note
+                        </Button>
+                      }
+                    >
+                      {search
+                        ? "Try another search or scope."
+                        : "Keep a workspace note or link it to an athlete."}
+                    </Empty>
+                  )}
+                </Section>
+              </Surface>
+            ),
+          },
+        ]}
+      />
       {editor && (
         <Dialog
           title={`${editor.item ? "Edit" : "Add"} ${editor.kind === "note" ? "note" : "to-do"}`}
@@ -355,6 +436,14 @@ export function NotesWorkspace() {
                       destination === "workspace" ? undefined : destination,
                     complete: false,
                   };
+              if (editor.kind === "todo") {
+                item.deadline = deadline || undefined;
+                item.reminderAt = reminderAt || undefined;
+                item.notes = todoNotes.trim() || undefined;
+                item.priority = priority;
+                item.clientId =
+                  destination === "workspace" ? undefined : destination;
+              }
               setState((s) => change(s, editor.kind, item, "save"));
               setEditor(null);
               toast(`${editor.kind === "note" ? "Note" : "To-do"} saved.`);
@@ -370,16 +459,49 @@ export function NotesWorkspace() {
                 ...clients.map((c) => ({ value: c.id, label: c.name })),
               ]}
             />
-            <label className="cd-field">
-              {editor.kind === "note" ? "Note" : "To-do"}
-              <textarea
-                required
-                autoFocus
-                rows={editor.kind === "note" ? 5 : 3}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-            </label>
+            <TextArea
+              label={editor.kind === "note" ? "Note" : "To-do"}
+              required
+              autoFocus
+              rows={editor.kind === "note" ? 5 : 3}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
+            {editor.kind === "todo" && (
+              <>
+                <DateField
+                  label="Deadline"
+                  value={deadline}
+                  onChange={setDeadline}
+                />
+                <DateTimeField
+                  label="In-app reminder"
+                  value={reminderAt}
+                  onChange={setReminderAt}
+                />
+                <div className="cd-field-hint">
+                  <small>
+                    Shown in this workspace when its reminder time arrives.
+                  </small>
+                </div>
+                <Select
+                  label="Priority"
+                  value={priority ?? "normal"}
+                  onChange={(value) => setPriority(parsePriority(value))}
+                  options={[
+                    { value: "low", label: "Low" },
+                    { value: "normal", label: "Normal" },
+                    { value: "high", label: "High" },
+                  ]}
+                />
+                <TextArea
+                  label="Notes"
+                  rows={3}
+                  value={todoNotes}
+                  onChange={(e) => setTodoNotes(e.target.value)}
+                />
+              </>
+            )}
             <p className="cd-caption">
               Private to you. Athlete-linked items also appear in their profile.
             </p>

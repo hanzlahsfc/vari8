@@ -100,22 +100,11 @@
   gap: 10px;
 }
 
-.foundation-actions .app-button,
-.foundation-empty .app-button {
-  min-height: 36px;
-  padding-inline: var(--control-padding-x, 16px);
-  font-size: 11px;
-}
-
 .foundation-statuses {
   gap: 14px;
   margin-top: 16px;
   padding: 0;
   border: 0;
-}
-
-.foundation-statuses .status-label {
-  font-size: 10px;
 }
 
 .foundation-validation-grid {
@@ -131,23 +120,7 @@
   gap: 7px;
   min-width: 0;
   color: var(--muted);
-  font-size: 10px;
-}
-
-.foundation-label .form-input,
-.foundation-label .form-select {
-  min-height: 40px;
-  padding: 6px var(--control-padding-x, 16px);
-  color: var(--text);
-  font-size: 12px;
-}
-
-.foundation-label .form-select {
-  padding-right: var(--control-arrow-space, 40px);
-}
-
-.foundation-label [aria-invalid="true"] {
-  border-color: color-mix(in srgb, var(--danger) 75%, var(--border));
+  font-size: var(--v8-font-size-label);
 }
 
 .foundation-error,
@@ -174,21 +147,6 @@
   gap: 18px;
 }
 
-.foundation-choices .checkbox-control,
-.foundation-choices .switch-label {
-  font-size: 11px;
-}
-
-.foundation-section > .tabs {
-  gap: 18px;
-  padding: 0 3px;
-}
-
-.foundation-section > .tabs .tab {
-  padding: 8px 0;
-  font-size: 11px;
-}
-
 .foundation-tab-state {
   margin-top: 9px;
 }
@@ -211,21 +169,16 @@
   gap: 12px;
 }
 
-.foundation-number.form-input {
+.foundation-number {
   box-sizing: border-box;
   width: var(--numeric-control-width, 148px);
   min-width: var(--numeric-control-width, 148px);
-  height: var(--numeric-control-height, 44px);
-  min-height: var(--numeric-control-height, 44px);
-  padding: 0 var(--control-padding-x, 16px);
-  border-radius: 999px;
-  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 
 .foundation-unit {
   color: var(--muted);
-  font-size: 10px;
+  font-size: var(--v8-font-size-supporting);
   white-space: nowrap;
 }
 

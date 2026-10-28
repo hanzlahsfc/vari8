@@ -1,0 +1,94 @@
+.v8-input-showcase {
+  display: grid;
+  gap: 28px;
+}
+.v8-input-group {
+  border-top: 1px solid var(--v8-border);
+  padding-top: 16px;
+}
+.v8-input-group h3 {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-card-heading);
+  font-weight: 600;
+  margin: 0 0 14px;
+}
+.v8-input-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.v8-density-sample {
+  display: grid;
+  gap: 12px;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+.v8-density-sample h4 {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  font-weight: var(--v8-font-weight-medium);
+  grid-column: 1 / -1;
+  margin: 0;
+  text-transform: capitalize;
+}
+.v8-native-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.v8-native-field--wide {
+  grid-column: 1 / -1;
+}
+.v8-showcase-textarea {
+  background: var(--v8-field);
+  border: 1px solid var(--v8-border-control);
+  border-radius: var(--v8-radius-control, 12px);
+  color: var(--v8-text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+  min-height: 84px;
+  padding: 10px 12px;
+  resize: vertical;
+  width: 100%;
+}
+.v8-showcase-textarea:focus-visible,
+.v8-native-field select:focus-visible {
+  border-color: var(--v8-focus);
+  outline: 2px solid var(--v8-focus);
+  outline-offset: 2px;
+}
+.v8-input-showcase .v8-date-range,
+.v8-input-showcase .v8-date-time {
+  min-width: 0;
+}
+.v8-password-field {
+  position: relative;
+}
+.v8-password-field .v8-input {
+  padding-right: 64px;
+}
+.v8-password-toggle {
+  align-self: end;
+  bottom: 6px;
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 28px;
+  padding-inline: 8px;
+  position: absolute;
+  right: 6px;
+  z-index: 1;
+}
+@media (max-width: 640px) {
+  .v8-input-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .v8-density-sample {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .v8-native-field--wide {
+    grid-column: auto;
+  }
+}

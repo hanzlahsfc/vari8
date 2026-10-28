@@ -10,6 +10,7 @@ import {
 } from "./checkin/forms-gate";
 import { isMealPlansEnabled } from "./mealplan/gate";
 import { isOnboardingSubmissionEnabled } from "./onboarding/submission-gate";
+import { isSupplementsEnabled } from "./supplements/gate";
 import {
   classifyRuntime,
   consentGatesEnabled,
@@ -127,6 +128,10 @@ const PROTECTED_OPERATIONS: Partial<Record<Resource, readonly ConsentKind[]>> =
     // P-024 (decisions #86–#91): staff review rides the same dev/test
     // registry resolution; production stays unconfigured/fail-closed.
     onboardingSubmissionReviews: BASE_CONSENTS,
+    // PR-SUPP: supplement plans are client health-adjacent data — same
+    // dev/test-only BASE_CONSENTS posture; production stays
+    // unconfigured/fail-closed.
+    supplementPlans: BASE_CONSENTS,
   };
 
 /** Required consent kinds for a resource, or `undefined` when not consent-protected. */
@@ -696,6 +701,11 @@ export const ONBOARDING_SUBMISSION_DEV_CONSENT = {
   HEALTH_DATA: "onboarding-submission-dev-health-v1",
 } as const;
 
+export const SUPPLEMENTS_DEV_CONSENT = {
+  PRIVACY_NOTICE: "supplements-dev-privacy-v1",
+  HEALTH_DATA: "supplements-dev-health-v1",
+} as const;
+
 /** Shared classifier — kept under the submission-era alias so existing
  * imports/tests keep their reviewed name. */
 export type SubmissionRuntimeClass = RuntimeClass;
@@ -742,6 +752,18 @@ export function resolveTrainingConsentPolicy(
   if (!isTrainingPlansEnabled(env)) return unconfiguredConsentPolicy;
   if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
   return createStaticConsentPolicy({ ...TRAINING_DEV_CONSENT });
+}
+
+export function resolveSupplementsConsentPolicy(
+  env: {
+    ENABLE_SUPPLEMENTS?: string;
+    APP_ENV?: string;
+    NODE_ENV?: string;
+  } = process.env,
+): ConsentPolicyRegistry {
+  if (!isSupplementsEnabled(env)) return unconfiguredConsentPolicy;
+  if (classifyRuntime(env) === "production") return unconfiguredConsentPolicy;
+  return createStaticConsentPolicy({ ...SUPPLEMENTS_DEV_CONSENT });
 }
 
 export function resolveOnboardingSubmissionConsentPolicy(
