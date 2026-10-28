@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: habits service (PR-M7)
+
+- Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-m7-habits`: habits service with frequency semantics
+  and completion tracking.
+
 ## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
 
 - Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
