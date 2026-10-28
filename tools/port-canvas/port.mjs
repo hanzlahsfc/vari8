@@ -21,10 +21,27 @@ const ROOT = new URL("../../", import.meta.url).pathname;
 
 // Hand-merged files: never touched by the mechanical copy.
 const HAND_MERGE = new Set([
+  // Canvas remote wiring hub: the provider takes a workspaceId, gates the
+  // Amara fixture set behind ?demo= and persists through the canvas data
+  // layer (readCoachState/writeCoachState); check-ins, messages,
+  // nutrition, training and client detail read /api/v1, and
+  // clientProfileIdFor/physiquePhotosFor resolve roster names.
   "components/coach/store.tsx",
+  // CoachApp binds the signed-in viewer (name, initials, role,
+  // workspaceName, workspaceId) into the account chip and the provider,
+  // and adds the sign-out form.
   "components/coach/coach-app.tsx",
+  // Staff messaging is remote (W2-A4): conversation/thread fetch,
+  // mark-read, 500ms draft save and media upload run through
+  // components/canvas/data.
   "components/coach/messages.tsx",
+  // Media.mediaObjectId anchors PR-MEDIA uploads; seedState({demo}) keeps
+  // the fixture chain behind adoptCanvasDemos so stored state can render
+  // without demo content.
   "components/coach/model.ts",
+  // The check-in board loads instances, submissions and schedules from
+  // /api/v1 for the visible range (PR-W6), cancels/restores via the data
+  // layer and renders the shared CheckInReviewPanel.
   "components/coach/check-ins.tsx",
   // Canvas carries local wiring deltas: ClientTrainingLogs in the Plans tab,
   // review-panel status chips in coach.css, the issue-169 activity-target
@@ -37,8 +54,17 @@ const HAND_MERGE = new Set([
   "components/coach/athlete/overview.tsx",
   "components/coach/athlete/timeline-tab.tsx",
   "components/coach/plans/setup-ui.tsx",
+  // Meal plans persist via the canvas data layer (loadMealPlans /
+  // saveMealPlans in components/canvas/data/nutrition) instead of the
+  // twin's raw coaching-mealplans-v1 localStorage key.
   "components/ethereal/mealplan/mealplan-workspace.tsx",
+  // Dashboard draft and records persist via components/canvas/data/
+  // dashboard helpers instead of the twin's raw localStorage keys.
   "components/ethereal/builder/dashboard-builder.tsx",
+  // Appearance types and the workspace merge live in
+  // workspace-appearance; the provider merges the workspace-resolved
+  // appearance over the local store, adds density and logoMediaId, and
+  // persists via components/canvas/data/appearance.
   "lib/ethereal-appearance.tsx",
   "app/layout.tsx",
   // Canvas auth wiring: pages bind the signed in viewer into canvas apps.
@@ -81,6 +107,8 @@ const HAND_MERGE = new Set([
   "components/client-app/mobile/home.tsx",
   "components/client-app/mobile/logbook.tsx",
   "components/client-app/mobile/training.tsx",
+  // Same lint group: the overlap notice carries &quot; escapes and ASCII
+  // hyphens where the twin text has the quote and typographic dashes.
   "components/coach/plans/temporary-editor.tsx",
 ]);
 

@@ -33,7 +33,7 @@ import type { SeedContext } from "./index";
  *   SEED_OWNER_EMAIL,  SEED_OWNER_PASSWORD  — owner of `canvas-demo`.
  *   SEED_COACH_EMAIL,  SEED_COACH_PASSWORD  — coach of `canvas-demo`.
  *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD — client of `canvas-demo`, linked
- *     to the first canvas demo client profile.
+ *     to a canvas demo client profile the check-ins seed does not claim.
  *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD — coach of `seed-second-workspace`.
  *   SEED_COACH2_EMAIL, SEED_COACH2_PASSWORD - optional second COACH member of
  *     `canvas-demo` (w2-fe2 notes matrix fixture).
@@ -109,13 +109,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   }
 
   const names = canvasClientNames();
-  // The seeded client signs in as the first canvas demo client so a lane can
-  // exercise the client role against a roster row the canvas already shows.
-  const clientName = names[0];
+  // The seeded client signs in against a roster row the canvas already
+  // shows. It binds names[1] (James Reed): the check-ins seed
+  // (33-checkins.seed.ts) claims the profiles at indices 0, 2 and 3 for its
+  // own submission-author users, so binding names[0] would be stolen later
+  // in the run.
+  const clientName = names[1]!;
   const client = await upsertUser(prisma, clientEmail, clientName);
   await upsertCredentialAccount(prisma, client.id, clientPassword);
   await upsertMember(prisma, workspace.id, client.id, "CLIENT");
-  await linkClientProfile(prisma, workspace.id, client.id, clientName);
 
   const secondWorkspace = await prisma.workspace.upsert({
     where: { slug: SECOND_WORKSPACE_SLUG },
@@ -141,6 +143,11 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   const total = await prisma.clientProfile.count({
     where: { workspaceId: workspace.id },
   });
+  // Bound after the bulk create so the profile keeps its loop-created
+  // timestamp: 33-checkins.seed.ts reads the profiles createdAt-ordered and
+  // maps index i onto canvas client i. The link only writes `userId` on the
+  // one profile named above and leaves every other binding untouched.
+  await linkClientProfile(prisma, workspace.id, client.id, clientName);
   console.log(
     `[seed] workspace ${workspace.slug}: owner+coach+client ready, ` +
       `${created} client profile(s) created, ${total} total; ` +
