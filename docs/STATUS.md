@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
 ## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
 
 - Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
