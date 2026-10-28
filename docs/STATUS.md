@@ -1,3 +1,9 @@
+## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
+
+- Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m9-dashboard-config`: dashboard config
+  schema, adapter and the dashboard editor surface.
+
 ## 2026-10-28 - Promotion: habits service (PR-M7)
 
 - Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
