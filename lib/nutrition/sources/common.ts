@@ -192,7 +192,7 @@ export function toNutritionSource(
     carbs?: string;
     fats?: string;
   },
-): NutritionSource {
+): NutritionSource & { candidates: SourceCandidate[] } {
   const accepted: NutritionSourceRecord[] = classified.accepted.map((c) => {
     const numericPart = c.sourceId.replace(/[^0-9]/g, "");
     const sourceNo = Number(numericPart);
@@ -245,5 +245,8 @@ export function toNutritionSource(
         : null,
       reasonCode: r.reasonCode as never,
     })),
+    // rich candidates (provenance + full nutrients + qualifiers) travel
+    // with the flat records — typed, no cast
+    candidates: classified.accepted,
   };
 }

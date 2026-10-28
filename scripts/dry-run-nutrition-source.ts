@@ -191,9 +191,6 @@ async function main() {
       audit,
       importerRecords: importer.accepted.length,
     };
-    // provenance + rich measurements travel alongside the flat records
-    (importer as unknown as { candidates: SourceCandidate[] }).candidates =
-      classified.accepted;
   }
 
   // Cross-source dedupe — REVIEW LIST for a human; no merge, no delete.
