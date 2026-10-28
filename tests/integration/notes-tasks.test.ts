@@ -156,7 +156,17 @@ describe.skipIf(!enabled)("PR-M3 notes + coach tasks (real PG)", () => {
     expect(createdBody.revision).toBe(1);
     const noteId = createdBody.id as string;
 
-    const listed = await call(notesGET, path, params, { token });
+    // The workspace-level GET without a query answers the canvas
+    // { notes: [{ id, text }] } envelope for clientProfileId-null notes
+    // only; the client note lists under the ?clientProfileId= read.
+    const listed = await call(
+      notesGET,
+      `${path}?clientProfileId=${cp.id}`,
+      params,
+      {
+        token,
+      },
+    );
     expect(listed.status).toBe(200);
     const list = await listed.json();
     expect(list.hasMore).toBe(false);
@@ -344,7 +354,7 @@ describe.skipIf(!enabled)("PR-M3 notes + coach tasks (real PG)", () => {
     // Deleted rows leave every list.
     const emptyList = await call(
       notesGET,
-      base,
+      `${base}?clientProfileId=${cp.id}`,
       { workspaceId: ws.id },
       {
         token,
@@ -364,7 +374,12 @@ describe.skipIf(!enabled)("PR-M3 notes + coach tasks (real PG)", () => {
     expect(restored.status).toBe(200);
     expect(await restored.json()).toEqual({ revision: 4, changed: true });
 
-    const back = await call(notesGET, base, { workspaceId: ws.id }, { token });
+    const back = await call(
+      notesGET,
+      `${base}?clientProfileId=${cp.id}`,
+      { workspaceId: ws.id },
+      { token },
+    );
     const backBody = await back.json();
     expect(backBody.notes).toHaveLength(1);
     expect(backBody.notes[0].body).toBe("v2 body");
@@ -387,7 +402,9 @@ describe.skipIf(!enabled)("PR-M3 notes + coach tasks (real PG)", () => {
       },
     );
     expect(created.status).toBe(200);
-    const { id } = await created.json();
+    // POST answers the { coachTask } envelope the canvas adapter reads.
+    const createdTask = (await created.json()) as { coachTask: { id: string } };
+    const id = createdTask.coachTask.id;
 
     const done = await call(
       taskPATCH,

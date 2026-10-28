@@ -55,6 +55,10 @@ const deleteQuerySchema = z.object({
   expectedRevision: z.coerce.number().int().min(1).optional(),
 });
 
+const deleteBodySchema = z
+  .object({ expectedRevision: z.number().int().min(1).optional() })
+  .nullable();
+
 async function readJson(request: Request): Promise<unknown> {
   try {
     return await request.json();
@@ -127,7 +131,8 @@ export const PATCH = defineApiV1Route({
     // check inside the write transaction still runs.
     if (body.title !== undefined) {
       const expected =
-        body.expectedRevision ?? (await liveRevision(caller, ctx.params.taskId));
+        body.expectedRevision ??
+        (await liveRevision(caller, ctx.params.taskId));
       const result = await updateCoachTaskTitleFromRoute(caller, {
         taskId: ctx.params.taskId,
         title: body.title,
@@ -178,11 +183,19 @@ export const DELETE = defineApiV1Route({
   query: deleteQuerySchema,
   handler: async (ctx) => {
     const caller = callerOf(ctx);
-    if (ctx.query?.expectedRevision !== undefined) {
+    // expectedRevision arrives either as a query (?expectedRevision=, flat
+    // { revision, changed } answer) or in the JSON body ({ coachTask }
+    // envelope); an empty body resolves the live revision first.
+    let expectedRevision = ctx.query?.expectedRevision;
+    if (expectedRevision === undefined) {
+      const body = deleteBodySchema.parse(await readJson(ctx.request));
+      expectedRevision = body?.expectedRevision;
+    }
+    if (expectedRevision !== undefined) {
       return unwrap(
         await deleteCoachTaskFromRoute(caller, {
           taskId: ctx.params.taskId,
-          expectedRevision: ctx.query.expectedRevision,
+          expectedRevision,
         }),
       );
     }

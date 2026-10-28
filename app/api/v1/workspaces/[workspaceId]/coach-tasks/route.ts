@@ -71,6 +71,29 @@ function caller(ctx: {
   };
 }
 
+// The canvas envelope pins the seven-field task view; the service view
+// carries bookkeeping fields (complete, createdAt, updatedAt) the adapter
+// contract does not expose.
+function strictView(view: {
+  id: string;
+  clientProfileId: string | null;
+  title: string;
+  completedAt: Date | string | null;
+  completedByMemberId: string | null;
+  createdByMemberId: string;
+  revision: number;
+}) {
+  return {
+    id: view.id,
+    clientProfileId: view.clientProfileId,
+    title: view.title,
+    completedAt: view.completedAt,
+    completedByMemberId: view.completedByMemberId,
+    createdByMemberId: view.createdByMemberId,
+    revision: view.revision,
+  };
+}
+
 export const GET = defineApiV1Route({
   capability: "tasks.manage",
   params: paramsSchema,
@@ -78,10 +101,13 @@ export const GET = defineApiV1Route({
   handler: async (ctx) => {
     const listed = unwrap(
       await readCoachTasks(caller(ctx), {
+        // No query: the workspace-level list the canvas reads is
+        // clientProfileId-null rows only; a query filters to that client.
         clientProfileId: ctx.query?.clientProfileId ?? null,
+        workspaceOnly: ctx.query?.clientProfileId == null,
       }),
     );
-    return { coachTasks: listed.tasks, hasMore: listed.hasMore };
+    return { coachTasks: listed.tasks.map(strictView) };
   },
 });
 
@@ -99,6 +125,6 @@ export const POST = defineApiV1Route({
     const view = unwrap(
       await readCoachTaskFromRoute(caller(ctx), { taskId: created.id }),
     );
-    return { coachTask: view };
+    return { coachTask: strictView(view) };
   },
 });

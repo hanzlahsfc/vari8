@@ -63,39 +63,39 @@ function createCall(
 
 function patchTask(
   workspaceId: string,
-  coachTaskId: string,
+  taskId: string,
   headers: Record<string, string> = {},
   body?: unknown,
 ) {
   return patchCoachTask(
     new Request(
-      `${BASE}/api/v1/workspaces/${workspaceId}/coach-tasks/${coachTaskId}`,
+      `${BASE}/api/v1/workspaces/${workspaceId}/coach-tasks/${taskId}`,
       {
         method: "PATCH",
         headers: { ...headers, "content-type": "application/json" },
         body: JSON.stringify(body),
       },
     ),
-    { params: Promise.resolve({ workspaceId, coachTaskId }) },
+    { params: Promise.resolve({ workspaceId, taskId }) },
   );
 }
 
 function deleteTask(
   workspaceId: string,
-  coachTaskId: string,
+  taskId: string,
   headers: Record<string, string> = {},
   body?: unknown,
 ) {
   return deleteCoachTask(
     new Request(
-      `${BASE}/api/v1/workspaces/${workspaceId}/coach-tasks/${coachTaskId}`,
+      `${BASE}/api/v1/workspaces/${workspaceId}/coach-tasks/${taskId}`,
       {
         method: "DELETE",
         headers: { ...headers, "content-type": "application/json" },
         body: JSON.stringify(body),
       },
     ),
-    { params: Promise.resolve({ workspaceId, coachTaskId }) },
+    { params: Promise.resolve({ workspaceId, taskId }) },
   );
 }
 

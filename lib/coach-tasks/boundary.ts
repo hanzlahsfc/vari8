@@ -108,7 +108,7 @@ export const restoreCoachTaskFromRoute = (
 
 export const readCoachTasks = (
   caller: CoachTaskCaller,
-  input: { clientProfileId?: string | null } = {},
+  input: { clientProfileId?: string | null; workspaceOnly?: boolean } = {},
   deps: CoachTaskDeps = {},
 ): Promise<CoachTaskSafeResult<{ tasks: CoachTaskView[]; hasMore: boolean }>> =>
   guard(() => serviceList(caller, input, deps));

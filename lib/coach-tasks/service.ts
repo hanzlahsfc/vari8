@@ -129,12 +129,9 @@ async function lockProfile(
     clientProfileId,
     workspaceId,
   );
-  if (!rows[0])
-    throw new AccessDeniedError(
-      "client_outside_workspace",
-      "coachTasks",
-      "write",
-    );
+  // A client outside the caller's workspace is a missing resource, not a
+  // role denial — closed not_available, never a disclosing reason.
+  if (!rows[0]) throw new CoachTaskError("not_available");
 }
 
 export function normalizeTaskTitle(input: unknown): string {
@@ -501,7 +498,7 @@ export async function restoreCoachTask(
  */
 export async function listCoachTasks(
   caller: CoachTaskCaller,
-  input: { clientProfileId?: string | null } = {},
+  input: { clientProfileId?: string | null; workspaceOnly?: boolean } = {},
   deps: CoachTaskDeps = {},
 ): Promise<{ tasks: CoachTaskView[]; hasMore: boolean }> {
   const db = deps.db ?? prisma;
@@ -516,7 +513,9 @@ export async function listCoachTasks(
         deletedAt: null,
         ...(input.clientProfileId
           ? { clientProfileId: input.clientProfileId }
-          : {}),
+          : input.workspaceOnly
+            ? { clientProfileId: null }
+            : {}),
       },
       select: TASK_SELECT,
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
