@@ -41,6 +41,47 @@ const HAND_MERGE = new Set([
   "components/ethereal/builder/dashboard-builder.tsx",
   "lib/ethereal-appearance.tsx",
   "app/layout.tsx",
+  // Canvas auth wiring: pages bind the signed in viewer into canvas apps.
+  "app/client/page.tsx",
+  "app/coach/page.tsx",
+  // requireCanvasAccess gate; the viewer is not bound into EtherealApp.
+  "app/ethereal/page.tsx",
+  // Client app remote own surfaces (cards 05a, 08, 09): session bound data
+  // flows through authored wrappers and plumbing the twin does not carry.
+  "components/client-app/check-in.tsx",
+  "components/client-app/client-app.css",
+  "components/client-app/client-app.tsx",
+  "components/client-app/views.tsx",
+  // STATUS_META moved into model.ts so the canvas native remote logbook can
+  // share it; session-logger carries the dirty guard beforeunload wiring.
+  "components/client-app/training-log/model.ts",
+  "components/client-app/training-log/session-logger.tsx",
+  "components/client-app/training-log/training-logbook.tsx",
+  // Canvas data layer and remote persistence wiring.
+  "components/coach/media.tsx",
+  "components/coach/notes.tsx",
+  "components/coach/supplements/editor.tsx",
+  "components/coach/targets/editor.tsx",
+  "components/coach/workspace-polish.css",
+  // onRecordsChange persists record edits for an own bound caller.
+  "components/coach/builder/dashboard-builder.tsx",
+  // sender is a string for own bound messages instead of a fixture literal.
+  "components/ethereal/builder/model.ts",
+  // Remote mode for the own bound tracker surfaces (card 05a, issue 169).
+  "components/ethereal/client-tracker/client-tracker.tsx",
+  "components/ethereal/client-tracker/tracking-view.tsx",
+  // Attention reasons and priority delegate to the shared attention module
+  // (W2-T5); workspace persistence reads through the canvas data layer.
+  "components/ethereal/clients/client-roster.tsx",
+  "components/ethereal/clients/clients-workspace.tsx",
+  "components/ethereal/clients/model.ts",
+  // Root eslint (react/no-unescaped-entities, react-hooks/purity) requires
+  // escapes and one suppression the twin text does not carry; the frontend
+  // lints under a different config.
+  "components/client-app/mobile/home.tsx",
+  "components/client-app/mobile/logbook.tsx",
+  "components/client-app/mobile/training.tsx",
+  "components/coach/plans/temporary-editor.tsx",
 ]);
 
 // Out of scope: node:test suites and dev-only playground pages.
