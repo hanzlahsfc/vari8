@@ -24,7 +24,7 @@ export function initialBodyBudget(width: number, height: number) {
   };
 }
 
-export function widgetDetailKey(widget: WidgetInstance) {
+export function widgetDetailKey(widget: WidgetInstance): string | null {
   const { kind, settings: s } = widget;
   switch (kind) {
     case "BN21":
@@ -67,5 +67,8 @@ export function widgetDetailKey(widget: WidgetInstance) {
       return "feedback";
     case "CU16":
       return `destination:${s.fields[0] || "Tracker"}`;
+    case "CU17":
+    case "CU18":
+      return null;
   }
 }

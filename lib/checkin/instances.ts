@@ -46,11 +46,21 @@ import { writeAuditEvent } from "../audit";
 import {
   hasExactActiveConsent,
   requiredConsentsFor,
+  type ConsentKind,
   type ConsentPolicyRegistry,
 } from "../consent";
 import { resolveCheckInConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
+import {
+  DailyEntryError,
+  dailyEntryConsentRegistry,
+  loadStaffDailyEntryDetailTx,
+  type StaffDailyEntryDetail,
+} from "../daily-entry/service";
+import { CHECKIN_RATING_WORD_LABELS } from "./forms";
 import type { CheckInDefinition, CheckInField } from "./forms";
+import { isCheckInsEnabled } from "./forms-gate";
+import { localDateInZone } from "./timezone";
 
 // Type-only re-export — app surfaces consume the definition contract
 // through THIS module (the P-025-A seam rule forbids app→forms imports).
@@ -137,6 +147,10 @@ export const CHECKIN_INSTANCE_LIMITS = {
   answersJsonMaxBytes: 128 * 1024,
   answerTextMax: 4000,
   optionIdsMaxPerField: 50,
+  /** PR-M8: media ids a single VISUAL answer may carry. */
+  visualMediaIdsMax: 10,
+  /** PR-M8: staff coach note on the instance (canvas Extra.note). */
+  coachNoteMax: 500,
   idMax: 128,
   dueTzMax: 64,
   dueAtMinIsoYear: 2000,
@@ -170,6 +184,18 @@ export function parseCheckInDueTz(raw: unknown): string | null {
   const v = raw.trim();
   if (v.length === 0) return null;
   if (v.length > CHECKIN_INSTANCE_LIMITS.dueTzMax)
+    throw new CheckInInstanceError("invalid_input");
+  return v;
+}
+
+/** PR-M8: optional staff note on the instance (the canvas `Extra.note`) —
+ *  bounded, trimmed, null when absent or blank. */
+export function parseCheckInCoachNote(raw: unknown): string | null {
+  if (raw === undefined || raw === null) return null;
+  if (typeof raw !== "string") throw new CheckInInstanceError("invalid_input");
+  const v = raw.trim();
+  if (v.length === 0) return null;
+  if (v.length > CHECKIN_INSTANCE_LIMITS.coachNoteMax)
     throw new CheckInInstanceError("invalid_input");
   return v;
 }
@@ -232,10 +258,22 @@ export const KIND_TO_ENUM = {
   date: "DATE",
   singleChoice: "SINGLE_CHOICE",
   multiChoice: "MULTI_CHOICE",
+  rating: "RATING",
+  visual: "VISUAL",
 } as const;
 
 const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DECIMAL_RE = /^-?\d{1,16}(\.\d{1,6})?$/;
+const RATING_INT_RE = /^\d{1,3}$/;
+
+/** PR-M8: stored-integer bounds per canvas rating scheme. WORD_LABELS
+ *  answers store the 1-based position in CHECKIN_RATING_WORD_LABELS —
+ *  the fixed four-label scale the canvas renders. */
+const RATING_SCHEME_BOUNDS: Record<string, { min: number; max: number }> = {
+  SCALE_1_10: { min: 1, max: 10 },
+  SCALE_1_5: { min: 1, max: 5 },
+  WORD_LABELS: { min: 1, max: CHECKIN_RATING_WORD_LABELS.length },
+};
 
 export type CanonicalCheckInAnswer = {
   fieldId: string;
@@ -249,6 +287,11 @@ export type CanonicalCheckInAnswer = {
   valueNumeric: string | null;
   valueDate: string | null;
   valueOptionIds: string[] | null;
+  /** RATING answers — the stored integer inside the scheme bounds. */
+  valueRating: number | null;
+  /** VISUAL answers — ordered media object ids for the
+   *  checkin_answer_media join rows (position = array index). */
+  mediaIds: string[] | null;
 };
 
 function hasAnswerValue(v: unknown): boolean {
@@ -349,6 +392,48 @@ export function canonicalizeCheckInAnswers(
           valueOptionIds: [...new Set(value as string[])].sort(),
         });
       }
+      case "rating": {
+        // A rating field without a scheme can never canonicalize — the
+        // definition validator requires it; fail closed here too.
+        const bounds =
+          field.ratingScheme !== undefined
+            ? RATING_SCHEME_BOUNDS[field.ratingScheme]
+            : undefined;
+        if (bounds === undefined)
+          throw new CheckInInstanceError("invalid_input");
+        if (!present) return base(field, { valueRating: null });
+        const v =
+          typeof value === "number"
+            ? value
+            : typeof value === "string" && RATING_INT_RE.test(value.trim())
+              ? Number(value.trim())
+              : NaN;
+        if (!Number.isInteger(v) || v < bounds.min || v > bounds.max)
+          throw new CheckInInstanceError("invalid_input");
+        return base(field, { answered: true, valueRating: v });
+      }
+      case "visual": {
+        // VISUAL carries no value columns; its attachments live in
+        // checkin_answer_media. Media-object existence/workspace scope is
+        // verified inside the submit transaction.
+        if (!present) return base(field, { mediaIds: null });
+        if (
+          !Array.isArray(value) ||
+          value.length === 0 ||
+          value.length > CHECKIN_INSTANCE_LIMITS.visualMediaIdsMax ||
+          value.some(
+            (v) =>
+              typeof v !== "string" ||
+              v.length === 0 ||
+              v.length > CHECKIN_INSTANCE_LIMITS.idMax,
+          )
+        )
+          throw new CheckInInstanceError("invalid_input");
+        return base(field, {
+          answered: true,
+          mediaIds: [...new Set(value as string[])],
+        });
+      }
       default:
         throw new CheckInInstanceError("invalid_input");
     }
@@ -367,6 +452,8 @@ function base(
     valueNumeric: null,
     valueDate: null,
     valueOptionIds: null,
+    valueRating: null,
+    mediaIds: null,
     ...patch,
   };
 }
@@ -434,6 +521,8 @@ export type PrismaLike = Pick<
   | "checkInFeedback"
   | "checkInForm"
   | "checkInFormVersion"
+  | "checkInAnswerMedia"
+  | "mediaObject"
   | "clientProfile"
   | "workspaceMember"
   | "clientAssignment"
@@ -633,11 +722,88 @@ async function checkRequiredConsent(
   }
 }
 
+/**
+ * Consent intersection shared by the tracker-context read and the
+ * submission detail's embedded parameter packet. Locks every required
+ * kind's consent rows FOR UPDATE in sorted-kind order (the same global
+ * lock order everywhere — no lock-order inversion against the detail
+ * read's own consent step, which uses the same union when the packet
+ * is in play).
+ */
+export async function checkConsentIntersection(
+  tx: Prisma.TransactionClient,
+  clientProfileId: string,
+  pairs: Array<{
+    resource: "checkinsCoachReviews" | "dailyTracking";
+    registry: ConsentPolicyRegistry;
+  }>,
+): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
+  const required: { kind: ConsentKind; version: string }[] = [];
+  for (const { resource, registry } of pairs) {
+    for (const kind of requiredConsentsFor(resource) ?? []) {
+      const version = registry.currentVersion(kind);
+      if (version === null)
+        throw new CheckInInstanceError("policy_not_configured");
+      required.push({ kind, version });
+    }
+  }
+  const kinds = [...new Set(required.map((r) => r.kind))].sort();
+  for (const kind of kinds) {
+    const rows = (
+      await tx.$queryRawUnsafe<
+        { kind: string; version: string; revoked_at: Date | null }[]
+      >(
+        `SELECT kind, version, revoked_at
+         FROM "consent_record"
+         WHERE client_profile_id = $1
+           AND kind = CAST($2 AS "public"."ConsentKind")
+         FOR UPDATE`,
+        clientProfileId,
+        kind,
+      )
+    ).map((r) => ({
+      kind: r.kind,
+      version: r.version,
+      revokedAt: r.revoked_at,
+    }));
+    for (const req of required.filter((r) => r.kind === kind))
+      if (!hasExactActiveConsent(rows, kind, req.version))
+        throw new CheckInInstanceError("consent_missing");
+  }
+}
+
+/** Effective-scope reconciliation for the two-resource reads: the
+ *  stricter of both authorized scopes wins; `own`, denials, or unknown
+ *  values fail closed. */
+export function reconcileTrackerContextScopes(
+  checkinScope: string | null | undefined,
+  dailyScope: string | null | undefined,
+): "workspace" | "assigned" | "denied" {
+  if (
+    (checkinScope !== "workspace" && checkinScope !== "assigned") ||
+    (dailyScope !== "workspace" && dailyScope !== "assigned")
+  )
+    return "denied";
+  return checkinScope === "assigned" || dailyScope === "assigned"
+    ? "assigned"
+    : "workspace";
+}
+
 // ── Inputs ───────────────────────────────────────────────────────────────
 
 export type CheckInInstanceDeps = {
   db?: PrismaLike;
   registry?: ConsentPolicyRegistry;
+  /** Check-in review packet (PR-SV5): the daily-consent registry for the
+   *  embedded tracker-parameter packet; defaults to the deployed daily
+   *  consent policy. */
+  dailyRegistry?: ConsentPolicyRegistry;
+  /** PR-SV5 test seam — injectable dailyTracking authorization for the
+   *  embedded packet (asymmetric-capability coverage). */
+  authorizeDaily?: typeof authorize;
 };
 
 export type ScheduleCheckInInstanceInput = {
@@ -647,6 +813,8 @@ export type ScheduleCheckInInstanceInput = {
   formVersionId: string;
   dueAt: string;
   dueTz?: string | null;
+  /** PR-M8: optional staff note on the instance (canvas `Extra.note`). */
+  coachNote?: string | null;
 };
 
 export type CancelCheckInInstanceInput = {
@@ -735,6 +903,7 @@ export async function scheduleCheckInInstance(
   const dueAt = parseCheckInDueAt(input.dueAt);
   if (!dueAt) throw new CheckInInstanceError("invalid_input");
   const dueTz = parseCheckInDueTz(input.dueTz);
+  const coachNote = parseCheckInCoachNote(input.coachNote);
 
   const attempt = (): Promise<ScheduleCheckInInstanceResult> =>
     withSerializedRetry(() =>
@@ -832,6 +1001,7 @@ export async function scheduleCheckInInstance(
               formVersionId: input.formVersionId,
               dueAt,
               dueTz,
+              coachNote,
               scheduledByMemberId: member.id,
             },
             select: { id: true },
@@ -996,6 +1166,8 @@ export type StaffCheckInInstanceItem = {
   versionSeq: number;
   dueAt: string;
   dueTz: string | null;
+  /** PR-M8: staff-only note on the instance (canvas `Extra.note`). */
+  coachNote: string | null;
   state: CheckInInstanceState;
   late: boolean;
   submittedAt: string | null;
@@ -1061,6 +1233,7 @@ export async function listCheckInInstancesForClient(
         formId: true,
         dueAt: true,
         dueTz: true,
+        coachNote: true,
         cancelledAt: true,
         cancelledByMemberId: true,
         scheduledAt: true,
@@ -1107,6 +1280,7 @@ export async function listCheckInInstancesForClient(
         versionSeq: row.formVersion.versionSeq,
         dueAt: row.dueAt.toISOString(),
         dueTz: row.dueTz,
+        coachNote: row.coachNote,
         state: presentation.state,
         late: presentation.late,
         submittedAt: submission?.submittedAt.toISOString() ?? null,
@@ -1322,6 +1496,12 @@ export type OwnCheckInInstanceDetail = {
     valueNumeric: string | null;
     valueDate: string | null;
     valueOptionIds: string[] | null;
+    /** PR-M8: RATING answers — stored integer inside the field's
+     *  scheme bounds; null on every other kind. */
+    valueRating: number | null;
+    /** PR-M8: VISUAL answers — media object ids in submission order;
+     *  empty on every other kind. */
+    mediaIds: string[];
   }> | null;
   /** CHECK-IN-FEEDBACK-I1: bounded first page of staff feedback for this
    * instance's own submission — queried inside the SAME consent gate as
@@ -1426,6 +1606,8 @@ export async function getOwnCheckInInstance(
       valueNumeric: { toString(): string } | null;
       valueDate: Date | null;
       valueOptionIds: unknown;
+      valueRating: number | null;
+      media: { mediaObjectId: string }[];
     }> | null = null;
     let ownFeedback: CheckInFeedbackItem[] | null = null;
     let ownFeedbackNextCursor: string | null = null;
@@ -1460,6 +1642,11 @@ export async function getOwnCheckInInstance(
           valueNumeric: true,
           valueDate: true,
           valueOptionIds: true,
+          valueRating: true,
+          media: {
+            select: { mediaObjectId: true },
+            orderBy: { position: "asc" },
+          },
         },
         orderBy: { fieldId: "asc" },
       });
@@ -1509,6 +1696,8 @@ export async function getOwnCheckInInstance(
           valueOptionIds: Array.isArray(a.valueOptionIds)
             ? (a.valueOptionIds as string[])
             : null,
+          valueRating: a.valueRating,
+          mediaIds: a.media.map((m) => m.mediaObjectId),
         })) ?? null,
       feedback: ownFeedback,
       feedbackNextCursor: ownFeedbackNextCursor,
@@ -1651,6 +1840,31 @@ export async function submitCheckInInstance(
             rawAnswers,
           );
 
+          // 10b. VISUAL answers: every referenced media object must
+          // resolve to a live MediaObject INSIDE this workspace (PR-M8 —
+          // the raw composite FK makes a foreign-workspace reference
+          // impossible; the bounded re-check turns a stale or foreign id
+          // into the closed invalid_input, never a FK violation).
+          const mediaIds = [
+            ...new Set(
+              answers
+                .filter((a) => a.answered && a.mediaIds !== null)
+                .flatMap((a) => a.mediaIds!),
+            ),
+          ];
+          if (mediaIds.length > 0) {
+            const media = await tx.mediaObject.findMany({
+              where: {
+                id: { in: mediaIds },
+                workspaceId: input.workspaceId,
+                deletedAt: null,
+              },
+              select: { id: true },
+            });
+            if (media.length !== mediaIds.length)
+              throw new CheckInInstanceError("invalid_input");
+          }
+
           // 11. Insert — immutable submission + typed answer rows; the
           // composite coherence FKs + kind↔column CHECK enforce shape.
           const now = new Date();
@@ -1668,7 +1882,7 @@ export async function submitCheckInInstance(
             select: { id: true },
           });
           for (const answer of answers.filter((a) => a.answered)) {
-            await tx.checkInSubmissionAnswer.create({
+            const answerRow = await tx.checkInSubmissionAnswer.create({
               data: {
                 submissionId: submission.id,
                 workspaceId: input.workspaceId,
@@ -1685,8 +1899,27 @@ export async function submitCheckInInstance(
                   answer.valueOptionIds !== null
                     ? answer.valueOptionIds
                     : Prisma.DbNull,
+                valueRating: answer.valueRating,
               },
+              select: { id: true },
             });
+            // VISUAL attachments — ordered by submission position; the
+            // composite (answer, media, workspace) tuple is FK-anchored.
+            if (answer.mediaIds !== null) {
+              for (const [
+                position,
+                mediaObjectId,
+              ] of answer.mediaIds.entries()) {
+                await tx.checkInAnswerMedia.create({
+                  data: {
+                    answerId: answerRow.id,
+                    mediaObjectId,
+                    workspaceId: input.workspaceId,
+                    position,
+                  },
+                });
+              }
+            }
           }
 
           // 12. Audit LAST — a failed audit rolls the whole submission back.
@@ -1914,7 +2147,29 @@ export type StaffCheckInSubmissionFieldView = {
   required: boolean;
   /** Sanitized display value — never the raw option/field identifiers. */
   display: string;
+  /** PR-M8: VISUAL answer attachments in submission order — empty on
+   *  every other kind. Media bytes are served through the media route;
+   *  this view carries references only. */
+  mediaIds: string[];
 };
+
+/** PR-SV5: canvas flag column shape — one flagged athlete set note. */
+export type CheckInFlaggedSetNote = {
+  exercise: string;
+  set: number;
+  date: string;
+  text: string;
+};
+
+/** PR-SV5 slot — no fields are defined until issue 11's progress-photo
+ *  contract lands; the column ships as `null` (unavailable), never
+ *  fabricated rows. */
+export type CheckInReviewPhoto = Record<string, never>;
+
+/** PR-SV5 slot — no fields are defined until issue 12a's contract
+ *  lands; the column ships as `null` (unavailable), never fabricated
+ *  rows. */
+export type CheckInNutritionItem = Record<string, never>;
 
 export type StaffCheckInSubmissionDetail = {
   submissionId: string;
@@ -1945,6 +2200,21 @@ export type StaffCheckInSubmissionDetail = {
    * caller's assigned write cell + ACTIVE assignment. The send action
    * re-authorizes independently. */
   canSend: boolean;
+  /** PR-SV5: tracker-parameter packet for the check-in date — the same
+   *  values the explicit tracker-context read serves, embedded in this
+   *  audited view. `null` = withheld (dailyTracking denied, scope
+   *  reconcile denied, daily consent missing or policy unconfigured);
+   *  `[]` = authorized but no committed entry for the date. Never
+   *  fabricated. */
+  parameterValues: StaffDailyEntryDetail["values"] | null;
+  /** PR-SV5 availability slots — `null` = the feature has not landed
+   *  (unavailable), distinguishable from an authorized-but-empty `[]`.
+   *  Flagged set notes arrive with issue 14, progress photos with
+   *  issue 11 (answer attachments in `fields[].mediaIds` are a separate
+   *  thing), nutrition with issue 12a. */
+  flags: CheckInFlaggedSetNote[] | null;
+  photos: CheckInReviewPhoto[] | null;
+  nutrition: CheckInNutritionItem[] | null;
   fields: StaffCheckInSubmissionFieldView[];
 };
 
@@ -1957,6 +2227,8 @@ function displayCheckInAnswer(
         valueNumeric: Prisma.Decimal | null;
         valueDate: Date | null;
         valueOptionIds: Prisma.JsonValue | null;
+        valueRating: number | null;
+        mediaIds: string[];
       }
     | undefined,
 ): string {
@@ -1987,6 +2259,25 @@ function displayCheckInAnswer(
         .filter((v): v is string => typeof v === "string");
       return labels.length > 0 ? labels.join(", ") : "—";
     }
+    case "RATING": {
+      if (answer.valueRating === null) return "—";
+      // PR-M8: numeric schemes render as the canvas select does
+      // ("8 / 10"); word labels render the fixed canvas label the
+      // stored position names.
+      if (field.ratingScheme === "WORD_LABELS")
+        return (
+          CHECKIN_RATING_WORD_LABELS[answer.valueRating - 1] ??
+          String(answer.valueRating)
+        );
+      const max = field.ratingScheme === "SCALE_1_5" ? 5 : 10;
+      return `${answer.valueRating} / ${max}`;
+    }
+    case "VISUAL":
+      // Attachment references live on the field view's mediaIds; the
+      // display column carries the honest count only.
+      return answer.mediaIds.length > 0
+        ? `${answer.mediaIds.length} visual${answer.mediaIds.length === 1 ? "" : "s"}`
+        : "—";
     default:
       return "—";
   }
@@ -2012,6 +2303,14 @@ export async function readCheckInSubmissionDetail(
 ): Promise<StaffCheckInSubmissionDetail> {
   const db = deps.db ?? defaultPrisma;
   const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  // PR-SV5: the embedded parameter packet uses the DAILY registry —
+  // gated on the Check-In trusted-runtime classification exactly as
+  // the explicit tracker-context read does; production/unknown
+  // resolves unconfigured and withholds (never fabricated).
+  const dailyRegistry =
+    deps.dailyRegistry ??
+    dailyEntryConsentRegistry(isCheckInsEnabled(process.env));
+  const authorizeDaily = deps.authorizeDaily ?? authorize;
   if (
     !validId(input.workspaceId) ||
     !validId(input.clientProfileId) ||
@@ -2107,8 +2406,118 @@ export async function readCheckInSubmissionDetail(
         if (state !== "SUBMITTED")
           throw new CheckInInstanceError("not_available");
 
+        // 7b. PR-SV5 packet pre-lock — authorize dailyTracking, reconcile
+        // both scopes and (for an assigned effective scope) re-resolve +
+        // lock the ACTIVE assignment BEFORE the consent step, mirroring
+        // the tracker-context read's authorize → scope → assignment →
+        // consent order so the two paths never invert lock acquisition.
+        // Any denial withholds the packet; the detail read itself
+        // continues on the check-in contract alone.
+        let ctxDaily: Awaited<ReturnType<typeof authorize>> | null = null;
+        let packetScope: "workspace" | "assigned" | "denied" = "denied";
+        try {
+          ctxDaily = await authorizeDaily(
+            session,
+            {
+              resource: "dailyTracking",
+              action: "read",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            createPrismaAuthorizationRepo(tx),
+          );
+          packetScope = reconcileTrackerContextScopes(
+            ctx.grantedScope,
+            ctxDaily.grantedScope,
+          );
+          if (packetScope === "assigned")
+            await lockAssignmentForScope(
+              tx,
+              input.workspaceId,
+              input.clientProfileId,
+              member.id,
+              "checkinsCoachReviews",
+            );
+        } catch (e) {
+          if (!(e instanceof AccessDeniedError)) throw e;
+          ctxDaily = null;
+          packetScope = "denied";
+        }
+
         // 8. Consent rows FOR UPDATE before ANY answer read (#85).
-        await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+        // The check-in kinds are asserted fatally. The UNION of the
+        // daily registry's required kinds is locked in the same
+        // sorted-kind order at the same step — one global lock order
+        // shared with the tracker-context intersection — and the held
+        // rows feed the packet's withheld-vs-served decision below
+        // without a second, potentially order-inverting lock.
+        const dailyConsentRequirements = consentGatesEnabled()
+          ? (requiredConsentsFor("dailyTracking") ?? []).map((kind) => ({
+              kind,
+              version: dailyRegistry.currentVersion(kind),
+            }))
+          : [];
+        const unionKinds = consentGatesEnabled()
+          ? [
+              ...new Set([
+                ...(requiredConsentsFor("checkinsCoachReviews") ?? []),
+                ...dailyConsentRequirements.map((r) => r.kind),
+              ]),
+            ].sort()
+          : [];
+        const heldConsentRows = new Map<
+          string,
+          { kind: string; version: string; revokedAt: Date | null }[]
+        >();
+        for (const kind of unionKinds) {
+          heldConsentRows.set(
+            kind,
+            (
+              await tx.$queryRawUnsafe<
+                { kind: string; version: string; revoked_at: Date | null }[]
+              >(
+                `SELECT kind, version, revoked_at
+                 FROM "consent_record"
+                 WHERE client_profile_id = $1
+                   AND kind = CAST($2 AS "public"."ConsentKind")
+                 FOR UPDATE`,
+                input.clientProfileId,
+                kind,
+              )
+            ).map((r) => ({
+              kind: r.kind,
+              version: r.version,
+              revokedAt: r.revoked_at,
+            })),
+          );
+        }
+        if (consentGatesEnabled()) {
+          for (const kind of requiredConsentsFor("checkinsCoachReviews") ??
+            []) {
+            const version = registry.currentVersion(kind);
+            if (version === null)
+              throw new CheckInInstanceError("policy_not_configured");
+            if (
+              !hasExactActiveConsent(
+                heldConsentRows.get(kind) ?? [],
+                kind,
+                version,
+              )
+            )
+              throw new CheckInInstanceError("consent_missing");
+          }
+        }
+        // The packet's consent state — every daily requirement holds an
+        // exact active version against the held rows.
+        const dailyConsented = dailyConsentRequirements.every(
+          (r) =>
+            r.version !== null &&
+            hasExactActiveConsent(
+              heldConsentRows.get(r.kind) ?? [],
+              r.kind,
+              r.version,
+            ),
+        );
 
         // 9. Pinned version + answers (only now — after consent holds).
         const version = await tx.checkInFormVersion.findUnique({
@@ -2135,6 +2544,11 @@ export async function readCheckInSubmissionDetail(
             valueNumeric: true,
             valueDate: true,
             valueOptionIds: true,
+            valueRating: true,
+            media: {
+              select: { mediaObjectId: true },
+              orderBy: { position: "asc" },
+            },
           },
         });
         const byField = new Map(answers.map((a) => [a.fieldId, a]));
@@ -2241,6 +2655,48 @@ export async function readCheckInSubmissionDetail(
           if (!(e instanceof AccessDeniedError)) throw e;
         }
 
+        // 10b. PR-SV5 tracker-parameter packet — the daily values for
+        // the check-in date (the Vienna local date of the instance's
+        // due date — the same date the canvas passes to the explicit
+        // tracker-context endpoint). Governed inside this same
+        // transaction by the DAILY contract: dailyTracking/read denied,
+        // scope reconcile denied, missing assignment, daily consent
+        // missing or daily policy unconfigured → withheld (`null` —
+        // never an empty array that would present as "no entry"); an
+        // authorized date with no committed entry → `[]`. The shared
+        // audit-free loader supplies values; the single
+        // checkin_submission audit below covers the whole view — one
+        // READ audit per view, zero on passive GET.
+        let parameterValues: StaffCheckInSubmissionDetail["parameterValues"] =
+          null;
+        if (ctxDaily !== null && packetScope !== "denied" && dailyConsented) {
+          // The check-in date contract is the canvas's
+          // `viennaDate(dueAt)` — Europe/Vienna local date of the
+          // instance due instant.
+          const entryDate = localDateInZone(instance.dueAt, "Europe/Vienna");
+          if (entryDate !== null) {
+            try {
+              const load = await loadStaffDailyEntryDetailTx(tx, {
+                workspaceId: input.workspaceId,
+                clientProfileId: input.clientProfileId,
+                entryDate,
+                ctx: ctxDaily,
+              });
+              parameterValues = load.detail.values;
+            } catch (e) {
+              // No entry for the date → honest empty. An ineligible
+              // template stays withheld — a withheld state, never
+              // presented as "no entry".
+              if (e instanceof DailyEntryError && e.code === "not_available")
+                parameterValues = [];
+              else if (!(
+                e instanceof DailyEntryError && e.code === "ineligible"
+              ))
+                throw e;
+            }
+          }
+        }
+
         // 11. Structural READ audit — last; a failed write rolls the
         // detail read (and its values) back (#89-analog).
         await writeAuditEvent(tx, ctx, {
@@ -2279,13 +2735,29 @@ export async function readCheckInSubmissionDetail(
             sendWriteScope === "assigned" &&
             sendAssignment !== null &&
             review !== null,
-          fields: definition.fields.map((f) => ({
-            fieldId: f.fieldId,
-            label: f.label,
-            kind: f.kind,
-            required: f.required,
-            display: displayCheckInAnswer(f, byField.get(f.fieldId)),
-          })),
+          parameterValues,
+          // PR-SV5 availability slots — `null` = unavailable until the
+          // owning lane lands, never fabricated rows: flagged set notes
+          // (issue 14), progress photos (issue 11 — answer attachments
+          // stay on fields[].mediaIds), nutrition (issue 12a).
+          flags: null,
+          photos: null,
+          nutrition: null,
+          fields: definition.fields.map((f) => {
+            const a = byField.get(f.fieldId);
+            const mediaIds = (a?.media ?? []).map((m) => m.mediaObjectId);
+            return {
+              fieldId: f.fieldId,
+              label: f.label,
+              kind: f.kind,
+              required: f.required,
+              display: displayCheckInAnswer(
+                f,
+                a === undefined ? undefined : { ...a, mediaIds },
+              ),
+              mediaIds,
+            };
+          }),
         } satisfies StaffCheckInSubmissionDetail;
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

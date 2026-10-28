@@ -288,22 +288,8 @@
   font-size: 12px;
 }
 
-.eg-root .eg-variant .bw-chart-select {
+.eg-root .eg-variant .bw-chart-select .v8-field {
   min-width: 112px;
-}
-
-.eg-root .eg-variant .bw-chart-select select {
-  min-height: 37px;
-  border-color: var(--eg-edge);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 4%);
-  font-size: 13px;
-}
-
-.eg-root .eg-variant .bw-chart-select svg {
-  width: 15px;
-  height: 15px;
-  stroke-width: 1.25;
 }
 
 .eg-root .eg-variant .bw-chart {
@@ -559,11 +545,6 @@
   font-size: 26px;
 }
 
-.eg-root .eg-foundations-group .foundation-actions .app-button {
-  min-height: 40px;
-  font-size: 12px;
-}
-
 .eg-root .eg-footer-note {
   margin-top: 24px;
   padding: 17px 0 0;
@@ -592,7 +573,6 @@
   outline-offset: 3px;
 }
 
-.eg-root .app-button[data-variant="default"]:hover,
 .eg-root [data-slot="button"][data-variant="default"]:hover,
 .eg-root .mt-energy-button[aria-pressed="true"]:hover {
   filter: none;

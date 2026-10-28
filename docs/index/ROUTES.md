@@ -4,24 +4,30 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 49 backend pages, 3 API routes, 8 layouts, 3 canvas pages.
+Counts: 55 backend pages, 18 API routes, 14 layouts, 4 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
 treat a missing guard as unverified, and read `lib/auth/route-guard.ts` for real enforcement.
 
-Route groups (do not add a path segment): `(tracker)`.
+Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 
 ## Backend pages (`app/`)
 
 | Path | File | Rendered | Auth (detected) |
 |---|---|---|---|
-| `/` | `app/page.tsx` | server | none detected |
+| `/` | `app/(canvas)/page.tsx` | server | requireSessionUser |
+| `/coach` | `app/(canvas)/coach/page.tsx` | server | requireCanvasAccess |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
+| `/ethereal` | `app/(canvas)/ethereal/page.tsx` | server | requireCanvasAccess |
 | `/invite` | `app/invite/page.tsx` | server | auth |
 | `/library/exercises` | `app/library/exercises/page.tsx` | server | none detected |
 | `/library/foods` | `app/library/foods/page.tsx` | server | none detected |
 | `/login` | `app/login/page.tsx` | server | none detected |
+| `/me` | `app/(canvas)/me/page.tsx` | server | requireClientAccess |
+| `/me/login` | `app/(canvas)/me/(auth)/login/page.tsx` | server | none detected |
+| `/me/reset` | `app/(canvas)/me/(auth)/reset/page.tsx` | server | none detected |
+| `/me/reset-request` | `app/(canvas)/me/(auth)/reset-request/page.tsx` | server | none detected |
 | `/reset` | `app/reset/page.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
 | `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
@@ -71,8 +77,23 @@ Route groups (do not add a path segment): `(tracker)`.
 | Path | File | Methods | Auth (detected) |
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
+| `/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series` | `app/api/v1/daily-entries/[workspaceId]/[clientProfileId]/series/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
+| `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
+| `/api/v1/media/object` | `app/api/v1/media/object/route.ts` | GET, PUT | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients` | `app/api/v1/workspaces/[workspaceId]/clients/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/restore` | `app/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/restore/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/invitations` | `app/api/v1/workspaces/[workspaceId]/invitations/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/invitations/[invitationId]` | `app/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes` | `app/api/v1/workspaces/[workspaceId]/notes/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes/[noteId]` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/preferences` | `app/api/v1/workspaces/[workspaceId]/preferences/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/preferences/sidebar` | `app/api/v1/workspaces/[workspaceId]/preferences/sidebar/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
+| `/logout` | `app/logout/route.ts` | POST | getSession |
 
 ## Backend layouts (`app/`)
 
@@ -80,7 +101,13 @@ Layouts enforce the guards below for every route beneath them.
 
 | Path | File | Rendered | Auth (detected) |
 |---|---|---|---|
+| `/` | `app/(canvas)/layout.tsx` | server | none detected |
 | `/` | `app/layout.tsx` | server | none detected |
+| `/login` | `app/login/layout.tsx` | server | none detected |
+| `/me` | `app/(canvas)/me/(auth)/layout.tsx` | server | none detected |
+| `/reset` | `app/reset/layout.tsx` | server | none detected |
+| `/reset-request` | `app/reset-request/layout.tsx` | server | none detected |
+| `/signup` | `app/signup/layout.tsx` | server | none detected |
 | `/workspace/[workspaceId]` | `app/workspace/[workspaceId]/layout.tsx` | server | requireSessionUser + requireWorkspaceAccess |
 | `/workspace/[workspaceId]/check-ins` | `app/(tracker)/workspace/[workspaceId]/check-ins/layout.tsx` | server | requireSessionUser |
 | `/workspace/[workspaceId]/daily` | `app/(tracker)/workspace/[workspaceId]/daily/layout.tsx` | server | requireSessionUser |
@@ -97,6 +124,7 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 |---|---|---|---|
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
+| `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 
 Canvas root layout (wraps every canvas page, no guard): `frontend/src/app/layout.tsx`

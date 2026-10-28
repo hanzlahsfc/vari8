@@ -3,6 +3,7 @@
 import { Popover } from "@base-ui/react/popover";
 import { Plus, Search, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
+import { Button, IconButton, Input } from "@/components/vari8/components";
 import type { Food } from "./model";
 import "./swap-food-picker.css";
 
@@ -41,9 +42,15 @@ export function SwapFoodPicker({
       }}
     >
       <Popover.Trigger
-        type="button"
         ref={setAnchor}
-        className="mp-swap-action"
+        render={
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="mp-swap-action"
+          />
+        }
         aria-label={`Add approved alternative for ${sourceFood.name}`}
       >
         Swap
@@ -70,16 +77,23 @@ export function SwapFoodPicker({
                 </Popover.Description>
               </div>
               <Popover.Close
-                className="mp-swap-picker-close"
-                aria-label="Cancel swap"
-                title="Cancel swap"
+                render={
+                  <IconButton
+                    label="Cancel swap"
+                    className="mp-swap-picker-close"
+                  />
+                }
               >
                 <X size={15} />
               </Popover.Close>
             </div>
-            <label className="mp-swap-picker-search">
+            <div className="mp-swap-picker-search">
               <Search size={15} aria-hidden="true" />
-              <input
+              <Input
+                label={`Search alternatives for ${sourceFood.name}`}
+                className="mp-swap-picker-search-input"
+                size="sm"
+                type="search"
                 ref={searchRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
@@ -95,9 +109,8 @@ export function SwapFoodPicker({
                   }
                 }}
                 placeholder="Search foods…"
-                aria-label={`Search alternatives for ${sourceFood.name}`}
               />
-            </label>
+            </div>
             <div
               className="mp-swap-picker-results"
               role="listbox"

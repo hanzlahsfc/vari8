@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 131 modules with exports, 1296 exported symbols.
+Counts: 154 modules with exports, 1528 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -46,6 +46,15 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export { cn } from "cn"`
 
+## `frontend/src/lib/vari8-theme.ts`
+
+- `export const VARI8_SURFACES = [ "canvas", "surface-navigation", "surface", "surface-subtle", "surface-raised", "surface-inset", "surface-interactive", "surface-selected", "surface-featured", "surfa...`
+- `export type Vari8Mode = "light" | "dark"`
+- `export type Vari8Theme = Record<`--v8-${Vari8Role}`, string>`
+- `export function contrastRatio(first: string, second: string): number`
+- `export function normalizeAccent(value: string): string | null`
+- `export function vari8Theme({ mode, accent, }: { mode: Vari8Mode; accent: string; }): Vari8Theme`
+
 ## `lib/api/v1.ts`
 
 - `export class ApiError extends Error (1 members)`
@@ -54,6 +63,8 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type V1RouteContext<P, Q> = { viewer: ApiViewer; workspace: ApiWorkspaceContext; params: P; query: Q; request: Request; }`
 - `export type V1RouteDefinition<P, Q, R> = { capability: Capability; params: ZodType<P>; query?: ZodType<Q>; handler: (ctx: V1RouteContext<P, Q>) => Promise<R>; }`
 - `export function defineApiV1Route<P extends { workspaceId: string }, Q, R>(def: V1RouteDefinition<P, Q, R>)`
+- `export function reportV1Failure(request: Request, requestId: string, error: unknown): Response`
+- `export function requestIdFor(request: Request): string`
 
 ## `lib/audit.ts`
 
@@ -180,9 +191,16 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/auth/viewer.ts`
 
+- `export type CanvasRole = "Owner" | "Coach"`
+- `export type CanvasViewer = { name: string; initials: string; role: CanvasRole; workspace: { id: string; name: string }; }`
+- `export type ClientViewer = { name: string; initials: string; workspace: { id: string; name: string }; clientProfileId: string; }`
 - `export type Viewer = { id: string; email: string; name: string | null }`
+- `export async function getCanvasViewer(userId: string): Promise<CanvasViewer | null>`
+- `export async function getClientViewer(userId: string): Promise<ClientViewer | null>`
 - `export async function getViewer(): Promise<Viewer | null>`
 - `export async function getViewerFromHeaders(requestHeaders: Headers): Promise<Viewer | null>`
+- `export function initialsOf(name: string): string`
+- `export async function signOutPath(userId: string | undefined | null): Promise<string>`
 
 ## `lib/boundary.ts`
 
@@ -192,6 +210,42 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function failMessage(message: string): { ok: false; message: string }`
 - `export async function guard<F, T>(options: { enabled: boolean; off: () => F; map: (error: unknown) => F; }, fn: () => Promise<T>): Promise<{ ok: true; value: T } | F>`
 - `export function mapError<F>(error: unknown, mapping: { denied: () => F; consent?: (error: ConsentError) => F; domain: (error: unknown) => F | null | undefined; serializationConflict?: () => F; fall...`
+
+## `lib/canvas/coaching-data.ts`
+
+- `export type Client = (typeof seed.clients)[number]`
+- `export type Meal = (typeof seed.mealPlan.variants)[number]["meals"][number]`
+- `export type MealVariant = (typeof seed.mealPlan.variants)[number]`
+- `export type VariantId = "td" | "ntd"`
+- `export const clientProfile = seed.clientProfile`
+- `export const clients = seed.clients`
+- `export const dashboard = seed.dashboard`
+- `export function formatDate(value: string, withYear = false): string`
+- `export function getVariant(id: VariantId): MealVariant`
+- `export function isEmma(client: Client): boolean`
+- `export const mealVariants = seed.mealPlan.variants`
+- `export const seed = source`
+- `export function templateName(client: Client): string`
+
+## `lib/canvas/ethereal-appearance.tsx`
+
+- `export type Appearance = { mode: AppearanceMode; accent: string; font: AppearanceFont; }`
+- `export type AppearanceFont = | "sans" | "serif" | "condensed" | "mono" | "rounded"`
+- `export type AppearanceMode = "light" | "dark"`
+- `export function AppearanceProvider({ children }: { children: ReactNode })`
+- `export const defaultAppearance: Appearance`
+- `export const fontOptions: { id: AppearanceFont; label: string; name: string; family: string; }[]`
+- `export function normalizeHex(value: string): string | null`
+- `export function themeVariables(appearance: Appearance): CSSProperties`
+- `export function useAppearance(): AppearanceContextValue`
+
+## `lib/canvas/reduced-motion.ts`
+
+- `export function useReducedMotion(): boolean`
+
+## `lib/canvas/utils.ts`
+
+- `export { cn } from "cn"`
 
 ## `lib/catalog.ts`
 
@@ -234,16 +288,19 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/checkin/forms.ts`
 
-- `export const CHECKIN_FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", ] as const`
+- `export const CHECKIN_FIELD_KINDS = [ "shortText", "longText", "number", "date", "singleChoice", "multiChoice", "rating", "visual", ] as const`
 - `export const CHECKIN_FORM_LIMITS = { maxFields: 100, minPublishFields: 1, labelMax: 200, helpTextMax: 500, classificationMax: 64, minOptions: 1, maxOptions: 50, optionLabelMax: 200, nameMax: 120, d...`
+- `export const CHECKIN_RATING_SCHEMES = [ "SCALE_1_10", "SCALE_1_5", "WORD_LABELS", ] as const`
+- `export const CHECKIN_RATING_WORD_LABELS = [ "Low", "Okay", "Good", "Excellent", ] as const`
 - `export type CheckInDefinition = { title: string; fields: CheckInField[] }`
-- `export type CheckInField = { fieldId: string; kind: CheckInFieldKind; label: string; required: boolean; order: number; helpText?: string; options?: CheckInOption[]; classification?: string; }`
+- `export type CheckInField = { fieldId: string; kind: CheckInFieldKind; label: string; required: boolean; order: number; helpText?: string; options?: CheckInOption[]; ratingScheme?: CheckInRatingSche...`
 - `export type CheckInFieldKind = (typeof CHECKIN_FIELD_KINDS)[number]`
 - `export type CheckInFormDetail = { id: string; name: string; status: "ACTIVE" | "ARCHIVED"; draftRevision: number; draft: CheckInDefinition | null; versions: Array<{ versionSeq: number; publishedAt:...`
 - `export class CheckInFormError extends Error (1 members)`
 - `export type CheckInFormErrorCode = | "invalid_input" | "form_not_accessible" | "form_archived" | "no_open_draft" | "stale_revision" | "forbidden_field_id" | "publish_incomplete" | "serialization_co...`
 - `export type CheckInFormSummary = { id: string; name: string; status: "ACTIVE" | "ARCHIVED"; draftRevision: number; hasDraft: boolean; latestVersionSeq: number | null; updatedAt: string; }`
 - `export type CheckInOption = { optionId: string; label: string }`
+- `export type CheckInRatingScheme = (typeof CHECKIN_RATING_SCHEMES)[number]`
 - `export async function archiveCheckInForm(session: SessionLike, input: { workspaceId: string; formId: string }, client?: PrismaClient): Promise<{ formId: string }>`
 - `export async function createCheckInForm(session: SessionLike, input: { workspaceId: string; name: string }, client?: PrismaClient): Promise<{ formId: string }>`
 - `export async function getCheckInForm(session: SessionLike, input: { workspaceId: string; formId: string }, client?: PrismaClient): Promise<CheckInFormDetail>`
@@ -273,6 +330,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function listStaffCheckInSubmissions(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ items: Staf...`
 - `export async function markCheckInSubmissionReviewedFromAction(session: Session, input: MarkCheckInSubmissionReviewedInput, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<MarkCheckInSubm...`
 - `export { parseCheckInSubmissionParam }`
+- `export async function projectStaffCheckInScheduleOccurrences(session: Session, input: ProjectCheckInScheduleOccurrencesInput, deps: CheckInScheduleDeps = {}): Promise<CheckInSafeResult<ProjectCheck...`
 - `export async function readCheckInReviewTrackerContextFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }, deps: CheckInTra...`
 - `export async function readOwnCheckInCalendar(session: Session, input: { workspaceId: string; from: string; to: string }, deps: CheckInInstanceDeps = {}): Promise< CheckInSafeResult<{ items: OwnChec...`
 - `export async function readOwnNextCheckInInstance(session: Session, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<CheckInSafeResult<{ next: OwnNextCheckInInstance | null }>>`
@@ -290,7 +348,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const CHECKIN_FEEDBACK_BODY_MAX = 2000`
 - `export const CHECKIN_FEEDBACK_NONCE_MAX = 64`
 - `export const CHECKIN_FEEDBACK_PAGE_SIZE = 50`
-- `export const CHECKIN_INSTANCE_LIMITS = { answersJsonMaxBytes: 128 * 1024, answerTextMax: 4000, optionIdsMaxPerField: 50, idMax: 128, dueTzMax: 64, dueAtMinIsoYear: 2000, dueAtMaxIsoYear: 2100, list...`
+- `export const CHECKIN_INSTANCE_LIMITS = { answersJsonMaxBytes: 128 * 1024, answerTextMax: 4000, optionIdsMaxPerField: 50, visualMediaIdsMax: 10, coachNoteMax: 500, idMax: 128, dueTzMax: 64, dueAtMin...`
 - `export const CHECKIN_REVIEW_QUEUE_PAGE_SIZE = 50`
 - `export type CancelCheckInInstanceInput = { workspaceId: string; clientProfileId: string; instanceId: string; }`
 - `export type CancelCheckInInstanceResult = { status: "cancelled" }`
@@ -299,14 +357,17 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInFeedbackItem = { id: string; sentAt: string; byName: string; body: string; }`
 - `export type CheckInFeedbackPage = { items: CheckInFeedbackItem[]; nextCursor: string | null; hasMore: boolean; }`
 - `export type { CheckInField }`
-- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; }`
+- `export type CheckInFlaggedSetNote = { exercise: string; set: number; date: string; text: string; }`
+- `export type CheckInInstanceDeps = { db?: PrismaLike; registry?: ConsentPolicyRegistry; dailyRegistry?: ConsentPolicyRegistry; authorizeDaily?: typeof authorize; }`
 - `export class CheckInInstanceError extends Error (1 members)`
 - `export type CheckInInstanceErrorCode = | "invalid_input" | "not_available" | "already_submitted" | "instance_not_accessible" | "consent_missing" | "policy_not_configured" | "serialization_conflict"...`
 - `export type CheckInInstanceLifecycleInput = { cancelledAt: Date | null; cancelledByMemberId: string | null; hasSubmission: boolean; hasReview?: boolean; }`
 - `export type CheckInInstancePresentation = { state: CheckInInstanceState; late: boolean; }`
 - `export type CheckInInstanceState = "CANCELLED" | "REVIEWED" | "SUBMITTED" | "SCHEDULED"`
+- `export type CheckInNutritionItem = Record<string, never>`
+- `export type CheckInReviewPhoto = Record<string, never>`
 - `export type GetOwnCheckInInstanceInput = { workspaceId: string; instanceId: string; }`
-- `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", } as const`
+- `export const KIND_TO_ENUM = { shortText: "SHORT_TEXT", longText: "LONG_TEXT", number: "NUMBER", date: "DATE", singleChoice: "SINGLE_CHOICE", multiChoice: "MULTI_CHOICE", rating: "RATING", visual: "...`
 - `export type ListCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; cursor?: string; limit?: number; }`
 - `export type ListCheckInInstancesInput = { workspaceId: string; clientProfileId: string; range?: { from: string; to: string }; }`
 - `export type ListOwnCheckInFeedbackInput = { workspaceId: string; instanceId: string; cursor?: string; }`
@@ -320,21 +381,22 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type RawCheckInAnswerEntry = { fieldId: string; value: unknown }`
 - `export type ResolveCheckInFeedbackSendInput = { workspaceId: string; clientProfileId: string; submissionId: string; clientRequestId: string; }`
 - `export type ResolveCheckInFeedbackSendResult = | { status: "sent"; feedbackId: string; sentAt: string; byName: string; body: string; } | { status: "not_sent" }`
-- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; dueAt: string; dueTz?: string | null; }`
+- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; dueAt: string; dueTz?: string | null; coachNote?: string | null; }`
 - `export type ScheduleCheckInInstanceResult = | { status: "scheduled"; instanceId: string } | { status: "already_scheduled"; instanceId: string }`
 - `export type ScheduleFormOption = { position: number; formName: string; versionSeq: number; formId: string; formVersionId: string; }`
 - `export type SendCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; body: string; clientRequestId: string; }`
 - `export type SendCheckInFeedbackResult = { status: "sent" | "already_sent"; feedbackId: string; sentAt: string; byName: string; body: string; }`
-- `export type StaffCheckInInstanceItem = { instanceId: string; formId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; state: CheckInInstanceState; late: boolean; s...`
+- `export type StaffCheckInInstanceItem = { instanceId: string; formId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; coachNote: string | null; state: CheckInInsta...`
 - `export type StaffCheckInReviewQueueItem = { submissionId: string; instanceId: string; clientProfileId: string; clientName: string; formName: string; versionSeq: number; dueAt: string; submittedAt: ...`
 - `export type StaffCheckInSubmissionDetail = { submissionId: string; instanceId: string; formName: string; versionSeq: number; dueAt: string; submittedAt: string; late: boolean; reviewed: { byName: s...`
-- `export type StaffCheckInSubmissionFieldView = { fieldId: string; label: string; kind: string; required: boolean; display: string; }`
+- `export type StaffCheckInSubmissionFieldView = { fieldId: string; label: string; kind: string; required: boolean; display: string; mediaIds: string[]; }`
 - `export type StaffCheckInSubmissionItem = { instanceId: string; submissionId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; submittedAt: string; late: boolean; r...`
 - `export type SubmitCheckInInstanceInput = { workspaceId: string; instanceId: string; answersJson: string; }`
 - `export type SubmitCheckInInstanceResult = | { status: "submitted"; submissionId: string } | { status: "already_submitted"; submissionId: string }`
 - `export function buildCheckInReviewQueueWhere(scope: "workspace" | "assigned", ctx: { workspaceId: string; workspaceMemberId: string }, cursor: { submittedAt: Date; id: string } | undefined): Prisma...`
 - `export async function cancelCheckInInstance(session: SessionLike, input: CancelCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CancelCheckInInstanceResult>`
 - `export function canonicalizeCheckInAnswers(definition: CheckInDefinition, raw: readonly RawCheckInAnswerEntry[]): CanonicalCheckInAnswer[]`
+- `export async function checkConsentIntersection(tx: Prisma.TransactionClient, clientProfileId: string, pairs: Array<{ resource: "checkinsCoachReviews" | "dailyTracking"; registry: ConsentPolicyRegis...`
 - `export function deriveCheckInQueueCanReview(role: string, rowHasActiveAssignment: boolean): boolean`
 - `export async function getOwnCheckInInstance(session: SessionLike, input: GetOwnCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<OwnCheckInInstanceDetail>`
 - `export async function getOwnNextCheckInInstance(session: SessionLike, input: { workspaceId: string }, deps: CheckInInstanceDeps = {}): Promise<OwnNextCheckInInstance | null>`
@@ -349,6 +411,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function normalizeCheckInFeedbackBody(raw: unknown): string | null`
 - `export function parseCheckInAnswersJson(raw: unknown): RawCheckInAnswerEntry[]`
 - `export function parseCheckInCalendarRange(raw: { from?: unknown; to?: unknown; }): { from: Date; to: Date } | null`
+- `export function parseCheckInCoachNote(raw: unknown): string | null`
 - `export function parseCheckInDueAt(raw: unknown): Date | null`
 - `export function parseCheckInDueTz(raw: unknown): string | null`
 - `export function parseCheckInReviewQueueCursor(raw: string): { submittedAt: Date; id: string; }`
@@ -356,6 +419,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function projectCheckInInstancePresentation(row: CheckInInstanceLifecycleInput & { dueAt: Date; submittedAt: Date | null; }, now: Date = new Date()): CheckInInstancePresentation`
 - `export function projectCheckInInstanceState(row: CheckInInstanceLifecycleInput): CheckInInstanceState`
 - `export async function readCheckInSubmissionDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; submissionId: string; }, deps: CheckInInstanceDeps = {}): Promise<Staf...`
+- `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
 - `export async function resolveCheckInFeedbackSend(session: SessionLike, input: ResolveCheckInFeedbackSendInput, deps: CheckInInstanceDeps = {}): Promise<ResolveCheckInFeedbackSendResult>`
 - `export async function scheduleCheckInInstance(session: SessionLike, input: ScheduleCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<ScheduleCheckInInstanceResult>`
 - `export async function sendCheckInFeedback(session: SessionLike, input: SendCheckInFeedbackInput, deps: CheckInInstanceDeps = {}): Promise<SendCheckInFeedbackResult>`
@@ -364,7 +428,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/checkin/schedules.ts`
 
 - `export const CHECKIN_SCHEDULE_HORIZON_DAYS = CHECKIN_SCHEDULE_LIMITS.horizonDays`
-- `export const CHECKIN_SCHEDULE_LIMITS = { idMax: 128, horizonDays: 56, } as const`
+- `export const CHECKIN_SCHEDULE_LIMITS = { idMax: 128, horizonDays: 56, projectionRangeMaxDays: 95, } as const`
 - `export { CheckInInstanceError }`
 - `export type CheckInRuleWeekday = (typeof WEEKDAYS)[number]`
 - `export type CheckInScheduleDeps = { db?: PrismaLike; now?: () => Date; }`
@@ -373,15 +437,20 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CreateCheckInScheduleRuleResult = | { status: "created"; ruleId: string } | { status: "replaced"; ruleId: string; endedRuleId: string }`
 - `export type GenerateCheckInScheduleRuleInput = { workspaceId: string; clientProfileId: string; ruleId: string; }`
 - `export type GenerateCheckInScheduleRuleResult = | { status: "generated"; examinedThrough: string | null; created: number; alreadyGenerated: number; skippedConflicts: string[]; unrepresentable: stri...`
+- `export type ProjectCheckInScheduleOccurrencesInput = { workspaceId: string; clientProfileId: string; rangeStart: string; rangeEnd: string; }`
+- `export type ProjectCheckInScheduleOccurrencesResult = { items: ProjectedCheckInOccurrence[]; unrepresentable: { ruleId: string; occurrenceDate: string }[]; }`
+- `export type ProjectedCheckInOccurrence = { ruleId: string; formId: string; occurrenceDate: string; dueAt: string; }`
 - `export type SetCheckInScheduleRuleStatusInput = { workspaceId: string; clientProfileId: string; ruleId: string; action: "pause" | "resume" | "end"; }`
 - `export type SetCheckInScheduleRuleStatusResult = | { status: "paused" } | { status: "resumed" } | { status: "ended"; cancelledCount: number }`
 - `export async function createCheckInScheduleRule(session: SessionLike, input: CreateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<CreateCheckInScheduleRuleResult>`
 - `export function enumerateRuleOccurrenceDates(input: { weekday: CheckInRuleWeekday; startDate: string; endDate: string | null; todayLocal: string; }): string[]`
+- `export function enumerateRuleOccurrenceDatesInRange(input: { weekday: CheckInRuleWeekday; startDate: string; endDate: string | null; rangeStart: string; rangeEnd: string; }): string[]`
 - `export async function generateCheckInScheduleRuleInstances(session: SessionLike, input: GenerateCheckInScheduleRuleInput, deps: CheckInScheduleDeps = {}): Promise<GenerateCheckInScheduleRuleResult>`
 - `export async function listCheckInScheduleRules(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: CheckInScheduleDeps = {}): Promise<{ items: CheckInScheduleRuleIt...`
 - `export function parseCheckInScheduleLocalDate(raw: unknown): string | null`
 - `export function parseCheckInScheduleLocalTimeMinutes(raw: unknown): number | null`
 - `export function parseCheckInScheduleWeekday(raw: unknown): CheckInRuleWeekday | null`
+- `export async function projectCheckInScheduleOccurrences(session: SessionLike, input: ProjectCheckInScheduleOccurrencesInput, deps: CheckInScheduleDeps = {}): Promise<ProjectCheckInScheduleOccurrenc...`
 - `export async function setCheckInScheduleRuleStatus(session: SessionLike, input: SetCheckInScheduleRuleStatusInput, deps: CheckInScheduleDeps = {}): Promise<SetCheckInScheduleRuleStatusResult>`
 
 ## `lib/checkin/timezone.ts`
@@ -398,7 +467,31 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type CheckInTrackerContextInput = { workspaceId: string; clientProfileId: string; submissionId: string; entryDate: string; }`
 - `export type CheckInTrackerContextResult = StaffDailyEntryDetail`
 - `export async function readCheckInReviewTrackerContext(session: SessionLike, input: CheckInTrackerContextInput, deps: CheckInTrackerContextDeps = {}): Promise<StaffDailyEntryDetail>`
-- `export function reconcileTrackerContextScopes(checkinScope: string | null | undefined, dailyScope: string | null | undefined): "workspace" | "assigned" | "denied"`
+
+## `lib/coach-tasks/boundary.ts`
+
+- `export type CoachTaskSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
+- `export const createCoachTaskFromRoute = (caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ id: string; re...`
+- `export const deleteCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; cha...`
+- `export const readCoachTasks = (caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ tasks: CoachTaskView[]; hasMore: bo...`
+- `export const restoreCoachTaskFromRoute = (caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ revision: number; changed: boolean }>> =>`
+- `export const setCoachTaskCompletionFromRoute = (caller: CoachTaskCaller, input: { taskId: string; complete: boolean; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise< CoachTaskSafeRes...`
+- `export const updateCoachTaskTitleFromRoute = (caller: CoachTaskCaller, input: { taskId: string; title: unknown; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<CoachTaskSafeResult<{ ...`
+
+## `lib/coach-tasks/service.ts`
+
+- `export type CoachTaskCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
+- `export type CoachTaskDeps = { db?: PrismaLike }`
+- `export class CoachTaskError extends Error (1 members)`
+- `export type CoachTaskView = { id: string; clientProfileId: string | null; title: string; complete: boolean; completedAt: string | null; createdByMemberId: string; revision: number; createdAt: strin...`
+- `export const RESTORE_WINDOW_MS = 30_000`
+- `export async function createCoachTask(caller: CoachTaskCaller, input: { clientProfileId?: string | null; title: unknown }, deps: CoachTaskDeps = {}): Promise<{ id: string; revision: number }>`
+- `export async function deleteCoachTask(caller: CoachTaskCaller, input: { taskId: string; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
+- `export async function listCoachTasks(caller: CoachTaskCaller, input: { clientProfileId?: string | null } = {}, deps: CoachTaskDeps = {}): Promise<{ tasks: CoachTaskView[]; hasMore: boolean }>`
+- `export function normalizeTaskTitle(input: unknown): string`
+- `export async function restoreCoachTask(caller: CoachTaskCaller, input: { taskId: string }, deps: CoachTaskDeps = {}): Promise<{ revision: number; changed: boolean }>`
+- `export async function setCoachTaskCompletion(caller: CoachTaskCaller, input: { taskId: string; complete: boolean; expectedRevision: number; }, deps: CoachTaskDeps = {}): Promise<{ revision: number;...`
+- `export async function updateCoachTaskTitle(caller: CoachTaskCaller, input: { taskId: string; title: unknown; expectedRevision: number }, deps: CoachTaskDeps = {}): Promise<{ revision: number; chang...`
 
 ## `lib/coaching/client-setup-boundary.ts`
 
@@ -636,6 +729,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const MEALPLAN_DEV_CONSENT = { PRIVACY_NOTICE: "meal-plan-dev-privacy-v1", HEALTH_DATA: "meal-plan-dev-health-v1", } as const`
 - `export const ONBOARDING_SUBMISSION_DEV_CONSENT = { PRIVACY_NOTICE: "onboarding-submission-dev-privacy-v1", HEALTH_DATA: "onboarding-submission-dev-health-v1", } as const`
 - `export type OnboardingSubmissionConsentEnv = RuntimeEnv & { ENABLE_ONBOARDING_SUBMISSION?: string; }`
+- `export const SUPPLEMENTS_DEV_CONSENT = { PRIVACY_NOTICE: "supplements-dev-privacy-v1", HEALTH_DATA: "supplements-dev-health-v1", } as const`
 - `export type SubmissionRuntimeClass = RuntimeClass`
 - `export const TRAINING_DEV_CONSENT = { PRIVACY_NOTICE: "training-plan-dev-privacy-v1", HEALTH_DATA: "training-plan-dev-health-v1", } as const`
 - `export function assertConsentMutationsExternallyExposable(env: ConsentGateEnv = process.env): void`
@@ -650,6 +744,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function resolveCheckInConsentPolicy(env: { ENABLE_CHECK_INS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveMealPlanConsentPolicy(env: { ENABLE_MEAL_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveOnboardingSubmissionConsentPolicy(env: OnboardingSubmissionConsentEnv = process.env): ConsentPolicyRegistry`
+- `export function resolveSupplementsConsentPolicy(env: { ENABLE_SUPPLEMENTS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export function resolveTrainingConsentPolicy(env: { ENABLE_TRAINING_PLANS?: string; APP_ENV?: string; NODE_ENV?: string; } = process.env): ConsentPolicyRegistry`
 - `export async function revokeOwnConsent(session: SessionLike, input: { workspaceId: string; clientProfileId: string; kind: ConsentKind }, deps: ConsentServiceDeps = {}): Promise<ConsentMutationResult>`
 - `export const unconfiguredConsentPolicy: ConsentPolicyRegistry`
@@ -657,6 +752,7 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/daily-entry/boundary.ts`
 
 - `export type DailyEntryActionResult<T> = { ok: true; value: T } | { ok: false; message: string }`
+- `export async function readDailyEntryNumericSeriesFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { clientProfileId: unknown; parameterId: unknown; from: unknown; to: unknown; }, d...`
 - `export async function saveDailyEntryFromAction(session: SessionLike, input: unknown, deps: { entryEnabled?: boolean; db?: PrismaClient; registry?: ConsentPolicyRegistry; } = {}): Promise<DailyEntry...`
 
 ## `lib/daily-entry/canonical.ts`
@@ -686,22 +782,31 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { DailyEntryError } from "./gate"`
 - `export type DailyEntryHistoryEntry = { entryDate: string; declaredAt: string; revisionCount: number; values: DailyEntryHistoryRow[]; }`
 - `export type DailyEntryHistoryRow = { parameterKey: string; label: string; unit: string | null; display: string; }`
+- `export type DailyEntryNumericSeriesPoint = { date: string; value: number; }`
+- `export type DailyEntryNumericSeriesResult = | { state: "ready"; parameter: { parameterId: string; key: string; label: string; unit: string | null; kind: string; }; from: string; to: string; points:...`
 - `export type DailyEntrySurface = | { state: "ready"; formToken: string; entryDate: string; sections: DailyEntrySurfaceSection[]; history: DailyEntryHistoryEntry[]; } | { state: "not_applicable" } | ...`
 - `export type DailyEntrySurfaceItem = { ordinal: number; parameterKey: string; label: string; helpText: string | null; unit: string | null; kind: string; required: boolean; ratingScheme: string | nul...`
 - `export type DailyEntrySurfaceSection = { sectionKey: string; label: string; items: DailyEntrySurfaceItem[]; }`
+- `export const SERIES_MAX_SPAN_DAYS = 372`
 - `export const STAFF_ENTRY_PAGE_SIZE = 25`
 - `export type SaveDailyEntryInput = { workspaceId: string; entryDate: string; formToken: string; values: OrdinalValue[]; }`
 - `export type SaveDailyEntryResult = { status: "saved"; revisionSeq: number } | { status: "no_op" }`
 - `export type StaffDailyEntryDetail = { entryDate: string; revisionSeq: number; revisionCount: number; declaredAt: string; values: DailyEntryHistoryRow[]; }`
 - `export type StaffDailyEntryListItem = { entryDate: string; revisionCount: number; currentRevisionSeq: number | null; }`
 - `export type StaffDailyEntryListResult = | { state: "ready"; clientName: string; items: StaffDailyEntryListItem[]; nextCursor: string | null; } | { state: "consent_missing" }`
+- `export type StaffDailyEntryLoad = { entryId: string; detail: StaffDailyEntryDetail; }`
+- `export type StoredValue = { parameterId: string; kind: string; valueNumeric: unknown; valueRating: number | null; valueOptionId: string | null; valueText: string | null; }`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
+- `export async function loadStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
+- `export function parseDailyEntrySeriesRange(rawFrom: unknown, rawTo: unknown): { from: string; to: string }`
 - `export function parseDeclaredDate(raw: unknown): string`
 - `export function parseStaffEntryCursor(raw: unknown): string | null`
+- `export async function readDailyEntryNumericSeries(viewer: { userId: string }, workspace: { workspaceId: string; scope: "workspace" | "own" }, input: { clientProfileId: unknown; parameterId: unknown...`
 - `export async function readStaffDailyEntryDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string; entryDate: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntry...`
 - `export async function readStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
+- `export function renderRevisionDisplayRows(values: readonly StoredValue[], snapshot: readonly SnapshotParam[], def: VersionDefinition): DailyEntryHistoryRow[]`
 - `export async function saveDailyEntry(session: SessionLike, input: SaveDailyEntryInput, deps: DailyEntryDeps = {}): Promise<SaveDailyEntryResult>`
 
 ## `lib/daily-entry/validate.ts`
@@ -744,6 +849,12 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type TrackerValues = Record<string, string>`
 - `export function getSectionById(id: string): TrackerSection | undefined`
 - `export function validateDailyTrackerValues(values: TrackerValues): TrackerValidationError[]`
+
+## `lib/dashboard/adapter.ts`
+
+- `export type DraftResult = { ok: true; draft: DashboardDraft } | { ok: false; reason: string }`
+- `export function configToDraft(config: unknown): DraftResult`
+- `export function draftToConfig(draft: unknown, visibility: WidgetVisibility = "client"): ValidationResult`
 
 ## `lib/dashboard/autosave-coordinator.ts`
 
@@ -790,7 +901,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const WIDGET_KINDS = [ "BN21", "BN01", "BN08", "BN15", "BN19", "TL26", "TL28", "TL06", "TL11", "TL14", "TL21", "TL22", "CU01", "CU02", "CU03", "CU04", "CU06", "CU09", "CU10", "CU16", ] as const`
 - `export type WidgetInstance = { id: string; kind: WidgetKind; settings: WidgetSettings; }`
 - `export type WidgetKind = (typeof WIDGET_KINDS)[number]`
-- `export type WidgetSettings = { title: string; source: string; summary: string; period: string; historyPeriod: "auto" | "3m" | "6m" | "1y"; target: boolean; size: SizeName; fields: string[]; labels:...`
+- `export type WidgetSettings = { title: string; source: string; summary: string; period: string; historyPeriod?: "auto" | "3m" | "6m" | "1y"; target: boolean; size: SizeName; fields: string[]; labels...`
 - `export type WidgetVisibility = "staff" | "client"`
 - `export function canonicalizeDashboardConfig(config: DashboardConfig): string`
 - `export function compactRects(rects: Record<string, Rect>): Record<string, Rect>`
@@ -1126,9 +1237,10 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type HabitSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
 - `export const archiveHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; expectedRevision: number; }, deps: HabitDeps = {}): Promise<HabitSaf...`
-- `export const createHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; startDate: unknown; weekdays: unknown; endDate?: unkno...`
-- `export const editHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; schedule?: { weekdays?: unknown; endD...`
+- `export const createHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; reason?: unknown; startDate: unknown; weekdays: unknow...`
+- `export const editHabitFromAction = (session: Session, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; reason?: unknown; schedule?: { weekda...`
 - `export const readHabitChoices = (session: Session, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise< HabitSafeResult<{ choices: { id: string; name: string }[]...`
+- `export const readHabitCompletions = (session: Session, input: { workspaceId: string; clientProfileId?: string; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitSafeResult<{ habits: HabitCom...`
 - `export const readHabitConsistency = (session: Session, input: { workspaceId: string; clientProfileId?: string; period: unknown; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitSafeResult<H...`
 - `export const readStaffHabits = (session: Session, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<HabitSafeResult<{ habits: HabitView[]; hasMore: boolean }>> =>`
 - `export const readTodayHabits = (session: Session, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise< HabitSafeResult<{ habits: TodayHabitView[]; hasMore: boolean; dat...`
@@ -1150,22 +1262,45 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function shiftDateUtc(date: string, days: number): string`
 - `export function weekdayBit(date: string): number`
 
+## `lib/habits/frequency.ts`
+
+- `export const DAILY_WEEKDAY_MASK = 127`
+- `export const WEEKDAYS_MASK = 0b0011111`
+- `export const WEEKENDS_MASK = 0b1100000`
+- `export function frequencyToWeekdayMask(input: unknown): number | null`
+- `export function spreadMask(daysPerWeek: number): number | null`
+- `export function weekdayMaskToFrequency(mask: number): string | null`
+
 ## `lib/habits/service.ts`
 
+- `export const HABIT_REASON_MAX = 500`
+- `export type HabitCompletionRow = { habitId: string; name: string; target: string; reason: string; frequency: string | null; completed: number; archived: boolean; }`
 - `export type HabitConsistencyResult = { period: string; from: string; to: string; rows: HabitConsistencyRow[]; totals: { scheduled: number; done: number; skipped: number; missing: number }; }`
 - `export type HabitConsistencyRow = { habitId: string; name: string; target: string; scheduled: number; done: number; skipped: number; missing: number; }`
 - `export type HabitDeps = { db?: PrismaLike; now?: Date }`
 - `export class HabitError extends Error (1 members)`
-- `export type HabitView = { id: string; name: string; target: string; archived: boolean; revision: number; schedule: { weekdays: number; endDate: string | null } | null; }`
-- `export type TodayHabitView = { id: string; name: string; target: string; status: "DONE" | "SKIPPED" | "NONE"; }`
+- `export type HabitView = { id: string; name: string; target: string; reason: string; archived: boolean; revision: number; schedule: { weekdays: number; endDate: string | null } | null; frequency: st...`
+- `export type TodayHabitView = { id: string; name: string; target: string; reason: string; frequency: string | null; status: "DONE" | "SKIPPED" | "NONE"; }`
 - `export async function archiveHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; expectedRevision: number; }, deps: HabitDeps = {}): Promise<{ revisi...`
-- `export async function createHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; startDate: unknown; weekdays: unknown; endDate?: unkno...`
-- `export async function editHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; schedule?: { weekdays?: unknown; endD...`
+- `export async function createHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown; target: unknown; reason?: unknown; startDate: unknown; weekdays: unknow...`
+- `export async function editHabit(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; name?: unknown; target?: unknown; reason?: unknown; schedule?: { weekda...`
 - `export async function habitConsistency(session: SessionLike, input: { workspaceId: string; clientProfileId?: string; period: unknown; fields?: unknown; }, deps: HabitDeps = {}): Promise<HabitConsis...`
 - `export async function listHabitChoices(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ choices: { id: string; name: string }[]; hasMo...`
+- `export async function listHabitCompletions(session: SessionLike, input: { workspaceId: string; clientProfileId?: string; fields?: unknown; }, deps: HabitDeps = {}): Promise<{ habits: HabitCompletio...`
 - `export async function listStaffHabits(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: HabitDeps = {}): Promise<{ habits: HabitView[]; hasMore: boolean }>`
 - `export async function listTodayHabits(session: SessionLike, input: { workspaceId: string; fields?: unknown }, deps: HabitDeps = {}): Promise<{ habits: TodayHabitView[]; hasMore: boolean; date: stri...`
 - `export async function setHabitLog(session: SessionLike, input: { workspaceId: string; clientProfileId: string; habitId: string; date: unknown; desired: "DONE" | "CLEARED"; }, deps: HabitDeps = {}):...`
+
+## `lib/log.ts`
+
+- `export type LogLevel = "info" | "warn" | "error"`
+- `export const REDACTED = "[redacted]"`
+- `export const TRUSTED_ID_SHAPE = /^[A-Za-z0-9-]{1,64}$/`
+- `export function log(level: LogLevel, event: string, fields: Record<string, unknown> = {}): void`
+- `export function logError(event: string, fields: Record<string, unknown>)`
+- `export function redact(value: unknown, depth = 0, seen: WeakSet<object> = new WeakSet()): unknown`
+- `export function redactString(value: string): string`
+- `export function trustedId(value: string): TrustedId | string`
 
 ## `lib/mail/index.ts`
 
@@ -1233,6 +1368,32 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function resolveMealPlanActivation(zone: string, effectiveDate: string): MealPlanActivation`
 - `export async function saveMealPlanDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, ...`
 - `export async function setMealPlanTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<{ planId: string }>`
+
+## `lib/notes/boundary.ts`
+
+- `export type NoteSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
+- `export const createCoachNoteFromRoute = (caller: NoteCaller, input: { clientProfileId?: string | null; visibility: unknown; body: unknown; }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ id: stri...`
+- `export const deleteCoachNoteFromRoute = (caller: NoteCaller, input: { noteId: string; expectedRevision: number }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number; changed: boolean }...`
+- `export const readClientVisibleNotes = (caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<NoteSafeResult<{ notes: NoteView[]; hasMore: boolean }>> =>`
+- `export const readCoachNotes = (caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<NoteSafeResult<{ notes: NoteView[]; hasMore: boolean }>> =>`
+- `export const restoreCoachNoteFromRoute = (caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number; changed: boolean }>> =>`
+- `export const updateCoachNoteBodyFromRoute = (caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<NoteSafeResult<{ revision: number;...`
+
+## `lib/notes/service.ts`
+
+- `export type NoteCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
+- `export type NoteDeps = { db?: PrismaLike }`
+- `export class NoteError extends Error (1 members)`
+- `export type NoteView = { id: string; clientProfileId: string | null; visibility: "PRIVATE" | "GENERAL"; body: string; authorMemberId: string; revision: number; createdAt: string; updatedAt: string; }`
+- `export const RESTORE_WINDOW_MS = 30_000`
+- `export async function createCoachNote(caller: NoteCaller, input: { clientProfileId?: string | null; visibility: unknown; body: unknown; }, deps: NoteDeps = {}): Promise<{ id: string; revision: numb...`
+- `export async function deleteCoachNote(caller: NoteCaller, input: { noteId: string; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
+- `export async function listClientVisibleNotes(caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<{ notes: NoteView[]; hasMore: boolean }>`
+- `export async function listCoachNotes(caller: NoteCaller, input: { clientProfileId?: string | null } = {}, deps: NoteDeps = {}): Promise<{ notes: NoteView[]; hasMore: boolean }>`
+- `export function normalizeNoteBody(input: unknown): string`
+- `export function normalizeVisibility(input: unknown): "PRIVATE" | "GENERAL"`
+- `export async function restoreCoachNote(caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
+- `export async function updateCoachNoteBody(caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
 
 ## `lib/nutrition/import.ts`
 
@@ -1432,15 +1593,90 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/storage.ts`
 
-- `export type ObjectStorageBackend = { readonly name: string; presignGet(key: string, ttlSeconds: number): Promise<string>; deletePrefix(prefix: string): Promise<{ deleted: number }>; }`
-- `export class ObjectStorageNotExposableError extends Error (1 members)`
+- `export const DEFAULT_PRESIGN_TTL_SECONDS = 300`
+- `export const MAX_MEDIA_BYTES = 20 * 1024 * 1024`
+- `export const MAX_PRESIGN_TTL_SECONDS = 3600`
+- `export const MEDIA_CONTENT_TYPES: Readonly<Record<string, MediaKindName>>`
+- `export type MediaKindName = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT"`
+- `export type ObjectStorageBackend = { readonly name: string; presignGet(key: string, ttlSeconds: number): Promise<PresignedDownload>; presignPut( key: string, options: { contentType: string; byteSiz...`
+- `export type PresignedDownload = { readonly url: string; readonly expiresAt: string; }`
+- `export type PresignedUpload = { readonly url: string; readonly method: "PUT"; readonly headers: Record<string, string>; readonly expiresAt: string; }`
 - `export class StorageError extends Error (1 members)`
-- `export type StorageErrorCode = "invalid_input" | "invalid_key" | "invalid_ttl" | "storage_not_configured"`
+- `export type StorageErrorCode = | "invalid_input" | "invalid_key" | "invalid_ttl" | "invalid_signature" | "payload_too_large" | "unsupported_media_type" | "storage_not_configured"`
 - `export function assertClientObjectKey(key: unknown, workspaceId: string, clientProfileId: string): string`
-- `export function assertObjectStorageExternallyExposable(): never`
+- `export function assertMediaByteSize(byteSize: unknown): number`
+- `export function assertMediaStorageConfigured(env: Record<string, string | undefined> = process.env): void`
 - `export function assertPresignGetTtl(ttlSeconds: number, maxTtlSeconds: number): void`
 - `export function clientObjectPrefix(workspaceId: string, clientProfileId: string): string`
+- `export async function getObjectStorage(): Promise<ObjectStorageBackend>`
+- `export function mediaKindForContentType(contentType: unknown): MediaKindName | null`
 - `export const nullObjectStorage: ObjectStorageBackend`
+- `export function parseClientObjectKey(key: unknown): { workspaceId: string; clientProfileId: string; objectId: string; }`
+- `export function presignTtlSeconds(env: Record<string, string | undefined> = process.env): number`
+
+## `lib/storage/local.ts`
+
+- `export type LocalStorageConfig = { dir: string; secret: string; }`
+- `export function localObjectPath(dir: string, key: string): string`
+- `export const localObjectStorage: ObjectStorageBackend`
+- `export function localStorageConfig(env: Record<string, string | undefined> = process.env): LocalStorageConfig`
+- `export async function readLocalObject(key: string): Promise<Uint8Array | null>`
+- `export function verifyLocalObjectSignature(input: { secret: string; op: "get" | "put"; key: string; expiresAt: number; signature: string; now?: number; }): boolean`
+- `export async function writeLocalObject(key: string, bytes: Uint8Array): Promise<void>`
+
+## `lib/storage/s3.ts`
+
+- `export type S3Config = { endpoint: string; bucket: string; region: string; accessKeyId: string; secretAccessKey: string; pathStyle: boolean; }`
+- `export function presignS3Url(input: { config: S3Config; method: "GET" | "PUT"; key: string; ttlSeconds: number; extraHeaders?: Record<string, string>; now?: Date; }): { url: string; headers: Record...`
+- `export function s3Config(env: Record<string, string | undefined> = process.env): S3Config | null`
+- `export const s3ObjectStorage: ObjectStorageBackend`
+
+## `lib/supplements/boundary.ts`
+
+- `export type SupplementSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "consent_missing" | "policy_not_configured" | "seri...`
+- `export async function readOwnSupplementPlanFromAction(session: Session, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<OwnSupplementPlanView>>`
+- `export async function readStaffSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSup...`
+- `export async function saveSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: Supplem...`
+- `export async function viewSupplementPlanFromAction(session: Session, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<SupplementSafeResult<StaffSuppleme...`
+
+## `lib/supplements/gate.ts`
+
+- `export type SupplementsEnv = RuntimeEnv & { ENABLE_SUPPLEMENTS?: string }`
+- `export type SupplementsRuntimeClass = RuntimeClass`
+- `export const classifySupplementsRuntime: ( env?: RuntimeEnv, ) => SupplementsRuntimeClass`
+- `export function isSupplementsEnabled(env: SupplementsEnv = process.env): boolean`
+
+## `lib/supplements/model.ts`
+
+- `export const MAX_ID_LENGTH = 128`
+- `export const MAX_NOTES_LENGTH = 2000`
+- `export const MAX_PLAN_NAME_LENGTH = 120`
+- `export const MAX_SUPPLEMENT_ITEMS = 50`
+- `export const MAX_TEXT_FIELD = 300`
+- `export const MAX_TIMING_LENGTH = 200`
+- `export const MAX_UNIT_LENGTH = 64`
+- `export const SUPPLEMENT_ITEM_STATUSES: readonly SupplementItemStatusWire[]`
+- `export type SupplementItemStatusWire = "must-have" | "optional" | "none"`
+- `export type SupplementProductSnapshot = { refId: string; brand: string; name: string; referenceQuantity: number | null; quantityUnit: string | null; declaredAmount: number | null; declaredUnit: str...`
+- `export class SupplementValidationError extends Error (2 members)`
+- `export type ValidatedSupplementItem = { itemRefId: string | null; product: SupplementProductSnapshot; quantity: number; doseUnit: string; timing: string; status: SupplementItemStatusWire; notes: st...`
+- `export function parseSupplementItems(input: unknown): ValidatedSupplementItem[]`
+- `export function parseSupplementPlanName(name: unknown): string`
+- `export function safeProductUrl(value: string | null): string | undefined`
+
+## `lib/supplements/service.ts`
+
+- `export type OwnSupplementPlanView = { plan: SupplementPlanView | null }`
+- `export type StaffSupplementPlanView = { plan: SupplementPlanView | null; writeCapable: boolean; }`
+- `export class SupplementError extends Error (2 members)`
+- `export type SupplementErrorCode = | "invalid_input" | "plan_not_accessible" | "stale_revision" | "consent_missing" | "policy_not_configured" | "serialization_conflict"`
+- `export type SupplementItemView = { id: string; itemRefId: string | null; position: number; product: { refId: string; brand: string; name: string; referenceQuantity: number | null; quantityUnit: str...`
+- `export type SupplementPlanView = { id: string; name: string; revision: number; savedAt: string | null; items: SupplementItemView[]; }`
+- `export type SupplementsDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
+- `export async function readOwnSupplementPlan(session: SessionLike, input: { workspaceId: string }, deps: SupplementsDeps = {}): Promise<OwnSupplementPlanView>`
+- `export function readStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
+- `export async function saveSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; name?: string; items: unknown; }, deps: SupplementsDe...`
+- `export function viewStaffSupplementPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: SupplementsDeps = {}): Promise<StaffSupplementPlanView>`
 
 ## `lib/tasks/boundary.ts`
 
@@ -1504,6 +1740,24 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function inspectAccessToken(db: | Prisma.TransactionClient | PrismaClient | { accessToken: Pick< Prisma.TransactionClient["accessToken"], "findUnique" >; }, rawToken: unknown, binding?...`
 - `export async function issueWorkspaceInviteToken(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; createdByUserId: string; targetMemberState...`
 - `export async function revokeMatchingInviteTokens(tx: Prisma.TransactionClient, input: { workspaceId: string; targetEmail: string; intendedRole: MemberRole; }): Promise<{ revokedCount: number }>`
+
+## `lib/tracker-comments/boundary.ts`
+
+- `export type TrackerCommentSafeResult<T> = | { ok: true; value: T } | { ok: false; code: | "denied" | "invalid_input" | "not_available" | "conflict" | "serialization_conflict"; message: string; }`
+- `export const readOwnTrackerComments = (caller: TrackerCommentCaller, input: { from?: string; to?: string } = {}, deps: TrackerCommentDeps = {}): Promise< TrackerCommentSafeResult<{ comments: Tracke...`
+- `export const readTrackerComments = (caller: TrackerCommentCaller, input: { clientProfileId: string; from?: string; to?: string }, deps: TrackerCommentDeps = {}): Promise< TrackerCommentSafeResult<{...`
+- `export const saveTrackerCommentFromRoute = (caller: TrackerCommentCaller, input: { clientProfileId: string; entryDate: unknown; parameterId: string; body: unknown; }, deps: TrackerCommentDeps = {})...`
+
+## `lib/tracker-comments/service.ts`
+
+- `export type TrackerCommentCaller = { userId: string; workspaceId: string; scope: "workspace" | "own"; }`
+- `export type TrackerCommentDeps = { db?: PrismaLike }`
+- `export class TrackerCommentError extends Error (1 members)`
+- `export type TrackerCommentView = { id: string; clientProfileId: string; entryDate: string; parameterId: string; body: string; authorMemberId: string; createdAt: string; updatedAt: string; }`
+- `export async function listOwnTrackerComments(caller: TrackerCommentCaller, input: { from?: string; to?: string } = {}, deps: TrackerCommentDeps = {}): Promise<{ comments: TrackerCommentView[]; hasM...`
+- `export async function listTrackerComments(caller: TrackerCommentCaller, input: { clientProfileId: string; from?: string; to?: string; }, deps: TrackerCommentDeps = {}): Promise<{ comments: TrackerC...`
+- `export function parseCommentDate(input: unknown): string | null`
+- `export async function saveTrackerComment(caller: TrackerCommentCaller, input: { clientProfileId: string; entryDate: unknown; parameterId: string; body: unknown; }, deps: TrackerCommentDeps = {}): P...`
 
 ## `lib/trainingprogram/boundary.ts`
 
@@ -1634,22 +1888,41 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type AssignmentSummary = { id: string; clientProfileId: string; coachMemberId: string; role: "PRIMARY" | "COACH"; status: "ACTIVE" | "REMOVED"; assignedAt: Date; }`
 - `export const CLIENT_LIST_DEFAULT_LIMIT = 25`
 - `export const CLIENT_LIST_MAX_LIMIT = 100`
+- `export type ClientLifecycleResult = { clientProfileId: string; changed: boolean; }`
+- `export type ClientProfileDetail = { id: string; workspaceId: string; userId: string | null; name: string; label: string | null; coachingSince: Date | null; heightCm: number | null; priorityMessages...`
+- `export type ClientProfileFieldPatch = { name?: unknown; label?: unknown; coachingSince?: unknown; heightCm?: unknown; priorityMessagesAllowed?: unknown; }`
 - `export type ClientProfileSummary = { id: string; workspaceId: string; name: string; createdAt: Date; updatedAt: Date; }`
-- `export type ServiceErrorCode = | "invalid_input" | "client_not_accessible" | "member_not_eligible" | "assignment_not_accessible" | "assignment_conflict" | "serialization_conflict" | "audit_not_wire...`
+- `export type ServiceErrorCode = | "invalid_input" | "client_not_accessible" | "client_not_archived" | "retention_not_elapsed" | "client_not_deletable" | "member_not_eligible" | "assignment_not_acces...`
 - `export class WorkspaceServiceError extends Error (1 members)`
+- `export async function archiveClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string; reason?: unknown }, client: PrismaClient = prisma): Promise<ClientLifecycleRe...`
 - `export async function assignCoach(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; role?: "PRIMARY" | "COACH"; }, client: PrismaClient = prisma): ...`
-- `export function buildClientProfileWhere(scope: CollectionContext["grantedScope"], ctx: { workspaceId: string; userId: string; workspaceMemberId: string }): Prisma.ClientProfileWhereInput`
+- `export function buildClientProfileWhere(scope: CollectionContext["grantedScope"], ctx: { workspaceId: string; userId: string; workspaceMemberId: string }, opts: { includeArchived?: boolean } = {}):...`
 - `export function coachTargetRoleIsEligible(targetRole: WorkspaceRole, requestedRole: "PRIMARY" | "COACH"): boolean`
 - `export async function createClientProfile(session: SessionLike, input: { workspaceId: string; name: unknown }, client: PrismaClient = prisma): Promise<ClientProfileSummary>`
-- `export async function listAccessibleClientProfiles(session: SessionLike, input: { workspaceId: string; limit?: number; cursor?: string }, client: PrismaClient = prisma): Promise<{ items: ClientProf...`
+- `export async function listAccessibleClientProfiles(session: SessionLike, input: { workspaceId: string; limit?: number; cursor?: string; includeArchived?: boolean; }, client: PrismaClient = prisma):...`
 - `export async function listAssignableCoachMembers(session: SessionLike, input: { workspaceId: string }, client: PrismaClient = prisma): Promise<{ memberId: string; displayName: string; role: Workspa...`
 - `export async function listClientAssignments(session: SessionLike, input: { workspaceId: string; clientProfileId: string; limit?: number; cursor?: string; }, client: PrismaClient = prisma): Promise<...`
 - `export function normalizeLimit(limit?: number): number`
 - `export async function readClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientProfileSummary>`
+- `export async function readClientProfileDetail(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientProfileDetail>`
 - `export async function removeClientAssignment(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; }, client: PrismaClient = prisma): Promise<Assignmen...`
+- `export async function restoreClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma): Promise<ClientLifecycleResult>`
 - `export async function setPrimaryCoach(session: SessionLike, input: { workspaceId: string; clientProfileId: string; coachMemberId: string; }, client: PrismaClient = prisma): Promise<AssignmentMutati...`
+- `export async function updateClientProfileFields(session: SessionLike, input: { workspaceId: string; clientProfileId: string; fields: ClientProfileFieldPatch; }, client: PrismaClient = prisma): Prom...`
 - `export async function updateClientProfileName(session: SessionLike, input: { workspaceId: string; clientProfileId: string; name: unknown }, client: PrismaClient = prisma): Promise<ClientProfileSumm...`
+- `export function validateArchiveReason(value: unknown): string | null`
+- `export function validateCoachingSince(value: unknown): Date | null`
+- `export function validateHeightCm(value: unknown): number | null`
+- `export function validateLabel(value: unknown): string | null`
 - `export function validateName(name: unknown): string`
+- `export function validatePriorityMessagesAllowed(value: unknown): boolean`
+
+## `lib/workspace/invitation-api.ts`
+
+- `export type CreatedInvitationResult = { invitationId: string; expiresAt: Date; delivered: true; }`
+- `export async function createInvitationFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { targetEmail: unknown; intendedRole: unknown }): Promise<CreatedInvitationResult>`
+- `export async function listInvitationsFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }): Promise<{ items: InvitationSummary[]; nextCursor: string...`
+- `export async function revokeInvitationFromApi(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { invitationId: unknown }): Promise<{ changed: boolean }>`
 
 ## `lib/workspace/invitations.ts`
 
@@ -1663,7 +1936,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type InvitationStatus = "active" | "consumed" | "revoked" | "expired"`
 - `export type InvitationSummary = { id: string; targetEmail: string; intendedRole: InvitableRole; expiresAt: Date; status: InvitationStatus; }`
 - `export async function acceptWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
-- `export function assertInvitationOrchestrationExternallyExposable(): never`
+- `export function assertInvitationOrchestrationExternallyExposable(): void`
 - `export async function createWorkspaceInvitation(session: SessionLike, input: { workspaceId: string; targetEmail: unknown; intendedRole: unknown }, client: PrismaClient = prisma): Promise<CreatedInv...`
 - `export function invitationResource(intendedRole: InvitableRole): "membersInvitations" | "clientInvitations"`
 - `export function isExpectedUniqueRace(error: Prisma.PrismaClientKnownRequestError)`
@@ -1678,6 +1951,33 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function acceptInvitationFromLink(session: SessionLike, input: { workspaceId: unknown; rawToken: unknown; name?: unknown; password?: unknown; }, client: PrismaClient = prisma): Promise...`
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
+- `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
+
+## `lib/workspace/preferences.ts`
+
+- `export type AppearanceDensityWire = z.infer<typeof appearanceDensityInput>`
+- `export type AppearanceFontWire = z.infer<typeof appearanceFontInput>`
+- `export type AppearanceModeWire = z.infer<typeof appearanceModeInput>`
+- `export type SidebarState = { sidebarCollapsed: boolean }`
+- `export type WorkspacePreferences = { mode: AppearanceModeWire; accent: string; font: AppearanceFontWire; density: AppearanceDensityWire; logoMediaId: string | null; availability: string; notificati...`
+- `export type WorkspacePreferencesPatch = z.infer< typeof workspacePreferencesPatchSchema >`
+- `export const accentInput = z .string() .regex(/^#[0-9a-f]{6}$/i) .transform((value) => value.toUpperCase())`
+- `export const appearanceDensityInput = z.enum(["comfortable", "compact"])`
+- `export const appearanceFontInput = z.enum([ "sans", "serif", "condensed", "mono", "rounded", ])`
+- `export const appearanceModeInput = z.enum(["light", "dark"])`
+- `export async function getSidebarState(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<SidebarState>`
+- `export async function getWorkspacePreferences(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<WorkspacePreferences>`
+- `export const sidebarPatchSchema = z.strictObject({ sidebarCollapsed: z.boolean(), })`
+- `export async function updateSidebarState(workspace: ApiWorkspaceContext, input: unknown, client: PrismaLike = prisma): Promise<SidebarState>`
+- `export async function updateWorkspacePreferences(workspace: ApiWorkspaceContext, input: unknown, client: PrismaLike = prisma): Promise<WorkspacePreferences>`
+- `export const workspacePreferencesPatchSchema = z.strictObject({ mode: appearanceModeInput.optional(), accent: accentInput.optional(), font: appearanceFontInput.optional(), density: appearanceDensit...`
+
+## `lib/workspace/retention.ts`
+
+- `export const DEFAULT_RETENTION_DAYS = 90`
+- `export async function deleteClientProfile(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, client: PrismaClient = prisma, now: Date = new Date()): Promise<ClientLifecy...`
+- `export function retentionCutoff(now: Date, retentionDays: number): Date`
+- `export function retentionElapsed(archivedAt: Date, retentionDays: number, now: Date): boolean`
 
 ## `lib/workspace/roster-query.ts`
 
@@ -1687,6 +1987,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function nextRosterHref(base: string, current: RosterQuery, nextCursor: string): string`
 - `export function parseRosterQuery(raw: { c?: string | string[]; p?: string | string[]; }): RosterQuery | null`
 - `export function prevRosterHref(base: string, history: string[]): string | null`
+- `export function rosterClientVisibility(includeArchived: boolean): Prisma.ClientProfileWhereInput`
 - `export function rosterPageNumber(history: string[]): number`
 
 ## `lib/workspace/roster.ts`
@@ -1696,5 +1997,5 @@ Imported type names are shown without their `import("...")` prefix.
 - `export const ROSTER_DEFAULT_LIMIT = 25`
 - `export const ROSTER_MAX_LIMIT = 100`
 - `export function encodeRosterCursor(createdAt: Date, id: string): string`
-- `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string }, client: PrismaLike = prisma): Promise<ClientRosterResult>`
+- `export async function listWorkspaceClientRoster(viewer: ApiViewer, workspace: ApiWorkspaceContext, input: { limit?: number; cursor?: string; includeArchived?: boolean }, client: PrismaLike = prisma...`
 - `export function parseRosterCursor(cursor: string): { createdAt: Date; id: string } | null`

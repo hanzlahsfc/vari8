@@ -5,12 +5,15 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "App",
+  // iOS does not read the web manifest; the tile below is the same PR-31
+  // brand mark the manifest icons use.
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" data-theme="pro-dark" suppressHydrationWarning>
-      <body>
+      <head>
         {/* FI-I3: browser-local appearance bootstrap. Reads the dedicated
             `appearance` key and applies it ONLY when the value is one of
             the two existing theme identifiers — malformed, foreign or
@@ -25,8 +28,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               "document.documentElement.dataset.theme=v;}catch(e){}",
           }}
         />
-        {children}
-      </body>
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

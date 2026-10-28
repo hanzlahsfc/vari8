@@ -4,7 +4,7 @@
 #
 # Required: BASE_SHA (the Vari8-Beta commit the change is measured against), LANE_DB (app_<lane>).
 # Optional: LANE_PORT (default 3999), CARD (plan id, for the schema guard), KEEP_DB=1,
-#           SKIP_E2E=1, PARITY_SCREENS (default ALL), REQUIRE_NODE24=1.
+#           SKIP_E2E=1, SKIP_PARITY=1, PARITY_SCREENS (default ALL), REQUIRE_NODE24=1.
 set -euo pipefail
 
 : "${BASE_SHA:?Set BASE_SHA to the Vari8-Beta commit this change is measured against}"
@@ -12,7 +12,7 @@ set -euo pipefail
 LANE_PORT="${LANE_PORT:-3999}"
 CARD="${CARD:-}"
 . "$(dirname "${BASH_SOURCE[0]}")/paths.sh"
-SCHEMA_WRITERS="PR-05 PR-M0 PR-R2"
+SCHEMA_WRITERS="PR-05 PR-M0 PR-R2 PR-SUPP"
 
 if [[ ! "$LANE_DB" =~ ^app_[a-z0-9_]+$ ]] || [[ "$LANE_DB" == "app_dev" ]]; then
   echo "FAIL setup: LANE_DB must match ^app_[a-z0-9_]+$ and must not be app_dev" >&2
@@ -132,7 +132,12 @@ else
   fi
 fi
 
-if [[ -f tools/parity/run.mjs ]]; then
+if [[ "${SKIP_PARITY:-0}" == 1 ]]; then
+  # Only for cards whose contract reads "Parity (D32) on: none" (data-model PRs wire no screens).
+  # The parity baseline is host-specific: it is captured on the Linux reference host and cannot
+  # match on another host, so a card that owns no screens must not be failed on it.
+  skip "parity regression (D32)" "SKIP_PARITY=1, card contract gates no screens"
+elif [[ -f tools/parity/run.mjs ]]; then
   # PR-P1 harness: starts the canvas on PARITY_PORT, captures 1440x900 and 390x844, compares with the baseline.
   # After PR-01 the harness serves the root app (PR-01 points it there); PARITY_URL reuses a running lane server.
   step "parity regression (D32)" env PARITY_PORT="$((LANE_PORT + 1))" npm run parity

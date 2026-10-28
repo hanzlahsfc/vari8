@@ -860,7 +860,7 @@ function SettingsPanel({
               {f}{" "}
               <input
                 autoComplete="off"
-                value={s.labels[f] ?? ""}
+                value={s.labels?.[f] ?? ""}
                 maxLength={80}
                 onChange={(e) =>
                   set({ labels: { ...s.labels, [f]: e.target.value } })
