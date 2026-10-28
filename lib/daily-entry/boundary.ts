@@ -173,8 +173,7 @@ export async function readDailyEntryNumericSeriesFromApi(
       // not_available is a 403 denial class, ineligible a 409 state.
       if (error.code === "not_available")
         throw new ApiError(403, "not_available");
-      if (error.code === "ineligible")
-        throw new ApiError(409, "ineligible");
+      if (error.code === "ineligible") throw new ApiError(409, "ineligible");
     }
     throw error;
   }

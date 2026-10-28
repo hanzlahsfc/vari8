@@ -13,7 +13,7 @@
  * touch that member's rows by construction.
  */
 import { z } from "zod";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 
 import { ApiError, type ApiWorkspaceContext } from "@/lib/api/v1";
 import { prisma } from "@/lib/db";
@@ -43,7 +43,8 @@ export class PreferenceError extends Error {
 }
 
 type ReadPrisma = Pick<PrismaClient, "memberPreference">;
-type WritePrisma = Pick<PrismaClient, "memberPreference" | "$transaction">;
+type WritePrisma =
+  Pick<PrismaClient, "memberPreference"> | Prisma.TransactionClient;
 export type PreferenceReadDeps = { db?: ReadPrisma };
 export type PreferenceDeps = { db?: WritePrisma };
 
@@ -103,7 +104,12 @@ export async function updateMemberPreferences(
       select: { key: true, enabled: true },
     }),
   );
-  if (ops.length > 0) await db.$transaction(ops);
+  if (ops.length > 0) {
+    // deps.db set means the caller owns the atomic boundary (e.g. settings
+    // PATCH) — run the ops sequentially inside it; otherwise self-contain.
+    if (deps.db) for (const op of ops) await op;
+    else await prisma.$transaction(ops);
+  }
   return listMemberPreferences(workspaceId, memberId, deps);
 }
 
@@ -123,6 +129,7 @@ export async function memberPreferenceEnabled(
     select: { enabled: true },
   });
   return rows.length === 0 ? true : rows[0].enabled;
+}
 
 /**
  * PR-M2 (D25) — workspace appearance/preferences and the member's sidebar
@@ -339,5 +346,4 @@ export async function updateSidebarState(
     data: { sidebarCollapsed },
   });
   return { sidebarCollapsed };
-
 }

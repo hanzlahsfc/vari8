@@ -12,7 +12,7 @@ import {
 import {
   DELETE as deleteCoachTask,
   PATCH as patchCoachTask,
-} from "../../app/api/v1/workspaces/[workspaceId]/coach-tasks/[coachTaskId]/route";
+} from "../../app/api/v1/workspaces/[workspaceId]/coach-tasks/[taskId]/route";
 
 /**
  * W2-A4 coach to-do routes on real PostgreSQL: workspace rows (clientProfileId
@@ -331,7 +331,10 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
       completed: true,
     });
     expect(again.status).toBe(200);
-    expect(((await again.json()) as { coachTask: { revision: number } }).coachTask.revision).toBe(2);
+    expect(
+      ((await again.json()) as { coachTask: { revision: number } }).coachTask
+        .revision,
+    ).toBe(2);
 
     const reopen = await patchTask(ws.id, created.coachTask.id, authed(token), {
       completed: false,
@@ -363,7 +366,12 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
       await createCall(ws.id, authed(token), { title: "Delete me" })
     ).json()) as { coachTask: { id: string } };
 
-    const res = await deleteTask(ws.id, created.coachTask.id, authed(token), {});
+    const res = await deleteTask(
+      ws.id,
+      created.coachTask.id,
+      authed(token),
+      {},
+    );
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
       coachTask: {
@@ -382,9 +390,7 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
     });
     expect(row.deletedAt).not.toBeNull();
     expect(row.restoreUntil).not.toBeNull();
-    expect(row.restoreUntil!.getTime() - row.deletedAt!.getTime()).toBe(
-      30_000,
-    );
+    expect(row.restoreUntil!.getTime() - row.deletedAt!.getTime()).toBe(30_000);
 
     const list = await listCall(ws.id, authed(token));
     expect(await list.json()).toEqual({ coachTasks: [] });
@@ -430,7 +436,9 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
       { expectedRevision: 99 },
     );
     expect(deleteConflict.status).toBe(409);
-    expect(await deleteConflict.json()).toEqual({ error: { code: "conflict" } });
+    expect(await deleteConflict.json()).toEqual({
+      error: { code: "conflict" },
+    });
 
     // The current revision goes through.
     const ok = await patchTask(ws.id, created.coachTask.id, authed(token), {
@@ -438,7 +446,10 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
       expectedRevision: 1,
     });
     expect(ok.status).toBe(200);
-    expect(((await ok.json()) as { coachTask: { revision: number } }).coachTask.revision).toBe(2);
+    expect(
+      ((await ok.json()) as { coachTask: { revision: number } }).coachTask
+        .revision,
+    ).toBe(2);
   });
 
   it("enforces the role matrix and never answers 404", async () => {
@@ -500,14 +511,19 @@ describe.skipIf(!enabled)("W2-A4 coach task routes (real PG)", () => {
       (await patchTask(a.ws.id, created.coachTask.id, {}, { completed: true }))
         .status,
     ).toBe(401);
-    expect((await deleteTask(a.ws.id, created.coachTask.id, {}, {})).status).toBe(
-      401,
-    );
+    expect(
+      (await deleteTask(a.ws.id, created.coachTask.id, {}, {})).status,
+    ).toBe(401);
 
     // Unknown ids stay 403 not_available, never 404.
-    const unknown = await patchTask(a.ws.id, "no-such-task", authed(coachToken), {
-      completed: true,
-    });
+    const unknown = await patchTask(
+      a.ws.id,
+      "no-such-task",
+      authed(coachToken),
+      {
+        completed: true,
+      },
+    );
     expect(unknown.status).toBe(403);
     expect(await unknown.json()).toEqual({ error: { code: "not_available" } });
   });
