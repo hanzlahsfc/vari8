@@ -8,6 +8,8 @@
 // PARITY_DEV=1 uses next dev on the same private backend port (debugging only; dev timing noise makes the gate flaky).
 // npm run parity -- --update-baseline   recaptures the baseline instead of comparing (needs PARITY_APP=frontend).
 // PARITY_APP=frontend serves frontend/ (no session) instead of the root app; the baseline comes from there.
+// Explicit isolated prep runs may set PARITY_REFERENCE_DIR + PARITY_OUT_DIR with
+// PARITY_COMPARER=reference for the owner-adopted reference gate. External capture modules are unsupported.
 // Sign-in (root app): PARITY_USER_EMAIL and PARITY_USER_PASSWORD name an existing account. Without a password the
 // run upserts the dev user (icm/05-build/tools/dev-user.ts) with a fresh password on DATABASE_URL, a lane database.
 import { spawn, spawnSync } from "node:child_process";
@@ -16,9 +18,9 @@ import { openSync } from "node:fs";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { createLocalTlsProxy } from "../local-tls-proxy.mjs";
-import { captureAll, INDEX_PATH } from "./capture.mjs";
+import { captureAll as defaultCaptureAll, INDEX_PATH } from "./capture.mjs";
 import { compareRuns, ConfigError, envThresholds } from "./compare.mjs";
 import {
   browserCookies,
@@ -37,12 +39,18 @@ const FE = path.join(ROOT, "frontend");
 const ROOT_APP = process.env.PARITY_APP !== "frontend";
 const APP = ROOT_APP ? ROOT : FE;
 const NEXT_BIN = path.join(ROOT, "node_modules/next/dist/bin/next");
-const OUT = path.join(HERE, "out");
-const CUR = path.join(OUT, "current");
-const BASE = path.join(HERE, "baseline");
-const LOG = path.join(OUT, "server.log");
+const DEFAULT_OUT = path.join(HERE, "out");
+const DEFAULT_BASE = path.join(HERE, "baseline");
+let OUT = DEFAULT_OUT;
+let CUR = path.join(OUT, "current");
+let BASE = DEFAULT_BASE;
+let LOG = path.join(OUT, "server.log");
 const update = process.argv.includes("--update-baseline");
 const DEV = process.env.PARITY_DEV === "1";
+let captureAll = defaultCaptureAll;
+let combinedAdapter = null;
+let combinedPaths = null;
+let combinedReferenceArtifacts = null;
 
 class Refuse extends Error {}
 
@@ -125,6 +133,64 @@ let th;
 let pinned;
 let externalUrl;
 try {
+  if (process.env.PARITY_CAPTURE_MODULE !== undefined)
+    throw new ConfigError(
+      "PARITY_CAPTURE_MODULE is unsupported; combined runs generate the pinned D32 adapter",
+    );
+  if (
+    process.env.PARITY_COMPARER !== undefined &&
+    process.env.PARITY_COMPARER !== "reference"
+  )
+    throw new ConfigError(`PARITY_COMPARER must be "reference" when set`);
+  if (
+    process.env.PARITY_COMPARER !== "reference" &&
+    (process.env.PARITY_REFERENCE_DIR !== undefined ||
+      process.env.PARITY_OUT_DIR !== undefined)
+  )
+    throw new ConfigError(
+      "PARITY_REFERENCE_DIR/PARITY_OUT_DIR require PARITY_COMPARER=reference",
+    );
+  if (process.env.PARITY_COMPARER === "reference") {
+    const {
+      assertCombinedRunPaths,
+      assertFreshOutputPath,
+      prepareOwnedOutputDir,
+    } = await import("./safe-paths.mjs");
+    combinedPaths = assertCombinedRunPaths({
+      root: ROOT,
+      referenceDir: process.env.PARITY_REFERENCE_DIR,
+      outDir: process.env.PARITY_OUT_DIR,
+      update,
+    });
+    try {
+      const { assertProposedReference } =
+        await import("./reference/combined-run.mjs");
+      const shots = JSON.parse(await readFile(INDEX_PATH, "utf8")).shots;
+      combinedReferenceArtifacts = assertProposedReference({
+        directory: combinedPaths.reference,
+        shots,
+      });
+    } catch (e) {
+      throw new ConfigError(`invalid proposed reference: ${e.message}`);
+    }
+    OUT = combinedPaths.out;
+    BASE = combinedPaths.reference;
+    CUR = path.join(OUT, "current");
+    LOG = path.join(OUT, "server.log");
+    assertFreshOutputPath(CUR, "combined capture output");
+    assertFreshOutputPath(LOG, "combined server log");
+    const adapterPath = assertFreshOutputPath(
+      path.join(OUT, "d32-capture-adapter.mjs"),
+      "combined capture adapter",
+    );
+    prepareOwnedOutputDir(OUT);
+    const { createAdapter } = await import("./reference/reference.mjs");
+    combinedAdapter = createAdapter({
+      harnessRoot: ROOT,
+      outputFile: adapterPath,
+    });
+    captureAll = (await import(pathToFileURL(adapterPath).href)).captureAll;
+  }
   th = envThresholds();
   pinned = pinnedPort();
   externalUrl = process.env.PARITY_URL
@@ -148,6 +214,10 @@ const agentsPath = path.join(APP, "AGENTS.md");
 const agentsBefore = await readFile(agentsPath, "utf8");
 let code = 1;
 try {
+  if (update && process.env.PARITY_REFERENCE_DIR)
+    throw new Refuse(
+      "--update-baseline must not target PARITY_REFERENCE_DIR; only the active baseline may be updated by its own reviewed flow",
+    );
   if (update && ROOT_APP)
     throw new Refuse(
       "--update-baseline captures the frontend/ canvas; set PARITY_APP=frontend",
@@ -287,7 +357,8 @@ try {
       code = 0;
     }
   } else {
-    await rm(CUR, { recursive: true, force: true });
+    if (process.env.PARITY_COMPARER !== "reference")
+      await rm(CUR, { recursive: true, force: true });
     const m = await captureAll({
       baseUrl,
       outDir: CUR,
@@ -302,16 +373,237 @@ try {
       );
       code = 1;
     } else {
-      const r = await compareRuns({
-        baseline: BASE,
-        current: CUR,
-        report: path.join(OUT, "report.html"),
-        th,
-      });
-      console.log(
-        `parity ${r.failed ? "FAIL" : "PASS"}: ${r.failed} problem(s), retried=${m.retried ?? 0}; report ${r.report}`,
-      );
-      code = r.failed ? 1 : 0;
+      if (process.env.PARITY_COMPARER === "reference") {
+        const { compareRuns: compareReference } =
+          await import("./reference/compare.mjs");
+        const { validateCombinedRun } =
+          await import("./reference/combined-run.mjs");
+        const { CONTRACT, installedDependencies, snapshotSource, fileHash } =
+          await import("./reference/reference.mjs");
+        const { sourceIdentity } =
+          await import("./reference/source-identity.mjs");
+        const { environment } = await import("./reference/environment.mjs");
+        const { execFileSync: gitExec } = await import("node:child_process");
+        const git = (...args) =>
+          gitExec("git", ["-C", ROOT, ...args], { encoding: "utf8" }).trim();
+        const shots = JSON.parse(await readFile(INDEX_PATH, "utf8")).shots;
+        const referenceArtifacts = combinedReferenceArtifacts;
+        const head = git("rev-parse", "HEAD");
+        const source = snapshotSource(ROOT, { expectedSha: head });
+        const dependencies = installedDependencies(APP);
+        const env = await environment();
+        const provenance = {
+          role: "combined",
+          contract: CONTRACT,
+          inputs: {
+            vari8Beta: "d1c4081022f2ac21070b28f284248fad2ef04839",
+            pr203: "90c16bee63e2609ebc4f09e91459332390562464",
+            pr206: "43b63ed0f41e6e92e93ecf72065c0190c9ef3dea",
+            prep: { branch: "beta/p203-p206-combined-verification", head },
+          },
+          source: { ...source, ...sourceIdentity(ROOT, head) },
+          dependencies,
+          environment: env,
+          adapter: combinedAdapter,
+          recipeIndexSha256: fileHash(INDEX_PATH),
+          toolingSource: head,
+          buildId: (
+            await readFile(path.join(APP, ".next/BUILD_ID"), "utf8")
+          ).trim(),
+        };
+        await writeFile(
+          path.join(OUT, "combined-provenance.json"),
+          JSON.stringify(provenance, null, 2) + "\n",
+          { flag: "wx" },
+        );
+        const artifacts = validateCombinedRun({
+          directory: CUR,
+          manifest: m,
+          shots,
+          provenance,
+        });
+        const canonical = compareReference(BASE, CUR);
+        const strict = compareReference(BASE, CUR, { strict: true });
+        await writeFile(
+          path.join(OUT, "proposed-canonical.json"),
+          JSON.stringify(canonical, null, 2) + "\n",
+          { flag: "wx" },
+        );
+        await writeFile(
+          path.join(OUT, "proposed-strict.json"),
+          JSON.stringify(strict, null, 2) + "\n",
+          { flag: "wx" },
+        );
+        const receipt = {
+          kind: "combined-proposed-reference-verification",
+          commands: [
+            {
+              cwd: ".",
+              argv: ["node", "tools/parity/run.mjs"],
+              env: {
+                PARITY_COMPARER: process.env.PARITY_COMPARER,
+                PARITY_REFERENCE_DIR: process.env.PARITY_REFERENCE_DIR,
+                PARITY_OUT_DIR: process.env.PARITY_OUT_DIR,
+                PARITY_PORT: process.env.PARITY_PORT ?? null,
+              },
+            },
+          ],
+          environmentVariables: Object.fromEntries(
+            [
+              "NODE_ENV",
+              "APP_ENV",
+              "NEXT_TELEMETRY_DISABLED",
+              "MEDIA_STORAGE_ADAPTER",
+              "MEDIA_STORAGE_DIR",
+              "PARITY_COMPARER",
+              "PARITY_REFERENCE_DIR",
+              "PARITY_OUT_DIR",
+              "PARITY_PORT",
+            ].map((name) => [name, process.env[name] ?? null]),
+          ),
+          exits: {
+            capture: 0,
+            canonical: canonical.failed ? 1 : 0,
+            strict: strict.failed ? 1 : 0,
+            parity: canonical.failed ? 1 : 0,
+          },
+          settings: {
+            comparer: "reference",
+            fixedNow: CONTRACT.clock,
+            timezone: CONTRACT.timezone,
+            viewports: CONTRACT.viewports,
+            geometryPx: CONTRACT.geometryPx,
+            pixelmatchThreshold: CONTRACT.pixelmatchThreshold,
+            pixelmatchIncludeAA: CONTRACT.pixelmatchIncludeAA,
+            maxChangedFraction: CONTRACT.maxChangedFraction,
+          },
+          inputs: provenance.inputs,
+          source: provenance.source,
+          productTree: {
+            tree: source.tree,
+            diffFromPr203: git(
+              "diff",
+              "--name-only",
+              `${provenance.inputs.pr203}..HEAD`,
+              "--",
+              "app",
+              "components",
+              "db",
+              "lib",
+              "public",
+              "scripts",
+              "package.json",
+              "package-lock.json",
+              "next.config.ts",
+            ),
+          },
+          tooling: {
+            runner: fileHash(path.join(ROOT, "tools/parity/run.mjs")),
+            comparer: fileHash(
+              path.join(ROOT, "tools/parity/reference/compare.mjs"),
+            ),
+            legacyComparer: fileHash(
+              path.join(ROOT, "tools/parity/compare.mjs"),
+            ),
+            validator: fileHash(
+              path.join(ROOT, "tools/parity/reference/combined-run.mjs"),
+            ),
+            contract: fileHash(
+              path.join(ROOT, "tools/parity/reference/contract.json"),
+            ),
+            comparerManifest: fileHash(
+              path.join(ROOT, "tools/parity/reference/evidence/comparer.json"),
+            ),
+            locks: {
+              root: fileHash(path.join(ROOT, "package-lock.json")),
+              reference: fileHash(
+                path.join(ROOT, "tools/parity/reference/package-lock.json"),
+              ),
+            },
+            files: Object.fromEntries(
+              [
+                "tools/parity/run.mjs",
+                "tools/parity/capture.mjs",
+                "tools/parity/reference/capture-metadata.mjs",
+                "tools/parity/safe-paths.mjs",
+                "tools/parity/compare.mjs",
+                "tools/parity/reference/reference.mjs",
+                "tools/parity/reference/combined-run.mjs",
+                "tools/parity/reference/compare.mjs",
+                "tools/parity/reference/contract.json",
+                "tools/parity/reference/environment.mjs",
+                "tools/parity/reference/source-identity.mjs",
+                "tools/parity/reference/combined-pins.mjs",
+                "tools/parity/reference/package-combined.mjs",
+                "tools/parity/reference/verify-combined.mjs",
+                "tools/parity/reference/evidence/evidence-lib.mjs",
+                "tools/parity/reference/evidence/comparer.json",
+                "tools/parity/local-https.mjs",
+                "tools/local-tls-proxy.mjs",
+                "auth.ts",
+                "package.json",
+                "package-lock.json",
+                "tools/parity/reference/package.json",
+                "tools/parity/reference/package-lock.json",
+                "icm/04-briefing/shots/index.json",
+              ].map((file) => [file, fileHash(path.join(ROOT, file))]),
+            ),
+            adapter: combinedAdapter,
+          },
+          environment: env,
+          dependencies,
+          reference: {
+            directory: BASE,
+            manifestSha256: fileHash(path.join(BASE, "manifest.json")),
+            provenanceSha256: fileHash(path.join(BASE, "provenance.json")),
+            artifactCount: referenceArtifacts.length,
+            artifacts: referenceArtifacts,
+          },
+          capture: {
+            directory: CUR,
+            manifestSha256: fileHash(path.join(CUR, "manifest.json")),
+            screens: m.screens.length,
+            failures: m.failures.length,
+            retried: m.retried ?? 0,
+            artifactCount: artifacts.length,
+            artifacts,
+          },
+          results: {
+            canonical: {
+              passed: canonical.passed,
+              failed: canonical.failed,
+              total: canonical.total,
+              sha256: fileHash(path.join(OUT, "proposed-canonical.json")),
+            },
+            strict: {
+              passed: strict.passed,
+              failed: strict.failed,
+              total: strict.total,
+              sha256: fileHash(path.join(OUT, "proposed-strict.json")),
+            },
+          },
+        };
+        await writeFile(
+          path.join(OUT, "execution-receipt.json"),
+          JSON.stringify(receipt, null, 2) + "\n",
+          { flag: "wx" },
+        );
+        console.log(
+          `proposed-reference canonical ${canonical.failed ? "FAIL" : "PASS"}: ${canonical.failed} problem(s), strict diagnostic ${strict.failed} problem(s), retried=${m.retried ?? 0}; receipts ${OUT}`,
+        );
+        code = canonical.failed ? 1 : 0;
+      } else {
+        const r = await compareRuns({
+          baseline: BASE,
+          current: CUR,
+          report: path.join(OUT, "report.html"),
+          th,
+        });
+        console.log(
+          `parity ${r.failed ? "FAIL" : "PASS"}: ${r.failed} problem(s), retried=${m.retried ?? 0}; report ${r.report}`,
+        );
+        code = r.failed ? 1 : 0;
+      }
     }
   }
 } catch (e) {

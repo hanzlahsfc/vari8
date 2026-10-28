@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 159 modules with exports, 1576 exported symbols.
+Counts: 168 modules with exports, 1633 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1408,6 +1408,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function restoreCoachNote(caller: NoteCaller, input: { noteId: string }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
 - `export async function updateCoachNoteBody(caller: NoteCaller, input: { noteId: string; body: unknown; expectedRevision: number }, deps: NoteDeps = {}): Promise<{ revision: number; changed: boolean }>`
 
+## `lib/nutrition/actuals.ts`
+
+- `export type MacroActuals = { protein: number | null; carbs: number | null; fat: number | null; }`
+- `export type NutritionLogRecord = MacroActuals & { calories: number | null; }`
+- `export function applyActualsPatch(record: MacroActuals, patch: Partial<MacroActuals>): MacroActuals`
+- `export function deriveActualCalories(actuals: MacroActuals): number | null`
+- `export const emptyActuals = (): MacroActuals =>`
+- `export function toNutritionLogRecord(actuals: MacroActuals): NutritionLogRecord`
+
 ## `lib/nutrition/foods.ts`
 
 - `export async function loadNutritionFoodMap(foodIds: readonly string[], db: PrismaClient = defaultPrisma): Promise<Map<string, Food>>`
@@ -1417,6 +1426,19 @@ Imported type names are shown without their `import("...")` prefix.
 - `export class NutritionImportError extends Error (1 members)`
 - `export type NutritionImportSummary = { runId: string; status: string; scannedRowCount: number; sourceRowCount: number; ignoredEmptyRowCount: number; acceptedCount: number; rejectedCount: number; du...`
 - `export async function importNutritionCatalog(client: PrismaClient, source: NutritionSource, now: Date = new Date()): Promise<NutritionImportSummary>`
+
+## `lib/nutrition/label-entry.ts`
+
+- `export const LABEL_ENTRY_UNITS = new Set(["g", "mg", "µg", "ug", "kJ", "kcal"])`
+- `export type LabelBasis = "per 100 g" | "per serving"`
+- `export class LabelEntryError extends Error (1 members)`
+- `export interface LabelEntryInput (7 members)`
+- `export interface LabelEntryRecord (7 members)`
+- `export interface LabelNutrient (4 members)`
+- `export const NUTRIENT_UNITS: Record<string, readonly string[]>`
+- `export function canonicalNutrientCode(code: string): string`
+- `export function nutrientUnits(code: string): readonly string[] | null`
+- `export function parseLabelEntry(input: unknown): LabelEntryRecord`
 
 ## `lib/nutrition/math.ts`
 
@@ -1434,6 +1456,21 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function iifymTargetNutrients(targets: MealTargets): Nutrients`
 - `export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares`
 - `export function targetNumber(target: TargetValue | undefined): number`
+
+## `lib/nutrition/off.ts`
+
+- `export const OFF_ATTRIBUTION = "Contains data from Open Food Facts, available under the Open Database License (ODbL)"`
+- `export const OFF_LICENCE = "ODbL-1.0"`
+- `export const OFF_LICENCE_URL = "https://opendatacommons.org/licenses/odbl/1.0/"`
+- `export const OFF_PRODUCT_URL = "https://world.openfoodfacts.org/api/v2/product"`
+- `export type OffFetch = ( url: string, init: { signal?: AbortSignal }, ) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>`
+- `export class OffLookupError extends Error (1 members)`
+- `export type OffLookupResult = | { status: "found"; product: OffProduct } | { status: "not_found"; barcode: string }`
+- `export interface OffNutrient (4 members)`
+- `export interface OffProduct (6 members)`
+- `export interface OffProvenance (6 members)`
+- `export function isValidBarcode(barcode: string): boolean`
+- `export async function lookupOffProduct(barcode: string, options: { fetchImpl: OffFetch; timeoutMs?: number; baseUrl?: string; }): Promise<OffLookupResult>`
 
 ## `lib/nutrition/search.ts`
 
@@ -1455,6 +1492,53 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type NutritionSourceField = (typeof NUTRITION_SOURCE_FIELDS)[number]`
 - `export type NutritionSourceRecord = { sourceRow: number; sourceNo: number; name: string; amount: number | null; unit: string | null; calories: number | null; protein: number | null; carbs: number |...`
 - `export function extractNutritionSource(html: string, meta: { sourceName: string; sourceFingerprint: string }): NutritionSource`
+
+## `lib/nutrition/sources/accuracy.ts`
+
+- `export interface AccuracyCheck (6 members)`
+- `export interface ExpectedNutrient (3 members)`
+- `export interface ExpectedRow (4 members)`
+- `export function assertAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): void`
+- `export function checkAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): AccuracyCheck[]`
+- `export function checkProvenance(candidates: SourceCandidate[]): AccuracyCheck[]`
+- `export function checkSourceHashBinding(candidates: SourceCandidate[], actualSha256: string): AccuracyCheck[]`
+- `export function findDuplicateExpected(expected: ExpectedRow[] | Record<string, ExpectedRow>): string[]`
+- `export function findDuplicateIds(candidates: SourceCandidate[]): string[]`
+
+## `lib/nutrition/sources/bls.ts`
+
+- `export const BLS_PROVENANCE: Omit<SourceProvenance, "sourceSha256">`
+- `export async function parseBlsExport(bytes: Buffer): Promise<{ provenance: SourceProvenance; classified: ClassifiedSource }>`
+
+## `lib/nutrition/sources/ciqual.ts`
+
+- `export const CIQUAL_PROVENANCE: Omit<SourceProvenance, "sourceSha256">`
+- `export async function parseCiqualExport(bytes: Buffer): Promise<{ provenance: SourceProvenance; classified: ClassifiedSource }>`
+
+## `lib/nutrition/sources/common.ts`
+
+- `export type ClassifiedSource = { sourceName: string; sourceFingerprint: string; scannedRowCount: number; ignoredEmptyRowCount: number; sourceRowCount: number; accepted: SourceCandidate[]; rejected:...`
+- `export type NutrientMeasure = { code: string; name: string; unit: string; basis: string; value: number | null; qualifier?: "lt" | "gt" | "traces" | "lod" | "loq" | "lod_or_loq"; origin?: string | n...`
+- `export const SUPPORTED_UNITS = new Set(["kJ", "kcal", "g", "mg", "µg", "IU"])`
+- `export class SourceAdapterError extends Error (1 members)`
+- `export type SourceCandidate = { sourceId: string; sourceRow: number; name: string; nameAlt: string | null; group: string | null; sourceNote?: string | null; nutrients: NutrientMeasure[]; provenance...`
+- `export type SourceProvenance = { source: string; sourceUrl: string; licence: string; licenceUrl: string; sourceVersion: string; sourceSha256: string; }`
+- `export type SourceRejectedReason = | "empty_row" | "missing_source_id" | "missing_name" | "invalid_numeric" | "unsupported_unit" | "duplicate_source_id"`
+- `export type SourceRejectedRow = { sourceRow: number; sourceId: string | null; reasonCode: SourceRejectedReason; reasonField?: string; reasonDetail?: string; }`
+- `export function candidateFingerprint(candidate: Omit<SourceCandidate, "rowFingerprint">): string`
+- `export function parseSourceNumeric(raw: string | null | undefined): | { value: number | null; qualifier?: "lt" | "gt" | "traces" | "lod" | "loq" | "lod_or_loq"; } | undefined`
+- `export function sha256Hex(bytes: Buffer | string): string`
+- `export function toNutritionSource(classified: ClassifiedSource, nutritionCodes: { calories?: string; protein?: string; carbs?: string; fats?: string; }): NutritionSource & { candidates: SourceCandi...`
+
+## `lib/nutrition/sources/dedupe.ts`
+
+- `export interface DedupeCandidate (2 members)`
+- `export function applyDedupeDecision(candidates: DedupeCandidate[], decisionFile: string): { status: "decided"; decision: Decision }`
+
+## `lib/nutrition/sources/xlsx.ts`
+
+- `export type XlsxCell = string | number | boolean | Date | null`
+- `export async function readSheet(bytes: Buffer, sheet: string | number): Promise<XlsxCell[][]>`
 
 ## `lib/onboarding/assignments-boundary.ts`
 

@@ -59,20 +59,30 @@ export const RULED = [
     added: { stem: "s11-preferences", tag: "button", text: "Sign out" },
   },
   {
-    rule: "D32 truth text: the canvas records a real stream, not a demo",
-    text: {
-      tag: "button",
-      base: "Record demo video feedback",
-      now: "Record video feedback",
-    },
-  },
-  {
     rule: "S11-04 real workspace name in the shell label (O15)",
     text: {
       tag: "div",
       base: "COACH WORKSPACE",
       now: "Liliana Mansfeld Coaching",
     },
+  },
+  {
+    rule: "S03-18 real video feedback copy and width (Prompt 417)",
+    stem: "s03-checkin-review",
+    text: {
+      tag: "button",
+      base: "Record demo video feedback",
+      now: "Record video feedback",
+    },
+    geometry: {
+      baseWidth: 244.5,
+      baseHeight: 44,
+      nowWidth: 205.5,
+      nowHeight: 44,
+    },
+    // Owner approved the copy and its exact width consequence, not a
+    // button/screen-wide pixel mask. Canonical pixels already remain in budget.
+    maskPixels: false,
   },
 ];
 
@@ -82,15 +92,33 @@ const RULED_PAD = 14;
 
 export function applyRuled(stem, g, baseRows, curRows) {
   const keys = new Set();
+  const maskKeys = new Set();
+  const unmasked = new Set();
   const rules = new Set();
   for (const r of RULED) {
     for (const t of r.text ? g.texts : [])
       if (
+        (!r.stem || r.stem === stem) &&
         t.tag === r.text.tag &&
         t.base === r.text.base &&
-        t.now === r.text.now
+        t.now === r.text.now &&
+        (!r.geometry ||
+          (() => {
+            const moved = g.moved.find((m) => m.key === t.key);
+            return (
+              moved &&
+              moved.base[0] === moved.now[0] &&
+              moved.base[1] === moved.now[1] &&
+              moved.base[2] === r.geometry.baseWidth &&
+              moved.base[3] === r.geometry.baseHeight &&
+              moved.now[2] === r.geometry.nowWidth &&
+              moved.now[3] === r.geometry.nowHeight
+            );
+          })())
       ) {
         keys.add(t.key);
+        if (r.maskPixels === false) unmasked.add(t.key);
+        else maskKeys.add(t.key);
         rules.add(r.rule);
       }
     if (!r.added || r.added.stem !== stem) continue;
@@ -98,15 +126,27 @@ export function applyRuled(stem, g, baseRows, curRows) {
     for (const a of g.added)
       if (a[1] === r.added.tag && a[6] === r.added.text) {
         keys.add(a[0]);
+        maskKeys.add(a[0]);
         // Its own wrapper (the sign-out form) when that is new too, and anything inside it.
         const parent = a[0].slice(0, a[0].lastIndexOf(">"));
-        if (added.has(parent)) keys.add(parent);
-        for (const k of added) if (k.startsWith(`${a[0]}>`)) keys.add(k);
+        if (added.has(parent)) {
+          keys.add(parent);
+          maskKeys.add(parent);
+        }
+        for (const k of added)
+          if (k.startsWith(`${a[0]}>`)) {
+            keys.add(k);
+            maskKeys.add(k);
+          }
         rules.add(r.rule);
       }
   }
+  // A rule that rules text or geometry but leaves pixels counted (maskPixels:
+  // false, the S03-18 shape) wins over any looser rule that would mask the same
+  // element: the owner approved the copy and width, not a pixel exception.
+  for (const k of unmasked) maskKeys.delete(k);
   const masks = [...baseRows, ...curRows]
-    .filter((row) => keys.has(row[0]))
+    .filter((row) => maskKeys.has(row[0]))
     .map((row) => [
       row[2] - RULED_PAD,
       row[3] - RULED_PAD,

@@ -205,13 +205,16 @@ Owner overriding rule. Every screen in `icm/04-briefing/shots/index.json` (35) p
 
 Truth-text exceptions (copy that names browser-local storage or the demo source would become false once data lives on the server and the recorder records for real; same position, style and size, new words). Reverse with `keep-demo-copy`.
 
-| Row    | Today                                                   | After                                             |
-| ------ | ------------------------------------------------------- | ------------------------------------------------- |
-| S01-09 | "Local demo" / "Session only"                           | "Saved" / "Saving"                                |
-| S10-09 | "Saved automatically on this device"                    | "Saved automatically for this workspace"          |
-| S03-17 | "Sent locally"                                          | "Sent"                                            |
-| S02-24 | "Local demo media"                                      | the file size, as the canvas shows for real files |
-| S02-25 | "Record demo voice note" / "Record demo video feedback" | "Record voice note" / "Record video feedback"     |
+| Row    | Today                                                   | After                                                              |
+| ------ | ------------------------------------------------------- | ------------------------------------------------------------------ |
+| S01-09 | "Local demo" / "Session only"                           | "Saved" / "Saving"                                                 |
+| S10-09 | "Saved automatically on this device"                    | "Saved automatically for this workspace"                           |
+| S03-17 | "Sent locally"                                          | "Sent"                                                             |
+| S03-18 | "Record demo video feedback"                            | "Record video feedback"; the real recorder button is 39px narrower |
+| S02-24 | "Local demo media"                                      | the file size, as the canvas shows for real files                  |
+| S02-25 | "Record demo voice note" / "Record demo video feedback" | "Record voice note" / "Record video feedback"                      |
+
+The S03-18 and S02-25 rows sit on different surfaces and both stand: on s03 the recorder copy change and its measured 39px narrowing are an approved truth-text exception, and on s02 both recorder labels drop the demo prefix.
 
 The S02-25 row carries D36's recorder rule into the gate: PR-MEDIA wires the recorder to a real stream, so its labels drop the demo prefix. `tools/parity/compare.mjs` masks exactly that button text, nothing else.
 

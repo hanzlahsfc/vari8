@@ -1,0 +1,1634 @@
+[
+  {
+    "path": "1440/s01-profile-checkins.geom.json.gz",
+    "oldSha256": "d23f2c3ec2d198c3bf1e2832ac9d84902bb113817f315a0304380d6e0981b475",
+    "proposedSha256": "f309cda09697116c1fcdb966d6ad8f5fad2bc718a5df380a7e79d9cfd8bb9c9e",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-profile-checkins.png",
+    "oldSha256": "197f11e5954701aeb6cf1fcf1a85860d64b577d6abe7c2819cf8d7eb9b8c4b7d",
+    "proposedSha256": "2a0fd789e9e909597e98fa17d67aea8c708d85df2d29d360266d6a2025cfc5d6",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s01-profile-notes.geom.json.gz",
+    "oldSha256": "7e931cd9d6839b2106467087e73be298c1488e4db719b75d831bd126df943781",
+    "proposedSha256": "1a4794dc9ddf344b2a75551c5f1f3501737d08803b232cd0a76c718a0bdeae76",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-profile-notes.png",
+    "oldSha256": "55728a17e3a6fc3fc6aa2f920f44e8bdfd0d37af588330a405e748728afd457c",
+    "proposedSha256": "dcd5f86092bfb5e0a929a6d742cd399e4772bea0009beb6dc59bceda4647dd0f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s01-profile-onboarding.geom.json.gz",
+    "oldSha256": "1f462a8c70d3761c1acc168314a652d428a1a4d7e63a0a6d558b1e64b7beb0eb",
+    "proposedSha256": "9dcf9a343c9ae75ac26e82a4dfa13e57be4d80b99a0c9d5681ee2acad74fb9e7",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-profile-onboarding.png",
+    "oldSha256": "3ae09f7433c460e1aa4b2d79c7bbea9200d9f8944766f813837651fc96f8e2ab",
+    "proposedSha256": "2e8d131518043cebac5535fa72840d4fdf4b841a377c0ce2b11d5ce6b4f187fd",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s01-profile-overview.geom.json.gz",
+    "oldSha256": "11feb0800f92cb70ede89c69f004888379ffbe37b0545dd09faf84549e999bbf",
+    "proposedSha256": "2532ce13fae6f8294510e9d754bfaa0f0fc304f6b29cfef0478db102ee833a46",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-profile-overview.png",
+    "oldSha256": "c5118de9fb323b36a0dbd19d65d75343f4a2515fbfe428a9d9dcc9896c1564b4",
+    "proposedSha256": "96538189ab0d731e1018713ddbabb8762f19443c766084d49cc4472864b4883d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s01-profile-plans.geom.json.gz",
+    "oldSha256": "ee732a5303c413f401e8e0df2709d2f55cc1d6cb710f96730a53a23f730d8050",
+    "proposedSha256": "0afeba5d5edb26e70f83cb99c7df5a0b2130080f03a56c2b27603a6b38b36971",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-profile-plans.png",
+    "oldSha256": "e9bf3af492aa7291b3283d30e3cb10e6d21ab0a6bcfd9bb95f342a827a802b70",
+    "proposedSha256": "a07ef4c66ef125a711378884e1d2aeecf8c661439a36c237d6627cc6825c29c7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s01-roster.geom.json.gz",
+    "oldSha256": "4a2cf12b621f36937f19256d79babe1c9caf472821ddf3e24a166eaf759f4ab5",
+    "proposedSha256": "49a9ae7402fee3ec9aa4d590e955f19404664df184eb8c6a3ac59e345758c03e",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s01-roster.png",
+    "oldSha256": "deacd2d542a056802ffd090a4c2058066a020e8c578a01a0255eeb103227eff2",
+    "proposedSha256": "916d705b0a82b0393a61a6acf6fcf01189a1bed4e3a869b6f3c3e940bf90a112",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-messages.geom.json.gz",
+    "oldSha256": "6a376ae8ed072369381a4f8c938ecd463fc8ae906d8b2c2c4894086fd7ae8a7a",
+    "proposedSha256": "d8033c21d3a2cfc97f1f6273a0a0fd2199aca493ea69fb0868aaf440767cf2d8",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s02-messages.png",
+    "oldSha256": "07962141f5190455e6ab4f7680f87019f4de0da9b5e86592892899dd86e5b1de",
+    "proposedSha256": "bd66d4387a645f60504eb1362c7a7e7518e38adce45ae2e573e31c1ee04ed214",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-messages.s115-0-0.png",
+    "oldSha256": "45fef4b99eeef50ed8d04d837d988fdd53c6f8ea339fc43e739dccaa34d0d9af",
+    "proposedSha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-messages.s115-0-552.png",
+    "oldSha256": "dec2eaadbca0f2e6d33d1620a982020c7acc3775109fd3a7e6b85a59596c76d0",
+    "proposedSha256": "3754a7450d7d87ce228809aaa029ef1c679501603b725743b01da75cc5694c41",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-messages.s115-0-746.png",
+    "oldSha256": "cf97acf29b27552023706349ce1a04b7467ec1d1b493a5f16e85fc115d467e20",
+    "proposedSha256": "798a9b06217e579d19edc1b8c5e9b085a342a0c2075b58b4562a051691dde2f4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-notes-todos.geom.json.gz",
+    "oldSha256": "3fd8ed8660e3aeb5fb33c1d141ce57c34c020ab040c3e53c8bdd4d727617ea8b",
+    "proposedSha256": "a2634672750ab0937eeb3227138c7ae19eb951513abb6fe89645cff7e8a535ac",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s02-notes-todos.png",
+    "oldSha256": "2906bea8b00132b916c0260a57b1fe68d554a1bda2288fdc8936bd785f52af0c",
+    "proposedSha256": "766770a2366801dcce67d9b6681a8a39faf7ab6996db8eb8f579941f278b5e3c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread-attachments.geom.json.gz",
+    "oldSha256": "34b2189bc680594bb903d7bd6490bbb3e450b192d242f2fc7dec0d14c2ba393b",
+    "proposedSha256": "dc7c7c4cfda05d7b9e8a5eb9fea9cb92904dcda432addbd1478728e5adfc1e84",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s02-thread-attachments.png",
+    "oldSha256": "d45081e74676797a11147a6a781ec2322ced22f36315f8968fb5627b2da6de23",
+    "proposedSha256": "c99024cb9e3afd23a7a3a886a5fef1b12a9ad6a65934927dd49a64dc160d5ba9",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread-attachments.s115-0-0.png",
+    "oldSha256": "9797b3efaacda996a66c107c92282a9ed4eb0990b9a0cdba6564222440e398da",
+    "proposedSha256": "548a2a92529357381c0d11acd415648d93f2d6b6b45d664b41a582bcc912312f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread-attachments.s115-0-552.png",
+    "oldSha256": "e913a0f2a003084a5c31a9e4cf3451fb90d2c298c8fedd906e1dffca979d8719",
+    "proposedSha256": "53066600b91c23b181c7c57848bed098d6a50b790a230f6b474504ce4e166f0b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread-attachments.s115-0-746.png",
+    "oldSha256": "d134a4ef603064fddc773edb023be6579166d6ec3658d7dd8df5580a269514e4",
+    "proposedSha256": "42f087d23e07fd0d318a79f473b5d96e2c36304061b45ef47b83597e024c3dd7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread.geom.json.gz",
+    "oldSha256": "ae7a893f850e4dd22959a32dff59d398d91fddc16b8daeccba3b46ed392be302",
+    "proposedSha256": "873626399fedd14e228fe04a3457e23a54cd272f37d78e04415ef6a4d0a5f8f9",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s02-thread.png",
+    "oldSha256": "c1afa0e0e2f3a3275970a941bd3676a62d10a425b052835f83c5121681b81042",
+    "proposedSha256": "795036544be5bc982075bb732f2b3f276e55cfb2277d443d69cbed8a7b63f6fa",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread.s115-0-0.png",
+    "oldSha256": "45fef4b99eeef50ed8d04d837d988fdd53c6f8ea339fc43e739dccaa34d0d9af",
+    "proposedSha256": "a16e285e6fc69196271a49eacba7f6907391e7ac018cab2bf029c76a5aa01650",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread.s115-0-552.png",
+    "oldSha256": "660b7729addfdac645f0bdf424f7778bb1382607aeef3d6552aa6d5fda5ef62a",
+    "proposedSha256": "b77acc616e4d346d90f3863d90719973d601b78391af8a3c6ef76b8617af9263",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s02-thread.s115-0-746.png",
+    "oldSha256": "766d5d8706a31885ab37a0b5a476fa73e54fddfb300107e9d523c96fa146050d",
+    "proposedSha256": "c39a139bbaf531e948f9d838108cf755bf751fb7e9a4739954d1c728517fd7ab",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s03-add-extra.geom.json.gz",
+    "oldSha256": "d2ed5557363e8a892832063454237a143cab6913032d9a7befdb61210caa1c1b",
+    "proposedSha256": "f2133747454dd54df674cdfefffcaf168686ed41d4f938babad0e3c81c28e522",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s03-add-extra.png",
+    "oldSha256": "13f981840f5cb96f939a129828b42863b31d6cfbcc64f6d50b4a6682cabd7daa",
+    "proposedSha256": "459e545365c8cb8db0e3dc2df7fb65c55c69d6c96e90f2404d0b29dc9062def1",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s03-checkin-review.geom.json.gz",
+    "oldSha256": "862c35b3ae82e14073009f80ea6455e7a4d478aac662e593ca915a80dc76a569",
+    "proposedSha256": "71a75e4c9e5c94a2f355a4f8018912c6c6a222f5e82c8e0a308b19ea6af28c6a",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s03-checkin-review.png",
+    "oldSha256": "608f7f5cd301022a0b400c63948d98c4aee983d359d575e4007d403beafea1eb",
+    "proposedSha256": "4aaee7ea3b3be72cd5190530ef88fbe2c663a87974ba2960ad02367f9519544e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s03-checkins-board.geom.json.gz",
+    "oldSha256": "21fef9def51a2902fcca5f918e7800d368bf93ee06d83a8c5178020952c3786e",
+    "proposedSha256": "24790c8e4b73e32befab7a98d7588c72e63279d4c31521c917f7204ecc432431",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s03-checkins-board.png",
+    "oldSha256": "8ab38cdfaffd7b9c4247097549b5b44070106cefd5d32e5f13c10a95ea232aa3",
+    "proposedSha256": "6ff28a7a9e7253141a5d41f92301f7f7e064212fad24ffd42ea277ae36cd1286",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s04-habit-editor.geom.json.gz",
+    "oldSha256": "e8281f7347299829c4be76b760247e67687957a219a61a3274746a6e63193e78",
+    "proposedSha256": "4b06c4b5dbbc01f6a80f5a167b440c40705a2ceb911f3ab8e4c5e251124498ff",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s04-habit-editor.png",
+    "oldSha256": "87d51f8bcef84095b247f4aeec1f0491460483e82f66a90043713d156c0ca9c2",
+    "proposedSha256": "255932a8d1cc6d81f2f6712d78412998322e5af7f8fca7d3eb8dac06a1c5d863",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s04-template-habits.geom.json.gz",
+    "oldSha256": "0af6dfa2ef9a2b4fec2bfc18164d136ce9e397dbca5ffbd9d55c4322830f5a06",
+    "proposedSha256": "b46aa72f52fdc2890fb3bf68a47f78fe9e293bd0509501d2678c89ff35cac02a",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s04-template-habits.png",
+    "oldSha256": "a0be0721c0bcff6844f0efe418fd4ab6bfe0c9ed5e91032f3280d05be60a9f7f",
+    "proposedSha256": "93cea5f5987bafadde68ad378ed7d5a0a988bbba38522182f7eb5135979293b2",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s05-client-setup.geom.json.gz",
+    "oldSha256": "97c7e43c103ec2c81c143f873ed8a1d9e7ffb55fee747ed5eca286aa81e998a6",
+    "proposedSha256": "77a8b1a76b393e369e432775333afa39e72d04b2cf54cff3c348c2994ca9f9b5",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s05-client-setup.png",
+    "oldSha256": "0864d117dbbe1d2a6d763a5eee713e3ac76e7ea8ca2352b7ae1eb03637201d69",
+    "proposedSha256": "75dd9eaa5b7b026ce82f65d5452ef48e6ade29520e83eef1f98b7ab0faf2538d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s05-template-editor.geom.json.gz",
+    "oldSha256": "0af6dfa2ef9a2b4fec2bfc18164d136ce9e397dbca5ffbd9d55c4322830f5a06",
+    "proposedSha256": "6c80e025762c3f7a0054b5e4385a03835c394d538b8baf403a74f0d8cc7a90c6",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s05-template-editor.png",
+    "oldSha256": "825998fc68354bfc35efc21aa5f8602b5e84b2db96fc7b7550856ef9089d8ef3",
+    "proposedSha256": "ccedb83033cf748c1c53351cca16d0dfe55deae1dd9f3bfbdfa234fdd734f35c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s05-templates.geom.json.gz",
+    "oldSha256": "d36cf04067e08232c5fdbc6203216e5dd290b5594f69a3d622e300883c7f6919",
+    "proposedSha256": "82e4d150d50e2cf0e3bc7a59b48ea35a871634edffb87b49d4812a6e7f971265",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s05-templates.png",
+    "oldSha256": "dd8a50a568638c7e9b33cd33af63691ec4f7c140c686db6177751b9868f8e676",
+    "proposedSha256": "d63ee5d50ee161d69cc302bc08db0117aa89ca3c136755dba4782692f3983790",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s05-tracker-setup.geom.json.gz",
+    "oldSha256": "202f929131f9180db206b05c7c8f01b9f22588a670f707976fa60db7a560b33f",
+    "proposedSha256": "02ee357663bfe90ecbe9b4a2123cd1d7ac64c1aa18fcf80b2d34a883dddd4673",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s05-tracker-setup.png",
+    "oldSha256": "6c3ce11e4eeb3008baa3b3558dd03d4efe78ad80982ee88c3a45b5ab2bd65c67",
+    "proposedSha256": "a78f729f901dfbde294cc32350ff5e639be7c165c23ae71298ec125eb2c66a78",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s06-mealplan-editor.geom.json.gz",
+    "oldSha256": "727ff89d39a19861fec07bb412551ce8aebaf0c99e20208d8b0a0e714403e69c",
+    "proposedSha256": "f31963f6f221ed8727e6d4d1ebaf9e709fb883b7c6fde7bcb3e872d7ebc434c0",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s06-mealplan-editor.png",
+    "oldSha256": "2cd7dcdddfa30190e9abe577357c82af4d6fdb3653ba975ae8c9b1d02012ec84",
+    "proposedSha256": "0acb2f1119fc85c33c4f11094e6e4a364d1efe2dbc81473c7a17803dd2b2475e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s06-template-nutrition.geom.json.gz",
+    "oldSha256": "7ccb3c4595e745e9747c0357135cae6f64aa893b82f9ed705e662b1b26819bfe",
+    "proposedSha256": "abd5d1bd2b3a1c68a7f6f2d6fe3178b50169f163ad8f11a8684142059348aa99",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s06-template-nutrition.png",
+    "oldSha256": "e9375a35cf1bd797d9fae86b85cb32482f1bbc6b6b9789fa3df09479287dfd18",
+    "proposedSha256": "45b8f572215942a14b9141bb28c3c025bbf40fec80504d973772bfb266b3ca0a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s07-exercise-library.geom.json.gz",
+    "oldSha256": "bd3173c362fe9d736a3eea0a423be2e2b8e5b3ce307ffc5c9a61203916a78d06",
+    "proposedSha256": "18e672af863461ec4af0d201124737eadb58c37c3d5f1b8bc8fb965b480e0042",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s07-exercise-library.png",
+    "oldSha256": "036e576c662a5a82db1c404d6d9f054eb0c16bddc83109d845c6d231d403ea3f",
+    "proposedSha256": "e8549dce1c608874a6d691df11f92c7b5d30f71bdb12d837f56de86d18cd4b2c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s07-exercise-library.s178-0-0.png",
+    "oldSha256": "0bc7c2782913153a801dc0283b75ea8e1eadb24af4cd1f2bdf1b32c089d6142a",
+    "proposedSha256": "e39b26e078ff01f1bf7b85eb58fff3b8e6b78aefb8c95cf21a8c2d1c30c2a846",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s07-exercise-library.s178-0-102.png",
+    "oldSha256": "5261e69cf9417381096defd3245b1ceb32cf78694d0957a7da13bd948b8b0019",
+    "proposedSha256": "ed8be1112534668b2f3fee231d5b4c80793050d4cd3fbc58c99782118cbf6d9c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s07-exercise-library.s178-0-84.png",
+    "oldSha256": "1ff6da8d92c2411fe5406d49fc65b517c41901b76e7d79ec1ed7e1f70880daa8",
+    "proposedSha256": "ef5974599e0f2287f05cd270f65bb2b9ca33e720c51020b5371c5cb21839feee",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s07-training-editor.geom.json.gz",
+    "oldSha256": "800904967b8c6f0a3f6228adce38915a3ba5aa4a28abca05bd15c932dbb92c2e",
+    "proposedSha256": "a5319ee004e55e62fb6d0f46641acb4b9be8844529ee23d257cd8486de980e7a",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s07-training-editor.png",
+    "oldSha256": "df2bf4469a6d32970bb2af614a25825907d1b763652ade1a0c9f544b78180c66",
+    "proposedSha256": "de2beba49980204539562a73688b793a7d4ab7c7bca235cdd1901c71df95055f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-builder.geom.json.gz",
+    "oldSha256": "8fd43069241390d89e6575b5ad46ae17d4e585b47fc6ae379475ee274fb208d4",
+    "proposedSha256": "e894b0ce380f64107871d9eb22196f22abd9c7efcbda803508d4d955b32229ee",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s08-builder.png",
+    "oldSha256": "aa93f4c1ab02a79a9cfef5a6a255c02698c9e99322227eebb2fa0e2e1fda7390",
+    "proposedSha256": "38b90ea2b787e52a3541e569bddb7736fe917852bd5fd45ffcc76af3dd93615c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-template-dashboard.geom.json.gz",
+    "oldSha256": "9748824e547b3e1b4d4b99e8437688b00938976f795c3f19c8b28b9b3b037f7d",
+    "proposedSha256": "c878941314b8ee08ae29330eb9462240aeb5663e3cba671adbb8b5b358c3e73a",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s08-template-dashboard.png",
+    "oldSha256": "408038dd43cf5e9e4f8d84f09206746953a60d77e29acee1dea420909426894e",
+    "proposedSha256": "ce7bef66f1cb6e103bd7b68546033f8c6240ec3fb88c6bda79ff65a2e9bb0ff1",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.geom.json.gz",
+    "oldSha256": "30442ac3220bdf0645f6d94619aea45ac1be579afcf2dd8774ce41702996542e",
+    "proposedSha256": "d5eca585384614824ed5795aaf325b9c73acec69a50884d01fc1947d36cef430",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s08-widget-gallery.png",
+    "oldSha256": "632660ed0a93a7592e3919c85d1d1358eb51ac1e81040bc73cf0601d4a892e9d",
+    "proposedSha256": "383da1878c2071e7d43d59c385ad50a2663f7124b4c41af9f60568faab64a210",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-0.png",
+    "oldSha256": "923d2e564f2dd20d720b9696c901b63fead8c1987e51a12d529751d964875770",
+    "proposedSha256": "ecc4a2923d490ff9c3965d9c251604bb159f32c0af475a77eeef525bf7b45c79",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-1322.png",
+    "oldSha256": "f12b7f3ed91b893b5bca18276dc5ee9064335e0003d5ddc8c825d8ecae362913",
+    "proposedSha256": "6c356d61f977c635bc73b1340731db8947e559cef521d028b616f4cf42350447",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-1983.png",
+    "oldSha256": "422d30036ef061c9b712afb6b16f285f387adb358cad085923209b0eb685bac8",
+    "proposedSha256": "424f40226062235a93a51f246568c3007fbe0f7f66af1c4b2f8c55c77cdd22f3",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-2644.png",
+    "oldSha256": "899779ff97ef9384d6b410094c8b5c07130dcfc264e1aeb46eaeb0cc8658f1b9",
+    "proposedSha256": "87490711532660abc940a758ae18021c3a0158ab4f551d548537827ba09dd732",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-3137.png",
+    "oldSha256": "09d35c65c7c643020356bdd14220cb2baddee0e09eb1ca21c763565beb7ecad4",
+    "proposedSha256": "9de57126dbb9f882752dedc1c03014365fa11276686b237037e20d0d1761937e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s08-widget-gallery.s92-0-661.png",
+    "oldSha256": "d5ecdb0e2e3b32fec24384f7693043c9f46fa4972cece5d399620460e428e421",
+    "proposedSha256": "38439b50e647001d21204204f193bab08722b6be8e5fd245e9e01f3f7556bc01",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-config.geom.json.gz",
+    "oldSha256": "0710d3867db6997458890a8f4b84749e5252965b1b0f5ceabebd47ac5876ce87",
+    "proposedSha256": "9d5c3ca79471834c4066ee6354067c7fefe53122a310aa4bb07dce71b02fa5b9",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s09-tracker-config.png",
+    "oldSha256": "b91f011447a94551b5b7665138dc80eec257187e5f56483405eef6c301a277ed",
+    "proposedSha256": "99256ba47294882c753eb611da258d0c0fc715e978db510defd26f1a846f1cbc",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-today.geom.json.gz",
+    "oldSha256": "ec9955b6475173eca70d947dbda1763b37b33accb9ab100ab33b5b4e4ebf004c",
+    "proposedSha256": "b0ef4325d2aa9708d9e0dbf875befb329e7c1498d319b3527b2571e64d21ce1b",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s09-tracker-today.png",
+    "oldSha256": "e3db24b573d4d0409027bfcae34f9ac06e0e6a91a5815a4caf8104efa32f4eaa",
+    "proposedSha256": "413d302ae4150abe68b087dd2f3b9d7cdfe80294fd74361da625e6ae6ad53b9f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-today.s236-0-0.png",
+    "oldSha256": "dfafb0311060389b934ef02ab1decbceea1b27a657d4d45bbd0967fc171516a6",
+    "proposedSha256": "a6e626060ac4f74eb56cf3fa13aea31c7cc63eb33fc3c827fa7959f90e224e27",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-today.s236-0-330.png",
+    "oldSha256": "01393eebf2413ef0615334b4e90de1343a0e160b64104ac69db1d7cd14766949",
+    "proposedSha256": "3429ef3d9472e2d890289bd13646de9276ad1686d74153e4119aef1644ce3130",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-trends.geom.json.gz",
+    "oldSha256": "d50bf08f9aeca3bd8a13af7221ef92dcda9fe5808b6d0ec65287043b65597158",
+    "proposedSha256": "4b43693e3df7f2079282e1851c05f87d8521a52ba33b2f172036ce765681831b",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s09-tracker-trends.png",
+    "oldSha256": "5473c54a90a6d9f7f03d0fc10e47457f417a1a5a000b6bf7d8f52bd73b6de129",
+    "proposedSha256": "36584cf3b11bc90351ca5e2efa6bdf76edb2c60f200ce891414d9fdb6da3d87b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-week.geom.json.gz",
+    "oldSha256": "e27d2c051ed01a80cde56527791d067ddb6ffd6880f56c6288fb0ae41dcdd0fd",
+    "proposedSha256": "c597bee969a9c1fa17c218a0ab9c81fd9ed096d124fc8aebb4f89c11784b42ac",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s09-tracker-week.png",
+    "oldSha256": "f8a16909d5dfadf9f9e37915f7e8c3927735387e5153dc3c72d88c9d543a81f8",
+    "proposedSha256": "aab40837ba86d9abd2ae95ae10c128c2414e64b49deee903369ce3e1b75bf4e8",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-week.s236-0-0.png",
+    "oldSha256": "b1b2842459c884fc7d2d751290bf7eace246484c359975e28f68101346881231",
+    "proposedSha256": "c21ad00147ca12acf9639688d2c2a806a821687897dfe64e09ff3a552bc421ac",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s09-tracker-week.s236-0-82.png",
+    "oldSha256": "9affec0e2a936f74efbd20062dcf959b7afebcb49e1b79c30ddc72a5e91817f3",
+    "proposedSha256": "240ee9ebfa7f463ebad01d8a3ab24102f8cf8ce06ac874dfa32339c518524010",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s10-appearance.geom.json.gz",
+    "oldSha256": "9315b5d197b189885777553d1da50239de0331a8f38445cf06f32823d261ee95",
+    "proposedSha256": "a6703675f73c71bebfb1e5da966118bd3a28409c1866f1f9da688f894e90ea77",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s10-appearance.png",
+    "oldSha256": "ce14e7a2e8d7894c38122a4bcb4307eee586cdfb5c476dfdc8605b199589c2d7",
+    "proposedSha256": "a5a7c55a0575736fdc809614c2fb3048fcb8aee50825f450fa5561f8803d31fa",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s10-clients-studio.geom.json.gz",
+    "oldSha256": "f0b65da08f996fe72fc17a405dd212469b382c489c05f87cecc5a2722d1c7510",
+    "proposedSha256": "d314272566e2373b48afe3758809f9a3237cca5f44ad53fd4ddb501beb6d1c2c",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s10-clients-studio.png",
+    "oldSha256": "9949871a581c71cf2821dddbd923374ba7b6138c840f0e9a1a246bd56dabd63a",
+    "proposedSha256": "64ce8ff95100937222fe3fbf05d499509fc7166149edbd863946f26694ee2b28",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s10-mealplan-studio.geom.json.gz",
+    "oldSha256": "55b407e97d5bd93509c00831a87e3d4479b73978fe57144648792e0f3613af25",
+    "proposedSha256": "251706f2a35af91569164059e5f18f0ab25b5d9f0def8dee0b7b5e4c77610f78",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s10-mealplan-studio.png",
+    "oldSha256": "c8c8798032ee319c9d2a7535d8b9919a5a38bf0f63ea10b01abb49d855222451",
+    "proposedSha256": "c1628c1122cdd77c3702fecc510743e87af1272254fcd35c7ef74b590b2e9fb3",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-client-preview.geom.json.gz",
+    "oldSha256": "430ed39dda930d7bd944b410ab784b1ad3d02f1965944d4fb27e15a3eb519d0d",
+    "proposedSha256": "518f9d15244a82e4bc912e6dab07b7542a2f9e6bb93dd857d9a23a4bb4be4a53",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s11-client-preview.png",
+    "oldSha256": "b1244a0055406de9aed69c4e7524db8a883153e5a65cf092b87cf143738d41d4",
+    "proposedSha256": "b678dad6d65b9b40440be648ee93c4e535d11b80e1d16929fbde40b95b38d481",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-client-preview.s218-0-0.png",
+    "oldSha256": "c3db700fd5dcb8b2815f5e2a199a625e347afdc63551fe8eaee6047db27967be",
+    "proposedSha256": "260d9760071f3500fd82641b7c4e1729c18ce2aaf4812192f474496d0864492e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-client-preview.s218-0-3.png",
+    "oldSha256": "286d7c6766e8a4ccf9e3e34cdc5d8d57b8fd41ef0212882de6a631daec84de8d",
+    "proposedSha256": "14b8eb3ce2dbd675576fd6b4526e544b2973efc2188dc0ee843e1a0051c81267",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-preferences.geom.json.gz",
+    "oldSha256": "6529e78262f7a08021e56ee8120e84fd46932a0ed3e499e47c21177e57214552",
+    "proposedSha256": "5b85b21adaa86817d296d3b491cbd9c5138c893f61afe0d44cc66f851d3ab55d",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "1440/s11-preferences.png",
+    "oldSha256": "c2f6367772f27f34573d23eec4df84ba46167962cd4000b48b15557fee8f266d",
+    "proposedSha256": "b6f2dee8751b424533c3ae8ba079a3bbc9cf802153361f75892af3d21f405ef5",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-preferences.s236-0-0.png",
+    "oldSha256": "b7e3d884a695ece0af560d6fc871feeb4f655dba8f10c80feb4f6ab481a31956",
+    "proposedSha256": "134f8bf156e1caa479495d35b65af48f75dc3d08e9e270b2d37a91be29baf1d4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "1440/s11-preferences.s236-0-240.png",
+    "oldSha256": "bcdba2d63e477238ea70971582928a0729c82ce366b6a1477cc2b9d7f05dd3de",
+    "proposedSha256": "d37f0d6e20380b478d94c3f690d46f891f51e9d5b2d47bac2eca0fed405e8839",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-checkins.geom.json.gz",
+    "oldSha256": "c4ed74cfe6134b635368d485ed85b02aafc297e6d9c19b599153c298045aa536",
+    "proposedSha256": "e7b4c99146dec489076eec026742a5c4ed277585bc465a9f37e3731232dd16ff",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-profile-checkins.png",
+    "oldSha256": "1285eb43a25227dd34571669115d5a306ac2226642cb4cd88e877fcde9875b30",
+    "proposedSha256": "6e6f5585802a489a0e0d2394725d14bebc5041fa119eb7c6495d8fe8364afc74",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-checkins.s129-0-0.png",
+    "oldSha256": "03529e5c3b35160d1bf8596ccd1e2760f0a7534b36d62eb1a8b287a44d1b7e97",
+    "proposedSha256": "a75624a5ff47bab77de1b8d184d03a2b77c81b4b6b1fb3905bbd98b60a8d4604",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-checkins.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "e2bf7e916f75b24ebea2afcb471493a36c1cf94d92b70332e9259e2e277d42ea",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-checkins.s129-47-0.png",
+    "oldSha256": "bc8d049b97b19a883f85e81cc59c4a9777aba74a00adcca5c6b07ab50dc573ad",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-notes.geom.json.gz",
+    "oldSha256": "d4e3c33fd4fda2b4642864ad5cef44657be0e67183a83fa5a3a6476279bc6025",
+    "proposedSha256": "e3fc4de21c4ae703ac2296732a76dbd7ff688490c48b966d27c8fc26b6c7947d",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-profile-notes.png",
+    "oldSha256": "e8caff61acdf4576149e393d332968257401d0e4b36d4867788f39c20f00c3a7",
+    "proposedSha256": "91f567ac7b5781c4e0662b63c06d78aca979f2182bfba620f1787ec138c01649",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-notes.s129-0-0.png",
+    "oldSha256": "ce95a303bfe030cc400c5ddd89358519a4fe895ce51f8c45a2d1e760f99c62ce",
+    "proposedSha256": "38c30c9eca0dca4555a3e2fe00e6892bdf44ee763e92c5cc28697176a8dc51a4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-notes.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "3a3f487c0378600bc5e52fead30a1c3db7c98ebf87035b4df61d50e7285d4848",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-notes.s129-47-0.png",
+    "oldSha256": "b460c310adf32333c9e4cf50ffaad2ef10620b56cd6ef3926682654200bd1b55",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-onboarding.geom.json.gz",
+    "oldSha256": "1b91bcdbdb02ab5ce4c4cfbbd87d477cac96a56beec4bf73b606002a293b1d27",
+    "proposedSha256": "e18bfa0b91dfbf17550dda457a9f7a0195e5a2def8c4d25ac3c3eecc57ba265d",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-profile-onboarding.png",
+    "oldSha256": "f0ff22269f4b85a603a51e92b890f8eba54aa6fc5851368fec8c8aad89eb18a7",
+    "proposedSha256": "514e1eb27963a4f719389e5163baf009da896a7c609e67017fb06f59600fe791",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-onboarding.s129-0-0.png",
+    "oldSha256": "2e0d5c9a976ba4fd92181f3151050c977934429e4b2df2c14ac3e4f63d43ab9d",
+    "proposedSha256": "39b225bf7f94e0decb5deb283bc15e495089d5a3c6509d529596c63d70eec754",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-onboarding.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "38e5628d654cd6c64f4c88378595e813a3b816f4d0e6a4726bfb57f19a893ffa",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-onboarding.s129-47-0.png",
+    "oldSha256": "1f58cda5caa85dc33e9dea6072c24773f0f31f0b148055fff86829f04f67e26e",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-overview.geom.json.gz",
+    "oldSha256": "072aadb7b84d114e6752f51bda3cf8ccc5bf6f31b5e0c8e9c8acce45228e1cc8",
+    "proposedSha256": "4c1cb09360ba8761732b441e7468463ed39177e6729f297ce3cf768097e350dd",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-profile-overview.png",
+    "oldSha256": "1c86954bed650fa87d204b1d5d20cbcf996ea9087190690d9c5c4d2707871cc7",
+    "proposedSha256": "b70bbd6c48a4e913e4d0c739e97ca32dc1031e522fe41b97140a9e6238691585",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-overview.s129-0-0.png",
+    "oldSha256": "3ba00cac9cb4755c66dfa021af93f75be484d20c1c7431e7c833a11427a32a63",
+    "proposedSha256": "4fdab8d662c6fb73f0a65d52cf44b19df62c618d436fb40236511cd8358eb208",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-overview.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "dd2a46e9de3b038de305e7b1399312aa7531e751b6571a6da1b1670b5e75276f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-overview.s129-47-0.png",
+    "oldSha256": "a42731aa32e632598a82ed6bd2fac7b01c9d9dd57814ef03351846dfd598b7ad",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-plans.geom.json.gz",
+    "oldSha256": "1675f33af26ac78ce7346b75a6036c17477fc5de2dc06aecde2e0480d4bd5397",
+    "proposedSha256": "48a3cb5360c074e83a6aa99e6482ce108f05f693148df7083728543799a37df8",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-profile-plans.png",
+    "oldSha256": "111527a4b63891e079f9fab086f280722d7abf4cd445ba541a347b9c4817205d",
+    "proposedSha256": "68c5f2c267f6774de9b4c01a7bc14e1df19aef7ddece4feaa6be1400deec5595",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-plans.s129-0-0.png",
+    "oldSha256": "9743636b403d9852986f977deff307bb6c75682146f092fd654537b822bbf530",
+    "proposedSha256": "774f291ade1f184626bebf98620f9789c4a3b02846d96cc4c96d143f52d64326",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-plans.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "6a2781b6d9660001b521676428b1815c113ef43b07faccdb163254918c57e699",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-profile-plans.s129-47-0.png",
+    "oldSha256": "4d30cfad0d7bdb6af5610552627126607eb7f21318dd6e9521bb7f0c0d183644",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-roster.geom.json.gz",
+    "oldSha256": "1dbd4662367a0303add56efe3b5f4925a7ed6572d06b4b69ca215fe6c71b44c2",
+    "proposedSha256": "e0cc7288ddd8c60b8898e330d000bef045f8ee3c1417223979bcd5db224f69e2",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s01-roster.png",
+    "oldSha256": "ee8ce6f6ba77f6f81693c491031bdb08d8d06055d7d66afccdb9b99c366d893b",
+    "proposedSha256": "fc15682331a633a98e2b8d6074990c59aea90fcbbf3b677c099431d359994323",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-roster.s143-0-0.png",
+    "oldSha256": "d9602477be0a6576278a7f72b88a22092a20c5589c4108c7c4671f41e1d2945b",
+    "proposedSha256": "d2e9cce57f224f0581da731dc1cf4a09e98cf07aa5b17bab56666ad4a360f782",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-roster.s143-312-0.png",
+    "oldSha256": "dc7e22ab4ff246866ec11d87a3c0b58dcc39b4e2bcac9f773fe12a5aa9ecbda6",
+    "proposedSha256": "85e03c7962b88054456be765d81871ba071664aeb1458ca50208a4ea49954cf6",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s01-roster.s143-468-0.png",
+    "oldSha256": "45a4df86230b47b04d80ab8138016280ec767354276133783cc047aad821db02",
+    "proposedSha256": "5b4a5414da355da6220bf250b6ba764dc67f2076187f30461f9e827f4188c4f5",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-messages.geom.json.gz",
+    "oldSha256": "7d14cade107d9947c408b8b79e5e0b385a23bfb8dc078d0d585cbd830d1b0155",
+    "proposedSha256": "bf2b1a0048b42fb670f40053eecd3dd2187a9e1b0c5291cdf3b94b5015eb2c5c",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s02-messages.png",
+    "oldSha256": "6b9c2988868370444b0534a69d4df13fb6b8167e9cac155d55c42c8c862c1352",
+    "proposedSha256": "576d5d45518e82f4d67592f8f618a2805911adc97561abc9596e550f90d82f9b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-messages.s115-0-0.png",
+    "oldSha256": "d2a7f67f3239510eb83beefe53b73cd0c788b2b92e275d0e0d8698b3f1db2170",
+    "proposedSha256": "caa1a775155d6eab5674e5fec439c491ec7f3c13bf6c90a72f05adabaa2fe69f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-messages.s115-0-454.png",
+    "oldSha256": "bef8459af499e9ba500af8379b829d807cd367f8a1b766f615374b3cf6a0e4ff",
+    "proposedSha256": "8799e10563e780255267f5c5c5c87859508920044d5c5b9ba546b2b06f2b69c1",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-messages.s115-0-844.png",
+    "oldSha256": "0547d5932ae464b6413d302beb3b2068d88f4f9a158823b5c81cda6e9567b453",
+    "proposedSha256": "e3b99bc10ace3d2fd84f919a23c6c472de3724f32b2a7d7297ac17b7e1fca1a0",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-notes-todos.geom.json.gz",
+    "oldSha256": "3ae7774656c9dd255df5d67978a57e1b3466186beb6e2629a16ef7b61888649d",
+    "proposedSha256": "197be382af28b84e567d9887f0536bfe6d2c9726c366a31b675412624f03c290",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s02-notes-todos.png",
+    "oldSha256": "291d54a9021d754ec544a82f544ca4f84be32ce5da0f0a8283f5061204b4916b",
+    "proposedSha256": "14b7786958cc0fda546df651c07ea28ba2d02bcb7042098b794d8f99d77d7e3b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-thread-attachments.geom.json.gz",
+    "oldSha256": "44d4b89d6b9fc7a8ab2e555322906f08bdd4fe0ef73c4a8146913a57db6abbe1",
+    "proposedSha256": "f50f14ae41772c3799eac792e621a32bd94eabc9893606bb9bcea16c91ecca88",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s02-thread-attachments.png",
+    "oldSha256": "a6afddd1f3a9c21400acbce6836ca0e9bcd80cbb666160931ce4ae3d8a7378e0",
+    "proposedSha256": "a47b7a2151e5ecedcac9534b4f8726c1ab2440dd707510338d60a49fe63833d4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s02-thread.geom.json.gz",
+    "oldSha256": "488ee2ca6f334c85874b936ba25add09c62effea4278fded7670329008aceaaa",
+    "proposedSha256": "9d31f6e97a26fd99267f573628f5404f7dd849e3bcdb6cf9232d7068745069a0",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s02-thread.png",
+    "oldSha256": "cf2603d12eef1dc29428bcadf7f85f7e7870748e6480938d37f449b724e4d4d6",
+    "proposedSha256": "d431836c9f67f0923aad104165049773e77a3bd1307391fe6ff871b7b7415eda",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s03-add-extra.geom.json.gz",
+    "oldSha256": "b5985eccde636071c6d649e4cfd6f510e499f9951bda1cc26f5d7572777e5e98",
+    "proposedSha256": "d6f175e52f4e28da4c41e4a55c2bc490407f23c89b5c49bf3bec347f57ff012f",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s03-add-extra.png",
+    "oldSha256": "d2a0bd9a01dc32d75a0b264dfe78f2f32c12a53d0503b3ab32d7b57f3c0032c6",
+    "proposedSha256": "af1dabd2e09c531a0d79b07e0db6ce99c8f6083b03a12b379dad8ed9bd9194c6",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s03-checkin-review.geom.json.gz",
+    "oldSha256": "ad80d0f1c4f1fbd627da8f35fd7444d06dcec35a665b3bda56c31f4d05e74b26",
+    "proposedSha256": "6b564d2fe14838811c35ece713223d3a2b19ffbb9b3de7733d4aa96ae04f6332",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s03-checkin-review.png",
+    "oldSha256": "8b5594ec0ddbd7dd041c9641a4fa3258ef0f80cd7ee1349b5097daac6b90261a",
+    "proposedSha256": "7599e03dbe4bddb465dd83b52a30f81bd2c6b1669fb60a1862b6a01136591f30",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s03-checkins-board.geom.json.gz",
+    "oldSha256": "88e889c98d69d675d907885609e91e9a6c897b5961ab89df477b680a84aa3b0c",
+    "proposedSha256": "625e88bdd8e2bb86daf07b3e342bc9f49e1b974813e5fccade3d7979c0355ff4",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s03-checkins-board.png",
+    "oldSha256": "8c8a50c98f9379c59d247580e0a118a7529b0e6aa385a6d0278e3cbfc953bc6a",
+    "proposedSha256": "0e549c45d6f2d9b199c2a971e20b0a4f21aea04b96a70118eb9a0242411f52f7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-habit-editor.geom.json.gz",
+    "oldSha256": "70866359b0c20619fb18ff6a8efe1ca88a63c9dcecb556b7a615c3c810bb4439",
+    "proposedSha256": "eeebb27b6431898933649f5fd6a6c692a863cd01a12ef4ab652b87525dd72312",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s04-habit-editor.png",
+    "oldSha256": "4a84a8b50e087ca979bf59e478efaa5f9cc3f6fc1019d0ce6510102410c9d8bc",
+    "proposedSha256": "1374d8dfa06f858c0ebe86b1fa2fe417642e42c1e1d4e477bab22dc36313196a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-template-habits.geom.json.gz",
+    "oldSha256": "a1272a370e4d674ae0763c5acc0d28bdb90d675c3ba11d8b998dde576ca4a633",
+    "proposedSha256": "01c5d8d399b56f0891cdd770d84298ca512d97b9c2ba5083094f28a9c3ff9b47",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-template-habits.png",
+    "oldSha256": "c01d88ac99632b2a2300fb0a00e0898242de0aeecf0ab9eef08d7794ee9b8d78",
+    "proposedSha256": "5984dd57cdc4875581dc125c340a2fea8295abf2547dcef754359ddc09edbcf7",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-template-habits.s120-0-0.png",
+    "oldSha256": "12b588f6d8641ecb2d91ba0234cf0e218e0edcf300910c594989c564359ae1ef",
+    "proposedSha256": "a57e3c9361510a30dbb8d0f2755fc5a1897e713aab10d0248d5d7c159892e331",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-template-habits.s120-323-0.png",
+    "oldSha256": null,
+    "proposedSha256": "5a6105cf57966e1cfc9ad569efd13262211c69f1947824395f1c30bf461ce0bd",
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "390/s04-template-habits.s120-325-0.png",
+    "oldSha256": "8f06555dd7c529ba5db1b0bcce14cdac334158c5628fa3b83edc54f0721094e3",
+    "proposedSha256": null,
+    "reason": "Intended Habits replaces faulty Tabs; historical authority, D32 clock, recorded environment and semantic metadata. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-client-setup.geom.json.gz",
+    "oldSha256": "ce582526e689dcbbcfbec45920b4c4f8f2f449585297fa8ac67424ef5d3a6651",
+    "proposedSha256": "a41a2249f3195e836f613b9b8c9c931bb5bff7f60ef0a64d5a8e8d405c685595",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s05-client-setup.png",
+    "oldSha256": "e93236a6472ebb451cbf7c256c2fa5ee6029b9290eec72c6734d47d5407204c9",
+    "proposedSha256": "87371e16e51be67ee56dd2928143e4a223c1aaf6a1c3142a15b6606fcf579b4b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-client-setup.s129-0-0.png",
+    "oldSha256": "9585f1a865b30bcb7f225a50b4664a7306be777fad2524c1beea354592e676f9",
+    "proposedSha256": "769f4296f08624f8f22775a6cd830680a0cfdbdc274e76e81919e7f14959df54",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-client-setup.s129-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "8c573b96a60af9c043f6c3b9eb91462ae9354a0a0b50207fe7a035be192ca539",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-client-setup.s129-47-0.png",
+    "oldSha256": "a22aec0925403bbf595f3de86d73571fa5e7d59a2e2fa2a7d3fff65bb4f6706f",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-template-editor.geom.json.gz",
+    "oldSha256": "a1272a370e4d674ae0763c5acc0d28bdb90d675c3ba11d8b998dde576ca4a633",
+    "proposedSha256": "9d2a450da838c6d57591d59dfe21762077355ef70aaacf501b9323817f36ecad",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s05-template-editor.png",
+    "oldSha256": "d8c45b7500ebfb77bbc616dda4aef3f20468db4a6b1ddf3ffef1f5d06cda34ba",
+    "proposedSha256": "9c98fb9f8fe4ca4d1f42eb8ab0eb63580cc1e38f094ced1eb0d27b9b6f8e432c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-template-editor.s120-0-0.png",
+    "oldSha256": "12b588f6d8641ecb2d91ba0234cf0e218e0edcf300910c594989c564359ae1ef",
+    "proposedSha256": "9a079dd605042add18ebab3f90b349d59bffbdfe9c154da869576ec0dd1ec622",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-template-editor.s120-323-0.png",
+    "oldSha256": null,
+    "proposedSha256": "d36a2b0dfaa51d18e720b4e3c347721de1b0440b121820eb114bf4af8dd1710b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-template-editor.s120-325-0.png",
+    "oldSha256": "8f06555dd7c529ba5db1b0bcce14cdac334158c5628fa3b83edc54f0721094e3",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-templates.geom.json.gz",
+    "oldSha256": "5f9a10fa1d7f33bb56a329920c8acb22aa91751f1468cb14a428c60ac488216d",
+    "proposedSha256": "9ab5ade41ba4eb1b0c60232770c8ca3b61b73e4f547ecd03c7e17256bb55c3a8",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s05-templates.png",
+    "oldSha256": "565a96ce6f335b829902e8c89ae7ae46b6c467fb73a892ac2bdab38ff5e54bda",
+    "proposedSha256": "f9ea73d8f3d98a801f9dd6779687b81b637f7d7a86d5d767ad39dc6abfbfad7e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-tracker-setup.geom.json.gz",
+    "oldSha256": "7762bf2e6edcd1f872a09200391aec9d35b961c3d4e8219e2836525f930f8b78",
+    "proposedSha256": "83cc62021bf079a554f58d5535ae1c64a7d717f410e0993c9fbcaed1eb22ae66",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s05-tracker-setup.png",
+    "oldSha256": "6865032a51dc91abe620e56a22fa5bde664ea098591b076efea6aa336c785883",
+    "proposedSha256": "a1ffc9810856c075742eabc0a48bfc4ec10563c4173e7ddfa7e24f5a9dd05211",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-tracker-setup.s120-0-0.png",
+    "oldSha256": "18eaf93e4309d614c76e66dd640e94aa8b035804706386dfd16ff9249829dc0a",
+    "proposedSha256": "523c6841cdc6f62d4ad41743a253ab7aa846ccc4fd3c5a6705d36fba9c853131",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-tracker-setup.s120-323-0.png",
+    "oldSha256": null,
+    "proposedSha256": "9d8cd192fa3dadbf5ecf0fae2646e357bc8ff7a8ecdd5c317c9c5326e655bbf9",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s05-tracker-setup.s120-325-0.png",
+    "oldSha256": "f867c02c541ab24c518c437f9169cfcb89a8c92be729216587f561c8f359723a",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s06-mealplan-editor.geom.json.gz",
+    "oldSha256": "ecee4456cf2940a550f8edb6a4dd7ae99a444eee06c6a6d3087ad1cf1d98c895",
+    "proposedSha256": "d15b8d6ba7f7c51254cc17540f0b7b802f4c92dcfad81f3fdc9234073c8777eb",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s06-mealplan-editor.png",
+    "oldSha256": "d53dfd8d825ffbc96234f06a2eb2a72457e8cb5d85baba7d34bf9c4cb85c1e45",
+    "proposedSha256": "3348b8785ef473c1786a5322ff48af96b7a594bbebd9f11b3da2626ca9638531",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s06-template-nutrition.geom.json.gz",
+    "oldSha256": "bce8ff78ac4149a66357d33d122f98e45f95a4c395745f903341659ed7222671",
+    "proposedSha256": "9eb06c2a6fb04f959ccc99ae56e8b1b912ef44f4c87d245d6c61b063ca5e5fda",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s06-template-nutrition.png",
+    "oldSha256": "48e58a4f8fc04e7f365e99dceec3c4af96278eb6162531cf1c3f733dc911b092",
+    "proposedSha256": "e702255537ca1f02a01fb9e74f669e2ec30fb671bb753b9106ddab2d5677884b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s06-template-nutrition.s120-0-0.png",
+    "oldSha256": "32427451df8c54a942ff95e49dfcd400a314c9df624beb140e0330d73eda7ef3",
+    "proposedSha256": "c35e6f39fe5c741145b204b2c3ce876f690b3891e311dde84fedcdee76d7870d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s06-template-nutrition.s120-323-0.png",
+    "oldSha256": null,
+    "proposedSha256": "419bb02529b4e8ac101e6e9ffb87308d8a7a77a00149672e87de5e42f583b507",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s06-template-nutrition.s120-325-0.png",
+    "oldSha256": "85609bbcc37c2e04a860d4f9708d4cde29bb259470c7171c3e5314760376363b",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s07-exercise-library.geom.json.gz",
+    "oldSha256": "ee8fa6e814800959ce1848844410f7cf1c807bd80d4038f769efcdbe41b27dad",
+    "proposedSha256": "c15f93064fa617a424592dc5e82b8b914c02a25edbd44d21855946794776c1fc",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s07-exercise-library.png",
+    "oldSha256": "4117e255a871fa2f788a989cd2a205a38a5abdf38e5a07e109ff30401ce429da",
+    "proposedSha256": "c6b4a27f916b47a44056d0c175da34f867431b207cf0a01274e0d8969b6d3407",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s07-exercise-library.s178-0-0.png",
+    "oldSha256": "2be923c65f3bc44b732d3b969c78e80749c39750404fdbdbe96985ef0cb1cdc6",
+    "proposedSha256": "470517d64a2b0348d7b1f58ee1b750f298c8c48c57424a4af7f8f56f59468361",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s07-exercise-library.s178-0-102.png",
+    "oldSha256": "d674030bf92671cea8c19a6a12254c2c592cb9dd1ed1bec40b3f17dc772f028e",
+    "proposedSha256": "3129d0a706c13a030bb1e9587479e9170a7058a2de6637b291521917600794e2",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s07-exercise-library.s178-0-84.png",
+    "oldSha256": "2b711cd33286b112e5e38afb9385d411de795469c0956d1e165a2e2883772ee7",
+    "proposedSha256": "4d5099af9e1e9d0c401e86bbd1754b727a0e952c4142e76c3991abb8b9be808c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s07-training-editor.geom.json.gz",
+    "oldSha256": "7945bea14cc893b7dc86e3630fc9e38f2f74c66539d70aba73419e5355b87824",
+    "proposedSha256": "a5f3ef78f62fa3662233569f70db8e70e9aaaa91453f062917176028d3a3862b",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s07-training-editor.png",
+    "oldSha256": "bb054ed740a435644634c5a6569e8faf1daaddb22af10d83f21bdadc03ba8235",
+    "proposedSha256": "3104ff00c17947d0eac675ebb07f9db239b490ce51918f19e5ed5375d70d0f46",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-builder.geom.json.gz",
+    "oldSha256": "cf9fc89853245343473a5dfc0cb8181c761dd339b9b3dde5ef72e1e737ebdcdf",
+    "proposedSha256": "755eda89728c9e057500aeed28066a67ce8433934b0e5cc0d256f03f16557270",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s08-builder.png",
+    "oldSha256": "97d602f1c705deeef68816fc181e2efb6ecf15ae3921ace945d3e821ef95d0f6",
+    "proposedSha256": "5f0e6c3b1e0f80a84394c0bbdc7b0801519deaa609958430df678f95e808c34f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-builder.s12-0-0.png",
+    "oldSha256": "21cfed67e978e0d22438d99e168fa0a6ae17dd6ff47172a86f7612ff58b485b3",
+    "proposedSha256": "3eded9ca44f5286eff8bf8b33e69c9b0a326c3d28e312551423e327bdcfae50c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-builder.s12-11-0.png",
+    "oldSha256": "c66f9d9495dfc47043c491af34fe13d74a305eeef74d31c992bc457fe0f8ed36",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-builder.s12-5-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c898fc2fae01b87ee8cc1e99b67728f7f9c608b105efa12c6c8649983561c4b6",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-template-dashboard.geom.json.gz",
+    "oldSha256": "f522185a99545203272eb19bac008071ef3d9fec9c7cff14286a2559526b23bb",
+    "proposedSha256": "1bc5e4672e44d396322e3775767dae34ecb72f9f5f199879384603057528e6ff",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s08-template-dashboard.png",
+    "oldSha256": "6a0dd2c0e599de0a86e14aea5d6e238a18b827606088def5b0530c3306a55195",
+    "proposedSha256": "00cb15bbee4824abd15a0cb3bfddcbabb4ccbe757cb0f58359b9bbb35878b9bf",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-template-dashboard.s120-0-0.png",
+    "oldSha256": "7c0e3f38fbe12e42760d5228f06184d6517afca6cdfea1472c2a9fdae2218a3c",
+    "proposedSha256": "e1c6fbf0a02a33495b28c880897258e70d809055a86a5f71a1b211958069f47c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-template-dashboard.s120-323-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c5915f3ecaa52caeae18893ab4be686ad3e74c5b511ac2d1947ee03bdbc67a48",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-template-dashboard.s120-325-0.png",
+    "oldSha256": "e7c02716f95bee6e4bba4eb6315e97a2eae166074f7446a73770fd6d9e6577eb",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.geom.json.gz",
+    "oldSha256": "d840fd36b0db1c5c1877e7deb24beba2011b8453c4cb2da0d8d1b5ca26e7c034",
+    "proposedSha256": "184effb848b920cfbde1f8fa6305b6a02ae0c337a3b57a25390d792842fa7ccd",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s08-widget-gallery.png",
+    "oldSha256": "b850287cf6ee373a06bcca15128f81dec99dbba6c601e6ddac34b49e9fd3a748",
+    "proposedSha256": "ba997fd73e7a44031a45cd48486e5d1d7986c57ec19c3b45981bd5347c8d8f44",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s12-0-0.png",
+    "oldSha256": "613cd7d317d8b1f357110486f226d0d006c9ca0b92d20217948be7ebf55c8bec",
+    "proposedSha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s12-11-0.png",
+    "oldSha256": "613cd7d317d8b1f357110486f226d0d006c9ca0b92d20217948be7ebf55c8bec",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s12-5-0.png",
+    "oldSha256": null,
+    "proposedSha256": "06c1c8d7327e674843d716cbcb8e33879a036decd7bf39a295250de8417b314a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-0.png",
+    "oldSha256": "46cde02616d6cda8696feb713ff2d70eff847b1107efa69429ff1471c02f6e03",
+    "proposedSha256": "70437b8c61bf2339d01a65fdf6bf7f400ff52bdf6bb319f6a3efcf0fd673fe89",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-1300.png",
+    "oldSha256": "2a81e6687f026bcbefcaec9dc5219647054827c684403ed5e7eadcc06bab9361",
+    "proposedSha256": "a9dd451ea2f6a99e4759329cf03e4616f98fe54eeae33e53f5a6e489490bcbff",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-1950.png",
+    "oldSha256": "2abccf77a42ebcde51041ecc37a9f59ff559693a996b19e9acd6a1dcfd8e3ca3",
+    "proposedSha256": "4a871a2bfc2499df0592630a492436eecbd391972c2253af3db2e5ed0e95af6c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-2600.png",
+    "oldSha256": "cce16aeb17cc1e551ad6adf4af4b843262ea5722666877376d9ecfcabcdd4c83",
+    "proposedSha256": "ebdb3aff4453aafcedee283bbec1ce5fe0c6b717ab7651f9cc8139d16357c304",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-3250.png",
+    "oldSha256": "df65f1ef0acf95a0dc26e7f9ea69e26682c439ce7828a73f92ea5ebdbf446a55",
+    "proposedSha256": "f7d6f4e147597905f83f929ac790e3417464efc1dd1f0fb68f3926cbd4e7925a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-3900.png",
+    "oldSha256": "e749e2f0f39fd3ca47d546bff5b0da109d49d5f0328eea1335475b9fc68dc90a",
+    "proposedSha256": "e73e9ec1c3b87e8b990a1ea02749622d93a205845fda299e3b605fc6930aa041",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-4550.png",
+    "oldSha256": "da1250bce42aacbe352a6d54a3531d918825cb1d20a46ad1ab7e6d8b4abb7550",
+    "proposedSha256": "3d6f4acd9037e92b25ce5c18595f555a39a75332b3edab1b7bb9b06d0fba583d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-5200.png",
+    "oldSha256": "5825b0fd124891d4a8a4ce05a7118086e4c288418d15f378db5dfde3a4bd9572",
+    "proposedSha256": "c97ae06936205a189b7171e9400353a20830906b5ba80e7634d757bc6c53282a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-5850.png",
+    "oldSha256": "27d35a86b0baaf90d24300b790543fa4188073c467414d4c56b94806fd2fdd0a",
+    "proposedSha256": "96fb6a29c04c1d0aa5ead86f7a82998af3aaf59687880b7f9a46c1ace583f5ed",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-6271.png",
+    "oldSha256": "d9615d9c9d924bcce80cbd408c8bfbb0cd94bfd37e567ff630d63832d270ab58",
+    "proposedSha256": "82c9f773ebe93ea211811a470251289fe0a00a387cb5dc75f3e33f2eed681d32",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s08-widget-gallery.s92-0-650.png",
+    "oldSha256": "0d525ff039599c004e0b3709ffb9978133b5fd612b97995bed5a6560bf213bfd",
+    "proposedSha256": "fa449341aba8d8ac0e4a0f1b44a14f2756cf05117e494f52200b2d6f7a6b23ce",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-config.geom.json.gz",
+    "oldSha256": "1141016574eaa3b25956c43b1e1776845d87b306479735241d1334bd53dc1767",
+    "proposedSha256": "17e5f709c4efb2cd08e37438328cf6cab98fd31de2aa343aff0246bbca6219c7",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s09-tracker-config.png",
+    "oldSha256": "10065a99740486fc30ce6b3f4897ee34b444337aee69e9063b181aef55a0a893",
+    "proposedSha256": "e33ff45e90e0fa767f555d41fd5761674811380d9f9face16b7c89d565950dad",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-config.s12-0-0.png",
+    "oldSha256": "b5322671555b1cd03c919d6aa38bf106cfd0691c9c61c9671e27e99db74909f0",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-config.s12-13-0.png",
+    "oldSha256": "780593048bcc7966973263dc3ab7374dff5531a9865a4311b26a35d0c4c81a6e",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.geom.json.gz",
+    "oldSha256": "a7b8fc35d7f8cfea614436068650d52c7edf82892deb2524d115a672e39cbf4b",
+    "proposedSha256": "fc1fbbd9ecb7f818bcd78ec9c55ed5a563c6a119d0514eda3ee093d780360a46",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s09-tracker-today.png",
+    "oldSha256": "9e098667605e901de58b4f58e962e4682a3bdd9b185fb10356f742d201a455f0",
+    "proposedSha256": "a0828131c1c75272de29596ff426cfe1f662859d6f8f797a20f612308b3b5c0a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.s236-0-0.png",
+    "oldSha256": "2acf1ede716e7fe767ae654c0eb6dab4f7e55ef017d160a17f7860ce2d26c5da",
+    "proposedSha256": "783eed8c004722f27736447df6751a82ef7cd854d30066aac661f51dde9fa949",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.s236-0-619.png",
+    "oldSha256": "e7289444f53e5d4a28c44a07668fb8e274ce03039091af8325ba6d534aaaea2c",
+    "proposedSha256": "b318b290d00d5a0ad7a33fbe6c84538d2234f029218fd4f2adbbad59600ffdad",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.s251-0-0.png",
+    "oldSha256": "5595801b9785cc7986b9d9659109900632aaf9ab244920e5d61362d248e56e5a",
+    "proposedSha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.s251-299-0.png",
+    "oldSha256": "80b5fc56dbe4d87b13ceb9e4aeaadbb031ae7ff9fd806e8fe3145d51c10b0dfb",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-today.s251-300-0.png",
+    "oldSha256": null,
+    "proposedSha256": "231e10d0ca9ff9560216ec2e1e50c41cdc0c8b19df5fa6cc164c9f14362780a7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.geom.json.gz",
+    "oldSha256": "39e653972ef5648e367643f42303e38f1a920958dcf3c186a116af861201000c",
+    "proposedSha256": "8adde293d4239494fbd08b766cad2f986c8d36f8815308ea9dc2e6a09a78cf7e",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s09-tracker-trends.png",
+    "oldSha256": "a98dd094255c7f5d151393c55add0d1cd8dcabfa5399adeff8ea6ba4d6d3ae71",
+    "proposedSha256": "23578e5ed820227219756efe7f2317f84b7b77a30f257ba29e573865e6cc7601",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.s236-0-0.png",
+    "oldSha256": "a9473e538ea171619b7c835bf99163f0038941e2a734d3777462138f25a9b269",
+    "proposedSha256": "6818d2e7659242bd4a59fcc04a39b07326b54b2500a3f118e1986ab6f0a1dd4d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.s236-0-232.png",
+    "oldSha256": "a0c5d75bbf7d7abc7cd14e461294b307256134edaf06256c5cb19af5f2498059",
+    "proposedSha256": "6c2f971a032cef8a465fa0ee95fbb73a1ece507585f9582394780c347916a4b7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.s251-0-0.png",
+    "oldSha256": "5595801b9785cc7986b9d9659109900632aaf9ab244920e5d61362d248e56e5a",
+    "proposedSha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.s251-299-0.png",
+    "oldSha256": "0d616e40d34401b965921b2be4b2794a1d101b2d15786ee7013f834adb40f1b7",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-trends.s251-300-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.geom.json.gz",
+    "oldSha256": "01f842f956b90b9c798a79d52546d1ef884c04519c3ad349e5595dce1bb395f7",
+    "proposedSha256": "8aa95e918d4d1fd4c5373f45368ee909dd78b6e78be780adc0ce20681c27aa32",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s09-tracker-week.png",
+    "oldSha256": "c653a3f5fd501cc34617cd19e4204447166900f2538d1e893cfc5983cf902a23",
+    "proposedSha256": "2b885e31c8642ae09862f6323db2716e0999ed29e708f70ee3c16be1faf65103",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s236-0-0.png",
+    "oldSha256": "965b7d14f84225e0e6dc9aa8db15a580da64788381adfae0bd09191bf7d9b296",
+    "proposedSha256": "ea5fa83d59b5905f731fc98d9dfb18ad4890bc701001e45dbe137c0450d243b7",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s236-0-1451.png",
+    "oldSha256": null,
+    "proposedSha256": "eb3d95daea34f18ba2c01bc657733ab805412b15299565c928b443fdd512bb88",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s236-0-1471.png",
+    "oldSha256": "6471d92844c38ac41af78397c6c5fedec08ef8411d52bd4d7b3ecd04271d35dc",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s236-0-810.png",
+    "oldSha256": "7d9201aff345925f46c1bec64a9008c0d49069c8271a488d27fe0d2866ea2a38",
+    "proposedSha256": "e98316f7497513ff0ac438f8e5904862afb3b565fb18eee55bb41152bb398e3d",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s251-0-0.png",
+    "oldSha256": "5595801b9785cc7986b9d9659109900632aaf9ab244920e5d61362d248e56e5a",
+    "proposedSha256": "dcf80a99f2770823bf79eb6423a1ac321283c42a33faece8c705c6dc19816b37",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s251-299-0.png",
+    "oldSha256": "0d616e40d34401b965921b2be4b2794a1d101b2d15786ee7013f834adb40f1b7",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s09-tracker-week.s251-300-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-appearance.geom.json.gz",
+    "oldSha256": "f8b410e2b8c21d5b2fc9d13d44d8f5028ddf9fcc85f55e3d7924e3a09cb791b6",
+    "proposedSha256": "09585e4cc5a7f6fe57cb005456dbd4f7471a51a2800ea29a11a7d408ddef1a01",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s10-appearance.png",
+    "oldSha256": "d750bbd05d989eacb1a9fd6741940207d99191b0b82c1d19d00df9e90a318172",
+    "proposedSha256": "45f84fcbdd621a1b4d6f08104f7aec20f35c6ae731661845dcde60dd0b8d5b5b",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-appearance.s12-0-0.png",
+    "oldSha256": "812ae7983d7cadff5130234c9cf51a80b5538402a4dccae17af7691fe969e431",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-appearance.s12-13-0.png",
+    "oldSha256": "8088b5a783046a7578d081538a3ec00b9b61103d7755ef5c06fa4233ab0e9340",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-clients-studio.geom.json.gz",
+    "oldSha256": "53fe9f4fdb05aa3656bc46c00c6c0962faf5acbdde42ec2c448c74541d3b0960",
+    "proposedSha256": "315d8cf16de199da8af4e5841f0b29d113527d1c92e352067b6e7403d7df9419",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s10-clients-studio.png",
+    "oldSha256": "bef0c16c884ff963d9a8aa83238d0a996d35140f9de11573c2424d9feb1f378f",
+    "proposedSha256": "d42ee2836abb236af04cd068aa744a27e7503cbf9978b8b8c85a0578df880919",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-clients-studio.s12-0-0.png",
+    "oldSha256": "07ea9177af961ff437578ad6c0a21032f68befb90432c510171156b299603863",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-clients-studio.s12-13-0.png",
+    "oldSha256": "fecf3487394e5b81fde3ac04ce256b280078e07a0d05495df5159bab2d4e198f",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-mealplan-studio.geom.json.gz",
+    "oldSha256": "a25f9e4ce401618c881dba8b8ff0096f43b2402fdd90ae1b2b2e35808b4ff658",
+    "proposedSha256": "786f5066375ad0fdd904bb13c2cf4e2f5f9610c36f19e7dc5a03c71ec059e387",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s10-mealplan-studio.png",
+    "oldSha256": "7c5df9918fd83f8b2a4622e9563d3e9df0b3864a261e2f8d40399a46d705ef6a",
+    "proposedSha256": "bc9d4734f94dbea03d197b7abfd684f0ebbace2d5c7894df58e1604df043d59c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-mealplan-studio.s12-0-0.png",
+    "oldSha256": "2a4e68fba3b1c361ccfb8759c2ee4d2af4c82600c23cb6593bfee66b28874291",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s10-mealplan-studio.s12-13-0.png",
+    "oldSha256": "ee8d439656568dd7cfd412ffcf34e8cbc216bab325c17ea33e3e3d3a3d6503bb",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.geom.json.gz",
+    "oldSha256": "442f8e1dc2e207f2ffa9b53ceab1597ae01ef8e66cc38e52248ca0888c968aa0",
+    "proposedSha256": "0db74db42664dcb9b27e99741e5a3c22db193a0ca1ac051a4a81199fa41ba116",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s11-client-preview.png",
+    "oldSha256": "c1f46ec9acd3737f88abfe138a5c31845386169ef003967d6704721904eadf64",
+    "proposedSha256": "60a5666fcedfe7e9e59e71882665fd96deb61f9785e9dd3d8238a8c3a2548d8a",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s130-0-0.png",
+    "oldSha256": "f9bc258f10dc80ee093908444e04d565a60f681810e95fb888644f8a7bbc49af",
+    "proposedSha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s130-27-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c829e92a00181ad531f03287051ce2954ae468f431b2d3846f56ac333e355d77",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s130-47-0.png",
+    "oldSha256": "f9bc258f10dc80ee093908444e04d565a60f681810e95fb888644f8a7bbc49af",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s218-0-0.png",
+    "oldSha256": "31d58f84a518712139a25aba97333a990d1b492a2a1a9c9607ff26a0dd7a30cc",
+    "proposedSha256": "af9831e54550a2f07c946258fcc923cfc2eade4d0d3f6f24d531c2b97cf91dd3",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s218-0-567.png",
+    "oldSha256": "e3e307efa25a6a3726ec082bf66bfc1ac9d31ff47a90785389f82b5b3022e345",
+    "proposedSha256": "30d30f8d33e4502f80671c03fcf182f0b541d8845f0d4522872e025b75dc9f43",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s233-0-0.png",
+    "oldSha256": "8299c3e4c70e2165f139171c538d69d7ddf2aa4c7ecf5120d65a19b2dc3a02b5",
+    "proposedSha256": "d52b108bfced5785b93824ab8ff5f18790368f526d21a7278116832a7d7ca39f",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s233-299-0.png",
+    "oldSha256": "0d616e40d34401b965921b2be4b2794a1d101b2d15786ee7013f834adb40f1b7",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-client-preview.s233-300-0.png",
+    "oldSha256": null,
+    "proposedSha256": "c92a4a4550ba5f1a69899cfad30d9510a3c2e2ff24dc1bb88625ee3808f9f4fd",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-preferences.geom.json.gz",
+    "oldSha256": "11f237475811c9e50ca38fe09accbd41108f6562d84b32e988fcafb15c56b780",
+    "proposedSha256": "4111d478eae177d509b0049eec403356287e4d6010f3efad3d460c5124753db6",
+    "reason": "Historical authority; D32 clock/recorded environment; role/name metadata added. No application evolution baselined."
+  },
+  {
+    "path": "390/s11-preferences.png",
+    "oldSha256": "ab3d5f55aac53094d35b4be8dcd9aaac24d520088a3bb0ff981575a2030876c0",
+    "proposedSha256": "19301e7dd45e4a33e1f9a0526e8e675e45f6269a224f4e60590dc7ce8462e238",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-preferences.s236-0-0.png",
+    "oldSha256": "e44e62d5cf4a6487cf78af7e4897cb7ca39c26fd2319f7ca0fc53016d30826ee",
+    "proposedSha256": "2ca1278380e26f80ff37746ad21deec0626a448e5aabc23e11798b8e718dbcaa",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-preferences.s236-0-297.png",
+    "oldSha256": null,
+    "proposedSha256": "dc99f454509fc0e86989b740daef314782a859e09e2811712e6696af57f974d4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "390/s11-preferences.s236-0-315.png",
+    "oldSha256": "07a0278cd69b8f1d6a608e5d006dc97a9cb577361ca313198d5437dd6ba3cb23",
+    "proposedSha256": null,
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "all-70-comparison.json",
+    "oldSha256": null,
+    "proposedSha256": "eaf8b7a5cbc1587c11106c47aeefca49544acde9a4b4554e8070980f2aa4f878",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "inputs.json",
+    "oldSha256": null,
+    "proposedSha256": "85e43c9493d89f169c4afa5c4ca3297e8d3a55c41a23555f017975dbef6a865c",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "manifest.json",
+    "oldSha256": "ae558dbc034e8be3a1473aaa7d6f983e552c1102e121aa37f23c3205b4602217",
+    "proposedSha256": "23bf72290f941460a84400121d5a55b947ebee3104aff565140d472d60537f0c",
+    "reason": "New validated historical-source capture/provenance receipt, including full contract and source/environment hashes."
+  },
+  {
+    "path": "preserved-original-artifacts.json",
+    "oldSha256": null,
+    "proposedSha256": "67908abcb275ac7895c6448b33450c4ef01ded07e6799df860080aca4b1a7c11",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "provenance.json",
+    "oldSha256": null,
+    "proposedSha256": "ad1d385f2247738a3087bb855fe205d12dde3b56a12f496d256c3efc33033d66",
+    "reason": "New validated historical-source capture/provenance receipt, including full contract and source/environment hashes."
+  },
+  {
+    "path": "reference-run-2-manifest.json",
+    "oldSha256": null,
+    "proposedSha256": "e1919e14dfaf9a33dd11156f0c5ae1aad347c201e1628b1503f215cd0fa55da4",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "reference-run-2-provenance.json",
+    "oldSha256": null,
+    "proposedSha256": "903db3ecb3f017cf8f479de5c40e9e1d1a7e76e0fd5679f1a8fd1c10485c4f20",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "results.json",
+    "oldSha256": null,
+    "proposedSha256": "f754860dd4dcb2c1f0e4a70f80ab7d533baf3ea5cd5c8444a0a385eed2b1166e",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "server-ownership.json",
+    "oldSha256": null,
+    "proposedSha256": "68043326b6b08b5a58fe2af252caf44478c1fa36c491eefa3fcce981a811b0d3",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "stability.json",
+    "oldSha256": null,
+    "proposedSha256": "0cd27a8fb85dba42ee8cabd4f3b7ef64ab37fcf842249dfe79380cbc788bbed0",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  },
+  {
+    "path": "validated-artifacts.json",
+    "oldSha256": null,
+    "proposedSha256": "32d234fb8d92dcb836a996e3df68226237d1ceddcb63f3f20f6202416f991e27",
+    "reason": "Historical authority recaptured with D32 clock and recorded environment; original-host residual is not attributed to a specific cause. No current-app expected pixels."
+  }
+]

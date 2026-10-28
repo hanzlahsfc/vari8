@@ -1,0 +1,3018 @@
+{
+  "24999": {
+    "sourceRow": 2,
+    "sourceId": "24999",
+    "name": "Dessert (aliment moyen)",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "1070",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "255",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "1070",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "255",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "49,9",
+        "unit": "kj",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "4,41",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "4,39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "32,9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "11,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "21,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "1,68",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "1,91",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "2,14",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "0,86",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "14,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "9,02",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "1,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "0,34",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "0,87",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0,087",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "0,14",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "4,96",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "4,04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "1,33",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "0,16",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "0,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "0,077",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "0,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "0,25",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "0,58",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "2,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,91",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "3,88",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "1,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "0,017",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "0,0043",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "0,0075",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "47,3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "0,33",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "67,6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "161",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "1,3",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "13,6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "19,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,21",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "91,9",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "178",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "5,72",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "130",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,46",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "53,5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "48,7",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "57",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "0,16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "0,019",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "0,16",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "1,43",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "2,42",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "0,045",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,16",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "0,21",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "0,38",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,044",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "0,18",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "8406": {
+    "sourceRow": 3,
+    "sourceId": "8406",
+    "name": "Salade de museau de porc, avec sauce, pr\u00e9emball\u00e9e",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "712",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "172",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "712",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "172",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "75,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "8,51",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "8,51",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "0,89",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "14,8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "0,64",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "0,23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "0,28",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "0,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "0,75",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "2,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "3,59",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "9,88",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "0,011",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "0,011",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "0,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "1,9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,93",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "7,45",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "3,46",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,22",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "0,051",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "587",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,58",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "14,7",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "1,4",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "7,8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "97",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "700",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "1,6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "8407": {
+    "sourceRow": 4,
+    "sourceId": "8407",
+    "name": "Salade de cervelas, avec sauce, pr\u00e9emball\u00e9e",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "1070",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "259",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "1070",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "259",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "7,6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "7,6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "1,93",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "24,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "1,29",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "1,28",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,75",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "6,23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,75",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "25600": {
+    "sourceRow": 5,
+    "sourceId": "25600",
+    "name": "Salade de c\u00e9leri r\u00e9moulade, pr\u00e9emball\u00e9e",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "469",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "114",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "469",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "114",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "81,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "0,94",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "0,94",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "3,14",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "10,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "1,8",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "0,4",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "1,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "< 0,35",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "2,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "< 0,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "0,39",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "0,94",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "6,24",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "2,54",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "0,04",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "0,58",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,21",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "5,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "1,81",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,73",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,17",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "34",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "675",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,06",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "0,23",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "< 20",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "8,8",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,09",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "40",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "260",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "< 20",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "469",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,21",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "11,2",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "< 21",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "7,86",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "< 0,5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "traces",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "traces",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "2,2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "10,5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "3,06",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "0,018",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,029",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "< 0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "0,49",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,089",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "6,39",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "< 0,08",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "25601": {
+    "sourceRow": 6,
+    "sourceId": "25601",
+    "name": "Salade de thon et l\u00e9gumes, appertis\u00e9e",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "489",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "117",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "489",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "117",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "76,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "9,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "9,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "8,13",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "4,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "3,63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "0,82",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "0,78",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "< 0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "0,97",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "4,1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "2,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "traces",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,79",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "0,56",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "1,83",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "1,76",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "< 0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "< 0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "< 0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "< 0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "< 0,05",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "0,008",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "0,38",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,12",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "1,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,056",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "0,008",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "0,039",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "19,2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,11",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "20,7",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "731",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "1,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "2",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "25,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "88,4",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "232",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "445",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "< 2",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "< 0,5",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "traces",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "traces",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "1,6",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "2,75",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "< 0,04",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,053",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "4,45",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "< 0,16",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,29",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "31",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "1,45",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "25602": {
+    "sourceRow": 7,
+    "sourceId": "25602",
+    "name": "Salade compos\u00e9e avec viande ou poisson, appertis\u00e9e",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "458",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "110",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "458",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "110",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "76,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "8,06",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "8,06",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "6,4",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "5,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "1,9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "0,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "0,6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "< 0,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "0,6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "3,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "traces",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "3,27",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "1,54",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "< 0,01",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "0,23",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,075",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "2,24",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "1,08",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,28",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "0,016",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "0,016",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "0,15",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "15,2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "0,95",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "22",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "584",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,07",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "0,7",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "< 20",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "20",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "92",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "220",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "30",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "381",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,38",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "75,6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "< 21",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "781",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "0,44",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "0,44",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "2,04",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "9,75",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "0,032",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,022",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "4,13",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "0,2",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "11,1",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "1,23",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "25605": {
+    "sourceRow": 8,
+    "sourceId": "25605",
+    "name": "Champignons \u00e0 la grecque, pr\u00e9emball\u00e9s",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "316",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "76,3",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "316",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "76,3",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "85,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "2,07",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "2,07",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "3,53",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "5,47",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "2,33",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "0,7",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "1",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "< 0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "< 0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "0,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "0,99",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "2,35",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,6",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "0,4",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "1,5",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "1,63",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "0,026",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "0,11",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,17",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "19,5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,17",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "1,06",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "2,46",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "13,5",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,13",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "64,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "277",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "1,79",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "500",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,4",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "62,3",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "747",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "1,08",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "6,67",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "0,056",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,21",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "1,84",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "0,88",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,088",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "19,6",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "0,018",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  },
+  "25606": {
+    "sourceRow": 9,
+    "sourceId": "25606",
+    "name": "Salade de pommes de terre, faite maison",
+    "nutrients": {
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KJ": {
+        "value": "528",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-REGLEMENT-UE-N-1169-2011-KCAL": {
+        "value": "127",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KJ": {
+        "value": "528",
+        "unit": "kJ",
+        "basis": "per 100 g"
+      },
+      "ENERGIE-N-X-FACTEUR-JONES-AVEC-FIBRES-KCAL": {
+        "value": "127",
+        "unit": "kcal",
+        "basis": "per 100 g"
+      },
+      "EAU-G": {
+        "value": "76",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-FACTEUR-DE-JONES-G": {
+        "value": "2,68",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "PROTEINES-N-X-6-25-G": {
+        "value": "2,68",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCIDES-G": {
+        "value": "9,9",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LIPIDES-G": {
+        "value": "8,2",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SUCRES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FRUCTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GALACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "GLUCOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "LACTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "MALTOSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "SACCHAROSE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AMIDON-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "FIBRES-ALIMENTAIRES-G": {
+        "value": "1,3",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "POLYOLS-TOTAUX-G": {
+        "value": "traces",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CENDRES-G": {
+        "value": "1,95",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ALCOOL-ETHANOL-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "ACIDES-ORGANIQUES-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-SATURES-G": {
+        "value": "1,43",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-MONOINSATURES-G": {
+        "value": "2,48",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-POLYINSATURES-G": {
+        "value": "3,74",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-4-0-BUTYRIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-6-0-CAPROIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-8-0-CAPRYLIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-10-0-CAPRIQUE-G": {
+        "value": "0",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-12-0-LAURIQUE-G": {
+        "value": "0,011",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-14-0-MYRISTIQUE-G": {
+        "value": "0,013",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-16-0-PALMITIQUE-G": {
+        "value": "1,03",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-0-STEARIQUE-G": {
+        "value": "0,37",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-1-9C-N-9-OLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-2-9C-12C-N-6-LINOLEIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-18-3-C9-C12-C15-N-3-ALPHA-LINOLENIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-4-5C-8C-11C-14C-N-6-ARACHIDONIQUE-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-20-5-5C-8C-11C-14C-17C-N-3-EPA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "AG-22-6-4C-7C-10C-13C-16C-19C-N-3-DHA-G": {
+        "value": "-",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CHOLESTEROL-MG": {
+        "value": "68",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SEL-CHLORURE-DE-SODIUM-G": {
+        "value": "1,32",
+        "unit": "g",
+        "basis": "per 100 g"
+      },
+      "CALCIUM-MG": {
+        "value": "19",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CHLORURE-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "CUIVRE-MG": {
+        "value": "0,12",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "FER-MG": {
+        "value": "0,65",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "IODE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "MAGNESIUM-MG": {
+        "value": "15",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "MANGANESE-MG": {
+        "value": "0,1",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "PHOSPHORE-MG": {
+        "value": "52",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "POTASSIUM-MG": {
+        "value": "254",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "SELENIUM-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "SODIUM-MG": {
+        "value": "529",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ZINC-MG": {
+        "value": "0,31",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "ACTIVITE-VITAMINIQUE-A-EQUIVALENTS-RETINOL-\u039cG": {
+        "value": "32",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "RETINOL-\u039cG": {
+        "value": "29",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "BETA-CAROTENE-\u039cG": {
+        "value": "36",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D2-ERGOCALCIFEROL-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-D3-CHOLECALCIFEROL-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ALPHA-TOCOPHEROL-VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-E-MG": {
+        "value": "-",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K1-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-K2-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-C-MG": {
+        "value": "10",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B1-OU-THIAMINE-MG": {
+        "value": "0,077",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B2-OU-RIBOFLAVINE-MG": {
+        "value": "0,06",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B3-OU-PP-OU-NIACINE-MG": {
+        "value": "0,89",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B5-OU-ACIDE-PANTOTHENIQUE-MG": {
+        "value": "0,53",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B6-MG": {
+        "value": "0,14",
+        "unit": "mg",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-EQUIVALENTS-FOLATES-ALIMENTAIRES-DFE-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B9-OU-FOLATES-TOTAUX-\u039cG": {
+        "value": "7",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "FOLATES-INTRINSEQUES-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "ACIDE-FOLIQUE-ENRICHISSEMENT-\u039cG": {
+        "value": "-",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      },
+      "VITAMINE-B12-\u039cG": {
+        "value": "0",
+        "unit": "\u00b5g",
+        "basis": "per 100 g"
+      }
+    }
+  }
+}
