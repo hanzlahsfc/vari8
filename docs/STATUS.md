@@ -34,7 +34,10 @@
   client own-scope read, foreign clientProfileId 403 with zero READ
   audits, delete-once then 403, unauthenticated 401. Mutation-proved:
   removing the overlap guard fails exactly the overlap test; removing the
-  own-scope compare fails exactly the foreign-id test.
+  own-scope compare fails exactly the foreign-id test. Independent
+  verifier review repaired one coverage gap: the inclusive 28-day bound is
+  now boundary-pinned (exactly-28 accepted, 29 rejected) plus Object.hasOwn
+  guards on the wire-label enum maps.
 - Gates: typecheck 0; eslint 0 errors (96 pre-existing warnings); next
   build 0; `npm run index` + `index:check` 0; frontend biome check (pinned
   2.5.15) 0; prettier on changed files clean; unit vitest green after
