@@ -308,6 +308,10 @@ describe.skipIf(!enabled)("W2-N9 temporary meal-plan entries (real PG)", () => {
       ],
       ["blank label", input({ label: "   " })],
       [
+        "range of 29 days",
+        input({ startDate: "2026-11-01", endDate: "2026-11-29" }),
+      ],
+      [
         "range over 28 days",
         input({ startDate: "2026-11-01", endDate: "2026-11-30" }),
       ],
@@ -379,6 +383,16 @@ describe.skipIf(!enabled)("W2-N9 temporary meal-plan entries (real PG)", () => {
       input({ startDate: "2026-11-04", endDate: "2026-11-05" }),
     );
     expect(adjacent.status).toBe(200);
+
+    // Inclusive 28-day boundary: exactly 28 days is the maximum accepted
+    // span; 29 days is already rejected in the invalid-input test.
+    const maxSpan = await createTemporary(
+      workspace.id,
+      profile.id,
+      coachToken,
+      input({ startDate: "2026-11-28", endDate: "2026-12-25" }),
+    );
+    expect(maxSpan.status).toBe(200);
   });
 
   it("client own scope reads its own temporary rows", async () => {

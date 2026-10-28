@@ -1245,14 +1245,16 @@ function validateTemporaryInput(input: {
   plan: Prisma.InputJsonValue;
 } {
   const kind =
-    typeof input.kind === "string"
+    typeof input.kind === "string" &&
+    Object.hasOwn(TEMPORARY_KIND_FROM_WIRE, input.kind)
       ? TEMPORARY_KIND_FROM_WIRE[
           input.kind as keyof typeof TEMPORARY_KIND_FROM_WIRE
         ]
       : undefined;
   if (kind === undefined) throw new MealPlanError("invalid_input");
   const source =
-    typeof input.source === "string"
+    typeof input.source === "string" &&
+    Object.hasOwn(TEMPORARY_SOURCE_FROM_WIRE, input.source)
       ? TEMPORARY_SOURCE_FROM_WIRE[
           input.source as keyof typeof TEMPORARY_SOURCE_FROM_WIRE
         ]
