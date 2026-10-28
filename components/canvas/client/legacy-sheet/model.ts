@@ -7,10 +7,9 @@
 import { sheetGeom } from "./styles";
 
 export const LEGACY_SHEET_BANNER =
-  "Emulation of PRGRSS 2.0. Tab order, frozen bands, column widths, row heights, hidden rows and columns, merged regions, number formats, conditional formatting kinds and formula shapes are read from the team workbook structure. Bound cells read and write the client store; imported cells keep their exported value. Formula string literals are withheld.";
+  "Emulation of PRGRSS 2.0. Tab order, frozen bands, column widths, row heights, hidden rows and columns, merged regions, number formats and conditional formatting kinds are read from the team workbook structure; cell text, numbers, dates and formula text are extracted from the workbook content. Bound cells read and write the client store; imported cells keep their exported value.";
 
-export const FORMULA_SHAPE_BADGE =
-  "Formula text from the team export, string literals withheld";
+export const FORMULA_SHAPE_BADGE = "Workbook formula";
 export const UDF_SHAPE_BADGE = "Google only formula, not evaluated";
 export const SYNTHETIC_VALUE_BADGE = "Synthetic value";
 export const IMPORTED_VALUE_BADGE = "Imported value";
