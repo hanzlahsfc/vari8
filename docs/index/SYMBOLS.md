@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 150 modules with exports, 1495 exported symbols.
+Counts: 151 modules with exports, 1511 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1926,6 +1926,25 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function acceptInvitationMessage(error: unknown): string`
 - `export async function getInviteLinkState(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<InviteLinkState>`
 - `export async function getInviteShellRole(input: { workspaceId: unknown; rawToken: unknown }, client: PrismaClient = prisma): Promise<"client" | "staff" | null>`
+
+## `lib/workspace/preferences.ts`
+
+- `export type AppearanceDensityWire = z.infer<typeof appearanceDensityInput>`
+- `export type AppearanceFontWire = z.infer<typeof appearanceFontInput>`
+- `export type AppearanceModeWire = z.infer<typeof appearanceModeInput>`
+- `export type SidebarState = { sidebarCollapsed: boolean }`
+- `export type WorkspacePreferences = { mode: AppearanceModeWire; accent: string; font: AppearanceFontWire; density: AppearanceDensityWire; logoMediaId: string | null; availability: string; notificati...`
+- `export type WorkspacePreferencesPatch = z.infer< typeof workspacePreferencesPatchSchema >`
+- `export const accentInput = z .string() .regex(/^#[0-9a-f]{6}$/i) .transform((value) => value.toUpperCase())`
+- `export const appearanceDensityInput = z.enum(["comfortable", "compact"])`
+- `export const appearanceFontInput = z.enum([ "sans", "serif", "condensed", "mono", "rounded", ])`
+- `export const appearanceModeInput = z.enum(["light", "dark"])`
+- `export async function getSidebarState(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<SidebarState>`
+- `export async function getWorkspacePreferences(workspace: ApiWorkspaceContext, client: PrismaLike = prisma): Promise<WorkspacePreferences>`
+- `export const sidebarPatchSchema = z.strictObject({ sidebarCollapsed: z.boolean(), })`
+- `export async function updateSidebarState(workspace: ApiWorkspaceContext, input: unknown, client: PrismaLike = prisma): Promise<SidebarState>`
+- `export async function updateWorkspacePreferences(workspace: ApiWorkspaceContext, input: unknown, client: PrismaLike = prisma): Promise<WorkspacePreferences>`
+- `export const workspacePreferencesPatchSchema = z.strictObject({ mode: appearanceModeInput.optional(), accent: accentInput.optional(), font: appearanceFontInput.optional(), density: appearanceDensit...`
 
 ## `lib/workspace/retention.ts`
 
