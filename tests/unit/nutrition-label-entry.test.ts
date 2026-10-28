@@ -44,6 +44,12 @@ describe("parseLabelEntry", () => {
     expect(r.variant).toEqual({ kind: "flavour", label: "blueberry" });
     expect(r.servingSizeG).toBe(150);
     expect(r.nutrients.find((n) => n.code === "sugar")?.value).toBe(0);
+    expect(r.nutrients.map((n) => n.code)).toEqual([
+      "protein",
+      "fats",
+      "carbs",
+      "sugar",
+    ]);
     expect(r.provenance.labelPhotoSha256).toBe(PHOTO);
     expect(r.provenance.capturedBy).toBe("manual-label-entry");
   });
@@ -65,6 +71,8 @@ describe("parseLabelEntry", () => {
     ["protein in kcal", { unit: "kcal" }],
     ["unknown nutrient code", { code: "unicornium" }],
     ["unknown code in g", { code: "unknown-x", unit: "g" }],
+    ["calories in g", { code: "calories", unit: "g" }],
+    ["fats in kcal", { code: "fats", unit: "kcal" }],
   ])("rejects %s measurement", (_label, over) => {
     expect(() =>
       parseLabelEntry({ ...BASE, nutrients: [macros(over)] }),
@@ -138,7 +146,8 @@ describe("parseLabelEntry", () => {
 
   it("valid nutrient/unit pairs accept; incompatible pairs refuse", () => {
     expect(nutrientUnits("protein")).toEqual(["g"]);
-    expect(nutrientUnits("energy")).toEqual(["kJ", "kcal"]);
+    expect(nutrientUnits("calories")).toEqual(["kcal"]);
+    expect(nutrientUnits("energy")).toEqual(["kJ", "kcal"]); // unit-resolved alias
     expect(nutrientUnits("vitamin_a")).toEqual(["µg", "ug"]);
     expect(() =>
       parseLabelEntry({ ...BASE, nutrients: [macros({ unit: "kcal" })] }),

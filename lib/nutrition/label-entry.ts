@@ -36,11 +36,12 @@ export const LABEL_ENTRY_UNITS = new Set(["g", "mg", "µg", "ug", "kJ", "kcal"])
  * codes fail safe: an unmapped nutrient code is refused, never
  * guessed or silently relabelled. */
 export const NUTRIENT_UNITS: Record<string, readonly string[]> = {
-  // macronutrients
+  // canonical vocabulary — lib/nutrition/source.ts fields
+  calories: ["kcal"],
   protein: ["g"],
-  carbohydrates: ["g"],
   carbs: ["g"],
-  fat: ["g"],
+  fats: ["g"],
+  // extended label nutrients
   saturated_fat: ["g"],
   "saturated-fat": ["g"],
   sugars: ["g"],
@@ -49,11 +50,9 @@ export const NUTRIENT_UNITS: Record<string, readonly string[]> = {
   fiber: ["g"],
   salt: ["g"],
   sodium: ["g"],
-  // energy
-  energy: ["kJ", "kcal"],
+  // energy aliases — kJ stays kJ, never relabelled calories
   "energy-kj": ["kJ"],
-  "energy-kcal": ["kcal"],
-  kcal: ["kcal"],
+  energy: ["kJ", "kcal"], // unit-resolved to calories/energy-kj
   kj: ["kJ"],
   // vitamins / minerals (mass units only)
   vitamin_a: ["µg", "ug"],
@@ -66,12 +65,25 @@ export const NUTRIENT_UNITS: Record<string, readonly string[]> = {
   zinc: ["mg"],
 };
 
-/** Resolve a nutrient code to its allowed units, or null when the code
- * is unknown. Returns the canonical code + units; an unknown code must
- * refuse — never guess a unit contract. */
-export function nutrientUnits(code: string): readonly string[] | null {
+/** Aliases explicitly normalize to the canonical source.ts names —
+ * `fat`→`fats`, `carbohydrate`→`carbs`. `energy`+kJ is NOT an alias of
+ * calories: kJ never relabels as kcal (that would silently convert). */
+const NUTRIENT_ALIASES: Record<string, string> = {
+  fat: "fats",
+  "total-fat": "fats",
+  carbohydrate: "carbs",
+  carbohydrates: "carbs",
+};
+
+export function canonicalNutrientCode(code: string): string {
   const normalized = code.trim().toLowerCase().replace(/\s+/g, "-");
-  return NUTRIENT_UNITS[normalized] ?? null;
+  return NUTRIENT_ALIASES[normalized] ?? normalized;
+}
+
+/** Resolve a nutrient code to its allowed units, or null when unknown —
+ * unknown codes refuse, never a guessed unit contract. */
+export function nutrientUnits(code: string): readonly string[] | null {
+  return NUTRIENT_UNITS[canonicalNutrientCode(code)] ?? null;
 }
 
 export interface LabelNutrient {
@@ -187,7 +199,12 @@ export function parseLabelEntry(input: unknown): LabelEntryRecord {
         "invalid_unit",
         `nutrient ${code}: unsupported unit ${JSON.stringify(nr.unit)}`,
       );
-    const allowed = nutrientUnits(code);
+    let canonicalCode = canonicalNutrientCode(code);
+    // `energy` is unit-dependent: kcal → calories, kJ → energy-kj —
+    // explicit resolution, never a field rename of units
+    if (canonicalCode === "energy")
+      canonicalCode = unit === "kcal" ? "calories" : "energy-kj";
+    const allowed = NUTRIENT_UNITS[canonicalCode] ?? null;
     if (allowed === null)
       throw new LabelEntryError(
         "invalid_measurement",
@@ -215,8 +232,19 @@ export function parseLabelEntry(input: unknown): LabelEntryRecord {
         "missing_serving_quantity",
         `nutrient ${code}: per-serving basis needs a declared servingSizeG — never silently assumed`,
       );
-    return { code, value: v, unit, basis };
+    return { code: canonicalCode, value: v, unit, basis };
   });
+  // canonical collision: alias + canonical both supplied for the same
+  // nutrient must refuse — never silently overwrite conflicting values
+  const seenCodes = new Set<string>();
+  for (const n of nutrients) {
+    if (seenCodes.has(n.code))
+      throw new LabelEntryError(
+        "invalid_input",
+        `duplicate canonical nutrient ${n.code} (alias/canonical collision)`,
+      );
+    seenCodes.add(n.code);
+  }
 
   const prov =
     typeof o.provenance === "object" && o.provenance !== null
