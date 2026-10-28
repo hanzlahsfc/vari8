@@ -124,6 +124,7 @@ const SCHEDULE_KEYS = {
   manual: new Set(["mode", "selectedVariantId"]),
   weekly: new Set(["mode", "days"]),
   cycle: new Set(["mode", "anchorDate", "steps"]),
+  flexible: new Set(["mode"]),
 } as const;
 const STEP_KEYS = new Set(["variantId", "days"]);
 
@@ -399,6 +400,10 @@ function cleanSchedule(
     if (total > MEALPLAN_LIMITS.cycleDaysMax)
       throw new MealPlanError("invalid_input");
     return { mode: "cycle", anchorDate: v.anchorDate, steps };
+  }
+  if (mode === "flexible") {
+    rejectUnknownKeys(v, SCHEDULE_KEYS.flexible);
+    return { mode: "flexible" };
   }
   throw new MealPlanError("invalid_input");
 }

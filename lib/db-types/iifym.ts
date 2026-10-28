@@ -29,6 +29,7 @@ export const variantSchedule = z.discriminatedUnion("mode", [
     anchorDate: z.string(),
     steps: z.array(z.object({ variantId: z.string(), days: z.number() })),
   }),
+  z.object({ mode: z.literal("flexible") }),
 ]);
 export type VariantSchedule = z.infer<typeof variantSchedule>;
 

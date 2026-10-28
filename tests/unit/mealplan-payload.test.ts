@@ -346,6 +346,20 @@ describe("payload — schedule", () => {
     }
   });
 
+  it("accepts a flexible schedule and rejects extra keys on it", () => {
+    const out = normalizeMealPlanPayload(
+      payload({ schedule: { mode: "flexible" } }),
+      { forPublish: false },
+    );
+    expect(out.schedule).toEqual({ mode: "flexible" });
+    expect(() =>
+      normalizeMealPlanPayload(
+        payload({ schedule: { mode: "flexible", days: { "1": "v_td" } } }),
+        { forPublish: false },
+      ),
+    ).toThrowError(MealPlanError);
+  });
+
   it("rejects dangling variant references everywhere", () => {
     for (const input of [
       payload({ activeVariantId: "v_ghost" }),
