@@ -6,7 +6,11 @@
 
 import { z } from "zod";
 
-import { ApiError, defineApiV1Route } from "@/lib/api/v1";
+import {
+  ApiError,
+  defineApiV1Route,
+  requireOwnClientProfile,
+} from "@/lib/api/v1";
 import {
   readOwnActivityTargetsFromAction,
   readStaffActivityTargetsFromAction,
@@ -55,6 +59,9 @@ export const GET = defineApiV1Route({
   capability: "plan.read",
   params: paramsSchema,
   handler: async ({ viewer, workspace, params }) => {
+    // B3: under own scope the path id must be the caller's own client
+    // profile; a foreign id refuses before any read.
+    await requireOwnClientProfile(viewer, workspace, params.clientProfileId);
     const result =
       workspace.scope === "own"
         ? await readOwnActivityTargetsFromAction(sessionOf(viewer.userId), {

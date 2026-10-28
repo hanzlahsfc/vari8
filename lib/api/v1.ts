@@ -97,6 +97,27 @@ async function resolveWorkspaceContext(
 }
 
 /**
+ * Own-scope path binding (B3): a client-scoped route whose resolved scope is
+ * "own" serves only the caller's own client profile. When the path
+ * clientProfileId is missing or is not the caller's own profile, refuse with
+ * the same 403 the capability gate emits, before any domain read: a foreign
+ * id is indistinguishable from a denied capability. No-op for staff scope:
+ * staff reads stay bound to the path id inside the domain services.
+ */
+export async function requireOwnClientProfile(
+  viewer: ApiViewer,
+  workspace: ApiWorkspaceContext,
+  clientProfileId: string,
+): Promise<void> {
+  if (workspace.scope !== "own") return;
+  const own = await prisma.clientProfile.findFirst({
+    where: { workspaceId: workspace.workspaceId, userId: viewer.userId },
+    select: { id: true },
+  });
+  if (!own || own.id !== clientProfileId) throw new ApiError(403, "forbidden");
+}
+
+/**
  * LOGGING (#168): an inbound `x-request-id` is honored only when it matches a
  * safe token shape — a caller-controlled id must not smuggle newlines or markup
  * into a log line; anything else mints a fresh UUID. The id is echoed back on

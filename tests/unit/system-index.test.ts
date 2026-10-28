@@ -284,6 +284,7 @@ describe("system index generator", () => {
       // Imported by the root layout, which wraps /, /client, /coach,
       // /coach/settings (the W2-T1 settings-surface demo mount),
       // /coach/states,
+      // /coach/states (the W2-T2 states playground),
       // /dev/design-system (the frontend design system playground, dev only)
       // and /ethereal.
       expect(row).toBe(

@@ -1067,7 +1067,50 @@ export default async function seed(ctx: SeedContext): Promise<void> {
           createdByMemberId: staff.id,
         },
       });
+      // w2-c4: the definition also carries the canvas-Variant slots the
+      // client shell's roadmap part reads - tracked parameter fields,
+      // weekly metric rows and the Steps/Cardio planning columns. Slot
+      // names mirror templateDefinitionSlots (lib/db-types/template-slots).
       const definition = {
+        fields: [
+          { id: "weight", unit: "kg" },
+          { id: "sleep", unit: "hours" },
+          { id: "water", unit: "L" },
+          { id: "steps", unit: "steps" },
+          { id: "calories", unit: "kcal" },
+          { id: "protein", unit: "g" },
+          { id: "carbs", unit: "g" },
+          { id: "fat", unit: "g" },
+        ],
+        roadmap: [
+          {
+            source: "weight",
+            calculation: "Weekly average",
+            comparison: true,
+          },
+          { source: "weight", calculation: "Trend", comparison: false },
+          {
+            source: "sleep",
+            calculation: "Weekly average",
+            comparison: false,
+          },
+          {
+            source: "steps",
+            calculation: "Weekly average",
+            comparison: false,
+          },
+          {
+            source: "calories",
+            calculation: "Weekly average",
+            comparison: false,
+          },
+          {
+            source: "calories",
+            calculation: "Adherence",
+            comparison: true,
+          },
+        ],
+        roadmapActivityTargets: ["steps", "cardio"],
         sections: [
           {
             sectionId: "seed-demo-de-section",

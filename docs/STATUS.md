@@ -1,3 +1,29 @@
+## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
+
+- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
+  unconditionally while no caller supplies `onAssign`; browser proof
+  showed success text with zero `/api/v1/saved-meals` requests.
+- Lead ruling, option (b): the Assign affordance renders only when
+  `onAssign` is provided; wiring the demo-backed studio to the real API
+  stays parked as an owner decision.
+- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
+  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
+  without a callback, awaits it, sets success only on a truthy resolve
+  and an honest failure message on false or rejection; the Assign
+  button renders behind `{onAssign && (...)}`. No fetch inside the
+  component. `mealplan-workspace.tsx`, routes, migration, schema and
+  integration tests untouched.
+- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
+  baseline), prettier on changed files 0, vitest 117 files 1384 tests
+  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
+  parallel load; solo rerun passed clean.
+- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
+  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
+  Duplicate, Delete and NO Assign button, no assigned text, zero
+  `/api/v1/saved-meals` requests, no console errors. Screenshots and
+  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
+  with pg_database absence proof and `app_fp_w2t7%` census saved.
+
 ## 2026-10-27 - w2-t8 repair 4: failed uploads block the send instead of dropping the attachment on `w2/t8`
 
 - B1 root cause: a composer attachment whose background upload settled
@@ -144,6 +170,37 @@
   staff2 foreign-workspace mint returns 403; a minted url redeems 200
   while an expired signature returns 403; 390 render verified.
   Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+## 2026-10-27 - W2T7 preview conflict repair: w2/t6 merge line `c9440dc` merged into `w2/t7`
+
+- Preview rebuild skipped w2-t7 on conflicts against the merged stage
+  set carried by verified w2/t6 tip `c9440dc` (t6 media work plus the
+  c6 and c7 client-app lines). Absorbed into stage tip `fc563aa` as
+  `--no-ff` merge `f120ebc`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree fc563aa c9440dc`
+  -> tree `7ed11a08a92803fba8b52012871bfb270967ccae`; conflict list
+  `docs/STATUS.md` and generated
+  `docs/index/{DATA-MODEL,ROUTES,SYMBOLS}.md`. Both `client-app.css`
+  twins and `db/schema.prisma` auto-merged clean.
+- Resolutions: `docs/STATUS.md` union, all 2026-10-28 entries above all
+  2026-10-27 entries above all 2026-10-26, ours-new then theirs-new
+  within a date. Index docs took theirs, then `npm run index`
+  regenerated them on the merged tree; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (85 canvas-only + 29
+  frontend-only lines). Hunk count moved 6 -> 4 because surrounding
+  merged lines shifted hunk boundaries; the differing line set did
+  not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 310
+  files), `npx vitest run` 0 (123 files, 1437 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+  index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
 
 ## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
 
@@ -226,32 +283,6 @@
   WITH (FORCE) and the pg_database absence proof plus the
   app_fp_w2t7% census were saved.
 
-## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
-
-- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
-  unconditionally while no caller supplies `onAssign`; browser proof
-  showed success text with zero `/api/v1/saved-meals` requests.
-- Lead ruling, option (b): the Assign affordance renders only when
-  `onAssign` is provided; wiring the demo-backed studio to the real API
-  stays parked as an owner decision.
-- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
-  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
-  without a callback, awaits it, sets success only on a truthy resolve
-  and an honest failure message on false or rejection; the Assign
-  button renders behind `{onAssign && (...)}`. No fetch inside the
-  component. `mealplan-workspace.tsx`, routes, migration, schema and
-  integration tests untouched.
-- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
-  baseline), prettier on changed files 0, vitest 117 files 1384 tests
-  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
-  parallel load; solo rerun passed clean.
-- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
-  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
-  Duplicate, Delete and NO Assign button, no assigned text, zero
-  `/api/v1/saved-meals` requests, no console errors. Screenshots and
-  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
-  with pg_database absence proof and `app_fp_w2t7%` census saved.
-
 ## 2026-10-27 - Wave 2 T7: saved meal assign-to-client on `w2/t7`
 
 - Semantics: `saved_meal.client_profile_id` NULL means coach library row;
@@ -293,6 +324,213 @@
   rows; spoofed `clientProfileId` 403; assign affordance + feedback at
   1440 and 390 in the ethereal studio. Screenshots under
   `Vari8-evidence/FULL-PACKAGE-2/W2T7/`.
+
+## 2026-10-27 - W2T6 preview conflict repair 2: w2/c7 merge line `daaad6e` merged into `w2/t6`
+
+- Preview rebuild skipped w2-t6 again after the verified c7 merge line
+  advanced to `daaad6e` (merge `9f28b3c` of `4bfaf2b` + `2f602b6` plus
+  its STATUS record commit). Absorbed into stage tip `b9f5003` as
+  `--no-ff` merge `03d2a93`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree b9f5003 daaad6e`
+  -> tree `440b528ace9fc186c3b5fd887d049d2349869577`; conflict list
+  `docs/STATUS.md` only. Both `client-app.css` twins and the generated
+  `docs/index/*` auto-merged clean this round.
+- Resolutions: `docs/STATUS.md` union, ours-new (the t6 repair entry)
+  then theirs-new (the c7 repair entry) over the shared tail, all
+  2026-10-27 entries above all 2026-10-26. `npm run index` regenerated
+  the merged docs byte-identical to the auto-merge; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (29 frontend-only + 85
+  canvas-only lines: the ca-nutrition actuals/split blocks plus the
+  end-positioned ca-shared-media block on the canvas side). The diff
+  hunk count moved 6 -> 4 only because surrounding merged lines
+  shifted hunk boundaries; the differing line set did not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
+  files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+  index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
+## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
+
+- Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
+  the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
+  w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
+- Conflicted files and resolutions: `frontend/src/components/client-app/
+  client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+  `ca-checkin-*` styles appended intact; selector sets disjoint so neither
+  cascade regresses). `docs/STATUS.md` union, both sides' entries newest
+  first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
+  index` regenerated the merged tree (174 components, 58 API routes).
+  Canvas twin `components/canvas/client-app/client-app.css` auto-merged
+  but placed `ca-shared-media` at EOF; the identical resolution was applied
+  so parity holds.
+- Gates on the merge commit: `npm run typecheck` 0, `npm run lint` 0
+  (93 warnings), `cd frontend && npm run lint` 0 (biome 306 files, 0/0),
+  `npx vitest run` 0 (121 files, 1411 tests, 0 failures; the inherited
+  logging.test.ts env pair did not occur), `npm run index:check` 0, dash
+  gate `git diff da34672..HEAD` added lines en/em count 0.
+- Twin parity: `components/canvas/client-app/client-app.css` vs the
+  frontend twin diffs at exactly the pre-existing 80 canvas-only lines
+  (ca-photos + ca-nutrition + ca-nutrition-split extras), unchanged from
+  before the merge.
+- Independent gate cross-check by a DeepSeek child (hermes, different model
+  family): same gate list all exit 0, vitest 1411/1411. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/` (`child-gates-summary.txt`,
+  `twin-delta-pre-merge.diff`, `twin-delta-post-merge.diff`).
+- NOT done: no push, no PR, no fetch. Lane database not needed (no gate
+  demanded one).
+
+## 2026-10-27 - w2-c7 conflict repair: absorbed verified c6 tip `2f602b6`
+
+- Preview merge probe `git merge-tree --write-tree 4bfaf2b 2f602b6`
+  -> tree `76845d35b2700fa26bed02a39d102ab2dbdd291f`; conflicts on
+  `components/canvas/client-app/client-app.css`, `docs/STATUS.md` and
+  generated `docs/index/{COMPONENTS,DATA-MODEL,ROUTES,SYMBOLS}.md`,
+  matching the lead probe. Frontend css twin auto-merged.
+- Merge commit `9f28b3c` (--no-ff of `2f602b6`).
+- `client-app.css` resolved by union: the auto-merged head (c7 photos,
+  training log and tracker polish plus the c6 bottom-nav repair lines
+  `min-inline-size: max-content` and the hidden-scrollbar rules) kept
+  whole, then the c6-side w2-c5 messages/tasks block appended whole so
+  neither side's cascade regresses; the stale base tail blocks the c7
+  polish had replaced stayed dropped. Frontend twin auto-merged to the
+  same union shape; twin delta stays the pre-existing 114 lines,
+  content identical before and after the merge.
+- `docs/STATUS.md`: ours-new entries then theirs-new (w2-a4 repair)
+  over the byte-identical tail; all 2026-10-27 entries above all
+  2026-10-26. Index docs regenerated via `npm run index` on the merged
+  tree; `npm run index:check` 0 on both runs.
+- Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
+  generate` (stale client missed `clientPhase`/`clientWeekNote`);
+  `npm run lint` 0 (0 errors, 94 pre-existing warnings);
+  `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
+  files (the inherited logging.test.ts env pair stayed green here, also
+  30/30 isolated); dash gate prints 0. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7M2/`.
+
+## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
+
+- Scope implemented on top of merge tip `01c66b0`:
+  - `components/canvas/client-app/photos.tsx` rewritten: shared
+    presentational `PhotoGallery` plus live wrapper: pose select on
+    upload encoded as `{pose} · {date}` in the minted media fileName,
+    pose parsed back with `"Photo"` fallback, compare mode driven by
+    `compareProgressPhotos`, delete via `deleteProgressPhoto`,
+    `SharedMedia` kept verbatim after the gallery.
+  - `frontend/src/components/client-app/photos.tsx` new authored twin:
+    byte-identical presentational block; demo wrapper uses local state +
+    object URLs (frontend has no photos section id; intentionally
+    unmounted there, named deviation).
+  - `components/canvas/client-app/client-app.tsx`: `poses` wired from
+    the variant's visual-upload question, `DEFAULT_POSES` fallback.
+  - `components/canvas/client-app/training-log/session-logger.tsx` +
+    frontend twin: typed-set dirty tracking (weight/reps/RPE/RIR/note/
+    flag set and not done) with dirty-only `beforeunload`; finish clears
+    permanently for the logger instance. Twins differ only by the
+    pre-existing `&apos;` hunk.
+  - `components/canvas/client-app/training-log/remote-training-logbook.tsx`:
+    queued/in-flight remote write counter arms the same dirty-only
+    beforeunload; no-op writes never arm.
+  - `components/canvas/ethereal/client-tracker/remote-client-tracker.tsx`:
+    day dirty = pending edits, raws differing from the loaded surface
+    baseline, or a save/refetch round trip running; guard registered
+    only while dirty; autosave/token-refresh/override semantics kept.
+- Live API proofs on lane DB `app_fp_w2c7r2` (TLS front
+  `https://localhost:5178` -> private `next start` :5177, production
+  runtime via `APP_ENV=development`, all dev flags unset):
+  Amara + Emma real logins; media intent -> local PUT -> register 200
+  for both; photo lists disjoint (Amara 16 seeded + probe, Emma probe
+  only); compare 200 own pair; Emma -> Amara photo path 403, foreign
+  session 404 both directions; own delete 200; training lifecycle
+  start/set/finish 200 for both; Amara's already-finished log correctly
+  409 `state_conflict`.
+- Browser pass (Playwright, real login) at 1440 and 390:
+  17 photo tiles rendered live each width; compare picker renders
+  `.ca-photos-compare`; training list shows 4 scheduled sessions;
+  390 overflow probe `{doc:390, win:390, offenders:[]}`.
+  Tracker guard proven live: PUT daily-entry write delayed in-flight
+  via route intercept -> synthetic cancelable `beforeunload` dispatch
+  returns `defaultPrevented:true` (armed); after save settles,
+  `defaultPrevented:false` (disarmed). Both widths.
+  Screenshots: `Vari8-evidence/FULL-PACKAGE-2/W2C7/w2c7-{1440,390}px-*.png`.
+- Gates: `npm run typecheck` 0; `npm run build` 0 (post-change, before
+  prod boot); `npm run index` + `index:check` 0; eslint touched files
+  0 errors; frontend `biome check` touched files clean; canvas-file
+  biome findings all verified pre-existing against HEAD baselines;
+  `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
+  277/277; no new en/em dashes in added lines. Known pre-existing
+  frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+- Lane teardown: `DROP DATABASE app_fp_w2c7r2` executed;
+  `pg_database` count for `app_fp_w2c7%` is 0; prod server :5177 and
+  TLS front :5178 stopped. Work committed as `d4a8659`, tree clean.
+
+## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
+
+- Lead amendment tick 160 extended the step-3 named resolution set by
+  exactly one file: `frontend/src/components/coach/clients.tsx`,
+  resolved by the same union rule granted for
+  `components/canvas/coach/store.tsx` (keep both sides' additions;
+  order matches the canvas twin's auto-merged order).
+- Merge 3 re-run: `git merge-tree --write-tree` on HEAD + fe2 pin
+  `2df2d8200fcc5aefc2a5d6629928e56d8f803e16` -> tree OID
+  `f29b779115485a06bee951458909bb55b5b7cc38`; conflicts exactly the
+  amended set (`store.tsx`, `frontend/.../clients.tsx`,
+  `docs/STATUS.md`, `docs/index/{COMPONENTS,DATA-MODEL,ROUTES}.md`);
+  `components/canvas/coach/clients.tsx` auto-merged. Merge commit
+  `01c66b0d01d6c25011d3f89f5ecbb488730af193`.
+- Resolutions: `store.tsx` union (fe2 tracker/training-logs imports
+  plus HEAD `addLocalDays`, both call sites live at 807/906);
+  `frontend/.../clients.tsx` union (both `AthleteTrackerTab` and
+  `ClientMediaPanel`, canvas auto-merge order: tracker-tab import
+  before the model block, media import after it); `STATUS.md`
+  hand-merged ours-new then theirs-new over a byte-identical tail;
+  index docs regenerated via `npm run index` (exit 0).
+- Merged-tip gates: first `npm run typecheck` exit 2 on stale Prisma
+  client (`trackerDayNote` missing), fixed by `npx prisma generate`;
+  re-run exit 0. `npm run build` exit 0.
+- New lane DB for this run: `app_fp_w2c7r2` (`app_fp_w2c7` was never
+  created; not reused).
+
+## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
+
+- Card w2-c7 (client photos, training log, tracker entry polish),
+  branch `w2/c7` off c1 tip `788714b`. Lane DB `app_fp_w2c7`, port
+  floor >4999, migration stamp `20261027000017` reserved and free.
+- Merge 1: `w2/a3` `0e91798` -> `git merge-tree --write-tree` OID
+  `8dd37c086de6a63b807cb39e6ca8f533f8ed3a72` (matches the card's
+  verified OID, clean). Merge commit
+  `842851ad8679d8d645f35a79f1bccacbdd5ae628`.
+- Merge 2: `w2/t6` pinned `f0dddf3` (note: the `w2/t6` branch tip had
+  advanced to `da34672`, a later merge of w2/fe1; the card pins
+  `f0dddf3`, so the SHA was merged, not the branch tip). merge-tree
+  OID `1c321ddf5ac0415339a56b16137ca012dd65aefd`; conflicts only in
+  the two named files, resolved per card: `docs/STATUS.md` hand-merged
+  newest-first keeping both sides, `docs/index/ROUTES.md` regenerated
+  via `npm run index` (exit 0). Merge commit
+  `0c6b0a8c87069c8f44c5cd15da96ee2d12c6b87f`.
+- Merge 3: `w2/fe2` `2df2d82` -> merge-tree OID
+  `96e7573f9705326c0b487e5589f505cf1a2e239a`; conflicts: named
+  `components/canvas/coach/store.tsx`, named docs class
+  (`docs/STATUS.md`, `docs/index/COMPONENTS.md`,
+  `docs/index/DATA-MODEL.md`, `docs/index/ROUTES.md`), PLUS the
+  unlisted `frontend/src/components/coach/clients.tsx` (t6 side adds
+  `import { ClientMediaPanel } from "./media"`, fe2 side adds
+  `import { AthleteTrackerTab } from "./athlete/tracker-tab"` in the
+  same import-block slot; the canvas twin auto-merged cleanly).
+  Card rule: any conflict beyond the named files stops the merge,
+  verbatim to report, no resolution attempt. Merge aborted; branch at
+  `0c6b0a8`. Verbatim conflicted file and stage list under
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7/`.
+- Card BLOCKED pending owner/lead ruling on `clients.tsx` resolution
+  scope. No card item work started; merged-tip typecheck/build not
+  run, per the step order.
 
 ## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
 
@@ -810,6 +1048,7 @@ false`, tenant-coherent FKs and indexes.
   notes. Add-note and timeline week-note edits persist through reload
   (verified in `coach_note`/`client_week_note` rows). Second-workspace
   coach gets literal 403 on both endpoints.
+
 ## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
 
 - Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
@@ -846,6 +1085,45 @@ false`, tenant-coherent FKs and indexes.
   `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
 - Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
   count 0 saved to `pg_database-absent.txt`.
+
+## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
+
+- `lib/messages/service.ts` (new): own-thread list + client send, one
+  Conversation per (workspaceId, clientProfileId), `clientRequestId`
+  idempotent retry via the (conversationId, clientRequestId) unique index.
+  No `messages` RBAC resource exists, so ownership binds by resolving the
+  caller's own ClientProfile in the workspace (same first step as
+  `listOwnClientTasks`); callers without a linked profile are denied.
+- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
+  `clientProfileId` (recon decision - the PATCH path needs it; backward
+  compatible for `{tasks, hasMore}` callers).
+- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
+  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
+  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
+  `clients/[clientProfileId]/daily-entries/history` GET
+  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
+  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
+  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
+  (`own.write` → `setClientTaskCompletion`),
+  `checkins/instances/[instanceId]` GET (`own.read` →
+  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
+  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
+  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
+  400/403/409 per the card table - never 404.
+- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
+  functions over the new routes (wire shapes mirror the lib services).
+  LocalStorage slices untouched; coach store hydration contract unmoved.
+- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
+  pre-existing unused-type-import warnings in data providers).
+- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
+  (provider remote calls).
+- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
+  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
+  probes, coach↔client round trips, screenshots, the seven substitute
+  gates, independent review, evidence report. Verification claims stand on
+  none of that yet - typecheck/lint only.
+- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
+  `01-service-signatures.md` already there).
 
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
@@ -1230,45 +1508,6 @@ false`, tenant-coherent FKs and indexes.
   probe-output.txt). Preview: managed runner on 127.0.0.1:3997 left running
   (3964/3000/3001 held by sibling lanes).
 - NOT done: push/PR — held per card rule until Marcel approves the screens.
-
-## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
-
-- `lib/messages/service.ts` (new): own-thread list + client send, one
-  Conversation per (workspaceId, clientProfileId), `clientRequestId`
-  idempotent retry via the (conversationId, clientRequestId) unique index.
-  No `messages` RBAC resource exists, so ownership binds by resolving the
-  caller's own ClientProfile in the workspace (same first step as
-  `listOwnClientTasks`); callers without a linked profile are denied.
-- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
-  `clientProfileId` (recon decision - the PATCH path needs it; backward
-  compatible for `{tasks, hasMore}` callers).
-- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
-  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
-  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
-  `clients/[clientProfileId]/daily-entries/history` GET
-  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
-  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
-  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
-  (`own.write` → `setClientTaskCompletion`),
-  `checkins/instances/[instanceId]` GET (`own.read` →
-  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
-  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
-  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
-  400/403/409 per the card table - never 404.
-- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
-  functions over the new routes (wire shapes mirror the lib services).
-  LocalStorage slices untouched; coach store hydration contract unmoved.
-- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
-  pre-existing unused-type-import warnings in data providers).
-- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
-  (provider remote calls).
-- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
-  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
-  probes, coach↔client round trips, screenshots, the seven substitute
-  gates, independent review, evidence report. Verification claims stand on
-  none of that yet - typecheck/lint only.
-- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
-  `01-service-signatures.md` already there).
 
 ## 2026-10-25 — Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
 
@@ -1661,919 +1900,6 @@ Append-only loop memory (newest first). "Done" = the exact gate re-run on the cu
 tree with a real exit code. Phases 1–12 (foundation + spreadsheet-source extraction)
 are complete; product direction is now the configurable coaching system in
 `docs/product-alignment-blueprint.md` (P-006, 2026-10-02).
-
-## TRAINING-I1B-2-R2 — review-findings repair (PROMPT R2)
-
-- Bounded repair on `feature/training-i1b2` for the I1-R1 independent
-  review (`~/Downloads/TRAINING-I1B-2-I1-R1-independent-review.md`,
-  SHA-256 `bf608abc…dea006e`, 256 lines, read through EOF). Reviewed
-  head `dfac206`; base `f71198b`; no PR, no merge.
-- **F1 (HIGH, closed):** `readOwnTrainingBookingHistory` returned
-  published-pending successor bookings pre-takeover (title + pinned
-  prescription leak, mislabelled "replaced"). Repair: join the program's
-  `version_seq=1` row and require `v1.activation_instant <= now` (the
-  injected op clock — the same in-force predicate `selectCurrent` uses,
-  inclusive at the exact takeover instant). Tenant/client scope,
-  authorization, consent, cancellation filters, pin projection, cutoff
-  and keyset semantics unchanged.
-- **F2 (LOW/MED, closed):** staff history `hasMore` was unreachable.
-  `listTrainingBookingsAction` exposes the existing bounded keyset read
-  (target-scoped `(scheduledDate,id)` cursor, truthful hasMore); the
-  bookings panel appends deduped rows with pending/error/disabled
-  states, re-syncs on server re-render, and remounts per
-  workspace/client/program target via a route key.
-- **RED→GREEN:** tests committed first (`32ea7d5`): pending-successor
-  history assertions (incl. takeover −1ms / exact / +after) → 2 focused
-  failures on `dfac206`; browser keyset load-more regression →
-  `bookings-history-more` absent on reviewed head. GREEN after
-  `21d5d98` (F1) + `8df3d65` (F2): focused 15/15 + spec 8/8.
-- **Mutations:** removing the `activation_instant <= now` predicate →
-  both F1 assertions fail again (2/15); stubbing the pagination dispatch
-  → later-page assertion stuck at 12 rows. Both restored byte-identical
-  (sha256-verified).
-- **Advisories:** A1 evidence corrected prospectively — the I1 report's
-  M5 wording ("fell through to `no_governing_version`") was imprecise;
-  the reviewer observed it resolved (booking created); original hashed
-  report preserved. A2 inspected — the pending-leaf cascade writes one
-  program-level `UPDATE {changed:true}` audit and no per-booking rows;
-  contract-authorized (decision #118 mandates the atomic cancel, not
-  per-booking audit) — no change. A3 noted — `readOwnTrainingBookingHistory`
-  remains unwired to any UI/action; no end-to-end client-history claim.
-- Gates on the repair tree (task-owned `i1b2_r2_*` DBs on
-  tracker-review-pg): `git diff --check`, format:check, typecheck clean;
-  lint 0 errors / 4 pre-existing warnings; unit 1331/1331; full
-  integration 873/873; build clean; focused E2E 8/8; full E2E on fresh
-  dedicated `i1b2_r2_e2e_full`. Schema/migration/RBAC/gate/pin paths
-  byte-identical to `dfac206` (whole-diff verified).
-- Builder report `~/Downloads/TRAINING-I1B-2-R2-builder-report.md`.
-  Stopped at the pushed repair for independent confirmation; no PR.
-
-## TRAINING-I1B-2 — dated-session bookings (PROMPT 266)
-
-- Owner-authorized implementation of the independently confirmed I1b-2
-  bookings contract on `feature/training-i1b2` (base `f71198b`, merged
-  Evergreen). Contract: P2 + P2-A1 + bookings finalization (A1-1
-  closed) — confirmed READY by P1-R1 review `929a89da…ef50a`.
-- `training_session_booking`: immutable pin (pinnedVersionId,
-  sessionId, bookedWeek) + mutable declared `scheduledDate`; partial
-  unique natural key over active rows; composite coherence FKs + CHECKs
-  (raw-SQL convention). Move = date-only; cancelled tuples reusable.
-- Service: staff create/move/cancel + bounded staff bookings read +
-  client agenda + client booking history; staff detail gains
-  bookings/bookableSessions; pending-leaf cancel cascades to non-past
-  bookings. Authorization/consent/locks precede replay lookup; pin
-  resolves at the booked instant under the anchor timezone; client
-  projection uses the PINNED version's snapshotted fieldConfig.
-- Boundary codes: booking_conflict, booking_date_bounds,
-  past_handover, no_governing_version. UI: staff bookings panel +
-  client agenda ("Booked for {date}" vs "Week {n} prescription").
-- Gates (final tree): format/typecheck/lint clean; unit 1331/1331;
-  full integration 872/872 (fresh tgt_i1b2_full; s1-a inventory updated
-  for the new table); build clean; focused E2E 7/7; full E2E on
-  dedicated app_i1b2_e2e. Migration: fresh deploy + genuine
-  base->candidate upgrade; drift = established composite-FK/raw-SQL
-  extras only. Mutations M1-M5 (pin timing, pinned fieldConfig,
-  move-pin drift, tombstone reuse, cutoff) all bite; restored
-  byte-identical.
-- Records: decision #118 + `docs/tasks/training-i1b2.md`. Stopped at
-  the pushed candidate for independent review — no PR, no merge.
-  Excluded: recurrence, logging/notes/flags/review, volume, formulas,
-  template integration. `ENABLE_TRAINING_PLANS` unchanged, fail-closed.
-
-## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
-
-- Owner-authorized implementation of the independently confirmed I1b-1
-  scope on `feature/training-i1b1` (base `36eae79`, the merged I1a
-  repair). Contract: P2 plan + P2-A1 addendum (DeepSeek R1 confirmations
-  — I1b-1 READY; booking-only advisory A1-1 remains for I1b-2 and is
-  NOT implemented).
-- `training_program.program_mode` (TEXT, default `WEEK_BASED`, CHECK
-  `WEEK_BASED|EVERGREEN`) — set at create from the draft literal,
-  editable pre-publish only, immutable after first publish (a different
-  mode is a replacement, never in-place conversion). Evergreen stores
-  `weekCount=1` as its single prescription week.
-- Mode-aware week-derived sites (complete inventory): save-path
-  `ceiling`+locked-week assertion, `setTrainingProgramTimezone`
-  high-water advance, publish lock ceiling + history-invariant loop +
-  `newHighWater`, publish `upperBound`/`program_ended`, staff-detail
-  `ceiling`, client `completed`/`weekEndInstant`. Evergreen: ceiling 0,
-  no high-water advance, no upper bound, never completed by date.
-- Client: `ongoing` flag + "ongoing program" label, single prescription
-  week, marker = scheduled-later → "updates" / republished-governing →
-  "updated". Staff: mode select pre-publish, week nav/week-count hidden,
-  "Ongoing" list label. Existing immutable versions, CAS, replay,
-  authz/consent/audit and `ENABLE_TRAINING_PLANS` fail-closed gate
-  unchanged.
-- Gates (final tree): format/typecheck/lint clean (4 pre-existing
-  warnings); unit 1331/1331; integration 858/858 (disposable
-  `train_i1b1_intfull`); build clean; focused E2E 6/6; full E2E
-  417/429 (12 skipped, 0 failed; disposable `train_i1b1_e2e_full`).
-  Migration: fresh deploy + genuine base→candidate upgrade (backfill
-  `WEEK_BASED`, CHECK enforced, no new drift). Mutations: M1 save-ceiling,
-  M2 publish-bound, M3 completed-state, M4 timezone high-water — all
-  bite on targeted assertions; restored byte-identical.
-- Records: decision #117 + `docs/tasks/training-i1b1.md`. Stopped at the
-  pushed candidate for independent review — no PR, no merge.
-
-## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
-
-- Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the
-  independent R3 review (DeepSeek V4.1 Flash,
-  `~/Downloads/TRAINING-I1A-R3-R1-independent-review.md`, SHA-256
-  `a8efa2d6…81f3`, 305 lines, read through EOF). D1/D2 stay closed.
-- F1: after a lost v1-publish response + remount, retrying at the same
-  revision sent `expectedPredecessor: null` → `revision_already_published`
-  instead of idempotent replay. The R3 `published ? null` fix could not
-  distinguish a committed-revision retry from a genuinely new publish.
-- Repair: `readStaffTrainingProgram` now exposes committed
-  `firstPublishOriginRevision` (v1's `publishOriginRevision`) to authorized
-  staff; the editor resubmits the stored `replacesProgramId` claim only
-  when `revision === firstPublishOriginRevision` — an exact reproduction
-  of the original request. Any revision advanced by a real save sends no
-  claim (genuinely new later version; server rejection unchanged).
-- RED→GREEN: new integration test (origin exposure, null when
-  unpublished, denied actor cannot recover state, reconstructed replay
-  → `replayed:true`, claimless retry → `revision_already_published`,
-  version/audit counts unchanged) + E2E UI steps (remount → retry →
-  "Published version 1.", count invariant, changed-date → "already
-  published", root identical-replay regression). Mutation M-R4-1
-  (blanket `published ? null`) re-produced the exact
-  "already published" failure through the UI; restored byte-identical.
-- Gates: format/typecheck/lint clean (4 pre-existing warnings); unit
-  1329/1329; integration 850/850 (disposable `train_r4_int`); build
-  clean; full E2E 416/428 (12 skipped, 0 failed; disposable
-  `train_r4_e2e_full`). No schema/migration/permission/gate changes.
-- Builder report `~/Downloads/TRAINING-I1A-R4-builder-report.md`.
-  Stopped at pushed repair for independent confirmation; no PR.
-
-## TRAINING-I1A-R3 — acceptance-defect repair (PROMPT 253)
-
-- Bounded repair on `feature/training-i1a-r3` for two defects found by the
-  JOURNEY-A1 real-browser acceptance (`~/Downloads/TRAINING-JOURNEY-A1-report.md`,
-  SHA-256 `2e5eaa9a…59fa7`). NOTE: the R1/R2 reviews and earlier full suites
-  passed but did NOT cover final-week client state or replacement v2
-  republishing — those gates did not prove these paths.
-- D1 (client final week rendered "has ended"): `readOwnTrainingProgram`
-  clamped the week index to `weekCount` then tested `idx >= weekCount` —
-  1-based index means every final week (and every 1-week program from day
-  one) reported `completed`. Fixed by deriving state from the real end
-  boundary instant (`weekEndInstant` under the immutable anchor) — final
-  week stays current through its last valid instant.
-- D2 (replacement frozen at v1): the editor seeded `predecessor` from
-  `replacesProgramId`, hid the control after publish, but still submitted
-  `expectedPredecessor` — the service's later-version claim rejection
-  (`invalid_input`) fired on every v2. Fixed: claim submitted only while
-  `!published`; a lost first-publish response keeps the original claim
-  (component has not remounted); the server check stays intact.
-- RED first: 4 integration tests (1-week first/last day, boundary ±1ms,
-  multi-week final week, NY-anchor across 2026-11-01 DST fall-back,
-  not-started → upcoming) + 1 E2E through the real UI (root v2 regression,
-  replacement v1 takeover + ack, final-week client view, v2 publish with
-  persisted-version/audit proof). RED reproduced both user-visible
-  failures; mutations (clamped-index check; always-submitted claim)
-  re-bit the same tests; restored byte-identical.
-- Gates on repair tree: format/typecheck/lint clean (4 pre-existing
-  warnings); unit 1329/1329; integration 849/849 (real PG, disposable
-  `train_r3_int`); build clean; full E2E 416 passed / 12 skipped /
-  0 failed (disposable `train_r3_e2e_full`).
-- Builder report `~/Downloads/TRAINING-I1A-R3-builder-report.md`.
-  Stopped at pushed repair for independent review; no PR; no production
-  enablement.
-
-## TRAINING-I1A-R2 — coverage/formatting repair (pushed `4dbe363b…`)
-
-- Bounded repair on `feature/training-i1a` for the R1 independent review
-  (DeepSeek V4.1 Flash; report `~/Downloads/TRAINING-I1A-R1-independent-review.md`,
-  SHA-256 `96e1cc6a…a3d58`, verified through EOF). No production logic,
-  schema, RBAC, gate, selection or history-algorithm changes.
-- P2-1: new real-PG test proves the PLATFORM_ADMIN deny-set alone denies
-  a dual-role PA (ACTIVE WORKSPACE_OWNER) read and a PA assigned-coach
-  write — all downstream prerequisites valid. Mutation (deny-set entry
-  removed) fails both legs through forbidden admission; restored
-  byte-identical.
-- P2-2: new test — draft legitimately saved while week 2 open is rejected
-  at publish by the wholly-past invariant after the week closes;
-  `history_conflict`, no new version, no audit. Mutation (invariant
-  disabled) lets publish wrongly commit; restored byte-identical.
-- P3-2: new unit test — `gvAt` eligibility is inclusive at
-  `activationInstant == t`; cutoff stays exclusive. Comparator flip
-  (`>`→`>=`) fails the test; restored byte-identical.
-- P3-1/P3-3: Prettier line-wrap on the client training-program page
-  (prior format:check claim was inaccurate — corrected); renderer label
-  "Instructions" → "Detailed instructions" per FRONTEND.
-- Also fixed (disclosed, test-only): `tests/e2e/client-home.spec.ts`
-  used bare `new PrismaClient()` relying on ambient `DATABASE_URL` —
-  the only spec without the shared `e2eDatabaseUrl()` fallback; it
-  failed the full-suite run. Now matches the shared pattern; no
-  assertion or behavior change.
-- Gates on repair tree: `diff --check`/`format:check` clean; typecheck
-  - lint clean (pre-existing warnings only); unit 1329/1329;
-    integration 845/845; build clean; focused training E2E 4/4; full E2E
-    415 passed / 12 skipped / 0 failed (5.2m, single worker, no
-    concurrent DB work).
-- Non-blocking follow-up recorded: optional baseline-query optimization
-  left out of this repair per PROMPT 248.
-- Correction (per §5): R1 evidence/chronology wording updated — the
-  original format:check claim and the non-isolating deny-set/history
-  tests were inaccurate; R2 mutation results are distinct evidence;
-  tests-after-code/single-commit chronology unchanged.
-
-## TRAINING-I1A — week-based training programs (implementation complete; candidate pushed)
-
-- Branch `feature/training-i1a` from `origin/main` `5f9cb41c…`; contract
-  record `docs/tasks/training-i1a.md`; precedence: PROMPT 244 S/G → A3
-  (`45fe661d…`) → A2 (`7737934b…`) → A1 (`579fd897…`) → P9 (`8cf99c34…`).
-- Schema: `training_program` + `training_program_version` models; curated
-  migration `db/migrations/20261017195754_training_i1a/` (partial uniques
-  `single_root`/`live_successor`, `tail` index, composite coherence
-  uniques/FKs, CHECKs) — verified on fresh disposable DB; no raw-SQL drift.
-- Implementation: `lib/trainingprogram/{limits,gate,consent,payload,weeks,
-service,boundary}.ts` — P9+A1+A2+A3 contract incl. S (lifecycle-
-  unfiltered labelled staff history) and G (`UPDATE`+`{changed:true}`
-  cancel audit, no unsupported meta keys); RBAC owner-write
-  `denied→assigned` + PLATFORM_ADMIN deny-set; `training_program`/
-  `training_program_version` audit resources; `ENABLE_TRAINING_PLANS`
-  - trusted `APP_ENV` fail-closed gate; staff + client routes/components;
-    Training nav links on all five client layouts + roster link.
-- Iteration found real service defects, fixed: JSONB key-reorder breaking
-  canonical draft comparison (→ stable deep-sorted `canonicalJson`);
-  cancel takeover check using DB clock vs injected op clock; v1 bounds
-  rejecting backdated starts (v1 = startDate exactly); high-water never
-  persisted on publish; one-root fixture conflicting with single-PRIMARY
-  partial unique.
-- Decision #116 recorded (synthetic/testing boundaries only).
-- Gates: unit 1328/1328; integration 843/843 (incl. training-i1a 18/18
-  real PG; `s1-a-identity` inventory updated for the two approved
-  training tables — same repair pattern as MEAL-PLAN-I1-R2); typecheck,
-  lint, format:check, `prisma validate`, `next build` clean.
-- Real-PG evidence (`~/Downloads/training-i1a-evidence.log`): P2002 meta
-  `target=[workspace_id,client_profile_id]`; FOR UPDATE contender blocks
-  426ms → 57014; pg_sleep under 50ms statement_timeout → P2010/57014;
-  forced mid-tx failure atomic (versions before=after=49); pool healthy;
-  version keyset uses `Index Scan Backward` on
-  `program_id_version_seq_key` (seq-scan on near-empty tables is planner-
-  correct; index path proven with seqscan off).
-- Mutations: 3/4 bite (locked-week skip, activation-floor `<=`,
-  forced `changed:true`); M2 (client-own write allowed) NO BITE —
-  defense-in-depth: `lockAssignmentForScope` still rejects client
-  members lacking ACTIVE staff assignment; recorded honestly.
-- E2E: focused `training-program.spec.ts` 4/4 (author→publish→client
-  view, replacement label + cancel, read-only owner, flag-off 404s,
-  1440/390 no-overflow). Full 427-test run #1 had 9 cross-spec fixture
-  failures caused by builder's own concurrent integration/mutation/
-  evidence runs sharing the disposable DB — all 8 affected spec files
-  pass clean in isolation (130/142, 12 expected skips); clean
-  uninterrupted full re-run: **415 passed, 12 skipped, 0 failed**
-  (427 tests, 5.2m).
-- NOT done (named follow-ons): Evergreen, dated sessions, logging,
-  volume/progression, template-variant field-config wiring, dashboard
-  widgets, production enablement. Stopped at pushed candidate for
-  independent implementation review; no PR.
-
-## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
-
-- R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
-  P1-1 full integration fails 1/825 on `s1-a-identity` schema
-  inventory (new `meal_plan`/`meal_plan_version` trip the historical
-  `"meal"` forbidden guard + exact sorted list); P3-1 unit count is
-  1308 measured, not the builder's reported 1310; P3-2 mutation
-  accounting verified accurate (10/10, harness artifacts separate).
-- Evidence corrections recorded prospectively: the builder validated
-  only the FOCUSED meal-plan integration (19/19), not the full suite
-  the task required — independent full integration exposed the
-  failure; the original coverage gap was revoked-consent publish
-  (closed in `7d58a25`); unit 1310 was stale.
-- Repair: `s1-a-identity` inventory updated — `"meal"` removed from
-  the forbidden list (meal plans approved under #115), `meal_plan` +
-  `meal_plan_version` added to the exact expected list; all other
-  exclusions/assertions preserved. Other `information_schema`
-  inventories are domain-scoped (submission/`checkin_` prefixes) —
-  unaffected, unchanged.
-- Reproduced: 1/825 failure on fresh disposable `tracker_mp_r2`
-  (exact-list + `"meal"` forbidden assertions). Sensitivity proven:
-  an injected `r2_unexpected_probe` table still fails the exact-list
-  check; probe dropped.
-- Repaired gates: full integration **825/825** on clean
-  `tracker_mp_r2`; full unit **1308/1308** measured; build + full E2E
-  carried forward from R1 identity-verified head — production is
-  byte-identical (repair touches tests/docs only).
-
-## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
-
-- Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
-  lines) + P3-R1 PASS (`3f79b84a…`, 91 lines); owner choice applied:
-  effective dates activate at client-local midnight in the plan's
-  explicitly confirmed IANA timezone. Decision #115 recorded
-  (synthetic/testing boundaries only; RBAC mealPlans owner-write
-  prospectively amended `denied → assigned`; `mealPlans` joins the
-  platform-admin deny-set).
-- Branch `feature/mealplan-i1` from verified main `16fa0ab`; commits:
-  `2c8068e` tests-only RED → `40d39b4` schema+migration+
-  `lib/mealplan/*`+RBAC/audit → `c0ea987` staff/client UI → `7d58a25`
-  mutation-coverage tests.
-- Implementation: `MealPlan`/`MealPlanVersion` models + raw migration
-  (coherence FKs, `(meal_plan_id,version_seq)` + `(meal_plan_id,
-publish_origin_revision)` uniques); `lib/mealplan/{limits,payload,
-gate,consent,service,boundary}` — strict closed-key payload
-  normalization, `ENABLE_MEAL_PLANS`+APP_ENV fail-closed gate, draft
-  CAS, idempotent publish with bounded P2002 retry on the two declared
-  uniques, immutable `effectiveDate`/`effectiveTimezone`/
-  `activationInstant` snapshots, server-side current-version selection
-  (`activationInstant ≤ now`, `effectiveDate DESC, versionSeq DESC`),
-  structural-only audits. Staff route/actions/editor/history + client
-  view-only page (current/upcoming/no-plan states), gated nav.
-- Verification: unit 10/10 timezone+gate; payload 11/11; integration
-  19/19 on disposable `tracker_mp_i1` (authz matrix incl. dual-role PA,
-  consent+revocation+publish, CAS, replay, concurrent sequential
-  versionSeq, tz snapshots preserved, Apia rejection, audit rollback);
-  E2E 3/3 real-browser (coach draft→publish→client view, unassigned
-  owner read-only, flag-off 404) at desktop + 390px; typecheck/lint/
-  build green; migrations fresh + base→candidate zero-drift; full unit
-  regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
-- Mutation sweep: first pass reported 4 survivors — all were a HARNESS
-  false positive (post-prettier patterns missed + non-fatal python
-  assert → unmutated files tested green; also a wrong-file `-t`
-  filter). Corrected sweep with hard-abort apply checks: 10/10 KILLED
-  (deny-set, owner-write, consent, publish-consent, CAS, replay,
-  ordering, unknown-key, audit, tz snapshot, gate). One real coverage
-  gap fixed: revoked-consent publish denial (`7d58a25`); the gate
-  "survivor" was filter error — existing `mealplan-gate.test.ts`
-  already kills the mutant (verified by direct re-run).
-- Remaining: final gates re-run on completed tree, push, builder
-  report, tracker entry, independent review handoff. No PR.
-
-## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
-
-- Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,
-  263 lines) + P3-R1 PASS (`c37cba13…`, 76 lines, 5 refinements applied);
-  decision #114 recorded (synthetic/testing boundaries only —
-  production fail-closed; bounded recurring scheduling, NOT automatic
-  replenishment).
-- Branch `feature/checkin-recurrence-i1` from verified main `18d9f6f`;
-  commits: `92ffcfe` RED-A units → `61a3280` schema+migration →
-  `c7a66a5` RED-B integration+E2E → `cd6df45` GREEN implementation →
-  `a772519` E2E locator fix → `9f97e12` mutation-coverage tests.
-- Implementation: `lib/checkin/timezone.ts` Intl-based wall→instant
-  (crossing-detection gap→first valid, fold→earlier, ≤181-min bound,
-  whole-day→unrepresentable, 2000–2100); `lib/checkin/schedules.ts`
-  rule lifecycle + explicit generation (two pre-queries, truthful
-  three-way classification, audits last, current-actor provenance,
-  Serializable + bounded P2002 re-enter); staff UI section
-  `schedule-rules.tsx` with conspicuous nonautomatic copy.
-- Verification so far: unit 1282/1282; integration 18/18 incl.
-  permission matrix + dual-role PA denial + end-vs-submit + rollback;
-  focused E2E 3/3; typecheck/lint/build green; migrations verified
-  fresh + base→candidate on disposable DBs (rec_i1_fresh/_upgrade/_it).
-- Mutation sweep: 12 of 16 bit immediately; 3 no-bites closed with new
-  coverage (assigned-assistant write, per-instance audit assertion,
-  past-instant via `now` dep); M16 alternate advisory namespace is a
-  recorded honest no-bite (unobservable via serialized outcomes).
-- CHECK-IN-RECURRENCE-I1-R1 (DeepSeek V4.1 Flash, `5cfa2119…`,
-  149 lines): **PASS** on head `9898c0a` — all fresh gates green,
-  timezone converter independently probed correct (Troll 03:00 via
-  crossing detection), M16 verified genuine outcome-equivalence (End
-  vs submit preserved by the instance row lock, 15/15 decoupled
-  stress). P3s noted: compile-time (not behavioral) RED; mutation
-  count miscount (corrected above); past-due occurrences silently
-  excluded from outcome fields; generation writes create+audit
-  per-instance rather than all-creates-then-all-audits. Review grants
-  no merge/deploy authorization; technically ready for PR under the
-  normal process.
-
-## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
-
-- Independently reviewed contract: CHECK-IN-OVERVIEW-P2 (`4d619ccf…`,
-  224 lines) + P2-R1 PASS (`bd204a61…`, 85 lines); decision #113
-  recorded (synthetic/testing boundaries only — production fail-closed;
-  bounded W09 subset, NOT the full W09/W02 roadmap).
-- Branch `feature/checkin-overview-i1` from verified main `6e64a928`;
-  9 commits forward-only (RED-A unit → schema/index → RED-B
-  integration+E2E → GREEN implementation → test fixes → boundary-denial
-  coverage → prettier).
-- Scope: read-only workspace-level queue of submissions with no review —
-  `authorizeCollection` scope (owner workspace / coach+assistant
-  assigned / CLIENT-own rejected / SUPPORT+PA denied incl. dual-role),
-  one keyset query (`submittedAt ASC, id ASC`, `{iso}|{id}` cursor,
-  N+1 `hasMore`, predicates before LIMIT), header-only projection, zero
-  audits, `canReview` = write cell AND per-row ACTIVE assignment.
-  New index `checkin_submission_workspace_id_submitted_at_id_idx`
-  verified on fresh and base→candidate disposable DBs.
-- Deep link: `?submission=<id>` on the per-client page dispatches the
-  existing audited detail action through one `useActionState` path —
-  param-keyed guard (A→B→A re-fires), stale-detail suppression while a
-  param load is pending, invalid params fire nothing (no POST, no
-  audit); `prefetch={false}` on row links.
-- Verification: unit 36/36 new-file tests + 1256 total; integration
-  18/18 new + 788/788 suite; focused E2E `checkin-review-queue.spec.ts`
-  13/13 including delayed-A→B stale-response, back/forward, refresh,
-  prefetch-safety, revoked assignment, reviewed-after-listing, and
-  flag-off 404; build clean; typecheck/lint/format green.
-- Mutations: 13 of 15 bit; two honest no-bites — `prefetch={false}`
-  removal (structural barrier: detail load is a server-action POST that
-  prefetch can never trigger, page is force-dynamic) and stale-detail
-  suppression (transient window below the test's final-state granularity;
-  retained as the correct barrier). One coverage gap found by the sweep:
-  boundary denied→empty was unobservable because the workspace layout
-  denies all queue-denied roles first — closed by a direct boundary
-  assertion test.
-- Full E2E: first run surfaced cross-spec fixture pollution — the queue
-  spec left an auto-id `clientProfile` and a wsB `workspaceMember` for
-  the shared client user, colliding with sibling specs' own fixed-id
-  seeds (9 failures). Repaired with owned-fixture tracking (profiles and
-  the wsB member are deleted at teardown only when this spec created
-  them); final full run: 405 passed, 12 skipped (delivery-gated
-  password-reset), 0 failed.
-- Review candidate — gates green; pushed for independent review.
-  No PR, merge, deployment, feature enablement, or real-client use.
-
-## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (R1 PASS; R2 cleanup pushed)
-
-- **R2 cleanup** (PROMPT 176, closing the four P3 review findings —
-  narrow repair, no redesign):
-  - P3-1 formatting: `docs/STATUS.md` prettier continuation indent fixed;
-    `npm run format:check` clean. Correction to the R1 review's claim —
-    `.github/workflows/ci.yml` DOES run `format:check` (line 42), so a
-    PR would have failed CI; the `npm run verify` script does not
-    include it (verified against the actual workflow file).
-  - P3-2 explicit staff-detail authorization: `readCheckInSubmissionDetail`
-    now issues an explicit `checkinFeedback`/read `authorize` inside the
-    transaction before querying the thread. Denial withholds the thread
-    (`feedback: null` — never an empty array that would present as "no
-    responses yet") while the authorized base detail (fields, review
-    provenance, `canSend`) survives. Defense-in-depth resource
-    separation, not a repaired leak — the two read cells coincide today.
-    Isolation test: spy denies only `checkinFeedback` while
-    `checkinsCoachReviews` stays real → detail returns `feedback: null`.
-    Barrier mutation (remove the explicit authorize) BITES: the denied
-    read leaks the thread.
-  - P3-3 recovery copy: `not_sent` now states no sent response was
-    found, the text wasn't saved locally and must be re-entered, and the
-    resend keeps the same attempt identity (can't silently duplicate).
-    Nonce/idempotency protocol unchanged. Behavioral E2E asserts the
-    truthful note, an empty composer, and that the resend carries the
-    SAME nonce.
-  - P3-4 evidence corrections (recorded prospectively here): the R1
-    reviewer independently verified **769/769** integration tests; the
-    I1 builder report claimed 768/768 — the verified count stands. And
-    **14 of 16** independently reproduced mutations bit; the two
-    no-bites were redundant/index-masked (explicit own-scope authorize
-    redundant under the enclosing own-scope gate; `id ASC` ORDER-BY
-    removal masked by the backing `(submission_id, sent_at, id)` index —
-    the tie _predicate_ mutation did bite), not hidden failures.
-- Independently reviewed contract: CHECK-IN-FEEDBACK-P3 (`0427fcb1…`,
-  137 lines) + P3-R1 PASS (`6eece636…`, 96 lines); decision #112
-  recorded (synthetic/testing boundaries only — production fail-closed).
-  Implementation R1 review (`c5301172…`, 143 lines): technical PASS,
-  four P3s, all closed above.
-- Base verified `9ee84063` (`origin/main`); branch
-  `feature/checkin-feedback-i1`; `appearance-r2` untouched.
-- RED-A `87d2dcd` (unit: matrix cells, deny-set behavior, audit
-  resource, boundary exports — 11 intended failures).
-- Schema+migration `2424dbb`: `checkin_feedback` table, composite
-  coherence FK `(submission_id, workspace_id, client_profile_id)` →
-  `checkin_submission`, unique `(submission_id, client_request_id)`,
-  indexes `(submission_id, sent_at, id)` + `(workspace_id,
-client_profile_id)`, all FKs RESTRICT, no `updatedAt`. Hand-curated
-  migration (auto-diff tried to drop unrelated custom FKs). Fresh +
-  upgrade deploys verified on disposable PG; `migrate status` clean,
-  29 migrations.
-- RED-B `8011f73` (integration, true RED vs schema-present-no-service).
-- GREEN `8c31047`: `checkinFeedback` resource + matrix row + deny-set
-  entry; `checkin_feedback` audit resource; `sendCheckInFeedback` /
-  `listCheckInFeedback` / `resolveCheckInFeedbackSend` in
-  `lib/checkin/instances.ts` (serializable, review-exists prerequisite,
-  assignment lock, consent before insert AND on replay, scoped-P2002
-  `meta.target` matcher, audit-last); staff detail `feedback`/`canSend`;
-  own-detail feedback inside the consent gate; boundary safe errors
-  `review_required`/`idempotency_conflict`; staff actions +
-  `CheckInFeedbackThread` composer (nonce in state + nonce-only
-  sessionStorage marker keyed userId+workspaceId+submissionId);
-  client "Response sent" from persisted rows.
-- Gates on `dbcc9da` (R1 tree): `git diff --check` clean; eslint 0
-  errors (3 pre-existing warnings elsewhere); `tsc --noEmit` exit 0;
-  full unit 1220/1220; integration on disposable `cfi1_int` —
-  independently verified **769/769** (the prior builder report's
-  768/768 was an undercount, corrected in the R2 entry above);
-  `next build` clean; focused E2E `checkin-feedback.spec.ts` 7/7;
-  **full E2E suite 391 passed / 0 failed / 12 skipped**.
-- Mutation sweep (16 reproduced): 14 bit; two documented no-bites —
-  client-path own-scope authorize removal is redundant under the
-  enclosing own-scope gate (deliberate defense-in-depth per the
-  contract), and `id ASC` ORDER-BY removal is masked by the backing
-  index (the keyset tie _predicate_ mutation did bite). Two fixtures
-  strengthened so mutations became observable (dual-role PA now holds
-  an ACTIVE assignment; unreviewed-submission `canSend` asserted);
-  all restored byte-identically.
-- E2E fixes during gate runs: row selection now keys on the hidden
-  `submissionId` input (`.last()` was racy across fixtures); fixture
-  cleanup also removes the spec's `checkin_submission`/`checkin_feedback`
-  audit rows (a sibling spec asserts a zero global audit count).
-
-## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
-
-- Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
-  lines) + P2-R1 PASS (`549a2916…`, 119 lines); decision #111 recorded.
-- Base verified `c63ddfb` (`origin/main`); branch `feature/solo-coach-i1`;
-  `appearance-r2` untouched.
-- RED committed `9e5b538` (behavioral: deny-set hole shown granted,
-  owner eligibility missing, canMark role-only, actions absent).
-- GREEN: 2 owner write cells → `assigned` (#95 + #37/P-024 amendments),
-  `clientAssignments` in the platform-admin deny-set, owner PRIMARY/
-  COACH eligibility, bounded `listAssignableCoachMembers`, assignment-
-  aware `canMark` ×2 (also tightens coach visibility — P3-c noted),
-  owner-gated coaches page/actions/panel + roster link; the stale
-  `assertAssignmentMutationsExternallyExposable` blocker removed with
-  its protections replaced by the action contract + tests.
-- GREEN on `aae19f6` + contract-assertion updates on `e32f4ce`.
-- Gates on the final tree: `git diff --check` clean; prettier clean;
-  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
-  exit 0; `prisma validate` + `migrate status` up to date (no migration
-  needed); full unit 1209/1209; full integration 749/749 on disposable
-  `app_integration_test`; `next build` clean.
-- Mutation sweep 7/7 bitten (deny-set entry, owner eligibility, each
-  owner write cell, canMark assignment check, ASSIGN audit skip,
-  onboarding role-only canMark) — all restored byte-identically.
-- E2E: `coach-assignments` 3/3 (real-UI self-assign → both review
-  journeys; non-owner 403); checkin-review 7/7; staff-onboarding-review
-  9/9; client-roster 23/23; **full E2E suite 384 passed / 0 failed / 12 skipped** (396 total) — new spec included.
-
-## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
-
-- Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +
-  P4-R1 PASS (`361a71ce…`, 107 lines); decision #110 recorded.
-- Base verified `6b24def` (`origin/main`); worktree
-  `the-great-tracker-habits` on `feature/habits-i1`; `appearance-r2`
-  untouched.
-- Review P3s resolved in `docs/tasks/habits-i1.md`: raw-SQL coherence FK
-  convention (not Prisma composite relation), caller `weekdays=0`
-  rejection on normal paths, `HabitLogStatus {DONE, SKIPPED}` shown,
-  `(id, workspace_id)` unique relabelled as identity target, real
-  constraint table documented.
-- Plan + decision + tracker recorded before code; RED committed.
-- GREEN: schema+migration `20261015000000_habits_i1` (Habit,
-  HabitSchedule, HabitLog + HabitLogStatus, coherence FK, CHECKs,
-  uniques); `lib/habits/{date,service,boundary}`; `habits` RBAC cell +
-  guard deny-set; audit resource types `habit`/`habit_log` + `date`/
-  `logStatus` meta keys; TL21/TL22 connected in config-schema; client
-  TL21 (Mark done/Undo only) + TL22 widgets wired on the client
-  dashboard; staff `ClientHabitsPanel` + editor habit picker.
-- Gates so far: `tsc --noEmit` clean; unit 1181/98 pass; integration
-  723/46 pass (incl. `habits` 27 + `habits-schema` 5 on
-  `habits_i1_integration`). E2E spec `tests/e2e/habits.spec.ts` written;
-  full E2E + mutation + build gates pending.
-- E2E round 2 (after killing a stale port-3000 server): fixed a real
-  contract bug — stored `fields: []` (no subset picked) filtered out the
-  whole cohort instead of meaning "all authorized"; `validateFields`
-  now maps empty arrays to `null` + regression coverage in
-  `habits.test.ts` (TL21 + TL22). `ClientHabitsWidget` now
-  `router.refresh()`es after a successful mark so server-rendered TL22
-  counts update. Spec fixes: locators scoped to `client-habits` (habit
-  names correctly appear in TL22 rows), theme drive via `localStorage`
-  after load (init scripts re-run on reload), and tests 2/3 made
-  self-sufficient — a failed test restarts the worker, re-running
-  `beforeAll`/`afterAll`, so cross-test row dependencies are unsafe.
-  `npx playwright test tests/e2e/habits.spec.ts` — 6/6 pass.
-- Mutation sweep (10 mutants, all restored byte-identically via
-  sha256-verified backups): fields-empty (2 bites), boundary
-  effectiveFrom `<` (11), weekday mask ignored (3), management scope
-  admitting `own` (1), log without schedule (3), create-audit skipped
-  (2), caller `weekdays=0` accepted (1), boundary at today not
-  tomorrow (4), boundary gate skipped (2), log write non-`own` scope
-  (1). No survivors, no masked assertions.
-- Gates: typecheck/lint/prisma-validate/build clean; fresh
-  `migrate deploy` from zero on `habits_i1_drift`; drift diff shows
-  only the documented raw-SQL FK/index conventions.
-- Full E2E round 1: 371 pass / 4 fail. `client-home` was
-  environmental (bare `new PrismaClient()` needs `DATABASE_URL` —
-  passes with it set). Three `client-dashboard` autosave/nav-guard
-  tests failed reproducibly while the identical run on the base tree
-  (`d279514` ≡ `6b24def`) passed 19/19 → real regression.
-- Regression mechanism: the initial implementation loaded habit data
-  via mount-time server-action POSTs (`readClientHabitChoices` in the
-  editor, `readClientHabits`/`readClientHabitConsistency` in the
-  panel). Those POSTs serialize on the same route ahead of the
-  nav-guard's flushed save, and the extra serialized boundary reads
-  delayed hydration enough that a fill inside the debounce window
-  could land before React attached `onChange` — no pending slot, the
-  navigation proceeded, the edit was lost. Fixed architecturally:
-  the staff page streams the habit cohort inside `<Suspense>` and
-  passes the picker choices as a deferred promise resolved by
-  `use()` only when a TL21/TL22 settings panel opens — zero
-  mount-time action POSTs, editor hydration back at base latency.
-  `client-dashboard` 19/19 + `habits` 6/6 green after the fix.
-- Independent read-only review (P4-R1 impl review): NEEDS-FIXES —
-  no P0/P1; one P2 + eight P3s. All repaired:
-  - P2 `editHabit` endDate validated against `tomorrow` but written
-    at a later future boundary → DB check violation. Now rejected
-    `invalid_input` once `boundaryDate` is known; regression test
-    added (future-start habit + endDate between tomorrow and the
-    boundary; control endDate ≥ boundary accepted).
-  - `withSerializedRetry` rethrew raw P2034 on the final attempt —
-    now maps to `HabitError("serialization_conflict")`.
-  - Migration gains `habits_revision_positive_chk` (`revision > 0`)
-    per the contract list.
-  - `setHabitLog` now `lockProfile` FOR UPDATE before the habit lock
-    (same order as management paths).
-  - TL21 echoes the server's `date` (returned by `listTodayHabits`)
-    instead of the browser clock; `hasMore` surfaced in TL21 and the
-    editor picker; TL22 + staff consistency render the contracted
-    "No scheduled days" empty-denominator state; multi-statement
-    reads run at `RepeatableRead`; `ClientHabitsWidget` re-syncs
-    from refreshed props.
-- Post-repair: unit 1181/98, integration suite re-run on a fresh
-  `habits_i1_integration` (migration checksum changed), targeted
-  E2E green. Full E2E re-run pending.
-- Pre-existing harness note (not HABITS-I1): E2E global teardown
-  deletes `clientProfile` before `clientDashboardLayout` —
-  FK-ordered sweep needed; left untouched as unrelated scope.
-- HABITS-I1-R2 (coverage/verification-hygiene repair on `4ed94fe`):
-  - **Real defect found and fixed:** genuine RepeatableRead
-    `FOR UPDATE` contention surfaces as `P2010` with
-    `meta.code = "40001"` (raw-query SQLSTATE), not `P2034` — the
-    `1ad6c11` retry/backstop matched only `error.code === "P2034"`,
-    so real member-lock conflicts never retried and degraded to
-    `not_available`. Added `isSerializationConflict` (P2034 +
-    P2010/40001/40P01) shared by `withSerializedRetry` and the
-    boundary backstop. Found by the new deterministic contention
-    test, not by review.
-  - New coverage (real PG): positive DONE `habit_log` audit
-    (exactly one, structural meta only, replay adds none);
-    audit-failure rollback on the log path; coordinator-held member
-    lock + post-snapshot commit → real 40001 → retry returns
-    coherent data; membership suspended mid-conflict → retry
-    re-authorizes → denied; bounded exhaustion (real-shape
-    injection inside live transactions) → `serialization_conflict`
-    with no partial log/audit rows; TL22 cohort excludes
-    zero-scheduled habits (plan §3 requires ≥1 scheduled pair —
-    P3-4 repaired rather than disclosed).
-  - Teardown repaired: the sweep omitted `clientDashboardLayout`
-    and all habit tables entirely (not merely ordering). Extracted
-    `tests/e2e/fixture-sweep.ts` — fixture-scoped, RESTRICT-ordered,
-    idempotent `deleteMany` sweep — used by `global-teardown.ts`;
-    `tests/integration/teardown-sweep.test.ts` populates
-    dashboard/habit/log/schedule rows and proves the sweep,
-    sentinel isolation, and a no-op second run.
-  - Unit backstop coverage: both raw shapes (P2034, P2010/40001)
-    map to `serialization_conflict`.
-  - Mutation sweep 7/7 bite, all restored byte-identical (sha256):
-    DONE-audit removal; retry `continue` removal (bites both
-    contention tests); P2010-branch removal (bites real
-    contention); exhaustion rethrow removal (bites both
-    exhaustion tests); habit sweep-lines removal (bites teardown
-    test); zero-scheduled filter removal (bites TL22 cohort);
-    boundary backstop neutralization (bites unit test).
-  - Focused green: `habits.test.ts` 35/35 +
-    `teardown-sweep.test.ts` 1/1 + `habits-boundary.test.ts` 6/6.
-
-## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
-
-- Independently reviewed contract: P2 (`7296937e…`) + P3 delta
-  (`241e59cc…`), P3-R1 PASS (`52ea53e1…`); decision #109 recorded.
-- Schema `client_task` + `ClientTaskStatus` + coherence/composite FKs +
-  CHECKs (title bound, COMPLETED⇔completed_at, CANCELLED⇔cancelled_at;
-  SetNull pointer excluded); migration `20261014000000_client_tasks`
-  applied to dev + isolated `client_tasks_i1_integration` DBs.
-- `clientTasks` RBAC cell + guard deny-set; `lib/tasks/{date,service,
-boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
-  operation split inside serializable tx (management ⇒ workspace|
-  assigned; completion ⇒ own + profile-user binding), explicit
-  desired-state CAS transitions, SQL filter-before-LIMIT 21 (≤20 +
-  hasMore), audit on changed ALLOW only.
-- UI: staff `ClientTasksPanel` (assign/edit/cancel + read-only badges)
-  on the editor page; client CU03 adapter `ClientTasksWidget` with
-  explicit Mark done/Undo; `CONNECTED_KINDS += CU03`.
-- RED: date unit suite (8) + integration suite (9) failed before
-  implementation; mutations bit on own-scope removal, CANCELLED-filter
-  removal, blind toggle, audit omission — service restored byte-
-  identical; spec `tests/e2e/client-tasks.spec.ts` 5/5 green.
-- Gate: flag `ENABLE_CLIENT_DASHBOARD` reused (owner rule 5); flag-off
-  staff surface 404s proven in-browser.
-- **Correction (R2):** the line above originally claimed a guard
-  deny-set entry — that entry was missing (silent no-op) at `266077c`;
-  `clientTasks` actually joined `PLATFORM_ADMIN_DENIED_RESOURCES` in the
-  R2 commit below, with a dual-role regression test.
-
-## CLIENT-TASKS-I1-R3 — dashboard test isolation (candidate)
-
-- Test-only repair: `isLayoutSave` (POST + next-action + `"config"`)
-  narrows all six dashboard-spec fault sites to the save action — task
-  POSTs pass normally; teardown gained the `clientTask` sweep.
-  Sensitivity proven (neutered matcher → failed-save tests fail);
-  focused specs green ×3; the pre-existing main flake is unchanged.
-- Unit count corrected to **1149**.
-- Owner granted a one-time exception for this task's original
-  tests-after-code deviation (conditional on final independent
-  technical approval); attributed to the owner, not the dashboard
-  exception.
-
-## CLIENT-TASKS-I1-R2 — platform-admin deny-set repair (candidate)
-
-- P1 closed: `clientTasks` ∈ `PLATFORM_ADMIN_DENIED_RESOURCES`; direct
-  RED (unauthorized assign reproduced) + biting mutation (deny-set
-  removal) at unit (4 roles × read/write) + integration (all ops).
-- maxLength aligned to the 120-char contract; task-owned R2 DB used.
-
-## CLIENT-TASKS-R2 — serialization-conflict retry repair (candidate)
-
-- Confirmed latent gap from HABITS-I1 R2 review: raw FOR UPDATE
-  conflicts surface as P2010 + SQLSTATE `40001`/`40P01`, but
-  `withSerializedRetry` matched only P2034 and rethrew raw on
-  exhaustion — contention degraded to `not_available`.
-- `isSerializationConflict` extracted to shared `lib/db.ts`;
-  tasks retry + boundary backstop now cover both shapes; non-conflict
-  errors never retried; exhaustion returns `serialization_conflict`.
-- Real-PG RED reproduced on unmodified code; 5/5 mutations bite;
-  focused + full gates on the final tree below.
-
-## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
-
-- `acquireDashboardSlot` returns a per-call ephemeral slot when
-  `typeof window === "undefined"` — SSR can never mutate the shared slot
-  map or `boundUserId`; two concurrent server renders cannot share
-  drafts. Client acquisition stays render-time (`useState` initializer):
-  a fresh slot's view is byte-identical to SSR props — no hydration
-  mismatch, no acquire-after-paint flicker.
-- Bounded clean-slot retention: `MAX_CLEAN_SLOTS=8`, oldest-clean evict;
-  dirty/pending/failed slots are never evicted.
-- Purge-while-in-flight covered: a cleared slot cannot resurrect drafts,
-  surface them, or queue further saves; already-dispatched writes may
-  still commit (honest wording retained).
-- New real bug fixed: Chromium form-value restoration repopulated the
-  controlled name input on revisit; React hydration replayed it as a
-  synthetic `onChange` → ghost commit overwrote the saved draft. Fixed
-  with `autoComplete="off"` on all editor form controls.
-- SSR suite added (`dashboard-autosave-ssr.test.ts`, node env = SSR
-  condition); coordinator suite moved to jsdom (browser path).
-- Mutation: SSR guard removed → SSR isolation test fails; restored
-  byte-identical.
-- Owner exception condition satisfied by R5-R1 technical PASS; E2E count
-  corrected to 370/12/0 (382) at `cc5df4d`; cross-engine evidence remains
-  Chromium-only + capability-stubbed (explicitly limited).
-
-## DASHBOARD-I1-R5 — autosave coordinator (candidate pushed)
-
-- `lib/dashboard/autosave-coordinator.ts` — module-level per-slot autosave
-  (draft/revision/timer/queue/history/save state) keyed by
-  userId:workspaceId:clientProfileId; observers subscribe/unsubscribe
-  without cancelling work; `abandon` = explicit discard; `acquire`
-  re-bases clean slots onto newer server revisions only.
-- Nav guard binds coordinator-backed callbacks once; api persists across
-  editor unmount so popstate/traverse interception keeps pending work
-  flushable. `download`, `//`, same-page-path links excluded.
-- `LoginForm` mount clears all slots (session boundary); a bind under a
-  different userId purges slots first.
-- Coverage: capability-absent Back persists edits; failed-away draft
-  recovery; per-client isolation; logout isolation; all R4 scenarios.
-- Mutations: component-only save lifetime → Back/draft-recovery tests
-  fail; restored byte-identical.
-- Gates: spec 19/19, unit 1129, full E2E 370/12sk/0f — 382 collected (CORRECTED: earlier report said 371/383 — inflated by a transient probe spec run pre-removal), tsc/eslint/prettier/
-  build clean.
-- Owner exception recorded: initial tests-after-code deviation accepted
-  conditionally (owner decision; not reviewer approval; PR clearance
-  still conditional on final independent review).
-
-Owner direction recorded: cross-browser Back/Forward must not lose pending
-edits; no Chromium-only restriction; the initial tests-after-code deviation
-is accepted as a one-time conditional exception (owner decision, not
-reviewer approval; does not waive review/CI/merge gates or set precedent).
-
-Design (specified before code per prompt):
-
-- **State lifetime/ownership:** `lib/dashboard/autosave-coordinator.ts`
-  module-level `Map<slotKey, Slot>`; each slot owns the draft
-  (`latestConfig`), `confirmedRevision`, dirty/in-flight/queued/timer,
-  retries, undo history, save state and the leave prompt. The editor is a
-  view over the slot — unmount detaches observers only; timers and
-  in-flight saves continue to completion.
-- **Identity binding:** slot key = `userId:workspaceId:clientProfileId`.
-  A bind under a different userId purges all prior slots (session change
-  cannot replay another user's config). `LoginForm` mount calls
-  `clearAllDashboardSlots()` — the login boundary covers sign-out
-  redirect and session-expiry flows.
-- **Observer cleanup vs save cancellation:** `subscribe`/`unsubscribe`
-  on unmount never cancels work; explicit `abandon(slot)` (Leave anyway)
-  cancels debounce+queue — an already-dispatched request may still commit.
-- **Failure recovery:** terminal failure/denial/conflict keeps the draft
-  and save state in the slot; returning to the editor restores draft +
-  revision + honest failure surface (never a false "Saved").
-- **Return-to-editor:** `acquire` reuses the slot when it has pending or
-  failed work; a fully clean slot re-bases onto the fresh server
-  `initialConfig`/`initialRevision` so a newer server truth wins.
-- **Nav guard:** listeners bind coordinator-level callbacks once
-  (`anyPending` scans slots), so `popstate`/`navigate`/`click` handlers
-  remain live after the editor unmounts — pending work is flushable and
-  completable independent of component lifetime. Inert when nothing is
-  pending (no interception residue).
-- Every save still POSTs through the existing server action → full
-  re-authorization per write. No localStorage/offline DB/sendBeacon/new
-  deps.
-
-## DASHBOARD-I1-R4 — stale nav guard + failure-state coverage (candidate)
-
-- Review `f992be30` P2 hold closed: the in-app guard moved to a
-  module-level singleton (`lib/dashboard/navigation-guard.ts`) whose
-  handlers are installed once per window and always call the editor's
-  ref-backed live callbacks — remounts/unmounts can never strand a
-  stale `pending()` closure (the R3 defect: post-failure clicks with
-  dirty state bypassed a stale handler).
-- Terminal failure/denial/conflict with a held navigation now requires
-  the explicit Leave/Stay decision; `Leave anyway` cancels pending work
-  and completes the held destination; `Stay` clears the hold.
-- URL handling: `//host` protocol-relative hrefs are rejected before
-  interception — never passed to `router.push`; hash/target/modifier/
-  middle/external and same-path links pass through untouched.
-- Back/Forward: the Navigation API's cancelable `navigate` event
-  (traverse) holds the traversal until the save commits, then
-  `traverseTo(key)` completes the intended history entry — verified
-  end-to-end in Chromium. Browsers without the Navigation API fall
-  back to a popstate flush (edit commits; traversal still completes) —
-  an honest, documented fallback, not silent protection.
-- E2E 15/15: debounce-window click, keyboard Enter, failed save +
-  prompt, conflict + prompt, in-flight+queued (deterministic gate —
-  navigation cannot fire after only the older save), multiple clicks,
-  `//` link, same-doc Back, document-exit Back, residue, subset,
-  flag-off 404, assistant read-only.
-- Mutations all bite and restored byte-identical: mount-time stale
-  `pending` closure + state-closing `pending` → failed-save test fails;
-  failure-guard bypass → failed+conflict fail; `//` allowed → proto
-  test fails; release-after-older-save → in-flight+queued fails.
-- `docs/STATUS.md` + spec only; no schema/permission/widget/appearance
-  changes. Unit (1116) + integration (681) carried — delta is client
-  component + nav module + E2E spec.
-- E2E process note: shared-fixture ordering failure traced to an
-  `expect()` inside a detached Playwright `dialog` handler — its
-  rejection crashed the worker, which restarted and re-ran `beforeAll`
-  (`deleteMany`), wiping the layout mid-suite. Assertions moved outside
-  handlers; documented so the pattern doesn't recur.
-- Process hold (tests-after-code) remains pending owner acceptance —
-  unchanged.
-
-## DASHBOARD-I1-R3 — in-app navigation guard (candidate)
-
-- Review `0179c46f` P2-3 hold closed: capture-phase link interception
-  holds in-app navigation while saves are pending; the debounce flushes
-  and the intended route is pushed only after commit; failed/conflict/
-  denied saves require an explicit Leave-anyway decision; popstate gets
-  best-effort `forward()` + immediate flush (documented — popstate is
-  not cancelable); `beforeunload` still covers document exits.
-- E2E: 8 dashboard tests (immediate link, keyboard Enter, residue-free
-  unmount). Mutation disabling the guard → both nav tests fail.
-- Unit/integration carried forward (delta is a client component + spec
-  only). Process hold for tests-after-code remains pending owner
-  acceptance — unchanged.
-
-## DASHBOARD-I1-R2 — review findings repaired (candidate)
-
-- Review `f683f6ea` (CONDITIONAL PASS, NOT PR-cleared) fully addressed:
-  - **P2-1:** migration `20261013120000_dashboard_i1_timestamptz` converts
-    `created_at`/`updated_at` to `TIMESTAMPTZ(6)` (session-zone cast of
-    synthetic rows, forward-only); new `information_schema` drift spec
-    proves the type; the earlier "zero drift" claim is corrected — it
-    was real new-table drift, distinct from the pre-existing
-    `coaching_template_version` index-name rename.
-  - **P2-2:** editor completed — breakpoint tabs + initialize-from-
-    desktop, drag/resize canvas (commits on pointer-up only), per-widget
-    settings panel bound to the same server allowlists, client preview
-    via the shared projection, plus the original controls/undo-redo.
-  - **P2-3:** `beforeunload` guard while saves are pending (debounce,
-    queued, in-flight, failed); E2E exercises the dialog.
-  - **P3s:** explicit depth≤6; labels⊆fields; CREATE-on-insert vs
-    UPDATE audit; client projection re-packs (compactRects);
-    deterministic barrier-held assignment-revocation race; denied
-    reconciliation → "Save denied"; bounded editor retry/backoff;
-    isolated 24-widget cap test.
-- Gates: unit **1116** · integration **681** (fresh `dash_r2`, upgrade
-  path) · build · E2E **356/12sk/0f** · format/tsc/lint clean · migrate
-  diff zero drift on the new table (pre-existing index rename remains,
-  unrelated). Mutations re-bitten (subset/CAS→audit/labels/visibility).
-- Process disposition **pending owner exception**: the original suite
-  is tests-after-code; recorded honestly, not closed.
-
-## DASHBOARD-I1 — persisted coach-configured client dashboards (candidate)
-
-- Decision **#108** records the owner-approved product rules under the
-  independently approved DASHBOARD-P3 contract (`371d4183`, P3-R1
-  `f81dd795` PASS). Implementation on `feature/dashboard-i1`.
-- `client_dashboard_layout`: standard `id` PK + `@@unique(ws,client)`;
-  RESTRICT provenance + composite coherence FKs (migration
-  `20261013000000_dashboard_i1_layouts`); config-only JSON + CAS
-  `revision`.
-- Bounded allowlist validation (`lib/dashboard/config-schema.ts`) —
-  24KB/depth-6 payload, closed settings keys incl. `visibility`,
-  per-kind source/summary/period/option/fields frozen from the pinned
-  Lily source; 20-widget catalogue preserved.
-- `clientDashboards` RBAC + platform-admin deny-set; `cdash`-then-
-  `member` advisory order (chkin/csetup convention); atomic CAS + no-op
-  dedupe + structural UPDATE audit only on real change; reconcile-on-
-  409 staff-boundary read + canonical compare in the autosave editor.
-- Surfaces: staff roster `Dashboard` link → editor
-  (`…/clients/[id]/dashboard`), client `/workspace/[ws]/dashboard`
-  renders the server-filtered subset; CU04/CU16 connected, 18 truthful
-  placeholders; `ENABLE_CLIENT_DASHBOARD` + trusted runtime.
-- Gates: tsc/lint/format clean · unit 1112 · integration 678 (fresh
-  `dash_i1_full`) · build · E2E 355+12sk · migrate-diff zero drift on
-  the new table (one pre-existing index rename unrelated). Mutations:
-  subset-leak/CAS-removal/audit-skip/visibility-enum all bit.
 
 ## 2026-10-12 — I4-R2 scope-barrier coverage (tests-only)
 
@@ -5860,6 +5186,54 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
   exact counts; `main` untouched; independent different-model re-review
   pending. No schema/route/UI/provider/rate-limit change.
 
+## 2026-10-01 — S1-F2C final documentation re-review PASS (opencode-go/deepseek-v4.1-flash)
+
+- Read-only final, documentation-only re-review of range `367fb99..02a7730`
+  (`fa33589` UI-direction reconciliation, `02a7730` record), HEAD `02a7730`.
+  Independence: implementation built by SWE-2 High; reviewer is a different
+  model and issued all three prior independent FAILs. **PASS.**
+- `git diff 367fb99..02a7730 -- lib tests db app` **empty** — zero code/test/
+  schema/migration/UI changes; changed files are exactly the seven expected
+  docs. The implementation at `367fb99` already independently passed every
+  full gate; this range is documentation only.
+- TRACKER §3 "faithful sheet layouts; do not redesign" now struck through +
+  **SUPERSEDED**; Stage 3 rewritten to the per-form-factor direction (desktop
+  = complete desktop-focused redesign; tablet/mobile form-factor-specific;
+  one shared design system; per-factor navigation, information density,
+  panels, tables, dashboards, interactions; no stretch/shrink). The false
+  changelog claim about §3 is corrected with a dated CORRECTION note.
+- All active guidance (`product-decisions.md` #3, `implementation-plan.md` §1,
+  STATUS, TRACKER §3 + Stage 3) consistently states the direction; an
+  exhaustive `rg` classification found no unmarked active contradiction
+  (remaining hits are superseded-struck or historical task/review evidence).
+- Boundaries: product name undecided (none invented); Prime Tracker
+  (Marcel + Mike) untouched and not the visual target; no UI implemented.
+  `s1f2c_repair2` no longer exists (read-only verified).
+- Verification: `git diff --check` 0; `npm run format:check` 0;
+  `git diff --check 367fb99..HEAD` 0;
+  `git diff --exit-code 367fb99..HEAD -- lib tests db app` 0.
+- **S1-F2C independently PASS. Platform-specific UI direction reconciled.
+  Prime Tracker untouched. Next eligible slice: S1-F2D (not started).**
+- Residual (non-blocking) UI-planning notes: "Marcel and Mike are finalizing
+  Prime Tracker" is conveyed as ownership + do-not-modify rather than the word
+  "finalizing"; Stage 3's visual-assertion bullet names desktop+mobile widths
+  (tablet width could be added); the `## 12. Change log` heading is duplicated
+  per entry (pre-existing structural quirk).
+
+## 2026-10-01 — S1-F2C documentation-only repair after third DeepSeek FAIL
+
+- Third review verdict: all code/security/concurrency/migration/test areas
+  independently **PASS**; FAIL was documentation only — superseded
+  "faithful sheet layout" wording still active in TRACKER §3 + Stage 3, and
+  a false changelog claim. Corrected; Stage 3 now records the
+  per-form-factor direction (desktop/web redesign, platform-appropriate
+  tablet/mobile, shared design system, per-factor navigation/density/panels/
+  tables/dashboards/interactions).
+- Disposable DB `s1f2c_repair2` verified abandoned and removed.
+- Product name still undecided; Prime Tracker untouched (Marcel + Mike).
+- **Final independent DeepSeek documentation re-review pending; S1-F2D not
+  started.**
+
 ## 2026-09-30 — S1-F2B repair — independent re-review PASS (opencode-go/deepseek-v4.1-flash)
 
 - Read-only independent re-review of the repair range `ac9857e..ae7c6d5`
@@ -6015,54 +5389,6 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
   pattern; stale "21 tests" counts corrected to 24.
 - Next: record the founder answers, then implement the separately reviewed S1-F
   Phase 1 schema foundation (still no routes/email until the flow decisions land).
-
-## 2026-10-01 — S1-F2C final documentation re-review PASS (opencode-go/deepseek-v4.1-flash)
-
-- Read-only final, documentation-only re-review of range `367fb99..02a7730`
-  (`fa33589` UI-direction reconciliation, `02a7730` record), HEAD `02a7730`.
-  Independence: implementation built by SWE-2 High; reviewer is a different
-  model and issued all three prior independent FAILs. **PASS.**
-- `git diff 367fb99..02a7730 -- lib tests db app` **empty** — zero code/test/
-  schema/migration/UI changes; changed files are exactly the seven expected
-  docs. The implementation at `367fb99` already independently passed every
-  full gate; this range is documentation only.
-- TRACKER §3 "faithful sheet layouts; do not redesign" now struck through +
-  **SUPERSEDED**; Stage 3 rewritten to the per-form-factor direction (desktop
-  = complete desktop-focused redesign; tablet/mobile form-factor-specific;
-  one shared design system; per-factor navigation, information density,
-  panels, tables, dashboards, interactions; no stretch/shrink). The false
-  changelog claim about §3 is corrected with a dated CORRECTION note.
-- All active guidance (`product-decisions.md` #3, `implementation-plan.md` §1,
-  STATUS, TRACKER §3 + Stage 3) consistently states the direction; an
-  exhaustive `rg` classification found no unmarked active contradiction
-  (remaining hits are superseded-struck or historical task/review evidence).
-- Boundaries: product name undecided (none invented); Prime Tracker
-  (Marcel + Mike) untouched and not the visual target; no UI implemented.
-  `s1f2c_repair2` no longer exists (read-only verified).
-- Verification: `git diff --check` 0; `npm run format:check` 0;
-  `git diff --check 367fb99..HEAD` 0;
-  `git diff --exit-code 367fb99..HEAD -- lib tests db app` 0.
-- **S1-F2C independently PASS. Platform-specific UI direction reconciled.
-  Prime Tracker untouched. Next eligible slice: S1-F2D (not started).**
-- Residual (non-blocking) UI-planning notes: "Marcel and Mike are finalizing
-  Prime Tracker" is conveyed as ownership + do-not-modify rather than the word
-  "finalizing"; Stage 3's visual-assertion bullet names desktop+mobile widths
-  (tablet width could be added); the `## 12. Change log` heading is duplicated
-  per entry (pre-existing structural quirk).
-
-## 2026-10-01 — S1-F2C documentation-only repair after third DeepSeek FAIL
-
-- Third review verdict: all code/security/concurrency/migration/test areas
-  independently **PASS**; FAIL was documentation only — superseded
-  "faithful sheet layout" wording still active in TRACKER §3 + Stage 3, and
-  a false changelog claim. Corrected; Stage 3 now records the
-  per-form-factor direction (desktop/web redesign, platform-appropriate
-  tablet/mobile, shared design system, per-factor navigation/density/panels/
-  tables/dashboards/interactions).
-- Disposable DB `s1f2c_repair2` verified abandoned and removed.
-- Product name still undecided; Prime Tracker untouched (Marcel + Mike).
-- **Final independent DeepSeek documentation re-review pending; S1-F2D not
-  started.**
 
 ## 2026-09-30 — S1-F2C second repair after second DeepSeek FAIL; re-review PENDING
 
@@ -6675,6 +6001,919 @@ FATS (g)/COOKED/RAW/DRY/CAT`; columns 12–21 and the row-label column empty →
 ## 2026-09-29 — Phase 1 — PASS
 
 - Cloned the empty new repository; Prime State untouched.
+
+## TRAINING-I1B-2-R2 — review-findings repair (PROMPT R2)
+
+- Bounded repair on `feature/training-i1b2` for the I1-R1 independent
+  review (`~/Downloads/TRAINING-I1B-2-I1-R1-independent-review.md`,
+  SHA-256 `bf608abc…dea006e`, 256 lines, read through EOF). Reviewed
+  head `dfac206`; base `f71198b`; no PR, no merge.
+- **F1 (HIGH, closed):** `readOwnTrainingBookingHistory` returned
+  published-pending successor bookings pre-takeover (title + pinned
+  prescription leak, mislabelled "replaced"). Repair: join the program's
+  `version_seq=1` row and require `v1.activation_instant <= now` (the
+  injected op clock — the same in-force predicate `selectCurrent` uses,
+  inclusive at the exact takeover instant). Tenant/client scope,
+  authorization, consent, cancellation filters, pin projection, cutoff
+  and keyset semantics unchanged.
+- **F2 (LOW/MED, closed):** staff history `hasMore` was unreachable.
+  `listTrainingBookingsAction` exposes the existing bounded keyset read
+  (target-scoped `(scheduledDate,id)` cursor, truthful hasMore); the
+  bookings panel appends deduped rows with pending/error/disabled
+  states, re-syncs on server re-render, and remounts per
+  workspace/client/program target via a route key.
+- **RED→GREEN:** tests committed first (`32ea7d5`): pending-successor
+  history assertions (incl. takeover −1ms / exact / +after) → 2 focused
+  failures on `dfac206`; browser keyset load-more regression →
+  `bookings-history-more` absent on reviewed head. GREEN after
+  `21d5d98` (F1) + `8df3d65` (F2): focused 15/15 + spec 8/8.
+- **Mutations:** removing the `activation_instant <= now` predicate →
+  both F1 assertions fail again (2/15); stubbing the pagination dispatch
+  → later-page assertion stuck at 12 rows. Both restored byte-identical
+  (sha256-verified).
+- **Advisories:** A1 evidence corrected prospectively — the I1 report's
+  M5 wording ("fell through to `no_governing_version`") was imprecise;
+  the reviewer observed it resolved (booking created); original hashed
+  report preserved. A2 inspected — the pending-leaf cascade writes one
+  program-level `UPDATE {changed:true}` audit and no per-booking rows;
+  contract-authorized (decision #118 mandates the atomic cancel, not
+  per-booking audit) — no change. A3 noted — `readOwnTrainingBookingHistory`
+  remains unwired to any UI/action; no end-to-end client-history claim.
+- Gates on the repair tree (task-owned `i1b2_r2_*` DBs on
+  tracker-review-pg): `git diff --check`, format:check, typecheck clean;
+  lint 0 errors / 4 pre-existing warnings; unit 1331/1331; full
+  integration 873/873; build clean; focused E2E 8/8; full E2E on fresh
+  dedicated `i1b2_r2_e2e_full`. Schema/migration/RBAC/gate/pin paths
+  byte-identical to `dfac206` (whole-diff verified).
+- Builder report `~/Downloads/TRAINING-I1B-2-R2-builder-report.md`.
+  Stopped at the pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1B-2 — dated-session bookings (PROMPT 266)
+
+- Owner-authorized implementation of the independently confirmed I1b-2
+  bookings contract on `feature/training-i1b2` (base `f71198b`, merged
+  Evergreen). Contract: P2 + P2-A1 + bookings finalization (A1-1
+  closed) — confirmed READY by P1-R1 review `929a89da…ef50a`.
+- `training_session_booking`: immutable pin (pinnedVersionId,
+  sessionId, bookedWeek) + mutable declared `scheduledDate`; partial
+  unique natural key over active rows; composite coherence FKs + CHECKs
+  (raw-SQL convention). Move = date-only; cancelled tuples reusable.
+- Service: staff create/move/cancel + bounded staff bookings read +
+  client agenda + client booking history; staff detail gains
+  bookings/bookableSessions; pending-leaf cancel cascades to non-past
+  bookings. Authorization/consent/locks precede replay lookup; pin
+  resolves at the booked instant under the anchor timezone; client
+  projection uses the PINNED version's snapshotted fieldConfig.
+- Boundary codes: booking_conflict, booking_date_bounds,
+  past_handover, no_governing_version. UI: staff bookings panel +
+  client agenda ("Booked for {date}" vs "Week {n} prescription").
+- Gates (final tree): format/typecheck/lint clean; unit 1331/1331;
+  full integration 872/872 (fresh tgt_i1b2_full; s1-a inventory updated
+  for the new table); build clean; focused E2E 7/7; full E2E on
+  dedicated app_i1b2_e2e. Migration: fresh deploy + genuine
+  base->candidate upgrade; drift = established composite-FK/raw-SQL
+  extras only. Mutations M1-M5 (pin timing, pinned fieldConfig,
+  move-pin drift, tombstone reuse, cutoff) all bite; restored
+  byte-identical.
+- Records: decision #118 + `docs/tasks/training-i1b2.md`. Stopped at
+  the pushed candidate for independent review — no PR, no merge.
+  Excluded: recurrence, logging/notes/flags/review, volume, formulas,
+  template integration. `ENABLE_TRAINING_PLANS` unchanged, fail-closed.
+
+## TRAINING-I1B-1 — Evergreen program mode (PROMPT 262)
+
+- Owner-authorized implementation of the independently confirmed I1b-1
+  scope on `feature/training-i1b1` (base `36eae79`, the merged I1a
+  repair). Contract: P2 plan + P2-A1 addendum (DeepSeek R1 confirmations
+  — I1b-1 READY; booking-only advisory A1-1 remains for I1b-2 and is
+  NOT implemented).
+- `training_program.program_mode` (TEXT, default `WEEK_BASED`, CHECK
+  `WEEK_BASED|EVERGREEN`) — set at create from the draft literal,
+  editable pre-publish only, immutable after first publish (a different
+  mode is a replacement, never in-place conversion). Evergreen stores
+  `weekCount=1` as its single prescription week.
+- Mode-aware week-derived sites (complete inventory): save-path
+  `ceiling`+locked-week assertion, `setTrainingProgramTimezone`
+  high-water advance, publish lock ceiling + history-invariant loop +
+  `newHighWater`, publish `upperBound`/`program_ended`, staff-detail
+  `ceiling`, client `completed`/`weekEndInstant`. Evergreen: ceiling 0,
+  no high-water advance, no upper bound, never completed by date.
+- Client: `ongoing` flag + "ongoing program" label, single prescription
+  week, marker = scheduled-later → "updates" / republished-governing →
+  "updated". Staff: mode select pre-publish, week nav/week-count hidden,
+  "Ongoing" list label. Existing immutable versions, CAS, replay,
+  authz/consent/audit and `ENABLE_TRAINING_PLANS` fail-closed gate
+  unchanged.
+- Gates (final tree): format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1331/1331; integration 858/858 (disposable
+  `train_i1b1_intfull`); build clean; focused E2E 6/6; full E2E
+  417/429 (12 skipped, 0 failed; disposable `train_i1b1_e2e_full`).
+  Migration: fresh deploy + genuine base→candidate upgrade (backfill
+  `WEEK_BASED`, CHECK enforced, no new drift). Mutations: M1 save-ceiling,
+  M2 publish-bound, M3 completed-state, M4 timezone high-water — all
+  bite on targeted assertions; restored byte-identical.
+- Records: decision #117 + `docs/tasks/training-i1b1.md`. Stopped at the
+  pushed candidate for independent review — no PR, no merge.
+
+## TRAINING-I1A-R4 — replay-after-remount repair (PROMPT 255)
+
+- Bounded repair on `feature/training-i1a-r3` for F1 (LOW) from the
+  independent R3 review (DeepSeek V4.1 Flash,
+  `~/Downloads/TRAINING-I1A-R3-R1-independent-review.md`, SHA-256
+  `a8efa2d6…81f3`, 305 lines, read through EOF). D1/D2 stay closed.
+- F1: after a lost v1-publish response + remount, retrying at the same
+  revision sent `expectedPredecessor: null` → `revision_already_published`
+  instead of idempotent replay. The R3 `published ? null` fix could not
+  distinguish a committed-revision retry from a genuinely new publish.
+- Repair: `readStaffTrainingProgram` now exposes committed
+  `firstPublishOriginRevision` (v1's `publishOriginRevision`) to authorized
+  staff; the editor resubmits the stored `replacesProgramId` claim only
+  when `revision === firstPublishOriginRevision` — an exact reproduction
+  of the original request. Any revision advanced by a real save sends no
+  claim (genuinely new later version; server rejection unchanged).
+- RED→GREEN: new integration test (origin exposure, null when
+  unpublished, denied actor cannot recover state, reconstructed replay
+  → `replayed:true`, claimless retry → `revision_already_published`,
+  version/audit counts unchanged) + E2E UI steps (remount → retry →
+  "Published version 1.", count invariant, changed-date → "already
+  published", root identical-replay regression). Mutation M-R4-1
+  (blanket `published ? null`) re-produced the exact
+  "already published" failure through the UI; restored byte-identical.
+- Gates: format/typecheck/lint clean (4 pre-existing warnings); unit
+  1329/1329; integration 850/850 (disposable `train_r4_int`); build
+  clean; full E2E 416/428 (12 skipped, 0 failed; disposable
+  `train_r4_e2e_full`). No schema/migration/permission/gate changes.
+- Builder report `~/Downloads/TRAINING-I1A-R4-builder-report.md`.
+  Stopped at pushed repair for independent confirmation; no PR.
+
+## TRAINING-I1A-R3 — acceptance-defect repair (PROMPT 253)
+
+- Bounded repair on `feature/training-i1a-r3` for two defects found by the
+  JOURNEY-A1 real-browser acceptance (`~/Downloads/TRAINING-JOURNEY-A1-report.md`,
+  SHA-256 `2e5eaa9a…59fa7`). NOTE: the R1/R2 reviews and earlier full suites
+  passed but did NOT cover final-week client state or replacement v2
+  republishing — those gates did not prove these paths.
+- D1 (client final week rendered "has ended"): `readOwnTrainingProgram`
+  clamped the week index to `weekCount` then tested `idx >= weekCount` —
+  1-based index means every final week (and every 1-week program from day
+  one) reported `completed`. Fixed by deriving state from the real end
+  boundary instant (`weekEndInstant` under the immutable anchor) — final
+  week stays current through its last valid instant.
+- D2 (replacement frozen at v1): the editor seeded `predecessor` from
+  `replacesProgramId`, hid the control after publish, but still submitted
+  `expectedPredecessor` — the service's later-version claim rejection
+  (`invalid_input`) fired on every v2. Fixed: claim submitted only while
+  `!published`; a lost first-publish response keeps the original claim
+  (component has not remounted); the server check stays intact.
+- RED first: 4 integration tests (1-week first/last day, boundary ±1ms,
+  multi-week final week, NY-anchor across 2026-11-01 DST fall-back,
+  not-started → upcoming) + 1 E2E through the real UI (root v2 regression,
+  replacement v1 takeover + ack, final-week client view, v2 publish with
+  persisted-version/audit proof). RED reproduced both user-visible
+  failures; mutations (clamped-index check; always-submitted claim)
+  re-bit the same tests; restored byte-identical.
+- Gates on repair tree: format/typecheck/lint clean (4 pre-existing
+  warnings); unit 1329/1329; integration 849/849 (real PG, disposable
+  `train_r3_int`); build clean; full E2E 416 passed / 12 skipped /
+  0 failed (disposable `train_r3_e2e_full`).
+- Builder report `~/Downloads/TRAINING-I1A-R3-builder-report.md`.
+  Stopped at pushed repair for independent review; no PR; no production
+  enablement.
+
+## TRAINING-I1A-R2 — coverage/formatting repair (pushed `4dbe363b…`)
+
+- Bounded repair on `feature/training-i1a` for the R1 independent review
+  (DeepSeek V4.1 Flash; report `~/Downloads/TRAINING-I1A-R1-independent-review.md`,
+  SHA-256 `96e1cc6a…a3d58`, verified through EOF). No production logic,
+  schema, RBAC, gate, selection or history-algorithm changes.
+- P2-1: new real-PG test proves the PLATFORM_ADMIN deny-set alone denies
+  a dual-role PA (ACTIVE WORKSPACE_OWNER) read and a PA assigned-coach
+  write — all downstream prerequisites valid. Mutation (deny-set entry
+  removed) fails both legs through forbidden admission; restored
+  byte-identical.
+- P2-2: new test — draft legitimately saved while week 2 open is rejected
+  at publish by the wholly-past invariant after the week closes;
+  `history_conflict`, no new version, no audit. Mutation (invariant
+  disabled) lets publish wrongly commit; restored byte-identical.
+- P3-2: new unit test — `gvAt` eligibility is inclusive at
+  `activationInstant == t`; cutoff stays exclusive. Comparator flip
+  (`>`→`>=`) fails the test; restored byte-identical.
+- P3-1/P3-3: Prettier line-wrap on the client training-program page
+  (prior format:check claim was inaccurate — corrected); renderer label
+  "Instructions" → "Detailed instructions" per FRONTEND.
+- Also fixed (disclosed, test-only): `tests/e2e/client-home.spec.ts`
+  used bare `new PrismaClient()` relying on ambient `DATABASE_URL` —
+  the only spec without the shared `e2eDatabaseUrl()` fallback; it
+  failed the full-suite run. Now matches the shared pattern; no
+  assertion or behavior change.
+- Gates on repair tree: `diff --check`/`format:check` clean; typecheck
+  - lint clean (pre-existing warnings only); unit 1329/1329;
+    integration 845/845; build clean; focused training E2E 4/4; full E2E
+    415 passed / 12 skipped / 0 failed (5.2m, single worker, no
+    concurrent DB work).
+- Non-blocking follow-up recorded: optional baseline-query optimization
+  left out of this repair per PROMPT 248.
+- Correction (per §5): R1 evidence/chronology wording updated — the
+  original format:check claim and the non-isolating deny-set/history
+  tests were inaccurate; R2 mutation results are distinct evidence;
+  tests-after-code/single-commit chronology unchanged.
+
+## TRAINING-I1A — week-based training programs (implementation complete; candidate pushed)
+
+- Branch `feature/training-i1a` from `origin/main` `5f9cb41c…`; contract
+  record `docs/tasks/training-i1a.md`; precedence: PROMPT 244 S/G → A3
+  (`45fe661d…`) → A2 (`7737934b…`) → A1 (`579fd897…`) → P9 (`8cf99c34…`).
+- Schema: `training_program` + `training_program_version` models; curated
+  migration `db/migrations/20261017195754_training_i1a/` (partial uniques
+  `single_root`/`live_successor`, `tail` index, composite coherence
+  uniques/FKs, CHECKs) — verified on fresh disposable DB; no raw-SQL drift.
+- Implementation: `lib/trainingprogram/{limits,gate,consent,payload,weeks,
+service,boundary}.ts` — P9+A1+A2+A3 contract incl. S (lifecycle-
+  unfiltered labelled staff history) and G (`UPDATE`+`{changed:true}`
+  cancel audit, no unsupported meta keys); RBAC owner-write
+  `denied→assigned` + PLATFORM_ADMIN deny-set; `training_program`/
+  `training_program_version` audit resources; `ENABLE_TRAINING_PLANS`
+  - trusted `APP_ENV` fail-closed gate; staff + client routes/components;
+    Training nav links on all five client layouts + roster link.
+- Iteration found real service defects, fixed: JSONB key-reorder breaking
+  canonical draft comparison (→ stable deep-sorted `canonicalJson`);
+  cancel takeover check using DB clock vs injected op clock; v1 bounds
+  rejecting backdated starts (v1 = startDate exactly); high-water never
+  persisted on publish; one-root fixture conflicting with single-PRIMARY
+  partial unique.
+- Decision #116 recorded (synthetic/testing boundaries only).
+- Gates: unit 1328/1328; integration 843/843 (incl. training-i1a 18/18
+  real PG; `s1-a-identity` inventory updated for the two approved
+  training tables — same repair pattern as MEAL-PLAN-I1-R2); typecheck,
+  lint, format:check, `prisma validate`, `next build` clean.
+- Real-PG evidence (`~/Downloads/training-i1a-evidence.log`): P2002 meta
+  `target=[workspace_id,client_profile_id]`; FOR UPDATE contender blocks
+  426ms → 57014; pg_sleep under 50ms statement_timeout → P2010/57014;
+  forced mid-tx failure atomic (versions before=after=49); pool healthy;
+  version keyset uses `Index Scan Backward` on
+  `program_id_version_seq_key` (seq-scan on near-empty tables is planner-
+  correct; index path proven with seqscan off).
+- Mutations: 3/4 bite (locked-week skip, activation-floor `<=`,
+  forced `changed:true`); M2 (client-own write allowed) NO BITE —
+  defense-in-depth: `lockAssignmentForScope` still rejects client
+  members lacking ACTIVE staff assignment; recorded honestly.
+- E2E: focused `training-program.spec.ts` 4/4 (author→publish→client
+  view, replacement label + cancel, read-only owner, flag-off 404s,
+  1440/390 no-overflow). Full 427-test run #1 had 9 cross-spec fixture
+  failures caused by builder's own concurrent integration/mutation/
+  evidence runs sharing the disposable DB — all 8 affected spec files
+  pass clean in isolation (130/142, 12 expected skips); clean
+  uninterrupted full re-run: **415 passed, 12 skipped, 0 failed**
+  (427 tests, 5.2m).
+- NOT done (named follow-ons): Evergreen, dated sessions, logging,
+  volume/progression, template-variant field-config wiring, dashboard
+  widgets, production enablement. Stopped at pushed candidate for
+  independent implementation review; no PR.
+
+## MEAL-PLAN-I1-R2 — schema-inventory repair (in progress)
+
+- R1 independent review (`e3f43cb7…`, 97 lines): CONDITIONAL PASS —
+  P1-1 full integration fails 1/825 on `s1-a-identity` schema
+  inventory (new `meal_plan`/`meal_plan_version` trip the historical
+  `"meal"` forbidden guard + exact sorted list); P3-1 unit count is
+  1308 measured, not the builder's reported 1310; P3-2 mutation
+  accounting verified accurate (10/10, harness artifacts separate).
+- Evidence corrections recorded prospectively: the builder validated
+  only the FOCUSED meal-plan integration (19/19), not the full suite
+  the task required — independent full integration exposed the
+  failure; the original coverage gap was revoked-consent publish
+  (closed in `7d58a25`); unit 1310 was stale.
+- Repair: `s1-a-identity` inventory updated — `"meal"` removed from
+  the forbidden list (meal plans approved under #115), `meal_plan` +
+  `meal_plan_version` added to the exact expected list; all other
+  exclusions/assertions preserved. Other `information_schema`
+  inventories are domain-scoped (submission/`checkin_` prefixes) —
+  unaffected, unchanged.
+- Reproduced: 1/825 failure on fresh disposable `tracker_mp_r2`
+  (exact-list + `"meal"` forbidden assertions). Sensitivity proven:
+  an injected `r2_unexpected_probe` table still fails the exact-list
+  check; probe dropped.
+- Repaired gates: full integration **825/825** on clean
+  `tracker_mp_r2`; full unit **1308/1308** measured; build + full E2E
+  carried forward from R1 identity-verified head — production is
+  byte-identical (repair touches tests/docs only).
+
+## MEAL-PLAN-I1 — staff-authored meal plans (in progress)
+
+- Independently reviewed contract: MEAL-PLAN-P3 (`6b21a663…`, 259
+  lines) + P3-R1 PASS (`3f79b84a…`, 91 lines); owner choice applied:
+  effective dates activate at client-local midnight in the plan's
+  explicitly confirmed IANA timezone. Decision #115 recorded
+  (synthetic/testing boundaries only; RBAC mealPlans owner-write
+  prospectively amended `denied → assigned`; `mealPlans` joins the
+  platform-admin deny-set).
+- Branch `feature/mealplan-i1` from verified main `16fa0ab`; commits:
+  `2c8068e` tests-only RED → `40d39b4` schema+migration+
+  `lib/mealplan/*`+RBAC/audit → `c0ea987` staff/client UI → `7d58a25`
+  mutation-coverage tests.
+- Implementation: `MealPlan`/`MealPlanVersion` models + raw migration
+  (coherence FKs, `(meal_plan_id,version_seq)` + `(meal_plan_id,
+publish_origin_revision)` uniques); `lib/mealplan/{limits,payload,
+gate,consent,service,boundary}` — strict closed-key payload
+  normalization, `ENABLE_MEAL_PLANS`+APP_ENV fail-closed gate, draft
+  CAS, idempotent publish with bounded P2002 retry on the two declared
+  uniques, immutable `effectiveDate`/`effectiveTimezone`/
+  `activationInstant` snapshots, server-side current-version selection
+  (`activationInstant ≤ now`, `effectiveDate DESC, versionSeq DESC`),
+  structural-only audits. Staff route/actions/editor/history + client
+  view-only page (current/upcoming/no-plan states), gated nav.
+- Verification: unit 10/10 timezone+gate; payload 11/11; integration
+  19/19 on disposable `tracker_mp_i1` (authz matrix incl. dual-role PA,
+  consent+revocation+publish, CAS, replay, concurrent sequential
+  versionSeq, tz snapshots preserved, Apia rejection, audit rollback);
+  E2E 3/3 real-browser (coach draft→publish→client view, unassigned
+  owner read-only, flag-off 404) at desktop + 390px; typecheck/lint/
+  build green; migrations fresh + base→candidate zero-drift; full unit
+  regression 1306/1306 after RBAC-snapshot + hex-comment fixes.
+- Mutation sweep: first pass reported 4 survivors — all were a HARNESS
+  false positive (post-prettier patterns missed + non-fatal python
+  assert → unmutated files tested green; also a wrong-file `-t`
+  filter). Corrected sweep with hard-abort apply checks: 10/10 KILLED
+  (deny-set, owner-write, consent, publish-consent, CAS, replay,
+  ordering, unknown-key, audit, tz snapshot, gate). One real coverage
+  gap fixed: revoked-consent publish denial (`7d58a25`); the gate
+  "survivor" was filter error — existing `mealplan-gate.test.ts`
+  already kills the mutant (verified by direct re-run).
+- Remaining: final gates re-run on completed tree, push, builder
+  report, tracker entry, independent review handoff. No PR.
+
+## CHECK-IN-RECURRENCE-I1 — bounded weekly scheduling (in progress)
+
+- Independently reviewed contract: CHECK-IN-RECURRENCE-P3 (`b560cda2…`,
+  263 lines) + P3-R1 PASS (`c37cba13…`, 76 lines, 5 refinements applied);
+  decision #114 recorded (synthetic/testing boundaries only —
+  production fail-closed; bounded recurring scheduling, NOT automatic
+  replenishment).
+- Branch `feature/checkin-recurrence-i1` from verified main `18d9f6f`;
+  commits: `92ffcfe` RED-A units → `61a3280` schema+migration →
+  `c7a66a5` RED-B integration+E2E → `cd6df45` GREEN implementation →
+  `a772519` E2E locator fix → `9f97e12` mutation-coverage tests.
+- Implementation: `lib/checkin/timezone.ts` Intl-based wall→instant
+  (crossing-detection gap→first valid, fold→earlier, ≤181-min bound,
+  whole-day→unrepresentable, 2000–2100); `lib/checkin/schedules.ts`
+  rule lifecycle + explicit generation (two pre-queries, truthful
+  three-way classification, audits last, current-actor provenance,
+  Serializable + bounded P2002 re-enter); staff UI section
+  `schedule-rules.tsx` with conspicuous nonautomatic copy.
+- Verification so far: unit 1282/1282; integration 18/18 incl.
+  permission matrix + dual-role PA denial + end-vs-submit + rollback;
+  focused E2E 3/3; typecheck/lint/build green; migrations verified
+  fresh + base→candidate on disposable DBs (rec_i1_fresh/_upgrade/_it).
+- Mutation sweep: 12 of 16 bit immediately; 3 no-bites closed with new
+  coverage (assigned-assistant write, per-instance audit assertion,
+  past-instant via `now` dep); M16 alternate advisory namespace is a
+  recorded honest no-bite (unobservable via serialized outcomes).
+- CHECK-IN-RECURRENCE-I1-R1 (DeepSeek V4.1 Flash, `5cfa2119…`,
+  149 lines): **PASS** on head `9898c0a` — all fresh gates green,
+  timezone converter independently probed correct (Troll 03:00 via
+  crossing detection), M16 verified genuine outcome-equivalence (End
+  vs submit preserved by the instance row lock, 15/15 decoupled
+  stress). P3s noted: compile-time (not behavioral) RED; mutation
+  count miscount (corrected above); past-due occurrences silently
+  excluded from outcome fields; generation writes create+audit
+  per-instance rather than all-creates-then-all-audits. Review grants
+  no merge/deploy authorization; technically ready for PR under the
+  normal process.
+
+## CHECK-IN-OVERVIEW-I1 — staff awaiting-review queue + deep link (in progress)
+
+- Independently reviewed contract: CHECK-IN-OVERVIEW-P2 (`4d619ccf…`,
+  224 lines) + P2-R1 PASS (`bd204a61…`, 85 lines); decision #113
+  recorded (synthetic/testing boundaries only — production fail-closed;
+  bounded W09 subset, NOT the full W09/W02 roadmap).
+- Branch `feature/checkin-overview-i1` from verified main `6e64a928`;
+  9 commits forward-only (RED-A unit → schema/index → RED-B
+  integration+E2E → GREEN implementation → test fixes → boundary-denial
+  coverage → prettier).
+- Scope: read-only workspace-level queue of submissions with no review —
+  `authorizeCollection` scope (owner workspace / coach+assistant
+  assigned / CLIENT-own rejected / SUPPORT+PA denied incl. dual-role),
+  one keyset query (`submittedAt ASC, id ASC`, `{iso}|{id}` cursor,
+  N+1 `hasMore`, predicates before LIMIT), header-only projection, zero
+  audits, `canReview` = write cell AND per-row ACTIVE assignment.
+  New index `checkin_submission_workspace_id_submitted_at_id_idx`
+  verified on fresh and base→candidate disposable DBs.
+- Deep link: `?submission=<id>` on the per-client page dispatches the
+  existing audited detail action through one `useActionState` path —
+  param-keyed guard (A→B→A re-fires), stale-detail suppression while a
+  param load is pending, invalid params fire nothing (no POST, no
+  audit); `prefetch={false}` on row links.
+- Verification: unit 36/36 new-file tests + 1256 total; integration
+  18/18 new + 788/788 suite; focused E2E `checkin-review-queue.spec.ts`
+  13/13 including delayed-A→B stale-response, back/forward, refresh,
+  prefetch-safety, revoked assignment, reviewed-after-listing, and
+  flag-off 404; build clean; typecheck/lint/format green.
+- Mutations: 13 of 15 bit; two honest no-bites — `prefetch={false}`
+  removal (structural barrier: detail load is a server-action POST that
+  prefetch can never trigger, page is force-dynamic) and stale-detail
+  suppression (transient window below the test's final-state granularity;
+  retained as the correct barrier). One coverage gap found by the sweep:
+  boundary denied→empty was unobservable because the workspace layout
+  denies all queue-denied roles first — closed by a direct boundary
+  assertion test.
+- Full E2E: first run surfaced cross-spec fixture pollution — the queue
+  spec left an auto-id `clientProfile` and a wsB `workspaceMember` for
+  the shared client user, colliding with sibling specs' own fixed-id
+  seeds (9 failures). Repaired with owned-fixture tracking (profiles and
+  the wsB member are deleted at teardown only when this spec created
+  them); final full run: 405 passed, 12 skipped (delivery-gated
+  password-reset), 0 failed.
+- Review candidate — gates green; pushed for independent review.
+  No PR, merge, deployment, feature enablement, or real-client use.
+
+## CHECK-IN-FEEDBACK-I1 — bounded staff text feedback (R1 PASS; R2 cleanup pushed)
+
+- **R2 cleanup** (PROMPT 176, closing the four P3 review findings —
+  narrow repair, no redesign):
+  - P3-1 formatting: `docs/STATUS.md` prettier continuation indent fixed;
+    `npm run format:check` clean. Correction to the R1 review's claim —
+    `.github/workflows/ci.yml` DOES run `format:check` (line 42), so a
+    PR would have failed CI; the `npm run verify` script does not
+    include it (verified against the actual workflow file).
+  - P3-2 explicit staff-detail authorization: `readCheckInSubmissionDetail`
+    now issues an explicit `checkinFeedback`/read `authorize` inside the
+    transaction before querying the thread. Denial withholds the thread
+    (`feedback: null` — never an empty array that would present as "no
+    responses yet") while the authorized base detail (fields, review
+    provenance, `canSend`) survives. Defense-in-depth resource
+    separation, not a repaired leak — the two read cells coincide today.
+    Isolation test: spy denies only `checkinFeedback` while
+    `checkinsCoachReviews` stays real → detail returns `feedback: null`.
+    Barrier mutation (remove the explicit authorize) BITES: the denied
+    read leaks the thread.
+  - P3-3 recovery copy: `not_sent` now states no sent response was
+    found, the text wasn't saved locally and must be re-entered, and the
+    resend keeps the same attempt identity (can't silently duplicate).
+    Nonce/idempotency protocol unchanged. Behavioral E2E asserts the
+    truthful note, an empty composer, and that the resend carries the
+    SAME nonce.
+  - P3-4 evidence corrections (recorded prospectively here): the R1
+    reviewer independently verified **769/769** integration tests; the
+    I1 builder report claimed 768/768 — the verified count stands. And
+    **14 of 16** independently reproduced mutations bit; the two
+    no-bites were redundant/index-masked (explicit own-scope authorize
+    redundant under the enclosing own-scope gate; `id ASC` ORDER-BY
+    removal masked by the backing `(submission_id, sent_at, id)` index —
+    the tie _predicate_ mutation did bite), not hidden failures.
+- Independently reviewed contract: CHECK-IN-FEEDBACK-P3 (`0427fcb1…`,
+  137 lines) + P3-R1 PASS (`6eece636…`, 96 lines); decision #112
+  recorded (synthetic/testing boundaries only — production fail-closed).
+  Implementation R1 review (`c5301172…`, 143 lines): technical PASS,
+  four P3s, all closed above.
+- Base verified `9ee84063` (`origin/main`); branch
+  `feature/checkin-feedback-i1`; `appearance-r2` untouched.
+- RED-A `87d2dcd` (unit: matrix cells, deny-set behavior, audit
+  resource, boundary exports — 11 intended failures).
+- Schema+migration `2424dbb`: `checkin_feedback` table, composite
+  coherence FK `(submission_id, workspace_id, client_profile_id)` →
+  `checkin_submission`, unique `(submission_id, client_request_id)`,
+  indexes `(submission_id, sent_at, id)` + `(workspace_id,
+client_profile_id)`, all FKs RESTRICT, no `updatedAt`. Hand-curated
+  migration (auto-diff tried to drop unrelated custom FKs). Fresh +
+  upgrade deploys verified on disposable PG; `migrate status` clean,
+  29 migrations.
+- RED-B `8011f73` (integration, true RED vs schema-present-no-service).
+- GREEN `8c31047`: `checkinFeedback` resource + matrix row + deny-set
+  entry; `checkin_feedback` audit resource; `sendCheckInFeedback` /
+  `listCheckInFeedback` / `resolveCheckInFeedbackSend` in
+  `lib/checkin/instances.ts` (serializable, review-exists prerequisite,
+  assignment lock, consent before insert AND on replay, scoped-P2002
+  `meta.target` matcher, audit-last); staff detail `feedback`/`canSend`;
+  own-detail feedback inside the consent gate; boundary safe errors
+  `review_required`/`idempotency_conflict`; staff actions +
+  `CheckInFeedbackThread` composer (nonce in state + nonce-only
+  sessionStorage marker keyed userId+workspaceId+submissionId);
+  client "Response sent" from persisted rows.
+- Gates on `dbcc9da` (R1 tree): `git diff --check` clean; eslint 0
+  errors (3 pre-existing warnings elsewhere); `tsc --noEmit` exit 0;
+  full unit 1220/1220; integration on disposable `cfi1_int` —
+  independently verified **769/769** (the prior builder report's
+  768/768 was an undercount, corrected in the R2 entry above);
+  `next build` clean; focused E2E `checkin-feedback.spec.ts` 7/7;
+  **full E2E suite 391 passed / 0 failed / 12 skipped**.
+- Mutation sweep (16 reproduced): 14 bit; two documented no-bites —
+  client-path own-scope authorize removal is redundant under the
+  enclosing own-scope gate (deliberate defense-in-depth per the
+  contract), and `id ASC` ORDER-BY removal is masked by the backing
+  index (the keyset tie _predicate_ mutation did bite). Two fixtures
+  strengthened so mutations became observable (dual-role PA now holds
+  an ACTIVE assignment; unreviewed-submission `canSend` asserted);
+  all restored byte-identically.
+- E2E fixes during gate runs: row selection now keys on the hidden
+  `submissionId` input (`.last()` was racy across fixtures); fixture
+  cleanup also removes the spec's `checkin_submission`/`checkin_feedback`
+  audit rows (a sibling spec asserts a zero global audit count).
+
+## SOLO-COACH-I1 — owner-as-coach assignments + assigned-owner review (in progress)
+
+- Independently reviewed contract: SOLO-COACH-P2 (`2b0d7eca…`, 125
+  lines) + P2-R1 PASS (`549a2916…`, 119 lines); decision #111 recorded.
+- Base verified `c63ddfb` (`origin/main`); branch `feature/solo-coach-i1`;
+  `appearance-r2` untouched.
+- RED committed `9e5b538` (behavioral: deny-set hole shown granted,
+  owner eligibility missing, canMark role-only, actions absent).
+- GREEN: 2 owner write cells → `assigned` (#95 + #37/P-024 amendments),
+  `clientAssignments` in the platform-admin deny-set, owner PRIMARY/
+  COACH eligibility, bounded `listAssignableCoachMembers`, assignment-
+  aware `canMark` ×2 (also tightens coach visibility — P3-c noted),
+  owner-gated coaches page/actions/panel + roster link; the stale
+  `assertAssignmentMutationsExternallyExposable` blocker removed with
+  its protections replaced by the action contract + tests.
+- GREEN on `aae19f6` + contract-assertion updates on `e32f4ce`.
+- Gates on the final tree: `git diff --check` clean; prettier clean;
+  eslint 0 errors (3 pre-existing warnings elsewhere); `tsc --noEmit`
+  exit 0; `prisma validate` + `migrate status` up to date (no migration
+  needed); full unit 1209/1209; full integration 749/749 on disposable
+  `app_integration_test`; `next build` clean.
+- Mutation sweep 7/7 bitten (deny-set entry, owner eligibility, each
+  owner write cell, canMark assignment check, ASSIGN audit skip,
+  onboarding role-only canMark) — all restored byte-identically.
+- E2E: `coach-assignments` 3/3 (real-UI self-assign → both review
+  journeys; non-owner 403); checkin-review 7/7; staff-onboarding-review
+  9/9; client-roster 23/23; **full E2E suite 384 passed / 0 failed / 12 skipped** (396 total) — new spec included.
+
+## HABITS-I1 — real habit tracking + TL21/TL22 (in progress)
+
+- Independently reviewed contract: HABITS-P4 (`59222875…`, 217 lines) +
+  P4-R1 PASS (`361a71ce…`, 107 lines); decision #110 recorded.
+- Base verified `6b24def` (`origin/main`); worktree
+  `the-great-tracker-habits` on `feature/habits-i1`; `appearance-r2`
+  untouched.
+- Review P3s resolved in `docs/tasks/habits-i1.md`: raw-SQL coherence FK
+  convention (not Prisma composite relation), caller `weekdays=0`
+  rejection on normal paths, `HabitLogStatus {DONE, SKIPPED}` shown,
+  `(id, workspace_id)` unique relabelled as identity target, real
+  constraint table documented.
+- Plan + decision + tracker recorded before code; RED committed.
+- GREEN: schema+migration `20261015000000_habits_i1` (Habit,
+  HabitSchedule, HabitLog + HabitLogStatus, coherence FK, CHECKs,
+  uniques); `lib/habits/{date,service,boundary}`; `habits` RBAC cell +
+  guard deny-set; audit resource types `habit`/`habit_log` + `date`/
+  `logStatus` meta keys; TL21/TL22 connected in config-schema; client
+  TL21 (Mark done/Undo only) + TL22 widgets wired on the client
+  dashboard; staff `ClientHabitsPanel` + editor habit picker.
+- Gates so far: `tsc --noEmit` clean; unit 1181/98 pass; integration
+  723/46 pass (incl. `habits` 27 + `habits-schema` 5 on
+  `habits_i1_integration`). E2E spec `tests/e2e/habits.spec.ts` written;
+  full E2E + mutation + build gates pending.
+- E2E round 2 (after killing a stale port-3000 server): fixed a real
+  contract bug — stored `fields: []` (no subset picked) filtered out the
+  whole cohort instead of meaning "all authorized"; `validateFields`
+  now maps empty arrays to `null` + regression coverage in
+  `habits.test.ts` (TL21 + TL22). `ClientHabitsWidget` now
+  `router.refresh()`es after a successful mark so server-rendered TL22
+  counts update. Spec fixes: locators scoped to `client-habits` (habit
+  names correctly appear in TL22 rows), theme drive via `localStorage`
+  after load (init scripts re-run on reload), and tests 2/3 made
+  self-sufficient — a failed test restarts the worker, re-running
+  `beforeAll`/`afterAll`, so cross-test row dependencies are unsafe.
+  `npx playwright test tests/e2e/habits.spec.ts` — 6/6 pass.
+- Mutation sweep (10 mutants, all restored byte-identically via
+  sha256-verified backups): fields-empty (2 bites), boundary
+  effectiveFrom `<` (11), weekday mask ignored (3), management scope
+  admitting `own` (1), log without schedule (3), create-audit skipped
+  (2), caller `weekdays=0` accepted (1), boundary at today not
+  tomorrow (4), boundary gate skipped (2), log write non-`own` scope
+  (1). No survivors, no masked assertions.
+- Gates: typecheck/lint/prisma-validate/build clean; fresh
+  `migrate deploy` from zero on `habits_i1_drift`; drift diff shows
+  only the documented raw-SQL FK/index conventions.
+- Full E2E round 1: 371 pass / 4 fail. `client-home` was
+  environmental (bare `new PrismaClient()` needs `DATABASE_URL` —
+  passes with it set). Three `client-dashboard` autosave/nav-guard
+  tests failed reproducibly while the identical run on the base tree
+  (`d279514` ≡ `6b24def`) passed 19/19 → real regression.
+- Regression mechanism: the initial implementation loaded habit data
+  via mount-time server-action POSTs (`readClientHabitChoices` in the
+  editor, `readClientHabits`/`readClientHabitConsistency` in the
+  panel). Those POSTs serialize on the same route ahead of the
+  nav-guard's flushed save, and the extra serialized boundary reads
+  delayed hydration enough that a fill inside the debounce window
+  could land before React attached `onChange` — no pending slot, the
+  navigation proceeded, the edit was lost. Fixed architecturally:
+  the staff page streams the habit cohort inside `<Suspense>` and
+  passes the picker choices as a deferred promise resolved by
+  `use()` only when a TL21/TL22 settings panel opens — zero
+  mount-time action POSTs, editor hydration back at base latency.
+  `client-dashboard` 19/19 + `habits` 6/6 green after the fix.
+- Independent read-only review (P4-R1 impl review): NEEDS-FIXES —
+  no P0/P1; one P2 + eight P3s. All repaired:
+  - P2 `editHabit` endDate validated against `tomorrow` but written
+    at a later future boundary → DB check violation. Now rejected
+    `invalid_input` once `boundaryDate` is known; regression test
+    added (future-start habit + endDate between tomorrow and the
+    boundary; control endDate ≥ boundary accepted).
+  - `withSerializedRetry` rethrew raw P2034 on the final attempt —
+    now maps to `HabitError("serialization_conflict")`.
+  - Migration gains `habits_revision_positive_chk` (`revision > 0`)
+    per the contract list.
+  - `setHabitLog` now `lockProfile` FOR UPDATE before the habit lock
+    (same order as management paths).
+  - TL21 echoes the server's `date` (returned by `listTodayHabits`)
+    instead of the browser clock; `hasMore` surfaced in TL21 and the
+    editor picker; TL22 + staff consistency render the contracted
+    "No scheduled days" empty-denominator state; multi-statement
+    reads run at `RepeatableRead`; `ClientHabitsWidget` re-syncs
+    from refreshed props.
+- Post-repair: unit 1181/98, integration suite re-run on a fresh
+  `habits_i1_integration` (migration checksum changed), targeted
+  E2E green. Full E2E re-run pending.
+- Pre-existing harness note (not HABITS-I1): E2E global teardown
+  deletes `clientProfile` before `clientDashboardLayout` —
+  FK-ordered sweep needed; left untouched as unrelated scope.
+- HABITS-I1-R2 (coverage/verification-hygiene repair on `4ed94fe`):
+  - **Real defect found and fixed:** genuine RepeatableRead
+    `FOR UPDATE` contention surfaces as `P2010` with
+    `meta.code = "40001"` (raw-query SQLSTATE), not `P2034` — the
+    `1ad6c11` retry/backstop matched only `error.code === "P2034"`,
+    so real member-lock conflicts never retried and degraded to
+    `not_available`. Added `isSerializationConflict` (P2034 +
+    P2010/40001/40P01) shared by `withSerializedRetry` and the
+    boundary backstop. Found by the new deterministic contention
+    test, not by review.
+  - New coverage (real PG): positive DONE `habit_log` audit
+    (exactly one, structural meta only, replay adds none);
+    audit-failure rollback on the log path; coordinator-held member
+    lock + post-snapshot commit → real 40001 → retry returns
+    coherent data; membership suspended mid-conflict → retry
+    re-authorizes → denied; bounded exhaustion (real-shape
+    injection inside live transactions) → `serialization_conflict`
+    with no partial log/audit rows; TL22 cohort excludes
+    zero-scheduled habits (plan §3 requires ≥1 scheduled pair —
+    P3-4 repaired rather than disclosed).
+  - Teardown repaired: the sweep omitted `clientDashboardLayout`
+    and all habit tables entirely (not merely ordering). Extracted
+    `tests/e2e/fixture-sweep.ts` — fixture-scoped, RESTRICT-ordered,
+    idempotent `deleteMany` sweep — used by `global-teardown.ts`;
+    `tests/integration/teardown-sweep.test.ts` populates
+    dashboard/habit/log/schedule rows and proves the sweep,
+    sentinel isolation, and a no-op second run.
+  - Unit backstop coverage: both raw shapes (P2034, P2010/40001)
+    map to `serialization_conflict`.
+  - Mutation sweep 7/7 bite, all restored byte-identical (sha256):
+    DONE-audit removal; retry `continue` removal (bites both
+    contention tests); P2010-branch removal (bites real
+    contention); exhaustion rethrow removal (bites both
+    exhaustion tests); habit sweep-lines removal (bites teardown
+    test); zero-scheduled filter removal (bites TL22 cohort);
+    boundary backstop neutralization (bites unit test).
+  - Focused green: `habits.test.ts` 35/35 +
+    `teardown-sweep.test.ts` 1/1 + `habits-boundary.test.ts` 6/6.
+
+## CLIENT-TASKS-I1 — real client tasks + CU03 (candidate)
+
+- Independently reviewed contract: P2 (`7296937e…`) + P3 delta
+  (`241e59cc…`), P3-R1 PASS (`52ea53e1…`); decision #109 recorded.
+- Schema `client_task` + `ClientTaskStatus` + coherence/composite FKs +
+  CHECKs (title bound, COMPLETED⇔completed_at, CANCELLED⇔cancelled_at;
+  SetNull pointer excluded); migration `20261014000000_client_tasks`
+  applied to dev + isolated `client_tasks_i1_integration` DBs.
+- `clientTasks` RBAC cell + guard deny-set; `lib/tasks/{date,service,
+boundary}` — `parseTaskDueDate` (proposed 5-year UTC bound, leap-safe),
+  operation split inside serializable tx (management ⇒ workspace|
+  assigned; completion ⇒ own + profile-user binding), explicit
+  desired-state CAS transitions, SQL filter-before-LIMIT 21 (≤20 +
+  hasMore), audit on changed ALLOW only.
+- UI: staff `ClientTasksPanel` (assign/edit/cancel + read-only badges)
+  on the editor page; client CU03 adapter `ClientTasksWidget` with
+  explicit Mark done/Undo; `CONNECTED_KINDS += CU03`.
+- RED: date unit suite (8) + integration suite (9) failed before
+  implementation; mutations bit on own-scope removal, CANCELLED-filter
+  removal, blind toggle, audit omission — service restored byte-
+  identical; spec `tests/e2e/client-tasks.spec.ts` 5/5 green.
+- Gate: flag `ENABLE_CLIENT_DASHBOARD` reused (owner rule 5); flag-off
+  staff surface 404s proven in-browser.
+- **Correction (R2):** the line above originally claimed a guard
+  deny-set entry — that entry was missing (silent no-op) at `266077c`;
+  `clientTasks` actually joined `PLATFORM_ADMIN_DENIED_RESOURCES` in the
+  R2 commit below, with a dual-role regression test.
+
+## CLIENT-TASKS-I1-R3 — dashboard test isolation (candidate)
+
+- Test-only repair: `isLayoutSave` (POST + next-action + `"config"`)
+  narrows all six dashboard-spec fault sites to the save action — task
+  POSTs pass normally; teardown gained the `clientTask` sweep.
+  Sensitivity proven (neutered matcher → failed-save tests fail);
+  focused specs green ×3; the pre-existing main flake is unchanged.
+- Unit count corrected to **1149**.
+- Owner granted a one-time exception for this task's original
+  tests-after-code deviation (conditional on final independent
+  technical approval); attributed to the owner, not the dashboard
+  exception.
+
+## CLIENT-TASKS-I1-R2 — platform-admin deny-set repair (candidate)
+
+- P1 closed: `clientTasks` ∈ `PLATFORM_ADMIN_DENIED_RESOURCES`; direct
+  RED (unauthorized assign reproduced) + biting mutation (deny-set
+  removal) at unit (4 roles × read/write) + integration (all ops).
+- maxLength aligned to the 120-char contract; task-owned R2 DB used.
+
+## CLIENT-TASKS-R2 — serialization-conflict retry repair (candidate)
+
+- Confirmed latent gap from HABITS-I1 R2 review: raw FOR UPDATE
+  conflicts surface as P2010 + SQLSTATE `40001`/`40P01`, but
+  `withSerializedRetry` matched only P2034 and rethrew raw on
+  exhaustion — contention degraded to `not_available`.
+- `isSerializationConflict` extracted to shared `lib/db.ts`;
+  tasks retry + boundary backstop now cover both shapes; non-conflict
+  errors never retried; exhaustion returns `serialization_conflict`.
+- Real-PG RED reproduced on unmodified code; 5/5 mutations bite;
+  focused + full gates on the final tree below.
+
+## DASHBOARD-I1-R6 — SSR-safe coordinator hardening (candidate)
+
+- `acquireDashboardSlot` returns a per-call ephemeral slot when
+  `typeof window === "undefined"` — SSR can never mutate the shared slot
+  map or `boundUserId`; two concurrent server renders cannot share
+  drafts. Client acquisition stays render-time (`useState` initializer):
+  a fresh slot's view is byte-identical to SSR props — no hydration
+  mismatch, no acquire-after-paint flicker.
+- Bounded clean-slot retention: `MAX_CLEAN_SLOTS=8`, oldest-clean evict;
+  dirty/pending/failed slots are never evicted.
+- Purge-while-in-flight covered: a cleared slot cannot resurrect drafts,
+  surface them, or queue further saves; already-dispatched writes may
+  still commit (honest wording retained).
+- New real bug fixed: Chromium form-value restoration repopulated the
+  controlled name input on revisit; React hydration replayed it as a
+  synthetic `onChange` → ghost commit overwrote the saved draft. Fixed
+  with `autoComplete="off"` on all editor form controls.
+- SSR suite added (`dashboard-autosave-ssr.test.ts`, node env = SSR
+  condition); coordinator suite moved to jsdom (browser path).
+- Mutation: SSR guard removed → SSR isolation test fails; restored
+  byte-identical.
+- Owner exception condition satisfied by R5-R1 technical PASS; E2E count
+  corrected to 370/12/0 (382) at `cc5df4d`; cross-engine evidence remains
+  Chromium-only + capability-stubbed (explicitly limited).
+
+## DASHBOARD-I1-R5 — autosave coordinator (candidate pushed)
+
+- `lib/dashboard/autosave-coordinator.ts` — module-level per-slot autosave
+  (draft/revision/timer/queue/history/save state) keyed by
+  userId:workspaceId:clientProfileId; observers subscribe/unsubscribe
+  without cancelling work; `abandon` = explicit discard; `acquire`
+  re-bases clean slots onto newer server revisions only.
+- Nav guard binds coordinator-backed callbacks once; api persists across
+  editor unmount so popstate/traverse interception keeps pending work
+  flushable. `download`, `//`, same-page-path links excluded.
+- `LoginForm` mount clears all slots (session boundary); a bind under a
+  different userId purges slots first.
+- Coverage: capability-absent Back persists edits; failed-away draft
+  recovery; per-client isolation; logout isolation; all R4 scenarios.
+- Mutations: component-only save lifetime → Back/draft-recovery tests
+  fail; restored byte-identical.
+- Gates: spec 19/19, unit 1129, full E2E 370/12sk/0f — 382 collected (CORRECTED: earlier report said 371/383 — inflated by a transient probe spec run pre-removal), tsc/eslint/prettier/
+  build clean.
+- Owner exception recorded: initial tests-after-code deviation accepted
+  conditionally (owner decision; not reviewer approval; PR clearance
+  still conditional on final independent review).
+
+Owner direction recorded: cross-browser Back/Forward must not lose pending
+edits; no Chromium-only restriction; the initial tests-after-code deviation
+is accepted as a one-time conditional exception (owner decision, not
+reviewer approval; does not waive review/CI/merge gates or set precedent).
+
+Design (specified before code per prompt):
+
+- **State lifetime/ownership:** `lib/dashboard/autosave-coordinator.ts`
+  module-level `Map<slotKey, Slot>`; each slot owns the draft
+  (`latestConfig`), `confirmedRevision`, dirty/in-flight/queued/timer,
+  retries, undo history, save state and the leave prompt. The editor is a
+  view over the slot — unmount detaches observers only; timers and
+  in-flight saves continue to completion.
+- **Identity binding:** slot key = `userId:workspaceId:clientProfileId`.
+  A bind under a different userId purges all prior slots (session change
+  cannot replay another user's config). `LoginForm` mount calls
+  `clearAllDashboardSlots()` — the login boundary covers sign-out
+  redirect and session-expiry flows.
+- **Observer cleanup vs save cancellation:** `subscribe`/`unsubscribe`
+  on unmount never cancels work; explicit `abandon(slot)` (Leave anyway)
+  cancels debounce+queue — an already-dispatched request may still commit.
+- **Failure recovery:** terminal failure/denial/conflict keeps the draft
+  and save state in the slot; returning to the editor restores draft +
+  revision + honest failure surface (never a false "Saved").
+- **Return-to-editor:** `acquire` reuses the slot when it has pending or
+  failed work; a fully clean slot re-bases onto the fresh server
+  `initialConfig`/`initialRevision` so a newer server truth wins.
+- **Nav guard:** listeners bind coordinator-level callbacks once
+  (`anyPending` scans slots), so `popstate`/`navigate`/`click` handlers
+  remain live after the editor unmounts — pending work is flushable and
+  completable independent of component lifetime. Inert when nothing is
+  pending (no interception residue).
+- Every save still POSTs through the existing server action → full
+  re-authorization per write. No localStorage/offline DB/sendBeacon/new
+  deps.
+
+## DASHBOARD-I1-R4 — stale nav guard + failure-state coverage (candidate)
+
+- Review `f992be30` P2 hold closed: the in-app guard moved to a
+  module-level singleton (`lib/dashboard/navigation-guard.ts`) whose
+  handlers are installed once per window and always call the editor's
+  ref-backed live callbacks — remounts/unmounts can never strand a
+  stale `pending()` closure (the R3 defect: post-failure clicks with
+  dirty state bypassed a stale handler).
+- Terminal failure/denial/conflict with a held navigation now requires
+  the explicit Leave/Stay decision; `Leave anyway` cancels pending work
+  and completes the held destination; `Stay` clears the hold.
+- URL handling: `//host` protocol-relative hrefs are rejected before
+  interception — never passed to `router.push`; hash/target/modifier/
+  middle/external and same-path links pass through untouched.
+- Back/Forward: the Navigation API's cancelable `navigate` event
+  (traverse) holds the traversal until the save commits, then
+  `traverseTo(key)` completes the intended history entry — verified
+  end-to-end in Chromium. Browsers without the Navigation API fall
+  back to a popstate flush (edit commits; traversal still completes) —
+  an honest, documented fallback, not silent protection.
+- E2E 15/15: debounce-window click, keyboard Enter, failed save +
+  prompt, conflict + prompt, in-flight+queued (deterministic gate —
+  navigation cannot fire after only the older save), multiple clicks,
+  `//` link, same-doc Back, document-exit Back, residue, subset,
+  flag-off 404, assistant read-only.
+- Mutations all bite and restored byte-identical: mount-time stale
+  `pending` closure + state-closing `pending` → failed-save test fails;
+  failure-guard bypass → failed+conflict fail; `//` allowed → proto
+  test fails; release-after-older-save → in-flight+queued fails.
+- `docs/STATUS.md` + spec only; no schema/permission/widget/appearance
+  changes. Unit (1116) + integration (681) carried — delta is client
+  component + nav module + E2E spec.
+- E2E process note: shared-fixture ordering failure traced to an
+  `expect()` inside a detached Playwright `dialog` handler — its
+  rejection crashed the worker, which restarted and re-ran `beforeAll`
+  (`deleteMany`), wiping the layout mid-suite. Assertions moved outside
+  handlers; documented so the pattern doesn't recur.
+- Process hold (tests-after-code) remains pending owner acceptance —
+  unchanged.
+
+## DASHBOARD-I1-R3 — in-app navigation guard (candidate)
+
+- Review `0179c46f` P2-3 hold closed: capture-phase link interception
+  holds in-app navigation while saves are pending; the debounce flushes
+  and the intended route is pushed only after commit; failed/conflict/
+  denied saves require an explicit Leave-anyway decision; popstate gets
+  best-effort `forward()` + immediate flush (documented — popstate is
+  not cancelable); `beforeunload` still covers document exits.
+- E2E: 8 dashboard tests (immediate link, keyboard Enter, residue-free
+  unmount). Mutation disabling the guard → both nav tests fail.
+- Unit/integration carried forward (delta is a client component + spec
+  only). Process hold for tests-after-code remains pending owner
+  acceptance — unchanged.
+
+## DASHBOARD-I1-R2 — review findings repaired (candidate)
+
+- Review `f683f6ea` (CONDITIONAL PASS, NOT PR-cleared) fully addressed:
+  - **P2-1:** migration `20261013120000_dashboard_i1_timestamptz` converts
+    `created_at`/`updated_at` to `TIMESTAMPTZ(6)` (session-zone cast of
+    synthetic rows, forward-only); new `information_schema` drift spec
+    proves the type; the earlier "zero drift" claim is corrected — it
+    was real new-table drift, distinct from the pre-existing
+    `coaching_template_version` index-name rename.
+  - **P2-2:** editor completed — breakpoint tabs + initialize-from-
+    desktop, drag/resize canvas (commits on pointer-up only), per-widget
+    settings panel bound to the same server allowlists, client preview
+    via the shared projection, plus the original controls/undo-redo.
+  - **P2-3:** `beforeunload` guard while saves are pending (debounce,
+    queued, in-flight, failed); E2E exercises the dialog.
+  - **P3s:** explicit depth≤6; labels⊆fields; CREATE-on-insert vs
+    UPDATE audit; client projection re-packs (compactRects);
+    deterministic barrier-held assignment-revocation race; denied
+    reconciliation → "Save denied"; bounded editor retry/backoff;
+    isolated 24-widget cap test.
+- Gates: unit **1116** · integration **681** (fresh `dash_r2`, upgrade
+  path) · build · E2E **356/12sk/0f** · format/tsc/lint clean · migrate
+  diff zero drift on the new table (pre-existing index rename remains,
+  unrelated). Mutations re-bitten (subset/CAS→audit/labels/visibility).
+- Process disposition **pending owner exception**: the original suite
+  is tests-after-code; recorded honestly, not closed.
+
+## DASHBOARD-I1 — persisted coach-configured client dashboards (candidate)
+
+- Decision **#108** records the owner-approved product rules under the
+  independently approved DASHBOARD-P3 contract (`371d4183`, P3-R1
+  `f81dd795` PASS). Implementation on `feature/dashboard-i1`.
+- `client_dashboard_layout`: standard `id` PK + `@@unique(ws,client)`;
+  RESTRICT provenance + composite coherence FKs (migration
+  `20261013000000_dashboard_i1_layouts`); config-only JSON + CAS
+  `revision`.
+- Bounded allowlist validation (`lib/dashboard/config-schema.ts`) —
+  24KB/depth-6 payload, closed settings keys incl. `visibility`,
+  per-kind source/summary/period/option/fields frozen from the pinned
+  Lily source; 20-widget catalogue preserved.
+- `clientDashboards` RBAC + platform-admin deny-set; `cdash`-then-
+  `member` advisory order (chkin/csetup convention); atomic CAS + no-op
+  dedupe + structural UPDATE audit only on real change; reconcile-on-
+  409 staff-boundary read + canonical compare in the autosave editor.
+- Surfaces: staff roster `Dashboard` link → editor
+  (`…/clients/[id]/dashboard`), client `/workspace/[ws]/dashboard`
+  renders the server-filtered subset; CU04/CU16 connected, 18 truthful
+  placeholders; `ENABLE_CLIENT_DASHBOARD` + trusted runtime.
+- Gates: tsc/lint/format clean · unit 1112 · integration 678 (fresh
+  `dash_i1_full`) · build · E2E 355+12sk · migrate-diff zero drift on
+  the new table (one pre-existing index rename unrelated). Mutations:
+  subset-leak/CAS-removal/audit-skip/visibility-enum all bit.
 
 ## Open TODO(product) items
 
