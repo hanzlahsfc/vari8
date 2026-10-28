@@ -1,0 +1,91 @@
+# NORMALIZED COPY — trailing whitespace stripped; raw bytes preserved in raw-logs.tar (hash-pinned)
+
+### STEP 0 lock acquisition (real shared flock)
+lock acquired pid=74416 fd=9
+
+### STEP 1 revalidate remote refs
+{"baseRefName":"Vari8-Beta","headRefOid":"90c16bee63e2609ebc4f09e91459332390562464","isDraft":true,"state":"OPEN"}
+base tip: d1c4081022f2ac21070b28f284248fad2ef04839
+
+### STEP 2 isolated test merge
+merge tree: 6fd7353e4734632c49c6d9e28427dd2c5c8a1556
+
+### STEP 3 baseline boundary snapshot (before)
+640f437595d870668ea6157376697b5b6b6c030c
+baseline sha recorded
+no active reference path on base (expected)
+
+### STEP 4 disposable DB (refuse existing)
+created app_p452
+
+### STEP 5 dirty-state refusal probe
+
+Node.js v24.22.1
+probe: run.mjs dirty -> expected refusal
+clean files remaining:        0
+
+### STEP 6 fast gate (unmasked)
+npm warn deprecated whatwg-encoding@3.1.1: Use @exodus/bytes instead for a more spec-conformant and faster implementation
+npm warn deprecated eslint@9.39.5: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+
+added 767 packages in 12s
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 6.19.3 -> 8.0.0-rc.27                 │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+
+warn The configuration property `package.json#prisma` is deprecated and will be removed in Prisma 7. Please migrate to a Prisma config file (e.g., `prisma.config.ts`).
+For more information, see: https://pris.ly/prisma-config
+
+
+All migrations have been successfully applied.
+typecheck exit 0
+
+✖ 81 problems (0 errors, 81 warnings)
+
+lint tail
+ Test Files  105 passed (105)
+      Tests  1270 passed (1270)
+   Start at  00:40:48
+   Duration  16.58s (tests 51%, import 20%, transform 20%, environment 8%, worker 1%)
+
+    Isolate  105 workers spawned · ~170ms startup each (spawn + environment, per file)
+             at least ~2.38s faster with isolate: false — reuses workers across files instead of one per file
+
+test tail
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+build tail
+
+### STEP 7 reviewed tooling overlay graft
+overlay commit: d677df410a5956dca583ad73d1a1372ccfbb6420 tree: 193d0574e2e514a495d2f30394a3d30734b13d1d
+non-overlay files touched:        0
+
+### STEP 8 combined capture (proposed-reference)
+added 2 packages in 279ms
+OK s10-appearance@1440 1440x2442 elements=373
+OK s10-clients-studio@1440 1440x3188 elements=570
+OK s10-mealplan-studio@1440 1440x2213 elements=346
+OK s11-preferences@1440 1440x900 elements=278
+OK s11-client-preview@1440 1440x1073 elements=315
+proposed-reference canonical PASS: 0 problem(s), strict diagnostic 2 problem(s), retried=0; receipts /private/tmp/p452-wt/tools/parity/out/p452-run
+
+### STEP 9 baseline boundary (after)
+640f437595d870668ea6157376697b5b6b6c030c
+baseline sha after graft (must equal step 3)
+
+### STEP 10 cleanup task-owned resources
+dropped app_p452
+lock released
+PREP COMPLETE
