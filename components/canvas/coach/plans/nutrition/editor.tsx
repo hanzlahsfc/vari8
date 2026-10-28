@@ -420,7 +420,9 @@ function Schedule({
   activeVariantId: string;
   onChange: (v: VariantSchedule) => void;
 }) {
-  const [enabled, setEnabled] = useState(() => schedule.mode !== "manual");
+  const [enabled, setEnabled] = useState(
+    () => schedule.mode === "weekly" || schedule.mode === "cycle",
+  );
   const fallback = variants[0]?.id ?? "";
   const manualSelection = useRef(
     schedule.mode === "manual" ? schedule.selectedVariantId : activeVariantId,
@@ -436,7 +438,9 @@ function Schedule({
       ? validId(schedule.selectedVariantId)
       : schedule.mode === "cycle"
         ? validId(schedule.steps[0]?.variantId)
-        : validId(schedule.days[1]);
+        : schedule.mode === "weekly"
+          ? validId(schedule.days[1])
+          : validId();
   const weeklyDays =
     schedule.mode === "weekly"
       ? schedule.days
@@ -718,7 +722,9 @@ function Schedule({
           ? "Each weekday has its own plan assignment."
           : schedule.mode === "cycle"
             ? `Repeats every ${cycleDays} ${cycleDays === 1 ? "day" : "days"} · ${schedule.steps.map((step) => `${label(validId(step.variantId))} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" → ")}`
-            : "Every day · one plan option"}
+            : schedule.mode === "flexible"
+              ? ""
+              : "Every day · one plan option"}
       </p>
     </section>
   );
@@ -1783,7 +1789,9 @@ export function IifymEditor({
               ? (value.schedule.steps[0]?.variantId ??
                 value.options[0]?.id ??
                 "")
-              : (value.schedule.days[1] ?? value.options[0]?.id ?? "")
+              : value.schedule.mode === "weekly"
+                ? (value.schedule.days[1] ?? value.options[0]?.id ?? "")
+                : (value.options[0]?.id ?? "")
         }
         variants={value.options.map((o) => ({
           id: o.id,
@@ -1832,6 +1840,7 @@ function scheduleInstruction(
           `${day}: ${label(schedule.days[(index + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7])}`,
       )
       .join(" · ");
+  if (schedule.mode === "flexible") return "";
   return `Starting ${schedule.anchorDate}, repeat ${schedule.steps.map((step) => `${label(step.variantId)} for ${step.days} ${step.days === 1 ? "day" : "days"}`).join(" then ")}.`;
 }
 

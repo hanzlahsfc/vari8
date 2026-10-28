@@ -361,7 +361,9 @@ export function MealplanWorkspace({ workspaceId }: { workspaceId?: string }) {
                 variantId: step.variantId === id ? active.id : step.variantId,
               })),
             }
-          : {
+          : plan.schedule.mode === "flexible"
+            ? plan.schedule
+            : {
               mode: "manual",
               selectedVariantId:
                 plan.schedule.selectedVariantId === id

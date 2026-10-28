@@ -204,7 +204,8 @@ export type IifymScheduleWire =
       mode: "cycle";
       anchorDate: string;
       steps: { variantId: string; days: number }[];
-    };
+    }
+  | { mode: "flexible" };
 
 export type IifymPayloadWire = {
   options: IifymOptionWire[];

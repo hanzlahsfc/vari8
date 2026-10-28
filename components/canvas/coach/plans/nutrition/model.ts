@@ -171,6 +171,7 @@ function remapSchedule(
       ) as typeof schedule.days,
     };
   }
+  if (schedule.mode === "flexible") return schedule;
   return {
     ...schedule,
     steps: schedule.steps.map((step) => ({

@@ -71,7 +71,8 @@ export type VariantSchedule =
       mode: "cycle";
       anchorDate: string;
       steps: { variantId: string; days: number }[];
-    };
+    }
+  | { mode: "flexible" };
 
 export const MAX_CYCLE_DAYS = 365;
 
@@ -190,6 +191,7 @@ function isVariantSchedule(value: unknown): value is VariantSchedule {
           typeof step.days === "number",
       )
     );
+  if (value.mode === "flexible") return false;
   if (value.mode !== "weekly" || !isRecord(value.days)) return false;
   return Object.entries(value.days).every(
     ([day, variantId]) => /^[1-7]$/.test(day) && typeof variantId === "string",
@@ -518,6 +520,7 @@ export function getActiveVariant(
     }
     return undefined;
   }
+  if (schedule.mode === "flexible") return undefined;
   const weekday = ((date.getDay() + 6) % 7) + 1;
   const scheduledId = schedule.days[weekday as 1 | 2 | 3 | 4 | 5 | 6 | 7];
   return (
@@ -628,6 +631,8 @@ export function validateMealPlan(
     if (schedule.steps.some((step) => !variantIds.has(step.variantId)))
       errors.push("Repeating rhythm entries must use existing variants.");
   }
+  if (schedule.mode === "flexible")
+    errors.push("A flexible schedule is not supported by this plan.");
   return errors;
 }
 

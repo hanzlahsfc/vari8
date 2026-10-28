@@ -9,10 +9,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import {
-  IifymError,
-  normalizeIifymPayload,
-} from "../../lib/iifym/payload";
+import { IifymError, normalizeIifymPayload } from "../../lib/iifym/payload";
 
 const WEEKLY = (training: string, rest: string) => ({
   mode: "weekly" as const,
@@ -89,9 +86,7 @@ describe("card 10 iifym payload normalizer", () => {
     const training = normalized.options.find((o) => o.id === "opt_training");
     expect(training?.targets.style).toBe("macros");
     expect(training?.targets).not.toHaveProperty("calories");
-    expect(
-      (training?.targets.protein as { value: number }).value,
-    ).toBe(200);
+    expect((training?.targets.protein as { value: number }).value).toBe(200);
   });
 
   it("keeps the calorie-only target entered directly", () => {
@@ -100,9 +95,7 @@ describe("card 10 iifym payload normalizer", () => {
     });
     const rest = normalized.options.find((o) => o.id === "opt_rest");
     expect(rest?.targets.style).toBe("calories");
-    expect(
-      (rest?.targets.calories as { value: number }).value,
-    ).toBe(1800);
+    expect((rest?.targets.calories as { value: number }).value).toBe(1800);
   });
 
   it("rejects a macros field on a calories-style option", () => {
@@ -151,9 +144,33 @@ describe("card 10 iifym payload normalizer", () => {
     ).toBe("weekly");
     expect(() =>
       normalizeIifymPayload(draft, { forPublish: true }),
-    ).toThrowError(
-      expect.objectContaining({ code: "publish_incomplete" }),
-    );
+    ).toThrowError(expect.objectContaining({ code: "publish_incomplete" }));
+  });
+
+  it("accepts a flexible schedule and keeps exactly { mode: 'flexible' }", () => {
+    const draft = validDraft();
+    draft.schedule = { mode: "flexible" } as unknown as DraftShape["schedule"];
+    const normalized = normalizeIifymPayload(draft, { forPublish: false });
+    expect(normalized.schedule).toEqual({ mode: "flexible" });
+  });
+
+  it("rejects an unknown schedule mode with invalid_input", () => {
+    const draft = validDraft();
+    draft.schedule = { mode: "bogus" } as unknown as DraftShape["schedule"];
+    expect(() =>
+      normalizeIifymPayload(draft, { forPublish: false }),
+    ).toThrowError(expect.objectContaining({ code: "invalid_input" }));
+  });
+
+  it("rejects a flexible schedule carrying extra keys with invalid_input", () => {
+    const draft = validDraft();
+    draft.schedule = {
+      mode: "flexible",
+      selectedVariantId: "x",
+    } as unknown as DraftShape["schedule"];
+    expect(() =>
+      normalizeIifymPayload(draft, { forPublish: false }),
+    ).toThrowError(expect.objectContaining({ code: "invalid_input" }));
   });
 
   it("requires name, startDate and a schedule for publish", () => {
@@ -161,9 +178,7 @@ describe("card 10 iifym payload normalizer", () => {
     delete (draft as unknown as Record<string, unknown>).name;
     expect(() =>
       normalizeIifymPayload(draft, { forPublish: true }),
-    ).toThrowError(
-      expect.objectContaining({ code: "publish_incomplete" }),
-    );
+    ).toThrowError(expect.objectContaining({ code: "publish_incomplete" }));
   });
 
   it("rejects an empty target block", () => {

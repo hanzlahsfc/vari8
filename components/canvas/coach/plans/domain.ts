@@ -179,6 +179,7 @@ export function scheduledOption(
     return schedule.days[
       (((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7) + 1) as 1
     ];
+  if (schedule.mode === "flexible") return undefined;
   if (!validDate(schedule.anchorDate)) return undefined;
   const total = schedule.steps.reduce((a, s) => a + s.days, 0);
   if (total <= 0) return undefined;
@@ -420,12 +421,13 @@ const schedule = (v: unknown) =>
     : v.mode === "weekly"
       ? record(v.days) &&
         Object.entries(v.days).every(([k, x]) => /^[1-7]$/.test(k) && string(x))
-      : v.mode === "cycle" &&
-        string(v.anchorDate) &&
-        array(
-          v.steps,
-          (x) => record(x) && string(x.variantId) && number(x.days),
-        ));
+      : v.mode === "cycle"
+        ? string(v.anchorDate) &&
+          array(
+            v.steps,
+            (x) => record(x) && string(x.variantId) && number(x.days),
+          )
+        : v.mode === "flexible" && Object.keys(v).every((k) => k === "mode"));
 const target = (v: unknown) =>
   record(v) &&
   (v.kind === "fixed" || v.kind === "minimum"
