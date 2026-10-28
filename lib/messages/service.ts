@@ -31,7 +31,13 @@ type SessionLike = { user?: { id?: string } } | null | undefined;
 
 type PrismaLike = Pick<
   PrismaClient,
-  "clientProfile" | "conversation" | "message" | "$transaction"
+  | "clientProfile"
+  | "conversation"
+  | "message"
+  | "messageDraft"
+  | "messageRead"
+  | "workspaceMember"
+  | "$transaction"
 >;
 
 export type MessageDeps = {
@@ -248,4 +254,438 @@ export async function sendOwnMessage(
     }
   }
   return { message: result.message };
+}
+
+/* -------------------------------------------------------------------------
+ * W2-A4 staff surface. The coach message center reads and writes the same
+ * Conversation/Message/Draft/Read models the client thread uses. There is
+ * still no messages RBAC resource, so staff binding mirrors ownProfile: the
+ * caller must hold an ACTIVE workspace membership in a staff role
+ * (WORKSPACE_OWNER or COACH). The route capability check supplies the
+ * workspace scope; a client caller whose message.write scope is "own" is
+ * rejected here.
+ * ---------------------------------------------------------------------- */
+
+const STAFF_ROLES = ["WORKSPACE_OWNER", "COACH"] as const;
+const PREVIEW_LEN = 140;
+
+async function staffMember(
+  db: PrismaLike,
+  workspaceId: string,
+  userId: string,
+  action: "read" | "write",
+): Promise<{ id: string }> {
+  if (
+    typeof workspaceId !== "string" ||
+    workspaceId.length === 0 ||
+    workspaceId.length > MAX_ID
+  )
+    throw new MessageError("invalid_input");
+  const member = await db.workspaceMember.findFirst({
+    where: {
+      workspaceId,
+      userId,
+      status: "ACTIVE",
+      role: { in: [...STAFF_ROLES] },
+    },
+    select: { id: true },
+  });
+  if (!member)
+    throw new AccessDeniedError("role_denied", "messages", action);
+  return member;
+}
+
+/** The client profile must live in this workspace; never leak across. */
+async function staffClientProfile(
+  db: PrismaLike,
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<{ id: string; userId: string | null }> {
+  if (
+    typeof clientProfileId !== "string" ||
+    clientProfileId.length === 0 ||
+    clientProfileId.length > MAX_ID
+  )
+    throw new MessageError("invalid_input");
+  const profile = await db.clientProfile.findFirst({
+    where: { id: clientProfileId, workspaceId },
+    select: { id: true, userId: true },
+  });
+  if (!profile) throw new MessageError("not_available");
+  return profile;
+}
+
+export type StaffConversationView = {
+  clientProfileId: string;
+  clientName: string;
+  lastMessageAt: string | null;
+  lastMessagePreview: string | null;
+  unreadCount: number;
+  hasPriority: boolean;
+};
+
+export type StaffMessageView = MessageView & {
+  /** CLIENT rows: read by the calling staff member. STAFF rows: read by the
+   *  client. Mirrors the canvas Message.read flag. */
+  read: boolean;
+  priority: boolean;
+  links: unknown;
+};
+
+type StaffMessageRow = MessageRow & {
+  priority: boolean;
+  links: unknown;
+  senderKind: "CLIENT" | "STAFF";
+};
+
+function toStaffView(
+  row: StaffMessageRow,
+  readIds: ReadonlySet<string>,
+): StaffMessageView {
+  return {
+    ...toView(row),
+    read: readIds.has(row.id),
+    priority: row.priority,
+    links: row.links ?? null,
+  };
+}
+
+/** Staff conversation list with per-thread unread counts for the caller. */
+export async function listStaffConversations(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: MessageDeps = {},
+): Promise<{ conversations: StaffConversationView[] }> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  await staffMember(db, input.workspaceId, userId, "read");
+  const conversations = await db.conversation.findMany({
+    where: { workspaceId: input.workspaceId },
+    select: {
+      id: true,
+      clientProfileId: true,
+      lastMessageAt: true,
+      clientProfile: { select: { name: true } },
+      messages: {
+        orderBy: [{ sentAt: "desc" }, { id: "desc" }],
+        take: 1,
+        select: { body: true },
+      },
+    },
+  });
+  const views = await Promise.all(
+    conversations.map(async (conv): Promise<StaffConversationView> => {
+      const [unreadCount, priority] = await Promise.all([
+        db.message.count({
+          where: {
+            conversationId: conv.id,
+            senderKind: "CLIENT",
+            reads: { none: { userId } },
+          },
+        }),
+        db.message.findFirst({
+          where: { conversationId: conv.id, priority: true },
+          select: { id: true },
+        }),
+      ]);
+      const last = conv.messages[0];
+      return {
+        clientProfileId: conv.clientProfileId,
+        clientName: conv.clientProfile.name,
+        lastMessageAt: conv.lastMessageAt?.toISOString() ?? null,
+        lastMessagePreview: last ? last.body.slice(0, PREVIEW_LEN) : null,
+        unreadCount,
+        hasPriority: Boolean(priority),
+      };
+    }),
+  );
+  views.sort((a, b) => {
+    const at = a.lastMessageAt ?? "";
+    const bt = b.lastMessageAt ?? "";
+    if (at !== bt) return bt.localeCompare(at);
+    return a.clientName.localeCompare(b.clientName);
+  });
+  return { conversations: views };
+}
+
+async function staffThreadReads(
+  db: Pick<PrismaClient, "messageRead">,
+  rows: { id: string; senderKind: "CLIENT" | "STAFF" }[],
+  staffUserId: string,
+  clientUserId: string | null,
+): Promise<ReadonlySet<string>> {
+  const want = rows
+    .filter((r) =>
+      r.senderKind === "CLIENT" ? true : clientUserId !== null,
+    )
+    .map((r) => r.id);
+  if (want.length === 0) return new Set();
+  const reads = await db.messageRead.findMany({
+    where: {
+      messageId: { in: want },
+      userId: clientUserId
+        ? { in: [staffUserId, clientUserId] }
+        : staffUserId,
+    },
+    select: { messageId: true, userId: true },
+  });
+  const byClient = new Set(
+    reads.filter((r) => r.userId === clientUserId).map((r) => r.messageId),
+  );
+  const byStaff = new Set(
+    reads.filter((r) => r.userId === staffUserId).map((r) => r.messageId),
+  );
+  const map = new Map(rows.map((r) => [r.id, r.senderKind]));
+  const out = new Set<string>();
+  for (const r of reads) {
+    const kind = map.get(r.messageId);
+    if (kind === "CLIENT" && byStaff.has(r.messageId)) out.add(r.messageId);
+    if (kind === "STAFF" && byClient.has(r.messageId)) out.add(r.messageId);
+  }
+  return out;
+}
+
+/** Staff thread read: messages plus the caller's saved draft. */
+export async function getStaffThread(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: MessageDeps = {},
+): Promise<{
+  clientProfileId: string;
+  messages: StaffMessageView[];
+  draft: { body: string; revision: number } | null;
+}> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  await staffMember(db, input.workspaceId, userId, "read");
+  const profile = await staffClientProfile(
+    db,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  const conversation = await db.conversation.findUnique({
+    where: {
+      workspaceId_clientProfileId: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+    },
+    select: { id: true },
+  });
+  if (!conversation)
+    return { clientProfileId: profile.id, messages: [], draft: null };
+  const [rows, draft] = await Promise.all([
+    db.message.findMany({
+      where: { conversationId: conversation.id },
+      orderBy: [{ sentAt: "asc" }, { id: "asc" }],
+      select: {
+        id: true,
+        body: true,
+        senderKind: true,
+        clientRequestId: true,
+        sentAt: true,
+        priority: true,
+        links: true,
+      },
+    }),
+    db.messageDraft.findUnique({
+      where: {
+        conversationId_authorUserId: {
+          conversationId: conversation.id,
+          authorUserId: userId,
+        },
+      },
+      select: { body: true, revision: true },
+    }),
+  ]);
+  const readIds = await staffThreadReads(
+    db,
+    rows,
+    userId,
+    profile.userId,
+  );
+  return {
+    clientProfileId: profile.id,
+    messages: rows.map((r) => toStaffView(r, readIds)),
+    draft: draft ? { body: draft.body, revision: draft.revision } : null,
+  };
+}
+
+/** Staff-authored send into a client's thread. */
+export async function sendStaffMessage(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    body: unknown;
+    clientRequestId?: unknown;
+  },
+  deps: MessageDeps = {},
+): Promise<{ message: StaffMessageView }> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  const body = normalizeBody(input.body);
+  const clientRequestId = normalizeRequestId(input.clientRequestId);
+  await staffMember(db, input.workspaceId, userId, "write");
+  const profile = await staffClientProfile(
+    db,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+
+  return db.$transaction(async (tx) => {
+    const conversation = await tx.conversation.upsert({
+      where: {
+        workspaceId_clientProfileId: {
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        },
+      },
+      update: {},
+      create: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+      select: { id: true },
+    });
+    const existing = await tx.message.findUnique({
+      where: {
+        conversationId_clientRequestId: {
+          conversationId: conversation.id,
+          clientRequestId,
+        },
+      },
+      select: {
+        id: true,
+        body: true,
+        senderKind: true,
+        clientRequestId: true,
+        sentAt: true,
+        priority: true,
+        links: true,
+      },
+    });
+    if (existing) {
+      const readIds = await staffThreadReads(
+        tx,
+        [existing],
+        userId,
+        profile.userId,
+      );
+      return { message: toStaffView(existing, readIds) };
+    }
+    const row = await tx.message.create({
+      data: {
+        workspaceId: input.workspaceId,
+        conversationId: conversation.id,
+        senderKind: "STAFF",
+        senderUserId: userId,
+        body,
+        clientRequestId,
+      },
+      select: {
+        id: true,
+        body: true,
+        senderKind: true,
+        clientRequestId: true,
+        sentAt: true,
+        priority: true,
+        links: true,
+      },
+    });
+    await tx.conversation.update({
+      where: { id: conversation.id },
+      data: { lastMessageAt: row.sentAt },
+    });
+    return { message: toStaffView(row, new Set()) };
+  });
+}
+
+/** Idempotent staff mark-read on a client thread. */
+export async function markStaffThreadRead(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: MessageDeps = {},
+): Promise<{ marked: number }> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  await staffMember(db, input.workspaceId, userId, "write");
+  const profile = await staffClientProfile(
+    db,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  const conversation = await db.conversation.findUnique({
+    where: {
+      workspaceId_clientProfileId: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+    },
+    select: { id: true },
+  });
+  if (!conversation) return { marked: 0 };
+  const unread = await db.message.findMany({
+    where: {
+      conversationId: conversation.id,
+      senderKind: "CLIENT",
+      reads: { none: { userId } },
+    },
+    select: { id: true },
+  });
+  if (unread.length === 0) return { marked: 0 };
+  const result = await db.messageRead.createMany({
+    data: unread.map((m) => ({
+      messageId: m.id,
+      userId,
+      readAt: new Date(),
+    })),
+    skipDuplicates: true,
+  });
+  return { marked: result.count };
+}
+
+/** Staff draft save: one row per author per conversation. */
+export async function saveStaffDraft(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string; body: unknown },
+  deps: MessageDeps = {},
+): Promise<{ draft: { body: string; revision: number } }> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  if (typeof input.body !== "string" || input.body.length > MAX_BODY)
+    throw new MessageError("invalid_input");
+  await staffMember(db, input.workspaceId, userId, "write");
+  const profile = await staffClientProfile(
+    db,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  const conversation = await db.conversation.findUnique({
+    where: {
+      workspaceId_clientProfileId: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+    },
+    select: { id: true },
+  });
+  if (!conversation) throw new MessageError("not_available");
+  const draft = await db.messageDraft.upsert({
+    where: {
+      conversationId_authorUserId: {
+        conversationId: conversation.id,
+        authorUserId: userId,
+      },
+    },
+    update: { body: input.body, revision: { increment: 1 } },
+    create: {
+      workspaceId: input.workspaceId,
+      conversationId: conversation.id,
+      authorUserId: userId,
+      body: input.body,
+    },
+    select: { body: true, revision: true },
+  });
+  return { draft };
 }
