@@ -1125,122 +1125,365 @@
             "content": {
               "id": "plan-00000000-0000-4000-8000-000000000006-demo-plan-hist-a",
               "clientId": "client-007",
-              "name": "Amara · prep nutrition",
+              "name": "Pre-prep · Maintenance",
               "startDate": "day -69",
               "variants": [
                 {
-                  "id": "variant-00000000-0000-4000-8000-000000000001",
-                  "label": "TD",
+                  "id": "high",
+                  "label": "High",
                   "meals": [
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000002",
+                      "id": "demo-high-m1",
                       "label": "Breakfast",
-                      "time": "08:00",
-                      "frequency": "Daily",
+                      "time": "07:30",
                       "portions": [
                         {
                           "foodId": "food-057",
-                          "quantity": 367.37060023212433
+                          "quantity": 65
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 30
+                        },
+                        {
+                          "foodId": "food-108",
+                          "quantity": 85
+                        },
+                        {
+                          "foodId": "food-072",
+                          "quantity": 15
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000003",
+                      "id": "demo-high-m2",
                       "label": "Lunch",
                       "time": "12:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
                           "foodId": "food-001",
-                          "quantity": 231.58021993927858
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-051",
+                          "quantity": 75
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 95
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000004",
-                      "label": "Afternoon",
+                      "id": "demo-high-m3",
+                      "label": "Pre-workout",
                       "time": "16:00",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-451",
-                          "quantity": 308.7736265857048
+                          "foodId": "food-062",
+                          "quantity": 65
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 30
+                        },
+                        {
+                          "foodId": "food-100",
+                          "quantity": 105
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000005",
+                      "id": "demo-high-m4",
                       "label": "Dinner",
                       "time": "19:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-005",
-                          "quantity": 183.2042182036453
+                          "foodId": "food-003",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 315
+                        },
+                        {
+                          "foodId": "food-114",
+                          "quantity": 105
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-high-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-018",
+                          "quantity": 180
+                        },
+                        {
+                          "foodId": "food-067",
+                          "quantity": 3
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 85
+                        },
+                        {
+                          "foodId": "food-081",
+                          "quantity": 30
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "id": "demo-variant-refeed",
-                  "label": "Refeed day",
+                  "id": "medium",
+                  "label": "Medium",
                   "meals": [
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000010",
+                      "id": "demo-med-m1",
                       "label": "Breakfast",
-                      "time": "08:00",
-                      "frequency": "Daily",
+                      "time": "07:30",
                       "portions": [
                         {
+                          "foodId": "food-018",
+                          "quantity": 225
+                        },
+                        {
                           "foodId": "food-057",
-                          "quantity": 366.9027271735451
+                          "quantity": 55
+                        },
+                        {
+                          "foodId": "food-108",
+                          "quantity": 110
+                        },
+                        {
+                          "foodId": "food-072",
+                          "quantity": 10
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000011",
+                      "id": "demo-med-m2",
                       "label": "Lunch",
                       "time": "12:30",
-                      "frequency": "Daily",
+                      "portions": [
+                        {
+                          "foodId": "food-033",
+                          "quantity": 125
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 280
+                        },
+                        {
+                          "foodId": "food-133",
+                          "quantity": 90
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m3",
+                      "label": "Pre-workout",
+                      "time": "16:00",
+                      "portions": [
+                        {
+                          "foodId": "food-067",
+                          "quantity": 4
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 20
+                        },
+                        {
+                          "foodId": "food-100",
+                          "quantity": 90
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m4",
+                      "label": "Dinner",
+                      "time": "19:30",
+                      "portions": [
+                        {
+                          "foodId": "food-009",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-051",
+                          "quantity": 55
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 90
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 105
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-016",
+                          "quantity": 4
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-074",
+                          "quantity": 45
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 90
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "low",
+                  "label": "Low",
+                  "meals": [
+                    {
+                      "id": "demo-low-m1",
+                      "label": "Breakfast",
+                      "time": "07:30",
+                      "portions": [
+                        {
+                          "foodId": "food-016",
+                          "quantity": 2
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 150
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 45
+                        },
+                        {
+                          "foodId": "food-074",
+                          "quantity": 85
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-low-m2",
+                      "label": "Lunch",
+                      "time": "12:30",
                       "portions": [
                         {
                           "foodId": "food-001",
-                          "quantity": 233.83094986044472
+                          "quantity": 150
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 150
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 10
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 425
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000012",
-                      "label": "Afternoon",
+                      "id": "demo-low-m3",
+                      "label": "Pre-workout",
                       "time": "16:00",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-451",
-                          "quantity": 311.7745998139263
+                          "foodId": "food-018",
+                          "quantity": 195
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 285
+                        },
+                        {
+                          "foodId": "food-081",
+                          "quantity": 10
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000013",
+                      "id": "demo-low-m4",
                       "label": "Dinner",
                       "time": "19:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
                           "foodId": "food-005",
-                          "quantity": 181.64993198746504
+                          "quantity": 110
+                        },
+                        {
+                          "foodId": "food-114",
+                          "quantity": 425
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 35
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-low-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-015",
+                          "quantity": 80
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 100
+                        },
+                        {
+                          "foodId": "food-082",
+                          "quantity": 10
                         }
                       ]
                     }
                   ]
                 }
               ],
-              "activeVariantId": "variant-00000000-0000-4000-8000-000000000001",
+              "activeVariantId": "high",
               "schedule": {
-                "mode": "manual",
-                "selectedVariantId": "variant-00000000-0000-4000-8000-000000000001"
+                "mode": "weekly",
+                "days": {
+                  "1": "high",
+                  "2": "medium",
+                  "3": "low",
+                  "4": "high",
+                  "5": "low",
+                  "6": "medium",
+                  "7": "low"
+                }
               },
               "archivedPlans": [],
               "reusableMeals": []
@@ -1253,122 +1496,365 @@
             "content": {
               "id": "plan-00000000-0000-4000-8000-000000000006-demo-plan-hist-b",
               "clientId": "client-007",
-              "name": "Amara · prep nutrition",
+              "name": "Contest prep · Block 1",
               "startDate": "day -40",
               "variants": [
                 {
-                  "id": "variant-00000000-0000-4000-8000-000000000001",
-                  "label": "TD",
+                  "id": "high",
+                  "label": "High",
                   "meals": [
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000002",
+                      "id": "demo-high-m1",
                       "label": "Breakfast",
-                      "time": "08:00",
-                      "frequency": "Daily",
+                      "time": "07:30",
                       "portions": [
                         {
                           "foodId": "food-057",
-                          "quantity": 337.7229333576477
+                          "quantity": 55
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 30
+                        },
+                        {
+                          "foodId": "food-108",
+                          "quantity": 75
+                        },
+                        {
+                          "foodId": "food-072",
+                          "quantity": 15
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000003",
+                      "id": "demo-high-m2",
                       "label": "Lunch",
                       "time": "12:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
                           "foodId": "food-001",
-                          "quantity": 222.3375897226285
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-051",
+                          "quantity": 65
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 90
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000004",
-                      "label": "Afternoon",
+                      "id": "demo-high-m3",
+                      "label": "Pre-workout",
                       "time": "16:00",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-451",
-                          "quantity": 296.4501196301714
+                          "foodId": "food-062",
+                          "quantity": 55
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 30
+                        },
+                        {
+                          "foodId": "food-100",
+                          "quantity": 95
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000005",
+                      "id": "demo-high-m4",
                       "label": "Dinner",
                       "time": "19:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-005",
-                          "quantity": 173.1287014475367
+                          "foodId": "food-003",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 290
+                        },
+                        {
+                          "foodId": "food-114",
+                          "quantity": 95
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-high-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-018",
+                          "quantity": 180
+                        },
+                        {
+                          "foodId": "food-067",
+                          "quantity": 3
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 75
+                        },
+                        {
+                          "foodId": "food-081",
+                          "quantity": 25
                         }
                       ]
                     }
                   ]
                 },
                 {
-                  "id": "demo-variant-refeed",
-                  "label": "Refeed day",
+                  "id": "medium",
+                  "label": "Medium",
                   "meals": [
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000010",
+                      "id": "demo-med-m1",
                       "label": "Breakfast",
-                      "time": "08:00",
-                      "frequency": "Daily",
+                      "time": "07:30",
                       "portions": [
                         {
+                          "foodId": "food-018",
+                          "quantity": 225
+                        },
+                        {
                           "foodId": "food-057",
-                          "quantity": 337.28024541712574
+                          "quantity": 50
+                        },
+                        {
+                          "foodId": "food-108",
+                          "quantity": 100
+                        },
+                        {
+                          "foodId": "food-072",
+                          "quantity": 10
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000011",
+                      "id": "demo-med-m2",
                       "label": "Lunch",
                       "time": "12:30",
-                      "frequency": "Daily",
+                      "portions": [
+                        {
+                          "foodId": "food-033",
+                          "quantity": 130
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 240
+                        },
+                        {
+                          "foodId": "food-133",
+                          "quantity": 95
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 15
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m3",
+                      "label": "Pre-workout",
+                      "time": "16:00",
+                      "portions": [
+                        {
+                          "foodId": "food-067",
+                          "quantity": 4
+                        },
+                        {
+                          "foodId": "food-021",
+                          "quantity": 20
+                        },
+                        {
+                          "foodId": "food-100",
+                          "quantity": 80
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m4",
+                      "label": "Dinner",
+                      "time": "19:30",
+                      "portions": [
+                        {
+                          "foodId": "food-009",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-051",
+                          "quantity": 50
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 95
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 105
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-med-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-016",
+                          "quantity": 3
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 135
+                        },
+                        {
+                          "foodId": "food-074",
+                          "quantity": 40
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 80
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "low",
+                  "label": "Low",
+                  "meals": [
+                    {
+                      "id": "demo-low-m1",
+                      "label": "Breakfast",
+                      "time": "07:30",
+                      "portions": [
+                        {
+                          "foodId": "food-016",
+                          "quantity": 2
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 145
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 45
+                        },
+                        {
+                          "foodId": "food-074",
+                          "quantity": 75
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-low-m2",
+                      "label": "Lunch",
+                      "time": "12:30",
                       "portions": [
                         {
                           "foodId": "food-001",
-                          "quantity": 224.45203268806708
+                          "quantity": 145
+                        },
+                        {
+                          "foodId": "food-111",
+                          "quantity": 145
+                        },
+                        {
+                          "foodId": "food-083",
+                          "quantity": 10
+                        },
+                        {
+                          "foodId": "food-055",
+                          "quantity": 370
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000012",
-                      "label": "Afternoon",
+                      "id": "demo-low-m3",
+                      "label": "Pre-workout",
                       "time": "16:00",
-                      "frequency": "Daily",
                       "portions": [
                         {
-                          "foodId": "food-451",
-                          "quantity": 299.2693769174227
+                          "foodId": "food-018",
+                          "quantity": 195
+                        },
+                        {
+                          "foodId": "food-096",
+                          "quantity": 250
+                        },
+                        {
+                          "foodId": "food-081",
+                          "quantity": 10
                         }
                       ]
                     },
                     {
-                      "id": "meal-00000000-0000-4000-8000-000000000013",
+                      "id": "demo-low-m4",
                       "label": "Dinner",
                       "time": "19:30",
-                      "frequency": "Daily",
                       "portions": [
                         {
                           "foodId": "food-005",
-                          "quantity": 171.6844976830142
+                          "quantity": 105
+                        },
+                        {
+                          "foodId": "food-114",
+                          "quantity": 370
+                        },
+                        {
+                          "foodId": "food-095",
+                          "quantity": 30
+                        }
+                      ]
+                    },
+                    {
+                      "id": "demo-low-m5",
+                      "label": "Evening",
+                      "time": "21:30",
+                      "portions": [
+                        {
+                          "foodId": "food-015",
+                          "quantity": 80
+                        },
+                        {
+                          "foodId": "food-017",
+                          "quantity": 100
+                        },
+                        {
+                          "foodId": "food-082",
+                          "quantity": 10
                         }
                       ]
                     }
                   ]
                 }
               ],
-              "activeVariantId": "variant-00000000-0000-4000-8000-000000000001",
+              "activeVariantId": "high",
               "schedule": {
-                "mode": "manual",
-                "selectedVariantId": "variant-00000000-0000-4000-8000-000000000001"
+                "mode": "weekly",
+                "days": {
+                  "1": "high",
+                  "2": "medium",
+                  "3": "low",
+                  "4": "high",
+                  "5": "low",
+                  "6": "medium",
+                  "7": "low"
+                }
               },
               "archivedPlans": [],
               "reusableMeals": []
@@ -1438,8 +1924,7 @@
           ],
           "activeVariantId": "variant-00000000-0000-4000-8000-000000000001",
           "schedule": {
-            "mode": "manual",
-            "selectedVariantId": "variant-00000000-0000-4000-8000-000000000001"
+            "mode": "flexible"
           },
           "archivedPlans": [],
           "reusableMeals": []
@@ -1449,122 +1934,365 @@
           "content": {
             "id": "plan-00000000-0000-4000-8000-000000000006",
             "clientId": "client-007",
-            "name": "Amara · prep nutrition",
+            "name": "Contest prep · Block 2",
             "startDate": "day -14",
             "variants": [
               {
-                "id": "variant-00000000-0000-4000-8000-000000000001",
-                "label": "TD",
+                "id": "high",
+                "label": "High",
                 "meals": [
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000002",
+                    "id": "demo-high-m1",
                     "label": "Breakfast",
-                    "time": "08:00",
-                    "frequency": "Daily",
+                    "time": "07:30",
                     "portions": [
                       {
                         "foodId": "food-057",
-                        "quantity": 276.8124398745528
+                        "quantity": 55
+                      },
+                      {
+                        "foodId": "food-021",
+                        "quantity": 25
+                      },
+                      {
+                        "foodId": "food-108",
+                        "quantity": 70
+                      },
+                      {
+                        "foodId": "food-072",
+                        "quantity": 15
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000003",
+                    "id": "demo-high-m2",
                     "label": "Lunch",
                     "time": "12:30",
-                    "frequency": "Daily",
                     "portions": [
                       {
                         "foodId": "food-001",
-                        "quantity": 206.07350235967624
+                        "quantity": 140
+                      },
+                      {
+                        "foodId": "food-051",
+                        "quantity": 60
+                      },
+                      {
+                        "foodId": "food-111",
+                        "quantity": 95
+                      },
+                      {
+                        "foodId": "food-083",
+                        "quantity": 15
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000004",
-                    "label": "Afternoon",
+                    "id": "demo-high-m3",
+                    "label": "Pre-workout",
                     "time": "16:00",
-                    "frequency": "Daily",
                     "portions": [
                       {
-                        "foodId": "food-451",
-                        "quantity": 274.7646698129017
+                        "foodId": "food-062",
+                        "quantity": 55
+                      },
+                      {
+                        "foodId": "food-021",
+                        "quantity": 25
+                      },
+                      {
+                        "foodId": "food-100",
+                        "quantity": 90
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000005",
+                    "id": "demo-high-m4",
                     "label": "Dinner",
                     "time": "19:30",
-                    "frequency": "Daily",
                     "portions": [
                       {
-                        "foodId": "food-005",
-                        "quantity": 230.2481302049174
+                        "foodId": "food-003",
+                        "quantity": 140
+                      },
+                      {
+                        "foodId": "food-055",
+                        "quantity": 260
+                      },
+                      {
+                        "foodId": "food-114",
+                        "quantity": 90
+                      },
+                      {
+                        "foodId": "food-083",
+                        "quantity": 15
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-high-m5",
+                    "label": "Evening",
+                    "time": "21:30",
+                    "portions": [
+                      {
+                        "foodId": "food-018",
+                        "quantity": 185
+                      },
+                      {
+                        "foodId": "food-067",
+                        "quantity": 3
+                      },
+                      {
+                        "foodId": "food-096",
+                        "quantity": 70
+                      },
+                      {
+                        "foodId": "food-081",
+                        "quantity": 20
                       }
                     ]
                   }
                 ]
               },
               {
-                "id": "demo-variant-refeed",
-                "label": "Refeed day",
+                "id": "medium",
+                "label": "Medium",
                 "meals": [
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000010",
+                    "id": "demo-med-m1",
                     "label": "Breakfast",
-                    "time": "08:00",
-                    "frequency": "Daily",
+                    "time": "07:30",
                     "portions": [
                       {
+                        "foodId": "food-018",
+                        "quantity": 220
+                      },
+                      {
                         "foodId": "food-057",
-                        "quantity": 287.25454173278325
+                        "quantity": 45
+                      },
+                      {
+                        "foodId": "food-108",
+                        "quantity": 90
+                      },
+                      {
+                        "foodId": "food-072",
+                        "quantity": 10
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000011",
+                    "id": "demo-med-m2",
                     "label": "Lunch",
                     "time": "12:30",
-                    "frequency": "Daily",
+                    "portions": [
+                      {
+                        "foodId": "food-033",
+                        "quantity": 125
+                      },
+                      {
+                        "foodId": "food-055",
+                        "quantity": 215
+                      },
+                      {
+                        "foodId": "food-133",
+                        "quantity": 90
+                      },
+                      {
+                        "foodId": "food-083",
+                        "quantity": 15
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-med-m3",
+                    "label": "Pre-workout",
+                    "time": "16:00",
+                    "portions": [
+                      {
+                        "foodId": "food-067",
+                        "quantity": 4
+                      },
+                      {
+                        "foodId": "food-021",
+                        "quantity": 20
+                      },
+                      {
+                        "foodId": "food-100",
+                        "quantity": 70
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-med-m4",
+                    "label": "Dinner",
+                    "time": "19:30",
+                    "portions": [
+                      {
+                        "foodId": "food-009",
+                        "quantity": 135
+                      },
+                      {
+                        "foodId": "food-051",
+                        "quantity": 45
+                      },
+                      {
+                        "foodId": "food-111",
+                        "quantity": 90
+                      },
+                      {
+                        "foodId": "food-095",
+                        "quantity": 100
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-med-m5",
+                    "label": "Evening",
+                    "time": "21:30",
+                    "portions": [
+                      {
+                        "foodId": "food-016",
+                        "quantity": 3
+                      },
+                      {
+                        "foodId": "food-017",
+                        "quantity": 135
+                      },
+                      {
+                        "foodId": "food-074",
+                        "quantity": 35
+                      },
+                      {
+                        "foodId": "food-096",
+                        "quantity": 70
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "low",
+                "label": "Low",
+                "meals": [
+                  {
+                    "id": "demo-low-m1",
+                    "label": "Breakfast",
+                    "time": "07:30",
+                    "portions": [
+                      {
+                        "foodId": "food-016",
+                        "quantity": 2
+                      },
+                      {
+                        "foodId": "food-017",
+                        "quantity": 150
+                      },
+                      {
+                        "foodId": "food-095",
+                        "quantity": 45
+                      },
+                      {
+                        "foodId": "food-074",
+                        "quantity": 65
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-low-m2",
+                    "label": "Lunch",
+                    "time": "12:30",
                     "portions": [
                       {
                         "foodId": "food-001",
-                        "quantity": 198.62943296879692
+                        "quantity": 150
+                      },
+                      {
+                        "foodId": "food-111",
+                        "quantity": 150
+                      },
+                      {
+                        "foodId": "food-083",
+                        "quantity": 10
+                      },
+                      {
+                        "foodId": "food-055",
+                        "quantity": 315
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000012",
-                    "label": "Afternoon",
+                    "id": "demo-low-m3",
+                    "label": "Pre-workout",
                     "time": "16:00",
-                    "frequency": "Daily",
                     "portions": [
                       {
-                        "foodId": "food-451",
-                        "quantity": 264.83924395839585
+                        "foodId": "food-018",
+                        "quantity": 195
+                      },
+                      {
+                        "foodId": "food-096",
+                        "quantity": 210
+                      },
+                      {
+                        "foodId": "food-081",
+                        "quantity": 10
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000013",
+                    "id": "demo-low-m4",
                     "label": "Dinner",
                     "time": "19:30",
-                    "frequency": "Daily",
                     "portions": [
                       {
                         "foodId": "food-005",
-                        "quantity": 212.9025850930717
+                        "quantity": 100
+                      },
+                      {
+                        "foodId": "food-114",
+                        "quantity": 315
+                      },
+                      {
+                        "foodId": "food-095",
+                        "quantity": 25
+                      }
+                    ]
+                  },
+                  {
+                    "id": "demo-low-m5",
+                    "label": "Evening",
+                    "time": "21:30",
+                    "portions": [
+                      {
+                        "foodId": "food-015",
+                        "quantity": 80
+                      },
+                      {
+                        "foodId": "food-017",
+                        "quantity": 100
+                      },
+                      {
+                        "foodId": "food-082",
+                        "quantity": 10
                       }
                     ]
                   }
                 ]
               }
             ],
-            "activeVariantId": "variant-00000000-0000-4000-8000-000000000001",
+            "activeVariantId": "high",
             "schedule": {
-              "mode": "manual",
-              "selectedVariantId": "variant-00000000-0000-4000-8000-000000000001"
+              "mode": "weekly",
+              "days": {
+                "1": "high",
+                "2": "medium",
+                "3": "low",
+                "4": "high",
+                "5": "low",
+                "6": "medium",
+                "7": "low"
+              }
             },
             "archivedPlans": [],
             "reusableMeals": []
@@ -1573,51 +2301,7 @@
         }
       },
       "iifym": {
-        "history": [],
-        "active": {
-          "id": "demo-iifym-amara-active",
-          "activatedAt": "day -14T08:00:00Z",
-          "content": {
-            "id": "demo-iifym-amara",
-            "clientId": "client-007",
-            "name": "Amara · macro targets",
-            "startDate": "day -14",
-            "schedule": {
-              "mode": "weekly",
-              "days": {
-                "1": "demo-iifym-opt-td",
-                "2": "demo-iifym-opt-td",
-                "3": "demo-iifym-opt-td",
-                "4": "demo-iifym-opt-td",
-                "5": "demo-iifym-opt-td",
-                "6": "demo-iifym-opt-td",
-                "7": "demo-iifym-opt-refeed"
-              }
-            },
-            "options": [
-              {
-                "id": "demo-iifym-opt-td",
-                "label": "Training day",
-                "targets": {
-                  "style": "macros",
-                  "protein": { "kind": "fixed", "value": 160 },
-                  "carbs": { "kind": "fixed", "value": 175 },
-                  "fat": { "kind": "range", "min": 50, "max": 60 }
-                }
-              },
-              {
-                "id": "demo-iifym-opt-refeed",
-                "label": "Refeed day",
-                "targets": {
-                  "style": "macros",
-                  "protein": { "kind": "fixed", "value": 160 },
-                  "carbs": { "kind": "fixed", "value": 250 },
-                  "fat": { "kind": "minimum", "value": 45 }
-                }
-              }
-            ]
-          }
-        }
+        "history": []
       },
       "temporary": [
         {
@@ -1630,122 +2314,123 @@
           "plan": {
             "id": "plan-00000000-0000-4000-8000-000000000006-temporary-00000000",
             "clientId": "client-007",
-            "name": "Amara · prep nutrition",
+            "name": "Contest prep · Block 2",
             "startDate": "day -14",
             "variants": [
               {
-                "id": "variant-00000000-0000-4000-8000-000000000001",
-                "label": "TD",
+                "id": "refeed",
+                "label": "Refeed",
                 "meals": [
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000002",
+                    "id": "demo-ref-m1",
                     "label": "Breakfast",
-                    "time": "08:00",
-                    "frequency": "Daily",
+                    "time": "07:30",
                     "portions": [
                       {
                         "foodId": "food-057",
-                        "quantity": 387.5374158243739
+                        "quantity": 70
+                      },
+                      {
+                        "foodId": "food-072",
+                        "quantity": 20
+                      },
+                      {
+                        "foodId": "food-100",
+                        "quantity": 85
+                      },
+                      {
+                        "foodId": "food-021",
+                        "quantity": 15
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000003",
+                    "id": "demo-ref-m2",
                     "label": "Lunch",
                     "time": "12:30",
-                    "frequency": "Daily",
                     "portions": [
                       {
                         "foodId": "food-001",
-                        "quantity": 206.07350235967624
+                        "quantity": 110
+                      },
+                      {
+                        "foodId": "food-051",
+                        "quantity": 85
+                      },
+                      {
+                        "foodId": "food-111",
+                        "quantity": 85
+                      },
+                      {
+                        "foodId": "food-083",
+                        "quantity": 30
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000004",
-                    "label": "Afternoon",
+                    "id": "demo-ref-m3",
+                    "label": "Pre-workout",
                     "time": "16:00",
-                    "frequency": "Daily",
                     "portions": [
                       {
-                        "foodId": "food-451",
-                        "quantity": 274.7646698129017
+                        "foodId": "food-058",
+                        "quantity": 1
+                      },
+                      {
+                        "foodId": "food-082",
+                        "quantity": 55
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000005",
+                    "id": "demo-ref-m4",
                     "label": "Dinner",
                     "time": "19:30",
-                    "frequency": "Daily",
                     "portions": [
                       {
-                        "foodId": "food-005",
-                        "quantity": 184.19850416393393
-                      }
-                    ]
-                  }
-                ]
-              },
-              {
-                "id": "demo-variant-refeed",
-                "label": "Refeed day",
-                "meals": [
-                  {
-                    "id": "meal-00000000-0000-4000-8000-000000000010",
-                    "label": "Breakfast",
-                    "time": "08:00",
-                    "frequency": "Daily",
-                    "portions": [
+                        "foodId": "food-033",
+                        "quantity": 110
+                      },
                       {
-                        "foodId": "food-057",
-                        "quantity": 402.15635842589654
+                        "foodId": "food-055",
+                        "quantity": 420
+                      },
+                      {
+                        "foodId": "food-114",
+                        "quantity": 140
                       }
                     ]
                   },
                   {
-                    "id": "meal-00000000-0000-4000-8000-000000000011",
-                    "label": "Lunch",
-                    "time": "12:30",
-                    "frequency": "Daily",
+                    "id": "demo-ref-m5",
+                    "label": "Evening",
+                    "time": "21:30",
                     "portions": [
                       {
-                        "foodId": "food-001",
-                        "quantity": 198.62943296879692
-                      }
-                    ]
-                  },
-                  {
-                    "id": "meal-00000000-0000-4000-8000-000000000012",
-                    "label": "Afternoon",
-                    "time": "16:00",
-                    "frequency": "Daily",
-                    "portions": [
+                        "foodId": "food-018",
+                        "quantity": 180
+                      },
                       {
-                        "foodId": "food-451",
-                        "quantity": 264.83924395839585
-                      }
-                    ]
-                  },
-                  {
-                    "id": "meal-00000000-0000-4000-8000-000000000013",
-                    "label": "Dinner",
-                    "time": "19:30",
-                    "frequency": "Daily",
-                    "portions": [
+                        "foodId": "food-067",
+                        "quantity": 4
+                      },
                       {
-                        "foodId": "food-005",
-                        "quantity": 170.32206807445738
+                        "foodId": "food-072",
+                        "quantity": 15
+                      },
+                      {
+                        "foodId": "food-096",
+                        "quantity": 110
                       }
                     ]
                   }
                 ]
               }
             ],
-            "activeVariantId": "variant-00000000-0000-4000-8000-000000000001",
+            "activeVariantId": "refeed",
             "schedule": {
               "mode": "manual",
-              "selectedVariantId": "variant-00000000-0000-4000-8000-000000000001"
+              "selectedVariantId": "refeed"
             },
             "archivedPlans": [],
             "reusableMeals": []
@@ -3620,10 +4305,10 @@
           "energy": 7,
           "muscle-soreness": 6,
           "cramps": 0,
-          "calories": 1810,
-          "protein": 153,
-          "carbs": 174,
-          "fat": 55
+          "calories": 1630,
+          "protein": 162,
+          "carbs": 114,
+          "fat": 58
         }
       },
       {
@@ -3647,9 +4332,9 @@
           "energy-in-gym": 9,
           "mood-in-gym": 7,
           "cardio-duration": 23,
-          "calories": 2230,
-          "protein": 175,
-          "carbs": 245,
+          "calories": 2370,
+          "protein": 179,
+          "carbs": 275,
           "fat": 60
         }
       },
@@ -3672,10 +4357,10 @@
           "cramps": 0,
           "energy-in-gym": 7,
           "mood-in-gym": 7,
-          "calories": 2220,
-          "protein": 174,
-          "carbs": 245,
-          "fat": 59
+          "calories": 2200,
+          "protein": 180,
+          "carbs": 223,
+          "fat": 63
         }
       },
       {
@@ -3696,10 +4381,10 @@
           "muscle-soreness": 4,
           "cramps": 0,
           "cardio-duration": 27,
-          "calories": 2320,
-          "protein": 182,
-          "carbs": 255,
-          "fat": 62
+          "calories": 2080,
+          "protein": 193,
+          "carbs": 166,
+          "fat": 70
         }
       },
       {
@@ -3722,9 +4407,9 @@
           "fbg": 4.9,
           "energy-in-gym": 9,
           "mood-in-gym": 7,
-          "calories": 2270,
-          "protein": 178,
-          "carbs": 250,
+          "calories": 2410,
+          "protein": 182,
+          "carbs": 280,
           "fat": 61
         }
       },
@@ -3745,10 +4430,10 @@
           "energy": 6,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2210,
-          "protein": 173,
-          "carbs": 243,
-          "fat": 59
+          "calories": 1980,
+          "protein": 184,
+          "carbs": 158,
+          "fat": 67
         }
       },
       {
@@ -3771,10 +4456,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 7,
           "cardio-duration": 30,
-          "calories": 2330,
-          "protein": 183,
-          "carbs": 257,
-          "fat": 62
+          "calories": 2310,
+          "protein": 189,
+          "carbs": 235,
+          "fat": 66
         }
       },
       {
@@ -3794,10 +4479,10 @@
           "energy": 7,
           "muscle-soreness": 5,
           "cramps": 4,
-          "calories": 2260,
-          "protein": 177,
-          "carbs": 249,
-          "fat": 61
+          "calories": 2020,
+          "protein": 188,
+          "carbs": 162,
+          "fat": 69
         }
       },
       {
@@ -3819,10 +4504,10 @@
           "cramps": 5,
           "energy-in-gym": 6,
           "mood-in-gym": 7,
-          "calories": 2590,
-          "protein": 203,
-          "carbs": 285,
-          "fat": 69
+          "calories": 2560,
+          "protein": 209,
+          "carbs": 260,
+          "fat": 73
         }
       },
       {
@@ -3843,10 +4528,10 @@
           "muscle-soreness": 5,
           "cramps": 5,
           "cardio-duration": 27,
-          "calories": 2240,
-          "protein": 175,
-          "carbs": 246,
-          "fat": 60
+          "calories": 2000,
+          "protein": 186,
+          "carbs": 160,
+          "fat": 68
         }
       },
       {
@@ -3869,9 +4554,9 @@
           "fbg": 5.2,
           "energy-in-gym": 7,
           "mood-in-gym": 8,
-          "calories": 2290,
-          "protein": 179,
-          "carbs": 251,
+          "calories": 2420,
+          "protein": 184,
+          "carbs": 282,
           "fat": 61
         }
       },
@@ -3892,10 +4577,10 @@
           "energy": 6,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2290,
-          "protein": 179,
-          "carbs": 252,
-          "fat": 61
+          "calories": 2050,
+          "protein": 190,
+          "carbs": 164,
+          "fat": 69
         }
       },
       {
@@ -3918,10 +4603,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 8,
           "cardio-duration": 26,
-          "calories": 2380,
-          "protein": 187,
-          "carbs": 262,
-          "fat": 64
+          "calories": 2360,
+          "protein": 192,
+          "carbs": 240,
+          "fat": 67
         }
       },
       {
@@ -3941,10 +4626,10 @@
           "energy": 8,
           "muscle-soreness": 6,
           "cramps": 0,
-          "calories": 2430,
-          "protein": 191,
-          "carbs": 268,
-          "fat": 65
+          "calories": 2170,
+          "protein": 202,
+          "carbs": 174,
+          "fat": 74
         }
       },
       {
@@ -3968,9 +4653,9 @@
           "energy-in-gym": 9,
           "mood-in-gym": 7,
           "cardio-duration": 31,
-          "calories": 2160,
-          "protein": 170,
-          "carbs": 238,
+          "calories": 2290,
+          "protein": 174,
+          "carbs": 267,
           "fat": 58
         }
       },
@@ -3993,10 +4678,10 @@
           "cramps": 0,
           "energy-in-gym": 7,
           "mood-in-gym": 8,
-          "calories": 2490,
-          "protein": 195,
-          "carbs": 274,
-          "fat": 66
+          "calories": 2460,
+          "protein": 201,
+          "carbs": 250,
+          "fat": 70
         }
       },
       {
@@ -4017,10 +4702,10 @@
           "muscle-soreness": 5,
           "cramps": 0,
           "cardio-duration": 20,
-          "calories": 2270,
-          "protein": 178,
-          "carbs": 249,
-          "fat": 61
+          "calories": 2030,
+          "protein": 188,
+          "carbs": 162,
+          "fat": 69
         }
       },
       {
@@ -4043,9 +4728,9 @@
           "fbg": 4.9,
           "energy-in-gym": 9,
           "mood-in-gym": 7,
-          "calories": 2220,
-          "protein": 174,
-          "carbs": 244,
+          "calories": 2360,
+          "protein": 179,
+          "carbs": 274,
           "fat": 59
         }
       },
@@ -4066,10 +4751,10 @@
           "energy": 8,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2180,
-          "protein": 171,
-          "carbs": 240,
-          "fat": 58
+          "calories": 1950,
+          "protein": 181,
+          "carbs": 156,
+          "fat": 66
         }
       },
       {
@@ -4092,10 +4777,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 6,
           "cardio-duration": 23,
-          "calories": 2280,
-          "protein": 179,
-          "carbs": 251,
-          "fat": 61
+          "calories": 2260,
+          "protein": 184,
+          "carbs": 230,
+          "fat": 64
         }
       },
       {
@@ -4115,10 +4800,10 @@
           "energy": 8,
           "muscle-soreness": 4,
           "cramps": 0,
-          "calories": 2370,
-          "protein": 186,
-          "carbs": 261,
-          "fat": 63
+          "calories": 2120,
+          "protein": 197,
+          "carbs": 170,
+          "fat": 72
         }
       },
       {
@@ -4142,9 +4827,9 @@
           "energy-in-gym": 7,
           "mood-in-gym": 6,
           "cardio-duration": 21,
-          "calories": 2210,
-          "protein": 173,
-          "carbs": 243,
+          "calories": 2340,
+          "protein": 178,
+          "carbs": 273,
           "fat": 59
         }
       },
@@ -4166,10 +4851,10 @@
           "muscle-soreness": 5,
           "cramps": 0,
           "cardio-duration": 21,
-          "calories": 2340,
-          "protein": 184,
-          "carbs": 258,
-          "fat": 63
+          "calories": 2100,
+          "protein": 195,
+          "carbs": 168,
+          "fat": 71
         }
       },
       {
@@ -4192,9 +4877,9 @@
           "fbg": 4.6,
           "energy-in-gym": 8,
           "mood-in-gym": 8,
-          "calories": 2340,
-          "protein": 184,
-          "carbs": 258,
+          "calories": 2480,
+          "protein": 188,
+          "carbs": 289,
           "fat": 63
         }
       },
@@ -4215,10 +4900,10 @@
           "energy": 6,
           "muscle-soreness": 3,
           "cramps": 0,
-          "calories": 2450,
-          "protein": 192,
-          "carbs": 270,
-          "fat": 65
+          "calories": 2190,
+          "protein": 204,
+          "carbs": 175,
+          "fat": 74
         }
       },
       {
@@ -4241,10 +4926,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 7,
           "cardio-duration": 28,
-          "calories": 2590,
-          "protein": 203,
-          "carbs": 285,
-          "fat": 69
+          "calories": 2560,
+          "protein": 209,
+          "carbs": 260,
+          "fat": 73
         }
       },
       {
@@ -4264,10 +4949,10 @@
           "energy": 8,
           "muscle-soreness": 3,
           "cramps": 0,
-          "calories": 2220,
-          "protein": 174,
-          "carbs": 245,
-          "fat": 59
+          "calories": 1990,
+          "protein": 185,
+          "carbs": 159,
+          "fat": 67
         }
       },
       {
@@ -4291,9 +4976,9 @@
           "energy-in-gym": 7,
           "mood-in-gym": 8,
           "cardio-duration": 29,
-          "calories": 2150,
-          "protein": 169,
-          "carbs": 237,
+          "calories": 2280,
+          "protein": 173,
+          "carbs": 265,
           "fat": 58
         }
       },
@@ -4316,10 +5001,10 @@
           "cramps": 0,
           "energy-in-gym": 9,
           "mood-in-gym": 7,
-          "calories": 2310,
-          "protein": 184,
-          "carbs": 251,
-          "fat": 62
+          "calories": 2280,
+          "protein": 193,
+          "carbs": 227,
+          "fat": 64
         }
       },
       {
@@ -4340,10 +5025,10 @@
           "muscle-soreness": 5,
           "cramps": 0,
           "cardio-duration": 23,
-          "calories": 2230,
-          "protein": 177,
-          "carbs": 243,
-          "fat": 60
+          "calories": 2000,
+          "protein": 191,
+          "carbs": 151,
+          "fat": 70
         }
       },
       {
@@ -4366,9 +5051,9 @@
           "fbg": 4.9,
           "energy-in-gym": 8,
           "mood-in-gym": 7,
-          "calories": 2130,
-          "protein": 169,
-          "carbs": 231,
+          "calories": 2240,
+          "protein": 178,
+          "carbs": 251,
           "fat": 57
         }
       },
@@ -4389,10 +5074,10 @@
           "energy": 7,
           "muscle-soreness": 2,
           "cramps": 0,
-          "calories": 2220,
-          "protein": 177,
-          "carbs": 242,
-          "fat": 59
+          "calories": 2000,
+          "protein": 190,
+          "carbs": 151,
+          "fat": 70
         }
       },
       {
@@ -4415,10 +5100,10 @@
           "energy-in-gym": 9,
           "mood-in-gym": 7,
           "cardio-duration": 22,
-          "calories": 2000,
-          "protein": 159,
-          "carbs": 218,
-          "fat": 53
+          "calories": 1970,
+          "protein": 167,
+          "carbs": 196,
+          "fat": 56
         }
       },
       {
@@ -4438,10 +5123,10 @@
           "energy": 7,
           "muscle-soreness": 4,
           "cramps": 5,
-          "calories": 2110,
-          "protein": 168,
-          "carbs": 229,
-          "fat": 56
+          "calories": 1900,
+          "protein": 181,
+          "carbs": 143,
+          "fat": 66
         }
       },
       {
@@ -4465,9 +5150,9 @@
           "energy-in-gym": 7,
           "mood-in-gym": 8,
           "cardio-duration": 31,
-          "calories": 2050,
-          "protein": 163,
-          "carbs": 223,
+          "calories": 2160,
+          "protein": 172,
+          "carbs": 242,
           "fat": 55
         }
       },
@@ -4489,10 +5174,10 @@
           "muscle-soreness": 5,
           "cramps": 3,
           "cardio-duration": 21,
-          "calories": 2070,
-          "protein": 165,
-          "carbs": 226,
-          "fat": 55
+          "calories": 1870,
+          "protein": 178,
+          "carbs": 141,
+          "fat": 65
         }
       },
       {
@@ -4515,9 +5200,9 @@
           "fbg": 4.5,
           "energy-in-gym": 8,
           "mood-in-gym": 6,
-          "calories": 2000,
-          "protein": 159,
-          "carbs": 218,
+          "calories": 2110,
+          "protein": 168,
+          "carbs": 236,
           "fat": 54
         }
       },
@@ -4538,10 +5223,10 @@
           "energy": 8,
           "muscle-soreness": 3,
           "cramps": 0,
-          "calories": 2180,
-          "protein": 174,
-          "carbs": 237,
-          "fat": 58
+          "calories": 1960,
+          "protein": 187,
+          "carbs": 148,
+          "fat": 68
         }
       },
       {
@@ -4564,10 +5249,10 @@
           "energy-in-gym": 6,
           "mood-in-gym": 6,
           "cardio-duration": 30,
-          "calories": 2170,
-          "protein": 173,
-          "carbs": 237,
-          "fat": 58
+          "calories": 2140,
+          "protein": 182,
+          "carbs": 213,
+          "fat": 60
         }
       },
       {
@@ -4587,10 +5272,10 @@
           "energy": 8,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2110,
-          "protein": 168,
-          "carbs": 229,
-          "fat": 56
+          "calories": 1900,
+          "protein": 181,
+          "carbs": 143,
+          "fat": 66
         }
       },
       {
@@ -4614,10 +5299,10 @@
           "energy-in-gym": 6,
           "mood-in-gym": 9,
           "cardio-duration": 24,
-          "calories": 2020,
-          "protein": 161,
-          "carbs": 220,
-          "fat": 54
+          "calories": 2130,
+          "protein": 170,
+          "carbs": 239,
+          "fat": 55
         }
       },
       {
@@ -4639,10 +5324,10 @@
           "cramps": 0,
           "energy-in-gym": 9,
           "mood-in-gym": 9,
-          "calories": 2160,
-          "protein": 172,
-          "carbs": 235,
-          "fat": 58
+          "calories": 2130,
+          "protein": 181,
+          "carbs": 212,
+          "fat": 60
         }
       },
       {
@@ -4663,10 +5348,10 @@
           "muscle-soreness": 6,
           "cramps": 0,
           "cardio-duration": 20,
-          "calories": 2210,
-          "protein": 176,
-          "carbs": 240,
-          "fat": 59
+          "calories": 1990,
+          "protein": 189,
+          "carbs": 150,
+          "fat": 69
         }
       },
       {
@@ -4689,10 +5374,10 @@
           "fbg": 4.7,
           "energy-in-gym": 7,
           "mood-in-gym": 8,
-          "calories": 2060,
-          "protein": 164,
-          "carbs": 224,
-          "fat": 55
+          "calories": 2170,
+          "protein": 173,
+          "carbs": 243,
+          "fat": 56
         }
       },
       {
@@ -4712,10 +5397,10 @@
           "energy": 7,
           "muscle-soreness": 6,
           "cramps": 0,
-          "calories": 2310,
-          "protein": 184,
-          "carbs": 252,
-          "fat": 62
+          "calories": 2080,
+          "protein": 198,
+          "carbs": 157,
+          "fat": 73
         }
       },
       {
@@ -4738,10 +5423,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 7,
           "cardio-duration": 28,
-          "calories": 2030,
-          "protein": 161,
-          "carbs": 221,
-          "fat": 54
+          "calories": 2000,
+          "protein": 170,
+          "carbs": 199,
+          "fat": 56
         }
       },
       {
@@ -4761,10 +5446,10 @@
           "energy": 8,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2150,
-          "protein": 171,
-          "carbs": 234,
-          "fat": 58
+          "calories": 1940,
+          "protein": 185,
+          "carbs": 146,
+          "fat": 68
         }
       },
       {
@@ -4788,9 +5473,9 @@
           "energy-in-gym": 8,
           "mood-in-gym": 8,
           "cardio-duration": 19,
-          "calories": 2240,
-          "protein": 178,
-          "carbs": 244,
+          "calories": 2370,
+          "protein": 188,
+          "carbs": 264,
           "fat": 60
         }
       },
@@ -4813,10 +5498,10 @@
           "cramps": 0,
           "energy-in-gym": 6,
           "mood-in-gym": 9,
-          "calories": 2270,
-          "protein": 180,
-          "carbs": 247,
-          "fat": 61
+          "calories": 2240,
+          "protein": 190,
+          "carbs": 223,
+          "fat": 63
         }
       },
       {
@@ -4837,10 +5522,10 @@
           "muscle-soreness": 5,
           "cramps": 0,
           "cardio-duration": 23,
-          "calories": 2250,
-          "protein": 179,
-          "carbs": 244,
-          "fat": 60
+          "calories": 2020,
+          "protein": 192,
+          "carbs": 153,
+          "fat": 70
         }
       },
       {
@@ -4863,10 +5548,10 @@
           "fbg": 4.6,
           "energy-in-gym": 7,
           "mood-in-gym": 9,
-          "calories": 2220,
-          "protein": 176,
-          "carbs": 241,
-          "fat": 59
+          "calories": 2340,
+          "protein": 186,
+          "carbs": 261,
+          "fat": 60
         }
       },
       {
@@ -4886,10 +5571,10 @@
           "energy": 8,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 2460,
-          "protein": 196,
-          "carbs": 268,
-          "fat": 66
+          "calories": 2210,
+          "protein": 211,
+          "carbs": 167,
+          "fat": 77
         }
       },
       {
@@ -4909,10 +5594,10 @@
           "energy": 6,
           "muscle-soreness": 6,
           "cramps": 0,
-          "calories": 2070,
-          "protein": 175,
-          "carbs": 198,
-          "fat": 62
+          "calories": 1870,
+          "protein": 185,
+          "carbs": 130,
+          "fat": 67
         }
       },
       {
@@ -4936,10 +5621,10 @@
           "energy-in-gym": 6,
           "mood-in-gym": 7,
           "cardio-duration": 25,
-          "calories": 2110,
-          "protein": 179,
-          "carbs": 203,
-          "fat": 64
+          "calories": 2270,
+          "protein": 181,
+          "carbs": 253,
+          "fat": 58
         }
       },
       {
@@ -4961,10 +5646,10 @@
           "cramps": 0,
           "energy-in-gym": 8,
           "mood-in-gym": 9,
-          "calories": 1960,
-          "protein": 166,
-          "carbs": 188,
-          "fat": 59
+          "calories": 1950,
+          "protein": 169,
+          "carbs": 187,
+          "fat": 56
         }
       },
       {
@@ -4985,10 +5670,10 @@
           "muscle-soreness": 3,
           "cramps": 0,
           "cardio-duration": 27,
-          "calories": 2020,
-          "protein": 171,
-          "carbs": 194,
-          "fat": 61
+          "calories": 1830,
+          "protein": 181,
+          "carbs": 127,
+          "fat": 65
         }
       },
       {
@@ -5011,10 +5696,10 @@
           "fbg": 4.7,
           "energy-in-gym": 8,
           "mood-in-gym": 8,
-          "calories": 1910,
-          "protein": 161,
-          "carbs": 183,
-          "fat": 57
+          "calories": 2040,
+          "protein": 163,
+          "carbs": 228,
+          "fat": 52
         }
       },
       {
@@ -5034,9 +5719,9 @@
           "energy": 6,
           "muscle-soreness": 6,
           "cramps": 0,
-          "calories": 1950,
-          "protein": 165,
-          "carbs": 187
+          "calories": 1760,
+          "protein": 175,
+          "carbs": 123
         }
       },
       {
@@ -5059,10 +5744,10 @@
           "energy-in-gym": 7,
           "mood-in-gym": 8,
           "cardio-duration": 20,
-          "calories": 2060,
-          "protein": 174,
-          "carbs": 198,
-          "fat": 62
+          "calories": 2050,
+          "protein": 178,
+          "carbs": 196,
+          "fat": 59
         }
       },
       {
@@ -5086,10 +5771,10 @@
           "energy-in-gym": 9,
           "mood-in-gym": 9,
           "cardio-duration": 20,
-          "calories": 2060,
-          "protein": 174,
-          "carbs": 198,
-          "fat": 62
+          "calories": 2210,
+          "protein": 176,
+          "carbs": 246,
+          "fat": 56
         }
       },
       {
@@ -5111,10 +5796,10 @@
           "cramps": 2,
           "energy-in-gym": 9,
           "mood-in-gym": 6,
-          "calories": 2040,
-          "protein": 173,
-          "carbs": 196,
-          "fat": 62
+          "calories": 2030,
+          "protein": 177,
+          "carbs": 195,
+          "fat": 59
         }
       },
       {
@@ -5135,10 +5820,10 @@
           "muscle-soreness": 6,
           "cramps": 6,
           "cardio-duration": 23,
-          "calories": 1950,
-          "protein": 165,
-          "carbs": 187,
-          "fat": 59
+          "calories": 1760,
+          "protein": 175,
+          "carbs": 122,
+          "fat": 63
         }
       },
       {
@@ -5161,10 +5846,10 @@
           "fbg": 4.4,
           "energy-in-gym": 7,
           "mood-in-gym": 9,
-          "calories": 1890,
-          "protein": 160,
-          "carbs": 182,
-          "fat": 57
+          "calories": 2030,
+          "protein": 162,
+          "carbs": 226,
+          "fat": 52
         }
       },
       {
@@ -5184,10 +5869,10 @@
           "energy": 7,
           "muscle-soreness": 5,
           "cramps": 0,
-          "calories": 1970,
-          "protein": 167,
-          "carbs": 189,
-          "fat": 59
+          "calories": 1780,
+          "protein": 177,
+          "carbs": 124,
+          "fat": 64
         }
       },
       {
@@ -5210,10 +5895,10 @@
           "energy-in-gym": 8,
           "mood-in-gym": 9,
           "cardio-duration": 31,
-          "calories": 1930,
-          "protein": 163,
-          "carbs": 185,
-          "fat": 58
+          "calories": 1920,
+          "protein": 166,
+          "carbs": 184,
+          "fat": 55
         }
       }
     ],
@@ -5444,7 +6129,7 @@
           },
           {
             "question": "Progress photos",
-            "answer": "Uploaded check-in photos"
+            "answer": "Uploaded front and side photos for 2026-08-23"
           }
         ],
         "metrics": [
@@ -5516,7 +6201,7 @@
           },
           {
             "question": "Progress photos",
-            "answer": "Uploaded check-in photos"
+            "answer": "Uploaded front and side photos for 2026-09-20"
           }
         ],
         "metrics": [

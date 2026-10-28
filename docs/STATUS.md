@@ -1,3 +1,38 @@
+## 2026-10-28 - w2-s13: demo-export rev 11 seed refresh on `w2/s13`
+
+- Copied `frontend/src/data/demo-export/**` at pinned commit `8e6503f6`
+  byte-identical into `lib/canvas/data/demo-export/**` and
+  `scripts/seed/demo-export/**`; `diff -r` clean both sides.
+  `scripts/seed/demo-export/PROVENANCE.md` is hand-written, excluded from
+  diff -r, and updated to the new source. The rev-11 client-007 copy
+  overwrites hand-carried content that frontend rev 9 never had.
+- Live proof on fresh lane DBs: the baseline default seed showed Emma
+  Anders `client_profile.user_id` rebound to `emma.anders@canvas-demo.test`
+  (the `33-checkins.seed.ts` demoClientUser steal, predicted by the card).
+  Repaired that file only: the demo user now binds its named fixture
+  profile only while the profile is unbound. Post-repair default run
+  links Emma Anders to the SEED_CLIENT user.
+- Default-seed equivalence vs the baseline dump (normalized for cuids,
+  scrypt hashes, run timestamps): the only delta is Emma's
+  `client_profile.user_id` plus the consequential `created_by_member_id`
+  on her own 7 `daily_entry` + 7 `daily_entry_revision` rows, which follow
+  the link through `profile.userId`. Nothing else differs.
+- Demo seed (`VARI8_SEED_DEMO=1`) run twice on the same lane: normalized
+  dumps identical (0 diff lines), Emma Anders still on SEED_CLIENT,
+  `athleteDataDemo` reads 11, and rev-11 coverage is live
+  (`meal_plan_version` names 'Pre-prep / Contest prep', tracking values
+  1630/2370/2200/2080/2410 for client-007).
+- Gates: typecheck 0, lint 0 (96 warnings, pre-existing), build 0,
+  `npm run index` 0 (no output diff), `prisma migrate deploy` on two fresh
+  lane DBs 0, prettier per changed file 0 (`scripts/seed/demo-export/`
+  added to `.prettierignore` to keep the byte-verbatim copy), authored
+  added-lines dash check 0.
+- App proof: dev server on lane `app_fp_w2s13`, sign in via `/me/login` as
+  the SEED_CLIENT lands on the `/me` client home at 1440 and 390
+  (screenshots in evidence). Server stopped, both lane DBs dropped,
+  `pg_database` absence proof saved.
+- Evidence: `Vari8-evidence/FULL-PACKAGE-2/W2S13/`. No migration consumed.
+
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
 - Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
