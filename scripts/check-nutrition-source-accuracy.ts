@@ -14,9 +14,11 @@ import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import {
   checkAccuracy,
   checkProvenance,
+  checkSourceHashBinding,
   type AccuracyCheck,
   type ExpectedRow,
 } from "../lib/nutrition/sources/accuracy";
+import { sha256Hex } from "../lib/nutrition/sources/common";
 import { parseBlsExport } from "../lib/nutrition/sources/bls";
 import { parseCiqualExport } from "../lib/nutrition/sources/ciqual";
 
@@ -40,7 +42,13 @@ if (!Object.keys(inputs).length)
 async function main() {
   const report: Record<
     string,
-    { failures: AccuracyCheck[]; accepted: number; checkedFields: number }
+    {
+      failures: AccuracyCheck[];
+      accepted: number;
+      checkedFields: number;
+      untestedFields: number;
+      fixtureNote: string;
+    }
   > = {};
   let total = 0;
   for (const [name, path] of Object.entries(inputs)) {
@@ -50,10 +58,19 @@ async function main() {
     const expected = JSON.parse(
       readFileSync(expecteds[name], "utf8"),
     ) as Record<string, ExpectedRow>;
-    const { classified } = await parse(readFileSync(path));
+    const bytes = readFileSync(path);
+    const { classified } = await parse(bytes);
+    const fileSha = sha256Hex(bytes);
     const failures = [
       ...checkAccuracy(classified.accepted, expected),
       ...checkProvenance(classified.accepted),
+      ...checkSourceHashBinding(classified.accepted, fileSha),
+      // adapter-detected duplicates are gate failures, not ignored rows
+      ...classified.duplicates.map((r): AccuracyCheck => ({
+        kind: "duplicate_candidate",
+        sourceId: r.sourceId ?? "?",
+        detail: `duplicate source id ${r.sourceId} at row ${r.sourceRow}`,
+      })),
       // rejected rows are acceptable only when the source genuinely
       // carries malformed data — the fixtures carry none
       ...classified.rejected.map((r): AccuracyCheck => ({
@@ -62,14 +79,30 @@ async function main() {
         detail: `row ${r.sourceRow} rejected: ${r.reasonCode}`,
       })),
     ];
+    // checked fields = nutrients the expected record actually covers;
+    // uncovered nutrients are reported separately, not hidden in a total
     const checkedFields = classified.accepted.reduce(
-      (n, c) => n + c.nutrients.length,
+      (n, c) =>
+        n +
+        c.nutrients.filter((nut) => expected[c.sourceId]?.nutrients?.[nut.code])
+          .length,
+      0,
+    );
+    const untestedFields = classified.accepted.reduce(
+      (n, c) =>
+        n +
+        c.nutrients.filter(
+          (nut) => !expected[c.sourceId]?.nutrients?.[nut.code],
+        ).length,
       0,
     );
     report[name] = {
       failures,
       accepted: classified.accepted.length,
       checkedFields,
+      untestedFields,
+      fixtureNote:
+        "expected covers the committed fixture rows — a sample, not the full export",
     };
     total += failures.length;
   }

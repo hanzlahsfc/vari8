@@ -101,3 +101,106 @@ describe("accuracy gate — real exit codes", () => {
     expect(failures[0].kind).toBe("missing_provenance");
   });
 });
+
+describe("accuracy gate — false-pass paths closed (#508)", () => {
+  const CIQ = "tests/fixtures/nutrition";
+  const clean = ["--input", `ciqual=${CIQ}/ciqual-2025-sample.xlsx`];
+
+  it("a duplicate expected identity fails", () => {
+    const r = run([
+      ...BASE,
+      ...clean,
+      "--expected",
+      `ciqual=${CIQ}/expected-ciqual-dup.json`,
+    ]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toMatch(/duplicate_expected|missing_row/);
+  });
+
+  it("a removed expected nutrient fails as uncovered", () => {
+    const r = run([
+      ...BASE,
+      ...clean,
+      "--expected",
+      `ciqual=${CIQ}/expected-ciqual-omit.json`,
+    ]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("uncovered_nutrient");
+    expect(r.out).toContain("EAU-G");
+  });
+
+  it("a numerically-equal value with wrong unit fails", () => {
+    const r = run([
+      ...BASE,
+      ...clean,
+      "--expected",
+      `ciqual=${CIQ}/expected-ciqual-wrongunit.json`,
+    ]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("wrong_unit");
+  });
+
+  it("a wrong reference basis fails", () => {
+    const r = run([
+      ...BASE,
+      ...clean,
+      "--expected",
+      `ciqual=${CIQ}/expected-ciqual-wrongbasis.json`,
+    ]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("wrong_basis");
+  });
+
+  it("sourceSha256 is required and bound to the input bytes", async () => {
+    const { checkProvenance, checkSourceHashBinding } =
+      await import("../../lib/nutrition/sources/accuracy");
+    const good = {
+      sourceId: "X1",
+      provenance: {
+        source: "s",
+        sourceUrl: "u",
+        licence: "l",
+        licenceUrl: "lu",
+        sourceVersion: "v",
+        sourceSha256: "a".repeat(64),
+      },
+      nutrients: [],
+    };
+    expect(checkProvenance([good as never])).toHaveLength(0);
+    const noHash = {
+      ...good,
+      provenance: { ...good.provenance, sourceSha256: "" },
+    };
+    expect(checkProvenance([noHash as never])[0].kind).toBe(
+      "missing_provenance",
+    );
+    const badHash = {
+      ...good,
+      provenance: { ...good.provenance, sourceSha256: "xyz" },
+    };
+    expect(checkProvenance([badHash as never])[0].kind).toBe("missing_hash");
+    const mismatched = checkSourceHashBinding([good as never], "b".repeat(64));
+    expect(mismatched[0].kind).toBe("hash_mismatch");
+    // and the real fixture path binds the actual file hash
+    const r = run([
+      ...BASE,
+      ...clean,
+      "--expected",
+      `ciqual=${CIQ}/expected-ciqual.json`,
+    ]);
+    expect(r.exit).toBe(0); // provenance hash == fixture file hash
+  });
+
+  it("duplicate candidate identity fails at the gate entry", async () => {
+    const { checkAccuracy } =
+      await import("../../lib/nutrition/sources/accuracy");
+    const c = {
+      sourceId: "X1",
+      name: "n",
+      nutrients: [],
+      provenance: { source: "s" },
+    };
+    const failures = checkAccuracy([c as never, c as never], {});
+    expect(failures.some((f) => f.kind === "duplicate_candidate")).toBe(true);
+  });
+});

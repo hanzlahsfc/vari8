@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 160 modules with exports, 1553 exported symbols.
+Counts: 160 modules with exports, 1557 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1425,10 +1425,14 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/nutrition/sources/accuracy.ts`
 
 - `export interface AccuracyCheck (6 members)`
+- `export interface ExpectedNutrient (3 members)`
 - `export interface ExpectedRow (4 members)`
 - `export function assertAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): void`
 - `export function checkAccuracy(candidates: SourceCandidate[], expected: Record<string, ExpectedRow>): AccuracyCheck[]`
 - `export function checkProvenance(candidates: SourceCandidate[]): AccuracyCheck[]`
+- `export function checkSourceHashBinding(candidates: SourceCandidate[], actualSha256: string): AccuracyCheck[]`
+- `export function findDuplicateExpected(expected: ExpectedRow[] | Record<string, ExpectedRow>): string[]`
+- `export function findDuplicateIds(candidates: SourceCandidate[]): string[]`
 
 ## `lib/nutrition/sources/bls.ts`
 

@@ -2,17 +2,23 @@
  * CATALOGUE-ACCURACY (#184) — executable accuracy gate over the
  * existing source adapters + independent expected cell values.
  * Reuses parseBlsExport/parseCiqualExport — no second parser.
- * Exits nonzero upstream: any mismatch, missing provenance or
- * unexpected outcome is a gate failure, not a warning.
+ * Any divergence, duplicate or coverage gap is a gate failure,
+ * never a warning.
  */
 
 import { SourceAdapterError, type SourceCandidate } from "./common";
+
+export interface ExpectedNutrient {
+  value: string | null;
+  unit: string;
+  basis: string;
+}
 
 export interface ExpectedRow {
   sourceRow: number;
   sourceId: string;
   name: string;
-  nutrients: Record<string, string | null>;
+  nutrients: Record<string, ExpectedNutrient>;
 }
 
 export interface AccuracyCheck {
@@ -21,7 +27,15 @@ export interface AccuracyCheck {
     | "zero_for_missing"
     | "lost_qualifier"
     | "wrong_qualifier"
+    | "wrong_unit"
+    | "wrong_basis"
     | "missing_provenance"
+    | "missing_hash"
+    | "hash_mismatch"
+    | "duplicate_candidate"
+    | "duplicate_expected"
+    | "uncovered_nutrient"
+    | "empty_expected"
     | "unexpected_row"
     | "missing_row";
   sourceId: string;
@@ -60,16 +74,55 @@ function classifyExpected(raw: string | null): {
   return { value: Number(t.replace(",", ".")) };
 }
 
+/** Reject duplicate source-row identities before any indexing —
+ * never silently overwrite in a map. Returns the duplicate ids. */
+export function findDuplicateIds(candidates: SourceCandidate[]): string[] {
+  const seen = new Set<string>();
+  const dup: string[] = [];
+  for (const c of candidates)
+    if (seen.has(c.sourceId)) dup.push(c.sourceId);
+    else seen.add(c.sourceId);
+  return dup;
+}
+
+export function findDuplicateExpected(
+  expected: ExpectedRow[] | Record<string, ExpectedRow>,
+): string[] {
+  const rows = Array.isArray(expected) ? expected : Object.values(expected);
+  const seen = new Set<string>();
+  const dup: string[] = [];
+  for (const r of rows)
+    if (seen.has(r.sourceId)) dup.push(r.sourceId);
+    else seen.add(r.sourceId);
+  return dup;
+}
+
 /** Compare adapter candidates against INDEPENDENT expected source
- * values. Any divergence is a gate failure — the gate measures the
- * adapter, it never trusts it. */
+ * values — identity, unit, basis, value AND qualifier must all match.
+ * Coverage: every candidate nutrient needs an expected entry; a
+ * missing expected nutrient fails, it does not shrink the denominator. */
 export function checkAccuracy(
   candidates: SourceCandidate[],
   expected: Record<string, ExpectedRow>,
 ): AccuracyCheck[] {
   const failures: AccuracyCheck[] = [];
+
+  for (const id of findDuplicateIds(candidates))
+    failures.push({
+      kind: "duplicate_candidate",
+      sourceId: id,
+      detail: `duplicate candidate source id ${id}`,
+    });
+  for (const id of findDuplicateExpected(expected))
+    failures.push({
+      kind: "duplicate_expected",
+      sourceId: id,
+      detail: `duplicate expected source id ${id}`,
+    });
+
   const seen = new Set<string>();
   for (const c of candidates) {
+    if (seen.has(c.sourceId)) continue; // already reported as duplicate
     seen.add(c.sourceId);
     const e = expected[c.sourceId];
     if (!e) {
@@ -80,22 +133,59 @@ export function checkAccuracy(
       });
       continue;
     }
-    for (const [code, rawExpected] of Object.entries(e.nutrients)) {
-      const exp = classifyExpected(rawExpected);
+    if (Object.keys(e.nutrients).length === 0)
+      failures.push({
+        kind: "empty_expected",
+        sourceId: c.sourceId,
+        detail: `expected row ${c.sourceId} declares zero nutrients — a gate must not pass on empty coverage`,
+      });
+
+    // every declared nutrient must have an independent expected value
+    const expectedCodes = new Set(Object.keys(e.nutrients));
+    for (const n of c.nutrients)
+      if (!expectedCodes.has(n.code))
+        failures.push({
+          kind: "uncovered_nutrient",
+          sourceId: c.sourceId,
+          code: n.code,
+          detail: `candidate nutrient ${n.code} has no expected value — coverage gap, not a pass`,
+        });
+
+    for (const [code, exp] of Object.entries(e.nutrients)) {
+      const expectedVal = classifyExpected(exp.value);
       const actual = c.nutrients.find((n) => n.code === code);
       if (!actual) {
         failures.push({
           kind: "value_mismatch",
           sourceId: c.sourceId,
           code,
-          expected: exp,
+          expected: expectedVal,
           actual: "missing nutrient",
           detail: `nutrient ${code} absent from candidate`,
         });
         continue;
       }
-      // zero written where the source cell is empty — the #184 acceptance case
-      if (exp.value === null && actual.value === 0) {
+      // unit and basis are part of the measurement identity
+      if (actual.unit !== exp.unit)
+        failures.push({
+          kind: "wrong_unit",
+          sourceId: c.sourceId,
+          code,
+          expected: exp.unit,
+          actual: actual.unit,
+          detail: `nutrient ${code}: unit ${JSON.stringify(exp.unit)} vs ${JSON.stringify(actual.unit)}`,
+        });
+      if (actual.basis !== exp.basis)
+        failures.push({
+          kind: "wrong_basis",
+          sourceId: c.sourceId,
+          code,
+          expected: exp.basis,
+          actual: actual.basis,
+          detail: `nutrient ${code}: basis ${JSON.stringify(exp.basis)} vs ${JSON.stringify(actual.basis)}`,
+        });
+      // zero written where the source cell is empty — the #184 case
+      if (expectedVal.value === null && actual.value === 0) {
         failures.push({
           kind: "zero_for_missing",
           sourceId: c.sourceId,
@@ -107,39 +197,39 @@ export function checkAccuracy(
         continue;
       }
       if (
-        exp.value !== null &&
+        expectedVal.value !== null &&
         actual.value !== null &&
-        Math.abs(exp.value - actual.value) > 1e-12
+        Math.abs(expectedVal.value - actual.value) > 1e-12
       ) {
         failures.push({
           kind: "value_mismatch",
           sourceId: c.sourceId,
           code,
-          expected: exp.value,
+          expected: expectedVal.value,
           actual: actual.value,
-          detail: `nutrient ${code}: expected ${exp.value}, got ${actual.value}`,
+          detail: `nutrient ${code}: expected ${expectedVal.value}, got ${actual.value}`,
         });
         continue;
       }
-      if ((exp.value === null) !== (actual.value === null)) {
+      if ((expectedVal.value === null) !== (actual.value === null)) {
         failures.push({
           kind: "value_mismatch",
           sourceId: c.sourceId,
           code,
-          expected: exp.value,
+          expected: expectedVal.value,
           actual: actual.value,
-          detail: `nutrient ${code}: expected ${exp.value}, got ${actual.value}`,
+          detail: `nutrient ${code}: expected ${expectedVal.value}, got ${actual.value}`,
         });
         continue;
       }
-      if ((exp.qualifier ?? null) !== (actual.qualifier ?? null)) {
+      if ((expectedVal.qualifier ?? null) !== (actual.qualifier ?? null)) {
         failures.push({
           kind: "wrong_qualifier",
           sourceId: c.sourceId,
           code,
-          expected: exp.qualifier ?? null,
+          expected: expectedVal.qualifier ?? null,
           actual: actual.qualifier ?? null,
-          detail: `nutrient ${code}: qualifier ${exp.qualifier ?? "exact"} vs ${actual.qualifier ?? "exact"}`,
+          detail: `nutrient ${code}: qualifier ${expectedVal.qualifier ?? "exact"} vs ${actual.qualifier ?? "exact"}`,
         });
       }
     }
@@ -154,8 +244,8 @@ export function checkAccuracy(
   return failures;
 }
 
-/** Every candidate must carry complete provenance — a row missing it
- * does not ship. */
+/** Every candidate must carry complete provenance including the
+ * bound source sha256 — a row missing it does not ship. */
 export function checkProvenance(
   candidates: SourceCandidate[],
 ): AccuracyCheck[] {
@@ -169,6 +259,7 @@ export function checkProvenance(
       ["licence", p.licence],
       ["licenceUrl", p.licenceUrl],
       ["sourceVersion", p.sourceVersion],
+      ["sourceSha256", p.sourceSha256],
     ].filter(([, v]) => !v);
     if (missing.length)
       failures.push({
@@ -176,7 +267,33 @@ export function checkProvenance(
         sourceId: c.sourceId,
         detail: `candidate ${c.sourceId} missing provenance: ${missing.map(([k]) => k).join(", ")}`,
       });
+    else if (!/^[0-9a-f]{64}$/.test(p.sourceSha256))
+      failures.push({
+        kind: "missing_hash",
+        sourceId: c.sourceId,
+        detail: `candidate ${c.sourceId} sourceSha256 is not a 64-hex digest: ${JSON.stringify(p.sourceSha256)}`,
+      });
   }
+  return failures;
+}
+
+/** Bind the recorded source hash to the actual input bytes — the
+ * provenance hash must be the hash of the file that produced the
+ * candidates, not any declared value. */
+export function checkSourceHashBinding(
+  candidates: SourceCandidate[],
+  actualSha256: string,
+): AccuracyCheck[] {
+  const failures: AccuracyCheck[] = [];
+  for (const c of candidates)
+    if (c.provenance.sourceSha256 !== actualSha256)
+      failures.push({
+        kind: "hash_mismatch",
+        sourceId: c.sourceId,
+        expected: actualSha256,
+        actual: c.provenance.sourceSha256,
+        detail: `candidate ${c.sourceId} provenance hash ${c.provenance.sourceSha256?.slice(0, 12)}… does not match the input file`,
+      });
   return failures;
 }
 
