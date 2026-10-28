@@ -1363,10 +1363,11 @@ model DailyEntryRevisionValue {
 
 // Card 09 (#173): daily nutrition actuals over daily entries. One log per
 // day entry with three independent nullable macro columns - NULL reads as
-// not recorded, never zero. Calories are derived at read (4/4/9); no
-// entered or stored calorie column exists by design. The log is pinned to
-// the day entry, not to any template pin or nutrition mode, so switching
-// a client between meal plan and macro counting keeps earlier entries.
+// not recorded, never zero. Calories are a stored nullable column: when a
+// value is recorded it is returned as-is, and when none is stored the
+// readers fall back to the 4/4/9 derivation. The log is pinned to the day
+// entry, not to any template pin or nutrition mode, so switching a client
+// between meal plan and macro counting keeps earlier entries.
 model NutritionLog {
   id                String   @id @default(cuid())
   dailyEntryId      String   @map("daily_entry_id")
@@ -1376,6 +1377,7 @@ model NutritionLog {
   protein           Decimal? @db.Decimal(9, 3)
   carbohydrate      Decimal? @db.Decimal(9, 3)
   fat               Decimal? @db.Decimal(9, 3)
+  calories          Decimal? @db.Decimal(9, 3)
   // Day-level nutrition state: the logged day type label and whether the
   // plan was followed. NULL reads as not recorded.
   dayType           String?  @map("day_type")

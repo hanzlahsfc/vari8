@@ -1326,6 +1326,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
               protein: vals.protein ?? null,
               carbohydrate: vals.carbs ?? null,
               fat: vals.fat ?? null,
+              calories: vals.calories ?? null,
               createdByMemberId: clientMemberId,
               updatedByMemberId: clientMemberId,
             },
