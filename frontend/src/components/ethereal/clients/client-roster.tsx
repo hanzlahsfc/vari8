@@ -12,14 +12,20 @@ import {
 import { motion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Input, SegmentedControl, Select } from "@/components/vari8/components";
+import { useReducedMotion } from "@/lib/reduced-motion";
+import {
+  attentionPriority,
+  attentionReasons,
+  attentionSignalsFrom,
+} from "@/lib/attention";
 import {
   attentionCount,
   formatClientDate,
   needsAttention,
   type WorkspaceClient,
 } from "./model";
+import { matchingSearch } from "./roster-search";
 import "./client-roster.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type RosterFilter = "all" | "attention" | "unread";
 type RosterSort = "next-check-in" | "name" | "attention";
@@ -39,14 +45,6 @@ function initials(client: WorkspaceClient) {
       .join("")
       .slice(0, 2)
   );
-}
-
-function matchingSearch(client: WorkspaceClient, query: string) {
-  const normalized = query.trim().toLocaleLowerCase();
-  if (!normalized) return true;
-  return [client.name, client.label, client.phase, client.template]
-    .filter(Boolean)
-    .some((value) => value.toLocaleLowerCase().includes(normalized));
 }
 
 function isClientDate(value: string | null | undefined): value is string {
@@ -139,54 +137,14 @@ function ClientCounts({ client }: { client: WorkspaceClient }) {
   );
 }
 
-function attentionReasons(client: WorkspaceClient) {
-  const reasons: string[] = [];
-  const pendingTasks = client.clientTasks.filter(
-    (task) => task.status === "open",
-  ).length;
-
-  const hasCheckInAwaitingFeedback = client.checkIns.some(
-    (checkIn) => checkIn.status === "awaiting feedback",
-  );
-  if (hasCheckInAwaitingFeedback) {
-    reasons.push("check-in awaiting feedback");
-  } else if (client.checkInStatus === "overdue") {
-    reasons.push("check-in overdue");
-  }
-  if (client.unreadCount > 0) {
-    reasons.push(
-      `${client.unreadCount} unread message${client.unreadCount === 1 ? "" : "s"}`,
-    );
-  }
-  const overdueTasks = client.clientTasks.filter(
-    (task) => task.status === "overdue",
-  ).length;
-  if (overdueTasks > 0) {
-    reasons.push(
-      `${overdueTasks} overdue task${overdueTasks === 1 ? "" : "s"}`,
-    );
-  }
-  if (pendingTasks > 0) {
-    reasons.push(
-      `${pendingTasks} pending task${pendingTasks === 1 ? "" : "s"}`,
-    );
-  }
-  if (client.trainingFlags > 0) {
-    reasons.push(
-      `${client.trainingFlags} training flag${client.trainingFlags === 1 ? "" : "s"}`,
-    );
-  }
-  return reasons;
+// W2-T5: reasons and priority come from the shared attention module so
+// the triage widget surfaces the identical result.
+function reasonsFor(client: WorkspaceClient) {
+  return attentionReasons(attentionSignalsFrom(client));
 }
 
-function attentionPriority(client: WorkspaceClient) {
-  if (client.checkIns.some((checkIn) => checkIn.status === "awaiting feedback"))
-    return 5;
-  if (client.checkInStatus === "overdue") return 4;
-  if (client.clientTasks.some((task) => task.status === "overdue")) return 3;
-  if (client.unreadCount > 0) return 2;
-  if (client.trainingFlags > 0) return 1;
-  return 0;
+function priorityFor(client: WorkspaceClient) {
+  return attentionPriority(attentionSignalsFrom(client));
 }
 
 export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
@@ -226,7 +184,7 @@ export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "attention") {
         return (
-          attentionPriority(b) - attentionPriority(a) ||
+          priorityFor(b) - priorityFor(a) ||
           Number(needsAttention(b)) - Number(needsAttention(a)) ||
           attentionCount(b) - attentionCount(a) ||
           a.name.localeCompare(b.name)
@@ -376,9 +334,7 @@ export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
           }
         >
           {visibleClients.map((client) => {
-            const reasons = needsAttention(client)
-              ? attentionReasons(client)
-              : [];
+            const reasons = needsAttention(client) ? reasonsFor(client) : [];
             const attentionId = `cr-attention-${client.id}`;
 
             return (

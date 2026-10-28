@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 58 backend pages, 76 API routes, 14 layouts, 5 canvas pages.
+Counts: 60 backend pages, 81 API routes, 14 layouts, 7 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -19,6 +19,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/` | `app/(canvas)/page.tsx` | server | requireSessionUser |
 | `/client` | `app/(canvas)/client/page.tsx` | server | auth |
 | `/coach` | `app/(canvas)/coach/page.tsx` | server | requireCanvasAccess |
+| `/coach/dashboard` | `app/(canvas)/coach/dashboard/page.tsx` | server | requireCanvasAccess |
 | `/daily` | `app/daily/page.tsx` | server | none detected |
 | `/ethereal` | `app/(canvas)/ethereal/page.tsx` | server | requireCanvasAccess |
 | `/invite` | `app/invite/page.tsx` | server | auth |
@@ -70,6 +71,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/workspace/[workspaceId]/onboarding/forms/[formId]/preview` | `app/workspace/[workspaceId]/onboarding/forms/[formId]/preview/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/onboarding/forms/new` | `app/workspace/[workspaceId]/onboarding/forms/new/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/parameters` | `app/workspace/[workspaceId]/parameters/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
+| `/workspace/[workspaceId]/settings` | `app/workspace/[workspaceId]/settings/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates` | `app/workspace/[workspaceId]/templates/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates/[templateId]` | `app/workspace/[workspaceId]/templates/[templateId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
 | `/workspace/[workspaceId]/templates/[templateId]/preview` | `app/workspace/[workspaceId]/templates/[templateId]/preview/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
@@ -81,6 +83,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 |---|---|---|---|
 | `/api/auth/[...all]` | `app/api/auth/[...all]/route.ts` | GET, POST | none detected |
 | `/api/v1/auth/refresh` | `app/api/v1/auth/refresh/route.ts` | POST | none detected |
+| `/api/v1/invite/lookup` | `app/api/v1/invite/lookup/route.ts` | POST | none detected |
 | `/api/v1/media/[workspaceId]` | `app/api/v1/media/[workspaceId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/route.ts` | - | none detected |
 | `/api/v1/media/[workspaceId]/[mediaObjectId]/assignments` | `app/api/v1/media/[workspaceId]/[mediaObjectId]/assignments/route.ts` | - | none detected |
@@ -91,6 +94,8 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/saved-meals/[workspaceId]/[savedMealId]` | `app/api/v1/saved-meals/[workspaceId]/[savedMealId]/route.ts` | - | none detected |
 | `/api/v1/saved-meals/[workspaceId]/[savedMealId]/assignments` | `app/api/v1/saved-meals/[workspaceId]/[savedMealId]/assignments/route.ts` | - | none detected |
 | `/api/v1/saved-meals/[workspaceId]/assigned` | `app/api/v1/saved-meals/[workspaceId]/assigned/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/appearance` | `app/api/v1/workspaces/[workspaceId]/appearance/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/attention` | `app/api/v1/workspaces/[workspaceId]/attention/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel` | `app/api/v1/workspaces/[workspaceId]/checkins/instances/[instanceId]/cancel/route.ts` | - | none detected |
@@ -140,6 +145,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/daily-entries` | `app/api/v1/workspaces/[workspaceId]/daily-entries/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/daily-entries/[entryDate]` | `app/api/v1/workspaces/[workspaceId]/daily-entries/[entryDate]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/exercise-library` | `app/api/v1/workspaces/[workspaceId]/exercise-library/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/first-run` | `app/api/v1/workspaces/[workspaceId]/first-run/route.ts` | GET | none detected |
 | `/api/v1/workspaces/[workspaceId]/iifym-plans` | `app/api/v1/workspaces/[workspaceId]/iifym-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/messages` | `app/api/v1/workspaces/[workspaceId]/messages/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/messages/read` | `app/api/v1/workspaces/[workspaceId]/messages/read/route.ts` | - | none detected |
@@ -147,6 +153,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]` | `app/api/v1/workspaces/[workspaceId]/nutrition-logs/[entryDate]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/settings` | `app/api/v1/workspaces/[workspaceId]/settings/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/tasks` | `app/api/v1/workspaces/[workspaceId]/tasks/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/route.ts` | - | none detected |
@@ -186,6 +193,8 @@ Lilly's canvas app. It is authoritative for screens and appearance; the backend 
 | `/` | `frontend/src/app/page.tsx` | server | none detected |
 | `/client` | `frontend/src/app/client/page.tsx` | server | none detected |
 | `/coach` | `frontend/src/app/coach/page.tsx` | server | none detected |
+| `/coach/settings` | `frontend/src/app/coach/settings/page.tsx` | client | none detected |
+| `/coach/states` | `frontend/src/app/coach/states/page.tsx` | client | none detected |
 | `/dev/design-system` | `frontend/src/app/dev/design-system/page.tsx` | server | none detected |
 | `/ethereal` | `frontend/src/app/ethereal/page.tsx` | server | none detected |
 

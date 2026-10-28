@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Modal, Status, Tabs } from "@/components/canvas/vari8/components";
 import { fetchStaffNutritionLogs } from "../../data/nutrition";
 import {
@@ -25,6 +25,7 @@ import {
 } from "./compute";
 import { SheetGrid, selectionStart } from "./grid";
 import { IMPORTED_CELLS } from "./imported";
+import { sheetFormula } from "./workbook-values";
 import "./legacy-sheet.css";
 import {
   cellAddress,
@@ -97,6 +98,7 @@ export function LegacySheetDialog({
     Record<string, [number, number, number]>
   >(() => readWeekTargets(client.id));
   const [toolsOpen, setToolsOpen] = useState(false);
+  const tabBarRef = useRef<HTMLDivElement>(null);
   const today = useMemo(() => localToday(), []);
 
   // Hydrate the sheet seam; when the workspace resolves, merge the staff
@@ -140,6 +142,16 @@ export function LegacySheetDialog({
       cancelled = true;
     };
   }, [open, client.id, client.name, workspaceId, clientProfileIdFor]);
+
+  // The tab bar scrolls horizontally on narrow layouts; keep the active tab
+  // inside the scrollport whenever the selection or the dialog changes.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeSlug is the re-run trigger, not an input.
+  useEffect(() => {
+    if (!open) return;
+    tabBarRef.current
+      ?.querySelector('[role="tab"][aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [open, activeSlug]);
 
   const tab = tabBySlug(activeSlug) ?? WORKBOOK[0];
   const selection = selections[tab.slug] ?? selectionStart(tab);
@@ -212,8 +224,15 @@ export function LegacySheetDialog({
   };
 
   const activeCell = tabCells[keyOf(selection.r1, selection.c1)];
+  const workbookFormula = sheetFormula(
+    tab.slug,
+    selection.r1,
+    selection.c1,
+  );
   const badges: string[] = [];
-  if (activeCell?.kind === "formula") {
+  if (workbookFormula) {
+    badges.push(FORMULA_SHAPE_BADGE);
+  } else if (activeCell?.kind === "formula") {
     badges.push(
       activeCell.formulaWrap === "udf" ? UDF_SHAPE_BADGE : FORMULA_SHAPE_BADGE,
     );
@@ -222,7 +241,8 @@ export function LegacySheetDialog({
     badges.push(provenanceBadge(activeCell));
   }
   const readout =
-    activeCell?.kind === "formula" ? activeCell.formulaText : activeCell?.value;
+    workbookFormula ??
+    (activeCell?.kind === "formula" ? activeCell.formulaText : activeCell?.value);
 
   const tabItems = WORKBOOK.map((item) => ({
     value: item.slug,
@@ -316,17 +336,19 @@ export function LegacySheetDialog({
             ))}
           </span>
         </div>
-        <Tabs
-          label="Workbook tabs"
-          value={tab.slug}
-          onValueChange={(slug) => {
-            setActiveSlug(slug);
-            setNameEdit(null);
-            setToolsOpen(false);
-          }}
-          items={tabItems}
-          className="ls-tabs"
-        />
+        <div ref={tabBarRef} className="ls-tabwrap">
+          <Tabs
+            label="Workbook tabs"
+            value={tab.slug}
+            onValueChange={(slug) => {
+              setActiveSlug(slug);
+              setNameEdit(null);
+              setToolsOpen(false);
+            }}
+            items={tabItems}
+            className="ls-tabs"
+          />
+        </div>
         <div className="ls-status">
           <span>{`${tab.name} · ${cellAddress({ row: selection.r1, col: selection.c1 })}`}</span>
           <span className="ls-status-synth">

@@ -7,10 +7,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AccessDeniedError } from "../../lib/auth/guard";
-import {
-  listOwnMessages,
-  sendOwnMessage,
-} from "../../lib/messages/service";
+import { listOwnMessages, sendOwnMessage } from "../../lib/messages/service";
 
 type Row = {
   id: string;
@@ -50,7 +47,8 @@ function fakeDb() {
     clientProfile: {
       findFirst: async (args: {
         where: { workspaceId: string; userId: string };
-      }) => profiles.get(`${args.where.workspaceId}:${args.where.userId}`) ?? null,
+      }) =>
+        profiles.get(`${args.where.workspaceId}:${args.where.userId}`) ?? null,
     },
     conversation: {
       findUnique: async (args: {
@@ -206,5 +204,32 @@ describe("sendOwnMessage", () => {
     );
     expect(retry.message.id).toBe(first.message.id);
     expect(messages).toHaveLength(1);
+  });
+
+  it("notifies staff only when a new message row commits, not on idempotent replay", async () => {
+    const { db, profiles } = fakeDb();
+    profiles.set("ws-1:user-1", { id: "cp-1" });
+    const calls: { workspaceId: string; clientProfileId: string }[] = [];
+    const deps = {
+      db: db as never,
+      notifyClientMessage: async (input: {
+        workspaceId: string;
+        clientProfileId: string;
+      }) => {
+        calls.push(input);
+      },
+    };
+    await sendOwnMessage(
+      client,
+      { workspaceId: "ws-1", body: "ping", clientRequestId: "req-10" },
+      deps,
+    );
+    expect(calls).toEqual([{ workspaceId: "ws-1", clientProfileId: "cp-1" }]);
+    await sendOwnMessage(
+      client,
+      { workspaceId: "ws-1", body: "ping", clientRequestId: "req-10" },
+      deps,
+    );
+    expect(calls).toHaveLength(1);
   });
 });

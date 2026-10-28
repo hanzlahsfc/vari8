@@ -15,6 +15,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "@prisma/client";
 import { prisma } from "../db";
 import { AccessDeniedError } from "../auth/guard";
+import { notifyStaffOfClientMessage } from "../email";
 
 export class MessageError extends Error {
   constructor(
@@ -41,7 +42,19 @@ type PrismaLike = Pick<
   | "$transaction"
 >;
 
-export type MessageDeps = { db?: PrismaLike };
+export type MessageDeps = {
+  db?: PrismaLike;
+  /**
+   * W2-T1: notification fan-out after a NEW client message commits. The
+   * default honours each staff member's `email.messages` preference at send
+   * time; tests inject a spy. Failures inside the notifier never roll the
+   * message back (it runs after the transaction commits).
+   */
+  notifyClientMessage?: (input: {
+    workspaceId: string;
+    clientProfileId: string;
+  }) => Promise<unknown>;
+};
 
 /** W2-T8: one media_object linked onto a message. byteSize is a BigInt on
  *  the row; the wire always speaks numbers. */
@@ -404,7 +417,7 @@ export async function sendOwnMessage(
     };
   });
 
-  return db.$transaction(async (tx) => {
+  const result = await db.$transaction(async (tx) => {
     const conversation = await tx.conversation.upsert({
       where: {
         workspaceId_clientProfileId: {
@@ -435,7 +448,7 @@ export async function sendOwnMessage(
         attachments: attachmentSelect,
       },
     });
-    if (existing) return { message: toView(existing) };
+    if (existing) return { message: toView(existing), created: false };
     const row = await tx.message.create({
       data: {
         workspaceId: input.workspaceId,
@@ -460,8 +473,28 @@ export async function sendOwnMessage(
       where: { id: conversation.id },
       data: { lastMessageAt: row.sentAt },
     });
-    return { message: { ...toView(row), attachments: targetViews } };
+    return {
+      message: { ...toView(row), attachments: targetViews },
+      created: true,
+    };
   });
+
+  // Notification fan-out runs after the commit boundary: a mail outage must
+  // not roll a delivered message back, and the notifier itself contains
+  // per-recipient failures.
+  if (result.created) {
+    const notify = deps.notifyClientMessage ?? notifyStaffOfClientMessage;
+    try {
+      await notify({
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      });
+    } catch {
+      // Delivery failure is already logged inside the notifier; the send
+      // result stands.
+    }
+  }
+  return { message: result.message };
 }
 
 /* -------------------------------------------------------------------------

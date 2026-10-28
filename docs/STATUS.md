@@ -810,6 +810,42 @@ false`, tenant-coherent FKs and indexes.
   notes. Add-note and timeline week-note edits persist through reload
   (verified in `coach_note`/`client_week_note` rows). Second-workspace
   coach gets literal 403 on both endpoints.
+## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
+
+- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
+  keyed `(workspaceId, memberId, key)` with closed key registry
+  (`attention.unread_messages`, `attention.priority_messages`,
+  `email.messages`; default enabled when no row). Migration dir
+  `20261027000000_member_preferences` with `down.sql`.
+- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
+  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
+  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
+  pref check at send time, failures logged as `notification_delivery_failed`,
+  never roll back the message). `sendOwnMessage` notifies post-commit only on
+  a newly created row (idempotent replays do not re-mail).
+- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
+  `defineApiV1Route`; member-scoped to the caller's resolved membership,
+  non-member/denied 403.
+- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
+  (profile + preference groups). Component authored first in
+  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
+  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
+  demo mount at `frontend/src/app/coach/settings` (localStorage).
+- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
+  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
+  check on changed files 0), `test` 1 in full-parallel run
+  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
+  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
+  `index`/`index:check` 0, settings integration 5/5 on real PG.
+- Browser pass on prod build (`next start` http:4200 + tls-proxy
+  https:4298): coach real login, settings surface, `email.messages` off →
+  second session persists off, client message mails owner but not the
+  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
+  1440/390 + mailbox.jsonl in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
+  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
+- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
+  count 0 saved to `pg_database-absent.txt`.
 
 ## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
@@ -980,7 +1016,7 @@ false`, tenant-coherent FKs and indexes.
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -1030,7 +1066,7 @@ MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -1142,7 +1178,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  - media still mintable + rows retained in db.
+  + media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe

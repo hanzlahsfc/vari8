@@ -151,6 +151,14 @@ export function WorkspaceNav({
       roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
       enabled: isCheckInsEnabled(),
     },
+    // W2-T1: member settings surface - read-scoped like the route itself;
+    // every write still goes through the own-scope settings API.
+    {
+      href: `/workspace/${workspaceId}/settings`,
+      label: "Settings",
+      resource: "workspaceSettings",
+      action: "read",
+    },
     {
       href: `/workspace/${workspaceId}/admin`,
       label: "Admin",
