@@ -32,6 +32,23 @@
   --cd-accent-ring: var(--cd-accent);
   --cd-action-bg: var(--cd-accent);
   --cd-action-text: var(--cd-accent-contrast);
+  /* Mirror of the .coach-root token set. coach.css aliases every --cd-*
+     token to --v8-* variables the canvas appearance store injects at
+     runtime; the auth routes never mount that store, so without repeats
+     the tokens resolve to nothing and the wash, card surface, text and
+     hairlines lose their canvas values. These repeat the v8 dark tokens;
+     the light block below repeats the v8 light tokens for pro-white. */
+  --cd-bg: #080808;
+  --cd-surface: #101010;
+  --cd-raised: #212121;
+  --cd-field: #0c0c0c;
+  --cd-text: #f1f1f1;
+  --cd-muted: #b2b2b2;
+  --cd-line: #2a2a2a;
+  --cd-wash: #171717;
+  --cd-highlight: rgb(255 255 255 / 8%);
+  --cd-accent-contrast: #000000;
+  color-scheme: dark;
 
   display: grid;
   place-items: center;
@@ -42,19 +59,19 @@
    O17: the client auth routes (.eg-auth) follow the eg shell's own data-mode,
    never the app-wide html[data-theme] switch, so they are excluded here. */
 html[data-theme="pro-white"] .auth-screen:not(.eg-auth) {
-  --cd-bg: #f4f4f4;
+  --cd-bg: #f5f5f5;
   --cd-surface: #ffffff;
   --cd-raised: #ffffff;
-  --cd-field: #ffffff;
-  --cd-text: #1c1c1c;
+  --cd-field: #fafafa;
+  --cd-text: #212121;
   --cd-muted: #626262;
-  --cd-line: rgb(35 25 35 / 12%);
-  --cd-wash: rgb(35 25 35 / 3%);
-  --cd-highlight: rgb(255 255 255 / 85%);
-  --cd-accent-ring: color-mix(in srgb, var(--cd-accent) 55%, #1c1c1c);
-  /* Plain #eb91b8 is 2.26:1 on white; the canvas mixes its accent down for the
-     light mode and text links need the same treatment. */
-  --cd-accent-text: color-mix(in srgb, var(--cd-accent) 55%, #1c1c1c);
+  --cd-line: #dddddd;
+  --cd-wash: #f0f0f0;
+  --cd-highlight: rgb(255 255 255 / 72%);
+  /* Plain #eb91b8 is 2.26:1 on white; the canvas derives the same
+     contrast-adjusted accent for rings and text on light surfaces. */
+  --cd-accent-ring: #b46f8d;
+  --cd-accent-text: #8d576f;
   background: var(--cd-bg);
   color-scheme: light;
 }

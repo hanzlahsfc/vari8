@@ -111,7 +111,7 @@ for (const theme of ["pro-dark", "pro-white"] as const) {
     await expect(card).toHaveCSS("border-radius", "12px");
     await expect(card).toHaveCSS(
       "background-color",
-      theme === "pro-dark" ? "rgb(15, 15, 15)" : "rgb(255, 255, 255)",
+      theme === "pro-dark" ? "rgb(16, 16, 16)" : "rgb(255, 255, 255)",
     );
   });
 }
