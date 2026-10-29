@@ -7,7 +7,7 @@
 import { execFileSync } from "node:child_process";
 
 import { PrismaClient } from "@prisma/client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { auth } from "../../lib/auth/server";
 import { hashPassword } from "../../lib/password";
@@ -196,6 +196,12 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
   };
 
   beforeAll(async () => {
+    // The three plan services resolve their dev consent registry only when
+    // the per-domain flag is on (sibling suites stub the same flags), so the
+    // consent records seeded below are actually checked, never skipped.
+    vi.stubEnv("ENABLE_MEAL_PLANS", "1");
+    vi.stubEnv("ENABLE_IIFYM_PLANS", "1");
+    vi.stubEnv("ENABLE_TRAINING_PLANS", "1");
     execFileSync("npx", ["prisma", "migrate", "deploy"], {
       stdio: "pipe",
       env: { ...process.env, DATABASE_URL: url as string },
@@ -207,6 +213,7 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
   });
 
   afterAll(async () => {
+    vi.unstubAllEnvs();
     await prisma?.$disconnect();
   });
 
