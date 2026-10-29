@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
 
+import pkg from "../../../../package.json";
+
 import {
   requireSessionUser,
   requireWorkspaceAccess,
@@ -52,7 +54,7 @@ export default async function WorkspaceSettingsPage({
         }) as CSSProperties
       }
     >
-      <SettingsForm workspaceId={workspaceId} />
+      <SettingsForm workspaceId={workspaceId} appVersion={pkg.version} />
     </section>
   );
 }
