@@ -407,7 +407,7 @@ describe("combined-run source and pin enforcement", () => {
       // systematic ASCII enumeration: every char as start and as a
       // mid-name char — acceptance comes from the browser, not our regex
       const ascii = await page.evaluate(() => {
-        const out = {};
+        const out: Record<string, string | null> = {};
         for (let i = 0x20; i < 0x7f; i++) {
           const c = String.fromCharCode(i);
           try {
