@@ -171,16 +171,24 @@ export function scrollerNameTag(name) {
   const tag = name.slice(0, i);
   const suffix = name.slice(i + 1);
   if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
-  // the browser's element-name contract (verified exhaustively
-  // against real chromium createElement/tagName across all ASCII):
-  // the FIRST code point must be an ASCII letter, ':' or '_' — or
-  // any non-ASCII char (Unicode letters, combining marks, digits,
-  // emoji, superscripts all valid); every ASCII punctuation except
-  // ':'/'_' is rejected at start. Subsequent code points may be
-  // anything except '/', '>', whitespace and C0 controls — mid-name
-  // '<', '#', '-', '.', '=', quotes and digits are all legitimate
-  // writer output
-  if (!/^(?:[a-z:_]|[^\x00-\x7f])[^/>\s\u0000-\u001f]*$/u.test(tag))
+  // the browser's element-name contract has two branches (verified
+  // against real chromium createElement/tagName):
+  //   ASCII-letter start → lenient continuation: anything except
+  //     '/', '>', ASCII whitespace and C0 controls (mid-name '<',
+  //     '#', '=', quotes, U+2028 and U+FEFF are all emitted)
+  //   ':'/'_'/non-ASCII start → strict continuation: XML NameChars
+  //     only (letters, digits, combining marks, '.', '-', '_', ':',
+  //     middle dot and joiners) — ':!', '_?' and 'é[' all refuse
+  const first = tag.codePointAt(0);
+  const letterStart =
+    (first >= 0x61 && first <= 0x7a) || (first >= 0x41 && first <= 0x5a);
+  if (letterStart) {
+    if (/[/>\t\n\f\r \u0000-\u001f]/u.test(tag)) return null;
+  } else if (
+    !/^(?:[:_]|[^\x00-\x7f])[\p{L}\p{N}\p{M}:_.\-\u00B7\u203F\u2040]*$/u.test(
+      tag,
+    )
+  )
     return null;
   return { tag, idx: Number(suffix) };
 }

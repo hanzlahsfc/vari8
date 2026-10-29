@@ -425,9 +425,24 @@ describe("combined-run source and pin enforcement", () => {
             out[`m${i}`] = null;
           }
         }
+        // per-branch continuation: same char after letter vs
+        // non-letter starts — the browser distinguishes them
+        for (const pfx of ["x", ":", "_", "é"]) {
+          for (let i = 0x20; i < 0x7f; i++) {
+            const c = String.fromCharCode(i);
+            try {
+              out[`${pfx}${i}`] = document
+                .createElement(pfx + c)
+                .tagName.toLowerCase();
+            } catch {
+              out[`${pfx}${i}`] = null;
+            }
+          }
+        }
         return out;
       });
       for (const [k, tag] of Object.entries(ascii)) {
+        if (!/^[sm]/.test(k)) continue; // only s*/m* start/mid keys
         const c = String.fromCharCode(Number(k.slice(1)));
         const candidate = k[0] === "s" ? `${c}x` : `x${c}`;
         // the oracle's authority is the emitted tagName — the writer
@@ -442,9 +457,45 @@ describe("combined-run source and pin enforcement", () => {
           });
         }
       }
+      // the five consolidated counterexamples, browser-verified
+      const branch = await page.evaluate(() =>
+        [":!", "_?", "é[", "a\u2028", "a\ufeff"].map((n) => {
+          try {
+            return [n, document.createElement(n).tagName.toLowerCase()];
+          } catch {
+            return [n, null];
+          }
+        }),
+      );
+      for (const [input, tag] of branch) {
+        const parsed = scrollerNameTag(`${tag ?? input}#0`);
+        if (tag === null)
+          expect(parsed, `rejected ${JSON.stringify(input)}`).toBeNull();
+        else
+          expect(parsed, `emitted ${JSON.stringify(tag)}`).toEqual({
+            tag,
+            idx: 0,
+          });
+      }
+      // per-branch ASCII continuation truth table
+      for (const [k, tag] of Object.entries(ascii)) {
+        if (/^[sm]/.test(k)) continue; // s*/m* already covered
+        const pfx = k[0];
+        const candidate = `${pfx}${String.fromCharCode(Number(k.slice(1)))}`;
+        const parsed = scrollerNameTag(`${tag ?? candidate}#0`);
+        if (tag === null)
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toBeNull();
+        else
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toEqual({
+            tag,
+            idx: 0,
+          });
+      }
       expect(scrollerNameTag("#3")).toBeNull(); // empty tag
       expect(scrollerNameTag("div#03")).toBeNull(); // leading-zero idx
-      expect(scrollerNameTag("Div#3")).toBeNull(); // uppercase isn't writer output — tagName is always lowercase
+      // shape-only: Div parses — lowercase binding is the call site's
+      // name === toLowerCase check (covered by the validator tests)
+      expect(scrollerNameTag("Div#3")).toEqual({ tag: "Div", idx: 3 });
     } finally {
       await browser.close();
     }
