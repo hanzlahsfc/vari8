@@ -1,3 +1,27 @@
+## 2026-10-29 - Merge: wave 2 trunk tail (flexible schedule, tracker columns, temporary nutrition plan, stored calories)
+
+- Four verified tips merged into this branch as merge commits in order, never
+  squashed: 58aab0ff (flexible schedule mode in the meal plan payload, which
+  carries the client own meal plan view, tracker migration pair and demo export
+  refresh), 1d6e3415 (tracker column groups read model), 69e310d4 (temporary
+  nutrition plan table, write route and client own read), 6be4e7fa (stored
+  calories column and canvas actuals that prefer it).
+- Saved meal assign and message attachments ride inside these tips. Beta already
+  carried the flexible schedule type and the canvas handling of it, so the
+  canvas schedule files keep the Beta behavior and add only the server payload
+  validation from the tip.
+- Conflicts resolved at function level. Beta won the canvas plan editor, the
+  nutrition model, the meal plan workspace, the seed credential expectations and
+  the seed link order. The tips won the daily nutrition select (day type and
+  plan followed), the staff daily page calories cell and the added tests. Both
+  appended service blocks in the daily entry service were kept. Generated index
+  docs were regenerated, never hand edited.
+- The frontend tree stays at the Beta state. The attach changes the tip carried
+  into frontend/ were reverted, and the unit test that only exercised that copy
+  was reduced to the canvas case.
+- Adapted callers: the snapshot parameter fixture in the display order test now
+  carries the decimals and summary fields.
+
 ## 2026-10-29 - Merge: client app and coach work items into the trunk base
 
 - Merged the client plans views work item and the supplement plan and activity

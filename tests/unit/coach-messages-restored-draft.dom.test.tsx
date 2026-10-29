@@ -11,9 +11,9 @@
 // attachment and no notice. The canvas twin now classifies that outcome
 // as failed and refuses the send until the item is removed or reattached.
 //
-// These tests mount the REAL CoachProvider + MessagesWorkspace for each
-// twin (frontend/ local preview and components/canvas/), seeding each
-// persistence seam the way a reload leaves it: the draft attachment's
+// These tests mount the REAL CoachProvider + MessagesWorkspace of the canvas
+// twin (components/canvas/), seeding the persistence seam the way a reload
+// leaves it: the draft attachment's
 // metadata is in storage while the in-memory media URL map is empty.
 // send() is invoked through the rendered Send button.
 //
@@ -47,16 +47,7 @@ vi.mock("../../components/canvas/coach/media-card", async (importOriginal) => {
   return { ...mod, uploadCanvasMedia: mocked.upload };
 });
 
-import type { Media } from "../../frontend/src/components/coach/model";
-import {
-  seedState as frontendSeed,
-  STORAGE_KEY,
-} from "../../frontend/src/components/coach/model";
-import { MessagesWorkspace as FrontendMessages } from "../../frontend/src/components/coach/messages";
-import {
-  CoachProvider as FrontendProvider,
-  useCoach as useFrontendCoach,
-} from "../../frontend/src/components/coach/store";
+import type { Media } from "../../components/canvas/coach/model";
 import { seedState as canvasSeed } from "../../components/canvas/coach/model";
 import { MessagesWorkspace as CanvasMessages } from "../../components/canvas/coach/messages";
 import {
@@ -77,21 +68,6 @@ function restoredItem(): Media {
     type: "application/pdf",
     size: 2048,
   };
-}
-
-function FrontendProbe() {
-  const { notice, state } = useFrontendCoach();
-  const client = new URLSearchParams(mocked.query).get("client") ?? "";
-  const draftAttachments = state.drafts[client]?.attachments.length ?? -1;
-  return (
-    <output
-      data-testid="notice"
-      data-messages={state.messages.length}
-      data-draft-attachments={draftAttachments}
-    >
-      {notice?.text ?? ""}
-    </output>
-  );
 }
 
 function CanvasProbe() {
@@ -116,70 +92,6 @@ async function restoredDraftLoaded() {
     await screen.findByPlaceholderText<HTMLTextAreaElement>(/Write a message/);
   await waitFor(() => expect(area.value).toBe("see attached"));
 }
-
-describe("frontend coach messages (local preview twin)", () => {
-  beforeEach(() => {
-    localStorage.clear();
-    globalThis.URL.createObjectURL = vi.fn(() => "blob:mock-session-url");
-    globalThis.URL.revokeObjectURL = vi.fn();
-    const client = frontendSeed().clients[0].id;
-    mocked.query = `section=messages&client=${client}`;
-  });
-  afterEach(cleanup);
-
-  it("restored file draft with no session blob surfaces the honest copy", async () => {
-    const seeded = frontendSeed();
-    const client = seeded.clients[0].id;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        ...seeded,
-        drafts: {
-          [client]: { text: "see attached", attachments: [restoredItem()] },
-        },
-      }),
-    );
-    render(
-      <FrontendProvider>
-        <FrontendMessages />
-        <FrontendProbe />
-      </FrontendProvider>,
-    );
-    await restoredDraftLoaded();
-    const before = screen.getByTestId("notice").dataset.messages;
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    const notice = await screen.findByTestId("notice");
-    expect(notice.textContent).toBe(HONEST_COPY);
-    expect(notice.dataset.messages).toBe(before);
-    expect(notice.dataset.draftAttachments).toBe("1");
-  });
-
-  it("freshly attached file still sends with its session blob", async () => {
-    render(
-      <FrontendProvider>
-        <FrontendMessages />
-        <FrontendProbe />
-      </FrontendProvider>,
-    );
-    const area =
-      await screen.findByPlaceholderText<HTMLTextAreaElement>(
-        /Write a message/,
-      );
-    const input =
-      document.querySelector<HTMLInputElement>('input[type="file"]')!;
-    fireEvent.change(input, {
-      target: {
-        files: [new File(["x"], "plan.pdf", { type: "application/pdf" })],
-      },
-    });
-    fireEvent.change(area, { target: { value: "see attached" } });
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    await waitFor(() =>
-      expect(screen.getByTestId("notice").dataset.messages).not.toBe("0"),
-    );
-    expect(screen.getByTestId("notice").textContent).not.toContain("uploading");
-  });
-});
 
 describe("canvas coach messages (backend twin)", () => {
   beforeEach(() => {
