@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import pkg from "../../../package.json";
 import type { CanvasRole } from "@/lib/auth/viewer";
 import { Input as Vari8Input } from "../vari8/components";
 import { AppearanceControls } from "./appearance-controls";
@@ -382,6 +383,7 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
           <p className="cd-caption">
             Preferences are saved locally. System notifications are not used.
           </p>
+          <p className="cd-caption">App version {pkg.version}</p>
           <details className="cd-reset">
             <summary>Reset this mockup</summary>
             <p>Resets this coach workspace only.</p>
