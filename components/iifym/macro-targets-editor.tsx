@@ -723,7 +723,7 @@ export function MacroTargetsEditor({
         scheduleMode === "weekly" &&
         missingDays.length > 0 ? (
           <p className="cd-muted" data-testid="mt-missing-days">
-            Unassigned weekdays: {missingDays.join(", ")} -- publishing a weekly
+            Unassigned weekdays: {missingDays.join(", ")}. Publishing a weekly
             schedule requires all seven.
           </p>
         ) : null}
