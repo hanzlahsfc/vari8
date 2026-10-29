@@ -189,7 +189,9 @@ function decodeAssetPaths(value, key) {
 }
 
 // --- Build ------------------------------------------------------------------
-const seeded = normalizeTemplateSetups(migrateCoachState(seedState(ANCHOR)));
+const seeded = normalizeTemplateSetups(
+  migrateCoachState(seedState({ today: ANCHOR })),
+);
 crypto.randomUUID = realRandomUUID;
 assert(
   isCoachState(seeded),

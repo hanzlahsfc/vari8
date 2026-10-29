@@ -1323,7 +1323,9 @@ export function seedState(
   const clients: CoachClient[] = clone(createInitialClients()).map((c, i) => ({
     ...c,
     priorityMessages: i === 0 || i === 4,
-    schedules: [{ effective: "2026-10-01", weekdays: i === 14 ? [] : [i % 7] }],
+    schedules: demo
+      ? [{ effective: "2026-10-01", weekdays: i === 14 ? [] : [i % 7] }]
+      : [],
     plan: {
       calories: 2200,
       protein: 140,
@@ -1491,8 +1493,11 @@ export function seedState(
     version: 1,
     templates: [strength, performance, simple],
     clients,
-    extras,
-    submissions,
+    // W2-CHK-I4: check-in rows are demo content too. A real workspace reads
+    // them only through the flag-gated hydration; a non-demo seed that ships
+    // them presents fixtures as live data when the flag is unset.
+    extras: demo ? extras : [],
+    submissions: demo ? submissions : [],
     messages,
     drafts: {},
     reviewDrafts: {},
