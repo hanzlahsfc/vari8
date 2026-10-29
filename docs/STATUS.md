@@ -1187,6 +1187,40 @@ generate` (stale client missed `clientPhase`/`clientWeekNote`);
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
 
+## 2026-10-27 - SEED_CLIENT owns the Amara Lewis profile; every linked demo client signs in
+
+- `scripts/seed/00-workspace.seed.ts`: the seeded sign-in client now links
+  to the Amara Lewis canvas profile (previously it linked `clients[0]`,
+  Emma Anders, which `33-checkins.seed.ts` then re-pointed to a demo user,
+  leaving SEED_CLIENT with zero profiles and getClientViewer null; the
+  row had to be relinked by hand). All fifteen profiles are now
+  created in roster order before the link so 33's positional indexing is
+  preserved. New `no-profile@canvas-demo.test` (ACTIVE CLIENT, credential
+  from SEED_DEMO_CLIENT_PASSWORD with SEED_CLIENT_PASSWORD fallback, zero
+  client_profile rows) carries the own-scope denial coverage SEED_CLIENT
+  used to provide.
+- `scripts/seed/33-checkins.seed.ts`: `demoClientUser` now writes a Better
+  Auth credential account for every demo user it creates, not only Emma,
+  so lily.chen and oliver.stone sign in; comment block corrected.
+- `scripts/seed/50-demo-coverage.seed.ts`: the demo-export Amara Lewis row
+  resolves to the SEED_CLIENT user via SEED_CLIENT_EMAIL instead of a
+  fixture-email user, sets the user name to the profile name, and a
+  credential account is ensured for every linked user including pre-linked
+  ones the module reuses. No amara.lewis@example.com user is created on a
+  fresh seed; the fixture email is not referenced by any other seeded row.
+- `tests/integration/seed-credentials.test.ts`: asserts SEED_CLIENT owns
+  the Amara Lewis profile, all fifteen linked canvas-demo users verify
+  with the seeded password, the no-profile client holds zero profiles, and
+  a second seed duplicates nothing; runs with VARI8_SEED_DEMO=1.
+- Gates on a lane database: `prisma migrate deploy` 0,
+  `npm run seed:dev` 0 twice (reseed: identical link state and row counts),
+  sign-in at /login as SEED_CLIENT lands on /me rendering Amara Lewis
+  (getClientViewer non-null), `npx vitest run --config
+  vitest.integration.config.ts tests/integration/seed-credentials.test.ts`
+  0 (5 tests), `npm run lint` 0 (91 warnings, 0 errors),
+  `npm run typecheck` 0, `npx prettier --check` 0 on changed files,
+  `npm run index` + `index:check` 0, dash gate on added diff lines 0.
+
 ## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
 
 - Client check-in surface wired: `components/canvas/data/checkins.ts`

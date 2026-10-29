@@ -1,4 +1,7 @@
 import { execFileSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { PrismaClient } from "@prisma/client";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -6,13 +9,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { verifyPassword } from "../../lib/password";
 
 /**
- * SEED-FIX: the development seed must write a Better Auth credential
- * `accounts` row for every seeded sign-in user — since PR-05 credential
- * sign-in reads `accounts`, a seed that only writes `users.passwordHash`
- * produces a database nobody can sign in to. The seed runs through the real
- * `npm run seed:dev` entrypoint (`tsx scripts/seed/index.ts`) against the
- * disposable integration database; each stored hash is checked with the same
- * `verifyPassword` the auth server uses.
+ * SEED-FIX / W2-SEEDLINK: the development seed must write a Better Auth
+ * credential `accounts` row for every seeded sign-in user, and every
+ * client_profile link it produces in `canvas-demo` must resolve to a user
+ * that can authenticate, since PR-05 credential sign-in reads `accounts`.
+ * The seed runs through the real `npm run seed:dev` entrypoint
+ * (`tsx scripts/seed/index.ts`) against the disposable integration database
+ * with VARI8_SEED_DEMO=1 so `50-demo-coverage.seed.ts` runs; each stored
+ * hash is checked with the same `verifyPassword` the auth server uses.
  */
 const url = process.env.INTEGRATION_DATABASE_URL;
 const enabled = typeof url === "string" && url.length > 0;
@@ -26,7 +30,20 @@ const SEED_ENV = {
   SEED_CLIENT_PASSWORD: "seed-client-pass-1",
   SEED_STAFF2_EMAIL: "seed-staff2@seed-fix.test",
   SEED_STAFF2_PASSWORD: "seed-staff2-pass-1",
+  VARI8_SEED_DEMO: "1",
+  MEDIA_STORAGE_SIGNING_SECRET: "seed-fix-test-signing-secret",
 };
+
+// SEED_DEMO_CLIENT_PASSWORD is intentionally unset: every seeded client
+// credential falls back to SEED_CLIENT_PASSWORD.
+const NO_PROFILE_EMAIL = "no-profile@canvas-demo.test";
+const DEMO_CLIENT_EMAILS = [
+  "emma.anders@canvas-demo.test",
+  "lily.chen@canvas-demo.test",
+  "oliver.stone@canvas-demo.test",
+];
+
+let mediaDir: string;
 
 function runSeed() {
   // Exactly what `npm run seed:dev` invokes, with the lane/test env pointed
@@ -37,6 +54,7 @@ function runSeed() {
       ...process.env,
       NODE_ENV: "test",
       DATABASE_URL: url as string,
+      MEDIA_STORAGE_DIR: mediaDir,
       ...SEED_ENV,
     },
   });
@@ -48,6 +66,7 @@ describe.skipIf(!enabled)(
     let prisma: PrismaClient;
 
     beforeAll(async () => {
+      mediaDir = mkdtempSync(join(tmpdir(), "seed-fix-media-"));
       execFileSync("npx", ["prisma", "migrate", "deploy"], {
         stdio: "pipe",
         env: { ...process.env, DATABASE_URL: url as string },
@@ -123,29 +142,66 @@ describe.skipIf(!enabled)(
       expect(clientMembership.status).toBe("ACTIVE");
       expect((await member(second.id, staff2.id)).role).toBe("COACH");
 
-      // The first canvas demo profile stays linked to the seeded demo
-      // client user (`33-checkins.seed.ts`, PR-M8). The credential client
-      // owns the James Reed profile, which the submission fixtures do not
-      // claim; the binding lets `getClientViewer` resolve its /me route.
-      const emma = await prisma.user.findUniqueOrThrow({
-        where: { email: "emma.anders@canvas-demo.test" },
+      // W2-SEEDLINK: the seeded sign-in client owns the Amara Lewis profile
+      // (the demo-export client-007 row resolves to SEED_CLIENT), and the
+      // user record carries the profile name so the account label matches.
+      const amara = await prisma.clientProfile.findFirstOrThrow({
+        where: { workspaceId: canvas.id, name: "Amara Lewis" },
       });
-      const emmaProfile = await prisma.clientProfile.findFirstOrThrow({
-        where: { workspaceId: canvas.id, userId: emma.id },
+      expect(amara.userId).toBe(client.id);
+      const clientUser = await prisma.user.findUniqueOrThrow({
+        where: { id: client.id },
+        select: { name: true },
       });
-      expect(emmaProfile.name).toBe("Emma Anders");
-      const clientProfiles = await prisma.clientProfile.findMany({
-        where: { workspaceId: canvas.id, userId: client.id },
+      expect(clientUser.name).toBe("Amara Lewis");
+      expect(
+        await prisma.clientProfile.count({
+          where: { workspaceId: canvas.id, userId: client.id },
+        }),
+      ).toBe(1);
+    });
+
+    it("every linked canvas-demo client profile resolves to a user that can sign in", async () => {
+      const canvas = await prisma.workspace.findUniqueOrThrow({
+        where: { slug: "canvas-demo" },
       });
-      expect(clientProfiles).toHaveLength(1);
-      expect(clientProfiles[0]?.name).toBe("James Reed");
+      const profiles = await prisma.clientProfile.findMany({
+        where: { workspaceId: canvas.id, userId: { not: null } },
+        select: { name: true, userId: true },
+      });
+      // All fifteen canvas demo clients end up linked and sign-in-able.
+      expect(profiles).toHaveLength(15);
+      for (const profile of profiles) {
+        const account = await prisma.account.findUnique({
+          where: {
+            providerId_accountId: {
+              providerId: "credential",
+              accountId: profile.userId!,
+            },
+          },
+        });
+        expect(
+          account,
+          `credential account for profile "${profile.name}"`,
+        ).not.toBeNull();
+        // The SEED_CLIENT account keeps SEED_CLIENT_PASSWORD; every other
+        // linked user falls back to it because SEED_DEMO_CLIENT_PASSWORD is
+        // unset in this env.
+        expect(
+          await verifyPassword(
+            SEED_ENV.SEED_CLIENT_PASSWORD,
+            account?.password ?? "",
+          ),
+          `password for profile "${profile.name}"`,
+        ).toBe(true);
+      }
     });
 
     it("the first canvas demo client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
       // The trial client walkthrough signs in as the first canvas demo
-      // client — `33-checkins.seed.ts` gives her a credential reusing
-      // SEED_CLIENT_PASSWORD - alongside the SEED-FIX credential client,
-      // which owns the James Reed profile.
+      // client; `33-checkins.seed.ts` gives every linked demo user a
+      // credential sourced from SEED_DEMO_CLIENT_PASSWORD with fallback to
+      // SEED_CLIENT_PASSWORD.
       const emma = await expectCredential(
         "emma.anders@canvas-demo.test",
         SEED_ENV.SEED_CLIENT_PASSWORD,
@@ -186,21 +242,77 @@ describe.skipIf(!enabled)(
       expect(assignments).toBe(15);
     });
 
+    it("the dedicated no-profile client signs in and owns zero profiles", async () => {
+      // SEED_CLIENT now owns Amara Lewis, so the own-scope denial coverage
+      // it used to carry moves to a dedicated synthetic client.
+      const noProfile = await expectCredential(
+        NO_PROFILE_EMAIL,
+        SEED_ENV.SEED_CLIENT_PASSWORD,
+      );
+      const canvas = await prisma.workspace.findUniqueOrThrow({
+        where: { slug: "canvas-demo" },
+      });
+      const member = await prisma.workspaceMember.findUniqueOrThrow({
+        where: {
+          workspaceId_userId: {
+            workspaceId: canvas.id,
+            userId: noProfile.id,
+          },
+        },
+      });
+      expect(member.role).toBe("CLIENT");
+      expect(member.status).toBe("ACTIVE");
+      expect(
+        await prisma.clientProfile.count({
+          where: { workspaceId: canvas.id, userId: noProfile.id },
+        }),
+      ).toBe(0);
+    });
+
     it("re-running the seed does not duplicate accounts or members", async () => {
       runSeed();
-      const emails = Object.values(SEED_ENV).filter((v) => v.includes("@"));
+      const emails = [
+        ...Object.values(SEED_ENV).filter(
+          (v) => typeof v === "string" && v.includes("@"),
+        ),
+        ...DEMO_CLIENT_EMAILS,
+        NO_PROFILE_EMAIL,
+      ];
       const users = await prisma.user.findMany({
         where: { email: { in: emails } },
         select: { id: true },
       });
+      expect(users).toHaveLength(8);
       const accounts = await prisma.account.findMany({
         where: { userId: { in: users.map((u) => u.id) } },
       });
-      expect(accounts).toHaveLength(4);
+      expect(accounts).toHaveLength(8);
       const members = await prisma.workspaceMember.count({
         where: { userId: { in: users.map((u) => u.id) } },
       });
-      expect(members).toBe(4);
+      expect(members).toBe(8);
+      // Link state is identical after a reseed: SEED_CLIENT still owns the
+      // Amara Lewis profile and the no-profile client still owns none.
+      const canvas = await prisma.workspace.findUniqueOrThrow({
+        where: { slug: "canvas-demo" },
+      });
+      const amara = await prisma.clientProfile.findFirstOrThrow({
+        where: { workspaceId: canvas.id, name: "Amara Lewis" },
+      });
+      const seedClientUser = await prisma.user.findUniqueOrThrow({
+        where: { email: SEED_ENV.SEED_CLIENT_EMAIL },
+        select: { id: true },
+      });
+      expect(amara.userId).toBe(seedClientUser.id);
+      const noProfile = await prisma.user.findUniqueOrThrow({
+        where: { email: NO_PROFILE_EMAIL },
+        select: { id: true },
+      });
+      expect(
+        await prisma.clientProfile.count({
+          where: { workspaceId: canvas.id, userId: noProfile.id },
+        }),
+      ).toBe(0);
     });
   },
 );
