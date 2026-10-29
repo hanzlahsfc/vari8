@@ -21,7 +21,7 @@
   "components": {
     "reference": {
       "path": "tools/parity/reference/reference.mjs",
-      "sha256": "e0dbee7c15ada9b1cafa7bbd106911b043c85715e43e2f3618b3b9af5baef484"
+      "sha256": "a1b33bf6c6d6efc3facccf98ad36f6a9c7557c47cf068675f60724104865dca8"
     },
     "referenceCompare": {
       "path": "tools/parity/reference/compare.mjs",
@@ -49,7 +49,7 @@
     },
     "combinedRun": {
       "path": "tools/parity/reference/combined-run.mjs",
-      "sha256": "74cb5f6dcb479bfe464611710e34d80d0bb40dc7353be7a8cb7c3600a320fa34"
+      "sha256": "fa0e4011fef6bf92641b88791d85874dade1380ded60e345adc30fb90da52be5"
     },
     "combinedPins": {
       "path": "tools/parity/reference/combined-pins.mjs",

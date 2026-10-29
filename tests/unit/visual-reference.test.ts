@@ -422,6 +422,26 @@ it("validates complete real-format receipts and rejects corrupt images, state an
         elements: 1,
         scrolls: [],
       });
+      // one real scroll artifact on the first screen for coordinate binding
+      if (vp === "390" && stem === "s01-roster") {
+        const scrollPng = `390/${stem}.s0-0-0.png`;
+        const sp = new PNG({ width: 10, height: 10 });
+        sp.data.fill(255);
+        writeFileSync(path.join(d, scrollPng), PNG.sync.write(sp));
+        const last = screens[screens.length - 1];
+        last.captureEvidence.scrollers = [
+          { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+        ];
+        last.scrolls = [
+          {
+            scroller: "div#0",
+            x: 0,
+            y: 0,
+            png: scrollPng,
+            box: [0, 0, 10, 10],
+          },
+        ];
+      }
     }
   }
   const manifest = {
@@ -432,7 +452,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   };
   expect(
     validateRun({ directory: d, manifest, shots, provenance }),
-  ).toHaveLength(140);
+  ).toHaveLength(141); // 70 screens + 70 geoms + 1 scroll
   const saved = screens[0].sha256;
   screens[0].sha256 = "0".repeat(64);
   expect(() =>
@@ -445,7 +465,9 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/scroll/);
-  screens[0].captureEvidence.scrollers = [];
+  screens[0].captureEvidence.scrollers = [
+    { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+  ];
   const oldUrl = screens[0].finalUrl;
   screens[0].finalUrl = "https://127.0.0.1:55940/login";
   expect(() =>
@@ -486,6 +508,24 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       validateRun({ directory: d, manifest, shots, provenance }),
     ).toThrow(/scroll|identity/);
     scrollScreen.scrolls[0].png = savedScroll;
+    // same-screen coordinate swap — the right stem, wrong coordinate
+    scrollScreen.scrolls[0].png = `${scrollScreen.vp}/${scrollScreen.stem}.s0-1-0.png`;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll artifact identity/);
+    scrollScreen.scrolls[0].png = savedScroll;
+    // a valid filename assigned to a coordinate it doesn't encode
+    scrollScreen.scrolls[0].x = 1;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll|incomplete/);
+    scrollScreen.scrolls[0].x = 0;
+    // an unrecorded scroller name refuses
+    scrollScreen.scrolls[0].scroller = "div#ghost";
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/unknown scroller|scroll/);
+    scrollScreen.scrolls[0].scroller = "div#0";
   }
   expect(() =>
     validateRun({

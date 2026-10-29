@@ -160,13 +160,26 @@ export function validateCombinedRun({
       .sort();
     if (JSON.stringify(expectedScrolls) !== JSON.stringify(actualScrolls))
       throw new Error(`incomplete scroll captures ${screen.id}`);
-    // scroll captures are tuple-bound too: vp/stem.s* — another
-    // screen's scroll png is a forgery, not shared evidence
-    for (const scroll of screen.scrolls)
-      if (!scroll.png.startsWith(`${screen.vp}/${screen.stem}.s`))
+    // scroll captures are tuple-bound: vp/stem.s<scrollerIdx>-<x>-<y>.png
+    // — the filename encodes the scroller's index in the recorded
+    // inventory AND the capture coordinates; a same-screen swap
+    // between coordinates or a wrong scroller is a forgery
+    for (const scroll of screen.scrolls) {
+      const scroller = screen.captureEvidence.scrollers.find(
+        (s) => s.name === scroll.scroller,
+      );
+      if (!scroller)
         throw new Error(
-          `scroll artifact identity mismatch ${screen.id}: ${JSON.stringify(scroll.png)}`,
+          `unknown scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
         );
+      // s.idx is the DOM element index — the capture writer's identity,
+      // not an array position; tag#idx in the name agrees with it
+      const expectedPng = `${screen.vp}/${screen.stem}.s${scroller.idx}-${scroll.x}-${scroll.y}.png`;
+      if (scroll.png !== expectedPng)
+        throw new Error(
+          `scroll artifact identity mismatch ${screen.id}: ${JSON.stringify(scroll.png)} != ${expectedPng}`,
+        );
+    }
     for (const f of [
       screen.png,
       `${screen.vp}/${screen.stem}.geom.json.gz`,
