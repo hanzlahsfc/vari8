@@ -165,6 +165,16 @@ const steps = (max, size) => {
   a.push(max);
   return a;
 };
+function scrollerNameTag(name) {
+  const i = name.lastIndexOf("#");
+  if (i <= 0) return null;
+  const tag = name.slice(0, i);
+  const suffix = name.slice(i + 1);
+  if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
+  if (!/^[\p{L}:_][\p{L}\p{N}\p{M}:_.\-\u00B7\u203F\u2040]*$/u.test(tag))
+    return null;
+  return { tag, idx: Number(suffix) };
+}
 function artifact(directory, relative) {
   const p = path.resolve(directory, relative);
   if (!p.startsWith(path.resolve(directory) + path.sep))
@@ -330,14 +340,15 @@ export function validateRun({ directory, manifest, shots, provenance }) {
         // writer emits `${tagName.toLowerCase()}#${idx}` — tag is whatever
         // the DOM produces (Unicode included), `#` splits exactly once,
         // the integer suffix must equal idx verbatim (no leading zeros)
-        scroller.name !== `${scroller.name.split("#")[0]}#${scroller.idx}` ||
-        scroller.name.split("#").length !== 2 ||
         scroller.name !== scroller.name.toLowerCase() ||
-        // DOM createElement validates names against the XML Name
-        // production — start letter/underscore, then letters/digits/.-_
-        // (Unicode included); ":" omitted because HTML tagName is never
-        // prefixed. Slash, whitespace, controls and # can never appear
-        !/^[\p{L}_][\p{L}\p{N}_.-]*$/u.test(scroller.name.split("#")[0])
+        // DOM qualified-name contract (createElement's validation):
+        // letters/underscores/colons start, NameChars (digits, dots,
+        // hyphens, middle dot, combining marks, joiners) continue —
+        // all writer-reachable. # is never a NameChar so the FINAL #
+        // is the recorded index separator, and its integer must equal
+        // the recorded idx field verbatim
+        !scrollerNameTag(scroller.name) ||
+        scrollerNameTag(scroller.name).idx !== scroller.idx
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

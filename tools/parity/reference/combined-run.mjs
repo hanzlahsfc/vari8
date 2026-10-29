@@ -195,14 +195,15 @@ export function validateCombinedRun({
         // writer emits `${tagName.toLowerCase()}#${idx}` — tag is whatever
         // the DOM produces (Unicode included), `#` splits exactly once,
         // the integer suffix must equal idx verbatim (no leading zeros)
-        scroller.name !== `${scroller.name.split("#")[0]}#${scroller.idx}` ||
-        scroller.name.split("#").length !== 2 ||
         scroller.name !== scroller.name.toLowerCase() ||
-        // DOM createElement validates names against the XML Name
-        // production — start letter/underscore, then letters/digits/.-_
-        // (Unicode included); ":" omitted because HTML tagName is never
-        // prefixed. Slash, whitespace, controls and # can never appear
-        !/^[\p{L}_][\p{L}\p{N}_.-]*$/u.test(scroller.name.split("#")[0])
+        // DOM qualified-name contract (createElement's validation):
+        // letters/underscores/colons start, NameChars (digits, dots,
+        // hyphens, middle dot, combining marks, joiners) continue —
+        // all writer-reachable. # is never a NameChar so the FINAL #
+        // is the recorded index separator, and its integer must equal
+        // the recorded idx field verbatim
+        !scrollerNameTag(scroller.name) ||
+        scrollerNameTag(scroller.name).idx !== scroller.idx
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

@@ -566,7 +566,8 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       { name: "div/name#143", idx: 143 },
       { name: "div<name#143", idx: 143 },
       { name: "1div#0", idx: 0 },
-      { name: ":div#0", idx: 0 },
+      { name: "a/b#1", idx: 1 },
+      { name: "a#1#2", idx: 2 },
     ]) {
       scrollScreen.captureEvidence.scrollers = [
         { name: bad.name, idx: bad.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
@@ -585,6 +586,9 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       { name: "my-scroll#143", idx: 143 },
       { name: "my-app#1", idx: 1 },
       { name: "math-α#143", idx: 143 },
+      { name: "café-x#7", idx: 7 },
+      { name: "tag·name#5", idx: 5 },
+      { name: "svg:rect#3", idx: 3 },
       { name: "h1#22", idx: 22 },
     ]) {
       // the scroll png must encode this scroller's actual idx
