@@ -147,6 +147,32 @@ describe("card 10 iifym payload normalizer", () => {
     ).toThrowError(expect.objectContaining({ code: "publish_incomplete" }));
   });
 
+  it("accepts a flexible schedule and keeps exactly { mode: 'flexible' }", () => {
+    const draft = validDraft();
+    draft.schedule = { mode: "flexible" } as unknown as DraftShape["schedule"];
+    const normalized = normalizeIifymPayload(draft, { forPublish: false });
+    expect(normalized.schedule).toEqual({ mode: "flexible" });
+  });
+
+  it("rejects an unknown schedule mode with invalid_input", () => {
+    const draft = validDraft();
+    draft.schedule = { mode: "bogus" } as unknown as DraftShape["schedule"];
+    expect(() =>
+      normalizeIifymPayload(draft, { forPublish: false }),
+    ).toThrowError(expect.objectContaining({ code: "invalid_input" }));
+  });
+
+  it("rejects a flexible schedule carrying extra keys with invalid_input", () => {
+    const draft = validDraft();
+    draft.schedule = {
+      mode: "flexible",
+      selectedVariantId: "x",
+    } as unknown as DraftShape["schedule"];
+    expect(() =>
+      normalizeIifymPayload(draft, { forPublish: false }),
+    ).toThrowError(expect.objectContaining({ code: "invalid_input" }));
+  });
+
   it("requires name, startDate and a schedule for publish", () => {
     const draft = validDraft();
     delete (draft as unknown as Record<string, unknown>).name;

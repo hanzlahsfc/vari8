@@ -40,12 +40,23 @@ export const messagesSlice: CoachSlice = {
  * Wire shape mirrors lib/messages/service.ts.
  * ---------------------------------------------------------------------- */
 
+/** W2-T8: one media_object linked onto a message (upload-then-link). */
+export type WireAttachment = {
+  mediaObjectId: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  position: number;
+};
+
 export type OwnMessageWire = {
   id: string;
   body: string;
   senderKind: "CLIENT" | "STAFF";
   sentAt: string;
   clientRequestId: string;
+  read: boolean;
+  attachments: WireAttachment[];
 };
 
 /** GET messages - the caller's own thread (empty when none exists yet). */
@@ -57,14 +68,25 @@ export function fetchOwnMessages(
   );
 }
 
-/** POST messages - a client-authored text send on the caller's own thread. */
+/** POST messages - a client-authored send on the caller's own thread. */
 export function sendOwnMessage(
   workspaceId: string,
   body: string,
+  mediaObjectIds?: string[],
 ): Promise<{ message: OwnMessageWire }> {
   return apiFetch<{ message: OwnMessageWire }>(
     `/workspaces/${workspaceId}/messages`,
-    { method: "POST", body: { body } },
+    { method: "POST", body: { body, mediaObjectIds } },
+  );
+}
+
+/** POST messages/read - the client's own mark-read on staff messages. */
+export function markOwnThreadRead(
+  workspaceId: string,
+): Promise<{ marked: number }> {
+  return apiFetch<{ marked: number }>(
+    `/workspaces/${workspaceId}/messages/read`,
+    { method: "POST" },
   );
 }
 
@@ -92,6 +114,7 @@ export type StaffMessageView = {
   read: boolean;
   priority: boolean;
   links: unknown | null;
+  attachments: WireAttachment[];
 };
 
 export type StaffThreadView = {
@@ -117,7 +140,13 @@ export function toCanvasMessage(
     date: view.sentAt,
     read: view.read,
     priority: view.priority,
-    attachments: [],
+    attachments: (view.attachments ?? []).map((attachment) => ({
+      id: attachment.mediaObjectId,
+      name: attachment.fileName,
+      type: attachment.contentType,
+      size: attachment.byteSize,
+      mediaObjectId: attachment.mediaObjectId,
+    })),
     link: (view.links as { link?: Message["link"] } | null)?.link,
   };
 }
@@ -141,15 +170,17 @@ export function fetchStaffThread(
   );
 }
 
-/** POST conversations/:clientProfileId - a staff-authored text send. */
+/** POST conversations/:clientProfileId - a staff-authored send; the
+ *  mediaObjectIds carry the upload-then-link attachment ids (W2-T8). */
 export function sendStaffMessage(
   workspaceId: string,
   clientProfileId: string,
   body: string,
+  mediaObjectIds?: string[],
 ): Promise<{ message: StaffMessageView }> {
   return apiFetch<{ message: StaffMessageView }>(
     `/workspaces/${workspaceId}/conversations/${encodeURIComponent(clientProfileId)}`,
-    { method: "POST", body: { body } },
+    { method: "POST", body: { body, mediaObjectIds } },
   );
 }
 

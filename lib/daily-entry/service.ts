@@ -158,6 +158,8 @@ type VersionDefinition = {
       helpText?: string | null;
       unit?: string | null;
       ratingScheme?: string | null;
+      decimals?: number | null;
+      summary?: string | null;
       options?: Array<{ optionId?: string; label?: string }>;
       validation?: { min?: number | null; max?: number | null } | null;
       dataClassification?: string | null;
@@ -206,6 +208,8 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
         required: item.required === true,
         unit: p.unit ?? null,
         ratingScheme: p.ratingScheme ?? null,
+        decimals: typeof p.decimals === "number" ? p.decimals : null,
+        summary: typeof p.summary === "string" ? p.summary : null,
         options: (p.options ?? []).map((o) => ({
           optionId: String(o.optionId ?? ""),
           label: String(o.label ?? ""),
@@ -1551,6 +1555,8 @@ export type DailyEntrySurfaceItem = {
   kind: string;
   required: boolean;
   ratingScheme: string | null;
+  decimals: number | null;
+  summary: string | null;
   options: Array<{ ordinal: number; label: string }>;
   validation: { min: number | null; max: number | null } | null;
   /** Prefill raw value (canonical form) for the client's current entry. */
@@ -1773,6 +1779,8 @@ export async function loadDailyEntrySurface(
           kind: p.kind,
           required: p.required,
           ratingScheme: p.ratingScheme,
+          decimals: p.decimals,
+          summary: p.summary,
           options: p.options.map((o, i) => ({
             ordinal: i,
             label: o.label,

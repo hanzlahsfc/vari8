@@ -1034,6 +1034,11 @@ model ParameterDefinition {
   label              String
   helpText           String?                      @map("help_text")
   group              String?                      @map("group_label")
+  // Tracker column display metadata: declared per parameter, NULL until
+  // declared. decimals is the closed set {0,1,2}; summary is the closed
+  // set {avg,sum,count,none}. Both are enforced by raw CHECK constraints.
+  decimals           Int?
+  summary            String?
   // Semantic metadata — locked after first published reference.
   unit               String?
   ratingScheme       RatingScheme?                @map("rating_scheme")
@@ -1371,6 +1376,10 @@ model NutritionLog {
   protein           Decimal? @db.Decimal(9, 3)
   carbohydrate      Decimal? @db.Decimal(9, 3)
   fat               Decimal? @db.Decimal(9, 3)
+  // Day-level nutrition state: the logged day type label and whether the
+  // plan was followed. NULL reads as not recorded.
+  dayType           String?  @map("day_type")
+  planFollowed      Boolean? @map("plan_followed")
   createdByMemberId String   @map("created_by_member_id")
   updatedByMemberId String   @map("updated_by_member_id")
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)

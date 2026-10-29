@@ -63,3 +63,6 @@ tools/parity/reference/evidence/receipts/
 
 # Generated combined-run receipts/captures preserve exact verifier output.
 tools/parity/reference/combined/
+# Byte-verbatim copy of frontend/src/data/demo-export at a pinned commit (w2-s13);
+# reformatting would break the diff -r copy proof.
+scripts/seed/demo-export/

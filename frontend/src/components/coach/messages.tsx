@@ -40,7 +40,7 @@ const SNIPPETS = [
   "Let’s keep things simple: consistency first, then we’ll build from here.",
 ];
 export function MessagesWorkspace() {
-  const { state, setState, route, navigate, attach, toast } = useCoach();
+  const { state, setState, route, navigate, attach, media, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [threadSearch, setThreadSearch] = useState("");
@@ -59,6 +59,7 @@ export function MessagesWorkspace() {
   const positions = useRef<Record<string, number>>({});
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
+  const pendingUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -138,27 +139,57 @@ export function MessagesWorkspace() {
   const send = () => {
     if (!client || (!draft.text.trim() && !draft.attachments.length && !link))
       return;
-    const m: Message = {
-      id: uid("message"),
-      clientId: client.id,
-      text: draft.text.trim(),
-      from: "coach",
-      date: new Date().toISOString(),
-      read: true,
-      priority: false,
-      attachments: draft.attachments,
-      link,
-      local: true,
-    };
+    const text = draft.text.trim();
+    const attachments = draft.attachments;
+    const sentLink = link;
+    const canvasId = client.id;
+    // W2-T8 local demo: this preview has no media_object store, so the
+    // blob attach is its upload and pendingUploads is empty by the time a
+    // send runs. A draft item missing its stamp, demo flag and session
+    // bytes is not in flight: it is a draft restored after reload whose
+    // blob is gone for good, so the send keeps it and says what recovers
+    // it instead of promising a retry that cannot land.
+    if (attachments.some((a) => pendingUploads.current.has(a.id))) {
+      toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    if (attachments.some((a) => !a.mediaObjectId && !a.demo && !media[a.id])) {
+      toast(
+        "Attachment kept as metadata after reload - reattach it to send it, or remove it.",
+      );
+      return;
+    }
+    const appendLocal = () =>
+      setState((s) => ({
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("message"),
+            clientId: canvasId,
+            text,
+            from: "coach",
+            date: new Date().toISOString(),
+            read: true,
+            priority: false,
+            attachments,
+            link: sentLink,
+            local: true,
+          },
+        ],
+      }));
     setState((s) => ({
       ...s,
-      messages: [...s.messages, m],
-      drafts: { ...s.drafts, [client.id]: { text: "", attachments: [] } },
+      drafts: { ...s.drafts, [canvasId]: { text: "", attachments: [] } },
     }));
     setLink(undefined);
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
+    // W2-T8 local demo: the canvas send POSTs the stamped media_object ids
+    // here and lands the returned wire row. This preview has no send route,
+    // so the same local row lands either way.
+    appendLocal();
   };
   const flag = (m: Message) => {
     if (!client || (!client.priorityMessages && !m.priority)) return;
@@ -419,7 +450,11 @@ export function MessagesWorkspace() {
                             </span>
                             {m.from === "coach" && (
                               <span>
-                                {m.local ? "Local message" : "Example · read"}
+                                {m.local
+                                  ? "Local message"
+                                  : m.read
+                                    ? "Read"
+                                    : "Sent"}
                                 <Check size={11} />
                               </span>
                             )}
@@ -691,7 +726,9 @@ export function MessagesWorkspace() {
                         type: f.type || "application/octet-stream",
                         size: f.size,
                       };
+                      pendingUploads.current.add(item.id);
                       attach(item, f);
+                      pendingUploads.current.delete(item.id);
                       items.push(item);
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });

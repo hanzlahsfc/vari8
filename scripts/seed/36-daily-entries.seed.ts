@@ -355,7 +355,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   for (const p of SEED_PARAMETERS) {
     await prisma.parameterDefinition.upsert({
       where: { workspaceId_key: { workspaceId: workspace.id, key: p.key } },
-      update: {},
+      update: {
+        decimals: p.decimals ?? null,
+        summary: p.summary ?? null,
+      },
       create: {
         id: p.id,
         workspaceId: workspace.id,
@@ -367,6 +370,8 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         options: p.options ?? undefined,
         validation: p.validation ?? undefined,
         dataClassification: "GENERAL_HEALTH",
+        decimals: p.decimals ?? null,
+        summary: p.summary ?? null,
         createdByMemberId: staffMember.id,
         updatedByMemberId: staffMember.id,
       },

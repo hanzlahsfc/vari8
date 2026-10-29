@@ -81,8 +81,9 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
       data: { workspaceId: ws.id, name: `${tag} client` },
     });
     // The integration harness forces ENABLE_CONSENT_GATES=1, so the plan
-    // services resolve their dev consent registry: grant every kind+version
-    // the three gated domains require.
+    // services resolve their dev consent registry (unlocked by the domain
+    // flags beforeAll sets): grant every kind+version the three gated
+    // domains require.
     for (const [kind, version] of [
       ["PRIVACY_NOTICE", "meal-plan-dev-privacy-v1"],
       ["HEALTH_DATA", "meal-plan-dev-health-v1"],
@@ -303,6 +304,62 @@ describe.skipIf(!enabled)("W2-A2 staff plan routes (real PG)", () => {
       payload: { variants: { id: string }[] };
     };
     expect(detailBody.payload.variants[0]?.id).toBe("v1");
+  });
+
+  it("meal plan: a flexible schedule draft round-trips save, publish and version read", async () => {
+    const { ws, email, client } = await staffWorkspace("COACH");
+    const token = await signInToken(email);
+    const params = {
+      workspaceId: ws.id,
+      clientProfileId: client.id,
+    };
+    const put = await putMealPlan(
+      req(meal(ws.id, client.id), {
+        method: "PUT",
+        token,
+        body: {
+          expectedRevision: 0,
+          title: "Flexible plan",
+          timezone: "Europe/Copenhagen",
+          draft: { ...MEAL_DRAFT, schedule: { mode: "flexible" } },
+        },
+      }),
+      { params: Promise.resolve(params) },
+    );
+    expect(put.status).toBe(200);
+    const get = await getMealPlan(req(meal(ws.id, client.id), { token }), {
+      params: Promise.resolve(params),
+    });
+    expect(get.status).toBe(200);
+    const getBody = (await get.json()) as {
+      plan: { draft: { schedule?: { mode: string } } };
+    };
+    expect(getBody.plan.draft.schedule).toEqual({ mode: "flexible" });
+    const pub = await publishMealPlan(
+      req(`${meal(ws.id, client.id)}/publish`, {
+        method: "POST",
+        token,
+        body: { expectedRevision: 1, effectiveDate: "2026-10-19" },
+      }),
+      { params: Promise.resolve(params) },
+    );
+    expect(pub.status).toBe(200);
+    const pubBody = (await pub.json()) as {
+      versionId: string;
+      versionSeq: number;
+    };
+    expect(pubBody.versionSeq).toBe(1);
+    const detail = await getMealPlanVersion(
+      req(`${meal(ws.id, client.id)}/versions/${pubBody.versionId}`, { token }),
+      {
+        params: Promise.resolve({ ...params, versionId: pubBody.versionId }),
+      },
+    );
+    expect(detail.status).toBe(200);
+    const detailBody = (await detail.json()) as {
+      payload: { schedule?: { mode: string } };
+    };
+    expect(detailBody.payload.schedule).toEqual({ mode: "flexible" });
   });
 
   it("meal plan: role matrix is literal (foreign 403, client 403, unauth 401)", async () => {

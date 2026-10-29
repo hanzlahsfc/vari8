@@ -574,4 +574,56 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
     expect(JSON.stringify(own)).not.toContain('"draft"');
     expect(own.current?.payload.options).toHaveLength(2);
   });
+
+  it("a flexible draft saves, publishes and reads back through staff and own reads", async () => {
+    const { ws, profile, coachSession, clientSession } = await seed();
+    const flexibleDraft = () => ({
+      ...twoOptionDraft(),
+      schedule: { mode: "flexible" },
+    });
+
+    const saved = await saveIifymDraft(
+      coachSession,
+      {
+        workspaceId: ws.id,
+        clientProfileId: profile.id,
+        expectedRevision: 0,
+        title: "Nutrition targets",
+        timezone: TIMEZONE,
+        draft: flexibleDraft(),
+      },
+      deps(),
+    );
+    expect(saved.revision).toBe(1);
+
+    const published = await publishIifymVersion(
+      coachSession,
+      {
+        workspaceId: ws.id,
+        clientProfileId: profile.id,
+        expectedRevision: 1,
+        effectiveDate: EFFECTIVE,
+      },
+      deps(),
+    );
+    expect(published.versionSeq).toBe(1);
+
+    const staff = await readStaffIifymPlan(
+      coachSession,
+      { workspaceId: ws.id, clientProfileId: profile.id },
+      deps(),
+    );
+    expect((staff.plan?.draft as IifymDraft | null)?.schedule).toEqual({
+      mode: "flexible",
+    });
+
+    const own = await readOwnIifymPlan(
+      clientSession,
+      { workspaceId: ws.id },
+      deps(),
+    );
+    expect((own.current?.payload as IifymDraft).schedule).toEqual({
+      mode: "flexible",
+    });
+  });
 });

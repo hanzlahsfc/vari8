@@ -232,6 +232,64 @@ describe.skipIf(!enabled)("P-021 DailyEntry (real PG)", () => {
 
   const DATE = "2026-10-01";
 
+  // ── w2-t12: tracker column fields ─────────────────────────────────────
+
+  describe("tracker column fields", () => {
+    it("pinned template decimals and summary survive to the surface items", async () => {
+      const c = await seedClient([
+        {
+          id: "pd_w",
+          kind: "MEASUREMENT",
+          required: true,
+          extra: { decimals: 1, summary: "avg" },
+        },
+        {
+          id: "pd_s",
+          kind: "MEASUREMENT",
+          extra: { decimals: 0, summary: "sum" },
+        },
+      ]);
+      const s = await surface(c.session, c.ws.id);
+      if (s.state !== "ready") throw new Error(s.state);
+      const items = s.sections[0].items;
+      expect(items[0].parameterKey).toBe(`p_${c.paramIds[0]}`);
+      expect(items[0].decimals).toBe(1);
+      expect(items[0].summary).toBe("avg");
+      expect(items[1].decimals).toBe(0);
+      expect(items[1].summary).toBe("sum");
+    });
+
+    it("parameter_definition stores decimals and summary columns", async () => {
+      const c = await seedClient([
+        { id: "pd_w", kind: "MEASUREMENT", required: true },
+      ]);
+      const row = await prisma.parameterDefinition.update({
+        where: { id: c.paramIds[0] },
+        data: { decimals: 2, summary: "avg" },
+      });
+      expect(row.decimals).toBe(2);
+      expect(row.summary).toBe("avg");
+    });
+
+    it("CHECKs reject values outside the closed sets", async () => {
+      const c = await seedClient([
+        { id: "pd_w", kind: "MEASUREMENT", required: true },
+      ]);
+      await expect(
+        prisma.$executeRawUnsafe(
+          `UPDATE "parameter_definition" SET "decimals" = 3 WHERE "id" = $1`,
+          c.paramIds[0],
+        ),
+      ).rejects.toThrow();
+      await expect(
+        prisma.$executeRawUnsafe(
+          `UPDATE "parameter_definition" SET "summary" = 'median' WHERE "id" = $1`,
+          c.paramIds[0],
+        ),
+      ).rejects.toThrow();
+    });
+  });
+
   // ── Schema constraints (raw SQL) ────────────────────────────────────────
 
   describe("schema constraints", () => {

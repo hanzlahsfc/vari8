@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 60 backend pages, 89 API routes, 14 layouts, 5 canvas pages.
+Counts: 60 backend pages, 90 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -153,6 +153,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/invitations` | `app/api/v1/workspaces/[workspaceId]/invitations/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/invitations/[invitationId]` | `app/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/messages` | `app/api/v1/workspaces/[workspaceId]/messages/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/messages/read` | `app/api/v1/workspaces/[workspaceId]/messages/read/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes` | `app/api/v1/workspaces/[workspaceId]/notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes/[noteId]` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore/route.ts` | - | none detected |

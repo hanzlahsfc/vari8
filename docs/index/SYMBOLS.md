@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 186 modules with exports, 1827 exported symbols.
+Counts: 186 modules with exports, 1830 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -859,7 +859,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export { DailyEntryError } from "./gate"`
 - `export const MAX_MACRO_GRAMS = 10000`
 - `export const NUTRITION_LOG_HISTORY_LIMIT = 30`
-- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; }`
+- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; dayType: string | null; planFollowed: boolean | null; }`
 - `export type NutritionLogSurface = | { state: "ready"; entryDate: string; log: Omit<NutritionLogDay, "entryDate"> | null; history: NutritionLogDay[]; } | { state: "not_applicable" } | { state: "cons...`
 - `export type NutritionMacroValues = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
 - `export const STAFF_NUTRITION_LOG_MAX_SPAN_DAYS = 366`
@@ -919,7 +919,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const DAILY_ENTRY_TEXT_MAX = 5000`
 - `export type OrdinalValue = { ordinal: number; raw: string }`
-- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; options: Array<{ optionId: string; label:...`
+- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; decimals: number | null; summary: string ...`
 - `export function resolveDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ResolveOk | ResolveErr`
 - `export function validateDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ValidateOk | ValidateErr`
 
@@ -1560,18 +1560,21 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/messages/service.ts`
 
+- `export type AttachmentView = { mediaObjectId: string; fileName: string; contentType: string; byteSize: number; position: number; }`
 - `export type MessageDeps = { db?: PrismaLike; notifyClientMessage?: (input: { workspaceId: string; clientProfileId: string; }) => Promise<unknown>; }`
 - `export class MessageError extends Error (1 members)`
-- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; attachments: AttachmentView[]; }`
+- `export type OwnMessageView = MessageView & { read: boolean }`
 - `export type StaffConversationView = { clientProfileId: string; clientName: string; lastMessageAt: string | null; lastMessagePreview: string | null; unreadCount: number; hasPriority: boolean; }`
 - `export type StaffMessageView = MessageView & { read: boolean; priority: boolean; links: unknown; }`
 - `export async function getStaffThread(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ clientProfileId: string; messages: StaffMessag...`
-- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: OwnMessageView[] }>`
 - `export async function listStaffConversations(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ conversations: StaffConversationView[] }>`
+- `export async function markOwnThreadRead(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function markStaffThreadRead(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function saveStaffDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown }, deps: MessageDeps = {}): Promise<{ draft: { body: string; revision...`
-- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
-- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; }, deps: MessageDeps = {}): Promise<{ m...`
+- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: MessageDeps = {}): Promise<{ me...`
+- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: Mess...`
 
 ## `lib/notes/boundary.ts`
 

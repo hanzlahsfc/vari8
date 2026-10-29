@@ -12,7 +12,8 @@ import { readBody, sessionOf, unwrapMessage } from "../../messages/_result";
  * W2-A4 staff thread: GET reads the seeded thread plus the caller's draft;
  * POST is the staff-authored send (senderKind STAFF, senderUserId the
  * caller). The service re-binds staff membership so a client-scope
- * message.write grant cannot pass.
+ * message.write grant cannot pass. W2-T8: POST also accepts mediaObjectIds
+ * for the upload-then-link attachment flow.
  */
 export const dynamic = "force-dynamic";
 
@@ -22,8 +23,9 @@ const paramsSchema = z.object({
 });
 
 const bodySchema = z.object({
-  body: z.string().min(1).max(4000),
+  body: z.string().max(4000).optional(),
   clientRequestId: z.string().max(128).optional(),
+  mediaObjectIds: z.array(z.string().min(1).max(64)).max(10).optional(),
 });
 
 export const GET = defineApiV1Route({
@@ -49,6 +51,7 @@ export const POST = defineApiV1Route({
         clientProfileId: params.clientProfileId,
         body: body.body,
         clientRequestId: body.clientRequestId,
+        mediaObjectIds: body.mediaObjectIds,
       }),
     );
   },

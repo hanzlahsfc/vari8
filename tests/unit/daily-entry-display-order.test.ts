@@ -26,6 +26,8 @@ const snap = (
   required: false,
   unit: kind === "MEASUREMENT" ? "kg" : null,
   ratingScheme: null,
+  decimals: null,
+  summary: null,
   options: [],
   validation: null,
   dataClassification: "GENERAL_HEALTH",
