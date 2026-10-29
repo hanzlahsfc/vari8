@@ -16,7 +16,7 @@
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { basename } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 import {
   checkAccuracy,
@@ -60,22 +60,64 @@ for (let i = 2; i < process.argv.length; i++) {
   else if (arg === "--manifest") MANIFEST = val();
   else throw new Error(`unrecognised argument ${JSON.stringify(arg)}`);
 }
+type Manifest = {
+  fixtures?: { path: string; sha256: string }[];
+  accuracyGate?: {
+    expected?: Record<string, unknown>;
+    hashes?: Record<string, string>;
+  };
+};
+const manifest = (() => {
+  if (!MANIFEST) return undefined;
+  try {
+    return JSON.parse(readFileSync(MANIFEST, "utf8")) as Manifest;
+  } catch (e) {
+    throw new Error(
+      `cannot read manifest ${MANIFEST}: ${(e as Error).message}`,
+    );
+  }
+})();
+
+// --manifest alone derives the source set from the manifest itself:
+// accuracyGate.expected.<src>.file names the expected JSON (resolved
+// next to the manifest) and fixtures[] supplies the source workbook
+// whose basename carries the <src>- prefix. Any --input switches back
+// to the explicit path and the manifest only binds hashes.
+if (manifest && MANIFEST && !Object.keys(inputs).length) {
+  const manifestDir = dirname(MANIFEST);
+  for (const [name, spec] of Object.entries(
+    manifest.accuracyGate?.expected ?? {},
+  )) {
+    if (typeof spec !== "object" || spec === null) continue;
+    const file = (spec as { file?: unknown }).file;
+    if (typeof file !== "string") continue;
+    const matches = (manifest.fixtures ?? []).filter((f) =>
+      basename(f.path).startsWith(`${name}-`),
+    );
+    if (matches.length !== 1)
+      throw new Error(
+        `manifest mode: expected exactly one fixture for source ${name}, found ${matches.length}`,
+      );
+    inputs[name] = matches[0].path;
+    if (!expecteds[name]) expecteds[name] = join(manifestDir, file);
+  }
+}
 if (!Object.keys(inputs).length)
-  throw new Error("required --input <src>=<file> --expected <src>=<json>");
+  throw new Error(
+    manifest
+      ? `manifest ${MANIFEST} declares no usable accuracyGate sources`
+      : "required --input <src>=<file> --expected <src>=<json>",
+  );
 for (const name of Object.keys(expecteds))
   if (!inputs[name])
     throw new Error(`--expected ${name} has no matching --input`);
 
 // fixture paths + accuracyGate.hashes both name files by basename
 const manifestHashes = (() => {
-  if (!MANIFEST) return undefined;
-  const man = JSON.parse(readFileSync(MANIFEST, "utf8")) as {
-    fixtures?: { path: string; sha256: string }[];
-    accuracyGate?: { hashes?: Record<string, string> };
-  };
+  if (!manifest) return undefined;
   const map: Record<string, string> = {};
-  for (const f of man.fixtures ?? []) map[basename(f.path)] = f.sha256;
-  return { ...map, ...(man.accuracyGate?.hashes ?? {}) };
+  for (const f of manifest.fixtures ?? []) map[basename(f.path)] = f.sha256;
+  return { ...map, ...(manifest.accuracyGate?.hashes ?? {}) };
 })();
 
 async function main() {

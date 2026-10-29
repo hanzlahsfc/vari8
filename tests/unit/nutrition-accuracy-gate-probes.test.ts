@@ -125,3 +125,57 @@ describe("accuracy gate fail-closed probes", () => {
     expect(r.exit).toBe(0);
   });
 });
+
+describe("accuracy gate manifest-only mode", () => {
+  const manOnly = ["--manifest", `${FIX}/MANIFEST.json`];
+
+  it("runs the declared sources and passes on honest fixtures", () => {
+    const r = run([...BASE, ...manOnly]);
+    expect(r.exit).toBe(0);
+    expect(r.out).toContain("ACCURACY GATE PASSED");
+    expect(r.out).toContain("bls");
+    expect(r.out).toContain("ciqual");
+  });
+
+  it("a tampered recorded hash fails as hash_mismatch", () => {
+    const dir = mkdtempSync(join(tmpdir(), "accgate-man-"));
+    const man = JSON.parse(readFileSync(`${FIX}/MANIFEST.json`, "utf8"));
+    man.accuracyGate.hashes["expected-bls.json"] = "0".repeat(64);
+    writeFileSync(join(dir, "MANIFEST.json"), JSON.stringify(man));
+    writeFileSync(
+      join(dir, "expected-bls.json"),
+      readFileSync(`${FIX}/expected-bls.json`),
+    );
+    writeFileSync(
+      join(dir, "expected-ciqual.json"),
+      readFileSync(`${FIX}/expected-ciqual.json`),
+    );
+    const r = run([...BASE, "--manifest", join(dir, "MANIFEST.json")]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("hash_mismatch");
+  });
+
+  it("a declared source with no fixture fails closed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "accgate-man-"));
+    const man = JSON.parse(readFileSync(`${FIX}/MANIFEST.json`, "utf8"));
+    man.accuracyGate.expected.bogus = { file: "expected-bls.json" };
+    writeFileSync(join(dir, "MANIFEST.json"), JSON.stringify(man));
+    const r = run([...BASE, "--manifest", join(dir, "MANIFEST.json")]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("bogus");
+  });
+
+  it("a manifest file that cannot be read fails closed", () => {
+    const r = run([...BASE, "--manifest", `${FIX}/NO-SUCH-MANIFEST.json`]);
+    expect(r.exit).toBe(1);
+    expect(r.out).toContain("manifest");
+  });
+
+  it("an expected file absent next to the manifest fails closed", () => {
+    const dir = mkdtempSync(join(tmpdir(), "accgate-man-"));
+    const man = JSON.parse(readFileSync(`${FIX}/MANIFEST.json`, "utf8"));
+    writeFileSync(join(dir, "MANIFEST.json"), JSON.stringify(man));
+    const r = run([...BASE, "--manifest", join(dir, "MANIFEST.json")]);
+    expect(r.exit).toBe(1);
+  });
+});
