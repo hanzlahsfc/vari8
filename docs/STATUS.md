@@ -1,3 +1,14 @@
+## 2026-10-29 - Merge: client app and coach work items into the trunk base
+
+- Merged the client plans views work item and the saved meal assign work item
+  into `slice/r2-s1` (off `Vari8-Beta` `1d026325`) as two merge commits.
+- `frontend/` stays byte identical to the FRONTEND tip `8e6503f6`; the Beta
+  side won on every frontend path. `components/canvas/client-app/nutrition-targets.tsx`
+  is kept from the branch side (Beta no longer carried the file or its mount).
+- Gates: typecheck, lint, format:check, index:check and build exit 0. Unit
+  tests pass except the two inherited suites that cannot load `pngjs`.
+  Integration suite on a disposable database: 86 files, 1087 tests passed.
+
 ## 2026-10-28 - Merge: newest Vari8-Beta tip into the full package branch
 
 - Merged `origin/Vari8-Beta` tip `07183902be14053b868a1fe47773b6aba6b2beda`
