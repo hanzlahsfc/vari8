@@ -1,5 +1,5 @@
 /**
- * Card 10 (#175) — IIFYM payload/count/size bounds, mirroring
+ * Card 10 (#175): IIFYM payload/count/size bounds, mirroring
  * MEALPLAN_LIMITS where the shape is shared. Everything here is a
  * structural limit, never a nutrition rule: calories derive at 4/4/9
  * at read/render time, never stored.
@@ -16,7 +16,7 @@ export const IIFYM_LIMITS = {
   cycleStepDaysMin: 1,
   cycleStepDaysMax: 28,
   cycleDaysMax: 365,
-  /** Entered target values: 0 ≤ v ≤ 99,999.9, at most one decimal —
+  /** Entered target values: 0 ≤ v ≤ 99,999.9, at most one decimal,
    * enforced by decimal-string comparison (never float math). */
   valueMax: 99999.9,
   /** Normalized draft/version payload cap. */
@@ -24,7 +24,7 @@ export const IIFYM_LIMITS = {
   /** Bounded staff version-history page size. */
   versionPageSize: 20,
   /** Declared effective dates: year bounds come from the shared timezone
-   * utility (2000–2100); forward horizon is server-UTC today + this many
+   * utility (2000 to 2100); forward horizon is server-UTC today + this many
    * days. */
   effectiveDateAheadDays: 366,
 } as const;

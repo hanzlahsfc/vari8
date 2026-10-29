@@ -1,5 +1,5 @@
 /**
- * Card 10 (#175) — guarded IIFYM (macro target) persistence service,
+ * Card 10 (#175): guarded IIFYM (macro target) persistence service,
  * cloned step for step from the reviewed meal-plan publish protocol
  * (MEAL-PLAN-I1, decision #115) onto the existing iifym_plan /
  * iifym_plan_version tables. No migration: the schema v2 tables carry
@@ -10,11 +10,11 @@
  * `draftRevision` CAS → publishes an immutable effective-dated version.
  * Publish = assign; the draft STAYS open for continuous editing.
  *
- * Lock protocol (client-scoped — reviewed order):
+ * Lock protocol (client-scoped, reviewed order):
  *   advisory `iifym:{workspaceId}:{clientProfileId}`
  *   → advisory `member:{workspaceId}:{userId}`
  *   → workspace_member FOR UPDATE (authoritative actor state)
- *   → in-transaction authorize(mealPlans/* — the owner's settled
+ *   → in-transaction authorize(mealPlans/*, the owner's settled
  *     nutrition-plan posture; IIFYM is the second nutrition plan kind)
  *   → ACTIVE ClientAssignment FOR UPDATE (assigned scope only)
  *   → client_profile FOR UPDATE
@@ -30,12 +30,12 @@
  * ONCE at publish via `resolveLocalInstant(plan.timezone,
  * effectiveDate, 0)` and stored immutably with `effectiveTimezone`.
  * Current selection is `activationInstant <= now` eligible,
- * `(effectiveDate, versionSeq)` precedence — identical for coach and
+ * `(effectiveDate, versionSeq)` precedence, identical for coach and
  * client, browser-tz-free. A timezone change touches the container
  * only; published snapshots never retime.
  *
  * `publishOriginRevision` is the replay authority: a retried publish of
- * a committed revision returns the stored version unchanged — checked
+ * a committed revision returns the stored version unchanged, checked
  * BEFORE the CAS so a lost-response retry after a newer draft save
  * still resolves.
  */
@@ -83,9 +83,9 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
  * Declared effective date: strict YYYY-MM-DD, real calendar date, year in
- * the shared timezone utility's supported range (2000–2100), and at most
+ * the shared timezone utility's supported range (2000 to 2100), and at most
  * `effectiveDateAheadDays` past the server UTC date. Backdating within
- * range is allowed — precedence resolves which version is current.
+ * range is allowed, precedence resolves which version is current.
  */
 export function parseEffectiveDate(
   raw: unknown,
@@ -119,7 +119,7 @@ export type IifymActivation =
   | { status: "invalid" };
 
 /**
- * Start-of-client-local-day for the declared effective date — the
+ * Start-of-client-local-day for the declared effective date: the
  * reviewed wall→instant resolver at minute 0 (strict-subset reuse: fold →
  * earlier instant, midnight gap → first valid minute on the SAME date,
  * whole-day skip → unrepresentable, invalid zone/date → invalid).
@@ -137,7 +137,7 @@ export function resolveIifymActivation(
  * Unique-violation targets that are safe to retry inside `publish`: under
  * SERIALIZABLE a concurrent publish can pass the plan-row lock yet insert
  * with a stale-snapshot sequence/origin. Restarting the transaction is
- * exactly correct — the retry re-runs the replay check (idempotent
+ * exactly correct, the retry re-runs the replay check (idempotent
  * return) or recomputes `versionSeq` under the serialized lock.
  */
 const PUBLISH_RETRYABLE_UNIQUE_TARGETS: readonly (readonly string[])[] = [
@@ -311,7 +311,7 @@ type LockedPlanRow = {
   draft_revision: number;
 };
 
-/** Row lock scoped to BOTH clientProfileId and workspaceId — never a
+/** Row lock scoped to BOTH clientProfileId and workspaceId, never a
  * foreign row. */
 async function lockPlan(
   tx: Prisma.TransactionClient,
@@ -329,7 +329,7 @@ async function lockPlan(
   return rows[0] ?? null;
 }
 
-/** Consent — deterministic kind order, rows FOR UPDATE when `forUpdate`.
+/** Consent: deterministic kind order, rows FOR UPDATE when `forUpdate`.
  * The macro-target surface rides the same nutrition-plan consent kinds
  * as meal plans (BASE_CONSENTS). */
 async function checkRequiredConsent(
@@ -338,7 +338,7 @@ async function checkRequiredConsent(
   registry: ConsentPolicyRegistry,
   forUpdate: boolean,
 ): Promise<void> {
-  // D19: parked consent gate — allows (and skips the consent reads) when
+  // D19: parked consent gate. Allows (and skips the consent reads) when
   // ENABLE_CONSENT_GATES is off.
   if (!consentGatesEnabled()) return;
   const required = requiredConsentsFor("mealPlans") ?? [];
@@ -443,7 +443,7 @@ const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 /**
  * Save the shared draft. `expectedRevision === 0` CREATES the container
  * (title required); otherwise the row's `draft_revision` must match
- * exactly (CAS — stale editor → `stale_revision`, zero writes). An
+ * exactly (CAS, stale editor → `stale_revision`, zero writes). An
  * optional `timezone` (explicit confirm) stamps provenance when it
  * changes; it never touches published version snapshots.
  */
@@ -484,7 +484,7 @@ export async function saveIifymDraft(
           workspaceId: input.workspaceId,
           clientProfileId: input.clientProfileId,
         });
-        // Write cells are `assigned` for coach AND owner — anything else
+        // Write cells are `assigned` for coach AND owner, anything else
         // never reaches here (authorize throws first); asserted anyway.
         if (ctx.grantedScope !== "assigned")
           throw new AccessDeniedError("role_denied", "mealPlans", "write");
@@ -666,7 +666,7 @@ export async function setIifymTimezone(
  * BEFORE the CAS, so a lost-response retry after a newer draft save
  * still resolves), and `stale_revision` rejects revisions that were
  * never published. The `(effectiveTimezone, activationInstant)` pair is
- * resolved inside the iifym lock — a concurrent timezone change can
+ * resolved inside the iifym lock, a concurrent timezone change can
  * never tear the snapshot.
  */
 export async function publishIifymVersion(
@@ -742,7 +742,7 @@ export async function publishIifymVersion(
           if (plan.draft_revision !== input.expectedRevision)
             throw new IifymError("stale_revision");
 
-          // Confirmed plan-scoped timezone — required before first publish.
+          // Confirmed plan-scoped timezone: required before first publish.
           if (plan.timezone === null) throw new IifymError("timezone_required");
           const activation = resolveIifymActivation(
             plan.timezone,
@@ -753,7 +753,7 @@ export async function publishIifymVersion(
           if (activation.status === "unrepresentable")
             throw new IifymError("unrepresentable_date");
 
-          // Publish completeness validation on the STORED draft — the
+          // Publish completeness validation on the STORED draft, the
           // frozen payload is exactly the normalized snapshot.
           const payload = normalizeIifymPayload(plan.draft, {
             forPublish: true,
@@ -763,7 +763,7 @@ export async function publishIifymVersion(
             where: { iifymPlanId: plan.id },
             _max: { versionSeq: true },
           });
-          // versionSeq assigned ONLY under the serialized plan lock —
+          // versionSeq assigned ONLY under the serialized plan lock,
           // concurrent publishes can never mint conflicting sequences.
           const versionSeq = (max._max.versionSeq ?? 0) + 1;
           const created = await tx.iifymPlanVersion.create({
@@ -826,7 +826,7 @@ export type StaffIifymView = {
     effectiveDate: string;
     effectiveTimezone: string;
   } | null;
-  /** Advisory write capability — the write path independently
+  /** Advisory write capability: the write path independently
    * re-authorizes under locks; this only shapes the UI. */
   canWrite: boolean;
 };
@@ -901,7 +901,7 @@ export async function readStaffIifymPlan(
 
         // Write capability mirrors the reviewed capability pattern: the
         // role's write scope on mealPlans is `assigned`, so capability =
-        // an ACTIVE assignment for THIS client. Advisory only — the
+        // an ACTIVE assignment for THIS client. Advisory only, the
         // write transaction independently re-authorizes under locks.
         const writeAssignment =
           member.role === "COACH" || member.role === "WORKSPACE_OWNER"
@@ -964,7 +964,7 @@ export type OwnIifymView = {
 };
 
 /**
- * Client own-scope read — the published CURRENT version plus the
+ * Client own-scope read: the published CURRENT version plus the
  * earliest upcoming header. The draft is never selected, never returned.
  */
 export async function readOwnIifymPlan(
@@ -983,7 +983,7 @@ export async function readOwnIifymPlan(
         const userId = session?.user?.id;
         if (typeof userId !== "string" || userId.length === 0)
           throw new AccessDeniedError("unauthenticated", "mealPlans", "read");
-        // Own-profile rebinding — needed before the client-scoped
+        // Own-profile rebinding: needed before the client-scoped
         // advisory key can be derived.
         const profile = await tx.clientProfile.findFirst({
           where: { workspaceId: input.workspaceId, userId },
@@ -1007,7 +1007,7 @@ export async function readOwnIifymPlan(
         const current = await currentVersion(tx, plan.id, now);
         const upcoming = await upcomingVersion(tx, plan.id, now);
 
-        // Detail-READ audit — written last, inside the tx.
+        // Detail-READ audit: written last, inside the tx.
         if (current !== null || upcoming !== null) {
           await writeAuditEvent(tx, ctx, {
             action: "READ",

@@ -1,4 +1,4 @@
-// Stage 1 card 02 / issue #162 — seeded UI slice. Thin /api/v1 route over
+// Stage 1 card 02 / issue #162, seeded UI slice. Thin /api/v1 route over
 // Hanzlah's merged supplement backend (lib/supplements/*); the owning
 // follow-up on #162 replaces this wiring. Do not extend it here.
 
@@ -39,7 +39,7 @@ function unwrap<T>(result: SupplementSafeResult<T>): T {
       throw new ApiError(409, "conflict");
     default:
       // not_available / consent_missing / policy_not_configured surface as
-      // the same closed 404 — the caller cannot tell them apart.
+      // the same closed 404, the caller cannot tell them apart.
       throw new ApiError(404, "not_found");
   }
 }

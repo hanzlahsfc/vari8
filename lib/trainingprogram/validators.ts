@@ -1,17 +1,17 @@
 /**
- * PR-M6 — zod-validated shapes crossing the training boundary.
+ * PR-M6: zod-validated shapes crossing the training boundary.
  *
  * - `prescribedSetSchema`: the canvas `TrainingSet`
- *   (frontend/src/components/coach/plans/types.ts:26-34) — ordered
+ *   (frontend/src/components/coach/plans/types.ts:26-34): ordered
  *   per-set prescription rows. No prescribed load per set (owner ruling
  *   O12: the canvas does not draw it).
  * - `setLogEntrySchema` / `loggedExerciseSchema` / `sessionSetLogSchema`:
- *   the set-logging model of owner ruling O5 — per-set actual reps,
+ *   the set-logging model of owner ruling O5, per-set actual reps,
  *   load, RPE, set note and flags, plus the session-complete marker the
  *   logbook gap (P04) names. Storage lands with PR-W8; these schemas
  *   are the contract it wires.
  * - `exerciseLibraryItemInputSchema`: the coach-editable exercise
- *   library write shape (V3-L1-Exercise) — the canvas
+ *   library write shape (V3-L1-Exercise), the canvas
  *   `ExerciseDefinition` backed by `exercise_library_item`.
  *
  * Values are stored and rendered exactly as entered: bounds here are
@@ -68,7 +68,7 @@ export type PrescribedSet = z.infer<typeof prescribedSetSchema>;
  * Optional numeric fields stay absent when the client leaves them blank
  * (#36: a blank input stays missing, never zero).
  *
- * `flags` carries the flag kinds the surface draws — today only
+ * `flags` carries the flag kinds the surface draws, today only
  * "checkin-review" (P04: flag the set note for the coach's check-in
  * review). The list shape leaves room for later kinds without a shape
  * change.
@@ -95,7 +95,7 @@ export const loggedExerciseSchema = z
 export type LoggedExercise = z.infer<typeof loggedExerciseSchema>;
 
 /**
- * One logged session against a program — the client logbook entry (P04)
+ * One logged session against a program: the client logbook entry (P04)
  * and the review-context record (P06). `completedAt` is the
  * session-complete marker; absent means partially logged.
  */

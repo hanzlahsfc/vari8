@@ -6,7 +6,7 @@ import { deleteProgressPhoto, getProgressPhoto } from "../service";
 
 /**
  * /api/v1/workspaces/:workspaceId/clients/:clientProfileId/progress-photos/:entryId
- * — GET reads one live entry of the path client (own scope reads only its
+ * GET reads one live entry of the path client (own scope reads only its
  * own clientVisible entries). DELETE soft-deletes the entry; the media
  * object stays for the retention pass.
  */

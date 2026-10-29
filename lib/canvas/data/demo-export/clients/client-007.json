@@ -47,12 +47,12 @@
     },
     {
       "id": "demo-pinned-note-1",
-      "text": "Left quad lags — keep unilateral work early in lower sessions.",
+      "text": "Left quad lags: keep unilateral work early in lower sessions.",
       "pinned": true
     },
     {
       "id": "demo-pinned-note-2",
-      "text": "Digestion issues with dairy — keep it out pre-show.",
+      "text": "Digestion issues with dairy: keep it out pre-show.",
       "pinned": true
     }
   ],
@@ -661,7 +661,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -709,7 +709,7 @@
             },
             {
               "id": "cramps",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "pms-symptoms",
@@ -725,15 +725,15 @@
             },
             {
               "id": "hunger",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "bloating",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "sleep-quality",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "muscle-soreness",
@@ -741,15 +741,15 @@
             },
             {
               "id": "stress",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "energy-in-gym",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "mood-in-gym",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "daily-note",
@@ -808,7 +808,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -822,7 +822,7 @@
               "label": "How was your energy this week?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "demo-q-bodyweight",
@@ -1027,7 +1027,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -1094,7 +1094,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -3530,7 +3530,7 @@
       "kind": "deload",
       "startDate": "day 21",
       "endDate": "day 27",
-      "note": "Recovery week — reduce volume."
+      "note": "Recovery week: reduce volume."
     },
     {
       "id": "demo-timeline-dietbreak",
@@ -5182,7 +5182,7 @@
       "2026-08-22:bleeding-level": "Light",
       "2026-08-23:bleeding-level": "Medium",
       "2026-08-23:daily-note": "Stomach a bit off, kept sodium the same.",
-      "2026-08-23:coach-note": "Sleep quality holding — keep the evening routine.",
+      "2026-08-23:coach-note": "Sleep quality holding: keep the evening routine.",
       "2026-08-25:bleeding-level": "Medium",
       "2026-08-26:bleeding-level": "Light",
       "2026-08-27:bp": "119 / 76",
@@ -5195,7 +5195,7 @@
       "2026-09-10:bp": "119 / 74",
       "2026-09-12:daily-note": "Stomach a bit off, kept sodium the same.",
       "2026-09-14:bp": "119 / 77",
-      "2026-09-16:coach-note": "Sleep quality holding — keep the evening routine.",
+      "2026-09-16:coach-note": "Sleep quality holding: keep the evening routine.",
       "2026-09-17:bp": "116 / 78",
       "2026-09-17:pms-symptoms": "Bloating, Mood changes",
       "2026-09-17:daily-note": "Stomach a bit off, kept sodium the same.",
@@ -5240,19 +5240,19 @@
         "answers": [
           {
             "question": "How did you feel this week?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your training?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Anything you would like me to know?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your energy this week?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Bodyweight average",
@@ -5280,7 +5280,7 @@
         "note": "Submitted from the client app.",
         "flags": [],
         "response": {
-          "text": "Great week, Amara — the step consistency is showing in the trend. Keep the same approach; we'll review photos at the next check-in.",
+          "text": "Great week, Amara: the step consistency is showing in the trend. Keep the same approach; we'll review photos at the next check-in.",
           "changes": [],
           "date": "day -7T18:30:00Z"
         },
@@ -5312,19 +5312,19 @@
         "answers": [
           {
             "question": "How did you feel this week?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your training?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Anything you would like me to know?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your energy this week?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Bodyweight average",
@@ -5376,19 +5376,19 @@
         "answers": [
           {
             "question": "How did you feel this week?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your training?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Anything you would like me to know?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your energy this week?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Bodyweight average",
@@ -5434,7 +5434,7 @@
         "note": "Submitted from the client app.",
         "flags": [],
         "response": {
-          "text": "Solid week — the step consistency is showing in the trend. Keep the same approach.",
+          "text": "Solid week: the step consistency is showing in the trend. Keep the same approach.",
           "changes": [],
           "date": "day -63T18:30:00Z"
         }
@@ -5448,19 +5448,19 @@
         "answers": [
           {
             "question": "How did you feel this week?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your training?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Anything you would like me to know?",
-            "answer": "Solid week overall — training felt strong and the evening routine stuck."
+            "answer": "Solid week overall: training felt strong and the evening routine stuck."
           },
           {
             "question": "How was your energy this week?",
-            "answer": "8 / 10 — energy held up even on the busy days"
+            "answer": "8 / 10: energy held up even on the busy days"
           },
           {
             "question": "Bodyweight average",
@@ -5506,7 +5506,7 @@
         "note": "Submitted from the client app.",
         "flags": [],
         "response": {
-          "text": "Solid week — the step consistency is showing in the trend. Keep the same approach.",
+          "text": "Solid week: the step consistency is showing in the trend. Keep the same approach.",
           "changes": [],
           "date": "day -35T18:30:00Z"
         }

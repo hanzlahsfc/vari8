@@ -1,5 +1,5 @@
 // Card 08 (#172): progress-photo data seam. One provider speaks for both
-// callers — a client binds their own clientProfileId (the service resolves
+// callers: a client binds their own clientProfileId (the service resolves
 // and matches it), staff name the roster client's id. Upload keeps the
 // proven two-step media intent + presigned PUT, then attaches the media
 // object to a dated entry in a second call.

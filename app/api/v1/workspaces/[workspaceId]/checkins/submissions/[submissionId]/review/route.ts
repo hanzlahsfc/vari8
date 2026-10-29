@@ -11,7 +11,7 @@ import { readBody, sessionOf, unwrap } from "../../../_result";
 /**
  * GET /api/v1/workspaces/:workspaceId/checkins/submissions/:submissionId/review
  *
- * FULL-PACKAGE SLICE of #171 — the coach review-panel read: one call
+ * FULL-PACKAGE SLICE of #171. The coach review-panel read: one call
  * returns the audited submission detail (answers, review state, feedback,
  * linked media) plus the change summary against the previous submission
  * of the same form.

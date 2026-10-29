@@ -514,40 +514,40 @@ MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   Marcel approves the screens.
 - NOT done: owner screen sign-off, lane DB drop (kept for preview).
 
-## 2026-10-25 — Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
+## 2026-10-25: Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
 
-- Schema: none added — existing `IifymPlan` (shared draft, `draftRevision` CAS,
+- Schema: none added. Existing `IifymPlan` (shared draft, `draftRevision` CAS,
   plan-scoped `timezone`) + `IifymPlanVersion` (immutable payload snapshot,
   `publishOriginRevision` dedupe authority) carry the whole card.
-- Service: `lib/iifym/` — `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
+- Service: `lib/iifym/`. `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
   resolver, enforced at the top of every exported service function: flag off →
   `plan_not_accessible`/403), `limits.ts`, `payload.ts` (strict draft
   normalizer; macros options reject `calories`, calorie options reject macros),
-  `service.ts` (draft save / timezone confirm / publish / staff+own reads —
+  `service.ts` (draft save / timezone confirm / publish / staff+own reads,
   meal-plan protocol cloned: advisory lock, serializable tx, consent under
   locks, replay-lookup before stale/publish checks, audit last).
 - Routes (api/v1): own `GET workspaces/{ws}/iifym-plans` (current version
-  payload + upcoming header only — draft never leaves the server); staff
+  payload + upcoming header only, draft never leaves the server); staff
   `GET|PUT clients/{cp}/iifym-plans`, `POST .../publish`,
   `POST .../timezone`. `_result.ts` maps the closed error vocabulary:
   400/403/409, never 404, foreign workspace → 403.
 - Coach UI: `app/workspace/[ws]/clients/[cp]/macro-targets` +
-  `components/iifym/` — option editor (macro mode: P/C/F with derived-kcal
+  `components/iifym/`, option editor (macro mode: P/C/F with derived-kcal
   readout; calorie mode entered directly + labelled), weekly weekday
   assignment grid (+manual; a stored `cycle` schedule is preserved, not
   clobbered), explicit "Confirm timezone" action (`setIifymTimezone` via the
-  timezone route — the coach's browser zone is never auto-stamped), publish
+  timezone route, the coach's browser zone is never auto-stamped), publish
   with effective date, version table. Clients roster row links to it.
 - Client UI: `nutrition-targets.tsx` beside card-09 `NutritionActuals` in a
-  `ca-nutrition-split` — resolves the weekday option for the displayed date
+  `ca-nutrition-split`: resolves the weekday option for the displayed date
   through the canvas's own `scheduledOption`, derives kcal at 4/4/9 in macro
   mode, labels calorie mode; empty/error states when no version is live.
 - Tests: 11 unit (payload normalize/derived-calorie rules), 7 integration on a
   disposable PG (two-option publish + weekday resolution via the real
   `scheduledOption`, byte-identical replay incl. after v2, foreign-workspace
   denial, flag-off closure, immutability, consent missing).
-- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn —
-  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
+- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn,
+  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build`,
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
 start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
@@ -559,7 +559,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   card-09 route for the side-by-side. Screenshots 1440/390 coach+client and
   `PROOF.md` in the card-10 evidence dir.
 - Independent review (verifier subagent): REPAIR → fixed. MAJOR-1 flag was
-  page-gated only — now enforced in the service and proven live flag-off.
+  page-gated only, now enforced in the service and proven live flag-off.
   MAJOR-2 browser auto-stamp replaced by explicit confirm route. Minors:
   dead exports dropped (`readStaffIifymVersion`, cursor pagination), cycle
   schedule preserved in editor, create-without-title 403→400, test imports
@@ -570,7 +570,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   the seed env only). No push, no PR until Marcel approves the screens.
 - NOT done: owner screen sign-off, lane DB drop (kept for preview).
 
-## 2026-10-25 — Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
+## 2026-10-25: Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
 
 - Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on
   `(workspaceId, clientProfileId, entryDate)`; nullable `protein`,
@@ -578,9 +578,9 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   `db/migrations/20261023030000_nutrition_log/` with `down.sql`.
 - Math: `MacroActuals` + `caloriesFromMacros` (4/4/9, missing macro
   contributes nothing, all-missing = 0, explicit 0 stays "0 g") in
-  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline —
+  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline,
   canvas never imports server modules.
-- Service: `lib/daily-entry/nutrition-log.ts` — own read/save reusing the
+- Service: `lib/daily-entry/nutrition-log.ts`. Own read/save reusing the
   `saveDailyEntry` lock/auth/consent protocol, staff 30-day range read.
   Logs bind to the daily entry/date, so meal-plan ↔ IIFYM switches keep
   earlier entries; template-independent.
@@ -595,25 +595,25 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   `app_fp_stage7` (partial/full/zero macros, reload, staff range,
   pin-switch retention, auth guards).
 - Gates: `npm ci`, `prisma generate`, `typecheck`, `lint` (0 err),
-  `index:check`, `test` (111 files / 1323), `build` — all exit 0.
+  `index:check`, `test` (111 files / 1323), `build`, all exit 0.
 - Live proof on `app_fp_stage7` (seeded, synthetic `card09-*` fixtures):
-  Playwright driver, 14/14 PASS — empty day, protein-only 720 kcal,
+  Playwright driver, 14/14 PASS: empty day, protein-only 720 kcal,
   150/200/60 → 1940 kcal hand-checked, reload persistence, IIFYM-variant
   client keeps entries, coach table shows 1940 + 400 kcal rows.
   Screenshots 1440/390 + `PROOF.md` in the card-09 evidence dir.
 - Preview for review R2-4: served on `https://127.0.0.1:3967` (TLS proxy
   → backend 3968), `APP_ENV=test`, `MEDIA_STORAGE_ADAPTER=local`,
   `ENABLE_DAILY_ENTRY=1`. Port 3964 is owned by the sibling
-  merge-preview lane and was left alone — flag for Marcel.
+  merge-preview lane and was left alone, flag for Marcel.
 - Commits: `9731f3a` schema+math, `0ce232e` service, `b412a50` routes,
   `91937c1` client panel, `edbe706` coach section + index. No push.
 - NOT done: independent review, owner screen sign-off, lane DB drop
   (kept for the preview).
 
-## 2026-10-25 — Stage 6 card 08 (#172): progress photos with comparison — built, live-verified, awaiting R2-4 screen review
+## 2026-10-25: Stage 6 card 08 (#172): progress photos with comparison, built, live-verified, awaiting R2-4 screen review
 
 - Migration `db/migrations/20261023020000_progress_photo/` (+ `down.sql`
-  ending in the `_prisma_migrations` delete): `progress_photo_entry` —
+  ending in the `_prisma_migrations` delete): `progress_photo_entry`,
   unique `media_object_id` link, `taken_on` DATE, optional
   `checkin_submission_id`, `client_visible` default true, `deleted_at`
   soft delete. Raw composite FKs pin media/submission to the same
@@ -624,12 +624,12 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   Workspace/ClientProfile/MediaObject/CheckInSubmission.
 - API under
   `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/`:
-  `service.ts` + routes — GET list + POST create (route.ts), GET/DELETE
+  `service.ts` + routes, GET list + POST create (route.ts), GET/DELETE
   `[entryId]` (route.ts), GET `compare?first&second` (compare/route.ts).
   Reads `clientData.read`, writes `message.write`. Client callers are
   resolved to their own profile server-side and constrained to it
   regardless of path ids; staff need an active member with staff scope.
-  Compare requires both entries under the same requested client —
+  Compare requires both entries under the same requested client,
   cross-client pairs return `not_found`, never leak existence. Deleted
   entries are filtered from list/get/compare; the media_object row is
   untouched by delete (retention pass owns it).
@@ -638,13 +638,13 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   `uploadOwnProgressPhoto` (intent → PUT → dated entry create) plus
   list/create/delete/compare. `fetchMediaDownload` alias clarifies the
   staff-side mint caller.
-- Client UI: `components/canvas/client-app/photos.tsx` — dated upload
+- Client UI: `components/canvas/client-app/photos.tsx`. Dated upload
   (DatePicker, defaults today), own gallery with delete; mounted as a
   remote-only `photos` section (sections.ts/client-app.tsx) visible only
   for a signed-in client with an `own` binding.
 - Coach UI: real staff page
   `app/workspace/[workspaceId]/clients/[clientProfileId]/photos/`
-  (page.tsx + photos-panel.tsx) — gallery mints fresh download urls per
+  (page.tsx + photos-panel.tsx), gallery mints fresh download urls per
   entry, two-entry comparator via the compare route, soft-delete buttons.
   Roster `app/workspace/[workspaceId]/clients/page.tsx` gains a Photos
   column link for owner/coach. Styles in `app/globals.css`.
@@ -655,7 +655,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   bumped 56→57 pages deliberately.
 - `tests/integration/api-v1-progress-photos.test.ts`: 8 tests green on
   lane db `app_fp_stage6` (real Postgres, migration deployed,
-  `MEDIA_STORAGE_ADAPTER=local`) — list/create/compare/soft-delete,
+  `MEDIA_STORAGE_ADAPTER=local`): list/create/compare/soft-delete,
   own-scope pinning, cross-client refusal, media survives entry delete.
 - Live probes on the built artifact (`next start`, port 3966; 3964 was
   held by the merge-preview lane): real upload through the media routes,
@@ -667,14 +667,14 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
   logs and report.
-- NOT pushed, no PR — awaiting Marcel's visual review of the screens
+- NOT pushed, no PR: awaiting Marcel's visual review of the screens
   (preview requirement was port 3964; sibling lanes occupy it, live
-  instance for this card ran on 3966 — coordinate before publish).
+  instance for this card ran on 3966, coordinate before publish).
 
-## 2026-10-25 — Stage 5 card 07 (#169): activity targets with a day-effective resolver landed; awaiting Marcel's 3964 screen review
+## 2026-10-25: Stage 5 card 07 (#169): activity targets with a day-effective resolver landed; awaiting Marcel's 3964 screen review
 
 - `db/migrations/20261023010000_activity_target/` (new): `activity_target`
-  — one row per (client, metric, day); kind set = prescription, kind NULL +
+  holds one row per (client, metric, day); kind set = prescription, kind NULL +
   stopped_at = stop version. Raw CHECKs: metric closed set ('steps',
   'cardioMin'), cardio columns together and exactly on CARDIO, ordered
   range bounds, positive prescription numbers (sessions_per_week whole, no
@@ -684,7 +684,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
 - `lib/activity-targets/` (new): `model.ts` pure resolver + write planner
   (latest row with effectiveFrom <= date wins; same-day replace needs the
   confirm flag and bumps revision); `service.ts` serializable tx with
-  advisory locks, in-tx authorize (new `activityTargets` RBAC resource —
+  advisory locks, in-tx authorize (new `activityTargets` RBAC resource,
   staff workspace|assigned, client own-read/write-denied), revision CAS on
   same-day replace, audit CREATE/UPDATE (structural meta only);
   `boundary.ts` closed safe vocabulary incl. `confirmation_required`;
@@ -713,7 +713,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   `Vari8-evidence/FULL-PACKAGE/STAGE-5/card-07/` (also gates.txt +
   probe-output.txt). Preview: managed runner on 127.0.0.1:3997 left running
   (3964/3000/3001 held by sibling lanes).
-- NOT done: push/PR — held per card rule until Marcel approves the screens.
+- NOT done: push/PR. Held per card rule until Marcel approves the screens.
 
 ## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
 
@@ -754,13 +754,13 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
 - Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
   `01-service-signatures.md` already there).
 
-## 2026-10-25 — Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
+## 2026-10-25: Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
 
 - Thin route
   `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts`:
   `GET` `plan.read` selects `readStaffSupplementPlan` (workspace scope) or
   `readOwnSupplementPlan` (own scope); `PUT` `plan.write` denies clients at
-  the capability gate. Backend untouched — the merged
+  the capability gate. Backend untouched, the merged
   `lib/supplements/{model,service,boundary,gate}.ts` is called through its
   safe `*FromAction` boundary with a closed error mapping.
 - `components/canvas/data/supplements.ts` is the remote provider
@@ -778,7 +778,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   `APP_ENV=test ENABLE_SUPPLEMENTS=1`): coach GET 200 / PUT 200 / GET 200
   ordered; profile-linked client GET 200 same items; client PUT 403;
   foreign-workspace GET 403. Seeded walk added two items with statuses,
-  saved, reloaded — order and rows persisted.
+  saved, reloaded, order and rows persisted.
 - No consent gate on supplements (owner decision 2026-10-22);
   `ENABLE_CONSENT_GATES` unset. Evidence report:
   `Vari8-evidence/FULL-PACKAGE/STAGE-1/card-02/REPORT.md`.

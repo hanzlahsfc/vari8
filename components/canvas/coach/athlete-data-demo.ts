@@ -290,15 +290,15 @@ const PMS_OPTIONS = [
   "Fatigue",
 ];
 const DAILY_NOTES = [
-  "Solid day — hit protein, felt full after meals.",
+  "Solid day: hit protein, felt full after meals.",
   "Legs heavy this morning, still got the session done.",
   "Stomach a bit off, kept sodium the same.",
   "Energy dipped mid-afternoon, short nap helped.",
-  "Best posing practice so far — lines looked sharp.",
+  "Best posing practice so far: lines looked sharp.",
 ];
 const COACH_NOTES = [
   "Check in on digestion before adjusting macros.",
-  "Sleep quality holding — keep the evening routine.",
+  "Sleep quality holding: keep the evening routine.",
   "Stress up this week, watch recovery closely.",
 ];
 const BLEEDING = ["Light", "Medium", "Heavy", "Medium", "Light"];

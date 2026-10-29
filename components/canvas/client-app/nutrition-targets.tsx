@@ -6,7 +6,7 @@
  * screen, beside the card 09 actuals. Reads the own iifym-plans route;
  * the server resolves WHICH version applies, the screen resolves WHICH
  * option applies on the selected date via the shared canvas
- * `scheduledOption` (weekly weekday keys "1"–"7", Monday first).
+ * `scheduledOption` (weekly weekday keys "1" to "7", Monday first).
  *
  * One applicable target set renders per date. Macros-style targets show
  * protein/carbohydrate/fat and derive kcal at render (4/4/9 over the
@@ -38,7 +38,7 @@ const NOT_SET = "Not set";
 
 function formatTarget(value: IifymTargetValueWire | undefined, unit: string) {
   if (!value) return NOT_SET;
-  if (value.kind === "range") return `${value.min}–${value.max} ${unit}`;
+  if (value.kind === "range") return `${value.min}\u2013${value.max} ${unit}`;
   if (value.kind === "minimum") return `≥${value.value} ${unit}`;
   return `${value.value} ${unit}`;
 }
@@ -96,7 +96,7 @@ export function NutritionTargets({
     };
   }, [workspaceId]);
 
-  // Only a response for the current workspaceId counts — a stale load
+  // Only a response for the current workspaceId counts, a stale load
   // from a previous binding reads as loading, never as content.
   const current =
     loaded !== null && loaded.workspaceId === workspaceId ? loaded : null;

@@ -13,13 +13,13 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Client Macro Targets" };
 
 /**
- * Card 10 (#175) — staff per-client macro-target surface. Assigned
+ * Card 10 (#175): staff per-client macro-target surface. Assigned
  * coaches AND explicitly assigned owners author the shared draft and
  * publish immutable effective-dated versions; unassigned owners keep
  * workspace-wide READ only; assistants read within assigned scope;
  * SUPPORT and PLATFORM_ADMIN (dual-role inclusive) are denied. Every
  * write re-authorizes inside its own serialized transaction on the
- * /api/v1 iifym-plans routes — capability flags here shape the UI only.
+ * /api/v1 iifym-plans routes, capability flags here shape the UI only.
  *
  * Feature gate first: an off/untrusted resolver returns 404 before any
  * session/database work. The client name is tenant data: read it only
@@ -57,7 +57,7 @@ export default async function StaffClientMacroTargetsPage({
           <Link href={`/workspace/${workspaceId}/clients`}>Clients</Link>
         </p>
         <h1 className="app-title">
-          Macro targets{client ? ` — ${client.name}` : ""}
+          Macro targets{client ? `: ${client.name}` : ""}
         </h1>
         <p className="app-lede">
           Coach-entered daily macro targets per option and weekday. Calories

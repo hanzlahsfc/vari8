@@ -1071,7 +1071,7 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
   );
 
   // Issue #169: attached to a workspace the timeline resolves the persisted
-  // day-effective versions through the same canvas resolver — a successful
+  // day-effective versions through the same canvas resolver, a successful
   // read is authoritative, a failed read keeps the local copy.
   useEffect(() => {
     if (!workspaceId) return;

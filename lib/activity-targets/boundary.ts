@@ -1,9 +1,9 @@
 /**
- * Issue #169 — activity-targets boundary: the ONLY module the app layer
+ * Issue #169. Activity-targets boundary: the ONLY module the app layer
  * touches. Every service-domain error maps to a closed, non-disclosing
  * safe vocabulary; nothing raw escapes to the client. `confirmation_required`
  * is carried as its own code because the coach editor must turn it into the
- * same-day replace confirm dialog — it is not an opaque conflict.
+ * same-day replace confirm dialog, it is not an opaque conflict.
  */
 
 import { fail as sharedFail, mapError as sharedMapError } from "../boundary";
@@ -36,9 +36,9 @@ const CLOSED_MESSAGES: Record<
   denied: "You don’t have access to these activity targets.",
   invalid_input: "The activity target request wasn’t valid.",
   confirmation_required:
-    "A target was already saved for that day — confirm to replace it.",
-  conflict: "The activity targets changed — refresh and try again.",
-  serialization_conflict: "The activity targets changed — please try again.",
+    "A target was already saved for that day. Confirm to replace it.",
+  conflict: "The activity targets changed. Refresh and try again.",
+  serialization_conflict: "The activity targets changed. Please try again.",
 };
 
 function fail<T>(

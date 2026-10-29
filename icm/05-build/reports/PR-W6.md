@@ -224,7 +224,7 @@ s03-checkin-review@390 /coach 266822 0/0/139 page size 390,3103 -> 390,3120; 266
 
 What is left on that screen is content, not structure: the 6 text changes are the two
 owner-ruled shell strings, the pending count (`2` -> `3`, the server has one more waiting
-feedback), the rating display (`8 / 10 — feeling stronger` -> `8 / 10`), the note heading
+feedback), the rating display (`8 / 10, feeling stronger` -> `8 / 10`), the note heading
 (`Athlete note` -> `Your note`, the server field label) and the video button caption. The
 22.5 px taller page comes from the visuals captions: the server carries media ids
 (`seed-m8-media-emma-1`), which wrap to two lines where base's `Front · 12 October` fit

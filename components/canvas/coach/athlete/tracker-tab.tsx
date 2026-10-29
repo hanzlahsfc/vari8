@@ -120,7 +120,7 @@ const groupOf = (parameterGroup: string) =>
   GROUPS.find(([, sources]) => sources.includes(parameterGroup))?.[0] ??
   "Notes";
 
-const RATING_UNITS = new Set(["1–10", "1–5", "Word labels"]);
+const RATING_UNITS = new Set(["1\u201310", "1\u20135", "Word labels"]);
 const LOWER_BETTER = new Set([
   "stress",
   "hunger",
@@ -199,7 +199,7 @@ function colFor(field: FieldConfig, parameter: Parameter): Col {
     summary:
       field.summary ??
       (parameter.id === "bleeding-level" ? "count" : defaultSummary(parameter)),
-    max: field.unit === "1–5" ? 5 : 10,
+    max: field.unit === "1\u20135" ? 5 : 10,
     lowerBetter: LOWER_BETTER.has(parameter.id),
     countWord:
       parameter.id === "daily-note"
@@ -670,7 +670,7 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
         .reduce((a, m) => a + textWidth(m.short, "550 11px") + 30, 0);
       if (w > markers) markers = w;
     }
-    const band = textWidth("Week 10 · 28 Sept – 4 Oct", "600 12px") + 52;
+    const band = textWidth("Week 10 · 28 Sept \u2013 4 Oct", "600 12px") + 52;
     return Math.ceil(Math.max(day + date + markers + 16, band));
   }, [data.markers]);
 
@@ -924,7 +924,7 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
             <span className="trk-narrow-vals">
               {groups[0].cols
                 .slice(0, 3)
-                .map((c) => cellValue(c, d, data, client).text || "—")
+                .map((c) => cellValue(c, d, data, client).text || "\u2014")
                 .join(" · ")}
             </span>
           </div>
@@ -934,7 +934,7 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
   }
 
   const first = weeks[0].days[0];
-  const rangeLabel = `${formatDate(first, { day: "numeric", month: "short" })} – ${formatDate(today, { day: "numeric", month: "short" })} · ${weeks.length} weeks`;
+  const rangeLabel = `${formatDate(first, { day: "numeric", month: "short" })} \u2013 ${formatDate(today, { day: "numeric", month: "short" })} · ${weeks.length} weeks`;
   const sessionDetail = session ? data.sessions.get(session) : undefined;
 
   const renderCell = (col: Col, date: string) => {
@@ -944,7 +944,7 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
       (col.kind === "coach" && !c.empty);
     const future = date > today;
     let content: ReactNode = c.empty ? (
-      <span className="trk-mut">—</span>
+      <span className="trk-mut">{"\u2014"}</span>
     ) : (
       c.text
     );
@@ -1031,7 +1031,7 @@ export function AthleteTrackerTab({ client }: { client: CoachClient }) {
 
   const renderWeek = (week: Week, phaseLabel: ReactNode) => {
     const collapsed = collapsedWeeks.has(week.monday);
-    const dates = `${formatDate(week.monday, { day: "numeric", month: "short" })} – ${formatDate(week.sunday, { day: "numeric", month: "short" })}`;
+    const dates = `${formatDate(week.monday, { day: "numeric", month: "short" })} \u2013 ${formatDate(week.sunday, { day: "numeric", month: "short" })}`;
     return (
       <Fragment key={week.monday}>
         {phaseLabel}

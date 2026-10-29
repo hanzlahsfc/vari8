@@ -2,7 +2,7 @@
 --
 -- One row per (client_profile_id, metric, effective_from) boundary. Each row
 -- is either a prescription (kind set, stopped_at NULL) or a stop (kind NULL,
--- stopped_at set) — the resolver picks the latest row with effective_from <=
+-- stopped_at set), the resolver picks the latest row with effective_from <=
 -- the asked date, so a stop row supersedes the prescription without rewriting
 -- earlier days. A same-day write replaces the row in place and bumps the
 -- revision; the unique key is what makes "same day" a single row.

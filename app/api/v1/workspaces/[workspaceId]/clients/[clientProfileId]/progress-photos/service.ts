@@ -7,14 +7,14 @@ import { prisma } from "@/lib/db";
 import { parseClientObjectKey } from "@/lib/storage";
 
 /**
- * Card 08 (#172) progress-photo service — one decision point for the dated
+ * Card 08 (#172) progress-photo service: one decision point for the dated
  * gallery on top of the media upload. Called only inside `defineApiV1Route`,
  * so the viewer is authenticated and `workspace.scope` already carries the
  * caller's D15 capability scope.
  *
  * Scope semantics ("own" = client role):
  *   - The client profile is resolved from the viewer's account and must
- *     equal the path's clientProfileId — a foreign id is 403, not found.
+ *     equal the path's clientProfileId, a foreign id is 403, not found.
  *   - Staff (workspace scope) name the client in the path; the profile
  *     must belong to the workspace or it is 404.
  *   - Own scope additionally filters to clientVisible entries: a photo a
@@ -22,7 +22,7 @@ import { parseClientObjectKey } from "@/lib/storage";
  *
  * Comparison is closed to one client: both entries must resolve under the
  * path's (workspace, client) pair, so a pair spanning two clients is 404.
- * Delete soft-deletes the entry only — the media_object row and its bytes
+ * Delete soft-deletes the entry only: the media_object row and its bytes
  * stay for the retention pass.
  */
 
@@ -122,7 +122,7 @@ function todayUtc(): Date {
 }
 
 /**
- * GET collection — the client's gallery. Staff see every live entry; own
+ * GET collection: the client's gallery. Staff see every live entry; own
  * scope sees only clientVisible ones.
  */
 export async function listProgressPhotos(
@@ -150,7 +150,7 @@ export async function listProgressPhotos(
 
 /**
  * GET one entry by id. Under own scope a foreign entry or a staff-only one
- * is not found — same as absent.
+ * is not found, same as absent.
  */
 export async function getProgressPhoto(
   viewer: ApiViewer,
@@ -178,7 +178,7 @@ export async function getProgressPhoto(
 }
 
 /**
- * GET compare — any two live entries of the path's client. A pair spanning
+ * GET compare: any two live entries of the path's client. A pair spanning
  * two clients can never both resolve, so the refusal is a plain 404.
  */
 export async function compareProgressPhotos(
@@ -210,7 +210,7 @@ export async function compareProgressPhotos(
 }
 
 /**
- * POST — attach a live image media_object as a dated gallery photo. The
+ * POST: attach a live image media_object as a dated gallery photo. The
  * object must sit under the path client's storage prefix, be an IMAGE,
  * and not already back another entry. takenOn defaults to today; a client
  * cannot mark their own photo staff-only.
@@ -282,7 +282,7 @@ export async function createProgressPhoto(
 }
 
 /**
- * DELETE — soft delete. The entry leaves every gallery; the media_object
+ * DELETE: soft delete. The entry leaves every gallery; the media_object
  * row is untouched so the retention pass still owns the bytes.
  */
 export async function deleteProgressPhoto(

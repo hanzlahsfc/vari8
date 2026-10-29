@@ -323,7 +323,7 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
-  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans —
+  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans,
   // staff author activity targets only for clients they hold an ACTIVE
   // assignment to; owner reads workspace-wide; assistants read-only;
   // clients read their own versions and never write.

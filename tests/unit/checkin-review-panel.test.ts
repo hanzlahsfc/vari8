@@ -15,7 +15,7 @@ import {
 } from "../../lib/checkin/review-panel";
 
 /**
- * Card 06 / R2-N2 — the change summary a browser cannot see: which answer
+ * Card 06 / R2-N2. The change summary a browser cannot see: which answer
  * is added, removed or changed between the current submission and the
  * previous submission of the same form. Compared on raw answer values,
  * never on display strings, and labelled from the submission's own form
@@ -164,7 +164,7 @@ describe("diffCheckInSubmissions (card 06 change summary)", () => {
     });
     expect(summary.changed).toEqual([]);
     // q-note answered before, blank now; q-visuals carried media before,
-    // none now — both removed.
+    // none now, both removed.
     expect(summary.removed).toEqual([
       {
         fieldId: "q-note",
@@ -283,7 +283,7 @@ describe("diffCheckInSubmissions (card 06 change summary)", () => {
       },
       previous: previous({
         answers: [
-          // Same set, different stored order — not a change.
+          // Same set, different stored order: not a change.
           choice("q-energy", ["o2", "o1"]),
           visual("q-note", ["m1", "m2"]),
         ],
@@ -385,7 +385,7 @@ describe("loadCheckInReview provider wire (card 06)", () => {
     // The panel payload passes through untouched.
     expect(result.panel.reviewState).toBe("answered");
     // Visual fields never enter the answer list; their media ids feed
-    // the visuals grid — the mapping loadSubmissionAnswers established.
+    // the visuals grid, the mapping loadSubmissionAnswers established.
     expect(result.submission.answers).toEqual([
       { question: "How did you feel this week?", answer: "Good week." },
     ]);

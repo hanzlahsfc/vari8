@@ -121,7 +121,7 @@ export type NutritionLogSurfaceWire =
   | { state: "not_applicable" }
   | { state: "consent_missing" };
 
-/** GET nutrition-logs?date= — the caller's own actuals for the day. */
+/** GET nutrition-logs?date=: the caller's own actuals for the day. */
 export function fetchNutritionLogSurface(
   workspaceId: string,
   date?: string,
@@ -132,7 +132,7 @@ export function fetchNutritionLogSurface(
   );
 }
 
-/** PUT nutrition-logs/:date — one save against the caller's own day log. */
+/** PUT nutrition-logs/:date: one save against the caller's own day log. */
 export function saveNutritionLogRemote(
   workspaceId: string,
   entryDate: string,
@@ -152,7 +152,7 @@ export type StaffNutritionLogListWire =
     }
   | { state: "consent_missing" };
 
-/** GET clients/:clientProfileId/nutrition-logs?from=&to= — staff range. */
+/** GET clients/:clientProfileId/nutrition-logs?from=&to=: staff range. */
 export function fetchStaffNutritionLogs(
   workspaceId: string,
   clientProfileId: string,
@@ -170,7 +170,7 @@ export function fetchStaffNutritionLogs(
 /* -------------------------------------------------------------------------
  * Card 10 (#175) remote surface: the caller's own CURRENT published IIFYM
  * macro-target version (immutable payload: options + weekday schedule).
- * Wire shapes mirror `lib/iifym/service.ts` and `lib/db-types` —
+ * Wire shapes mirror `lib/iifym/service.ts` and `lib/db-types`,
  * duplicated here so the canvas never imports server modules. The server
  * resolves which VERSION applies; the screen resolves which OPTION
  * applies on the selected weekday (`scheduledOption` from the shared
@@ -227,7 +227,7 @@ export type OwnIifymPlanWire = {
   } | null;
 };
 
-/** GET iifym-plans — the caller's own published macro target version. */
+/** GET iifym-plans: the caller's own published macro target version. */
 export function fetchOwnIifymPlan(
   workspaceId: string,
 ): Promise<OwnIifymPlanWire> {

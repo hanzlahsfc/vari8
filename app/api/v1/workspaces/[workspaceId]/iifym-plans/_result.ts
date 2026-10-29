@@ -1,6 +1,6 @@
 // FULL-PACKAGE SLICE of #175
 /**
- * Card 10 (#175) route plumbing for the IIFYM macro-target surface — the
+ * Card 10 (#175) route plumbing for the IIFYM macro-target surface, the
  * same role `daily-entries/_result.ts` plays for the daily-entry
  * boundary: the iifym service throws `IifymError` and
  * `AccessDeniedError`, the v1 helper only speaks ApiError, so this

@@ -1,7 +1,7 @@
 "use client";
 
 // Card 08 (#172): staff gallery + comparator for one client. Every call
-// goes through the /api/v1 progress-photo routes — the service resolves
+// goes through the /api/v1 progress-photo routes, the service resolves
 // the caller's workspace scope there; this panel holds no authorization
 // decisions of its own.
 

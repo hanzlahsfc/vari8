@@ -1,6 +1,6 @@
 -- Card 08 (#172): dated progress photos on top of the media upload.
 --
--- 1. progress_photo_entry: one row per gallery photo — a unique link to
+-- 1. progress_photo_entry: one row per gallery photo, a unique link to
 --    exactly one media_object, the owning client, the client-picked
 --    taken_on date, an optional check-in submission link, a
 --    client_visible flag and soft delete (deleted_at). Deleting an entry
@@ -36,7 +36,7 @@ CREATE INDEX "progress_photo_entry_client_profile_id_taken_on_idx" ON "public"."
 CREATE INDEX "progress_photo_entry_workspace_id_client_profile_id_idx" ON "public"."progress_photo_entry"("workspace_id", "client_profile_id");
 
 -- Declared foreign keys: the same composite coherence pattern the schema
--- uses for message_attachment/checkin_answer_media — every referenced row
+-- uses for message_attachment/checkin_answer_media, every referenced row
 -- must live in the same workspace, and the check-in submission must
 -- belong to the same client.
 ALTER TABLE "public"."progress_photo_entry" ADD CONSTRAINT "progress_photo_entry_workspace_id_fkey" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspace"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

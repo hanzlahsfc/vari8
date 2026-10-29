@@ -59,11 +59,11 @@ Every cell is written `read / write`; `—/—` means both denied.
 | client invitations        | — / —         | — / ws  | — / ws      | — / —     | — / —   | — / —     |
 | client assignments        | — / —         | ws / ws | — / —       | — / —     | — / —   | — / —     |
 | client profiles           | — / —         | ws / ws | asg / asg   | asg / —   | — / —   | own / own |
-| daily tracking            | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / own |
-| meal plans                | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / —   |
+| daily tracking            | - / -         | ws / -  | ws / asg †  | asg / -   | - / -   | own / own |
+| meal plans                | - / -         | ws / -  | ws / asg †  | asg / -   | - / -   | own / -   |
 | training plans & logs     | — / —         | ws / —  | asg / asg   | asg / —   | — / —   | own / own |
-| check-in instances        | — / —         | ws / ws | ws / asg †  | asg / —   | — / —   | own / —   |
-| check-ins & coach reviews | — / —         | ws / —  | ws / asg †  | asg / —   | — / —   | own / own |
+| check-in instances        | - / -         | ws / ws | ws / asg †  | asg / -   | - / -   | own / -   |
+| check-ins & coach reviews | - / -         | ws / -  | ws / asg †  | asg / -   | - / -   | own / own |
 | cycle data                | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
 | bloodwork                 | — / —         | — / — ⚠ | asg / asg ⚠ | — / —     | — / —   | own / own |
 | PED/HRT data              | — / —         | — / —   | — / — ⚠     | — / —     | — / —   | — / —     |

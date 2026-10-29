@@ -38,7 +38,7 @@ export type ClientTrackerIdentity = {
    */
   workspaceId?: string;
   /**
-   * Issue #169: the viewer's own client profile — when present the remote
+   * Issue #169: the viewer's own client profile, when present the remote
    * tracker also resolves the day's activity targets through the API.
    */
   clientProfileId?: string;

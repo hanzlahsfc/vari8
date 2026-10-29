@@ -3,7 +3,7 @@
  * Card 10 (#175): IIFYM payload normalizer unit tests. Asserts the
  * draft/publish contract callers rely on: strict declared keys, the
  * exclusive target styles (calorie-only entered directly vs macros
- * deriving at 4/4/9 — calories are never stored for macros style),
+ * deriving at 4/4/9, calories are never stored for macros style),
  * weekday schedule reference integrity and the publish floor.
  */
 

@@ -348,7 +348,7 @@ describe.skipIf(!enabled)(
       expect(pair.first.id).toBe(a.id);
       expect(pair.second.id).toBe(b.id);
 
-      // A pair spanning two clients is refused — under either client's path.
+      // A pair spanning two clients is refused, under either client's path.
       const cross = await comparePhotos(
         ws.id,
         first.id,

@@ -1084,7 +1084,7 @@
   color: var(--v8-warning-text);
   background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
 }
-/* FULL-PACKAGE SLICE of #171 — review panel state chips: open stays the
+/* FULL-PACKAGE SLICE of #171. Review panel state chips: open stays the
    base muted pill, draft flags the unsent autosave, answered closes out. */
 .coach-root .cd-status[data-status="Draft"] {
   color: var(--v8-warning-text);

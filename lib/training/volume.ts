@@ -1,12 +1,12 @@
 /**
- * PR-M6 (D29, S07-15, V3-CP13) — the canvas muscle-volume math ported to
+ * PR-M6 (D29, S07-15, V3-CP13): the canvas muscle-volume math ported to
  * the server. Source of truth: the canvas implementation at
  * `frontend/src/components/coach/muscle-volume.ts` and the
  * `prescribedMuscleVolume`/`volumeExerciseId` adapters at
  * `frontend/src/components/coach/plans/training/training-model.ts`.
  *
  * `weeklyMuscleVolume`, `MUSCLE_GROUPS`, `PRIMARY_MUSCLE`,
- * `VOLUME_EXERCISE_ID` and `volumeExerciseId` are verbatim ports — the
+ * `VOLUME_EXERCISE_ID` and `volumeExerciseId` are verbatim ports: the
  * product must compute the same numbers the canvas panel shows. The
  * frontend copy is not edited; a later wiring PR (PR-W8) switches the
  * canvas to consume this module.
@@ -151,7 +151,7 @@ export function workingSetCount(exercise: VolumeExerciseInput): number {
 }
 
 /**
- * Muscle-group working sets for one program week — the canvas
+ * Muscle-group working sets for one program week, the canvas
  * `prescribedMuscleVolume` fed from materialized sessions instead of the
  * canvas TrainingSession shape. Same mapping, same filter, same result.
  */

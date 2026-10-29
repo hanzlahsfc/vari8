@@ -1,12 +1,12 @@
 // FULL-PACKAGE SLICE of #171
 /**
- * Card 06 / R2-N2 — coach check-in review panel read.
+ * Card 06 / R2-N2: coach check-in review panel read.
  *
  * ONE read model over the card 03 submission detail read
  * (`readCheckInSubmissionDetail`): the detail payload already carries the
  * answers, the review state, the bounded feedback page and the linked
  * answer-media references this panel draws. On top of it this module adds
- * the change summary against the previous submission of the SAME form —
+ * the change summary against the previous submission of the SAME form,
  * added, removed and changed answers.
  *
  * Authorization, scope reconciliation, consent and the single structural
@@ -15,7 +15,7 @@
  * fails closed there before any panel data is touched. The previous
  * submission's answer rows read below are the same (workspace, client,
  * form) sensitivity the committed detail read just unlocked for this
- * caller, so the whole panel view stays ONE audited read — matching the
+ * caller, so the whole panel view stays ONE audited read, matching the
  * #171 read-model contract (one READ audit per view, zero on passive
  * GETs).
  */
@@ -116,7 +116,7 @@ function toPanelAnswer(row: RawAnswerRow): CheckInReviewPanelAnswer {
 }
 
 /**
- * Canonical comparison value for one answer — kind-aware, never the
+ * Canonical comparison value for one answer: kind-aware, never the
  * display string, so a render tweak can never fake a "changed" row.
  * Null means "no recorded answer value" (absent row or all-null row).
  */
@@ -165,7 +165,7 @@ function fallbackField(fieldId: string, kind: string): CheckInField {
 }
 
 /**
- * The change summary itself — pure, so the classification a browser
+ * The change summary itself: pure, so the classification a browser
  * cannot reach is testable directly. Field order follows the current
  * form version, then previous-version-only fields in their own order.
  */
@@ -278,7 +278,7 @@ export async function readCheckInReviewPanel(
 
   // Same-scope follow-up reads: the current submission's own form +
   // answers (the detail view carries displays only) and the latest
-  // earlier submission of the SAME form for this client — "the previous
+  // earlier submission of the SAME form for this client, "the previous
   // submission" the panel diffs against. A different form's answers
   // would read as noise (every field added or removed), not as change.
   const current = await db.checkInSubmission.findFirst({

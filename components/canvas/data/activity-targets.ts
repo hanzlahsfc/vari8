@@ -1,7 +1,7 @@
-// Activity-targets domain provider — issue #169 (Stage 5 card 07). Remote:
+// Activity-targets domain provider. Issue #169 (Stage 5 card 07). Remote:
 // reads and writes go through the shared /api/v1 client (http.ts) to the thin
 // route over lib/activity-targets/*. The wire metric carries the tracker key
-// verbatim ('steps' | 'cardioMin'); the canvas model uses 'cardio' — the
+// verbatim ('steps' | 'cardioMin'); the canvas model uses 'cardio', the
 // mapping lives only here.
 
 import type {
@@ -43,7 +43,7 @@ export type ActivityTargetWriteWire =
 const path = (workspaceId: string, clientProfileId: string) =>
   `/workspaces/${workspaceId}/clients/${clientProfileId}/activity-targets`;
 
-/** GET activity-targets — staff scope reads `clientProfileId`, own scope the caller's profile. */
+/** GET activity-targets: staff scope reads `clientProfileId`, own scope the caller's profile. */
 export function fetchActivityTargets(
   workspaceId: string,
   clientProfileId: string,
@@ -51,7 +51,7 @@ export function fetchActivityTargets(
   return apiFetch<ActivityTargetsViewWire>(path(workspaceId, clientProfileId));
 }
 
-/** PUT activity-targets — one day-effective version write (staff only). */
+/** PUT activity-targets: one day-effective version write (staff only). */
 export function saveActivityTargetRemote(
   workspaceId: string,
   clientProfileId: string,

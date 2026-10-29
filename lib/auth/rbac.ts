@@ -445,7 +445,7 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
     SUPPORT: D,
     CLIENT: c("own", "denied"),
   },
-  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans —
+  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans,
   // staff author only for clients they hold an ACTIVE assignment to; owner
   // keeps workspace-wide read; assistants read-only; clients read their own
   // versions and never write.

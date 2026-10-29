@@ -301,7 +301,7 @@ export async function readStaffCheckInSubmissionDetail(
 }
 
 /**
- * FULL-PACKAGE SLICE of #171 — coach review-panel read: the audited
+ * FULL-PACKAGE SLICE of #171. Coach review-panel read: the audited
  * submission detail payload plus the same-form previous-submission
  * change summary in ONE call. The detail read remains the
  * authorization/consent/audit gate; a denied or foreign tuple maps to

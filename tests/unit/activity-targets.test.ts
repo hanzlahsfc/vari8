@@ -1,5 +1,5 @@
 /**
- * Issue #169 — activity targets: the pure day-effective resolver and write
+ * Issue #169. Activity targets: the pure day-effective resolver and write
  * planner. Dated version rows per (client, metric); the latest row with
  * effectiveFrom <= date wins; a null-kind row is a stop. Same-day replace is
  * an in-place plan that requires the confirm flag and bumps the revision.
@@ -68,7 +68,7 @@ const cardio = (
   minutesPerSession,
 });
 
-describe("resolveActivityTarget — day-effective versions", () => {
+describe("resolveActivityTarget: day-effective versions", () => {
   // 2026-10-19 is a Monday; 2026-10-21 is a Wednesday.
   const oldTarget = stepsRow("r-old", "2026-10-19", 8000);
   const wednesdayChange = stepsRow("r-wed", "2026-10-21", 9500);
@@ -241,7 +241,7 @@ describe("validateActivityTargetWrite", () => {
   });
 });
 
-describe("planActivityTargetWrite — same-day replace and revision", () => {
+describe("planActivityTargetWrite: same-day replace and revision", () => {
   const existing = stepsRow("r-today", "2026-10-21", 8000, 3);
 
   it("inserts a new day-effective version when the day has no row", () => {

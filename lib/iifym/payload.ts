@@ -1,5 +1,5 @@
 /**
- * Card 10 (#175) — strict structural validation + normalization of the
+ * Card 10 (#175): strict structural validation + normalization of the
  * IIFYM (macro target) draft / version payload, cloned from the reviewed
  * meal-plan payload module and shaped to the canvas `IifymPlan`
  * (`frontend/src/components/coach/plans/types.ts`): options carry
@@ -7,15 +7,15 @@
  * `VariantSchedule` (manual / weekly / cycle) shared with meal plans.
  *
  * Contract (unchanged discipline):
- * - Declared keys ONLY at every nesting level. Any extra key rejects —
+ * - Declared keys ONLY at every nesting level. Any extra key rejects,
  *   nothing is smuggled into the immutable snapshot.
  * - Numeric bounds: finite numbers 0 ≤ v ≤ 99,999.9 with at most one
  *   decimal, enforced by decimal-string comparison (never float math).
  * - Target style is exclusive: a calories-style option carries only
- *   `calories` (entered directly — the calorie-only mode), a
+ *   `calories` (entered directly, the calorie-only mode), a
  *   macros-style option carries only `protein`/`carbs`/`fat` (calories
- *   derive at 4/4/9 at read time — D29 — and are never stored).
- * - No cross-field derivation — this module never sums, converts,
+ *   derive at 4/4/9 at read time, D29, and are never stored).
+ * - No cross-field derivation: this module never sums, converts,
  *   scores, or aggregates nutrition values.
  * - Draft save permits an INCOMPLETE plan (empty options, missing
  *   schedule) but never a MALFORMED one (unknown keys, dangling
@@ -110,7 +110,7 @@ function optionalText(v: unknown, max: number): string | undefined {
 
 const VALUE_RE = /^\d+(\.\d)?$/;
 
-/** Finite entered value: 0 ≤ v ≤ 99,999.9, at most one decimal — the
+/** Finite entered value: 0 ≤ v ≤ 99,999.9, at most one decimal, the
  * decimal-string check rejects `30.05` and exponent/float artifacts
  * without float arithmetic. */
 function cleanValue(v: unknown): number | undefined {
@@ -124,7 +124,7 @@ function cleanValue(v: unknown): number | undefined {
 
 const CALENDAR_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Strict calendar date — real YYYY-MM-DD (no Feb 30). */
+/** Strict calendar date: real YYYY-MM-DD (no Feb 30). */
 function isCalendarDate(v: string): boolean {
   if (!CALENDAR_RE.test(v)) return false;
   const [y, m, d] = v.split("-").map(Number);
@@ -169,7 +169,7 @@ function cleanTargetValue(v: unknown): TargetValue {
 const MACRO_FIELDS = ["protein", "carbs", "fat"] as const;
 const TARGET_FIELDS = ["calories", ...MACRO_FIELDS] as const;
 
-/** Canvas `MealTargets`: the style is exclusive — a calories-style block
+/** Canvas `MealTargets`: the style is exclusive. A calories-style block
  * may only carry `calories` (calorie-only mode, entered directly), a
  * macros-style block only the macro fields. A present block needs at
  * least one goal. */
@@ -220,7 +220,7 @@ function cleanOption(
   return { id, label, targets: cleanMealTargets(v.targets) };
 }
 
-/** Canvas `VariantSchedule` — references must resolve to declared option
+/** Canvas `VariantSchedule`: references must resolve to declared option
  * ids at every save (a dangling reference is malformed, not incomplete).
  * Completeness (all 7 weekly days, ≥1 cycle step) is a publish-floor
  * rule. */

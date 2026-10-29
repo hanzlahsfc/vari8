@@ -5,7 +5,7 @@ import { defineApiV1Route } from "@/lib/api/v1";
 import { compareProgressPhotos } from "../service";
 
 /**
- * GET .../progress-photos/compare?first=<id>&second=<id> — card 08 (#172)
+ * GET .../progress-photos/compare?first=<id>&second=<id>: card 08 (#172)
  * comparator. Both entries must belong to the path client, so a pair
  * spanning two clients is refused as not found.
  */

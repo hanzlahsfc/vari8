@@ -218,7 +218,7 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
     };
   }, [guard]);
 
-  // Issue #169 hydration: a successful server read is authoritative — the
+  // Issue #169 hydration: a successful server read is authoritative, the
   // fetched versions replace the local copy and re-baseline both drafts.
   // On a failed read the local copy stays visible and saves still attempt
   // the server. Reads happen only here and after a save; nothing autosaves.

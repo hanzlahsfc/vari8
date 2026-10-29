@@ -184,7 +184,7 @@ export async function cancelSetupAssignment(
 const MAX_EMAIL_LEN = 320;
 
 /**
- * T3 — issue a client invite link alongside the pin/assignment flow. Same
+ * T3: issue a client invite link alongside the pin/assignment flow. Same
  * gate order: DEV FLAG → session gate → bounded fields → service. The
  * returned link carries the raw token once, to the issuing coach only.
  */

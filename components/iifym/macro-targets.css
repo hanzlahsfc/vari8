@@ -1,4 +1,4 @@
-/* Card 10 (#175) — coach macro-target editor layout. Reuses the shared
+/* Card 10 (#175): coach macro-target editor layout. Reuses the shared
    auth-field/auth-input/auth-button and catalog-table primitives; only
    the option card, field grid and derived-kcal readout are new. */
 

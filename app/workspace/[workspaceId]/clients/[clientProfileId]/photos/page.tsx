@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Progress photos" };
 
 /**
- * Card 08 (#172) — staff per-client progress-photo gallery + comparator.
+ * Card 08 (#172): staff per-client progress-photo gallery + comparator.
  * The page itself only gates the surface to active staff (owner/coach);
  * every read and mutation inside the panel goes through the /api/v1
  * routes, which re-authorize with the caller's capability scope.
@@ -59,7 +59,7 @@ export default async function StaffClientPhotosPage({
         <p className="catalog-page__eyebrow">
           <Link href={`/workspace/${workspaceId}/clients`}>Clients</Link>
         </p>
-        <h1 className="app-title">Progress photos — {client.name}</h1>
+        <h1 className="app-title">Progress photos: {client.name}</h1>
         <p className="app-lede">Dated photos and side-by-side comparison.</p>
       </header>
       <PhotosPanel

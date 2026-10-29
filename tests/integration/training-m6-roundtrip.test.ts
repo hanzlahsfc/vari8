@@ -1,4 +1,4 @@
-// PR-M6 — real-PG round-trip of the ordered per-set prescription shape
+// PR-M6: real-PG round-trip of the ordered per-set prescription shape
 // and exercise metadata through the training-program service: draft
 // save (boundary document) -> publish (immutable materialized payload)
 // -> staff version read (raw) and client current-week read
@@ -80,11 +80,11 @@ const DRAFT = {
   },
   sessionNames: {},
   fieldCells: {
-    "s-lower/e-dead/reps": { "1": "4–5" },
+    "s-lower/e-dead/reps": { "1": "4\u20135" },
     "s-lower/e-dead/note": { "1": "Leave two reps in reserve" },
     "s-lower/e-ss/reps": { "1": "8 / side" },
     "s-upper/e-bench/reps": { "1": "6" },
-    "s-upper/e-row/reps": { "1": "8–10" },
+    "s-upper/e-row/reps": { "1": "8\u201310" },
   },
   setRows: {
     "s-lower/e-dead": {
@@ -385,7 +385,7 @@ describe.skipIf(!enabled)("PR-M6 ordered set rows (real PG)", () => {
       "d3",
       "d4",
     ]);
-    expect(deadlift?.reps).toBe("4–5");
+    expect(deadlift?.reps).toBe("4\u20135");
     const bench = sessions
       .flatMap((s) => s.exercises)
       .find((e) => e.id === "e-bench");

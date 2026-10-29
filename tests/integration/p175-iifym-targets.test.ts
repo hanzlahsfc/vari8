@@ -54,7 +54,7 @@ const NOW = new Date("2026-10-26T12:00:00Z"); // a Monday
 const EFFECTIVE = "2026-10-26";
 const TIMEZONE = "Europe/Berlin";
 
-/** The client screen's own resolver — asserts the published payload
+/** The client screen's own resolver: asserts the published payload
  * resolves through the exact function the canvas ships (ISO weekday
  * keys "1" Mon .. "7" Sun), not a re-implementation. */
 const optionFor = (schedule: VariantSchedule, ids: string[], date: string) =>
@@ -138,7 +138,7 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
       await prisma.consentRecord.create({
         data: { clientProfileId: profile.id, kind, version },
       });
-    // mealPlans write scope is `assigned` — the coach needs an ACTIVE
+    // mealPlans write scope is `assigned`, the coach needs an ACTIVE
     // assignment to author the client's targets.
     await prisma.clientAssignment.create({
       data: {

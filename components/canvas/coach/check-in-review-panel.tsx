@@ -13,13 +13,13 @@ import {
 import { Avatar, Status, Surface } from "./ui";
 
 /**
- * Card 06 / R2-N2 — the coach review panel for one check-in submission:
+ * Card 06 / R2-N2. The coach review panel for one check-in submission:
  * answers, review state, feedback thread, linked media and what changed
  * since the previous submission of the same form, all fed by the single
  * `GET .../submissions/:id/review` read.
  *
  * The three review states stay distinct: `open` (nothing acknowledged),
- * `draft` (unsent feedback in the local autosave — drafts never reach the
+ * `draft` (unsent feedback in the local autosave, drafts never reach the
  * server), `answered` (the review is acknowledged, feedback may be sent).
  * `panel === null` means the read is still out or failed; the panel then
  * falls back to whatever the submission already carries, exactly like the

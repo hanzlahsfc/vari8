@@ -2,7 +2,7 @@
 "use client";
 
 /**
- * Card 10 (#175) — coach macro-target editor, adapted from Lilly's
+ * Card 10 (#175): coach macro-target editor, adapted from Lilly's
  * nutrition-targets surface. Options carry a target style:
  *
  * - "Macro targets" (default): protein / carbohydrate / fat grams;
@@ -11,9 +11,9 @@
  *   and the client screen label the mode.
  *
  * The weekday assignment is the shared `VariantSchedule` weekly grid
- * (ISO weekday keys "1"–"7", Monday first) or manual selection. Save
+ * (ISO weekday keys "1" to "7", Monday first) or manual selection. Save
  * writes the shared draft under `draftRevision` CAS (PUT); publish
- * mints an immutable effective-dated version (POST publish) — a
+ * mints an immutable effective-dated version (POST publish), a
  * replayed publish returns the stored version unchanged.
  *
  * Every read/write goes through the /api/v1 iifym-plans routes, which
@@ -89,7 +89,7 @@ const mintOption = (): DraftOption => ({
   calories: "",
 });
 
-/** 4/4/9 over the macro fields present — display only, never stored. */
+/** 4/4/9 over the macro fields present: display only, never stored. */
 function derivedKcal(option: DraftOption): number {
   const g = (raw: string) => {
     const value = Number(raw);
@@ -265,7 +265,7 @@ export function MacroTargetsEditor({
     }
     if (view?.plan === null) {
       setTimezoneSet(true);
-      setNotice(`Timezone confirmed: ${tz} — saved with the plan.`);
+      setNotice(`Timezone confirmed: ${tz}. Saved with the plan.`);
       return;
     }
     setBusy("timezone");
@@ -614,7 +614,7 @@ export function MacroTargetsEditor({
                   />
                 </label>
                 <p className="mt-mode-note" data-testid={`mt-mode-${index}`}>
-                  Calorie-only target mode — entered directly.
+                  Calorie-only target mode. Entered directly.
                 </p>
               </div>
             )}
@@ -636,8 +636,8 @@ export function MacroTargetsEditor({
         {foreignSchedule ? (
           <p className="cd-muted" data-testid="mt-foreign-schedule">
             This plan uses a &quot;{foreignSchedule.mode}&quot; schedule created
-            elsewhere — preserved unchanged on save; assign options per weekday
-            by switching the mode below.
+            elsewhere. It is preserved unchanged on save; assign options per
+            weekday by switching the mode below.
           </p>
         ) : null}
         <label className="auth-field">
@@ -706,7 +706,7 @@ export function MacroTargetsEditor({
                       }
                       disabled={!canWrite}
                     >
-                      <option value="">—</option>
+                      <option value="">{"\u2014"}</option>
                       {options.map((option, index) => (
                         <option key={option.id} value={option.id}>
                           {option.label.trim() || `Option ${index + 1}`}

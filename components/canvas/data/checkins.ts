@@ -446,7 +446,7 @@ export async function loadSubmissionAnswers(
 }
 
 /* -------------------------------------------------------------------------
- * FULL-PACKAGE SLICE of #171 — review-panel read (card 06 / R2-N2)
+ * FULL-PACKAGE SLICE of #171: review-panel read (card 06 / R2-N2)
  * ---------------------------------------------------------------------- */
 
 /** One changed answer row in the panel's change summary (display values). */
@@ -506,7 +506,7 @@ export type CheckInReviewPanelWire = {
 };
 
 /**
- * GET submissions/:submissionId/review — the review-panel read. Returns
+ * GET submissions/:submissionId/review: the review-panel read. Returns
  * the raw wire payload plus the `Submission` patch the rest of the
  * review screen renders from (same mapping `loadSubmissionAnswers`
  * applies, fed by this read so the screen issues one audited call).

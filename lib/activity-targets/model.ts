@@ -1,15 +1,15 @@
 /**
- * Issue #169 — activity targets: the pure, storage-free core. Dated version
+ * Issue #169. Activity targets: the pure, storage-free core. Dated version
  * rows per (client, metric) answer one question everywhere: which target
  * applies on this date. The latest row with effectiveFrom <= date wins; a
  * null-kind row is a stop, not a prescription. A same-day write is an
- * in-place replace that needs the confirm flag and bumps the revision — all
+ * in-place replace that needs the confirm flag and bumps the revision, all
  * decided here by planActivityTargetWrite so the service stays a thin
  * transaction executor over these semantics.
  *
  * The canvas twin (components/canvas/coach/targets/model.ts) carries the same
  * semantics for the demo store; the data seam keeps wire shapes duplicated on
- * purpose — this file is the server-side source of truth.
+ * purpose: this file is the server-side source of truth.
  */
 
 export type ActivityMetric = "steps" | "cardioMin";
@@ -100,7 +100,7 @@ export function isActivityMetric(value: unknown): value is ActivityMetric {
 /**
  * The one resolver: latest version with effectiveFrom <= date for the metric.
  * A returned row with kind null means the target is stopped from that row's
- * day onward — the caller renders "no target", never the earlier row.
+ * day onward, the caller renders "no target", never the earlier row.
  */
 export function resolveActivityTarget({
   rows,
@@ -202,7 +202,7 @@ function columnsOf(target: ActivityTargetWrite): {
 /**
  * Plan a write against the known versions. Validation runs first; then the
  * same-day rule: a row already stored for (metric, effectiveFrom) makes the
- * write an in-place replace — refused without confirmSameDay, applied as a
+ * write an in-place replace, refused without confirmSameDay, applied as a
  * revision bump with it. Otherwise the write is a new dated version.
  */
 export function planActivityTargetWrite({

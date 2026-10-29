@@ -2,7 +2,7 @@
 // @vitest-environment jsdom
 
 /**
- * Card 06 / R2-N2 — the review panel's three distinct states and its
+ * Card 06 / R2-N2: the review panel's three distinct states and its
  * change summary, rendered from the one-call review read. Open, draft
  * and answered are asserted as the chips the coach reads, not as
  * implementation flags.
@@ -127,7 +127,7 @@ describe("CheckInReviewPanel states (card 06)", () => {
     expect(screen.getByText(/8 \/ 10/)).toBeTruthy();
     expect(screen.getByText("Removed")).toBeTruthy();
     expect(screen.getByText(/Knee felt unsettled\./)).toBeTruthy();
-    // No feedback yet — the empty state, not a missing block.
+    // No feedback yet: the empty state, not a missing block.
     expect(screen.getByText("No feedback sent yet.")).toBeTruthy();
   });
 

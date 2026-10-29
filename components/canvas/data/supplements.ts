@@ -1,8 +1,8 @@
-// Supplement-plan domain provider — issue #162 slice wiring (Stage 1
+// Supplement-plan domain provider: issue #162 slice wiring (Stage 1
 // card 02). Unlike the localStorage-backed providers in this directory this
 // one is remote: reads and writes go through the shared /api/v1 client
 // (http.ts) to the thin route over Hanzlah's merged supplement backend
-// (lib/supplements/*). Temporary slice wiring — the owning follow-up on
+// (lib/supplements/*). Temporary slice wiring, the owning follow-up on
 // #162 replaces it; do not extend it here.
 
 import type {

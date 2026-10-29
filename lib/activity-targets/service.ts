@@ -1,6 +1,6 @@
 /**
  * Issue #169 (Stage 5 card 07): day-effective activity target versions.
- * Reviewed protocol — `atarget:{ws}:{client}` advisory BEFORE
+ * Reviewed protocol: `atarget:{ws}:{client}` advisory BEFORE
  * `member:{ws}:{user}` (same slot convention as ctask), member FOR UPDATE,
  * in-tx authorize. Writes run the pure planner (model.ts) inside the
  * transaction: a same-day row turns the write into an in-place replace that
@@ -306,7 +306,7 @@ export async function readOwnActivityTargets(
 
 /**
  * Write one day-effective version (prescription or stop). `target: null` is
- * the stop write — it stores a kind-null row stamped `stopped_at` so the
+ * the stop write, it stores a kind-null row stamped `stopped_at` so the
  * resolver shows no target from `effectiveFrom` onward while earlier days
  * keep their prescription. A row already stored for (client, metric,
  * effectiveFrom) makes the write an in-place replace: refused without the

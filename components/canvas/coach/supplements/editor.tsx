@@ -308,7 +308,7 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
     };
   }, [guard]);
 
-  // Issue #162 slice hydration: a successful server read is authoritative —
+  // Issue #162 slice hydration: a successful server read is authoritative,
   // a plan replaces the local copy, an absent plan clears it. On a failed
   // read the local copy stays visible and saves still attempt the server.
   // Reads happen only here and after a save; nothing autosaves.

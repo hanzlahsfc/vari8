@@ -83,7 +83,7 @@ export function clientAppSections(
     messages: options?.remote === true,
     tasks: options?.remote === true,
     // Card 08: the gallery reads live own-scope data, so the section only
-    // exists when a signed-in client's own binding is mounted — a preview
+    // exists when a signed-in client's own binding is mounted, a preview
     // configuration has no entries to show.
     photos: options?.remote === true,
   };

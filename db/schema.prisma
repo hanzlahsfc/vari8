@@ -2574,10 +2574,10 @@ enum ActivityTargetKind {
 // Issue #169 (Stage 5 card 07): day-effective activity prescriptions.
 // One row per (client, metric, day): kind set = prescription, kind NULL +
 // stopped_at set = stop version. A same-day write replaces the row in place
-// (revision CAS). The domain CHECKs — cardio columns arrive together and
+// (revision CAS). The domain CHECKs, cardio columns arrive together and
 // exactly on kind CARDIO, ordered range bounds, positive prescription
 // numbers (sessions_per_week whole, no cap; minutes_per_session fractional),
-// kind/stopped_at pairing, metric closed set — are raw migration SQL.
+// kind/stopped_at pairing, metric closed set, are raw migration SQL.
 model ActivityTarget {
   id                String              @id @default(cuid())
   workspaceId       String              @map("workspace_id")

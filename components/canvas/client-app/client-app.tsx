@@ -134,7 +134,7 @@ function RemoteSupplementsPart({
 
 // Issue #169: the client Activity targets part reads the dated versions
 // through the card 07 route (own scope resolves the caller's profile
-// server-side) and is strictly read-only — writes are coach-side only.
+// server-side) and is strictly read-only, writes are coach-side only.
 function RemoteActivityTargetsPart({
   workspaceId,
   clientProfileId,

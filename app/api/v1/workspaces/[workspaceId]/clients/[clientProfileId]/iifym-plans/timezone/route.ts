@@ -13,7 +13,7 @@ import {
 /**
  * POST /api/v1/workspaces/:workspaceId/clients/:clientProfileId/iifym-plans/timezone
  *
- * Card 10 timezone confirm — the plan-scoped scheduling timezone the
+ * Card 10 timezone confirm: the plan-scoped scheduling timezone the
  * published versions' effective dates resolve against. Explicit action,
  * never inferred from the coach's browser zone; idempotent when the
  * stored zone already matches. Re-authorizes `mealPlans/write` +

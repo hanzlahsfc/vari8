@@ -141,7 +141,7 @@ export default async function ClientsPage({
   const showMealPlanLinks =
     isMealPlansEnabled() &&
     (mealPlanLinkScope === "workspace" || mealPlanLinkScope === "assigned");
-  // Card 10 (#175): same cosmetic-gate shape for macro targets — flag on
+  // Card 10 (#175): same cosmetic-gate shape for macro targets, flag on
   // AND the role can read nutrition plans; the destination re-authorizes
   // `mealPlans` server-side on every read and write.
   const showIifymLinks =
@@ -158,7 +158,7 @@ export default async function ClientsPage({
     isTrainingPlansEnabled() &&
     (trainingPlanLinkScope === "workspace" ||
       trainingPlanLinkScope === "assigned");
-  // Card 08: same cosmetic-gate shape — the link renders for staff roles
+  // Card 08: same cosmetic-gate shape. The link renders for staff roles
   // only; the destination page and every /api/v1 call it makes re-authorize.
   const photoLinkRole =
     member?.status === "ACTIVE" ? memberRoleToRole(member.role) : null;
