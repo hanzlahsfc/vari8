@@ -45,7 +45,10 @@ const DEMO_CLIENT_EMAILS = [
 
 let mediaDir: string;
 
-function runSeed() {
+function runSeed(
+  dbUrl = url as string,
+  extra: Record<string, string> = SEED_ENV,
+) {
   // Exactly what `npm run seed:dev` invokes, with the lane/test env pointed
   // at the disposable integration database.
   execFileSync("npx", ["tsx", "scripts/seed/index.ts"], {
@@ -53,12 +56,73 @@ function runSeed() {
     env: {
       ...process.env,
       NODE_ENV: "test",
-      DATABASE_URL: url as string,
+      DATABASE_URL: dbUrl,
       MEDIA_STORAGE_DIR: mediaDir,
-      ...SEED_ENV,
+      ...extra,
     },
   });
 }
+
+describe.skipIf(!enabled)(
+  "default seed (VARI8_SEED_DEMO unset) binds the sign-in client",
+  () => {
+    // Runs before the demo-seeded suite below so the database holds only
+    // what the default seed wrote.
+    const defaultUrl = url as string;
+    let prisma: PrismaClient;
+
+    beforeAll(async () => {
+      mediaDir = mkdtempSync(join(tmpdir(), "seed-default-media-"));
+      execFileSync("npx", ["prisma", "migrate", "deploy"], {
+        stdio: "pipe",
+        env: { ...process.env, DATABASE_URL: defaultUrl },
+      });
+      const { VARI8_SEED_DEMO: _unset, ...defaultEnv } = SEED_ENV;
+      void _unset;
+      runSeed(defaultUrl, defaultEnv);
+      prisma = new PrismaClient({ datasources: { db: { url: defaultUrl } } });
+    }, 120_000);
+
+    afterAll(async () => {
+      await prisma?.$disconnect();
+    });
+
+    it("SEED_CLIENT owns Amara Lewis and can sign in; the no-profile client owns nothing", async () => {
+      expect(process.env.VARI8_SEED_DEMO).toBeUndefined();
+      const signIn = async (email: string, password: string) => {
+        const user = await prisma.user.findUniqueOrThrow({ where: { email } });
+        const account = await prisma.account.findUniqueOrThrow({
+          where: {
+            providerId_accountId: {
+              providerId: "credential",
+              accountId: user.id,
+            },
+          },
+        });
+        expect(await verifyPassword(password, account.password ?? "")).toBe(
+          true,
+        );
+        return user;
+      };
+      const client = await signIn(
+        SEED_ENV.SEED_CLIENT_EMAIL,
+        SEED_ENV.SEED_CLIENT_PASSWORD,
+      );
+      const noProfile = await signIn(
+        NO_PROFILE_EMAIL,
+        SEED_ENV.SEED_CLIENT_PASSWORD,
+      );
+      const owned = await prisma.clientProfile.findMany({
+        where: { userId: client.id },
+        select: { name: true },
+      });
+      expect(owned).toEqual([{ name: "Amara Lewis" }]);
+      expect(
+        await prisma.clientProfile.count({ where: { userId: noProfile.id } }),
+      ).toBe(0);
+    });
+  },
+);
 
 describe.skipIf(!enabled)(
   "SEED-FIX: seed writes sign-in credentials (real PG + real seed entrypoint)",

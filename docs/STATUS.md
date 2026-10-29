@@ -1,3 +1,28 @@
+## 2026-10-29 - Repair round 1: reset demo flag, default seed coverage, claim corrections
+
+- Reset fix: "Reset coach workspace" re-seeded with the demo default, so a real
+  workspace got fixture check-in submissions, extras and schedules back. The
+  store now exposes `demo` and the reset calls `seedState({ demo })`. Test:
+  `tests/unit/coach-reset-demo-gate.test.tsx` resets a workspace holding demo
+  state and asserts no submissions, extras, schedules or board events remain.
+  Reverting the one call site turned it red; restored, it passes.
+- Default seed coverage: `tests/integration/seed-credentials.test.ts` has a new
+  case that runs the seed with `VARI8_SEED_DEMO` unset and asserts the sign-in
+  client can sign in and owns only the Amara Lewis profile, and the no-profile
+  client can sign in and owns nothing. Removing the `linkClientProfile` call in
+  `scripts/seed/00-workspace.seed.ts` turned it red; restored, it passes.
+- Corrected claims. The default seed is not unchanged: it now binds Amara Lewis
+  (not James Reed) to the sign-in client, adds a no-profile client, and writes
+  credential accounts for the demo users in the check-ins seed. The demo gate
+  covers the canvas model and its read path only. The check-ins seed
+  (`33-checkins`) already wrote its database rows before this work and is not
+  gated.
+
+### Known limits
+
+- The `?demo=` URL switch mounts fixtures client side in every build. No server
+  data is involved.
+
 ## 2026-10-29 - Merge: check-in fixtures, photo tiles, seed client link and credentials
 
 - Four verified tips merged as merge commits, never squashed: 3a47c445 (seeded

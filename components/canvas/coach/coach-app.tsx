@@ -58,6 +58,7 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
     setState,
     hydrated,
     storageOk,
+    demo,
     route,
     navigate,
     notice,
@@ -391,7 +392,7 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
                     "Reset this coach workspace? Local templates, messages and feedback will return to their starting examples.",
                   )
                 ) {
-                  setState(seedState());
+                  setState(seedState({ demo }));
                   setSettings(false);
                   navigate({ section: "templates" });
                 }
