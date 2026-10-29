@@ -9,8 +9,7 @@ npm run export:demo
 ```
 
 The script (`scripts/export-demo.mjs`) builds
-`normalizeTemplateSetups(migrateCoachState(seedState({ today: ANCHOR })))`,
-verifies the
+`normalizeTemplateSetups(migrateCoachState(seedState(ANCHOR)))`, verifies the
 result, and rewrites this directory. Re-running it must produce byte-identical
 files; `src/data/demo-export` is excluded from `biome check` because the files
 are machine-formatted (`JSON.stringify`, 2-space) artifacts.
@@ -132,7 +131,7 @@ enrichers.
 
 ## Determinism
 
-`seedState({ today: ANCHOR })` pins every derived date. Generated ids use a counter
+`seedState(ANCHOR)` pins every derived date. Generated ids use a counter
 (`00000000-0000-4000-8000-<seq>`) installed by the script for the duration of
 the seed — they are stable across runs and machines, and referential
 integrity is preserved (`activeVariantId`, `selectedVariantId`, temporary
