@@ -25,8 +25,8 @@
 
 ## 2026-10-29 - Merge: check-in fixtures, photo tiles, seed client link and credentials
 
-- Four verified tips merged as merge commits, never squashed: 3a47c445 (seeded
-  check-in fixtures gated on the demo flag), 2fbbcf36 (release orphaned media
+- Four verified tips merged as merge commits, never squashed: 3a47c445 (check-in
+  fixture canvas model and read path gated on the demo flag; check-ins seed DB rows not gated), 2fbbcf36 (release orphaned media
   mints on gallery reload), 85db3644 and caa5c2e8 (seed client linked to the
   Amara Lewis profile, every linked demo client holds a login). The last two
   were resolved together once; the seed files keep the 85db3644 content.
