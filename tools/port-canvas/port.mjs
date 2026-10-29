@@ -49,11 +49,11 @@ const HAND_MERGE = new Set([
   "components/coach/clients.tsx",
   // Adds review-panel status chips (Draft, Answered) and change-summary colours on v8 tokens.
   "components/coach/coach.css",
-  // Loads physiquePhotosFor(client.name) from the store in an effect, with an empty fallback on failure.
+  // Loads physiquePhotosFor(client.name) from the store in an effect (empty fallback on failure); the photo comparison reads backend rows when present, falls back to submissions, and onOpen falls back to onOpenTemplate; em dashes in the alt text and placeholders become ASCII.
   "components/coach/athlete/overview.tsx",
   // Issue-169 activity-target versions: fetchActivityTargets/versionsFromWire, plus workspaceId and clientProfileIdFor from the store.
   "components/coach/athlete/timeline-tab.tsx",
-  // Only the empty-phase notice: client's becomes client&apos;s for react/no-unescaped-entities.
+  // Import specifiers rewritten (@/components/vari8 to @/components/canvas/vari8, lines 9, 13, 14) and the empty-phase notice's client's becomes client&apos;s (react/no-unescaped-entities).
   "components/coach/plans/setup-ui.tsx",
   // Meal plans persist via the canvas data layer (loadMealPlans /
   // saveMealPlans in components/canvas/data/nutrition) instead of the
@@ -69,22 +69,23 @@ const HAND_MERGE = new Set([
   "lib/ethereal-appearance.tsx",
   // Route group layout (app/(canvas)/layout.tsx). Imports rewritten, html and body shell dropped, RootLayout renamed to CanvasLayout.
   "app/layout.tsx",
-  // Canvas auth wiring: pages bind the signed in viewer into canvas apps.
+  // Async page: a signed-in client binds workspaceId and clientProfileId from getClientViewer into ClientRoute's own prop; title drops "local demo".
   "app/client/page.tsx",
+  // Async page behind requireCanvasAccess: binds the viewer (name, initials, role, workspaceId, workspaceName) into CoachApp.
   "app/coach/page.tsx",
   // requireCanvasAccess gate; the viewer is not bound into EtherealApp.
   "app/ethereal/page.tsx",
-  // RemoteCheckInForm: own check-in instance, submit, feedback and calendar via the check-ins server actions and data/check-ins helpers.
+  // RemoteCheckInForm: own check-in instance, submit, feedback and calendar via the check-ins server actions and data/check-ins helpers; adds two eslint-disable-next-line comments, one coach&apos;s escape and an ASCII hyphen in the pose hint.
   "components/client-app/check-in.tsx",
   // Scrollable bottom nav (max-content items, hidden scrollbar) and a brand block in the desktop sidebar.
   "components/client-app/client-app.css",
   // Imports the remote supplement and activity-target fetchers, RemoteTrainingLogbook and remote-views tabs; SECTION_ICONS becomes Partial.
   "components/client-app/client-app.tsx",
-  // Optional own {workspaceId, clientProfileId} prop binds NutritionActuals to the own nutrition-logs routes (card 09).
+  // Optional own {workspaceId, clientProfileId} prop binds NutritionActuals to the own nutrition-logs routes (card 09); the check-in wrapper also threads workspaceId and clientProfileId to CheckInForm.
   "components/client-app/views.tsx",
   // STATUS_META is exported from here so the remote logbook shares it.
   "components/client-app/training-log/model.ts",
-  // Dirty-only beforeunload guard: isTyped(set) marks unsent typed values, cleared on finish.
+  // Dirty-only beforeunload guard: isTyped(set) marks unsent typed values, cleared on finish; "They'll" becomes They&apos;ll (react/no-unescaped-entities).
   "components/client-app/training-log/session-logger.tsx",
   // Imports STATUS_META from model.ts instead of declaring it locally.
   "components/client-app/training-log/training-logbook.tsx",
