@@ -197,7 +197,8 @@ export function validateCombinedRun({
         // the integer suffix must equal idx verbatim (no leading zeros)
         scroller.name !== `${scroller.name.split("#")[0]}#${scroller.idx}` ||
         scroller.name.split("#").length !== 2 ||
-        scroller.name !== scroller.name.toLowerCase()
+        scroller.name !== scroller.name.toLowerCase() ||
+        !/^[^\s\u0000-\u001f\u007f#]+$/.test(scroller.name.split("#")[0])
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

@@ -556,6 +556,13 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       { name: "div#0", idx: -1 },
       { name: "div#0", idx: 0.5 },
       { name: "div#00", idx: 0 },
+      { name: "#0", idx: 0 },
+      { name: "#143", idx: 143 },
+      { name: " #0", idx: 0 },
+      { name: "di v#0", idx: 0 },
+      { name: "div	#0", idx: 0 },
+      { name: "div\u0000#0", idx: 0 },
+      { name: "div# ", idx: 0 },
     ]) {
       scrollScreen.captureEvidence.scrollers = [
         { name: bad.name, idx: bad.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
