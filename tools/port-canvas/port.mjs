@@ -66,6 +66,7 @@ const HAND_MERGE = new Set([
   // appearance over the local store, adds density and logoMediaId, and
   // persists via components/canvas/data/appearance.
   "lib/ethereal-appearance.tsx",
+  // Route group layout (app/(canvas)/layout.tsx). Imports rewritten, html and body shell dropped, RootLayout renamed to CanvasLayout.
   "app/layout.tsx",
   // Canvas auth wiring: pages bind the signed in viewer into canvas apps.
   "app/client/page.tsx",
@@ -88,6 +89,7 @@ const HAND_MERGE = new Set([
   "components/coach/notes.tsx",
   "components/coach/supplements/editor.tsx",
   "components/coach/targets/editor.tsx",
+  // workspace-polish.css is not data layer wiring. It appends 27 lines of client detail training log styles.
   "components/coach/workspace-polish.css",
   // onRecordsChange persists record edits for an own bound caller.
   "components/coach/builder/dashboard-builder.tsx",
