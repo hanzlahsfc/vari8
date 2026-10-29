@@ -545,6 +545,28 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     scrollScreen.captureEvidence.scrollers = [
       { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
     ];
+    // malformed scroller names/indices refuse — full grammar, not suffix
+    for (const bad of [
+      { name: "div#bad#143", idx: 143 },
+      { name: "div#0x", idx: 0 },
+      { name: "#0", idx: 0 },
+      { name: "div#0#", idx: 0 },
+      { name: "div", idx: 0 },
+      { name: "Div#0", idx: 0 },
+      { name: "div#0", idx: -1 },
+      { name: "div#0", idx: 0.5 },
+      { name: "div#00", idx: 0 },
+    ]) {
+      scrollScreen.captureEvidence.scrollers = [
+        { name: bad.name, idx: bad.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      ];
+      expect(() =>
+        validateRun({ directory: d, manifest, shots, provenance }),
+      ).toThrow(/forged scroller identity|scroll/);
+    }
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
     // malformed coordinate types refuse — never coerced
     for (const [x, y] of [
       ["0" as unknown as number, 0],

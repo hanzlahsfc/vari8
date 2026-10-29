@@ -319,12 +319,15 @@ export function validateRun({ directory, manifest, shots, provenance }) {
           `${matches.length ? "ambiguous" : "unknown"} scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
         );
       const scroller = matches[0];
-      // the writer derives name = tag#idx — a name whose index suffix
-      // disagrees with idx is a forged pair, not a valid scroller
+      // the writer emits exactly tag#idx — one separator, lowercase
+      // tag name, non-negative integer index agreeing with the idx
+      // field. Extra separators, junk affixes and non-integer indices
+      // cannot be emitted by the writer — they are forged identities
       if (
+        typeof scroller.name !== "string" ||
         !Number.isInteger(scroller.idx) ||
         scroller.idx < 0 ||
-        !scroller.name.endsWith(`#${scroller.idx}`)
+        !new RegExp(`^[a-z][a-z0-9]*#${scroller.idx}$`).test(scroller.name)
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

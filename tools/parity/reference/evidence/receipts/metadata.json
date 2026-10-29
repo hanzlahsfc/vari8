@@ -5,12 +5,12 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "d921e531e83d9d5dadf53d9da8777944c64bd7b9a3a2e58f7adc14dd1ef67f58"
+      "sha256": "8a8c38ae8939a99650ff5f20efd1ab7131e078652b770893945815b83fb64825"
     },
     "components": {
       "reference": {
         "path": "tools/parity/reference/reference.mjs",
-        "sha256": "b25d4adc4fa01f0fb187b444991d0b89bf144546beb401666566b728a977c978"
+        "sha256": "344441f9e29615b2d6f55a0a1003a78757a7ba4e6a8b949dff62bd6184e46b3b"
       },
       "referenceCompare": {
         "path": "tools/parity/reference/compare.mjs",
@@ -38,7 +38,7 @@
       },
       "combinedRun": {
         "path": "tools/parity/reference/combined-run.mjs",
-        "sha256": "afde8513e604a574dd189c2d21ee23357eab367867d41ee5a180ee32bbac04e3"
+        "sha256": "25c038af8a387c14ecfff859aefc595d744883cd8b3dd7bea74336bd15e30e79"
       },
       "combinedPins": {
         "path": "tools/parity/reference/combined-pins.mjs",
