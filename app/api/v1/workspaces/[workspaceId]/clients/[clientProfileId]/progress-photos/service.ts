@@ -100,7 +100,11 @@ function parseTakenOn(takenOn: string): Date {
   const date = match ? new Date(`${takenOn}T00:00:00.000Z`) : null;
   if (!match || !date || Number.isNaN(date.getTime()))
     throw new ApiError(400, "invalid_input");
-  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const [year, month, day] = [
+    Number(match[1]),
+    Number(match[2]),
+    Number(match[3]),
+  ];
   if (
     date.getUTCFullYear() !== year ||
     date.getUTCMonth() + 1 !== month ||

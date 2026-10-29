@@ -195,8 +195,7 @@ describe("remoteDayDataFromHistory", () => {
 
 describe("edit -> wire raw", () => {
   const { metas } = dailyEntrySurfaceToTrackerView(surface);
-  const meta = (key: string) =>
-    metas.find((item) => item.key === key)!;
+  const meta = (key: string) => metas.find((item) => item.key === key)!;
 
   it("passes measurements through as decimal strings", () => {
     expect(remoteRawFromNumber(meta("weight"), 70.25)).toBe("70.25");

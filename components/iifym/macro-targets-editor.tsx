@@ -23,10 +23,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import {
-  apiFetch,
-  ApiClientError,
-} from "@/components/canvas/data/http";
+import { apiFetch, ApiClientError } from "@/components/canvas/data/http";
 import type {
   IifymPayloadWire,
   IifymScheduleWire,
@@ -183,7 +180,9 @@ export function MacroTargetsEditor({
   const [effectiveDate, setEffectiveDate] = useState(
     new Date().toISOString().slice(0, 10),
   );
-  const [busy, setBusy] = useState<"save" | "publish" | "timezone" | null>(null);
+  const [busy, setBusy] = useState<"save" | "publish" | "timezone" | null>(
+    null,
+  );
 
   const load = useCallback(() => {
     return apiFetch<StaffView>(base)
@@ -198,9 +197,7 @@ export function MacroTargetsEditor({
           setTimezone(result.plan.timezone ?? "");
           setTimezoneSet(result.plan.timezone !== null);
           const draftOptions = (draft.options ?? []).map(optionFromWire);
-          setOptions(
-            draftOptions.length > 0 ? draftOptions : [mintOption()],
-          );
+          setOptions(draftOptions.length > 0 ? draftOptions : [mintOption()]);
           setRevision(result.plan.draftRevision);
           const schedule = draft.schedule;
           if (schedule?.mode === "weekly") {
@@ -446,11 +443,15 @@ export function MacroTargetsEditor({
       <section className="cd-preview-section" aria-label="Target options">
         <h2>Target options</h2>
         <p className="cd-muted">
-          Each option carries one target set. In macro mode calories derive
-          from protein, carbohydrate and fat at 4, 4 and 9 kcal per gram.
+          Each option carries one target set. In macro mode calories derive from
+          protein, carbohydrate and fat at 4, 4 and 9 kcal per gram.
         </p>
         {options.map((option, index) => (
-          <article className="mt-option" key={option.id} data-testid="mt-option">
+          <article
+            className="mt-option"
+            key={option.id}
+            data-testid="mt-option"
+          >
             <div className="mt-option__head">
               <label className="auth-field">
                 Option label
@@ -579,7 +580,11 @@ export function MacroTargetsEditor({
                     disabled={!canWrite}
                   />
                 </label>
-                <div className="mt-kcal" role="status" data-testid={`mt-kcal-${index}`}>
+                <div
+                  className="mt-kcal"
+                  role="status"
+                  data-testid={`mt-kcal-${index}`}
+                >
                   <span>Calories (derived)</span>
                   <strong>{derivedKcal(option)} kcal</strong>
                 </div>
@@ -674,7 +679,10 @@ export function MacroTargetsEditor({
             </select>
           </label>
         ) : (
-          <table className="catalog-table mt-weekdays" data-testid="mt-weekdays">
+          <table
+            className="catalog-table mt-weekdays"
+            data-testid="mt-weekdays"
+          >
             <thead>
               <tr>
                 <th scope="col">Weekday</th>
@@ -711,10 +719,12 @@ export function MacroTargetsEditor({
             </tbody>
           </table>
         )}
-        {!foreignSchedule && scheduleMode === "weekly" && missingDays.length > 0 ? (
+        {!foreignSchedule &&
+        scheduleMode === "weekly" &&
+        missingDays.length > 0 ? (
           <p className="cd-muted" data-testid="mt-missing-days">
-            Unassigned weekdays: {missingDays.join(", ")} — publishing a
-            weekly schedule requires all seven.
+            Unassigned weekdays: {missingDays.join(", ")} — publishing a weekly
+            schedule requires all seven.
           </p>
         ) : null}
       </section>

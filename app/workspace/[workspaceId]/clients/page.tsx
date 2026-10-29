@@ -162,8 +162,7 @@ export default async function ClientsPage({
   // only; the destination page and every /api/v1 call it makes re-authorize.
   const photoLinkRole =
     member?.status === "ACTIVE" ? memberRoleToRole(member.role) : null;
-  const showPhotoLinks =
-    photoLinkRole === "owner" || photoLinkRole === "coach";
+  const showPhotoLinks = photoLinkRole === "owner" || photoLinkRole === "coach";
 
   return (
     <div className="catalog-page" data-testid="client-roster">

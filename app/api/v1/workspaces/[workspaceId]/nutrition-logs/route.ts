@@ -4,10 +4,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { loadNutritionLogSurface } from "@/lib/daily-entry/nutrition-log";
 
-import {
-  sessionOf,
-  unwrapDailyEntry,
-} from "../daily-entries/_result";
+import { sessionOf, unwrapDailyEntry } from "../daily-entries/_result";
 
 /**
  * GET /api/v1/workspaces/:workspaceId/nutrition-logs?date=YYYY-MM-DD

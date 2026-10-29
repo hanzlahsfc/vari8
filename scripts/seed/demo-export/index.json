@@ -5,12 +5,7 @@
   "dayOffsetFormat": {
     "day": "day <n> -> YYYY-MM-DD equal to generatedAt + n days (n may be negative)",
     "timestamp": "day <n>T<HH:mm:ss[.mmm][Z]> -> resolved date plus the original time tail",
-    "fixedKeys": [
-      "updated",
-      "referenceDate",
-      "birthDate",
-      "dateOfBirth"
-    ],
+    "fixedKeys": ["updated", "referenceDate", "birthDate", "dateOfBirth"],
     "verbatimTextKeys": [
       "answer",
       "note",

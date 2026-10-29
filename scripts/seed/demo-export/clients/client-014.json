@@ -101,9 +101,7 @@
   "schedules": [
     {
       "effective": "day -24",
-      "weekdays": [
-        6
-      ]
+      "weekdays": [6]
     }
   ],
   "plan": {

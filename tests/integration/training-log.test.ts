@@ -374,9 +374,9 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
         },
         deps(NOW),
       );
-    expect(
-      await prisma.trainingSetLog.count({ where: { sessionLogId } }),
-    ).toBe(1);
+    expect(await prisma.trainingSetLog.count({ where: { sessionLogId } })).toBe(
+      1,
+    );
     const resumed = await readOwnSessionLog(
       session(s.clientU.id),
       { workspaceId: s.w.id, sessionLogId },
@@ -627,7 +627,12 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
         draft: {
           title: "Weekly",
           fields: [
-            { kind: "shortText", label: "How are you?", required: true, order: 0 },
+            {
+              kind: "shortText",
+              label: "How are you?",
+              required: true,
+              order: 0,
+            },
           ],
         },
       },
@@ -662,9 +667,8 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
       },
       deps(NOW),
     );
-    const fieldId = (
-      version.definition as { fields: { fieldId: string }[] }
-    ).fields[0].fieldId;
+    const fieldId = (version.definition as { fields: { fieldId: string }[] })
+      .fields[0].fieldId;
     await submitCheckInInstance(
       session(s.clientU.id),
       {
@@ -848,9 +852,9 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
         deps(NOW),
       ),
     ).rejects.toMatchObject({ code: "invalid_input" });
-    expect(
-      await prisma.trainingSetLog.count({ where: { sessionLogId } }),
-    ).toBe(0);
+    expect(await prisma.trainingSetLog.count({ where: { sessionLogId } })).toBe(
+      0,
+    );
     expect(TrainingError).toBeDefined();
   });
 });

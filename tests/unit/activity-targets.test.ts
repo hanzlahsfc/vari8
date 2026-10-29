@@ -100,19 +100,29 @@ describe("resolveActivityTarget — day-effective versions", () => {
   it("scopes resolution to the metric", () => {
     const all = [...rows, cardioRow("r-cardio", "2026-10-19", 3, 20)];
     expect(
-      resolveActivityTarget({ rows: all, metric: "cardioMin", date: "2026-10-23" })
-        ?.id,
+      resolveActivityTarget({
+        rows: all,
+        metric: "cardioMin",
+        date: "2026-10-23",
+      })?.id,
     ).toBe("r-cardio");
     expect(
-      resolveActivityTarget({ rows: all, metric: "cardioMin", date: "2026-10-18" }),
+      resolveActivityTarget({
+        rows: all,
+        metric: "cardioMin",
+        date: "2026-10-18",
+      }),
     ).toBeUndefined();
   });
 
   it("does not depend on row order", () => {
     const shuffled = [...rows].reverse();
     expect(
-      resolveActivityTarget({ rows: shuffled, metric: "steps", date: "2026-10-22" })
-        ?.id,
+      resolveActivityTarget({
+        rows: shuffled,
+        metric: "steps",
+        date: "2026-10-22",
+      })?.id,
     ).toBe("r-wed");
   });
 
@@ -126,20 +136,32 @@ describe("resolveActivityTarget — day-effective versions", () => {
     };
     const withStop = [oldTarget, wednesdayChange, stopped];
     expect(
-      resolveActivityTarget({ rows: withStop, metric: "steps", date: "2026-10-22" })
-        ?.kind,
+      resolveActivityTarget({
+        rows: withStop,
+        metric: "steps",
+        date: "2026-10-22",
+      })?.kind,
     ).toBeNull();
     expect(
-      resolveActivityTarget({ rows: withStop, metric: "steps", date: "2026-10-25" })
-        ?.kind,
+      resolveActivityTarget({
+        rows: withStop,
+        metric: "steps",
+        date: "2026-10-25",
+      })?.kind,
     ).toBeNull();
     expect(
-      resolveActivityTarget({ rows: withStop, metric: "steps", date: "2026-10-21" })
-        ?.id,
+      resolveActivityTarget({
+        rows: withStop,
+        metric: "steps",
+        date: "2026-10-21",
+      })?.id,
     ).toBe("r-wed");
     expect(
-      resolveActivityTarget({ rows: withStop, metric: "steps", date: "2026-10-20" })
-        ?.id,
+      resolveActivityTarget({
+        rows: withStop,
+        metric: "steps",
+        date: "2026-10-20",
+      })?.id,
     ).toBe("r-old");
   });
 });
@@ -150,26 +172,30 @@ describe("validateActivityTargetWrite", () => {
     expect(
       validateActivityTargetWrite({ kind: "MAXIMUM", stepMax: 12000 }),
     ).toEqual([]);
-    expect(validateActivityTargetWrite({ kind: "FIXED", stepMin: 9000 })).toEqual(
-      [],
-    );
+    expect(
+      validateActivityTargetWrite({ kind: "FIXED", stepMin: 9000 }),
+    ).toEqual([]);
   });
 
   it("rejects blank, negative, fractional and non-finite step values", () => {
     for (const bad of [0, -5, 8000.5, Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(validateActivityTargetWrite(minimum(bad)).length).toBeGreaterThan(0);
+      expect(validateActivityTargetWrite(minimum(bad)).length).toBeGreaterThan(
+        0,
+      );
     }
   });
 
   it("requires ordered positive whole-number range bounds", () => {
     expect(validateActivityTargetWrite(range(8000, 10000))).toEqual([]);
-    expect(validateActivityTargetWrite(range(10000, 8000)).length).toBeGreaterThan(
+    expect(
+      validateActivityTargetWrite(range(10000, 8000)).length,
+    ).toBeGreaterThan(0);
+    expect(validateActivityTargetWrite(range(0, 8000)).length).toBeGreaterThan(
       0,
     );
-    expect(validateActivityTargetWrite(range(0, 8000)).length).toBeGreaterThan(0);
-    expect(validateActivityTargetWrite(range(8000.5, 9000)).length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      validateActivityTargetWrite(range(8000.5, 9000)).length,
+    ).toBeGreaterThan(0);
   });
 
   it("requires both cardio columns together", () => {

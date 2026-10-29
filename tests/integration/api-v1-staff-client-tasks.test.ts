@@ -27,12 +27,8 @@ const BASE = "http://127.0.0.1:3000";
 // The task dueDate contract is bounded to server-UTC today + 5 years, so the
 // fixtures stay relative and always future (dueState "upcoming").
 const DAY_MS = 86400000;
-const DUE_SOON = new Date(Date.now() + 30 * DAY_MS)
-  .toISOString()
-  .slice(0, 10);
-const DUE_LATER = new Date(Date.now() + 60 * DAY_MS)
-  .toISOString()
-  .slice(0, 10);
+const DUE_SOON = new Date(Date.now() + 30 * DAY_MS).toISOString().slice(0, 10);
+const DUE_LATER = new Date(Date.now() + 60 * DAY_MS).toISOString().slice(0, 10);
 
 function authed(token: string) {
   return { authorization: `Bearer ${token}` };
@@ -273,10 +269,16 @@ describe.skipIf(!enabled)("W2-A4 staff client task routes (real PG)", () => {
 
     // A status field is not in the staff PATCH schema, so it is ignored: the
     // task stays OPEN and nothing changes.
-    const statusAttempt = await patchTask(ws.id, cp.id, created.id, authed(token), {
-      status: "COMPLETED",
-      expectedRevision: 1,
-    });
+    const statusAttempt = await patchTask(
+      ws.id,
+      cp.id,
+      created.id,
+      authed(token),
+      {
+        status: "COMPLETED",
+        expectedRevision: 1,
+      },
+    );
     expect(statusAttempt.status).toBe(200);
     expect(await statusAttempt.json()).toEqual({ revision: 1, changed: false });
     expect(
@@ -398,7 +400,9 @@ describe.skipIf(!enabled)("W2-A4 staff client task routes (real PG)", () => {
       { expectedRevision: 99 },
     );
     expect(deleteConflict.status).toBe(409);
-    expect(await deleteConflict.json()).toEqual({ error: { code: "conflict" } });
+    expect(await deleteConflict.json()).toEqual({
+      error: { code: "conflict" },
+    });
 
     expect(
       (
@@ -475,10 +479,16 @@ describe.skipIf(!enabled)("W2-A4 staff client task routes (real PG)", () => {
     expect((await listCall(a.ws.id, cp.id)).status).toBe(401);
     expect(
       (
-        await patchTask(a.ws.id, cp.id, created.id, {}, {
-          title: "Anon",
-          expectedRevision: 2,
-        })
+        await patchTask(
+          a.ws.id,
+          cp.id,
+          created.id,
+          {},
+          {
+            title: "Anon",
+            expectedRevision: 2,
+          },
+        )
       ).status,
     ).toBe(401);
 
@@ -515,6 +525,8 @@ describe.skipIf(!enabled)("W2-A4 staff client task routes (real PG)", () => {
       { title: "Ghost", expectedRevision: 2 },
     );
     expect(unknownTask.status).toBe(403);
-    expect(await unknownTask.json()).toEqual({ error: { code: "not_available" } });
+    expect(await unknownTask.json()).toEqual({
+      error: { code: "not_available" },
+    });
   });
 });

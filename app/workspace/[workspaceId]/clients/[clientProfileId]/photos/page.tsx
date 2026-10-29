@@ -60,9 +60,7 @@ export default async function StaffClientPhotosPage({
           <Link href={`/workspace/${workspaceId}/clients`}>Clients</Link>
         </p>
         <h1 className="app-title">Progress photos — {client.name}</h1>
-        <p className="app-lede">
-          Dated photos and side-by-side comparison.
-        </p>
+        <p className="app-lede">Dated photos and side-by-side comparison.</p>
       </header>
       <PhotosPanel
         workspaceId={workspaceId}

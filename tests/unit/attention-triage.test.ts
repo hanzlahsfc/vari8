@@ -77,9 +77,7 @@ describe("needsAttention derivation parity", () => {
       checkInOverdue: true,
       awaitingFeedbackCount: 1,
     };
-    expect(attentionReasons(signals)).toEqual([
-      "check-in awaiting feedback",
-    ]);
+    expect(attentionReasons(signals)).toEqual(["check-in awaiting feedback"]);
     expect(attentionPriority(signals)).toBe(5);
     expect(attentionCount(signals)).toBe(1);
   });
@@ -138,10 +136,7 @@ describe("buildTriageRows", () => {
         trainingFlags: 0,
       }),
     ]);
-    expect(rows.map((row) => row.clientId)).toEqual([
-      "c-overdue",
-      "c-tasks",
-    ]);
+    expect(rows.map((row) => row.clientId)).toEqual(["c-overdue", "c-tasks"]);
     expect(rows[0].reasons).toEqual(["check-in overdue"]);
   });
 
@@ -183,7 +178,11 @@ function fakeDb(rows: {
       }
       if ("archivedAt" in where && where.archivedAt === null && row.archivedAt)
         return false;
-      if ("cancelledAt" in where && where.cancelledAt === null && row.cancelledAt)
+      if (
+        "cancelledAt" in where &&
+        where.cancelledAt === null &&
+        row.cancelledAt
+      )
         return false;
       if ("status" in where && row.status !== where.status) return false;
       if ("senderKind" in where && row.senderKind !== where.senderKind)
@@ -199,7 +198,9 @@ function fakeDb(rows: {
         if (reads.some((read) => read.userId === reader)) return false;
       }
       if ("conversation" in where) {
-        const convo = where.conversation as { clientProfileId?: { in?: string[] } };
+        const convo = where.conversation as {
+          clientProfileId?: { in?: string[] };
+        };
         const inIds = convo.clientProfileId?.in;
         const convoRow = row.conversation as { clientProfileId?: string };
         if (inIds && !inIds.includes(convoRow?.clientProfileId ?? ""))
@@ -315,9 +316,7 @@ describe("listWorkspaceAttentionTriage", () => {
       db,
       now: NOW,
     });
-    expect(result.items[0].reasons).toEqual([
-      "check-in awaiting feedback",
-    ]);
+    expect(result.items[0].reasons).toEqual(["check-in awaiting feedback"]);
   });
 
   it("joins tasks and unread messages into the same derivation", async () => {
@@ -367,9 +366,7 @@ describe("listWorkspaceAttentionTriage", () => {
 
   it("excludes archived clients and empty workspaces", async () => {
     const db = fakeDb({
-      profiles: [
-        { id: "cp-old", name: "Old Client", archivedAt: new Date() },
-      ],
+      profiles: [{ id: "cp-old", name: "Old Client", archivedAt: new Date() }],
       instances: [
         {
           clientProfileId: "cp-old",

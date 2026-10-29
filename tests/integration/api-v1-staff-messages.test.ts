@@ -134,9 +134,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
     return { user, email };
   }
 
-  async function workspaceWith(
-    role: "WORKSPACE_OWNER" | "COACH" | "CLIENT",
-  ) {
+  async function workspaceWith(role: "WORKSPACE_OWNER" | "COACH" | "CLIENT") {
     const tag = `wm${++n}_${Date.now()}`;
     const ws = await prisma.workspace.create({
       data: { name: tag, slug: tag, status: "ACTIVE" },
@@ -198,9 +196,7 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
       data: {
         workspaceId,
         clientProfileId,
-        lastMessageAt: rows.length
-          ? rows[rows.length - 1]!.sentAt
-          : null,
+        lastMessageAt: rows.length ? rows[rows.length - 1]!.sentAt : null,
       },
     });
     const messages = [];
@@ -465,7 +461,9 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
     expect(empty.status).toBe(400);
     expect(await empty.json()).toEqual({ error: { code: "invalid_input" } });
     expect(
-      await prisma.message.count({ where: { conversationId: conversation.id } }),
+      await prisma.message.count({
+        where: { conversationId: conversation.id },
+      }),
     ).toBe(1);
   });
 
@@ -493,9 +491,9 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
     const first = await readCall(ws.id, cp.id, authed(token));
     expect(first.status).toBe(200);
     expect(await first.json()).toEqual({ marked: 2 });
-    expect(
-      await prisma.messageRead.count({ where: { userId: user.id } }),
-    ).toBe(2);
+    expect(await prisma.messageRead.count({ where: { userId: user.id } })).toBe(
+      2,
+    );
 
     const second = await readCall(ws.id, cp.id, authed(token));
     expect(second.status).toBe(200);
@@ -606,29 +604,45 @@ describe.skipIf(!enabled)("W2-A4 staff message routes (real PG)", () => {
 
     // A client holds message.write at "own" scope, so the gate lets it in and
     // the staff binding inside the service denies it.
-    const clientSend = await threadCall("POST", a.ws.id, cp.id, authed(clientToken), {
-      body: "not allowed",
-    });
+    const clientSend = await threadCall(
+      "POST",
+      a.ws.id,
+      cp.id,
+      authed(clientToken),
+      {
+        body: "not allowed",
+      },
+    );
     expect(clientSend.status).toBe(403);
     expect(await clientSend.json()).toEqual({ error: { code: "forbidden" } });
 
-    const foreignSend = await threadCall("POST", a.ws.id, cp.id, authed(foreignToken), {
-      body: "not allowed",
-    });
+    const foreignSend = await threadCall(
+      "POST",
+      a.ws.id,
+      cp.id,
+      authed(foreignToken),
+      {
+        body: "not allowed",
+      },
+    );
     expect(foreignSend.status).toBe(403);
     expect(await foreignSend.json()).toEqual({ error: { code: "forbidden" } });
 
-    const anonSend = await threadCall("POST", a.ws.id, cp.id, {}, {
-      body: "not allowed",
-    });
+    const anonSend = await threadCall(
+      "POST",
+      a.ws.id,
+      cp.id,
+      {},
+      {
+        body: "not allowed",
+      },
+    );
     expect(anonSend.status).toBe(401);
 
     expect((await readCall(a.ws.id, cp.id)).status).toBe(401);
-    expect(
-      (await draftCall(a.ws.id, cp.id, {}, { body: "anon" })).status,
-    ).toBe(401);
-    expect(
-      (await threadCall("GET", a.ws.id, cp.id)).status,
-    ).toBe(401);
+    expect((await draftCall(a.ws.id, cp.id, {}, { body: "anon" })).status).toBe(
+      401,
+    );
+    expect((await threadCall("GET", a.ws.id, cp.id)).status).toBe(401);
   });
 });

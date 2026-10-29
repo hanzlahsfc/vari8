@@ -3,10 +3,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { readStaffTrainingLogs } from "@/lib/trainingprogram/service";
 
-import {
-  sessionOf,
-  unwrapTraining,
-} from "../../../training-logs/_result";
+import { sessionOf, unwrapTraining } from "../../../training-logs/_result";
 
 /**
  * GET /api/v1/workspaces/:workspaceId/clients/:clientProfileId/training-logs?cursor=

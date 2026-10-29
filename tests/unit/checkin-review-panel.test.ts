@@ -60,7 +60,10 @@ function text(fieldId: string, valueText: string): CheckInReviewPanelAnswer {
   };
 }
 
-function rating(fieldId: string, valueRating: number): CheckInReviewPanelAnswer {
+function rating(
+  fieldId: string,
+  valueRating: number,
+): CheckInReviewPanelAnswer {
   return {
     fieldId,
     kind: "RATING",
@@ -86,10 +89,7 @@ function numeric(fieldId: string, value: string): CheckInReviewPanelAnswer {
   };
 }
 
-function visual(
-  fieldId: string,
-  mediaIds: string[],
-): CheckInReviewPanelAnswer {
+function visual(fieldId: string, mediaIds: string[]): CheckInReviewPanelAnswer {
   return {
     fieldId,
     kind: "VISUAL",
@@ -102,7 +102,9 @@ function visual(
   };
 }
 
-function previous(over: Partial<Parameters<typeof diffCheckInSubmissions>[0]["previous"]> = {}) {
+function previous(
+  over: Partial<Parameters<typeof diffCheckInSubmissions>[0]["previous"]> = {},
+) {
   return {
     submissionId: "sub-prev",
     submittedAt: "2026-10-12T17:00:00.000Z",
@@ -258,7 +260,10 @@ describe("diffCheckInSubmissions (card 06 change summary)", () => {
   });
 
   it("compares option sets and media lists, not row identity", () => {
-    const choice = (fieldId: string, ids: string[]): CheckInReviewPanelAnswer => ({
+    const choice = (
+      fieldId: string,
+      ids: string[],
+    ): CheckInReviewPanelAnswer => ({
       fieldId,
       kind: "MULTI_CHOICE",
       valueText: null,

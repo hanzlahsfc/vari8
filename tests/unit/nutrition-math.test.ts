@@ -244,8 +244,6 @@ describe("card 09 derived calories from recorded macros (#173)", () => {
   });
 
   it("recorded zeros still yield 0 kcal", () => {
-    expect(
-      caloriesFromMacros({ protein: 0, carbohydrate: 0, fat: 0 }),
-    ).toBe(0);
+    expect(caloriesFromMacros({ protein: 0, carbohydrate: 0, fat: 0 })).toBe(0);
   });
 });

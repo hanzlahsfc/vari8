@@ -22,12 +22,7 @@ export const GET = defineApiV1Route({
   capability: "clientData.read",
   params: paramsSchema,
   handler: ({ viewer, workspace, params }) =>
-    getProgressPhoto(
-      viewer,
-      workspace,
-      params.clientProfileId,
-      params.entryId,
-    ),
+    getProgressPhoto(viewer, workspace, params.clientProfileId, params.entryId),
 });
 
 export const DELETE = defineApiV1Route({

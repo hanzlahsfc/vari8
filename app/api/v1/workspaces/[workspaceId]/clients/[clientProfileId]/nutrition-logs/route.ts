@@ -4,10 +4,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { listStaffNutritionLogs } from "@/lib/daily-entry/nutrition-log";
 
-import {
-  sessionOf,
-  unwrapDailyEntry,
-} from "../../../daily-entries/_result";
+import { sessionOf, unwrapDailyEntry } from "../../../daily-entries/_result";
 
 /**
  * GET /api/v1/workspaces/:workspaceId/clients/:clientProfileId/nutrition-logs?from=&to=

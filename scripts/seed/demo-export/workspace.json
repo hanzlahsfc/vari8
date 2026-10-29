@@ -51,11 +51,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -70,11 +66,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -257,12 +249,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ],
       "legacyConfigurations": [
@@ -309,11 +296,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -328,11 +311,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -515,12 +494,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ]
     },
@@ -574,11 +548,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -593,11 +563,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -780,12 +746,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ],
       "legacyConfigurations": []
@@ -840,11 +801,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -859,11 +816,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -1030,12 +983,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ],
       "legacyConfigurations": []
@@ -1078,16 +1026,8 @@
           "answer": "My left knee felt unsettled on the last split-squat set. Could we look at the setup?"
         }
       ],
-      "metrics": [
-        "weight",
-        "calories",
-        "sleep",
-        "habits"
-      ],
-      "visuals": [
-        "Front · 12 October",
-        "Side · 12 October"
-      ],
+      "metrics": ["weight", "calories", "sleep", "habits"],
+      "visuals": ["Front · 12 October", "Side · 12 October"],
       "note": "Kept all three sessions this week.",
       "flags": [
         {
@@ -1114,10 +1054,7 @@
           "answer": "7.8 hours"
         }
       ],
-      "metrics": [
-        "weight",
-        "sleep"
-      ],
+      "metrics": ["weight", "sleep"],
       "visuals": [],
       "note": "Just a quick update after the weekend. Feeling rested!",
       "flags": []
@@ -1134,10 +1071,7 @@
           "answer": "A consistent week, no concerns."
         }
       ],
-      "metrics": [
-        "weight",
-        "sleep"
-      ],
+      "metrics": ["weight", "sleep"],
       "visuals": [],
       "note": "",
       "flags": [],
@@ -1183,16 +1117,8 @@
           "answer": "Uploaded front and side photos for 2026-10-18"
         }
       ],
-      "metrics": [
-        "weight",
-        "calories",
-        "sleep",
-        "habits"
-      ],
-      "visuals": [
-        "Front · 2026-10-18",
-        "Side · 2026-10-18"
-      ],
+      "metrics": ["weight", "calories", "sleep", "habits"],
+      "visuals": ["Front · 2026-10-18", "Side · 2026-10-18"],
       "note": "Submitted from the client app.",
       "flags": [],
       "response": {
@@ -1255,12 +1181,7 @@
           "answer": "Uploaded front and side photos for 2026-10-24"
         }
       ],
-      "metrics": [
-        "weight",
-        "calories",
-        "sleep",
-        "habits"
-      ],
+      "metrics": ["weight", "calories", "sleep", "habits"],
       "visuals": [],
       "note": "Submitted from the client app.",
       "flags": [],
@@ -1319,16 +1240,8 @@
           "answer": "Uploaded check-in photos"
         }
       ],
-      "metrics": [
-        "weight",
-        "calories",
-        "sleep",
-        "habits"
-      ],
-      "visuals": [
-        "Front · 2026-08-23",
-        "Side · 2026-08-23"
-      ],
+      "metrics": ["weight", "calories", "sleep", "habits"],
+      "visuals": ["Front · 2026-08-23", "Side · 2026-08-23"],
       "photos": [
         {
           "pose": "Front relaxed",
@@ -1391,16 +1304,8 @@
           "answer": "Uploaded check-in photos"
         }
       ],
-      "metrics": [
-        "weight",
-        "calories",
-        "sleep",
-        "habits"
-      ],
-      "visuals": [
-        "Front · 2026-09-20",
-        "Side · 2026-09-20"
-      ],
+      "metrics": ["weight", "calories", "sleep", "habits"],
+      "visuals": ["Front · 2026-09-20", "Side · 2026-09-20"],
       "photos": [
         {
           "pose": "Front relaxed",
@@ -1725,66 +1630,49 @@
       "id": "library-back-squat",
       "name": "Back squat",
       "muscle": "quadriceps",
-      "secondaryMuscles": [
-        "glutes",
-        "core"
-      ],
+      "secondaryMuscles": ["glutes", "core"],
       "notes": "Brace before each rep; keep the whole foot grounded."
     },
     {
       "id": "library-bench-press",
       "name": "Bench press",
       "muscle": "chest",
-      "secondaryMuscles": [
-        "triceps",
-        "shoulders"
-      ],
+      "secondaryMuscles": ["triceps", "shoulders"],
       "notes": "Set the shoulder blades before unracking."
     },
     {
       "id": "library-deadlift",
       "name": "Deadlift",
       "muscle": "hamstrings",
-      "secondaryMuscles": [
-        "glutes",
-        "back"
-      ],
+      "secondaryMuscles": ["glutes", "back"],
       "notes": "Build tension against the bar before lifting."
     },
     {
       "id": "library-row",
       "name": "Chest-supported row",
       "muscle": "back",
-      "secondaryMuscles": [
-        "biceps"
-      ],
+      "secondaryMuscles": ["biceps"],
       "notes": "Pause briefly with the shoulder blades drawn back."
     },
     {
       "id": "library-lat-pulldown",
       "name": "Lat pulldown",
       "muscle": "back",
-      "secondaryMuscles": [
-        "biceps"
-      ],
+      "secondaryMuscles": ["biceps"],
       "notes": "Lead with the elbows and keep the torso steady."
     },
     {
       "id": "library-shoulder-press",
       "name": "Dumbbell shoulder press",
       "muscle": "shoulders",
-      "secondaryMuscles": [
-        "triceps"
-      ],
+      "secondaryMuscles": ["triceps"],
       "notes": "Use a comfortable range without arching the lower back."
     },
     {
       "id": "library-hip-thrust",
       "name": "Hip thrust",
       "muscle": "glutes",
-      "secondaryMuscles": [
-        "hamstrings"
-      ],
+      "secondaryMuscles": ["hamstrings"],
       "notes": "Finish with the hips, keeping the ribs stacked over the pelvis."
     },
     {
@@ -1805,19 +1693,14 @@
       "id": "library-plank",
       "name": "Forearm plank",
       "muscle": "core",
-      "secondaryMuscles": [
-        "shoulders"
-      ],
+      "secondaryMuscles": ["shoulders"],
       "notes": "Maintain a straight line from head to heels; stop before form changes."
     },
     {
       "id": "library-romanian-deadlift",
       "name": "Romanian deadlift",
       "muscle": "hamstrings",
-      "secondaryMuscles": [
-        "glutes",
-        "back"
-      ],
+      "secondaryMuscles": ["glutes", "back"],
       "notes": "Keep the bar close and stop the hinge before the back position changes."
     },
     {
@@ -1845,27 +1728,21 @@
       "id": "library-rear-delt-fly",
       "name": "Cable rear-delt fly",
       "muscle": "shoulders",
-      "secondaryMuscles": [
-        "back"
-      ],
+      "secondaryMuscles": ["back"],
       "notes": "Sweep the arms wide without shrugging."
     },
     {
       "id": "library-split-squat",
       "name": "Dumbbell split squat",
       "muscle": "glutes",
-      "secondaryMuscles": [
-        "quadriceps"
-      ],
+      "secondaryMuscles": ["quadriceps"],
       "notes": "Use a steady stance and a comfortable depth."
     },
     {
       "id": "library-glute-bridge",
       "name": "Barbell glute bridge",
       "muscle": "glutes",
-      "secondaryMuscles": [
-        "hamstrings"
-      ],
+      "secondaryMuscles": ["hamstrings"],
       "notes": "Finish with the hips while keeping the ribs stacked."
     },
     {
@@ -1914,11 +1791,7 @@
       "sessionId": "amara-upper-a",
       "sessionName": "Upper A · Delts and back",
       "scheduledDate": "day -12",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -2004,9 +1877,7 @@
             "libraryId": "library-shoulder-press",
             "name": "Dumbbell shoulder press",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "triceps"
-            ],
+            "secondaryMuscles": ["triceps"],
             "generalNotes": "Use a comfortable range without arching the lower back.",
             "instructions": "Press in a comfortable range without arching the lower back.",
             "progression": "Double progression",
@@ -2081,9 +1952,7 @@
             "libraryId": "library-lat-pulldown",
             "name": "Lat pulldown",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Lead with the elbows and keep the torso steady.",
             "instructions": "Lead with the elbows and keep the torso steady.",
             "progression": "Double progression",
@@ -2158,9 +2027,7 @@
             "libraryId": "library-row",
             "name": "Chest-supported row",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Pause briefly with the shoulder blades drawn back.",
             "instructions": "Pause briefly with the shoulder blades drawn back.",
             "progression": "Double progression",
@@ -2216,9 +2083,7 @@
             "libraryId": "library-rear-delt-fly",
             "name": "Cable rear-delt fly",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "back"
-            ],
+            "secondaryMuscles": ["back"],
             "generalNotes": "Sweep the arms wide without shrugging.",
             "instructions": "Sweep the arms wide without shrugging.",
             "progression": "Double progression",
@@ -2280,11 +2145,7 @@
       "sessionId": "amara-lower-b",
       "sessionName": "Lower B · Glutes and hamstrings",
       "scheduledDate": "day -10",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -2295,10 +2156,7 @@
             "libraryId": "library-romanian-deadlift",
             "name": "Romanian deadlift",
             "muscle": "hamstrings",
-            "secondaryMuscles": [
-              "glutes",
-              "back"
-            ],
+            "secondaryMuscles": ["glutes", "back"],
             "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
             "instructions": "Keep the weights close and use a controlled hip hinge.",
             "progression": "Double progression",
@@ -2373,9 +2231,7 @@
             "libraryId": "library-split-squat",
             "name": "Dumbbell split squat",
             "muscle": "glutes",
-            "secondaryMuscles": [
-              "quadriceps"
-            ],
+            "secondaryMuscles": ["quadriceps"],
             "generalNotes": "Use a steady stance and a comfortable depth.",
             "instructions": "Use a steady stance and a comfortable depth on each side.",
             "progression": "Double progression",
@@ -2450,9 +2306,7 @@
             "libraryId": "library-glute-bridge",
             "name": "Barbell glute bridge",
             "muscle": "glutes",
-            "secondaryMuscles": [
-              "hamstrings"
-            ],
+            "secondaryMuscles": ["hamstrings"],
             "generalNotes": "Finish with the hips while keeping the ribs stacked.",
             "instructions": "Finish with the hips while keeping the ribs stacked.",
             "progression": "Double progression",
@@ -2664,11 +2518,7 @@
       "sessionId": "amara-upper-b",
       "sessionName": "Upper B · Delts and arms",
       "scheduledDate": "day -8",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -2754,9 +2604,7 @@
             "libraryId": "library-shoulder-press",
             "name": "Dumbbell shoulder press",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "triceps"
-            ],
+            "secondaryMuscles": ["triceps"],
             "generalNotes": "Use a comfortable range without arching the lower back.",
             "instructions": "Press in a comfortable range without arching the lower back.",
             "progression": "Double progression",
@@ -2812,9 +2660,7 @@
             "libraryId": "library-rear-delt-fly",
             "name": "Cable rear-delt fly",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "back"
-            ],
+            "secondaryMuscles": ["back"],
             "generalNotes": "Sweep the arms wide without shrugging.",
             "instructions": "Sweep the arms wide without shrugging.",
             "progression": "Double progression",
@@ -2889,9 +2735,7 @@
             "libraryId": "library-lat-pulldown",
             "name": "Lat pulldown",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Lead with the elbows and keep the torso steady.",
             "instructions": "Lead with the elbows and keep the torso steady.",
             "progression": "Double progression",
@@ -3065,11 +2909,7 @@
       "sessionId": "amara-lower-a",
       "sessionName": "Lower A · Glute emphasis",
       "scheduledDate": "day -6",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -3080,9 +2920,7 @@
             "libraryId": "library-hip-thrust",
             "name": "Hip thrust",
             "muscle": "glutes",
-            "secondaryMuscles": [
-              "hamstrings"
-            ],
+            "secondaryMuscles": ["hamstrings"],
             "generalNotes": "Finish with the hips, keeping the ribs stacked over the pelvis.",
             "instructions": "Pause briefly at the top; keep the ribs stacked.",
             "progression": "Double progression",
@@ -3157,10 +2995,7 @@
             "libraryId": "library-back-squat",
             "name": "Back squat",
             "muscle": "quadriceps",
-            "secondaryMuscles": [
-              "glutes",
-              "core"
-            ],
+            "secondaryMuscles": ["glutes", "core"],
             "generalNotes": "Brace before each rep; keep the whole foot grounded.",
             "instructions": "Brace before each rep and keep the whole foot grounded.",
             "progression": "Double progression",
@@ -3235,10 +3070,7 @@
             "libraryId": "library-romanian-deadlift",
             "name": "Romanian deadlift",
             "muscle": "hamstrings",
-            "secondaryMuscles": [
-              "glutes",
-              "back"
-            ],
+            "secondaryMuscles": ["glutes", "back"],
             "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
             "instructions": "Keep the weights close and use a controlled hip hinge.",
             "progression": "Double progression",
@@ -3431,11 +3263,7 @@
       "sessionId": "amara-upper-a",
       "sessionName": "Upper A · Delts and back",
       "scheduledDate": "day -5",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -3521,9 +3349,7 @@
             "libraryId": "library-shoulder-press",
             "name": "Dumbbell shoulder press",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "triceps"
-            ],
+            "secondaryMuscles": ["triceps"],
             "generalNotes": "Use a comfortable range without arching the lower back.",
             "instructions": "Press in a comfortable range without arching the lower back.",
             "progression": "Double progression",
@@ -3598,9 +3424,7 @@
             "libraryId": "library-lat-pulldown",
             "name": "Lat pulldown",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Lead with the elbows and keep the torso steady.",
             "instructions": "Lead with the elbows and keep the torso steady.",
             "progression": "Double progression",
@@ -3675,9 +3499,7 @@
             "libraryId": "library-row",
             "name": "Chest-supported row",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Pause briefly with the shoulder blades drawn back.",
             "instructions": "Pause briefly with the shoulder blades drawn back.",
             "progression": "Double progression",
@@ -3733,9 +3555,7 @@
             "libraryId": "library-rear-delt-fly",
             "name": "Cable rear-delt fly",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "back"
-            ],
+            "secondaryMuscles": ["back"],
             "generalNotes": "Sweep the arms wide without shrugging.",
             "instructions": "Sweep the arms wide without shrugging.",
             "progression": "Double progression",
@@ -3797,11 +3617,7 @@
       "sessionId": "amara-lower-b",
       "sessionName": "Lower B · Glutes and hamstrings",
       "scheduledDate": "day -3",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -3812,10 +3628,7 @@
             "libraryId": "library-romanian-deadlift",
             "name": "Romanian deadlift",
             "muscle": "hamstrings",
-            "secondaryMuscles": [
-              "glutes",
-              "back"
-            ],
+            "secondaryMuscles": ["glutes", "back"],
             "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
             "instructions": "Keep the weights close and use a controlled hip hinge.",
             "progression": "Double progression",
@@ -3890,9 +3703,7 @@
             "libraryId": "library-split-squat",
             "name": "Dumbbell split squat",
             "muscle": "glutes",
-            "secondaryMuscles": [
-              "quadriceps"
-            ],
+            "secondaryMuscles": ["quadriceps"],
             "generalNotes": "Use a steady stance and a comfortable depth.",
             "instructions": "Use a steady stance and a comfortable depth on each side.",
             "progression": "Double progression",
@@ -3967,9 +3778,7 @@
             "libraryId": "library-glute-bridge",
             "name": "Barbell glute bridge",
             "muscle": "glutes",
-            "secondaryMuscles": [
-              "hamstrings"
-            ],
+            "secondaryMuscles": ["hamstrings"],
             "generalNotes": "Finish with the hips while keeping the ribs stacked.",
             "instructions": "Finish with the hips while keeping the ribs stacked.",
             "progression": "Double progression",
@@ -4181,11 +3990,7 @@
       "sessionId": "amara-upper-b",
       "sessionName": "Upper B · Delts and arms",
       "scheduledDate": "day -1",
-      "logFields": [
-        "weight",
-        "reps",
-        "note"
-      ],
+      "logFields": ["weight", "reps", "note"],
       "loadUnit": "kg",
       "exercises": [
         {
@@ -4271,9 +4076,7 @@
             "libraryId": "library-shoulder-press",
             "name": "Dumbbell shoulder press",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "triceps"
-            ],
+            "secondaryMuscles": ["triceps"],
             "generalNotes": "Use a comfortable range without arching the lower back.",
             "instructions": "Press in a comfortable range without arching the lower back.",
             "progression": "Double progression",
@@ -4329,9 +4132,7 @@
             "libraryId": "library-rear-delt-fly",
             "name": "Cable rear-delt fly",
             "muscle": "shoulders",
-            "secondaryMuscles": [
-              "back"
-            ],
+            "secondaryMuscles": ["back"],
             "generalNotes": "Sweep the arms wide without shrugging.",
             "instructions": "Sweep the arms wide without shrugging.",
             "progression": "Double progression",
@@ -4406,9 +4207,7 @@
             "libraryId": "library-lat-pulldown",
             "name": "Lat pulldown",
             "muscle": "back",
-            "secondaryMuscles": [
-              "biceps"
-            ],
+            "secondaryMuscles": ["biceps"],
             "generalNotes": "Lead with the elbows and keep the torso steady.",
             "instructions": "Lead with the elbows and keep the torso steady.",
             "progression": "Double progression",

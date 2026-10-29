@@ -213,10 +213,7 @@ export default async function StaffClientDailyPage({
               </thead>
               <tbody>
                 {nutrition.items.map((item) => (
-                  <tr
-                    key={item.entryDate}
-                    data-testid="staff-nutrition-row"
-                  >
+                  <tr key={item.entryDate} data-testid="staff-nutrition-row">
                     <td>{item.entryDate}</td>
                     <td>
                       {item.protein === null
@@ -229,9 +226,7 @@ export default async function StaffClientDailyPage({
                         : `${item.carbohydrate} g`}
                     </td>
                     <td>
-                      {item.fat === null
-                        ? "Not recorded"
-                        : `${item.fat} g`}
+                      {item.fat === null ? "Not recorded" : `${item.fat} g`}
                     </td>
                     <td>{caloriesFromMacros(item)} kcal</td>
                   </tr>
@@ -240,9 +235,9 @@ export default async function StaffClientDailyPage({
             </table>
           )}
           <p className="app-lede">
-            Calories derive at 4 kcal per gram of protein or carbohydrate
-            and 9 per gram of fat over the macros recorded; a missing macro
-            is not recorded, never zero.
+            Calories derive at 4 kcal per gram of protein or carbohydrate and 9
+            per gram of fat over the macros recorded; a missing macro is not
+            recorded, never zero.
           </p>
         </section>
       ) : null}

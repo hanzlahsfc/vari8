@@ -31,7 +31,10 @@ const TODAY = "2026-03-04"; // Wednesday of the fixture's week 6.
 
 const CTX: SheetContext = {
   entries: [
-    { date: "2026-03-02", values: { weight: 92.9, steps: 9200, "active-minutes": 45 } },
+    {
+      date: "2026-03-02",
+      values: { weight: 92.9, steps: 9200, "active-minutes": 45 },
+    },
     { date: "2026-03-03", values: { weight: 92.4 } },
   ],
   macros: {
@@ -59,13 +62,17 @@ describe("computations", () => {
 
   it("kcalFromMacros uses the sheet constants 4.1/4.1/9.3 and blanks on empty", () => {
     // 180*4.1 + 220*4.1 + 60*9.3 = 738 + 902 + 558 = 2198
+    expect(kcalFromMacros({ protein: 180, carbohydrate: 220, fat: 60 })).toBe(
+      "2,198",
+    );
     expect(
-      kcalFromMacros({ protein: 180, carbohydrate: 220, fat: 60 }),
-    ).toBe("2,198");
-    expect(kcalFromMacros({ protein: null, carbohydrate: null, fat: null })).toBe("");
+      kcalFromMacros({ protein: null, carbohydrate: null, fat: null }),
+    ).toBe("");
     expect(kcalFromMacros({ protein: 0, carbohydrate: 0, fat: 0 })).toBe("");
     // Missing macros stay null-safe, never coerce a missing side to energy.
-    expect(kcalFromMacros({ protein: 10, carbohydrate: null, fat: null })).toBe("41");
+    expect(kcalFromMacros({ protein: 10, carbohydrate: null, fat: null })).toBe(
+      "41",
+    );
   });
 
   it("weeklyAverage/weeklySum blank on empty and round as specified", () => {
@@ -93,7 +100,9 @@ describe("computations", () => {
       weekStart: "2026-03-02",
       values: [2400, 2100, 1800],
     });
-    expect(applyWeekTargets("2026-03-16", weeks, [2400, 2100, 1800])).toBeNull();
+    expect(
+      applyWeekTargets("2026-03-16", weeks, [2400, 2100, 1800]),
+    ).toBeNull();
   });
 });
 
@@ -189,7 +198,10 @@ describe("bindTab", () => {
 
   it("binds DASHBOARD U11:U13 read-only to the published targets", () => {
     const dash = bindTab("dashboard", IMPORTED_CELLS.dashboard, CTX);
-    expect(dash["11:21"]).toMatchObject({ value: "2400", valueSource: "store" });
+    expect(dash["11:21"]).toMatchObject({
+      value: "2400",
+      valueSource: "store",
+    });
     expect(dash["12:21"]?.value).toBe("2100");
     expect(dash["13:21"]?.value).toBe("1800");
     expect(dash["11:21"]?.editable).toBeUndefined();
@@ -215,6 +227,7 @@ describe("bindTab", () => {
 
   it("leaves tabs without bindings imported and read only", () => {
     const mealplan = bindTab("mealplan", IMPORTED_CELLS.mealplan, CTX);
-    for (const cell of Object.values(mealplan)) expect(cell.editable).toBeUndefined();
+    for (const cell of Object.values(mealplan))
+      expect(cell.editable).toBeUndefined();
   });
 });

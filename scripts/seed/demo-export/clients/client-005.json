@@ -30,9 +30,7 @@
   "email": "maya.patel@example.com",
   "priorityMessages": true,
   "trainingFlags": 0,
-  "additionalCheckInDates": [
-    "day -17"
-  ],
+  "additionalCheckInDates": ["day -17"],
   "clientTasks": [
     {
       "id": "maya-task-1",
@@ -91,9 +89,7 @@
   "schedules": [
     {
       "effective": "day -24",
-      "weekdays": [
-        4
-      ]
+      "weekdays": [4]
     }
   ],
   "plan": {
@@ -219,11 +215,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -238,11 +230,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -425,12 +413,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ],
       "legacyConfigurations": [
@@ -477,11 +460,7 @@
                   "period": "today",
                   "target": true,
                   "size": "Wide",
-                  "fields": [
-                    "protein",
-                    "carbs",
-                    "fat"
-                  ],
+                  "fields": ["protein", "carbs", "fat"],
                   "option": "circles",
                   "unit": "g"
                 }
@@ -496,11 +475,7 @@
                   "period": "week",
                   "target": false,
                   "size": "Regular",
-                  "fields": [
-                    "exercise",
-                    "sets",
-                    "reps"
-                  ],
+                  "fields": ["exercise", "sets", "reps"],
                   "option": "current",
                   "unit": ""
                 }
@@ -683,12 +658,7 @@
               "options": ""
             }
           ],
-          "summaries": [
-            "weight",
-            "calories",
-            "sleep",
-            "habits"
-          ]
+          "summaries": ["weight", "calories", "sleep", "habits"]
         }
       ]
     }

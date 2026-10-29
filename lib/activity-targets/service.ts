@@ -12,7 +12,10 @@ import { Prisma, type PrismaClient } from "@prisma/client";
 
 import { writeAuditEvent } from "../audit";
 import { AccessDeniedError, authorize } from "../auth/guard";
-import { prisma, withSerializedRetry as sharedWithSerializedRetry } from "../db";
+import {
+  prisma,
+  withSerializedRetry as sharedWithSerializedRetry,
+} from "../db";
 import { createPrismaAuthorizationRepo } from "../workspace/access";
 import {
   type ActivityMetric,
@@ -103,7 +106,10 @@ async function lockedAuthorize(
   const userId = session?.user?.id;
   if (typeof userId !== "string" || userId.length === 0)
     throw new AccessDeniedError("unauthenticated", RESOURCE, request.action);
-  await advisoryLock(tx, `atarget:${request.workspaceId}:${request.clientProfileId}`);
+  await advisoryLock(
+    tx,
+    `atarget:${request.workspaceId}:${request.clientProfileId}`,
+  );
   await advisoryLock(tx, `member:${request.workspaceId}:${userId}`);
   const member = await lockMember(tx, request.workspaceId, userId);
   if (!member || member.status !== "ACTIVE")
@@ -146,8 +152,7 @@ async function lockAssignmentForScope(
     },
     select: { id: true },
   });
-  if (!resolved)
-    throw new AccessDeniedError("not_assigned", RESOURCE, "write");
+  if (!resolved) throw new AccessDeniedError("not_assigned", RESOURCE, "write");
   const rows = await tx.$queryRawUnsafe<{ status: string }[]>(
     `SELECT status FROM "client_assignment"
      WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
@@ -173,11 +178,7 @@ async function lockProfile(
     workspaceId,
   );
   if (!rows[0])
-    throw new AccessDeniedError(
-      "client_outside_workspace",
-      RESOURCE,
-      "write",
-    );
+    throw new AccessDeniedError("client_outside_workspace", RESOURCE, "write");
 }
 
 /* ---------------- views ---------------- */
@@ -262,7 +263,11 @@ export async function readStaffActivityTargets(
       throw new AccessDeniedError("role_denied", RESOURCE, "read");
     return {
       clientProfileId: input.clientProfileId,
-      versions: await listVersions(tx, input.workspaceId, input.clientProfileId),
+      versions: await listVersions(
+        tx,
+        input.workspaceId,
+        input.clientProfileId,
+      ),
     };
   });
 }
@@ -282,8 +287,7 @@ export async function readOwnActivityTargets(
       where: { workspaceId: input.workspaceId, userId },
       select: { id: true },
     });
-    if (!profile)
-      throw new AccessDeniedError("not_owner", RESOURCE, "read");
+    if (!profile) throw new AccessDeniedError("not_owner", RESOURCE, "read");
     const { ctx } = await lockedAuthorize(tx, session, {
       action: "read",
       workspaceId: input.workspaceId,
@@ -324,8 +328,7 @@ export async function writeActivityTarget(
   const metric = input.metric;
   const effectiveFrom = input.effectiveFrom;
   const confirmSameDay = input.confirmSameDay === true;
-  if (!isActivityMetric(metric))
-    throw new ActivityTargetError("invalid_input");
+  if (!isActivityMetric(metric)) throw new ActivityTargetError("invalid_input");
   if (typeof effectiveFrom !== "string" || !isLocalCalendarDate(effectiveFrom))
     throw new ActivityTargetError("invalid_input");
   const target = input.target as ActivityTargetWrite;

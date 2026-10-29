@@ -1,16 +1,9 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import {
-  cancelClientTask,
-  editClientTask,
-} from "@/lib/tasks/service";
+import { cancelClientTask, editClientTask } from "@/lib/tasks/service";
 
-import {
-  readBody,
-  sessionOf,
-  unwrapTask,
-} from "../../../../../tasks/_result";
+import { readBody, sessionOf, unwrapTask } from "../../../../../tasks/_result";
 
 /**
  * PATCH  /api/v1/workspaces/:workspaceId/clients/:clientProfileId/tasks/:taskId/staff

@@ -183,12 +183,8 @@ export function diffCheckInSubmissions(input: {
   };
 }): CheckInSubmissionChangeSummary {
   const curFields = new Map(input.current.fields.map((f) => [f.fieldId, f]));
-  const prevFields = new Map(
-    input.previous.fields.map((f) => [f.fieldId, f]),
-  );
-  const curAnswers = new Map(
-    input.current.answers.map((a) => [a.fieldId, a]),
-  );
+  const prevFields = new Map(input.previous.fields.map((f) => [f.fieldId, f]));
+  const curAnswers = new Map(input.current.answers.map((a) => [a.fieldId, a]));
   const prevAnswers = new Map(
     input.previous.answers.map((a) => [a.fieldId, a]),
   );
@@ -350,40 +346,40 @@ export async function readCheckInReviewPanel(
       )
     : [];
   const payloadById = new Map(pinnedVersions.map((v) => [v.id, v.payload]));
-  const flaggedTrainingNotes: FlaggedTrainingNote[] = flaggedRows.map(
-    (row) => {
-      const payload = payloadById.get(row.pinned_version_id) as unknown as
-        | {
-            weeks?: {
-              week: number;
-              sessions?: { exercises?: { id: string; name: string }[] }[];
-            }[];
-          }
-        | undefined;
-      const sessionDef = payload?.weeks
-        ?.find((w) => w.week === row.booked_week)
-        ?.sessions?.find((s) =>
-          s.exercises?.some((e) => e.id === row.exercise_id),
-        );
-      return {
-        sessionLogId: row.session_log_id,
-        performedDate: row.performed_date.toISOString().slice(0, 10),
-        exerciseName:
-          sessionDef?.exercises?.find((e) => e.id === row.exercise_id)?.name ??
-          "Exercise",
-        set: row.position + 1,
-        note: row.note,
-      };
-    },
-  );
+  const flaggedTrainingNotes: FlaggedTrainingNote[] = flaggedRows.map((row) => {
+    const payload = payloadById.get(row.pinned_version_id) as unknown as
+      | {
+          weeks?: {
+            week: number;
+            sessions?: { exercises?: { id: string; name: string }[] }[];
+          }[];
+        }
+      | undefined;
+    const sessionDef = payload?.weeks
+      ?.find((w) => w.week === row.booked_week)
+      ?.sessions?.find((s) =>
+        s.exercises?.some((e) => e.id === row.exercise_id),
+      );
+    return {
+      sessionLogId: row.session_log_id,
+      performedDate: row.performed_date.toISOString().slice(0, 10),
+      exerciseName:
+        sessionDef?.exercises?.find((e) => e.id === row.exercise_id)?.name ??
+        "Exercise",
+      set: row.position + 1,
+      note: row.note,
+    };
+  });
 
   const changeSummary =
     current && previous
       ? diffCheckInSubmissions({
           current: {
             fields:
-              (current.formVersion.definition as unknown as CheckInDefinitionLike)
-                .fields ?? [],
+              (
+                current.formVersion
+                  .definition as unknown as CheckInDefinitionLike
+              ).fields ?? [],
             answers: current.answers.map(toPanelAnswer),
           },
           previous: {
@@ -391,8 +387,10 @@ export async function readCheckInReviewPanel(
             submittedAt: previous.submittedAt.toISOString(),
             formName: previous.form.name,
             fields:
-              (previous.formVersion
-                .definition as unknown as CheckInDefinitionLike).fields ?? [],
+              (
+                previous.formVersion
+                  .definition as unknown as CheckInDefinitionLike
+              ).fields ?? [],
             answers: previous.answers.map(toPanelAnswer),
           },
         })

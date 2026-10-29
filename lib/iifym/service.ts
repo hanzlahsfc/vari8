@@ -60,14 +60,16 @@ import { resolveIifymConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
 import { isIifymPlansEnabled } from "./gate";
 import { IIFYM_LIMITS } from "./limits";
-import {
-  IifymError,
-  normalizeIifymPayload,
-  type IifymDraft,
-} from "./payload";
+import { IifymError, normalizeIifymPayload, type IifymDraft } from "./payload";
 
 export { IifymError } from "./payload";
-export type { IifymDraft, IifymOption, MealTargets, TargetValue, VariantSchedule } from "./payload";
+export type {
+  IifymDraft,
+  IifymOption,
+  MealTargets,
+  TargetValue,
+  VariantSchedule,
+} from "./payload";
 
 export type IifymDeps = {
   db?: PrismaClient;
@@ -741,8 +743,7 @@ export async function publishIifymVersion(
             throw new IifymError("stale_revision");
 
           // Confirmed plan-scoped timezone — required before first publish.
-          if (plan.timezone === null)
-            throw new IifymError("timezone_required");
+          if (plan.timezone === null) throw new IifymError("timezone_required");
           const activation = resolveIifymActivation(
             plan.timezone,
             effectiveDate,

@@ -391,9 +391,7 @@ describe.skipIf(!enabled)(
       ).entry;
 
       // By list: another client's path is forbidden under own scope.
-      expect((await listPhotos(ws.id, other.id, clientToken)).status).toBe(
-        403,
-      );
+      expect((await listPhotos(ws.id, other.id, clientToken)).status).toBe(403);
       // By entry id under the foreign client's path: forbidden; under the
       // client's own path the foreign entry reads as not found.
       expect(
@@ -403,9 +401,7 @@ describe.skipIf(!enabled)(
         (await getPhoto(ws.id, own.id, otherEntry.id, clientToken)).status,
       ).toBe(404);
       // By url: the media mint still refuses a foreign-profile object.
-      expect((await getMedia(ws.id, otherMedia, clientToken)).status).toBe(
-        403,
-      );
+      expect((await getMedia(ws.id, otherMedia, clientToken)).status).toBe(403);
       // Compare with a foreign entry is refused for the client too.
       const ownMedia = await uploadImage(ws.id, clientToken);
       const ownEntry = (
@@ -428,7 +424,13 @@ describe.skipIf(!enabled)(
       ).toBe(404);
       expect(
         (
-          await comparePhotos(ws.id, other.id, ownEntry.id, otherEntry.id, clientToken)
+          await comparePhotos(
+            ws.id,
+            other.id,
+            ownEntry.id,
+            otherEntry.id,
+            clientToken,
+          )
         ).status,
       ).toBe(403);
     });

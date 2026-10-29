@@ -20,11 +20,7 @@ export const ACTIVITY_METRICS: readonly ActivityMetric[] = [
 ];
 
 export type ActivityTargetKind =
-  | "MINIMUM"
-  | "MAXIMUM"
-  | "RANGE"
-  | "FIXED"
-  | "CARDIO";
+  "MINIMUM" | "MAXIMUM" | "RANGE" | "FIXED" | "CARDIO";
 
 /** One stored version row (service view). kind null => stop version. */
 export type ActivityTargetRow = {
@@ -152,7 +148,9 @@ export function validateActivityTargetWrite(
     case "CARDIO": {
       const errors: string[] = [];
       if (!positiveInt(target.sessionsPerWeek))
-        errors.push("Cardio sessions per week must be a positive whole number.");
+        errors.push(
+          "Cardio sessions per week must be a positive whole number.",
+        );
       if (!positiveNumber(target.minutesPerSession))
         errors.push("Cardio minutes per session must be a positive number.");
       return errors;
@@ -235,7 +233,14 @@ export function planActivityTargetWrite({
   );
   if (sameDay) {
     if (!confirmSameDay) return { kind: "confirmation-required" };
-    return { kind: "replace", id: sameDay.id, revision: sameDay.revision + 1, metric, effectiveFrom, ...columns };
+    return {
+      kind: "replace",
+      id: sameDay.id,
+      revision: sameDay.revision + 1,
+      metric,
+      effectiveFrom,
+      ...columns,
+    };
   }
   return { kind: "insert", id, metric, effectiveFrom, revision: 1, ...columns };
 }

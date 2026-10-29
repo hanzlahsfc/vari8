@@ -35,7 +35,9 @@ const submission = {
   flags: [],
 } satisfies Submission;
 
-function panel(over: Partial<CheckInReviewPanelWire> = {}): CheckInReviewPanelWire {
+function panel(
+  over: Partial<CheckInReviewPanelWire> = {},
+): CheckInReviewPanelWire {
   return {
     submissionId: "sub-1",
     instanceId: "inst-1",
@@ -181,9 +183,7 @@ describe("CheckInReviewPanel states (card 06)", () => {
         onOpenVisual={vi.fn()}
       />,
     );
-    expect(
-      screen.getByText(/First submission of this form/),
-    ).toBeTruthy();
+    expect(screen.getByText(/First submission of this form/)).toBeTruthy();
   });
 
   it("treats a withheld thread as unavailable, not empty", () => {
@@ -196,9 +196,7 @@ describe("CheckInReviewPanel states (card 06)", () => {
         onOpenVisual={vi.fn()}
       />,
     );
-    expect(
-      screen.getByText(/not available for your role/),
-    ).toBeTruthy();
+    expect(screen.getByText(/not available for your role/)).toBeTruthy();
   });
 
   it("falls back to the stored submission while the read is out", () => {

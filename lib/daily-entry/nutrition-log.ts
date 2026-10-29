@@ -210,7 +210,8 @@ export async function saveNutritionLog(
           return { status: "no_op" };
 
         const row = {
-          protein: macros.protein === null ? null : new Prisma.Decimal(macros.protein),
+          protein:
+            macros.protein === null ? null : new Prisma.Decimal(macros.protein),
           carbohydrate:
             macros.carbohydrate === null
               ? null
@@ -278,8 +279,7 @@ function toDay(row: {
   return {
     entryDate: row.entryDate.toISOString().slice(0, 10),
     protein: row.protein === null ? null : Number(row.protein),
-    carbohydrate:
-      row.carbohydrate === null ? null : Number(row.carbohydrate),
+    carbohydrate: row.carbohydrate === null ? null : Number(row.carbohydrate),
     fat: row.fat === null ? null : Number(row.fat),
   };
 }
@@ -355,7 +355,11 @@ export async function loadNutritionLogSurface(
         entryDate: entryDateObj,
       },
     },
-    select: { nutritionLog: { select: { protein: true, carbohydrate: true, fat: true } } },
+    select: {
+      nutritionLog: {
+        select: { protein: true, carbohydrate: true, fat: true },
+      },
+    },
   });
   const logRow = entry?.nutritionLog ?? null;
 
@@ -373,12 +377,9 @@ export async function loadNutritionLogSurface(
       logRow === null
         ? null
         : {
-            protein:
-              logRow.protein === null ? null : Number(logRow.protein),
+            protein: logRow.protein === null ? null : Number(logRow.protein),
             carbohydrate:
-              logRow.carbohydrate === null
-                ? null
-                : Number(logRow.carbohydrate),
+              logRow.carbohydrate === null ? null : Number(logRow.carbohydrate),
             fat: logRow.fat === null ? null : Number(logRow.fat),
           },
     history: historyRows.map(toDay),

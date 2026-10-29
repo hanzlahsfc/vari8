@@ -6,10 +6,7 @@
  * same-day replace confirm dialog — it is not an opaque conflict.
  */
 
-import {
-  fail as sharedFail,
-  mapError as sharedMapError,
-} from "../boundary";
+import { fail as sharedFail, mapError as sharedMapError } from "../boundary";
 import {
   ActivityTargetError,
   readOwnActivityTargets,

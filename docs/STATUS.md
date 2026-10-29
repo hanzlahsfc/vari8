@@ -500,7 +500,7 @@
   `build` — all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
-  MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
   refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
@@ -550,7 +550,7 @@
   all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` —
   all exit 0.
 - Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
-  start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
   13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
   published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
@@ -662,7 +662,7 @@
   dated entry in coach gallery, same-client compare 200, cross-client
   compare 404 both directions, client→other-client list/entry/media-mint
   403/404, client cross-client compare 404, soft delete 200 + entry gone
-  + media still mintable + rows retained in db.
+  - media still mintable + rows retained in db.
 - Screenshots 1440 + 390 (client gallery incl. real UI upload of two
   dated photos, coach gallery + comparator mid-compare, roster link row)
   under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
@@ -803,7 +803,6 @@
 - `npm run check` in `frontend/`: tests 319/319, agent-context:check,
   typecheck, lint (300 files) and build all exit 0. Published-only test files
   were renormalized to Biome format; no tests removed or weakened.
-
 
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 

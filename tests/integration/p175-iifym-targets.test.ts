@@ -274,8 +274,7 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
     expect(training?.targets.style).toBe("macros");
     // Derived, never stored: 200*4 + 250*4 + 70*9 = 2430 kcal.
     expect(training?.targets).not.toHaveProperty("calories");
-    const num = (v: unknown) =>
-      (v as { kind: string; value: number }).value;
+    const num = (v: unknown) => (v as { kind: string; value: number }).value;
     expect(
       caloriesFromMacros({
         protein: num(training?.targets.protein),
@@ -434,9 +433,7 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
         },
         deps(),
       ),
-    ).rejects.toThrowError(
-      expect.objectContaining({ code: "stale_revision" }),
-    );
+    ).rejects.toThrowError(expect.objectContaining({ code: "stale_revision" }));
     await expect(
       publishIifymVersion(
         coachSession,
@@ -448,9 +445,7 @@ describe.skipIf(!enabled)("card 10 IIFYM macro targets (real PG)", () => {
         },
         deps(),
       ),
-    ).rejects.toThrowError(
-      expect.objectContaining({ code: "stale_revision" }),
-    );
+    ).rejects.toThrowError(expect.objectContaining({ code: "stale_revision" }));
   });
 
   it("a foreign workspace write is denied", async () => {

@@ -1,16 +1,9 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import {
-  assignClientTask,
-  listStaffClientTasks,
-} from "@/lib/tasks/service";
+import { assignClientTask, listStaffClientTasks } from "@/lib/tasks/service";
 
-import {
-  readBody,
-  sessionOf,
-  unwrapTask,
-} from "../../../tasks/_result";
+import { readBody, sessionOf, unwrapTask } from "../../../tasks/_result";
 
 /**
  * GET  /api/v1/workspaces/:workspaceId/clients/:clientProfileId/tasks

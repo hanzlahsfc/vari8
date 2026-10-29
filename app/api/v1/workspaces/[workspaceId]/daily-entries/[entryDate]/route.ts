@@ -21,9 +21,7 @@ const paramsSchema = z.object({
 
 const bodySchema = z.object({
   formToken: z.string().min(1),
-  values: z.array(
-    z.object({ ordinal: z.number().int(), raw: z.string() }),
-  ),
+  values: z.array(z.object({ ordinal: z.number().int(), raw: z.string() })),
 });
 
 export const PUT = defineApiV1Route({

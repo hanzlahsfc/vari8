@@ -197,7 +197,11 @@ function cleanMealTargets(v: unknown): MealTargets {
   return { style, ...out } as MealTargets;
 }
 
-function cleanOption(v: unknown, seenIds: Set<string>, seenLabels: Set<string>): IifymOption {
+function cleanOption(
+  v: unknown,
+  seenIds: Set<string>,
+  seenLabels: Set<string>,
+): IifymOption {
   if (!isPlainObject(v)) throw new IifymError("invalid_input");
   rejectUnknownKeys(v, OPTION_KEYS);
   let id: string;
@@ -277,7 +281,8 @@ function cleanSchedule(
       total += raw.days;
       return { variantId: raw.variantId, days: raw.days };
     });
-    if (total > IIFYM_LIMITS.cycleDaysMax) throw new IifymError("invalid_input");
+    if (total > IIFYM_LIMITS.cycleDaysMax)
+      throw new IifymError("invalid_input");
     return { mode: "cycle", anchorDate: v.anchorDate, steps };
   }
   throw new IifymError("invalid_input");
@@ -315,7 +320,9 @@ export function normalizeIifymPayload(
 
   const seenIds = new Set<string>();
   const seenLabels = new Set<string>();
-  draft.options = rawOptions.map((raw) => cleanOption(raw, seenIds, seenLabels));
+  draft.options = rawOptions.map((raw) =>
+    cleanOption(raw, seenIds, seenLabels),
+  );
 
   const optionIds = new Set(draft.options.map((o) => o.id));
   if (input.schedule !== undefined && input.schedule !== null)

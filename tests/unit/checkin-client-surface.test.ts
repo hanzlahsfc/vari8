@@ -15,14 +15,14 @@ import {
 
 describe("checkInScheduleStatus", () => {
   it("marks a past-due scheduled instance overdue", () => {
-    expect(
-      checkInScheduleStatus({ state: "SCHEDULED", late: true }),
-    ).toBe("overdue");
+    expect(checkInScheduleStatus({ state: "SCHEDULED", late: true })).toBe(
+      "overdue",
+    );
   });
   it("keeps a cancelled instance cancelled even when late flags exist", () => {
-    expect(
-      checkInScheduleStatus({ state: "CANCELLED", late: false }),
-    ).toBe("cancelled");
+    expect(checkInScheduleStatus({ state: "CANCELLED", late: false })).toBe(
+      "cancelled",
+    );
   });
   it("treats submitted and reviewed as submitted for the client", () => {
     expect(checkInScheduleStatus({ state: "SUBMITTED", late: true })).toBe(
@@ -132,11 +132,16 @@ describe("summaryRowsFromSurface", () => {
 });
 
 describe("submittedAnswerDisplay", () => {
-  const field = (kind: string, options?: { optionId: string; label: string }[]) => ({
+  const field = (
+    kind: string,
+    options?: { optionId: string; label: string }[],
+  ) => ({
     kind,
     options,
   });
-  const answer = (over: Partial<Parameters<typeof submittedAnswerDisplay>[1]>) => ({
+  const answer = (
+    over: Partial<Parameters<typeof submittedAnswerDisplay>[1]>,
+  ) => ({
     valueText: null,
     valueNumeric: null,
     valueDate: null,

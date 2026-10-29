@@ -2,16 +2,9 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import {
-  readStaffIifymPlan,
-  saveIifymDraft,
-} from "@/lib/iifym/service";
+import { readStaffIifymPlan, saveIifymDraft } from "@/lib/iifym/service";
 
-import {
-  readBody,
-  sessionOf,
-  unwrapIifym,
-} from "../../../iifym-plans/_result";
+import { readBody, sessionOf, unwrapIifym } from "../../../iifym-plans/_result";
 
 /**
  * Card 10 staff surface: the coach's macro-target draft + published

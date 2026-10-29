@@ -74,10 +74,7 @@ import {
   type TrainingDraft,
   type TrainingFieldConfig,
 } from "./payload";
-import {
-  setLogEntrySchema,
-  type SetLogEntry,
-} from "./validators";
+import { setLogEntrySchema, type SetLogEntry } from "./validators";
 import {
   addDays,
   boundaryInstant,
@@ -3543,11 +3540,7 @@ async function logOwnWritePrelude(
     clientProfileId: input.clientProfileId,
   });
   if (ctx.grantedScope !== "own")
-    throw new AccessDeniedError(
-      "role_denied",
-      "trainingPlansLogs",
-      "write",
-    );
+    throw new AccessDeniedError("role_denied", "trainingPlansLogs", "write");
   const profile = await lockProfile(
     tx,
     input.workspaceId,
@@ -3587,10 +3580,7 @@ async function logOwnReadPrelude(
 }
 
 export type SessionLogStatus =
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "PARTIAL"
-  | "SKIPPED";
+  "IN_PROGRESS" | "COMPLETED" | "PARTIAL" | "SKIPPED";
 
 export type SessionSetRow = {
   id: string;
@@ -4057,104 +4047,97 @@ export async function readOwnSessionLog(
     throw new TrainingError("invalid_input");
 
   return withSerializedRetry(() =>
-    db.$transaction(
-      async (tx) => {
-        const deadline = await beginRead(tx);
-        const userId = session?.user?.id;
-        if (typeof userId !== "string" || userId.length === 0)
-          throw new AccessDeniedError(
-            "unauthenticated",
-            "trainingPlansLogs",
-            "read",
-          );
-        const own = await ownClientProfile(tx, input.workspaceId, userId);
-        if (!own)
-          throw new AccessDeniedError(
-            "not_owner",
-            "trainingPlansLogs",
-            "read",
-          );
-        const clientProfileId = own.id;
-        const { ctx } = await logOwnReadPrelude(
-          tx,
-          session,
-          { workspaceId: input.workspaceId, clientProfileId },
-          registry,
+    db.$transaction(async (tx) => {
+      const deadline = await beginRead(tx);
+      const userId = session?.user?.id;
+      if (typeof userId !== "string" || userId.length === 0)
+        throw new AccessDeniedError(
+          "unauthenticated",
+          "trainingPlansLogs",
+          "read",
         );
-        const log = await tx.trainingSessionLog.findFirst({
-          where: {
-            id: input.sessionLogId,
-            workspaceId: input.workspaceId,
-            clientProfileId,
-          },
-          select: {
-            id: true,
-            programId: true,
-            pinnedVersionId: true,
-            sessionId: true,
-            bookedWeek: true,
-            performedDate: true,
-            status: true,
-            startedAt: true,
-            completedAt: true,
-            sets: {
-              orderBy: [
-                { exerciseId: "asc" },
-                { position: "asc" },
-                { id: "asc" },
-              ],
-              select: {
-                id: true,
-                exerciseId: true,
-                setKey: true,
-                position: true,
-                actuals: true,
-              },
+      const own = await ownClientProfile(tx, input.workspaceId, userId);
+      if (!own)
+        throw new AccessDeniedError("not_owner", "trainingPlansLogs", "read");
+      const clientProfileId = own.id;
+      const { ctx } = await logOwnReadPrelude(
+        tx,
+        session,
+        { workspaceId: input.workspaceId, clientProfileId },
+        registry,
+      );
+      const log = await tx.trainingSessionLog.findFirst({
+        where: {
+          id: input.sessionLogId,
+          workspaceId: input.workspaceId,
+          clientProfileId,
+        },
+        select: {
+          id: true,
+          programId: true,
+          pinnedVersionId: true,
+          sessionId: true,
+          bookedWeek: true,
+          performedDate: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+          sets: {
+            orderBy: [
+              { exerciseId: "asc" },
+              { position: "asc" },
+              { id: "asc" },
+            ],
+            select: {
+              id: true,
+              exerciseId: true,
+              setKey: true,
+              position: true,
+              actuals: true,
             },
           },
-        });
-        checkDeadline(deadline);
-        if (!log) throw new TrainingError("not_found");
-        const version = await tx.trainingProgramVersion.findUnique({
-          where: { id: log.pinnedVersionId },
-          select: { payload: true, fieldConfig: true, versionSeq: true },
-        });
-        if (!version) throw new TrainingError("not_found");
-        const pinned = pinnedSession(version, log.bookedWeek, log.sessionId);
-        await writeAuditEvent(tx, ctx, {
-          action: "READ",
-          resourceType: "training_session_log",
-          resourceId: log.id,
-          subjectClientProfileId: clientProfileId,
-        });
-        return {
-          sessionLogId: log.id,
-          programId: log.programId,
-          sessionId: log.sessionId,
-          bookedWeek: log.bookedWeek,
-          performedDate: isoDate(log.performedDate),
-          status: log.status as SessionLogStatus,
-          startedAt: log.startedAt.toISOString(),
-          completedAt: log.completedAt?.toISOString() ?? null,
-          pinnedVersionId: log.pinnedVersionId,
-          pinnedVersionSeq: version.versionSeq,
-          session: pinned?.projected ?? {
-            id: log.sessionId,
-            name: "Session",
-            exercises: [],
-          },
-          sets: log.sets.map((s) => ({
-            id: s.id,
-            exerciseId: s.exerciseId,
-            setId: s.setKey.slice(2),
-            setKey: s.setKey,
-            position: s.position,
-            actuals: s.actuals as unknown as SetLogEntry,
-          })),
-        };
-      },
-      TX_OPTS,
-    ),
+        },
+      });
+      checkDeadline(deadline);
+      if (!log) throw new TrainingError("not_found");
+      const version = await tx.trainingProgramVersion.findUnique({
+        where: { id: log.pinnedVersionId },
+        select: { payload: true, fieldConfig: true, versionSeq: true },
+      });
+      if (!version) throw new TrainingError("not_found");
+      const pinned = pinnedSession(version, log.bookedWeek, log.sessionId);
+      await writeAuditEvent(tx, ctx, {
+        action: "READ",
+        resourceType: "training_session_log",
+        resourceId: log.id,
+        subjectClientProfileId: clientProfileId,
+      });
+      return {
+        sessionLogId: log.id,
+        programId: log.programId,
+        sessionId: log.sessionId,
+        bookedWeek: log.bookedWeek,
+        performedDate: isoDate(log.performedDate),
+        status: log.status as SessionLogStatus,
+        startedAt: log.startedAt.toISOString(),
+        completedAt: log.completedAt?.toISOString() ?? null,
+        pinnedVersionId: log.pinnedVersionId,
+        pinnedVersionSeq: version.versionSeq,
+        session: pinned?.projected ?? {
+          id: log.sessionId,
+          name: "Session",
+          exercises: [],
+        },
+        sets: log.sets.map((s) => ({
+          id: s.id,
+          exerciseId: s.exerciseId,
+          setId: s.setKey.slice(2),
+          setKey: s.setKey,
+          position: s.position,
+          actuals: s.actuals as unknown as SetLogEntry,
+        })),
+      };
+    }, TX_OPTS),
   );
 }
 
@@ -4193,44 +4176,39 @@ export async function readOwnTrainingLogWeek(
     throw new TrainingError("invalid_input");
 
   return withSerializedRetry(() =>
-    db.$transaction(
-      async (tx) => {
-        const deadline = await beginRead(tx);
-        const userId = session?.user?.id;
-        if (typeof userId !== "string" || userId.length === 0)
-          throw new AccessDeniedError(
-            "unauthenticated",
-            "trainingPlansLogs",
-            "read",
-          );
-        const own = await ownClientProfile(tx, input.workspaceId, userId);
-        if (!own)
-          throw new AccessDeniedError(
-            "not_owner",
-            "trainingPlansLogs",
-            "read",
-          );
-        const clientProfileId = own.id;
-        const { ctx } = await logOwnReadPrelude(
-          tx,
-          session,
-          { workspaceId: input.workspaceId, clientProfileId },
-          registry,
+    db.$transaction(async (tx) => {
+      const deadline = await beginRead(tx);
+      const userId = session?.user?.id;
+      if (typeof userId !== "string" || userId.length === 0)
+        throw new AccessDeniedError(
+          "unauthenticated",
+          "trainingPlansLogs",
+          "read",
         );
-        const rows = await tx.$queryRawUnsafe<
-          {
-            id: string;
-            program_id: string;
-            pinned_version_id: string;
-            session_id: string;
-            booked_week: number;
-            performed_date: Date;
-            status: string;
-            completed_at: Date | null;
-            set_count: number;
-          }[]
-        >(
-          `SELECT l.id, l.program_id, l.pinned_version_id, l.session_id,
+      const own = await ownClientProfile(tx, input.workspaceId, userId);
+      if (!own)
+        throw new AccessDeniedError("not_owner", "trainingPlansLogs", "read");
+      const clientProfileId = own.id;
+      const { ctx } = await logOwnReadPrelude(
+        tx,
+        session,
+        { workspaceId: input.workspaceId, clientProfileId },
+        registry,
+      );
+      const rows = await tx.$queryRawUnsafe<
+        {
+          id: string;
+          program_id: string;
+          pinned_version_id: string;
+          session_id: string;
+          booked_week: number;
+          performed_date: Date;
+          status: string;
+          completed_at: Date | null;
+          set_count: number;
+        }[]
+      >(
+        `SELECT l.id, l.program_id, l.pinned_version_id, l.session_id,
                   l.booked_week, l.performed_date, l.status, l.completed_at,
                   (SELECT COUNT(*)::int FROM "training_set_log" s
                    WHERE s.session_log_id = l.id) AS set_count
@@ -4239,54 +4217,54 @@ export async function readOwnTrainingLogWeek(
              AND l.booked_week = $3
            ORDER BY l.performed_date ASC, l.id ASC
            LIMIT 100`,
-          input.workspaceId,
-          clientProfileId,
-          input.week,
-        );
-        checkDeadline(deadline);
-        if (rows.length === 0) {
-          await writeAuditEvent(tx, ctx, {
-            action: "READ",
-            resourceType: "training_session_log",
-            resourceId: clientProfileId,
-            subjectClientProfileId: clientProfileId,
-          });
-          return null;
-        }
-        const versions = await tx.trainingProgramVersion.findMany({
-          where: { id: { in: [...new Set(rows.map((r) => r.pinned_version_id))] } },
-          select: { id: true, payload: true, fieldConfig: true },
-        });
-        const byId = new Map(versions.map((v) => [v.id, v]));
-        const logs = rows.map((r) => {
-          const pinned = byId.get(r.pinned_version_id)
-            ? pinnedSession(
-                byId.get(r.pinned_version_id)!,
-                r.booked_week,
-                r.session_id,
-              )
-            : null;
-          return {
-            sessionLogId: r.id,
-            sessionId: r.session_id,
-            sessionName: pinned?.session.name ?? "Session",
-            bookedWeek: r.booked_week,
-            performedDate: isoDate(r.performed_date),
-            status: r.status as SessionLogStatus,
-            completedAt: r.completed_at?.toISOString() ?? null,
-            setCount: r.set_count,
-          };
-        });
+        input.workspaceId,
+        clientProfileId,
+        input.week,
+      );
+      checkDeadline(deadline);
+      if (rows.length === 0) {
         await writeAuditEvent(tx, ctx, {
           action: "READ",
           resourceType: "training_session_log",
           resourceId: clientProfileId,
           subjectClientProfileId: clientProfileId,
         });
-        return { programId: rows[0].program_id, logs };
-      },
-      TX_OPTS,
-    ),
+        return null;
+      }
+      const versions = await tx.trainingProgramVersion.findMany({
+        where: {
+          id: { in: [...new Set(rows.map((r) => r.pinned_version_id))] },
+        },
+        select: { id: true, payload: true, fieldConfig: true },
+      });
+      const byId = new Map(versions.map((v) => [v.id, v]));
+      const logs = rows.map((r) => {
+        const pinned = byId.get(r.pinned_version_id)
+          ? pinnedSession(
+              byId.get(r.pinned_version_id)!,
+              r.booked_week,
+              r.session_id,
+            )
+          : null;
+        return {
+          sessionLogId: r.id,
+          sessionId: r.session_id,
+          sessionName: pinned?.session.name ?? "Session",
+          bookedWeek: r.booked_week,
+          performedDate: isoDate(r.performed_date),
+          status: r.status as SessionLogStatus,
+          completedAt: r.completed_at?.toISOString() ?? null,
+          setCount: r.set_count,
+        };
+      });
+      await writeAuditEvent(tx, ctx, {
+        action: "READ",
+        resourceType: "training_session_log",
+        resourceId: clientProfileId,
+        subjectClientProfileId: clientProfileId,
+      });
+      return { programId: rows[0].program_id, logs };
+    }, TX_OPTS),
   );
 }
 
@@ -4324,39 +4302,34 @@ export async function readStaffTrainingLogs(
     throw new TrainingError("invalid_input");
 
   return withSerializedRetry(() =>
-    db.$transaction(
-      async (tx) => {
-        const deadline = await beginRead(tx);
-        const { ctx } = await readPrelude(
-          tx,
-          session,
-          {
-            workspaceId: input.workspaceId,
-            clientProfileId: input.clientProfileId,
-          },
-          registry,
-        );
-        if (ctx.grantedScope === "own")
-          throw new AccessDeniedError(
-            "role_denied",
-            "trainingPlansLogs",
-            "read",
-          );
-        const pageSize = 25;
-        const rows = await tx.$queryRawUnsafe<
-          {
-            id: string;
-            program_id: string;
-            program_title: string;
-            pinned_version_id: string;
-            session_id: string;
-            booked_week: number;
-            performed_date: Date;
-            status: string;
-            completed_at: Date | null;
-          }[]
-        >(
-          `SELECT l.id, l.program_id, p.title AS program_title,
+    db.$transaction(async (tx) => {
+      const deadline = await beginRead(tx);
+      const { ctx } = await readPrelude(
+        tx,
+        session,
+        {
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        },
+        registry,
+      );
+      if (ctx.grantedScope === "own")
+        throw new AccessDeniedError("role_denied", "trainingPlansLogs", "read");
+      const pageSize = 25;
+      const rows = await tx.$queryRawUnsafe<
+        {
+          id: string;
+          program_id: string;
+          program_title: string;
+          pinned_version_id: string;
+          session_id: string;
+          booked_week: number;
+          performed_date: Date;
+          status: string;
+          completed_at: Date | null;
+        }[]
+      >(
+        `SELECT l.id, l.program_id, p.title AS program_title,
                   l.pinned_version_id, l.session_id, l.booked_week,
                   l.performed_date, l.status, l.completed_at
            FROM "training_session_log" l
@@ -4365,94 +4338,89 @@ export async function readStaffTrainingLogs(
              AND ($3::text IS NULL OR l.id < $3)
            ORDER BY l.performed_date DESC, l.id DESC
            LIMIT $4`,
-          input.workspaceId,
-          input.clientProfileId,
-          input.cursor ?? null,
-          pageSize + 1,
-        );
-        checkDeadline(deadline);
-        const page = rows.slice(0, pageSize);
-        const versionIds = [...new Set(page.map((r) => r.pinned_version_id))];
-        const versions = versionIds.length
-          ? await tx.trainingProgramVersion.findMany({
-              where: { id: { in: versionIds } },
-              select: {
-                id: true,
-                versionSeq: true,
-                payload: true,
-                fieldConfig: true,
-              },
-            })
-          : [];
-        const byId = new Map(versions.map((v) => [v.id, v]));
-        const setRows = page.length
-          ? await tx.trainingSetLog.findMany({
-              where: { sessionLogId: { in: page.map((r) => r.id) } },
-              orderBy: [
-                { exerciseId: "asc" },
-                { position: "asc" },
-                { id: "asc" },
-              ],
-              select: {
-                id: true,
-                sessionLogId: true,
-                exerciseId: true,
-                setKey: true,
-                position: true,
-                actuals: true,
-              },
-            })
-          : [];
-        const setsByLog = new Map<string, typeof setRows>();
-        for (const s of setRows) {
-          const list = setsByLog.get(s.sessionLogId) ?? [];
-          list.push(s);
-          setsByLog.set(s.sessionLogId, list);
-        }
-        const logs = page.map((r) => {
-          const v = byId.get(r.pinned_version_id);
-          const pinned = v
-            ? pinnedSession(v, r.booked_week, r.session_id)
-            : null;
-          return {
-            sessionLogId: r.id,
-            programId: r.program_id,
-            programTitle: r.program_title,
-            sessionId: r.session_id,
-            bookedWeek: r.booked_week,
-            performedDate: isoDate(r.performed_date),
-            status: r.status as SessionLogStatus,
-            completedAt: r.completed_at?.toISOString() ?? null,
-            pinnedVersionSeq: v?.versionSeq ?? 0,
-            session: pinned?.projected ?? {
-              id: r.session_id,
-              name: "Session",
-              exercises: [],
+        input.workspaceId,
+        input.clientProfileId,
+        input.cursor ?? null,
+        pageSize + 1,
+      );
+      checkDeadline(deadline);
+      const page = rows.slice(0, pageSize);
+      const versionIds = [...new Set(page.map((r) => r.pinned_version_id))];
+      const versions = versionIds.length
+        ? await tx.trainingProgramVersion.findMany({
+            where: { id: { in: versionIds } },
+            select: {
+              id: true,
+              versionSeq: true,
+              payload: true,
+              fieldConfig: true,
             },
-            sets: (setsByLog.get(r.id) ?? []).map((s) => ({
-              id: s.id,
-              exerciseId: s.exerciseId,
-              setId: s.setKey.slice(2),
-              setKey: s.setKey,
-              position: s.position,
-              actuals: s.actuals as unknown as SetLogEntry,
-            })),
-          };
-        });
-        await writeAuditEvent(tx, ctx, {
-          action: "READ",
-          resourceType: "training_session_log",
-          resourceId: input.clientProfileId,
-          subjectClientProfileId: input.clientProfileId,
-        });
+          })
+        : [];
+      const byId = new Map(versions.map((v) => [v.id, v]));
+      const setRows = page.length
+        ? await tx.trainingSetLog.findMany({
+            where: { sessionLogId: { in: page.map((r) => r.id) } },
+            orderBy: [
+              { exerciseId: "asc" },
+              { position: "asc" },
+              { id: "asc" },
+            ],
+            select: {
+              id: true,
+              sessionLogId: true,
+              exerciseId: true,
+              setKey: true,
+              position: true,
+              actuals: true,
+            },
+          })
+        : [];
+      const setsByLog = new Map<string, typeof setRows>();
+      for (const s of setRows) {
+        const list = setsByLog.get(s.sessionLogId) ?? [];
+        list.push(s);
+        setsByLog.set(s.sessionLogId, list);
+      }
+      const logs = page.map((r) => {
+        const v = byId.get(r.pinned_version_id);
+        const pinned = v ? pinnedSession(v, r.booked_week, r.session_id) : null;
         return {
-          logs,
-          nextCursor:
-            rows.length > pageSize ? page[page.length - 1].id : null,
-          hasMore: rows.length > pageSize,
+          sessionLogId: r.id,
+          programId: r.program_id,
+          programTitle: r.program_title,
+          sessionId: r.session_id,
+          bookedWeek: r.booked_week,
+          performedDate: isoDate(r.performed_date),
+          status: r.status as SessionLogStatus,
+          completedAt: r.completed_at?.toISOString() ?? null,
+          pinnedVersionSeq: v?.versionSeq ?? 0,
+          session: pinned?.projected ?? {
+            id: r.session_id,
+            name: "Session",
+            exercises: [],
+          },
+          sets: (setsByLog.get(r.id) ?? []).map((s) => ({
+            id: s.id,
+            exerciseId: s.exerciseId,
+            setId: s.setKey.slice(2),
+            setKey: s.setKey,
+            position: s.position,
+            actuals: s.actuals as unknown as SetLogEntry,
+          })),
         };
-      },
-      TX_OPTS,
-    ),
+      });
+      await writeAuditEvent(tx, ctx, {
+        action: "READ",
+        resourceType: "training_session_log",
+        resourceId: input.clientProfileId,
+        subjectClientProfileId: input.clientProfileId,
+      });
+      return {
+        logs,
+        nextCursor: rows.length > pageSize ? page[page.length - 1].id : null,
+        hasMore: rows.length > pageSize,
+      };
+    }, TX_OPTS),
   );
 }

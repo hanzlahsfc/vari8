@@ -27,9 +27,8 @@ export type IifymRuntimeClass = RuntimeClass;
 
 export type IifymPlansEnv = RuntimeEnv & { ENABLE_IIFYM_PLANS?: string };
 
-export const classifyIifymRuntime: (
-  env?: RuntimeEnv,
-) => IifymRuntimeClass = classifyRuntime;
+export const classifyIifymRuntime: (env?: RuntimeEnv) => IifymRuntimeClass =
+  classifyRuntime;
 
 /** The shared enablement decision — flag AND trusted runtime, else closed. */
 export function isIifymPlansEnabled(env: IifymPlansEnv = process.env): boolean {

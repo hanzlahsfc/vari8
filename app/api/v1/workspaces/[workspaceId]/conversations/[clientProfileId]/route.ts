@@ -1,16 +1,9 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import {
-  getStaffThread,
-  sendStaffMessage,
-} from "@/lib/messages/service";
+import { getStaffThread, sendStaffMessage } from "@/lib/messages/service";
 
-import {
-  readBody,
-  sessionOf,
-  unwrapMessage,
-} from "../../messages/_result";
+import { readBody, sessionOf, unwrapMessage } from "../../messages/_result";
 
 /**
  * GET  /api/v1/workspaces/:workspaceId/conversations/:clientProfileId

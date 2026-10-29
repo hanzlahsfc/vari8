@@ -290,8 +290,7 @@ async function staffMember(
     },
     select: { id: true },
   });
-  if (!member)
-    throw new AccessDeniedError("role_denied", "messages", action);
+  if (!member) throw new AccessDeniedError("role_denied", "messages", action);
   return member;
 }
 
@@ -415,17 +414,13 @@ async function staffThreadReads(
   clientUserId: string | null,
 ): Promise<ReadonlySet<string>> {
   const want = rows
-    .filter((r) =>
-      r.senderKind === "CLIENT" ? true : clientUserId !== null,
-    )
+    .filter((r) => (r.senderKind === "CLIENT" ? true : clientUserId !== null))
     .map((r) => r.id);
   if (want.length === 0) return new Set();
   const reads = await db.messageRead.findMany({
     where: {
       messageId: { in: want },
-      userId: clientUserId
-        ? { in: [staffUserId, clientUserId] }
-        : staffUserId,
+      userId: clientUserId ? { in: [staffUserId, clientUserId] } : staffUserId,
     },
     select: { messageId: true, userId: true },
   });
@@ -498,12 +493,7 @@ export async function getStaffThread(
       select: { body: true, revision: true },
     }),
   ]);
-  const readIds = await staffThreadReads(
-    db,
-    rows,
-    userId,
-    profile.userId,
-  );
+  const readIds = await staffThreadReads(db, rows, userId, profile.userId);
   return {
     clientProfileId: profile.id,
     messages: rows.map((r) => toStaffView(r, readIds)),

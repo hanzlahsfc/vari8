@@ -90,7 +90,15 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
       });
     const session: SessionLike = { user: { id: clientUser.id } };
     const staffSession: SessionLike = { user: { id: ownerUser.id } };
-    return { ws, ownerMember, clientMember, clientUser, profile, session, staffSession };
+    return {
+      ws,
+      ownerMember,
+      clientMember,
+      clientUser,
+      profile,
+      session,
+      staffSession,
+    };
   }
 
   /** Two template pins on one setup stand in for the meal-plan and
@@ -382,7 +390,11 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
           {
             workspaceId: c.ws.id,
             entryDate: DATE,
-            macros: { protein: Number.POSITIVE_INFINITY, carbohydrate: null, fat: null },
+            macros: {
+              protein: Number.POSITIVE_INFINITY,
+              carbohydrate: null,
+              fat: null,
+            },
           },
           deps(),
         ),
@@ -523,8 +535,7 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
   describe("mode switch", () => {
     it("switching the client's pinned template keeps earlier log entries", async () => {
       const c = await seedClient();
-      const { setup, pinMealPlan, vMacroCounting } =
-        await seedSetupWithPins(c);
+      const { setup, pinMealPlan, vMacroCounting } = await seedSetupWithPins(c);
       await saveNutritionLog(
         c.session,
         {

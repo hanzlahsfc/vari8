@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 import { defineApiV1Route } from "@/lib/api/v1";
-import {
-  saveTrainingSetLog,
-} from "@/lib/trainingprogram/service";
+import { saveTrainingSetLog } from "@/lib/trainingprogram/service";
 import { setLogEntrySchema } from "@/lib/trainingprogram/validators";
 
 import { readBody, sessionOf, unwrapTraining } from "../../../_result";

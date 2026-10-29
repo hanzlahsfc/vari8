@@ -3,11 +3,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { saveStaffDraft } from "@/lib/messages/service";
 
-import {
-  readBody,
-  sessionOf,
-  unwrapMessage,
-} from "../../../messages/_result";
+import { readBody, sessionOf, unwrapMessage } from "../../../messages/_result";
 
 /**
  * PUT /api/v1/workspaces/:workspaceId/conversations/:clientProfileId/draft

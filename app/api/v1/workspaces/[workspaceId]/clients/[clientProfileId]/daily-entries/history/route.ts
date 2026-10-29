@@ -3,10 +3,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { listStaffDailyEntries } from "@/lib/daily-entry/service";
 
-import {
-  sessionOf,
-  unwrapDailyEntry,
-} from "../../../../daily-entries/_result";
+import { sessionOf, unwrapDailyEntry } from "../../../../daily-entries/_result";
 
 /**
  * GET /api/v1/workspaces/:workspaceId/clients/:clientProfileId/daily-entries/history?cursor=

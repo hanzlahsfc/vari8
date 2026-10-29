@@ -16,10 +16,7 @@
 import type { PrismaClient } from "@prisma/client";
 
 import type { ApiViewer, ApiWorkspaceContext } from "@/lib/api/v1";
-import {
-  buildTriageRows,
-  type TriageRow,
-} from "@/lib/canvas/attention";
+import { buildTriageRows, type TriageRow } from "@/lib/canvas/attention";
 import { prisma } from "@/lib/db";
 import { serverTodayUtc, taskDueState } from "@/lib/tasks/date";
 

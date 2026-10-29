@@ -3,10 +3,7 @@ import { z } from "zod";
 import { defineApiV1Route } from "@/lib/api/v1";
 import { markStaffThreadRead } from "@/lib/messages/service";
 
-import {
-  sessionOf,
-  unwrapMessage,
-} from "../../../messages/_result";
+import { sessionOf, unwrapMessage } from "../../../messages/_result";
 
 /**
  * POST /api/v1/workspaces/:workspaceId/conversations/:clientProfileId/read
