@@ -70,9 +70,35 @@ function scheduleSummary(
     .join(", ")}`;
 }
 
-function formatTotals(n: Nutrients): string {
-  const round = (v: number) => Math.round(v * 10) / 10;
-  return `${round(n.calories)} kcal · protein ${round(n.protein)} g · carbs ${round(n.carbs)} g · fat ${round(n.fat)} g`;
+const round1 = (v: number) => Math.round(v * 10) / 10;
+
+/**
+ * w2-c4: a value+unit pair must stay unbreakable. At 390px the inline text
+ * used to wrap between the number and its unit ("206.07350235967624 g"
+ * split into "206.07" / "g"), which read as grams and kcal concatenating.
+ * Every token below keeps quantity and unit on one line; the row may still
+ * wrap between portions or metrics.
+ */
+function Unit({ value, unit }: { value: number | string; unit: string }) {
+  return (
+    <span className="mp-token">
+      {value} {unit}
+    </span>
+  );
+}
+
+function TotalsLine({ n }: { n: Nutrients }) {
+  return (
+    <>
+      <Unit value={round1(n.calories)} unit="kcal" />
+      {" · protein "}
+      <Unit value={round1(n.protein)} unit="g" />
+      {" · carbs "}
+      <Unit value={round1(n.carbs)} unit="g" />
+      {" · fat "}
+      <Unit value={round1(n.fat)} unit="g" />
+    </>
+  );
 }
 
 function MealBlock({
@@ -97,24 +123,43 @@ function MealBlock({
         <span className="tracker-list__sub">
           {meal.portions.map((p, i) => {
             const food = foods?.get(p.foodId);
-            const label = food
-              ? `${food.name} ${p.quantity} ${food.unit}`
-              : `${p.foodId} × ${p.quantity}`;
-            const swaps =
-              p.swaps && p.swaps.length > 0
-                ? ` (or ${p.swaps
-                    .map((s) => {
-                      const sf = foods?.get(s.foodId);
-                      return sf
-                        ? `${sf.name} ${s.quantity} ${sf.unit}`
-                        : `${s.foodId} × ${s.quantity}`;
-                    })
-                    .join(", ")})`
-                : "";
             return (
               <span key={i} data-testid={`${testidPrefix}-portion`}>
-                {label}
-                {swaps}
+                {food ? (
+                  <>
+                    {food.name}{" "}
+                    <Unit value={round1(p.quantity)} unit={food.unit} />
+                  </>
+                ) : (
+                  <>
+                    {p.foodId} × <Unit value={round1(p.quantity)} unit="" />
+                  </>
+                )}
+                {p.swaps && p.swaps.length > 0 ? (
+                  <>
+                    {" (or "}
+                    {p.swaps.map((s, si) => {
+                      const sf = foods?.get(s.foodId);
+                      return (
+                        <span key={si}>
+                          {si > 0 ? ", " : ""}
+                          {sf ? (
+                            <>
+                              {sf.name}{" "}
+                              <Unit value={round1(s.quantity)} unit={sf.unit} />
+                            </>
+                          ) : (
+                            <>
+                              {s.foodId} ×{" "}
+                              <Unit value={round1(s.quantity)} unit="" />
+                            </>
+                          )}
+                        </span>
+                      );
+                    })}
+                    {")"}
+                  </>
+                ) : null}
                 {i < meal.portions.length - 1 ? "; " : ""}
               </span>
             );
@@ -126,7 +171,7 @@ function MealBlock({
           className="tracker-list__sub"
           data-testid={`${testidPrefix}-totals`}
         >
-          {formatTotals(totals)}
+          <TotalsLine n={totals} />
         </span>
       ) : null}
       {meal.target ? (
@@ -163,7 +208,7 @@ function VariantBlock({
       ) : null}
       {totals ? (
         <p className="app-lede" data-testid={`${testidPrefix}-totals`}>
-          {formatTotals(totals)}
+          <TotalsLine n={totals} />
           {shares
             ? ` — ring ${Math.round(shares.protein * 100)}/${Math.round(shares.carbs * 100)}/${Math.round(shares.fat * 100)}`
             : ""}

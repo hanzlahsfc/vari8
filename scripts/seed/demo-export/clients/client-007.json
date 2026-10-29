@@ -2273,7 +2273,51 @@
         }
       },
       "iifym": {
-        "history": []
+        "history": [],
+        "active": {
+          "id": "demo-iifym-amara-active",
+          "activatedAt": "day -14T08:00:00Z",
+          "content": {
+            "id": "demo-iifym-amara",
+            "clientId": "client-007",
+            "name": "Amara · macro targets",
+            "startDate": "day -14",
+            "schedule": {
+              "mode": "weekly",
+              "days": {
+                "1": "demo-iifym-opt-td",
+                "2": "demo-iifym-opt-td",
+                "3": "demo-iifym-opt-td",
+                "4": "demo-iifym-opt-td",
+                "5": "demo-iifym-opt-td",
+                "6": "demo-iifym-opt-td",
+                "7": "demo-iifym-opt-refeed"
+              }
+            },
+            "options": [
+              {
+                "id": "demo-iifym-opt-td",
+                "label": "Training day",
+                "targets": {
+                  "style": "macros",
+                  "protein": { "kind": "fixed", "value": 160 },
+                  "carbs": { "kind": "fixed", "value": 175 },
+                  "fat": { "kind": "range", "min": 50, "max": 60 }
+                }
+              },
+              {
+                "id": "demo-iifym-opt-refeed",
+                "label": "Refeed day",
+                "targets": {
+                  "style": "macros",
+                  "protein": { "kind": "fixed", "value": 160 },
+                  "carbs": { "kind": "fixed", "value": 250 },
+                  "fat": { "kind": "minimum", "value": 45 }
+                }
+              }
+            ]
+          }
+        }
       },
       "temporary": [
         {

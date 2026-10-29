@@ -161,6 +161,217 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   `app/(canvas)`, `lib/canvas`, `components/canvas` or `frontend/`
   relative to the verified base.
 
+## 2026-10-28 - w2-fe3: FRONTEND PR 211 merged, canvas port landed, gates green
+
+- Lane `w2/fe3` off `ad257ba`. Merge `6eda6fa` (parents `ad257ba` +
+  `8e6503f`); `frontend/` byte-identical to the PR 211 tip (empty diff).
+- Canvas twin: 39 files ported via `tools/port-canvas/port.mjs`; 8 local-delta
+  files three-way merged (client route, athlete overview, timeline tab,
+  coach css, model, plans setup, store, mealplan workspace). New hand-merge
+  entries recorded in the port map.
+- `/client` renders the PR 211 `ClientDesktop`/`MobileApp` pair (900 px
+  breakpoint, `?view=phone` toggle); `/me` keeps the session-wired
+  `ClientApp` shell on `own` identity.
+- Demo export re-pointed to revision 11 (client-007, workspace.json,
+  README, provenance); `public/demo/physique` assets carried over from the
+  frontend public tree.
+- Parity: click recipes re-derived for the module-rail plans UI, baseline
+  recaptured from the tip (74/74). Root compare exits 1 with 64 diffs,
+  classified: truth text (workspace/role/counts), flag-boundary 403
+  surfaces (checkins, iifym, supplements; inherited, zero backend diff),
+  seeded-data divergence, union deltas (Legacy sheet, extra widget), and
+  local-only features (temporary nutrition plans, no backend model).
+- Gates: `typecheck` 0, `lint` 0 (105 inherited warnings), `test` 0
+  (131 files, 1501 tests), `build` 0, `index`/`index:check` 0, frontend
+  `lint` 0, frontend `test` 0 (322 tests), frontend `typecheck` 0, dash
+  gate 0 authored lines. Lane DB `app_fp_w2fe3` fresh deploy + double
+  seed idempotent, dropped after capture.
+- Browser pass (real logins, prod build): coach roster, Amara tracker and
+  plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
+  login, `/client` mobile and desktop. Evidence under
+  `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
+
+## 2026-10-27 - w2-c4 merge repair: preview trunk ad257ba union-merged
+
+- Preview rebuild tick 217 skipped verified c4 tip `d387260` because
+  merging into preview trunk `ad257ba` conflicted on six paths.
+  Repaired here via `git merge --no-ff --no-commit ad257ba` with union
+  keep-both resolutions; nothing from either side deleted.
+- `app/(canvas)/me/page.tsx`: trunk's `Promise.all` expanded to keep
+  all three trunk reads (`supplementPlan.count`, active
+  `activityTarget.count`, `readClientWorkspaceAppearance`) plus c4's
+  `activityTarget.findMany`, `dailyEntry.findMany` and own-bound
+  `readOwnMealPlan`/`readOwnIifymPlan` reads. `AppearanceProvider`
+  mount, client-session appearance wiring and `clientPlansPresence`
+  kept; c4's `versionsFromWire` activity targets and
+  `draftWireToMealPlan`/`iifymDraftWireToPlan` active-plan binding
+  kept.
+- `components/canvas/data/notes.ts`: comment hunk only; both sides'
+  doc comments and all exports/call paths retained.
+- `docs/STATUS.md`: newest-first union, zero deletions. The
+  `2026-10-26 - Wave 2 T1` preview entry and every c4-line entry all
+  present. `docs/index/*` regenerated with `npm run index`, never
+  hand-merged.
+- Merge follow-ups: deduped a doubled `useReducedMotion` import in
+  `components/canvas/ethereal/clients/client-roster.tsx` (both sides
+  added the identical import); `npx prisma generate` to sync the
+  client with the merged schema (`MemberPreference` et al.);
+  `tests/unit/system-index.test.ts` literal updated for trunk's
+  `/coach/states` route (the literal was stale on trunk);
+  `npx biome check --write` on three frontend files for inherited
+  import-order/format findings (coach/settings page, frontend
+  client-roster, settings-surface).
+- Gates on the merged tree: `npm run typecheck`, `npm run lint` (0
+  errors, 96 inherited warnings), `npx vitest run` (131 files / 1505
+  tests), `npm run index`, `npm run index:check`, `npm run build`,
+  `cd frontend && npm run lint`, all exit 0. Merge-authored lines
+  carry zero U+2013/U+2014 dashes.
+
+## 2026-10-27 - w2-c4: client plans views (roadmap, nutrition, supplements, targets)
+
+- Branch `w2/c4` off `788714b` with `w2/a1` `269fd04` then `w2/a2`
+  `8403a62` merged in order (merged tip `53322dd`; generated-index
+  conflicts resolved keep-both-newest-first, `npm run index` rerun).
+- `/me` now binds the signed-in client's own rows into the shared
+  `CoachClient`/`Variant` shell server-side: tracker entries, activity
+  target versions, the published meal plan and the IIFYM plan via
+  `readOwnMealPlan`/`readOwnIifymPlan`. No client id travels through
+  the browser; every read is session-bound. No new routes (GET-only
+  surfaces reused: workspace `iifym-plans`, `nutrition-logs`,
+  `clients/[id]/supplement-plan`, `clients/[id]/activity-targets`).
+- `templateDefinitionSlots` gains `fields`, `roadmapPhases`,
+  `roadmapActivityTargets` (the canvas write schema already serialized
+  them; the read schema dropped them, hiding the roadmap metrics and
+  activity planning columns from the client shell).
+- Seed: one active IIFYM plan for Amara Lewis `client-007` inside the
+  opt-in demo coverage seed only (owner ruling 2026-10-27 item 3);
+  demo template definition now carries the roadmap/fields/activity
+  slots. Default seed output unchanged (normalized dump diff: only
+  scrypt re-hash and `updated_at` churn; the demo module is skipped
+  without `VARI8_SEED_DEMO=1`).
+- 390 meal-plan token-wrap fix: `components/mealplan/plan-version-view.tsx`
+  rounds displayed quantities/totals to one decimal and wraps each
+  value-unit pair in `.mp-token` (`white-space: nowrap` in
+  `app/globals.css`), so grams/kcal can no longer split mid-number.
+- Twin port: `frontend/src/components/client-app/nutrition-targets.tsx`
+  created from the canvas file (canvas kept; Biome import order applied
+  to both twins in lockstep, diff still byte-identical); plus
+  `frontend/src/components/data/nutrition.ts` same-origin shim.
+- Browser proof on lane DB `app_fp_w2c4` (production `next start`,
+  `APP_ENV=development`, `ENABLE_*=1`, `BETTER_AUTH_URL` unset so the
+  prod boot guard passes on http localhost): coach real login ->
+  client-setups -> assigned `seed-demo-de-tv-1` to Chloe Park (ACTIVE
+  pin created live); Amara real login at 1440 and 390 shows Plans:
+  Nutrition (meal plan TD meals + seeded IIFYM targets 160/175/50-60/
+  1835 kcal + nutrition-log form and recent days), Supplements (4
+  items), Activity targets (steps+cardio), Timeline/Roadmap (weekly
+  grid from seeded config). 19/19 probe checks pass; four 390
+  overflow probes clean; screenshots in W2C4 evidence.
+- Own-scope: foreign `clientProfileId` on the two `clients/[id]/*`
+  GETs rebounds to the caller's own rows (200 with own body, not a
+  literal 403 - route design, recorded); staff-only
+  `clients/[id]/iifym-plans` and `clients/[id]/nutrition-logs` return
+  literal 403 for a client session; workspace-level own routes proven
+  disjoint across Amara/Emma sessions.
+- Gates: typecheck 0, build 0, lint 0 (89 inherited warnings),
+  index+index:check 0, `cd frontend && npm run lint` 0, dash gate 0.
+  `npm test` exit 1: 4 inherited failures predating this card -
+  3 in `canvas-data-seam.test.ts` (a1's `clients.ts` generalNotes
+  split vs the pre-merge seam fixture, `clients.ts` byte-identical to
+  the a1 tip) and 1 in `coach-store-roster.test.tsx` (a2's
+  `clientProfileIdFor` caching vs pre-a2 test, `store.tsx` unchanged
+  from the a2 tip). `format:check` exit 1 on 56 inherited files; the
+  4 files this card touched were formatted and now pass.
+- Held per card: client-visible phase display (no client-readable
+  phase route exists on the a1 tip; staff-only `notes.write` reads
+  only) - recorded as a finding for the A lane.
+- Repair round 1 (verifier verdict on `2de07c6`): B1 fixed - the two
+  en dashes and one em dash in `nutrition-targets.tsx` are ASCII in
+  both twins (visible IIFYM range now renders `50-60 g`; twin diff
+  still 0 lines). B2 fixed at the same root as w2/a4 `54c4d66`,
+  re-implemented for this lineage (the a4 patch does not apply
+  cleanly): `clients.ts` persists the full client core again,
+  `notes.ts` persists `coachNotes` plus `coachTodos`, and `store.tsx`
+  fetches the client-detail bundle lazily on the `clients` and
+  `notes` sections only. `messages.ts` already carried the full
+  extract on this branch and was left unchanged. B3 and B4 are
+  owner-parked and untouched. REPORT.md written at
+  `Vari8-evidence/FULL-PACKAGE-2/W2C4/REPORT.md`.
+- Repair gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+  tests/unit/coach-store-roster.test.tsx` exit 0 (12/12); `npm run
+  test` exit 0 (1393/1393); `npm run lint` exit 0 (89 inherited
+  warnings); `npm run typecheck` exit 0; `cd frontend && npm run
+  lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
+  0 (U+2013 and U+2014); twin parity diff 0 lines. `npm run index`
+  not required (no tracked file added, renamed or deleted).
+- Repair round 2 (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the parent `2de07c6` extract window carry
+  cores without those two fields, and `isCoachState` requires both as
+  arrays (`components/canvas/coach/model.ts:1717`), so the read failed
+  the guard and the store parked the workspace behind the preserve
+  notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Same shape as the w2/a4 `113d788` repair.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam (grep for `CoachSlice`/`merge:`/`dataDomains`/
+  `readCoachState` in `frontend/src` returns no matches), so the
+  defect exists only on the canvas side.
+- Repair-2 gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+  tests/unit/coach-store-roster.test.tsx` exit 0 (13/13); `npm run
+  test` exit 0 (1394/1394, 118/118 files); `npm run lint` exit 0 (89
+  inherited warnings); `npm run typecheck` exit 0; `npx prettier
+  --check` on the two changed files exit 0; `npm run index` and
+  `npm run index:check` exit 0; dash count on `git diff 2de07c6`
+  added lines = 0 (U+2013 and U+2014); twin parity diff on
+  `nutrition-targets.tsx` = 0 lines.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4-REPAIR2/`.
+- Repair round 3 (owner-ruled defect B3 on `0b38af5`): the two
+  `clients/[id]/*` GETs whose `plan.read` scope resolves "own" now bind
+  the path `clientProfileId` to the caller's own client profile. New
+  exported helper `requireOwnClientProfile` in `lib/api/v1.ts` resolves
+  the caller's profile by `{ workspaceId, userId }` and throws
+  `ApiError(403, "forbidden")` when the caller has no own profile or the
+  path id is foreign, before any domain read; staff scope is a no-op so
+  coach reads stay bound to the path id inside the services. Refusal
+  status 403 on both routes, matching the progress-photos own-scope
+  convention and each route's closed denied mapping.
+- New route-level cases with real sign-in and real Request objects
+  through the exported handlers on lane DB `app_fp_w2c4r4`: "route GET:
+  a client requesting a foreign clientProfileId is refused before any
+  read" and "route GET: a client reading its own path id gets its
+  saved plan" in `tests/integration/supplements-plan.test.ts`; "a
+  client requesting a foreign clientProfileId is refused before any
+  read", "a client reading its own path id gets its versions (own
+  200)" and "an assigned coach reading a roster client keeps 200 with
+  that client's versions" in new
+  `tests/integration/activity-targets.test.ts`. Both negative cases
+  were red at `0b38af5` (expected 403, got 200 with the caller's own
+  rows) and green after the fix.
+- Repair-3 gates: touched files under `vitest.integration.config.ts`
+  exit 0 (19/19); full integration suite exit 0 (991/991, 74 files,
+  with the documented domain dev flags
+  ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS exported;
+  the same suite without them shows 4 inherited flag-gate reds in
+  `api-v1-plans.test.ts`, identical at `0b38af5` on the same lane DB);
+  `npx vitest run` exit 0 (1394/1394) after `npm run index`
+  regenerated `docs/index/SYMBOLS.md` for the new export; `npm run
+  typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
+  `npm run index:check` exit 0; dash count on `git diff 0b38af5..HEAD`
+  added lines = 0. Lane DB `app_fp_w2c4r4` dropped, absence proven by
+  a pg_database query saved in evidence.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4/` (repair-3 files).
+
 ## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
 
 - `retrieve-archived.mjs` rewritten: trusted hardcoded `ARCHIVES` registry is the only authority (editable `ARCHIVED.json` stubs cross-checked, not obeyed); name/traversal/tag/commit-shape validation before any git/fs op; `git fetch --depth 1 <remote> refs/tags/<tag>` into a scratch `.fetch` repo inside the task-owned destination; pinned commit + `artifactIndexSha256` verified, then every indexed artifact extracted and sha256-checked; existing/unowned destinations and unsafe indexed paths refused; arg-based `execFileSync` only (no shell).
@@ -212,6 +423,156 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
 - Historical package evidence remains separate: `verify-evidence.mjs` verified **482** artifacts and `recompare.mjs` remains canonical **70/70** / strict **68/70**.
 - Checks on Node 24.22.1: focused **42/42**, unit **106 files / 1292 tests**, real-DB integration **64 files / 913 tests** on disposable `app_p429` (no skipped suite), format/typecheck/ESLint/index/build/diff exit 0 (82 pre-existing lint warnings), and the canonical verify-local E2E subset `invite-acceptance.spec.ts password-reset.spec.ts auth.spec.ts` reports **10 passed / 7 skipped**. The 7 skips are the documented mail-dependent cases, not a full 24-test E2E result.
 - Draft PR #207 (`beta/visual-reference-establishment` <- `beta/p203-p206-combined-verification`, head `2bee45a`) is the tracked review unit: https://github.com/hanzlahsfc/vari8/pull/207. Remaining action is DeepSeek scoped cross-review of the labelled prep branch/PR and its packaged evidence, then the separate #203 landing, #206 retarget, baseline-activation and post-activation approvals. No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, or shared-resource change.
+
+## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
+
+- Branch `w2/a1` off `2967bb1`. One migration directory
+  `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
+  and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
+false`, tenant-coherent FKs and indexes.
+- New service `lib/workspace/client-detail.ts`; new routes
+  `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
+  client role denied, unauthenticated 401, bad payload 400.
+- Provider swap: `components/canvas/data/clients.ts` reads/writes
+  `/api/v1` for the detail domain and drops the remote-owned fields
+  from the persisted slice; `components/canvas/data/notes.ts` moves the
+  workspace Private-notes list to `/api/v1/notes` while coach to-dos
+  stay local for w2-a4. `components/canvas/coach/store.tsx` hydrates
+  the viewed client after the roster seed and PUTs on owned-field
+  changes (the roster-wide `state.clients` reseed stays out of scope).
+- Seed `50-demo-coverage.seed.ts` writes `ClientPhase`, `ClientWeekNote`
+  and `CoachNote.pinned` directly (no `[pinned]` body prefix), idempotent.
+- Boundary notes (task record): the timeline week-table NOTES column is
+  shared. This card owns the `weekNotes` value only; the other columns
+  belong to w2-a5 and w2-a2. The audit's unresolved `CoachNote` pinned
+  mapping resolved to a real `pinned` column. The store override point
+  sits in `components/canvas/coach/store.tsx` after the seed runs
+  because `coach/model.ts` is outside lane A ownership.
+- Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
+  `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
+  `index:check` 0; `format:check` exits 1: 56 files fail, all
+  inherited at merge base `6d3a07f`, zero touched by this card
+  (scoped `prettier --check` on all card files clean).
+- Browser pass on prod build `127.0.0.1:4191`, real login as coach, no
+  `?demo`: 1440 + 390 evidence in `FULL-PACKAGE-2/W2A1/`. Seeded Amara
+  (client-007) shows label chips, email, coaching-since, height, phase
+  progress, pinned notes card, timeline phase band, private + general
+  notes. Add-note and timeline week-note edits persist through reload
+  (verified in `coach_note`/`client_week_note` rows). Second-workspace
+  coach gets literal 403 on both endpoints.
+
+## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
+
+- Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
+  GET+PUT, `.../meal-plans/publish` POST, `.../meal-plans/versions/{id}`
+  GET, `clients/{cp}/training-programs` GET+PUT,
+  `.../training-programs/{id}` GET, `.../{id}/publish` POST,
+  `.../{id}/versions/{vid}` GET, `workspaces/{ws}/exercise-library` GET.
+  Capabilities: `plan.read`, `plan.write`, `library.manage`.
+- `components/canvas/data/{nutrition,training}.ts` gained wire mappers
+  and staff fetch/save/publish functions; localStorage slices kept as
+  write-through caches (lossless-seam tests). `coach/store.tsx`
+  hydrates the viewed client's mealPlan/iifym/training lifecycles and
+  the workspace exercise library, debounce-syncs draft PUTs and
+  publishes. `past_week_locked` fixed by preserving the raw wire at
+  locked weeks (seeded en-dash rep ranges vs canvas normalization).
+- `scripts/seed/50-demo-coverage.seed.ts` now deep-resolves `day <n>`
+  tokens inside verbatim payloads before storing (the export contract
+  requires re-anchoring; unresolved tokens broke `applicablePlan`).
+- Gates: typecheck 0, lint 0 (pre-existing warnings), format 0,
+  `npm test` 1380/1380, build 0, `npm run index`+`index:check` 0,
+  integration `api-v1-plans` 6/6 on lane DB (needs the domain dev flags
+  exported: ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS),
+  fresh `prisma migrate deploy` + `VARI8_SEED_DEMO=1` seed on
+  `app_fp_w2a2`, dash gate 0 added violations. Browser pass on
+  production build port 4401, real coach login, no `?demo`: Overview
+  nutrition targets (TD 2,082/refeed 2,062) + training program card,
+  Timeline NUTRITION kcal (2,370/2,213/2,082 per published version) +
+  TRAINING Sess (0/4), Plans cards (meal plan, temporary chip, training,
+  supplements), training draft rename persists after reload.
+  Role matrix: in-workspace 200 / foreign 403 / unauth 401.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
+
+## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
+
+- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
+  keyed `(workspaceId, memberId, key)` with closed key registry
+  (`attention.unread_messages`, `attention.priority_messages`,
+  `email.messages`; default enabled when no row). Migration dir
+  `20261027000000_member_preferences` with `down.sql`.
+- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
+  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
+  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
+  pref check at send time, failures logged as `notification_delivery_failed`,
+  never roll back the message). `sendOwnMessage` notifies post-commit only on
+  a newly created row (idempotent replays do not re-mail).
+- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
+  `defineApiV1Route`; member-scoped to the caller's resolved membership,
+  non-member/denied 403.
+- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
+  (profile + preference groups). Component authored first in
+  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
+  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
+  demo mount at `frontend/src/app/coach/settings` (localStorage).
+- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
+  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
+  check on changed files 0), `test` 1 in full-parallel run
+  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
+  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
+  `index`/`index:check` 0, settings integration 5/5 on real PG.
+- Browser pass on prod build (`next start` http:4200 + tls-proxy
+  https:4298): coach real login, settings surface, `email.messages` off →
+  second session persists off, client message mails owner but not the
+  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
+  1440/390 + mailbox.jsonl in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
+  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
+- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
+  count 0 saved to `pg_database-absent.txt`.
+
+## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
+
+- `lib/messages/service.ts` (new): own-thread list + client send, one
+  Conversation per (workspaceId, clientProfileId), `clientRequestId`
+  idempotent retry via the (conversationId, clientRequestId) unique index.
+  No `messages` RBAC resource exists, so ownership binds by resolving the
+  caller's own ClientProfile in the workspace (same first step as
+  `listOwnClientTasks`); callers without a linked profile are denied.
+- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
+  `clientProfileId` (recon decision - the PATCH path needs it; backward
+  compatible for `{tasks, hasMore}` callers).
+- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
+  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
+  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
+  `clients/[clientProfileId]/daily-entries/history` GET
+  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
+  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
+  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
+  (`own.write` → `setClientTaskCompletion`),
+  `checkins/instances/[instanceId]` GET (`own.read` →
+  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
+  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
+  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
+  400/403/409 per the card table - never 404.
+- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
+  functions over the new routes (wire shapes mirror the lib services).
+  LocalStorage slices untouched; coach store hydration contract unmoved.
+- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
+  pre-existing unused-type-import warnings in data providers).
+- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
+  (provider remote calls).
+- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
+  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
+  probes, coach↔client round trips, screenshots, the seven substitute
+  gates, independent review, evidence report. Verification claims stand on
+  none of that yet - typecheck/lint only.
+- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
+  `01-service-signatures.md` already there).
 
 ## 2026-10-25 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 427 — authorized combined-result verification
 
@@ -327,113 +688,6 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   `s11-preferences` DOM delta and pervasive raster differences remain
   unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
   baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
-
-## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
-
-- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
-  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
-  and the run exited 2 before screenshots.
-- Root parity now serves the public browser/auth origin over a
-  disposable loopback HTTPS proxy and `next start` on a distinct
-  loopback backend port. Port selection is availability probing only;
-  a startup race fails closed. Backend/proxy ownership is checked by the
-  original PGID, leader-exit descendants are cleaned, bounded escalation
-  is limited to that group, and listeners/members are verified gone.
-- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
-  cookies, session cookies and security/domain/path attributes. Each
-  capture validates pathname/auth content after navigation, then waits
-  for required route/hash/query, screen-specific content and
-  selected/open state before a screenshot is saved; `finalUrl`/markers
-  are recorded. The strict contract exposed and repaired the
-  `s04-template-habits` right-panel-toggle scope defect.
-- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
-  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
-  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
-  70 problems, exit 1** against the checked-in baseline — startup and
-  capture validity are fixed, visual acceptance is not claimed.
-- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
-  1263 tests**; typecheck, format, index, build and `git diff --check`
-  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
-  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
-  the narrower canonical E2E subset; mail-gated skips are not passes.
-- Fresh mutations: leader-exit cleanup left a descendant listener as
-  expected when restricted to leader lifetime; removing query/state
-  checks caused the reviewer's probes to pass incorrectly. Both were
-  restored byte-identically and the suite returned **13/13**.
-- Visual investigation found deterministic low-channel raster/layout
-  differences plus real DOM/page-size changes. Baseline provenance
-  lacks OS/browser/source environment sufficient to prove a host-only
-  cause; #202 remains blocked on mandatory visual parity.
-- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
-  disposable `app_parity_https` was dropped. Full record:
-  `icm/05-build/reports/PARITY-HTTPS.md`.
-
-## 2026-10-28 - w2-fe3: FRONTEND PR 211 merged, canvas port landed, gates green
-
-- Lane `w2/fe3` off `ad257ba`. Merge `6eda6fa` (parents `ad257ba` +
-  `8e6503f`); `frontend/` byte-identical to the PR 211 tip (empty diff).
-- Canvas twin: 39 files ported via `tools/port-canvas/port.mjs`; 8 local-delta
-  files three-way merged (client route, athlete overview, timeline tab,
-  coach css, model, plans setup, store, mealplan workspace). New hand-merge
-  entries recorded in the port map.
-- `/client` renders the PR 211 `ClientDesktop`/`MobileApp` pair (900 px
-  breakpoint, `?view=phone` toggle); `/me` keeps the session-wired
-  `ClientApp` shell on `own` identity.
-- Demo export re-pointed to revision 11 (client-007, workspace.json,
-  README, provenance); `public/demo/physique` assets carried over from the
-  frontend public tree.
-- Parity: click recipes re-derived for the module-rail plans UI, baseline
-  recaptured from the tip (74/74). Root compare exits 1 with 64 diffs,
-  classified: truth text (workspace/role/counts), flag-boundary 403
-  surfaces (checkins, iifym, supplements; inherited, zero backend diff),
-  seeded-data divergence, union deltas (Legacy sheet, extra widget), and
-  local-only features (temporary nutrition plans, no backend model).
-- Gates: `typecheck` 0, `lint` 0 (105 inherited warnings), `test` 0
-  (131 files, 1501 tests), `build` 0, `index`/`index:check` 0, frontend
-  `lint` 0, frontend `test` 0 (322 tests), frontend `typecheck` 0, dash
-  gate 0 authored lines. Lane DB `app_fp_w2fe3` fresh deploy + double
-  seed idempotent, dropped after capture.
-- Browser pass (real logins, prod build): coach roster, Amara tracker and
-  plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
-  login, `/client` mobile and desktop. Evidence under
-  `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
-
-## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
-
-- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
-  keyed `(workspaceId, memberId, key)` with closed key registry
-  (`attention.unread_messages`, `attention.priority_messages`,
-  `email.messages`; default enabled when no row). Migration dir
-  `20261027000000_member_preferences` with `down.sql`.
-- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
-  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
-  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
-  pref check at send time, failures logged as `notification_delivery_failed`,
-  never roll back the message). `sendOwnMessage` notifies post-commit only on
-  a newly created row (idempotent replays do not re-mail).
-- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
-  `defineApiV1Route`; member-scoped to the caller's resolved membership,
-  non-member/denied 403.
-- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
-  (profile + preference groups). Component authored first in
-  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
-  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
-  demo mount at `frontend/src/app/coach/settings` (localStorage).
-- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
-  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
-  check on changed files 0), `test` 1 in full-parallel run
-  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
-  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
-  `index`/`index:check` 0, settings integration 5/5 on real PG.
-- Browser pass on prod build (`next start` http:4200 + tls-proxy
-  https:4298): coach real login, settings surface, `email.messages` off →
-  second session persists off, client message mails owner but not the
-  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
-  1440/390 + mailbox.jsonl in
-  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
-  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
-- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
-  count 0 saved to `pg_database-absent.txt`.
 
 ## 2026-10-25 - Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
@@ -819,45 +1073,6 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   (3964/3000/3001 held by sibling lanes).
 - NOT done: push/PR - held per card rule until Marcel approves the screens.
 
-## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
-
-- `lib/messages/service.ts` (new): own-thread list + client send, one
-  Conversation per (workspaceId, clientProfileId), `clientRequestId`
-  idempotent retry via the (conversationId, clientRequestId) unique index.
-  No `messages` RBAC resource exists, so ownership binds by resolving the
-  caller's own ClientProfile in the workspace (same first step as
-  `listOwnClientTasks`); callers without a linked profile are denied.
-- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
-  `clientProfileId` (recon decision - the PATCH path needs it; backward
-  compatible for `{tasks, hasMore}` callers).
-- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
-  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
-  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
-  `clients/[clientProfileId]/daily-entries/history` GET
-  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
-  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
-  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
-  (`own.write` → `setClientTaskCompletion`),
-  `checkins/instances/[instanceId]` GET (`own.read` →
-  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
-  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
-  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
-  400/403/409 per the card table - never 404.
-- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
-  functions over the new routes (wire shapes mirror the lib services).
-  LocalStorage slices untouched; coach store hydration contract unmoved.
-- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
-  pre-existing unused-type-import warnings in data providers).
-- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
-  (provider remote calls).
-- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
-  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
-  probes, coach↔client round trips, screenshots, the seven substitute
-  gates, independent review, evidence report. Verification claims stand on
-  none of that yet - typecheck/lint only.
-- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
-  `01-service-signatures.md` already there).
-
 ## 2026-10-25 - Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
 
 - Thin route
@@ -907,6 +1122,46 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
 - `npm run check` in `frontend/`: tests 319/319, agent-context:check,
   typecheck, lint (300 files) and build all exit 0. Published-only test files
   were renormalized to Biome format; no tests removed or weakened.
+
+## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline — startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
 
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
