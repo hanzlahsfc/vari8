@@ -327,7 +327,7 @@ export function validateRun({ directory, manifest, shots, provenance }) {
         typeof scroller.name !== "string" ||
         !Number.isInteger(scroller.idx) ||
         scroller.idx < 0 ||
-        !new RegExp(`^[a-z][a-z0-9]*#${scroller.idx}$`).test(scroller.name)
+        !new RegExp(`^[a-z][a-z0-9-]*#${scroller.idx}$`).test(scroller.name)
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

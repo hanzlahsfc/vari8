@@ -567,6 +567,36 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     scrollScreen.captureEvidence.scrollers = [
       { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
     ];
+    // legitimate writer output — ordinary + custom-element tag names
+    for (const good of [
+      { name: "div#0", idx: 0 },
+      { name: "section#143", idx: 143 },
+      { name: "my-scroll#143", idx: 143 },
+      { name: "my-app#1", idx: 1 },
+      { name: "h1#22", idx: 22 },
+    ]) {
+      // the scroll png must encode this scroller's actual idx
+      const goodPng = `${scrollScreen.vp}/${scrollScreen.stem}.s${good.idx}-0-0.png`;
+      const sp = new PNG({ width: 10, height: 10 });
+      sp.data.fill(255);
+      writeFileSync(path.join(d, goodPng), PNG.sync.write(sp));
+      scrollScreen.captureEvidence.scrollers = [
+        { name: good.name, idx: good.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      ];
+      const savedP = scrollScreen.scrolls[0].png;
+      const savedName = scrollScreen.scrolls[0].scroller;
+      scrollScreen.scrolls[0].png = goodPng;
+      scrollScreen.scrolls[0].scroller = good.name;
+      expect(
+        validateRun({ directory: d, manifest, shots, provenance }).length,
+        good.name,
+      ).toBeGreaterThan(0);
+      scrollScreen.scrolls[0].png = savedP;
+      scrollScreen.scrolls[0].scroller = savedName;
+    }
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
     // malformed coordinate types refuse — never coerced
     for (const [x, y] of [
       ["0" as unknown as number, 0],
