@@ -125,8 +125,10 @@ describe("athlete profile check-in hydration (W2-A3)", () => {
     // reviewedAt becomes a sent response so the status reads right.
     expect(mine[0].response?.date).toBe("2026-10-13");
     expect(mine[0].type).toBe("Full"); // MONDAY rule occurrence
-    // Other clients keep their seeded rows (the merge names them failed).
-    expect(state.extras.some((e) => e.id === "extra-maya")).toBe(true);
+    // A real workspace seeds no check-in fixtures (W2-CHK-I4): after the
+    // merge the only rows present are the ones the staff read returned.
+    expect(state.extras).toEqual([]);
+    expect(state.submissions.map((s) => s.id)).toEqual(["sub-backend-1"]);
     // The profile window must stay inside the route's 95-day bound.
     expect(instancesSpanDays).toBeLessThanOrEqual(95);
   });
