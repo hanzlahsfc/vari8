@@ -8,14 +8,14 @@ import {
 } from "@/lib/notes/boundary";
 
 /**
- * /api/v1/workspaces/:workspaceId/notes/:noteId — one staff coach note.
+ * /api/v1/workspaces/:workspaceId/notes/:noteId - one staff coach note.
  *
- * PATCH  — update the body { body, expectedRevision } (CAS conflict on a
+ * PATCH  - update the body { body, expectedRevision } (CAS conflict on a
  *          stale revision).
- * DELETE — soft delete with the D24 undo window;
+ * DELETE - soft delete with the D24 undo window;
  *          ?expectedRevision= carries the CAS check.
  *
- * Capability `notes.write`: client deny — 403 before any lookup.
+ * Capability `notes.write`: client deny - 403 before any lookup.
  */
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,7 @@ async function readJson(request: Request): Promise<unknown> {
   }
 }
 
-// The route helper wraps the handler's return in Response.json — handlers
+// The route helper wraps the handler's return in Response.json - handlers
 // return data and map a closed failure to a thrown ApiError.
 function unwrap<T>(result: NoteSafeResult<T>): T {
   if (result.ok) return result.value;

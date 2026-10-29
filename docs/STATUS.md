@@ -1,3 +1,9 @@
+## 2026-10-29 - Merge: nutrition accuracy gate manifest mode
+
+- Manifest mode in `scripts/check-nutrition-source-accuracy.ts`, with probe
+  coverage in `tests/unit/nutrition-accuracy-gate-probes.test.ts`.
+- Comment punctuation tidied in the training, notes and refresh route files.
+
 ## 2026-10-29 - Repair round 1: reset demo flag, default seed coverage, claim corrections
 
 - Reset fix: "Reset coach workspace" re-seeded with the demo default, so a real
