@@ -21,7 +21,7 @@
   "components": {
     "reference": {
       "path": "tools/parity/reference/reference.mjs",
-      "sha256": "f0594143eeda23d5691ea8cb4ee445432c31eb6d15a1faffc47c4e1aaaf5391b"
+      "sha256": "50204fde369e82e8e73e51178d45de2eead1c91ec821533d6afbae9abfa08e80"
     },
     "referenceCompare": {
       "path": "tools/parity/reference/compare.mjs",
@@ -77,7 +77,7 @@
     },
     "verifyEvidence": {
       "path": "tools/parity/reference/evidence/verify-evidence.mjs",
-      "sha256": "0c0bd07179d7e9fc9dec8e9cbf8bca1f8392e0657b8e4baa8eb4ec7e12fd3e4d"
+      "sha256": "10efbb319f2984000f1cab3f3a2acf5115f4a7037cf17ff03d3e3cb29faef8cf"
     },
     "evidenceLib": {
       "path": "tools/parity/reference/evidence/evidence-lib.mjs",

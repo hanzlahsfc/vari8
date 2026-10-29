@@ -298,16 +298,30 @@ export function validateRun({ directory, manifest, shots, provenance }) {
   return artifacts;
 }
 export function createAdapter({ harnessRoot, outputFile }) {
-  // The adapter transforms the harness's CURRENT capture.mjs. The
-  // pinned candidateSource copy is provenance for the reference capture
-  // — compatibility is the anchored transformations below: each replace
-  // refuses on a missing or duplicated anchor, so a material change
-  // still fails closed as "adapter anchor changed" while unrelated
-  // evolution of the file is not a false rejection.
+  // The adapter transforms the harness's capture.mjs only when the file
+  // is EXACTLY the reviewed component pinned in the comparer manifest —
+  // byte-identity binds every semantic surface (auth, recipe selection,
+  // viewports, output paths, screenshot settings); anchors below only
+  // validate transformation structure, they never approve a mutated
+  // source. CONTRACT.candidateSource stays provenance for the
+  // historical reference capture — unmodified.
   const pinned = fs.readFileSync(
     path.join(harnessRoot, "tools/parity/capture.mjs"),
     "utf8",
   );
+  const manifest = JSON.parse(
+    fs.readFileSync(
+      new URL("./evidence/comparer.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const reviewedSha = manifest.components?.capture?.sha256;
+  if (!reviewedSha)
+    throw new Error("comparer manifest lacks capture component pin");
+  if (sha256(pinned) !== reviewedSha)
+    throw new Error(
+      "capture.mjs differs from the reviewed component pin — unapproved change; adapter refuses",
+    );
   const replace = (s, from, to) => {
     if (s.split(from).length !== 2)
       throw new Error(`adapter anchor changed: ${from}`);

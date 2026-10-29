@@ -283,33 +283,78 @@ describe("combined-run artifact validation", () => {
 });
 
 describe("combined-run source and pin enforcement", () => {
-  it("anchor mutations refuse; compatible evolution does not", () => {
+  it("semantic mutations refuse — the adapter binds the reviewed pin", () => {
+    const dir = fs.mkdtempSync("/tmp/parity-semantic-");
+    const harness = path.join(dir, "harness");
+    fs.mkdirSync(path.join(harness, "tools/parity"), { recursive: true });
+    const current = fs.readFileSync("tools/parity/capture.mjs", "utf8");
+    const mutations: [string, (c: string) => string][] = [
+      [
+        "recipe expectation changed",
+        (c) => c.replace('"Filter athletes"', '"x"'),
+      ],
+      [
+        "recipe index redirected",
+        (c) => c.replace("shots/index.json", "shots/index-x.json"),
+      ],
+      ["viewport changed", (c) => c.replace("width: 1440", "width: 720")],
+      [
+        "output path redirected",
+        (c) => c.replace("`${stem}.png`", "`${stem}.tmp`"),
+      ],
+      ["comment-only edit", (c) => c + "\n// mutation\n"],
+    ];
+    for (const [label, mutate] of mutations) {
+      fs.writeFileSync(
+        path.join(harness, "tools/parity/capture.mjs"),
+        mutate(current),
+      );
+      expect(
+        () =>
+          createAdapter({
+            harnessRoot: harness,
+            outputFile: path.join(dir, `${label}.mjs`),
+          }),
+        label,
+      ).toThrow(/reviewed component pin/);
+    }
+    // the unmutated file is the reviewed pin — it adapts
+    fs.writeFileSync(path.join(harness, "tools/parity/capture.mjs"), current);
+    expect(() =>
+      createAdapter({
+        harnessRoot: harness,
+        outputFile: path.join(dir, "ok.mjs"),
+      }),
+    ).not.toThrow();
+  });
+
+  it("any byte difference refuses — only the reviewed file adapts", () => {
     const dir = fs.mkdtempSync("/tmp/parity-anchor-");
     const harness = path.join(dir, "harness");
     fs.mkdirSync(path.join(harness, "tools/parity"), { recursive: true });
     const current = fs.readFileSync("tools/parity/capture.mjs", "utf8");
-    // a non-anchor edit is compatible — the adapter still applies
-    fs.writeFileSync(
-      path.join(harness, "tools/parity/capture.mjs"),
-      current + "\n// compatible comment\n",
-    );
+    // any difference — comment, removed anchor, changed viewport — is
+    // unapproved: the pin binds the whole reviewed file
+    for (const mutated of [
+      current + "\n// comment\n",
+      current.replace('import { chromium } from "@playwright/test";', ""),
+      current.replace("width: 1440", "width: 720"),
+    ]) {
+      fs.writeFileSync(path.join(harness, "tools/parity/capture.mjs"), mutated);
+      expect(() =>
+        createAdapter({
+          harnessRoot: harness,
+          outputFile: path.join(dir, "m.mjs"),
+        }),
+      ).toThrow(/reviewed component pin/);
+    }
+    fs.writeFileSync(path.join(harness, "tools/parity/capture.mjs"), current);
     expect(() =>
       createAdapter({
         harnessRoot: harness,
-        outputFile: path.join(dir, "a.mjs"),
+        outputFile: path.join(dir, "ok.mjs"),
       }),
     ).not.toThrow();
-    // an anchor removed is a breaking change — refuses closed
-    fs.writeFileSync(
-      path.join(harness, "tools/parity/capture.mjs"),
-      current.replace('import { chromium } from "@playwright/test";', ""),
-    );
-    expect(() =>
-      createAdapter({
-        harnessRoot: harness,
-        outputFile: path.join(dir, "b.mjs"),
-      }),
-    ).toThrow(/adapter anchor changed/);
   });
 
   it("generates byte-identical location-independent adapters", () => {

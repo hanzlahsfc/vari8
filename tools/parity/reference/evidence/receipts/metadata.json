@@ -5,12 +5,12 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "31c618f180df48ba397e9e426773b683f9143f52bc643e37d33ec23be038fde3"
+      "sha256": "a4e3ad19f2959b9a38d8c7b69e3115e37e1f4f608f4b4a5c9b8e4ebf72dab164"
     },
     "components": {
       "reference": {
         "path": "tools/parity/reference/reference.mjs",
-        "sha256": "f0594143eeda23d5691ea8cb4ee445432c31eb6d15a1faffc47c4e1aaaf5391b"
+        "sha256": "50204fde369e82e8e73e51178d45de2eead1c91ec821533d6afbae9abfa08e80"
       },
       "referenceCompare": {
         "path": "tools/parity/reference/compare.mjs",
@@ -66,7 +66,7 @@
       },
       "verifyEvidence": {
         "path": "tools/parity/reference/evidence/verify-evidence.mjs",
-        "sha256": "0c0bd07179d7e9fc9dec8e9cbf8bca1f8392e0657b8e4baa8eb4ec7e12fd3e4d"
+        "sha256": "10efbb319f2984000f1cab3f3a2acf5115f4a7037cf17ff03d3e3cb29faef8cf"
       },
       "evidenceLib": {
         "path": "tools/parity/reference/evidence/evidence-lib.mjs",
