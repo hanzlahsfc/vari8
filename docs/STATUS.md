@@ -1954,7 +1954,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
   typecheck, lint (300 files) and build all exit 0. Published-only test files
   were renormalized to Biome format; no tests removed or weakened.
 
-## 2026-10-24 — Issue #202 parity HTTPS repair — capture/auth lifecycle verified; visual comparison remains failed
+## 2026-10-24 - Issue #202 parity HTTPS repair: capture/auth lifecycle verified; visual comparison remains failed
 
 - Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
   supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
@@ -1975,7 +1975,7 @@ start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
 - Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
   `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
   reports **0 capture failures / 0 retries**. Comparison is **FAIL,
-  70 problems, exit 1** against the checked-in baseline — startup and
+  70 problems, exit 1** against the checked-in baseline, startup and
   capture validity are fixed, visual acceptance is not claimed.
 - Checks on Node v24.22.1: focused 13/13; full unit **105 files /
   1263 tests**; typecheck, format, index, build and `git diff --check`
