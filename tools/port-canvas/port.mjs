@@ -43,16 +43,17 @@ const HAND_MERGE = new Set([
   // /api/v1 for the visible range (PR-W6), cancels/restores via the data
   // layer and renders the shared CheckInReviewPanel.
   "components/coach/check-ins.tsx",
-  // Canvas carries local wiring deltas: ClientTrainingLogs in the Plans tab,
-  // review-panel status chips in coach.css, the issue-169 activity-target
-  // versions fetch in timeline-tab, the signed-in client session and
-  // workspace appearance in client-route, backend data in overview, and
-  // provider hydration hooks in setup-ui.
+  // Exports ClientSession (signed-in client identity, workspace appearance via fetchWorkspaceAppearance, coach variant) instead of the demo store.
   "components/client-app/client-route.tsx",
+  // Imports data/clients and data/notes (staff tasks), ClientTrainingLogs in the Plans tab and ClientMediaPanel; useCoach exposes the remote keys.
   "components/coach/clients.tsx",
+  // Adds review-panel status chips (Draft, Answered) and change-summary colours on v8 tokens.
   "components/coach/coach.css",
+  // Loads physiquePhotosFor(client.name) from the store in an effect, with an empty fallback on failure.
   "components/coach/athlete/overview.tsx",
+  // Issue-169 activity-target versions: fetchActivityTargets/versionsFromWire, plus workspaceId and clientProfileIdFor from the store.
   "components/coach/athlete/timeline-tab.tsx",
+  // Only the empty-phase notice: client's becomes client&apos;s for react/no-unescaped-entities.
   "components/coach/plans/setup-ui.tsx",
   // Meal plans persist via the canvas data layer (loadMealPlans /
   // saveMealPlans in components/canvas/data/nutrition) instead of the
@@ -73,21 +74,27 @@ const HAND_MERGE = new Set([
   "app/coach/page.tsx",
   // requireCanvasAccess gate; the viewer is not bound into EtherealApp.
   "app/ethereal/page.tsx",
-  // Client app remote own surfaces (cards 05a, 08, 09): session bound data
-  // flows through authored wrappers and plumbing the twin does not carry.
+  // RemoteCheckInForm: own check-in instance, submit, feedback and calendar via the check-ins server actions and data/check-ins helpers.
   "components/client-app/check-in.tsx",
+  // Scrollable bottom nav (max-content items, hidden scrollbar) and a brand block in the desktop sidebar.
   "components/client-app/client-app.css",
+  // Imports the remote supplement and activity-target fetchers, RemoteTrainingLogbook and remote-views tabs; SECTION_ICONS becomes Partial.
   "components/client-app/client-app.tsx",
+  // Optional own {workspaceId, clientProfileId} prop binds NutritionActuals to the own nutrition-logs routes (card 09).
   "components/client-app/views.tsx",
-  // STATUS_META moved into model.ts so the canvas native remote logbook can
-  // share it; session-logger carries the dirty guard beforeunload wiring.
+  // STATUS_META is exported from here so the remote logbook shares it.
   "components/client-app/training-log/model.ts",
+  // Dirty-only beforeunload guard: isTyped(set) marks unsent typed values, cleared on finish.
   "components/client-app/training-log/session-logger.tsx",
+  // Imports STATUS_META from model.ts instead of declaring it locally.
   "components/client-app/training-log/training-logbook.tsx",
-  // Canvas data layer and remote persistence wiring.
+  // Media library runs through data/media (list, assign, unassign, delete, download) with SegmentedControl and the demo-recorder; the twin's local recorder is dropped.
   "components/coach/media.tsx",
+  // Staff tasks load and save through data/notes; useCoach supplies hydrated and workspaceId.
   "components/coach/notes.tsx",
+  // Loads and saves the plan via data/supplements (fetchSupplementPlan, saveSupplementPlanRemote) with ApiClientError handling and a draft serializer.
   "components/coach/supplements/editor.tsx",
+  // Loads and saves versions via data/activity-targets; workspaceId and clientProfileIdFor come from useCoach.
   "components/coach/targets/editor.tsx",
   // workspace-polish.css is not data layer wiring. It appends 27 lines of client detail training log styles.
   "components/coach/workspace-polish.css",
@@ -95,19 +102,21 @@ const HAND_MERGE = new Set([
   "components/coach/builder/dashboard-builder.tsx",
   // sender is a string for own bound messages instead of a fixture literal.
   "components/ethereal/builder/model.ts",
-  // Remote mode for the own bound tracker surfaces (card 05a, issue 169).
+  // Tracker pins to one client (name, storage key, as-of), keeps drafts in data/tracker and renders RemoteClientTracker for the own bound caller.
   "components/ethereal/client-tracker/client-tracker.tsx",
+  // Props gain clientName, clientInitials, asOf, remote, parameterGroups and textValues; onConfigure becomes optional (card 05a).
   "components/ethereal/client-tracker/tracking-view.tsx",
-  // Attention reasons and priority delegate to the shared attention module
-  // (W2-T5); workspace persistence reads through the canvas data layer.
+  // Attention reasons and priority come from lib/attention (W2-T5); matchingSearch is exported.
   "components/ethereal/clients/client-roster.tsx",
+  // Workspace load and save go through data/clients (loadClientsWorkspace, saveClientsWorkspace); Invitation type is imported.
   "components/ethereal/clients/clients-workspace.tsx",
+  // attentionCount and needsAttention delegate to lib/attention (W2-T5); local derivation removed.
   "components/ethereal/clients/model.ts",
-  // Root eslint (react/no-unescaped-entities, react-hooks/purity) requires
-  // escapes and one suppression the twin text does not carry; the frontend
-  // lints under a different config.
+  // Today's targets becomes Today&apos;s targets (react/no-unescaped-entities).
   "components/client-app/mobile/home.tsx",
+  // Adds one eslint-disable-next-line react-hooks/purity the root config requires.
   "components/client-app/mobile/logbook.tsx",
+  // Quote becomes &quot; escapes with an ASCII hyphen (react/no-unescaped-entities).
   "components/client-app/mobile/training.tsx",
   // Only the overlap notice (twin lines 359-360) is changed, with &quot; escapes and ASCII hyphens; the other two dashes (lines 3, 347) stay verbatim.
   "components/coach/plans/temporary-editor.tsx",
