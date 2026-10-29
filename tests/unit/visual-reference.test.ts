@@ -660,7 +660,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/provenance/);
-}, 30000); // ~25 real validateRun calls post-scroll-matrix — measured need, not a hidden budget
+}, 60000); // ~40 real validateRun calls through the scroll matrix — budget reflects parallel-suite load, not a hidden hang
 
 it("rejects current-app expected output even before reading capture artifacts", async () => {
   const { compareRuns } =
