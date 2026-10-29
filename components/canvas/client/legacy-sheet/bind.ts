@@ -18,21 +18,7 @@ import {
   weeklyAverage,
   weeklySum,
 } from "./compute";
-// Cell types inlined from the deleted imported.ts record; the bind and
-// compute helpers stay canvas native for the sheet import pipeline.
-type SheetCell = {
-  kind: "text" | "number" | "checkbox" | "formula";
-  value?: string;
-  formulaText?: string;
-  formulaShape?: "recovered";
-  formulaWrap?: "udf";
-  valueSource?: "synthetic" | "imported" | "store" | "computed";
-  notCalculated?: boolean;
-  editable?: boolean;
-  vertical?: boolean;
-};
-
-type SheetCells = Record<string, SheetCell>;
+import type { SheetCell, SheetCells } from "./imported";
 
 /** Tracker entry keys the day-row cells bind to (tracker.ts store seam). */
 export const TRACKER_CELL_KEYS = {
@@ -43,7 +29,7 @@ export const TRACKER_CELL_KEYS = {
 } as const;
 
 export type SheetContext = {
-  /** The client's tracker entries - the same records the tracker reads. */
+  /** The client's tracker entries — the same records the tracker reads. */
   entries: TrackerEntry[];
   /** NutritionLog macro actuals by date ("yyyy-mm-dd"). */
   macros: Record<string, SheetMacroValues>;
@@ -53,7 +39,7 @@ export type SheetContext = {
   weekStamps: Record<string, [number, number, number]>;
   /**
    * TIMELINE D:F week windows projected from the block start (the client's
-   * phase start - the store field behind DASHBOARD!H13).
+   * phase start — the store field behind DASHBOARD!H13).
    */
   weeks: { row: number; start: IsoDate; end: IsoDate }[];
   today: IsoDate;
@@ -215,7 +201,7 @@ function bindDailyTracker(cells: SheetCells, ctx: SheetContext): void {
   }
 }
 
-/** DASHBOARD U11:U13 - the published macro-target calories, read only. */
+/** DASHBOARD U11:U13 — the published macro-target calories, read only. */
 function bindDashboard(cells: SheetCells, ctx: SheetContext): void {
   ctx.calorieTargets.forEach((target, i) => {
     cells[`${11 + i}:21`] = {
