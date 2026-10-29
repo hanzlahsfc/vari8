@@ -158,8 +158,11 @@ type VersionDefinition = {
       helpText?: string | null;
       unit?: string | null;
       ratingScheme?: string | null;
+      decimals?: number | null;
+      summary?: string | null;
       options?: Array<{ optionId?: string; label?: string }>;
       validation?: { min?: number | null; max?: number | null } | null;
+      group?: string | null;
       dataClassification?: string | null;
       revision?: number;
     }
@@ -206,6 +209,8 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
         required: item.required === true,
         unit: p.unit ?? null,
         ratingScheme: p.ratingScheme ?? null,
+        decimals: typeof p.decimals === "number" ? p.decimals : null,
+        summary: typeof p.summary === "string" ? p.summary : null,
         options: (p.options ?? []).map((o) => ({
           optionId: String(o.optionId ?? ""),
           label: String(o.label ?? ""),
@@ -227,6 +232,7 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
         snapshotRevision: typeof p.revision === "number" ? p.revision : 0,
         sectionId: String(section.sectionId ?? ""),
         itemId: item.itemId,
+        itemOrder: item.order ?? 0,
       });
     }
   }
@@ -1551,6 +1557,8 @@ export type DailyEntrySurfaceItem = {
   kind: string;
   required: boolean;
   ratingScheme: string | null;
+  decimals: number | null;
+  summary: string | null;
   options: Array<{ ordinal: number; label: string }>;
   validation: { min: number | null; max: number | null } | null;
   /** Prefill raw value (canonical form) for the client's current entry. */
@@ -1773,6 +1781,8 @@ export async function loadDailyEntrySurface(
           kind: p.kind,
           required: p.required,
           ratingScheme: p.ratingScheme,
+          decimals: p.decimals,
+          summary: p.summary,
           options: p.options.map((o, i) => ({
             ordinal: i,
             label: o.label,
@@ -2094,5 +2104,248 @@ export async function readDailyEntryNumericSeries(
     from: range.from,
     to: range.to,
     points,
+  };
+}
+
+// ── Tracker column groups read model (w2-t14) ─────────────────────────────
+
+/** One tracker column: a pinned template parameter projected for display.
+ * `group` is the template definition's own group label (never mapped into
+ * the frontend's hardcoded buckets); `max` is the template validation max
+ * where the definition carries one, else null; `order` is the declared
+ * section-item order resolved as `(order ?? 0)`. */
+export type TrackerColumn = {
+  key: string;
+  label: string;
+  unit: string | null;
+  decimals: number | null;
+  summary: string | null;
+  group: string | null;
+  sectionId: string;
+  order: number;
+  type: string;
+  max: number | null;
+};
+
+export type TrackerColumnGroup = {
+  group: string | null;
+  columns: TrackerColumn[];
+};
+
+export type TrackerColumnsResult =
+  | { state: "not_applicable" }
+  | { state: "unavailable" }
+  | { state: "ineligible" }
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      templateVersionId: string;
+      groups: TrackerColumnGroup[];
+    };
+
+/** Projects the pinned version definition into template-owned column
+ * groups. Parameter order and section/item ordering are inherited verbatim
+ * from the daily-entry snapshot projection (stable `(order ?? 0)` sort with
+ * the definition array as the equal-order tie-break); group buckets appear
+ * in first-appearance order of the definition's own `group` labels. */
+function projectTrackerColumnGroups(
+  definition: unknown,
+): TrackerColumnGroup[] | null {
+  const snapshot = projectSnapshot(definition);
+  if (!snapshot) return null;
+  const def = definition as VersionDefinition;
+  const groups: TrackerColumnGroup[] = [];
+  const byGroup = new Map<string | null, TrackerColumn[]>();
+  for (const p of snapshot) {
+    const meta = def.parameters?.[p.parameterId] ?? {};
+    const group = typeof meta.group === "string" ? meta.group : null;
+    const column: TrackerColumn = {
+      key: p.parameterKey,
+      label: typeof meta.label === "string" ? meta.label : "",
+      unit: p.unit,
+      decimals: p.decimals,
+      summary: p.summary,
+      group,
+      sectionId: p.sectionId,
+      order: p.itemOrder ?? 0,
+      type: p.kind,
+      max: p.validation?.max ?? null,
+    };
+    const columns = byGroup.get(group);
+    if (columns) {
+      columns.push(column);
+    } else {
+      const fresh: TrackerColumn[] = [column];
+      byGroup.set(group, fresh);
+      groups.push({ group, columns: fresh });
+    }
+  }
+  return groups;
+}
+
+type ResolvedTrackerColumns =
+  | { tag: "unavailable" | "ineligible" | "consent_missing" }
+  | { tag: "ready"; templateVersionId: string; groups: TrackerColumnGroup[] };
+
+/** Shared pin chain both tracker-column reads run after their own caller
+ * authorization: clientSetup by composite key, ACTIVE clientSetupPin, the
+ * pinned coachingTemplateVersion, daily-entry eligibility, the column
+ * projection, then the consent check the daily-entry surface enforces - so
+ * a pin the daily form refuses is never served. */
+async function resolveTrackerColumns(
+  db: PrismaClient,
+  registry: ConsentPolicyRegistry,
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<ResolvedTrackerColumns> {
+  const setup = await db.clientSetup.findUnique({
+    where: {
+      workspaceId_clientProfileId: { workspaceId, clientProfileId },
+    },
+    select: { id: true },
+  });
+  if (!setup) return { tag: "unavailable" };
+  const pin = await db.clientSetupPin.findFirst({
+    where: { clientSetupId: setup.id, status: "ACTIVE" },
+    select: { id: true, templateVersionId: true },
+  });
+  if (!pin) return { tag: "unavailable" };
+  const version = await db.coachingTemplateVersion.findUnique({
+    where: { id: pin.templateVersionId },
+    select: { id: true, definition: true },
+  });
+  if (!version) return { tag: "unavailable" };
+  if (!evaluateDailyEntryVersionEligibility(version.definition).eligible)
+    return { tag: "ineligible" };
+  const groups = projectTrackerColumnGroups(version.definition);
+  if (!groups) return { tag: "ineligible" };
+
+  try {
+    await checkRequiredConsent(db, clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { tag: "consent_missing" };
+    throw error;
+  }
+  return { tag: "ready", templateVersionId: version.id, groups };
+}
+
+/** Own read - resolves the caller's own client profile and runs the same
+ * setup/pin/eligibility chain `loadDailyEntrySurface` uses. Non-client
+ * principals and members without a client profile read `not_applicable`. */
+export async function loadOwnTrackerColumns(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: DailyEntryDeps = {},
+): Promise<TrackerColumnsResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (typeof input.workspaceId !== "string" || input.workspaceId.length === 0)
+    throw new DailyEntryError("invalid_input");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { workspaceId: input.workspaceId, userId },
+    select: { id: true },
+  });
+  if (!profile) return { state: "not_applicable" };
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: profile.id,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "own") return { state: "not_applicable" };
+
+  const member = await db.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId: input.workspaceId,
+        userId,
+      },
+    },
+    select: { id: true, role: true, status: true },
+  });
+  if (!member || member.status !== "ACTIVE" || member.role !== "CLIENT")
+    return { state: "not_applicable" };
+
+  const resolved = await resolveTrackerColumns(
+    db,
+    registry,
+    input.workspaceId,
+    profile.id,
+  );
+  if (resolved.tag !== "ready") return { state: resolved.tag };
+  return {
+    state: "ready",
+    templateVersionId: resolved.templateVersionId,
+    groups: resolved.groups,
+  };
+}
+
+/** Staff read - dailyTracking read for a named client profile, authorized
+ * exactly as `listStaffTrackerValues` is: grantedScope must be `workspace`
+ * or `assigned`; client callers and foreign profiles are denied before any
+ * template read. */
+export async function loadStaffTrackerColumns(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: DailyEntryDeps = {},
+): Promise<TrackerColumnsResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { id: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+
+  const resolved = await resolveTrackerColumns(
+    db,
+    registry,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  if (resolved.tag !== "ready") return { state: resolved.tag };
+  return {
+    state: "ready",
+    templateVersionId: resolved.templateVersionId,
+    groups: resolved.groups,
   };
 }

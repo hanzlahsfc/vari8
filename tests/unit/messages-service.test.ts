@@ -32,6 +32,16 @@ function fakeDb() {
     senderKind: row.senderKind,
     clientRequestId: row.clientRequestId,
     sentAt: row.sentAt,
+    attachments: [] as {
+      mediaObjectId: string;
+      position: number;
+      mediaObject: {
+        fileName: string;
+        contentType: string;
+        byteSize: bigint;
+        deletedAt: Date | null;
+      };
+    }[],
   });
   const db = {
     clientProfile: {
@@ -78,14 +88,17 @@ function fakeDb() {
             clientRequestId: string;
           };
         };
-      }) =>
-        messages.find(
-          (row) =>
-            row.conversationId ===
-              args.where.conversationId_clientRequestId.conversationId &&
-            row.clientRequestId ===
-              args.where.conversationId_clientRequestId.clientRequestId,
-        ) ?? null,
+      }) => {
+        const row =
+          messages.find(
+            (r) =>
+              r.conversationId ===
+                args.where.conversationId_clientRequestId.conversationId &&
+              r.clientRequestId ===
+                args.where.conversationId_clientRequestId.clientRequestId,
+          ) ?? null;
+        return row ? { ...row, attachments: [] } : null;
+      },
       findMany: async (args: { where: { conversationId: string } }) =>
         messages
           .filter((row) => row.conversationId === args.where.conversationId)
@@ -99,8 +112,21 @@ function fakeDb() {
           ...args.data,
         };
         messages.push(row);
-        return row;
+        return { ...row, attachments: [] };
       },
+    },
+    mediaObject: {
+      findMany: async () => [],
+    },
+    messageAttachment: {
+      createMany: async () => ({ count: 0 }),
+    },
+    messageRead: {
+      findMany: async () => [] as { messageId: string; userId: string }[],
+      createMany: async () => ({ count: 0 }),
+    },
+    workspaceMember: {
+      findMany: async () => [] as { userId: string }[],
     },
     $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn(db),
   };

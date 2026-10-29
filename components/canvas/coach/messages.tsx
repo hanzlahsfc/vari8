@@ -55,6 +55,7 @@ export function MessagesWorkspace() {
     route,
     navigate,
     attach,
+    media,
     toast,
     hydrated,
     workspaceId,
@@ -78,6 +79,8 @@ export function MessagesWorkspace() {
   const positions = useRef<Record<string, number>>({});
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
+  const pendingUploads = useRef(new Set<string>());
+  const failedUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -234,6 +237,42 @@ export function MessagesWorkspace() {
     const attachments = draft.attachments;
     const sentLink = link;
     const canvasId = client.id;
+    // W2-T8: attachments ride the wire once their media_object ids exist.
+    // "In-flight" means an upload actually pending, tracked in
+    // pendingUploads by the attach handler - not a missing session blob.
+    // A draft item missing its stamp, demo flag and session bytes is a
+    // draft restored after reload whose blob is gone for good, so the
+    // send keeps it and says what recovers it instead of promising a
+    // retry that cannot land.
+    if (
+      workspaceId &&
+      attachments.some((a) => pendingUploads.current.has(a.id))
+    ) {
+      toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    // A settled workspace upload that returned without a media_object
+    // stamp is a failed attachment. Its session blob still previews, but
+    // nothing can ride the wire, so the send refuses it until the item
+    // is removed or attached again.
+    if (
+      workspaceId &&
+      attachments.some((a) => failedUploads.current.has(a.id))
+    ) {
+      toast("Attachment upload failed. Remove it and reattach to send it.");
+      return;
+    }
+    if (
+      workspaceId &&
+      attachments.some(
+        (a) => !a.mediaObjectId && !a.demo && !media[a.id],
+      )
+    ) {
+      toast(
+        "Attachment kept as metadata after reload - reattach it to send it, or remove it.",
+      );
+      return;
+    }
     const appendLocal = () =>
       setState((s) => ({
         ...s,
@@ -261,10 +300,17 @@ export function MessagesWorkspace() {
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
-    // W2-A4: the send POSTs and the returned wire row is what lands in the
-    // thread. A textless send has no body field and attachments have no wire
-    // route yet (w2-t8), so those keep the local row.
-    if (!workspaceId || !text) {
+    // W2-T8: the send POSTs and the returned wire row is what lands in the
+    // thread - body and attachments alike. Anything without a stored
+    // media_object id (demo media, no backend) keeps the local row.
+    const mediaObjectIds = attachments
+      .map((a) => a.mediaObjectId)
+      .filter((id): id is string => Boolean(id));
+    if (
+      !workspaceId ||
+      mediaObjectIds.length !== attachments.length ||
+      (!text && mediaObjectIds.length === 0)
+    ) {
       appendLocal();
       return;
     }
@@ -279,17 +325,14 @@ export function MessagesWorkspace() {
           workspaceId,
           clientProfileId,
           text,
+          mediaObjectIds,
         );
         serverDrafts.current[canvasId] = "";
         setState((s) => ({
           ...s,
           messages: [
             ...s.messages,
-            {
-              ...toCanvasMessage(message, canvasId),
-              attachments,
-              link: sentLink,
-            },
+            { ...toCanvasMessage(message, canvasId), link: sentLink },
           ],
         }));
         await saveStaffDraft(workspaceId, clientProfileId, "");
@@ -564,7 +607,11 @@ export function MessagesWorkspace() {
                             </span>
                             {m.from === "coach" && (
                               <span>
-                                {m.local ? "Local message" : "Example · read"}
+                                {m.local
+                                  ? "Local message"
+                                  : m.read
+                                    ? "Read"
+                                    : "Sent"}
                                 <Check size={11} />
                               </span>
                             )}
@@ -840,14 +887,26 @@ export function MessagesWorkspace() {
                       items.push(item);
                       // PR-MEDIA: real upload in the background; the item
                       // stays local-previewable meanwhile (S02-08).
+                      pendingUploads.current.add(item.id);
                       void (async () => {
-                        const profileId = client
-                          ? await clientProfileIdFor(client.name)
-                          : null;
-                        await uploadCanvasMedia(item, f, {
-                          workspaceId,
-                          clientProfileId: profileId ?? undefined,
-                        });
+                        let uploaded = false;
+                        try {
+                          const profileId = client
+                            ? await clientProfileIdFor(client.name)
+                            : null;
+                          uploaded = await uploadCanvasMedia(item, f, {
+                            workspaceId,
+                            clientProfileId: profileId ?? undefined,
+                          });
+                        } finally {
+                          pendingUploads.current.delete(item.id);
+                          // No workspace means no upload was attempted, so
+                          // the item keeps its local-preview path. With a
+                          // workspace, a settled upload without a stamp
+                          // is a failed attachment and blocks send.
+                          if (workspaceId && !uploaded)
+                            failedUploads.current.add(item.id);
+                        }
                       })();
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });

@@ -1,3 +1,27 @@
+## 2026-10-29 - Merge: wave 2 trunk tail (flexible schedule, tracker columns, temporary nutrition plan, stored calories)
+
+- Four verified tips merged into this branch as merge commits in order, never
+  squashed: 58aab0ff (flexible schedule mode in the meal plan payload, which
+  carries the client own meal plan view, tracker migration pair and demo export
+  refresh), 1d6e3415 (tracker column groups read model), 69e310d4 (temporary
+  nutrition plan table, write route and client own read), 6be4e7fa (stored
+  calories column and canvas actuals that prefer it).
+- Saved meal assign and message attachments ride inside these tips. Beta already
+  carried the flexible schedule type and the canvas handling of it, so the
+  canvas schedule files keep the Beta behavior and add only the server payload
+  validation from the tip.
+- Conflicts resolved at function level. Beta won the canvas plan editor, the
+  nutrition model, the meal plan workspace, the seed credential expectations and
+  the seed link order. The tips won the daily nutrition select (day type and
+  plan followed), the staff daily page calories cell and the added tests. Both
+  appended service blocks in the daily entry service were kept. Generated index
+  docs were regenerated, never hand edited.
+- The frontend tree stays at the Beta state. The attach changes the tip carried
+  into frontend/ were reverted, and the unit test that only exercised that copy
+  was reduced to the canvas case.
+- Adapted callers: the snapshot parameter fixture in the display order test now
+  carries the decimals and summary fields.
+
 ## 2026-10-29 - Merge: client app and coach work items into the trunk base
 
 - Merged the client plans views work item and the supplement plan and activity
@@ -201,6 +225,174 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
   login, `/client` mobile and desktop. Evidence under
   `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
+
+## 2026-10-28 - W2-N9 temporary nutrition plan table + routes on `w2/n9`
+
+- Gap: the canvas attaches dated short nutrition plans (refeed windows,
+  diet breaks, event weeks) on top of the running meal plan, but the
+  backend had no table, no write path and no client read for them.
+- Schema + migration `20261027000024_temporary_nutrition_plan`: one row per
+  temporary plan (no draft/publish chain), closed enum columns
+  `TemporaryNutritionKind` (REFEED/DIET_BREAK/CUSTOM) and
+  `TemporaryNutritionSource` (MEAL_PLAN/IIFYM), opaque `plan` JSONB never
+  re-validated per source, CHECKs for non-blank label and ordered range,
+  composite coherence FKs matching the meal_plan family. Reviewed via
+  `prisma migrate diff --from-migrations`: no missing columns, indexes or
+  keys; only the schema-invisible composite FKs every table carries.
+- Service (`lib/mealplan/service.ts`): `createTemporaryNutritionPlan`,
+  `listStaffTemporaryNutritionPlans`, `listOwnTemporaryNutritionPlans`,
+  `deleteTemporaryNutritionPlan` under the shared lock protocol (mplan +
+  member advisories -> member FOR UPDATE -> in-tx authorize -> assignment
+  -> profile -> consent -> mutation -> audit LAST). Validation mirrors the
+  frontend `validateTemporaryNutrition`: closed kind/source labels,
+  non-blank label, real calendar dates, ordered range, inclusive span of
+  at most 28 days. The amendment rule - same-source date intersection on
+  create - is enforced inside the serializable per-client transaction;
+  different sources may overlap. `MealPlanError` codes reuse the closed
+  vocabulary (invalid_input 400, plan_not_accessible 403).
+- Routes: `meal-plans/temporary` GET (requireOwnClientProfile before any
+  row lookup, `own` -> own rows, staff -> requested client's rows) + POST
+  (staff plan.write), `meal-plans/temporary/[temporaryPlanId]` DELETE
+  (staff plan.write, foreign/missing id reads as denied, never 404).
+  Audit resourceType `temporary_nutrition_plan` added to the closed union.
+- Tests: `tests/integration/api-v1-mealplan-temporary.test.ts` (7 tests,
+  real PG + real sign-in): staff create+list round-trip with all eight
+  wire fields and the REFEED enum row, four invalid_input rejects with
+  zero-row proof, same-source overlap 400 vs cross-source/adjacent 200,
+  client own-scope read, foreign clientProfileId 403 with zero READ
+  audits, delete-once then 403, unauthenticated 401. Mutation-proved:
+  removing the overlap guard fails exactly the overlap test; removing the
+  own-scope compare fails exactly the foreign-id test. Independent
+  verifier review repaired one coverage gap: the inclusive 28-day bound is
+  now boundary-pinned (exactly-28 accepted, 29 rejected) plus Object.hasOwn
+  guards on the wire-label enum maps.
+- Gates: typecheck 0; eslint 0 errors (96 pre-existing warnings); next
+  build 0; `npm run index` + `index:check` 0; frontend biome check (pinned
+  2.5.15) 0; prettier on changed files clean; unit vitest green after
+  index regen; added-lines U+2013/U+2014 scan 0/0; integration suite needs
+  `ENABLE_MEAL_PLANS=1` for the dev consent registry (same as W2-N7).
+- Delegation: the integration test file was scaffolded by a DeepSeek
+  flash child and reviewed line-by-line; schema, migration, service,
+  routes, mutation proofs and gates ran in this lane.
+- Client `ClientPlans.nutrition.temporary` merge is the explicit
+  follow-up; no publish/version semantics by design.
+
+## 2026-10-28 - w2-s13: demo-export rev 11 seed refresh on `w2/s13`
+
+- Copied `frontend/src/data/demo-export/**` at pinned commit `8e6503f6`
+  byte-identical into `lib/canvas/data/demo-export/**` and
+  `scripts/seed/demo-export/**`; `diff -r` clean both sides.
+  `scripts/seed/demo-export/PROVENANCE.md` is hand-written, excluded from
+  diff -r, and updated to the new source. The rev-11 client-007 copy
+  overwrites hand-carried content that frontend rev 9 never had.
+- Live proof on fresh lane DBs: the baseline default seed showed Emma
+  Anders `client_profile.user_id` rebound to `emma.anders@canvas-demo.test`
+  (the `33-checkins.seed.ts` demoClientUser steal, predicted by the card).
+  Repaired that file only: the demo user now binds its named fixture
+  profile only while the profile is unbound. Post-repair default run
+  links Emma Anders to the SEED_CLIENT user.
+- Default-seed equivalence vs the baseline dump (normalized for cuids,
+  scrypt hashes, run timestamps): the only delta is Emma's
+  `client_profile.user_id` plus the consequential `created_by_member_id`
+  on her own 7 `daily_entry` + 7 `daily_entry_revision` rows, which follow
+  the link through `profile.userId`. Nothing else differs.
+- Demo seed (`VARI8_SEED_DEMO=1`) run twice on the same lane: normalized
+  dumps identical (0 diff lines), Emma Anders still on SEED_CLIENT,
+  `athleteDataDemo` reads 11, and rev-11 coverage is live
+  (`meal_plan_version` names 'Pre-prep / Contest prep', tracking values
+  1630/2370/2200/2080/2410 for client-007).
+- Gates: typecheck 0, lint 0 (96 warnings, pre-existing), build 0,
+  `npm run index` 0 (no output diff), `prisma migrate deploy` on two fresh
+  lane DBs 0, prettier per changed file 0 (`scripts/seed/demo-export/`
+  added to `.prettierignore` to keep the byte-verbatim copy), authored
+  added-lines dash check 0.
+- App proof: dev server on lane `app_fp_w2s13`, sign in via `/me/login` as
+  the SEED_CLIENT lands on the `/me` client home at 1440 and 390
+  (screenshots in evidence). Server stopped, both lane DBs dropped,
+  `pg_database` absence proof saved.
+- Evidence: `Vari8-evidence/FULL-PACKAGE-2/W2S13/`. No migration consumed.
+
+## 2026-10-28 - W2-N7 client own meal plan view route (audit row N7) on `w2/n7`
+
+- Gap: GET `.../clients/[clientProfileId]/meal-plans` declared `plan.read`
+  (client scope `own`) but always called `readStaffMealPlan`, which denies
+  anything but workspace/assigned scope, so a bound client could never read
+  its own published plan over the API.
+- Change (route.ts only): the GET handler now calls
+  `requireOwnClientProfile(viewer, workspace, params.clientProfileId)` before
+  any read. Scope `own` is bound to the caller's own client profile id and a
+  foreign `clientProfileId` is a plain 403; only then does the handler branch:
+  `own` serves `readOwnMealPlan` (`{current, upcoming}` with the published
+  payload and version metadata, no draft), every other scope keeps
+  `readStaffMealPlan` verbatim. PUT is untouched (staff `plan.write` only).
+- Tests: new `tests/integration/api-v1-mealplan-own.test.ts` (4 tests, real
+  PG + real sign-in): own read 200 with literal own-shape assertions and no
+  staff keys, the named test "denies a foreign clientProfileId with 403
+  before any read" (403 plus zero READ audit rows on the foreign subject),
+  staff keeps the staff shape, unauthenticated 401. Mutation-proved: with the
+  compare removed the foreign request returns 200 and the named test fails.
+  Regression: `api-v1-plans.test.ts` 6/6 stays green (its client role matrix
+  case uses an unbound profile, still 403 through the same compare).
+- Gates: typecheck 0; eslint on diff files 0 (repo lint 0 errors / 96
+  pre-existing warnings); prettier on diff files clean; `next build` 0;
+  `npm run index` 0 and `index:check` 0 (generated output unchanged); unit
+  vitest 132 files / 1509 tests 0; integration suite 4/4 + regression 6/6;
+  fresh `prisma migrate deploy` on lane DB `app_fp_w2n7` clean. No migration
+  consumed (reserved dir `20261027000022` unused; no schema need).
+- Live proof on `app_fp_w2n7` (seeded `VARI8_SEED_DEMO=1`, real sign-in via
+  /api/auth/sign-in/email, dev server 127.0.0.1:5455): own client GET 200
+  with `current.versionSeq=1` + full payload + `upcoming=null`; same client
+  on a foreign clientProfileId 403 forbidden; staff coach GET 200 staff
+  shape; no credentials 401 unauthenticated. Request/status lines under
+  `Vari8-evidence/FULL-PACKAGE-2/W2N7/`. Server stopped; `pg_database` shows
+  `lane_present|0` (lane-teardown.txt). Exported method set of the route
+  file: GET, PUT (unchanged, matches this claim). Zero U+2013/U+2014 in added
+  lines.
+- Unmapped client fields: resolved macro totals (kcal/protein/carbs/fat) are
+  not in the response; the client derives them from `payload` portions plus
+  the food catalog, which this route intentionally does not join. The
+  "temporary plan" badge is an audit N1 feature with no `MealPlanDraft`
+  field; not derivable. `upcoming` is metadata-only by service design.
+- Screenshot: none applies; no mounted surface on this base consumes the
+  route (the canvas client-app meal plan is demo data).
+
+## 2026-10-28 - w2-t14 repair 1: item-sort mutation guard + real HTTP proof on `w2/t14`
+
+- Round-1 verifier (hermes-verify, independent family) REPAIR on 6ab35547:
+  the item-sort mutation in `projectSnapshot` survived because the fixture's
+  out-of-order items sat in different groups; and the two route handlers had
+  no HTTP-level proof, only service-level calls.
+- Repair 1 in `tests/integration/w2-t14-tracker-columns.test.ts`: new case
+  seeds two items sharing one section and one group ("Probe") whose
+  definition array order (late, order 20) disagrees with declared order
+  (early, order 5) and asserts emitted `[early, late]`. Every existing
+  assertion untouched.
+- Mutation A re-run (item `(order ?? 0)` sort dropped in
+  `lib/daily-entry/service.ts`): suite exit 1, only the new test fails;
+  source restored byte-identical (`cmp` + clean `git diff`).
+- Repair 2: real HTTP against `next dev` on lane DB `app_fp_w2t14r` after
+  `npm run seed:dev`. Client caller `emma.anders@canvas-demo.test` (seeded
+  demo user from `33-checkins.seed.ts`, credential password =
+  `SEED_CLIENT_PASSWORD`, owns the pinned Emma Anders profile; the
+  `SEED_CLIENT_EMAIL` user keeps no profile by seed design). Staff caller
+  `SEED_COACH_EMAIL` (Sofia Miller, COACH). 15/15 checks PASS: own route
+  200 `ready` with pinned groups (`seed-de-tv-1`, single null group, five
+  columns in declared order incl. decimals/summary/max/unit projection);
+  staff route 200 identical body; client-scope caller on staff route 403
+  `forbidden` for own and foreign `clientProfileId`; staff on unknown
+  profile 403 (denied before read); anonymous 401 on both routes; coach on
+  own route 200 `not_applicable`.
+- Gates: typecheck 0, eslint 0, prettier --check 0, index:check 0 (no
+  generated-index movement; test file only), added-lines U+2013/U+2014
+  scan 0.
+- Lane `app_fp_w2t14r` created via `lane-db` + `prisma migrate deploy`,
+  dropped after proof with `pg_database` absence proof saved. Census still
+  lists stale `app_fp_w2t14` from the round-1 lane (its PROOF claimed a
+  drop); left in place and flagged, not mine to delete unasked.
+- Evidence: `Vari8-evidence/LEAD/PROOF/w2-t14/round2/`
+  (integration-test.log, mutation-itemsort.log, http-proof.log +
+  http-prove.mjs, typecheck/eslint/prettier/indexcheck logs,
+  pg_database-absence.txt, pg_database-census.txt, precheck.txt).
 
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
@@ -408,6 +600,153 @@ typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
   added lines = 0. Lane DB `app_fp_w2c4r4` dropped, absence proven by
   a pg_database query saved in evidence.
 - Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4/` (repair-3 files).
+
+## 2026-10-27 - w2-t8 repair 4: failed uploads block the send instead of dropping the attachment on `w2/t8`
+
+- B1 root cause: a composer attachment whose background upload settled
+  without a media_object stamp kept its session blob in `media`, so the
+  send guard's restored-draft check (`!a.mediaObjectId && !a.demo &&
+!media[a.id]`) passed and the message appended locally with no server
+  attachment and no notice. The canvas twin now keeps a `failedUploads`
+  ref beside `pendingUploads`: the attach handler records the id when a
+  workspace upload settles without the stamp, and `send()` refuses any
+  draft containing a failed id with "Attachment upload failed. Remove it
+  and reattach to send it." until the item is removed or reattached.
+  The mark is written only when `workspaceId` existed, so the
+  no-workspace preview keeps its local-append path, and the frontend
+  twin is untouched (its attach is synchronous and cannot fail).
+- Probe: `tests/unit/coach-messages-restored-draft.dom.test.tsx` mounts
+  the real canvas CoachProvider + MessagesWorkspace, forces
+  `uploadCanvasMedia` to resolve false, attaches a file, types text and
+  clicks Send. On the tip product file the send falls through with no
+  toast; on this tip the send is refused with the failed copy and the
+  draft keeps its attachment. Red proof: a scratch worktree at the
+  repair commit with only `components/canvas/coach/messages.tsx`
+  restored from 35296eb ran 1 failed / 3 passed; the same file is green
+  4/4 on this tip. Logs under the evidence dir.
+- Gates on this tip: `npx vitest run` on the touched file 4 passed, exit
+  0; full `npx vitest run` 124 files / 1441 tests all passed, exit 0
+  (one earlier run under parallel gate load timed out once in
+  `tests/unit/system-index.test.ts` F2, which passes 18/18 standalone
+  and is unrelated to this change; the inherited logging.test.ts env
+  pair was not observed this round); `npm run typecheck` exit 0; `npm
+run lint` exit 0 (92 warnings, 0 errors, one pre-existing warning on
+  messages.tsx:198); `npm run index` produced no diff and `npm run
+index:check` exit 0; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8 repair 3: restored-draft attachments no longer wedge the send on `w2/t8`
+
+- B1 root cause: the send guard read "no session blob" as "upload still
+  in flight", so a file attached to a draft and restored after reload
+  (its blob URL dead) was blocked by a toast promising a retry that
+  could never land. Both twins now classify send-time attachments in
+  three buckets: an id in `pendingUploads` (a ref populated while an
+  attach/upload is actually running) still waits on the "still
+  uploading" toast; an item missing stamp, demo flag and session blob
+  but not pending is a restored draft, which stays in the draft while
+  the send returns the honest copy "Attachment kept as metadata after
+  reload - reattach it to send it, or remove it."; reattaching through
+  the card's existing control restores the blob and the send proceeds.
+  The canvas twin gates both branches on `workspaceId` so the
+  no-workspace demo embed keeps the old local-append behavior.
+- I1 taken: the ceremonial frontend `mediaObjectIds` branch (both arms
+  called `appendLocal` identically) is collapsed to one `appendLocal()`
+  with a comment naming the canvas wire step it mirrors.
+- I2 corrected baseline per the verifier's re-measurement: `npm run
+test` at decd41a is 123 files / 1437 tests, all passed, exit 0 (the
+  repair-1 entry's 1436/1437 timeout did not reproduce); `cd frontend &&
+npm run typecheck` exits nonzero with exactly one inherited TS2322 at
+  `src/components/client/legacy-sheet/dialog.tsx(109,15)` (the file has
+  since moved out of `components/ui/`; this repair does not touch it).
+- I3: `npm run index:check` run twice on this tip; both exits 0.
+- B1 proof: `tests/unit/coach-messages-restored-draft.dom.test.tsx`
+  mounts the real CoachProvider + MessagesWorkspace of each twin, seeds
+  each persistence seam with a restored file draft and clicks Send. On
+  decd41a product code both restored-draft assertions fail on the "still
+  uploading" toast; on this tip all 3 tests pass. Twin-resolution in
+  vitest.config lets the frontend app mount under jsdom (its "@/*"
+  imports resolve to frontend/src and its react/next dedupe onto the
+  root copies); the test file is excluded from the root tsc program
+  because it legitimately spans two apps.
+- Live proof: real-browser attach -> reload -> send in the frontend
+  preview (no login wall; the workspace renders directly) at 1440x900
+  and 390x844: the send surfaces the honest copy on both widths, the
+  item is kept in the draft, and reattaching through the card then
+  sending lands the message. Screenshots and live-verify.json under the
+  evidence dir.
+- Gates on this tip: `npm run typecheck` 0; `npm run lint` 0 (92
+  warnings, 0 errors); `cd frontend && npm run lint` 0; `npx vitest run`
+  124 files / 1440 tests, all passed, 0; `npm run build` 0; `npm run
+index:check` 0 on both runs; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8 repair 1: frontend send carries the attach flow in local-demo idiom on `w2/t8`
+
+- Verdict repair on the T8 tip: the attach flow had reached only the
+  canvas twin; the frontend send still used the pre-A4 local append.
+  The frontend send now mirrors the canvas structure in this preview's
+  own idiom: an in-flight guard that treats a draft item missing its
+  stamp, demo media and session blob (a draft restored after reload)
+  as still uploading; `mediaObjectIds` computed off each attachment;
+  and the local fallback keyed on `mediaObjectIds.length` the way the
+  canvas send keys its wire fallback. `Media` gains the optional
+  `mediaObjectId` field so the twin sends read one shape.
+- Remaining twin deltas are the named pre-existing ones plus the
+  intended local-demo split: the `../data/messages` wire imports, the
+  `uploadCanvasMedia` import and file-input block, the useCoach
+  destructuring (canvas reads `hydrated`/`workspaceId`/
+  `clientProfileIdFor`, frontend reads `media`), the W2-A4 remote-sync
+  effects, the canvas remote-send branch, voice-note copy, and the
+  `clientName` prop on the legacy recorder.
+- Gates on the repaired tip: `cd frontend && npm run lint` 0;
+  `cd frontend && npm run typecheck` 1 with only the inherited
+  `dialog.tsx:109` `labelHidden` TS2322; `npm run typecheck` 0;
+  `npm run lint` 0 (92 warnings, 0 errors); `npx vitest run` 1436/1437
+  (single failure a 5s timeout in `system-index.test.ts` F2 that
+  passes standalone; env flake); `npm run index:check` 0; dash gate
+  adds 0 U+2013/U+2014 lines on this repair (57 exist in earlier
+  commits of the 113d788..HEAD range).
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8: message attachments and read state on `w2/t8`
+
+- Upload-then-link attachments on the messages wire: `POST /messages`
+  and `POST conversations/:clientProfileId` accept `mediaObjectIds`
+  (max 10, safe id grammar, duplicates rejected). Each id must resolve
+  to a live MediaObject in the same workspace anchored to the
+  conversation's client profile; anything else denies 403. Attachment
+  rows link in the same transaction as the message create, so the send
+  response and every later read carry real metadata. Attachment-only
+  sends (empty body) are allowed; a send with neither body nor
+  attachments is `invalid_input`.
+- Attachment urls reuse the T6 media mint unchanged: download urls are
+  workspace-scoped object keys, expire per the presign ttl, and deny
+  foreign workspaces and foreign client profiles. No media files edited.
+- Read state on the wire: own messages carry `read` (client-authored
+  rows count any staff MessageRead; staff-authored rows count the
+  client user's MessageRead). New `POST /messages/read` marks the
+  caller's unread staff messages, mirroring the staff read route.
+- Canvas send path: refuses to send while a real attachment still has
+  no mediaObjectId, passes the ids on the wire, and keeps local
+  fallback only for missing backend context or demo media. Coach
+  status renders Local message / Read / Sent instead of the literal
+  "Example · read".
+- Frontend twin updated in lockstep for the read-state label; the
+  twin's send stays local-preview per the existing wiring split.
+- Gates: typecheck 0; lint 0 (one pre-existing hooks warning in
+  messages.tsx on the merged base); prettier on touched files 0;
+  `npm run test` 1437/1437 0; `npm run test:integration` on the
+  attachment suite plus staff-messages regression 14/14 0;
+  `npm run build` 0; `npm run index` regenerated and `index:check` 0;
+  `cd frontend && npm run lint` 0; dash gate on added lines 0.
+- Live proof on fresh lane DB app_fp_w2t8 (migrate deploy, demo seed,
+  production server on 5310): coach attach+send at 1440 renders the
+  minted image on reload; client wire read shows the attachment and
+  `marked: 2` on POST /messages/read; coach thread flips Sent to Read;
+  staff2 foreign-workspace mint returns 403; a minted url redeems 200
+  while an expired signature returns 403; 390 render verified.
+  Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
 
 ## 2026-10-27 - W2T7 preview conflict repair: w2/t6 merge line `c9440dc` merged into `w2/t7`
 
@@ -848,6 +1187,53 @@ generate` (stale client missed `clientPhase`/`clientWeekNote`);
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
 
+## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
+
+- Client check-in surface wired: `components/canvas/data/checkins.ts`
+  (+130: schedule status chips, per-pose VISUAL media mapping,
+  tracker-summary rows, submitted-answer display) consumed by
+  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
+  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
+  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
+  - `client-app.css` kept in parity for shared blocks. Product
+    onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+    panel + page, `app/globals.css`). Helpers covered by
+    `tests/unit/checkin-client-surface.test.ts` (16 tests).
+- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
+  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
+  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
+  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
+  (304 files; first attempt before install exited 127),
+  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
+  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
+  en/em count 0 after repair (was 1, a comment em dash, fixed here).
+- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
+  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
+  feedback), dropped at teardown (`pg_database` count 0).
+  Production build served behind a loopback TLS front; surfaces
+  required APP_ENV=development with ENABLE_CHECK_INS=1 and
+  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
+  coach check-ins page without them).
+- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
+  sign-in, schedule a check-in, client /me Check-ins list (seeded
+  Submitted, Overdue, Scheduled items), fill form with five pose
+  slots plus tracker summary, submit (readback: Submitted,
+  awaiting coach review; media rows verified in DB), seeded
+  Oct-18 reviewed and Oct-24 awaiting-review details, product
+  onboarding empty state, required-field message on empty submit
+  at 390. Horizontal overflow 0 on every checked view.
+- Own-scope probes (client session): GET instances/[own] 200,
+  [foreign] 403 not_available, instances/next 200, instances list
+  by clientProfileId 403 denied (own and foreign), submissions
+  list 403 denied, submissions tracker-context 403 denied,
+  daily-entries 200, foreign progress-photos POST 403. Lily
+  lane-only credential returned a disjoint next instance and 403
+  on a foreign instance.
+- Repair round 1: replaced an em dash in the test file header
+  comment (B1) and added this STATUS entry (B2), verdict
+  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
+
 ## 2026-10-27 - w2-fe2 merge resolution: absorbed w2/a3, preview line product-clean
 
 - Merge-resolution card after preview rebuild 20261027T054901Z hit a real
@@ -1016,6 +1402,100 @@ generate` (stale client missed `clientPhase`/`clientWeekNote`);
 - Held for w2-a5 (not claimed here): template-editor persistence of
   Decimals and Week summary, and the template-field read that drives tab
   columns from the server.
+
+## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
+
+- Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`
+  resolved to `a3f620a56bf3165b6775c8f0bd4acabae21935bc` (verified by rev-parse),
+  merged into `w2/fe1` as merge commit `a83c0e92c87b5ac0a12160c82280a941e063ebe0`.
+  All 14 upstream files under `frontend/` verified byte-identical to the merge
+  tip by diff. No rebase, no force.
+- Port: `tools/port-canvas/port.mjs` run with `PORT_BASE=9491897`
+  `PORT_REF=a3f620a`. 9 mechanical copies plus 4 three-way merges
+  (`clients.tsx`, `coach.css`, `athlete/timeline-tab.tsx`, `model.ts`, all
+  added to HAND_MERGE because they carry local wiring deltas). New files
+  `components/canvas/coach/athlete/tracker-tab.tsx` + `tracker-tab.css` are
+  byte-identical to the upstream twin after the import-alias rewrite.
+  Hand-merges finished with zero conflicts and preserved the local deltas
+  (ClientTrainingLogs in clients view, review-panel status chips in
+  coach.css, activity-target version fetch in timeline-tab, provider/import
+  wiring). Tracker tab renders for `tab === "Tracker"` between Timeline and
+  Plans on the athlete profile.
+- Ownership note: `components/canvas/coach/model.ts` is on the card's
+  must-not-edit list, but the upstream `FieldConfig.decimals`/`summary`
+  extension and the revision-9 union live in that file's canvas twin and the
+  ported tab does not typecheck without them. Carried via the port's
+  three-way merge; flagged for the owner.
+- Demo seed re-point to export revision 9: `README.md`, `workspace.json`,
+  `clients/client-007.json` copied byte-verbatim into
+  `lib/canvas/data/demo-export/` and `scripts/seed/demo-export/`;
+  `PROVENANCE.md` now names source ref `import/frontend-tip`, commit
+  `a3f620a`, revision 9. `scripts/seed/50-demo-coverage.seed.ts` extended
+  from 8 keys to the full 26-field rev-9 tracker set: numeric fields seed
+  as MEASUREMENT (rating fields included so zero values and decimals
+  survive), `bleeding-level` as OPTION, `bp`/`pms-symptoms`/`daily-note`
+  as TEXT from `tracking.text` `${iso}:${fieldId}`. Coach-authored keys
+  `${iso}:note:*` and `${iso}:coach-note` deliberately unseeded; the
+  server-side note path is held w2-a5 work.
+- Seed proofs on lane `app_fp_w2fe1` (plus `app_fp_w2fe1b` as baseline):
+  default profile byte-identical, normalized `pg_dump` diff 0 lines
+  (1525 rows each side; only migration ledger ids, password hashes and
+  dump session tokens excluded). Demo profile: client-007 Amara Lewis,
+  26 template fields, 65 daily entries, 1338 revision values (1288
+  numeric, 38 text, 12 option), matching the rev-9 export counts.
+  Idempotent across reruns: row counts and normalized content hashes
+  identical (evidence `counts-demo-run*.txt`, `hash-demo-run*.txt`,
+  `dump-default-*.txt`).
+- Gates: `npm run typecheck` 0; `npm run lint` 0 errors / 92 warnings
+  (89 inherited, 2 in byte-verbatim upstream code, 1 authored and fixed);
+  `npm run format:check` exits 1 with 57 failing files, all inherited at
+  the merge base, zero authored; `npm test` 116 files / 1380 tests pass;
+  `npm run build` 0; `npm run index` + `index:check` 0 (COMPONENTS.md
+  gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
+  `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
+  0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
+npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+  `labelHidden` (stage-10 F1, present at merge base).
+- Browser proof: production build via `next start` on http 4403 behind the
+  disposable TLS proxy on https 4402 (F2 workaround; production auth
+  rejects http origins). Lane `app_fp_w2fe1`, seeded default + demo,
+  signed in as seeded coach, no `?demo`. URL
+  `/coach?section=clients&client=client-007&tab=Tracker` at 1440 and 2560:
+  `.trk` root renders, 10 expanded week rows plus the current week,
+  week labels 17 Aug through 25 Oct, template-driven column groups
+  (Body, Nutrition, Recovery, Activity, Notes) with derived Day/Session/
+  Coach columns, Expand/Collapse/Jump-to-today/pin controls. Screenshots
+  `tracker-1440.png`, `tracker-2560.png` in the evidence dir, looked at.
+- Note persistence: coach day note written through the tab's note popover
+  on today's Coach cell, page reloaded, popover reopened: text intact
+  (`PERSIST-PROOF: PASS`; `note-popover.png`, `note-saved-1440.png`,
+  `note-after-reload-1440.png`). Persistence is the local
+  `tracking.text`/`writeCoachState` flow Lilly shipped; the server-side
+  note path is the held work.
+- Read path record (step 4 HELD): the ported tab reads `client.tracking`
+  from the localStorage-backed `CoachState`; without `?demo` the roster
+  and template resolve but daily-entry cells render empty because no
+  canvas hydration maps `daily_entry` rows into `client.tracking` yet.
+  `TrackerComment` exists in the Prisma schema with no read/write route.
+  No route files added or extended on this card (grep: none). No
+  migration (schema unchanged). Held work verbatim for the follow-up
+  card: "Backend: FieldConfig.decimals and summary must persist with
+  template tracker fields (extend the w2-a5 template and tracker config
+  route and tests, new migration only if the schema needs it, timestamp
+  from the lead). Per-cell notes and coach day notes persist server-side
+  with workspace and role scoping, replacing local tracking.text storage
+  for coach notes."
+- Parked-stage reconciliation: Lilly's tracker supersedes w2-k2
+  (desktop) and w2-k4 (coach read-only view). w2-k3 (mobile) and the
+  client tracker entry in w2-c7 need an owner decision; PR 210 ships no
+  mobile layout by design (under 900px shows a notice plus last 7 days).
+  Nothing unparked: k1-k4 and a8 stay parked.
+- Teardown: prod server and TLS proxy stopped; lane databases
+  `app_fp_w2fe1` and `app_fp_w2fe1b` dropped, `pg_database` query shows
+  `app_fp_w2fe1%` absent (evidence `teardown-pg-database.txt`).
+- NOT done: no push, no PR, no unparks, no backend note path (held),
+  independent review by a different model family still pending (not
+  requested per instruction).
 
 ## 2026-10-27 - w2-a4 repair 1: localStorage seam and lazy client-detail fetch
 

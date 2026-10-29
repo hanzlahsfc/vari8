@@ -65,6 +65,7 @@ function scheduleSummary(
     });
     return `Weekly: ${parts.join(", ")}`;
   }
+  if (schedule.mode === "flexible") return "Client chooses";
   return `Cycle from ${schedule.anchorDate}: ${schedule.steps
     .map((s) => `${labelOf(s.variantId)} × ${s.days}d`)
     .join(", ")}`;

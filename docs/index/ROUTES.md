@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 60 backend pages, 89 API routes, 14 layouts, 5 canvas pages.
+Counts: 60 backend pages, 94 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -123,6 +123,8 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/iifym-plans/timezone/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/publish/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/[temporaryPlanId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/temporary/[temporaryPlanId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/meal-plans/versions/[versionId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/nutrition-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/route.ts` | - | none detected |
@@ -132,6 +134,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-columns` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-columns/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/route.ts` | - | none detected |
@@ -153,6 +156,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/invitations` | `app/api/v1/workspaces/[workspaceId]/invitations/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/invitations/[invitationId]` | `app/api/v1/workspaces/[workspaceId]/invitations/[invitationId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/messages` | `app/api/v1/workspaces/[workspaceId]/messages/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/messages/read` | `app/api/v1/workspaces/[workspaceId]/messages/read/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes` | `app/api/v1/workspaces/[workspaceId]/notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes/[noteId]` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore` | `app/api/v1/workspaces/[workspaceId]/notes/[noteId]/restore/route.ts` | - | none detected |
@@ -163,6 +167,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/settings` | `app/api/v1/workspaces/[workspaceId]/settings/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/tasks` | `app/api/v1/workspaces/[workspaceId]/tasks/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/tracker-columns` | `app/api/v1/workspaces/[workspaceId]/tracker-columns/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions/[sessionLogId]` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/[sessionLogId]/route.ts` | - | none detected |

@@ -4,9 +4,11 @@
  * database (INTEGRATION_DATABASE_URL). Synthetic fixtures only.
  *
  * Asserts the card contract end to end at the service seam: three
- * independent nullable macro columns, no calories column anywhere, kcal
- * derived at 4/4/9 over the macros present, missing stays missing, and
- * entries survive a client switch between meal plan and macro counting.
+ * independent nullable macro columns, a stored calories column beside
+ * the day-type and plan-followed state, omitted-key-leaves-unchanged
+ * and explicit-null-clears write semantics, kcal derived at 4/4/9 only
+ * as the fallback when no calories are stored, and entries surviving a
+ * client switch between meal plan and macro counting.
  */
 
 import { execFileSync } from "node:child_process";
@@ -146,7 +148,7 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
   const DATE2 = "2026-10-13";
 
   describe("schema", () => {
-    it("nutrition_log has the three macro columns and no calories column", async () => {
+    it("nutrition_log has the three macro columns and a stored calories column", async () => {
       const cols = await prisma.$queryRawUnsafe<{ column_name: string }[]>(
         `SELECT column_name FROM information_schema.columns
          WHERE table_schema = 'public' AND table_name = 'nutrition_log'`,
@@ -155,7 +157,7 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
       expect(names).toContain("protein");
       expect(names).toContain("carbohydrate");
       expect(names).toContain("fat");
-      expect(names.some((n) => n.includes("calorie"))).toBe(false);
+      expect(names).toContain("calories");
     });
   });
 
@@ -184,6 +186,9 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 180,
         carbohydrate: null,
         fat: null,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(720);
     });
@@ -210,6 +215,9 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(1940);
     });
@@ -231,7 +239,14 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         deps(),
       );
       if (surface.state !== "ready") throw new Error(surface.state);
-      expect(surface.log).toEqual({ protein: 0, carbohydrate: 0, fat: 0 });
+      expect(surface.log).toEqual({
+        protein: 0,
+        carbohydrate: 0,
+        fat: 0,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
+      });
       expect(caloriesFromMacros(surface.log!)).toBe(0);
     });
 
@@ -265,6 +280,9 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: null,
         fat: 60,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
       // Hand check: 150*4 + 60*9 = 600 + 540 = 1140.
       expect(caloriesFromMacros(surface.log!)).toBe(1140);
@@ -338,6 +356,9 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
     });
 
@@ -479,6 +500,9 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 180,
         carbohydrate: null,
         fat: null,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
       // Hand check: 180*4 = 720 on the partial day.
       expect(
@@ -575,8 +599,505 @@ describe.skipIf(!enabled)("card 09 NutritionLog (real PG)", () => {
         protein: 150,
         carbohydrate: 200,
         fat: 60,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
       });
       expect(caloriesFromMacros(surface.log!)).toBe(1940);
+    });
+  });
+
+  describe("day type and plan followed (w2-t12)", () => {
+    it("stores and reads back day-type and plan-followed", async () => {
+      const c = await seedClient();
+      const entry = await prisma.dailyEntry.create({
+        data: {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          entryDate: new Date(DATE),
+          createdByMemberId: c.clientMember.id,
+        },
+      });
+      await prisma.nutritionLog.create({
+        data: {
+          dailyEntryId: entry.id,
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          entryDate: new Date(DATE),
+          protein: 150,
+          carbohydrate: 200,
+          fat: 60,
+          dayType: "Rest day",
+          planFollowed: true,
+          createdByMemberId: c.clientMember.id,
+          updatedByMemberId: c.clientMember.id,
+        },
+      });
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        calories: null,
+        dayType: "Rest day",
+        planFollowed: true,
+      });
+      expect(surface.history[0]).toEqual({
+        entryDate: DATE,
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        calories: null,
+        dayType: "Rest day",
+        planFollowed: true,
+      });
+
+      const staff = await listStaffNutritionLogs(
+        c.staffSession,
+        {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          from: DATE,
+          to: DATE,
+        },
+        deps(),
+      );
+      if (staff.state !== "ready") throw new Error(staff.state);
+      expect(staff.items).toHaveLength(1);
+      expect(staff.items[0].dayType).toBe("Rest day");
+      expect(staff.items[0].planFollowed).toBe(true);
+    });
+
+    it("a macro-only save keeps day-type and plan-followed null", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 100, carbohydrate: null, fat: null },
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.dayType).toBeNull();
+      expect(surface.log?.planFollowed).toBeNull();
+    });
+  });
+
+  describe("calories + day-state write path (w2-t13)", () => {
+    it("persists calories, day-type and plan-followed through save and both reads", async () => {
+      const c = await seedClient();
+      const result = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: 200, fat: 60 },
+          calories: 2100,
+          dayType: "Training day",
+          planFollowed: true,
+        },
+        deps(),
+      );
+      expect(result.status).toBe("saved");
+
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        calories: 2100,
+        dayType: "Training day",
+        planFollowed: true,
+      });
+      expect(surface.history[0]).toEqual({
+        entryDate: DATE,
+        protein: 150,
+        carbohydrate: 200,
+        fat: 60,
+        calories: 2100,
+        dayType: "Training day",
+        planFollowed: true,
+      });
+
+      const staff = await listStaffNutritionLogs(
+        c.staffSession,
+        {
+          workspaceId: c.ws.id,
+          clientProfileId: c.profile.id,
+          from: DATE,
+          to: DATE,
+        },
+        deps(),
+      );
+      if (staff.state !== "ready") throw new Error(staff.state);
+      expect(staff.items).toEqual([
+        {
+          entryDate: DATE,
+          protein: 150,
+          carbohydrate: 200,
+          fat: 60,
+          calories: 2100,
+          dayType: "Training day",
+          planFollowed: true,
+        },
+      ]);
+    });
+
+    it("returns stored calories even when they differ from the 4/4/9 derivation", async () => {
+      const c = await seedClient();
+      // 150*4 + 200*4 + 60*9 = 1940 derived; the stored value wins on read.
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: 200, fat: 60 },
+          calories: 2100,
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.calories).toBe(2100);
+      expect(caloriesFromMacros(surface.log!)).toBe(1940);
+    });
+
+    it("omitted keys leave stored values unchanged; explicit null clears", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: 200, fat: 60 },
+          calories: 2100,
+          dayType: "Rest day",
+          planFollowed: false,
+        },
+        deps(),
+      );
+      // Second save sends only macros: the three day-state keys stay.
+      const again = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 180, carbohydrate: 200, fat: 60 },
+        },
+        deps(),
+      );
+      expect(again.status).toBe("saved");
+      let surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 180,
+        carbohydrate: 200,
+        fat: 60,
+        calories: 2100,
+        dayType: "Rest day",
+        planFollowed: false,
+      });
+      // Explicit null clears the stored values.
+      const cleared = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 180, carbohydrate: 200, fat: 60 },
+          calories: null,
+          dayType: null,
+          planFollowed: null,
+        },
+        deps(),
+      );
+      expect(cleared.status).toBe("saved");
+      surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 180,
+        carbohydrate: 200,
+        fat: 60,
+        calories: null,
+        dayType: null,
+        planFollowed: null,
+      });
+    });
+
+    it("partial nulls clear only the keys sent null", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: 200, fat: 60 },
+          calories: 2100,
+          dayType: "Training day",
+          planFollowed: true,
+        },
+        deps(),
+      );
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: null, fat: 60 },
+          dayType: null,
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: 150,
+        carbohydrate: null,
+        fat: 60,
+        calories: 2100,
+        dayType: null,
+        planFollowed: true,
+      });
+    });
+
+    it("a calories-only change saves instead of returning no_op", async () => {
+      const c = await seedClient();
+      const input = {
+        workspaceId: c.ws.id,
+        entryDate: DATE,
+        macros: { protein: 150, carbohydrate: 200, fat: 60 },
+      };
+      await saveNutritionLog(c.session, input, deps());
+      const same = await saveNutritionLog(c.session, input, deps());
+      expect(same.status).toBe("no_op");
+      const changed = await saveNutritionLog(
+        c.session,
+        { ...input, calories: 1940 },
+        deps(),
+      );
+      expect(changed.status).toBe("saved");
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.calories).toBe(1940);
+    });
+
+    it("a day-state-only change saves instead of returning no_op", async () => {
+      const c = await seedClient();
+      const input = {
+        workspaceId: c.ws.id,
+        entryDate: DATE,
+        macros: { protein: 100, carbohydrate: null, fat: null },
+      };
+      await saveNutritionLog(c.session, input, deps());
+      const changed = await saveNutritionLog(
+        c.session,
+        { ...input, dayType: "Rest day", planFollowed: true },
+        deps(),
+      );
+      expect(changed.status).toBe("saved");
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.dayType).toBe("Rest day");
+      expect(surface.log?.planFollowed).toBe(true);
+    });
+
+    it("a calories-only save on an empty day creates the row", async () => {
+      const c = await seedClient();
+      const result = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: null, carbohydrate: null, fat: null },
+          calories: 800,
+        },
+        deps(),
+      );
+      expect(result.status).toBe("saved");
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: null,
+        carbohydrate: null,
+        fat: null,
+        calories: 800,
+        dayType: null,
+        planFollowed: null,
+      });
+    });
+
+    it("an all-null save keeps the row while stored calories remain", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 150, carbohydrate: null, fat: null },
+          calories: 500,
+        },
+        deps(),
+      );
+      // All-null macros with calories omitted: stored calories feed the
+      // merge, so the row is updated, not deleted.
+      const kept = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: null, carbohydrate: null, fat: null },
+        },
+        deps(),
+      );
+      expect(kept.status).toBe("saved");
+      let surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toEqual({
+        protein: null,
+        carbohydrate: null,
+        fat: null,
+        calories: 500,
+        dayType: null,
+        planFollowed: null,
+      });
+      // Explicit null on calories makes the merged row all-absent: delete.
+      const gone = await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: null, carbohydrate: null, fat: null },
+          calories: null,
+        },
+        deps(),
+      );
+      expect(gone.status).toBe("saved");
+      surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log).toBeNull();
+    });
+
+    it("accepts the kcal bound edges and rejects outside them", async () => {
+      const c = await seedClient();
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: null, carbohydrate: null, fat: null },
+          calories: 0,
+        },
+        deps(),
+      );
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE2,
+          macros: { protein: null, carbohydrate: null, fat: null },
+          calories: 10000,
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.calories).toBe(0);
+      for (const calories of [
+        -1,
+        10000.001,
+        Number.POSITIVE_INFINITY,
+        Number.NaN,
+      ])
+        await expect(
+          saveNutritionLog(
+            c.session,
+            {
+              workspaceId: c.ws.id,
+              entryDate: DATE,
+              macros: { protein: null, carbohydrate: null, fat: null },
+              calories,
+            },
+            deps(),
+          ),
+        ).rejects.toThrow(DailyEntryError);
+    });
+
+    it("day-type is unbounded: a long label stores verbatim", async () => {
+      const c = await seedClient();
+      const long = "x".repeat(500);
+      await saveNutritionLog(
+        c.session,
+        {
+          workspaceId: c.ws.id,
+          entryDate: DATE,
+          macros: { protein: 1, carbohydrate: null, fat: null },
+          dayType: long,
+        },
+        deps(),
+      );
+      const surface = await loadNutritionLogSurface(
+        c.session,
+        { workspaceId: c.ws.id, entryDate: DATE },
+        deps(),
+      );
+      if (surface.state !== "ready") throw new Error(surface.state);
+      expect(surface.log?.dayType).toBe(long);
     });
   });
 });

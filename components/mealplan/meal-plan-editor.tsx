@@ -65,7 +65,8 @@ type ScheduleFields =
       mode: "cycle";
       anchorDate: string;
       steps: { variantId: string; days: string }[];
-    };
+    }
+  | { mode: "flexible" };
 
 const emptyTargetValue = (): TargetValueFields => ({
   kind: "",
@@ -161,13 +162,15 @@ function toFields(draft: MealPlanDraft | null): {
               days: String(s.days),
             })),
           }
-        : {
-            mode: "manual",
-            selectedVariantId:
-              draft?.schedule?.mode === "manual"
-                ? draft.schedule.selectedVariantId
-                : (draft?.activeVariantId ?? ""),
-          };
+        : draft?.schedule?.mode === "flexible"
+          ? { mode: "flexible" }
+          : {
+              mode: "manual",
+              selectedVariantId:
+                draft?.schedule?.mode === "manual"
+                  ? draft.schedule.selectedVariantId
+                  : (draft?.activeVariantId ?? ""),
+            };
   return {
     name: draft?.name ?? "",
     startDate: draft?.startDate ?? "",
@@ -215,6 +218,7 @@ function serializeSchedule(s: ScheduleFields): VariantSchedule | null {
       if (v.trim() !== "") days[k] = v;
     return { mode: "weekly", days } as VariantSchedule;
   }
+  if (s.mode === "flexible") return { mode: "flexible" };
   return {
     mode: "cycle",
     anchorDate: s.anchorDate.trim(),
@@ -969,11 +973,16 @@ export function MealPlanEditor({
                 steps: [],
               });
           }}
-          disabled={pending}
+          disabled={pending || schedule.mode === "flexible"}
         >
           <option value="manual">Manual</option>
           <option value="weekly">Weekly</option>
           <option value="cycle">Cycle</option>
+          {schedule.mode === "flexible" ? (
+            <option value="flexible" disabled>
+              Client chooses
+            </option>
+          ) : null}
         </select>
         {schedule.mode === "manual" ? (
           <>
@@ -1025,6 +1034,10 @@ export function MealPlanEditor({
               </select>
             </span>
           ))
+        ) : schedule.mode === "flexible" ? (
+          <p className="app-lede" data-testid="schedule-flexible">
+            Client chooses
+          </p>
         ) : (
           <>
             <label htmlFor="schedule-anchor">Anchor date (YYYY-MM-DD)</label>

@@ -13,10 +13,11 @@ import {
 /**
  * PUT /api/v1/workspaces/:workspaceId/nutrition-logs/:entryDate
  *
- * Card 09 client save: the three macro actuals for the caller's own day.
- * Each key is required and independently nullable - null is not recorded,
- * never zero. There is no calories field anywhere by design: kcal derives
- * at read time (4/4/9).
+ * Card 09 client save: the macro actuals plus the optional stored
+ * calories, day-type and plan-followed state for the caller's own day.
+ * Each macro key is required and independently nullable - null is not
+ * recorded, never zero. The three day-state keys are optional: an
+ * omitted key keeps the stored value, an explicit null clears it.
  */
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,9 @@ const bodySchema = z.object({
   protein: macroSchema,
   carbohydrate: macroSchema,
   fat: macroSchema,
+  calories: z.number().nullable().optional(),
+  dayType: z.string().nullable().optional(),
+  planFollowed: z.boolean().nullable().optional(),
 });
 
 export const PUT = defineApiV1Route({
@@ -47,6 +51,9 @@ export const PUT = defineApiV1Route({
           carbohydrate: body.carbohydrate,
           fat: body.fat,
         },
+        calories: body.calories,
+        dayType: body.dayType,
+        planFollowed: body.planFollowed,
       }),
     );
   },

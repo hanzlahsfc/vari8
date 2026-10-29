@@ -97,14 +97,16 @@ export {
  * Card 09 (#173) remote surface: the client's own daily macro actuals and
  * the staff date-range read. Wire shapes mirror
  * `lib/daily-entry/nutrition-log.ts`; duplicated here so the canvas never
- * imports server modules. `null` is "not recorded", never zero; there is
- * no calories field anywhere - kcal derives at render (4/4/9).
+ * imports server modules. `null` is "not recorded", never zero. The wire
+ * carries the stored `calories`; render prefers it and derives kcal
+ * (4/4/9) only as the null fallback.
  * ---------------------------------------------------------------------- */
 
 export type NutritionLogMacrosWire = {
   protein: number | null;
   carbohydrate: number | null;
   fat: number | null;
+  calories?: number | null;
 };
 
 export type NutritionLogDayWire = NutritionLogMacrosWire & {
@@ -204,7 +206,8 @@ export type IifymScheduleWire =
       mode: "cycle";
       anchorDate: string;
       steps: { variantId: string; days: number }[];
-    };
+    }
+  | { mode: "flexible" };
 
 export type IifymPayloadWire = {
   options: IifymOptionWire[];

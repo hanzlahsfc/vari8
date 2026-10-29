@@ -33,7 +33,9 @@ type PrismaLike = Pick<
   PrismaClient,
   | "clientProfile"
   | "conversation"
+  | "mediaObject"
   | "message"
+  | "messageAttachment"
   | "messageDraft"
   | "messageRead"
   | "workspaceMember"
@@ -54,23 +56,159 @@ export type MessageDeps = {
   }) => Promise<unknown>;
 };
 
+/** W2-T8: one media_object linked onto a message. byteSize is a BigInt on
+ *  the row; the wire always speaks numbers. */
+export type AttachmentView = {
+  mediaObjectId: string;
+  fileName: string;
+  contentType: string;
+  byteSize: number;
+  position: number;
+};
+
 export type MessageView = {
   id: string;
   body: string;
   senderKind: "CLIENT" | "STAFF";
   sentAt: string;
   clientRequestId: string;
+  attachments: AttachmentView[];
 };
+
+/** The client thread view adds `read`: own rows flip when any workspace
+ *  staff member reads them, staff rows flip when the caller does. */
+export type OwnMessageView = MessageView & { read: boolean };
 
 const MAX_BODY = 4000;
 const MAX_ID = 128;
+const MAX_ATTACHMENTS = 10;
+const MAX_MEDIA_ID = 64;
 
-function normalizeBody(raw: unknown): string {
+/** W2-T8: attachment ids the sender asks to link. Strict shape, deduped. */
+function normalizeAttachmentIds(raw: unknown): string[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw)) throw new MessageError("invalid_input");
+  if (raw.length > MAX_ATTACHMENTS) throw new MessageError("invalid_input");
+  const ids = raw.map((value) => {
+    if (
+      typeof value !== "string" ||
+      value.length === 0 ||
+      value.length > MAX_MEDIA_ID ||
+      !/^[A-Za-z0-9_-]+$/.test(value)
+    )
+      throw new MessageError("invalid_input");
+    return value;
+  });
+  if (new Set(ids).size !== ids.length) throw new MessageError("invalid_input");
+  return ids;
+}
+
+/** W2-T8 send rule: text or attachments must carry something; an attachment
+ *  send may leave the body empty (schema default ""). */
+function normalizeSendBody(raw: unknown, hasAttachments: boolean): string {
+  if (raw === undefined || raw === null) {
+    if (hasAttachments) return "";
+    throw new MessageError("invalid_input");
+  }
   if (typeof raw !== "string") throw new MessageError("invalid_input");
   const body = raw.trim();
-  if (body.length === 0 || body.length > MAX_BODY)
+  if (body.length > MAX_BODY || (body.length === 0 && !hasAttachments))
     throw new MessageError("invalid_input");
   return body;
+}
+
+/** Every attachment must be a live media_object in this workspace anchored
+ *  to the thread's client profile. The anchor is what keeps the existing
+ *  media download mint scoped: the client redeems own-prefix objects, staff
+ *  redeem any object in their workspace, and a foreign workspace or a
+ *  different client's object denies. */
+type AttachmentTarget = {
+  id: string;
+  clientProfileId: string | null;
+  fileName: string;
+  contentType: string;
+  byteSize: bigint;
+};
+
+async function attachmentTargets(
+  db: Pick<PrismaLike, "mediaObject">,
+  workspaceId: string,
+  mediaObjectIds: string[],
+  clientProfileId: string,
+): Promise<AttachmentTarget[]> {
+  if (mediaObjectIds.length === 0) return [];
+  const rows = await db.mediaObject.findMany({
+    where: { id: { in: mediaObjectIds }, workspaceId, deletedAt: null },
+    select: {
+      id: true,
+      clientProfileId: true,
+      fileName: true,
+      contentType: true,
+      byteSize: true,
+    },
+  });
+  const found = new Set(rows.map((row) => row.id));
+  for (const id of mediaObjectIds)
+    if (!found.has(id)) throw new MessageError("invalid_input");
+  for (const row of rows)
+    if (row.clientProfileId !== clientProfileId)
+      throw new AccessDeniedError("not_owner", "messages", "write");
+  return rows;
+}
+
+type AttachmentRow = {
+  mediaObjectId: string;
+  position: number;
+  mediaObject: {
+    fileName: string;
+    contentType: string;
+    byteSize: bigint;
+    deletedAt: Date | null;
+  };
+};
+
+const attachmentSelect = {
+  orderBy: { position: "asc" as const },
+  select: {
+    mediaObjectId: true,
+    position: true,
+    mediaObject: {
+      select: {
+        fileName: true,
+        contentType: true,
+        byteSize: true,
+        deletedAt: true,
+      },
+    },
+  },
+};
+
+function toAttachmentViews(rows: AttachmentRow[]): AttachmentView[] {
+  return rows
+    .filter((row) => row.mediaObject.deletedAt === null)
+    .map((row) => ({
+      mediaObjectId: row.mediaObjectId,
+      fileName: row.mediaObject.fileName,
+      contentType: row.mediaObject.contentType,
+      byteSize: Number(row.mediaObject.byteSize),
+      position: row.position,
+    }));
+}
+
+function createAttachmentLinks(
+  tx: Pick<PrismaLike, "messageAttachment">,
+  message: { id: string; workspaceId: string },
+  mediaObjectIds: string[],
+) {
+  if (mediaObjectIds.length === 0) return Promise.resolve({ count: 0 });
+  return tx.messageAttachment.createMany({
+    data: mediaObjectIds.map((mediaObjectId, position) => ({
+      messageId: message.id,
+      mediaObjectId,
+      workspaceId: message.workspaceId,
+      position,
+    })),
+  });
 }
 
 function normalizeRequestId(raw: unknown): string {
@@ -118,6 +256,7 @@ type MessageRow = {
   senderKind: "CLIENT" | "STAFF";
   clientRequestId: string;
   sentAt: Date;
+  attachments: AttachmentRow[];
 };
 
 function toView(row: MessageRow): MessageView {
@@ -127,6 +266,7 @@ function toView(row: MessageRow): MessageView {
     senderKind: row.senderKind,
     sentAt: row.sentAt.toISOString(),
     clientRequestId: row.clientRequestId,
+    attachments: toAttachmentViews(row.attachments),
   };
 }
 
@@ -139,7 +279,7 @@ export async function listOwnMessages(
   session: SessionLike,
   input: { workspaceId: string },
   deps: MessageDeps = {},
-): Promise<{ messages: MessageView[] }> {
+): Promise<{ messages: OwnMessageView[] }> {
   const db = deps.db ?? prisma;
   const userId = userIdOf(session);
   const profile = await ownProfile(db, input.workspaceId, userId, "read");
@@ -162,9 +302,79 @@ export async function listOwnMessages(
       senderKind: true,
       clientRequestId: true,
       sentAt: true,
+      attachments: attachmentSelect,
     },
   });
-  return { messages: rows.map(toView) };
+  // W2-T8: own rows flip read when any ACTIVE staff member in this
+  // workspace has read them; staff rows flip on the caller's own marker.
+  const staff = await db.workspaceMember.findMany({
+    where: {
+      workspaceId: input.workspaceId,
+      status: "ACTIVE",
+      role: { in: [...STAFF_ROLES] },
+    },
+    select: { userId: true },
+  });
+  const staffIds = new Set(staff.map((member) => member.userId));
+  const reads = await db.messageRead.findMany({
+    where: { messageId: { in: rows.map((row) => row.id) } },
+    select: { messageId: true, userId: true },
+  });
+  const ownReads = new Set(
+    reads.filter((r) => r.userId === userId).map((r) => r.messageId),
+  );
+  const staffReads = new Set(
+    reads.filter((r) => staffIds.has(r.userId)).map((r) => r.messageId),
+  );
+  return {
+    messages: rows.map((row) => ({
+      ...toView(row),
+      read:
+        row.senderKind === "CLIENT"
+          ? staffReads.has(row.id)
+          : ownReads.has(row.id),
+    })),
+  };
+}
+
+/** W2-T8: the client's own mark-read, the mirror of markStaffThreadRead.
+ *  Marks every unread STAFF message on the caller's own thread; idempotent. */
+export async function markOwnThreadRead(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: MessageDeps = {},
+): Promise<{ marked: number }> {
+  const db = deps.db ?? prisma;
+  const userId = userIdOf(session);
+  const profile = await ownProfile(db, input.workspaceId, userId, "write");
+  const conversation = await db.conversation.findUnique({
+    where: {
+      workspaceId_clientProfileId: {
+        workspaceId: input.workspaceId,
+        clientProfileId: profile.id,
+      },
+    },
+    select: { id: true },
+  });
+  if (!conversation) return { marked: 0 };
+  const unread = await db.message.findMany({
+    where: {
+      conversationId: conversation.id,
+      senderKind: "STAFF",
+      reads: { none: { userId } },
+    },
+    select: { id: true },
+  });
+  if (unread.length === 0) return { marked: 0 };
+  const result = await db.messageRead.createMany({
+    data: unread.map((message) => ({
+      messageId: message.id,
+      userId,
+      readAt: new Date(),
+    })),
+    skipDuplicates: true,
+  });
+  return { marked: result.count };
 }
 
 /**
@@ -174,14 +384,38 @@ export async function listOwnMessages(
  */
 export async function sendOwnMessage(
   session: SessionLike,
-  input: { workspaceId: string; body: unknown; clientRequestId?: unknown },
+  input: {
+    workspaceId: string;
+    body: unknown;
+    clientRequestId?: unknown;
+    mediaObjectIds?: unknown;
+  },
   deps: MessageDeps = {},
 ): Promise<{ message: MessageView }> {
   const db = deps.db ?? prisma;
   const userId = userIdOf(session);
-  const body = normalizeBody(input.body);
+  const mediaObjectIds = normalizeAttachmentIds(input.mediaObjectIds);
+  const body = normalizeSendBody(input.body, mediaObjectIds.length > 0);
   const clientRequestId = normalizeRequestId(input.clientRequestId);
   const profile = await ownProfile(db, input.workspaceId, userId, "write");
+  // W2-T8: a client may attach only media anchored to their own profile, so
+  // every link stays redeemable through the existing own-prefix mint.
+  const targets = await attachmentTargets(
+    db,
+    input.workspaceId,
+    mediaObjectIds,
+    profile.id,
+  );
+  const targetViews = mediaObjectIds.map((mediaObjectId, position) => {
+    const target = targets.find((row) => row.id === mediaObjectId)!;
+    return {
+      mediaObjectId,
+      fileName: target.fileName,
+      contentType: target.contentType,
+      byteSize: Number(target.byteSize),
+      position,
+    };
+  });
 
   const result = await db.$transaction(async (tx) => {
     const conversation = await tx.conversation.upsert({
@@ -211,6 +445,7 @@ export async function sendOwnMessage(
         senderKind: true,
         clientRequestId: true,
         sentAt: true,
+        attachments: attachmentSelect,
       },
     });
     if (existing) return { message: toView(existing), created: false };
@@ -225,17 +460,23 @@ export async function sendOwnMessage(
       },
       select: {
         id: true,
+        workspaceId: true,
         body: true,
         senderKind: true,
         clientRequestId: true,
         sentAt: true,
+        attachments: attachmentSelect,
       },
     });
+    await createAttachmentLinks(tx, row, mediaObjectIds);
     await tx.conversation.update({
       where: { id: conversation.id },
       data: { lastMessageAt: row.sentAt },
     });
-    return { message: toView(row), created: true };
+    return {
+      message: { ...toView(row), attachments: targetViews },
+      created: true,
+    };
   });
 
   // Notification fan-out runs after the commit boundary: a mail outage must
@@ -481,6 +722,7 @@ export async function getStaffThread(
         sentAt: true,
         priority: true,
         links: true,
+        attachments: attachmentSelect,
       },
     }),
     db.messageDraft.findUnique({
@@ -509,12 +751,14 @@ export async function sendStaffMessage(
     clientProfileId: string;
     body: unknown;
     clientRequestId?: unknown;
+    mediaObjectIds?: unknown;
   },
   deps: MessageDeps = {},
 ): Promise<{ message: StaffMessageView }> {
   const db = deps.db ?? prisma;
   const userId = userIdOf(session);
-  const body = normalizeBody(input.body);
+  const mediaObjectIds = normalizeAttachmentIds(input.mediaObjectIds);
+  const body = normalizeSendBody(input.body, mediaObjectIds.length > 0);
   const clientRequestId = normalizeRequestId(input.clientRequestId);
   await staffMember(db, input.workspaceId, userId, "write");
   const profile = await staffClientProfile(
@@ -522,6 +766,25 @@ export async function sendStaffMessage(
     input.workspaceId,
     input.clientProfileId,
   );
+  // W2-T8: staff attachments must also anchor to the thread's client
+  // profile - a coach uploads under that prefix, so both parties can redeem
+  // the existing mint and no other client's object can be linked in.
+  const targets = await attachmentTargets(
+    db,
+    input.workspaceId,
+    mediaObjectIds,
+    profile.id,
+  );
+  const targetViews = mediaObjectIds.map((mediaObjectId, position) => {
+    const target = targets.find((row) => row.id === mediaObjectId)!;
+    return {
+      mediaObjectId,
+      fileName: target.fileName,
+      contentType: target.contentType,
+      byteSize: Number(target.byteSize),
+      position,
+    };
+  });
 
   return db.$transaction(async (tx) => {
     const conversation = await tx.conversation.upsert({
@@ -553,6 +816,7 @@ export async function sendStaffMessage(
         sentAt: true,
         priority: true,
         links: true,
+        attachments: attachmentSelect,
       },
     });
     if (existing) {
@@ -575,19 +839,24 @@ export async function sendStaffMessage(
       },
       select: {
         id: true,
+        workspaceId: true,
         body: true,
         senderKind: true,
         clientRequestId: true,
         sentAt: true,
         priority: true,
         links: true,
+        attachments: attachmentSelect,
       },
     });
+    await createAttachmentLinks(tx, row, mediaObjectIds);
     await tx.conversation.update({
       where: { id: conversation.id },
       data: { lastMessageAt: row.sentAt },
     });
-    return { message: toStaffView(row, new Set()) };
+    return {
+      message: { ...toStaffView(row, new Set()), attachments: targetViews },
+    };
   });
 }
 

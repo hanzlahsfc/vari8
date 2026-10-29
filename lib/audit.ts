@@ -208,6 +208,9 @@ export const AUDIT_RESOURCE_TYPES = [
   // prescription text.
   "training_session_log",
   "training_set_log",
+  // W2-N9: temporary nutrition plan lifecycle (CREATE/READ/DELETE on the
+  // dated overlay rows) - ids and structural markers only.
+  "temporary_nutrition_plan",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 

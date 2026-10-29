@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 186 modules with exports, 1827 exported symbols.
+Counts: 186 modules with exports, 1843 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -857,13 +857,14 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/daily-entry/nutrition-log.ts`
 
 - `export { DailyEntryError } from "./gate"`
+- `export const MAX_CALORIES_KCAL = 10000`
 - `export const MAX_MACRO_GRAMS = 10000`
 - `export const NUTRITION_LOG_HISTORY_LIMIT = 30`
-- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; }`
+- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; calories: number | null; dayType: string | null; planFollowed: boolean | ...`
 - `export type NutritionLogSurface = | { state: "ready"; entryDate: string; log: Omit<NutritionLogDay, "entryDate"> | null; history: NutritionLogDay[]; } | { state: "not_applicable" } | { state: "cons...`
 - `export type NutritionMacroValues = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
 - `export const STAFF_NUTRITION_LOG_MAX_SPAN_DAYS = 366`
-- `export type SaveNutritionLogInput = { workspaceId: string; entryDate: string; macros: NutritionMacroValues; }`
+- `export type SaveNutritionLogInput = { workspaceId: string; entryDate: string; macros: NutritionMacroValues; calories?: number | null; dayType?: string | null; planFollowed?: boolean | null; }`
 - `export type SaveNutritionLogResult = { status: "saved" | "no_op" }`
 - `export type StaffNutritionLogListResult = | { state: "ready"; clientName: string; items: NutritionLogDay[]; } | { state: "consent_missing" }`
 - `export async function listStaffNutritionLogs(session: SessionLike, input: { workspaceId: string; clientProfileId: string; from?: string; to?: string; }, deps: DailyEntryDeps = {}): Promise<StaffNut...`
@@ -895,13 +896,18 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type StaffTrackerValueRow = { parameterKey: string; kind: string; display: string; }`
 - `export type StaffTrackerValuesResult = | { state: "consent_missing" } | { state: "ready"; clientName: string; entries: { entryDate: string; values: StaffTrackerValueRow[] }[]; cellNotes: StaffTrack...`
 - `export type StoredValue = { parameterId: string; kind: string; valueNumeric: unknown; valueRating: number | null; valueOptionId: string | null; valueText: string | null; }`
+- `export type TrackerColumn = { key: string; label: string; unit: string | null; decimals: number | null; summary: string | null; group: string | null; sectionId: string; order: number; type: string;...`
+- `export type TrackerColumnGroup = { group: string | null; columns: TrackerColumn[]; }`
+- `export type TrackerColumnsResult = | { state: "not_applicable" } | { state: "unavailable" } | { state: "ineligible" } | { state: "consent_missing" } | { state: "ready"; templateVersionId: string; g...`
 - `export async function advisoryLock(tx: Prisma.TransactionClient, key: string): Promise<void>`
 - `export async function checkRequiredConsent(tx: PrismaLike, clientProfileId: string, registry: ConsentPolicyRegistry, forUpdate: boolean): Promise<void>`
 - `export function dailyEntryConsentRegistry(entryFlagEnabled: boolean): ConsentPolicyRegistry`
 - `export async function listStaffDailyEntries(session: SessionLike, input: { workspaceId: string; clientProfileId: string; cursor?: string }, deps: DailyEntryDeps = {}): Promise<StaffDailyEntryListRe...`
 - `export async function listStaffTrackerValues(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DailyEntryDeps = {}): Promise<StaffTrackerValuesResult>`
 - `export async function loadDailyEntrySurface(session: SessionLike, input: { workspaceId: string; entryDate?: string }, deps: DailyEntryDeps = {}): Promise<DailyEntrySurface>`
+- `export async function loadOwnTrackerColumns(session: SessionLike, input: { workspaceId: string }, deps: DailyEntryDeps = {}): Promise<TrackerColumnsResult>`
 - `export async function loadStaffDailyEntryDetailTx(tx: Prisma.TransactionClient, input: { workspaceId: string; clientProfileId: string; entryDate: string; ctx: Awaited<ReturnType<typeof authorize>>;...`
+- `export async function loadStaffTrackerColumns(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: DailyEntryDeps = {}): Promise<TrackerColumnsResult>`
 - `export async function lockRow(tx: Prisma.TransactionClient, sql: string, ...params: string[]): Promise<void>`
 - `export function parseDailyEntrySeriesRange(rawFrom: unknown, rawTo: unknown): { from: string; to: string }`
 - `export function parseDeclaredDate(raw: unknown): string`
@@ -919,7 +925,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const DAILY_ENTRY_TEXT_MAX = 5000`
 - `export type OrdinalValue = { ordinal: number; raw: string }`
-- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; options: Array<{ optionId: string; label:...`
+- `export type SnapshotParam = { parameterId: string; parameterKey: string; kind: string; required: boolean; unit: string | null; ratingScheme: string | null; decimals: number | null; summary: string ...`
 - `export function resolveDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ResolveOk | ResolveErr`
 - `export function validateDailyEntryValues(values: readonly OrdinalValue[], ordinals: readonly string[], snapshot: readonly SnapshotParam[]): ValidateOk | ValidateErr`
 
@@ -1534,6 +1540,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/mealplan/service.ts`
 
+- `export type CreateTemporaryNutritionInput = { workspaceId: string; clientProfileId: string; kind: unknown; label: unknown; startDate: unknown; endDate: unknown; source: unknown; plan: unknown; }`
 - `export type MealPlanActivation = | { status: "ok"; instant: Date } | { status: "unrepresentable" } | { status: "invalid" }`
 - `export type MealPlanDeps = { db?: PrismaClient; registry?: ConsentPolicyRegistry; now?: Date; }`
 - `export type { MealPlanDraft } from "./payload"`
@@ -1547,8 +1554,14 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type { MealTargets } from "./payload"`
 - `export type OwnMealPlanView = { current: { versionSeq: number; effectiveDate: string; effectiveTimezone: string; payload: MealPlanDraft; } | null; upcoming: { versionSeq: number; effectiveDate: str...`
 - `export type StaffMealPlanView = { plan: { id: string; title: string; timezone: string | null; draftRevision: number; draft: MealPlanDraft; } | null; versions: MealPlanVersionHeader[]; nextCursor: n...`
+- `export const TEMPORARY_NUTRITION_MAX_DAYS = 28`
 - `export type { TargetValue } from "./payload"`
+- `export type TemporaryNutritionWire = { id: string; kind: keyof typeof TEMPORARY_KIND_FROM_WIRE; label: string; startDate: string; endDate: string; source: keyof typeof TEMPORARY_SOURCE_FROM_WIRE; p...`
 - `export type { VariantSchedule } from "./payload"`
+- `export async function createTemporaryNutritionPlan(session: SessionLike, input: CreateTemporaryNutritionInput, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutritionWire }>`
+- `export async function deleteTemporaryNutritionPlan(session: SessionLike, input: { workspaceId: string; clientProfileId: string; temporaryPlanId: string; }, deps: MealPlanDeps = {}): Promise<{ delet...`
+- `export async function listOwnTemporaryNutritionPlans(session: SessionLike, input: { workspaceId: string }, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutritionWire[] }>`
+- `export async function listStaffTemporaryNutritionPlans(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MealPlanDeps = {}): Promise<{ temporary: TemporaryNutriti...`
 - `export function parseEffectiveDate(raw: unknown, now: Date = new Date()): string`
 - `export async function publishMealPlanVersion(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; effectiveDate: string; }, deps: MealPlanDeps = {}...`
 - `export async function readOwnMealPlan(session: SessionLike, input: { workspaceId: string }, deps: MealPlanDeps = {}): Promise<OwnMealPlanView>`
@@ -1560,18 +1573,21 @@ Imported type names are shown without their `import("...")` prefix.
 
 ## `lib/messages/service.ts`
 
+- `export type AttachmentView = { mediaObjectId: string; fileName: string; contentType: string; byteSize: number; position: number; }`
 - `export type MessageDeps = { db?: PrismaLike; notifyClientMessage?: (input: { workspaceId: string; clientProfileId: string; }) => Promise<unknown>; }`
 - `export class MessageError extends Error (1 members)`
-- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; }`
+- `export type MessageView = { id: string; body: string; senderKind: "CLIENT" | "STAFF"; sentAt: string; clientRequestId: string; attachments: AttachmentView[]; }`
+- `export type OwnMessageView = MessageView & { read: boolean }`
 - `export type StaffConversationView = { clientProfileId: string; clientName: string; lastMessageAt: string | null; lastMessagePreview: string | null; unreadCount: number; hasPriority: boolean; }`
 - `export type StaffMessageView = MessageView & { read: boolean; priority: boolean; links: unknown; }`
 - `export async function getStaffThread(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ clientProfileId: string; messages: StaffMessag...`
-- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: MessageView[] }>`
+- `export async function listOwnMessages(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ messages: OwnMessageView[] }>`
 - `export async function listStaffConversations(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ conversations: StaffConversationView[] }>`
+- `export async function markOwnThreadRead(session: SessionLike, input: { workspaceId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function markStaffThreadRead(session: SessionLike, input: { workspaceId: string; clientProfileId: string }, deps: MessageDeps = {}): Promise<{ marked: number }>`
 - `export async function saveStaffDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown }, deps: MessageDeps = {}): Promise<{ draft: { body: string; revision...`
-- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown }, deps: MessageDeps = {}): Promise<{ message: MessageView }>`
-- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; }, deps: MessageDeps = {}): Promise<{ m...`
+- `export async function sendOwnMessage(session: SessionLike, input: { workspaceId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: MessageDeps = {}): Promise<{ me...`
+- `export async function sendStaffMessage(session: SessionLike, input: { workspaceId: string; clientProfileId: string; body: unknown; clientRequestId?: unknown; mediaObjectIds?: unknown; }, deps: Mess...`
 
 ## `lib/notes/boundary.ts`
 
