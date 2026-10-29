@@ -93,7 +93,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const ACTIVITY_METRICS: readonly ActivityMetric[]`
 - `export type ActivityMetric = "steps" | "cardioMin"`
-- `export type ActivityTargetKind = | "MINIMUM" | "MAXIMUM" | "RANGE" | "FIXED" | "CARDIO"`
+- `export type ActivityTargetKind = "MINIMUM" | "MAXIMUM" | "RANGE" | "FIXED" | "CARDIO"`
 - `export type ActivityTargetRow = { id: string; metric: ActivityMetric; kind: ActivityTargetKind | null; stepMin: number | null; stepMax: number | null; sessionsPerWeek: number | null; minutesPerSess...`
 - `export type ActivityTargetWrite = | { kind: "MINIMUM"; stepMin: number } | { kind: "MAXIMUM"; stepMax: number } | { kind: "RANGE"; stepMin: number; stepMax: number } | { kind: "FIXED"; stepMin: num...`
 - `export type ActivityTargetWritePlan = | { kind: "invalid"; errors: string[] } | { kind: "confirmation-required" } | { kind: "insert"; id: string; metric: ActivityMetric; effectiveFrom: string; targ...`
@@ -1466,7 +1466,7 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export type IifymPlansEnv = RuntimeEnv & { ENABLE_IIFYM_PLANS?: string }`
 - `export type IifymRuntimeClass = RuntimeClass`
-- `export const classifyIifymRuntime: ( env?: RuntimeEnv, ) => IifymRuntimeClass`
+- `export const classifyIifymRuntime: (env?: RuntimeEnv) => IifymRuntimeClass`
 - `export function isIifymPlansEnabled(env: IifymPlansEnv = process.env): boolean`
 
 ## `lib/iifym/limits.ts`
@@ -2192,7 +2192,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type OwnSessionLog = { sessionLogId: string; programId: string; sessionId: string; bookedWeek: number; performedDate: string; status: SessionLogStatus; startedAt: string; completedAt: string...`
 - `export type OwnTrainingView = { state: "none" | "upcoming" | "active" | "completed"; agenda: ClientAgendaItem[]; current: { programId: string; title: string; versionSeq: number; weekIndex: number; ...`
 - `export type OwnVersionDetail = { id: string; programId: string; versionSeq: number; effectiveDate: string; activationInstant: string; scheduled: boolean; payload: MaterializedProgram; }`
-- `export type SessionLogStatus = | "IN_PROGRESS" | "COMPLETED" | "PARTIAL" | "SKIPPED"`
+- `export type SessionLogStatus = "IN_PROGRESS" | "COMPLETED" | "PARTIAL" | "SKIPPED"`
 - `export type SessionSetRow = { id: string; exerciseId: string; setId: string; setKey: string; position: number; actuals: SetLogEntry; }`
 - `export type StaffBooking = { bookingId: string; scheduledDate: string; bookedWeek: number; pinnedVersionSeq: number; session: MaterializedSession; cancelledAt: string | null; programUpdatedSinceBoo...`
 - `export type StaffBookingsPage = { upcoming: StaffBooking[]; history: StaffBooking[]; nextCursor: { scheduledDate: string; id: string } | null; hasMore: boolean; canWrite: boolean; }`
