@@ -255,6 +255,12 @@ export function validateRun({ directory, manifest, shots, provenance }) {
       captureProblem(shot, screen.captureEvidence)
     )
       throw new Error(`invalid URL/content/selected state ${screen.id}`);
+    // the screen's PNG is its own identity — exactly vp/stem.png,
+    // never another screen's valid artifact
+    if (screen.png !== `${screen.vp}/${screen.stem}.png`)
+      throw new Error(
+        `artifact identity mismatch ${screen.id}: png ${JSON.stringify(screen.png)} != ${screen.vp}/${screen.stem}.png`,
+      );
     const image = artifact(directory, screen.png);
     const imageBuffer = fs.readFileSync(image);
     const png = PNG.sync.read(imageBuffer);
@@ -289,6 +295,13 @@ export function validateRun({ directory, manifest, shots, provenance }) {
       .sort();
     if (JSON.stringify(expectedScrolls) !== JSON.stringify(actualScrolls))
       throw new Error(`incomplete scroll captures ${screen.id}`);
+    // scroll captures are tuple-bound too: vp/stem.s* — another
+    // screen's scroll png is a forgery, not shared evidence
+    for (const scroll of screen.scrolls)
+      if (!scroll.png.startsWith(`${screen.vp}/${screen.stem}.s`))
+        throw new Error(
+          `scroll artifact identity mismatch ${screen.id}: ${JSON.stringify(scroll.png)}`,
+        );
     for (const f of [
       screen.png,
       `${screen.vp}/${screen.stem}.geom.json.gz`,
@@ -305,6 +318,14 @@ export function validateRun({ directory, manifest, shots, provenance }) {
     }
   }
   if (seen.size !== expected.size) throw new Error("incomplete captures");
+  // unique ownership — one artifact path belongs to exactly one screen
+  const owners = new Map();
+  for (const a of artifacts) owners.set(a.path, (owners.get(a.path) ?? 0) + 1);
+  const shared = [...owners.entries()].filter(([, n]) => n > 1);
+  if (shared.length)
+    throw new Error(
+      `artifact shared across screens: ${shared.map(([p]) => p).join(", ")}`,
+    );
   return artifacts;
 }
 export function createAdapter({ harnessRoot, outputFile }) {

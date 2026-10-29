@@ -65,7 +65,13 @@ type FixtureScreen = {
   size: { width: number; height: number };
   sha256: string;
   elements: number;
-  scrolls: never[];
+  scrolls: {
+    scroller: string;
+    x: number;
+    y: number;
+    png: string;
+    box: [number, number, number, number];
+  }[];
 };
 const dirs: string[] = [];
 afterEach(() =>
@@ -460,6 +466,27 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/id\/stem\/viewport mismatch/);
   vpScreen.vp = savedVp;
+  // artifact-identity: a screen referencing another screen's PNG refuses
+  const otherVp = screens.find((s) => s !== vpScreen && s.vp === "1440")!;
+  const savedPng = vpScreen.png;
+  vpScreen.png = otherVp.png;
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/artifact identity mismatch/);
+  vpScreen.png = savedPng;
+  // swapped scroll artifact (same weakness class) refuses
+  const scrollScreen = screens.find((s) => s.scrolls?.length)!;
+  if (scrollScreen) {
+    const otherStem = screens.find(
+      (s) => s !== scrollScreen && s.vp === scrollScreen.vp,
+    )!.stem;
+    const savedScroll = scrollScreen.scrolls[0].png;
+    scrollScreen.scrolls[0].png = `${scrollScreen.vp}/${otherStem}.s0-0-0.png`;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll|identity/);
+    scrollScreen.scrolls[0].png = savedScroll;
+  }
   expect(() =>
     validateRun({
       directory: d,
