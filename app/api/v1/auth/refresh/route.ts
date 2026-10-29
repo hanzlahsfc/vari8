@@ -9,7 +9,7 @@ import {
 import { prisma } from "@/lib/db";
 
 /**
- * AUTH-ROTATE: `POST /api/v1/auth/refresh` — bearer only (ruling O1: cookie
+ * AUTH-ROTATE: `POST /api/v1/auth/refresh`. Bearer only (ruling O1: cookie
  * sessions belong to web/PWA and never rotate here, D6: the Capacitor shell
  * rotates its bearer token).
  *

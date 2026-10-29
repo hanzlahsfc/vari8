@@ -108,7 +108,7 @@ database `app_wb_m6_rt`, exit 0, 1 test passed. It saves a draft, publishes
 it, then reads the version back as staff and as the client and asserts
 literal rows, not shape: `d1, d2, d3, d4` with `coachNote` "Keep the
 brace", `b1` to `b4`, `ss1` to `ss3`, `r1` to `r3`, the derived scalar
-`sets` 4 and `reps` "4–5".
+`sets` 4 and `reps` "4 to 5".
 
 `npx vitest run tests/unit/training-m6.test.ts` (the canvas parity guard
 plus the volume literal), exit 0, 16 tests passed. That suite compares

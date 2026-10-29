@@ -1,3 +1,20 @@
+## 2026-10-29 - Merge: nutrition accuracy gate manifest mode and parity capture counts
+
+- Manifest mode in `scripts/check-nutrition-source-accuracy.ts`, with probe
+  coverage in `tests/unit/nutrition-accuracy-gate-probes.test.ts`.
+- Parity capture contract counts follow the 37 recipe capture set (74
+  screens): `reference.mjs`, `combined-run.mjs`, `contract.json`, the proposed
+  provenance, the comparer and receipt pins, and the two unit tests that assert
+  the counts.
+- `pixelmatch` and `pngjs` are declared as dev dependencies in `package.json`
+  and `package-lock.json`.
+- Comment punctuation tidied in the training, notes and refresh route files.
+
+### Known limits
+
+- `tools/parity/reference/evidence/verify-evidence.mjs` still reports the
+  captured candidate provenance as stale until the reference is recaptured.
+
 ## 2026-10-29 - Repair round 1: reset demo flag, default seed coverage, claim corrections
 
 - Reset fix: "Reset coach workspace" re-seeded with the demo default, so a real
