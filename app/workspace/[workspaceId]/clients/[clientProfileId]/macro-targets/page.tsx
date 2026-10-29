@@ -62,7 +62,7 @@ export default async function StaffClientMacroTargetsPage({
         <p className="app-lede">
           Coach-entered daily macro targets per option and weekday. Calories
           derive from protein, carbohydrate and fat at 4, 4 and 9 kcal per gram
-          — a calorie-only target mode is entered directly and labelled.
+          -- a calorie-only target mode is entered directly and labelled.
         </p>
       </header>
       <MacroTargetsEditor
