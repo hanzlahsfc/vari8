@@ -1,3 +1,15 @@
+## 2026-10-29 - Merge: check-in fixtures, photo tiles, seed client link and credentials
+
+- Four verified tips merged as merge commits, never squashed: 3a47c445 (seeded
+  check-in fixtures gated on the demo flag), 2fbbcf36 (release orphaned media
+  mints on gallery reload), 85db3644 and caa5c2e8 (seed client linked to the
+  Amara Lewis profile, every linked demo client holds a login). The last two
+  were resolved together once; the seed files keep the 85db3644 content.
+- Conflicts: `components/canvas/client-app/photos.tsx` stays deleted as on Beta
+  (no importers; the gallery behavior lives in the workspace photos panel);
+  seed files keep the Amara Lewis link plus the optional second coach fixture;
+  this file is the union of both entries. The frontend tree matches Beta.
+
 ## 2026-10-29 - Merge: wave 2 trunk tail (flexible schedule, tracker columns, temporary nutrition plan, stored calories)
 
 - Four verified tips merged into this branch as merge commits in order, never
@@ -1216,7 +1228,7 @@ generate` (stale client missed `clientPhase`/`clientWeekNote`);
   `npm run seed:dev` 0 twice (reseed: identical link state and row counts),
   sign-in at /login as SEED_CLIENT lands on /me rendering Amara Lewis
   (getClientViewer non-null), `npx vitest run --config
-  vitest.integration.config.ts tests/integration/seed-credentials.test.ts`
+vitest.integration.config.ts tests/integration/seed-credentials.test.ts`
   0 (5 tests), `npm run lint` 0 (91 warnings, 0 errors),
   `npm run typecheck` 0, `npx prettier --check` 0 on changed files,
   `npm run index` + `index:check` 0, dash gate on added diff lines 0.

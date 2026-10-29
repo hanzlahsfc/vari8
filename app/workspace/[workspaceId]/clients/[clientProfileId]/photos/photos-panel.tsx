@@ -96,8 +96,7 @@ export function PhotosPanel({
       // Entries reloaded mid-mint: ids that never wrote a url must be
       // released so the next pass mints them again; resolved ids keep
       // their deduped urls.
-      for (const id of inFlight)
-        if (!resolved.has(id)) requestedSet.delete(id);
+      for (const id of inFlight) if (!resolved.has(id)) requestedSet.delete(id);
     };
   }, [entries, workspaceId]);
 

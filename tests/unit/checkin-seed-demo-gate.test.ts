@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  eventsBetween,
-  seedState,
-} from "../../components/canvas/coach/model";
+import { eventsBetween, seedState } from "../../components/canvas/coach/model";
 
 /**
  * W2-CHK-I4 (fail-closed seed gate): with ENABLE_CHECK_INS unset every
