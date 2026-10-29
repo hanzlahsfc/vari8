@@ -203,7 +203,7 @@ assert.match(
   assert.doesNotMatch(styles, /\.v8-card\[data-treatment="spotlight"\]::after/);
   assert.match(
     cssRule(".v8-theme :where(.v8-input, .v8-select)"),
-    /background:\s*var\(--v8-surface-inset\)/,
+    /background:\s*var\(--v8-field\)/,
   );
   assert.match(
     cssRule(".v8-theme :where(.v8-input, .v8-select)"),
@@ -215,16 +215,9 @@ assert.match(
   );
   assert.match(
     styles,
-    /\.v8-theme\s+:where\(\.v8-input:hover[^}]*border-color:\s*var\(--v8-field-border\)/s,
+    /\.v8-theme\s+:where\(\.v8-input:hover[^}]*background:\s*var\(--v8-surface-interactive\)/s,
   );
-  assert.match(
-    styles,
-    /\.v8-theme\s*\{[^}]*--v8-field-border:\s*var\(--v8-border-control\)/s,
-  );
-  assert.match(
-    styles,
-    /\.v8-theme\[data-mode="dark"\]\s*\{[^}]*--v8-field-border:\s*var\(--v8-border\)/s,
-  );
+  assert.match(styles, /\.v8-theme\s*\{[^}]*--v8-field-border:\s*transparent/s);
   assert.match(styles, /--v8-field-height:\s*var\(--v8-control-height-md\)/);
   const inputFieldRule = inputStyles.slice(
     inputStyles.indexOf(

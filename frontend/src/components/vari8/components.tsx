@@ -133,6 +133,8 @@ export function Card({
 
 type FieldMessages = {
   label: string;
+  /** Visually hide the label while keeping it for assistive tech. */
+  hideLabel?: boolean;
   hint?: string;
   error?: string;
 };
@@ -147,6 +149,7 @@ function useFieldIds(id: string | undefined, hint?: string, error?: string) {
 
 function FieldMessagesView({
   label,
+  hideLabel,
   hint,
   error,
   controlId,
@@ -159,7 +162,10 @@ function FieldMessagesView({
 }) {
   return (
     <>
-      <label className="v8-field__label" htmlFor={controlId}>
+      <label
+        className={hideLabel ? "v8-field__label v8-sr-only" : "v8-field__label"}
+        htmlFor={controlId}
+      >
         {label}
       </label>
       {hint && (
@@ -196,6 +202,7 @@ export type InputProps = FieldMessages &
 
 export function Input({
   label,
+  hideLabel,
   hint,
   error,
   id,
@@ -210,7 +217,13 @@ export function Input({
   const ids = useFieldIds(id, hint, error);
   return (
     <div className="v8-field">
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        hideLabel={hideLabel}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <input
         {...props}
         ref={ref}

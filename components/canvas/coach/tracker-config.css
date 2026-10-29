@@ -438,3 +438,9 @@
     gap: 3px;
   }
 }
+
+.coach-root .cd-tracker-decimals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

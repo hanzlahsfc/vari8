@@ -14,15 +14,13 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CanvasRole } from "@/lib/auth/viewer";
-import { themeVariables } from "@/lib/canvas/ethereal-appearance";
-import { vari8Theme } from "@/lib/canvas/vari8-theme";
 import { Input as Vari8Input } from "../vari8/components";
-import { accentControlColors } from "./accent-contrast";
 import { AppearanceControls } from "./appearance-controls";
 import { CheckInsWorkspace } from "./check-ins";
 import { ClientsWorkspace } from "./clients";
+import { coachThemeStyle } from "./coach-theme";
 import { MessagesWorkspace } from "./messages";
 import { type Section, seedState, unreadCount } from "./model";
 import { NotesWorkspace } from "./notes";
@@ -108,46 +106,12 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
   const selectedClient = state.clients.find((c) => c.id === route.client);
   const pending = state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
-  const theme = themeVariables({
-    mode: state.preferences.mode,
-    accent: state.preferences.accent,
-    font: "sans",
-  }) as Record<string, string>;
-  const actionSurfaces = [
-    theme["--v8-surface-navigation"],
-    theme["--v8-surface"],
-    theme["--v8-surface-raised"],
-    theme["--v8-surface-inset"],
-  ];
-  const actions = accentControlColors(theme["--accent"], actionSurfaces);
   return (
     <div
       className="coach-root v8-theme"
       data-mode={state.preferences.mode}
       data-sidebar-collapsed={Boolean(state.preferences.sidebarCollapsed)}
-      style={
-        {
-          ...vari8Theme({
-            mode: state.preferences.mode,
-            accent: state.preferences.accent,
-          }),
-          "--cd-accent": theme["--accent"],
-          "--cd-accent-text": theme["--accent-ink"],
-          "--cd-accent-link": theme["--accent-ink"],
-          "--cd-accent-contrast": theme["--accent-contrast"],
-          "--cd-accent-ring": theme["--accent-ring"],
-          "--cd-chart-line": theme["--chart-line"],
-          "--nutrition-macro-protein": theme["--nutrition-macro-protein"],
-          "--nutrition-macro-carbs": theme["--nutrition-macro-carbs"],
-          "--nutrition-macro-fat": theme["--nutrition-macro-fat"],
-          "--cd-action-bg": actions.background,
-          "--cd-action-hover": actions.hoverBackground,
-          "--cd-action-text": actions.foreground,
-          "--accent-action": actions.background,
-          "--accent-action-hover": actions.hoverBackground,
-          "--accent-action-text": actions.foreground,
-        } as CSSProperties
-      }
+      style={coachThemeStyle(state.preferences)}
     >
       <a className="cd-skip" href="#coach-main">
         Skip to workspace

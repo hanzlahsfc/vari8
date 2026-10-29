@@ -14,6 +14,7 @@ import {
   type TrackerConfig,
   type TrackerEntry,
 } from "./model";
+import { RemoteClientTracker } from "./remote-client-tracker";
 import { TrackerConfigurator } from "./tracker-configurator";
 import { TrackingView } from "./tracking-view";
 import "./client-tracker.css";
@@ -30,6 +31,17 @@ export type ClientTrackerIdentity = {
   clientName: string;
   clientInitials: string;
   asOf: string;
+  /**
+   * Card 05a: a real workspace binds the tracker to the server's daily-entry
+   * surface. Absent (the canvas studio identity), the component keeps its
+   * localStorage draft and sample history.
+   */
+  workspaceId?: string;
+  /**
+   * Issue #169: the viewer's own client profile - when present the remote
+   * tracker also resolves the day's activity targets through the API.
+   */
+  clientProfileId?: string;
 };
 
 const DEFAULT_IDENTITY: ClientTrackerIdentity = {
@@ -46,6 +58,24 @@ export function ClientTracker({
   identity = DEFAULT_IDENTITY,
 }: {
   identity?: ClientTrackerIdentity;
+}) {
+  if (identity.workspaceId)
+    return (
+      <RemoteClientTracker
+        workspaceId={identity.workspaceId}
+        clientProfileId={identity.clientProfileId}
+        clientName={identity.clientName}
+        clientInitials={identity.clientInitials}
+        asOf={identity.asOf}
+      />
+    );
+  return <LocalClientTracker identity={identity} />;
+}
+
+function LocalClientTracker({
+  identity,
+}: {
+  identity: ClientTrackerIdentity;
 }) {
   const [config, setConfig] = useState<TrackerConfig | null>(null);
   const [entries, setEntries] = useState<TrackerEntry[]>(sampleEntries);

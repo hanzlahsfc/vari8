@@ -1,4 +1,9 @@
 import {
+  attentionSignalsFrom,
+  attentionCount as sharedAttentionCount,
+  needsAttention as sharedNeedsAttention,
+} from "@/lib/canvas/attention";
+import {
   type Client,
   clientProfile,
   clients as seedClients,
@@ -11,7 +16,12 @@ export type ClientTask = {
   status: "open" | "complete" | "overdue";
 };
 
-export type CoachTask = { id: string; title: string; complete: boolean };
+export type CoachTask = {
+  id: string;
+  title: string;
+  complete: boolean;
+  deadline?: string;
+};
 export type CheckIn = {
   id: string;
   date: string;
@@ -19,7 +29,7 @@ export type CheckIn = {
   summary: string;
   feedback: string;
 };
-export type ClientNote = { id: string; text: string };
+export type ClientNote = { id: string; text: string; pinned?: boolean };
 
 export type WorkspaceClient = Client & {
   email: string;
@@ -1086,22 +1096,10 @@ export function createInitialClients(): WorkspaceClient[] {
   return structuredClone(initialClients);
 }
 
-function hasCheckInAttention(client: WorkspaceClient): boolean {
-  return (
-    client.checkInStatus === "overdue" ||
-    client.checkIns.some((checkIn) => checkIn.status === "awaiting feedback")
-  );
-}
-
+// W2-T5: the derivation moved into the shared attention module; the
+// roster keeps its public names and calls the same result.
 export function needsAttention(client: WorkspaceClient): boolean {
-  return (
-    hasCheckInAttention(client) ||
-    client.unreadCount > 0 ||
-    client.clientTasks.some(
-      (task) => task.status === "open" || task.status === "overdue",
-    ) ||
-    client.trainingFlags > 0
-  );
+  return sharedNeedsAttention(attentionSignalsFrom(client));
 }
 
 export function statusLabel(client: WorkspaceClient): string {
@@ -1111,14 +1109,7 @@ export function statusLabel(client: WorkspaceClient): string {
 }
 
 export function attentionCount(client: WorkspaceClient): number {
-  return (
-    Number(hasCheckInAttention(client)) +
-    client.unreadCount +
-    client.clientTasks.filter(
-      (task) => task.status === "open" || task.status === "overdue",
-    ).length +
-    client.trainingFlags
-  );
+  return sharedAttentionCount(attentionSignalsFrom(client));
 }
 
 export function formatClientDate(value: string): string {

@@ -1,0 +1,395 @@
+/* Client training logbook: week overview + session logger. */
+
+.coach-root .ctl-week-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.coach-root .ctl-week-title {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  text-align: center;
+}
+.coach-root .ctl-week-title h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  letter-spacing: var(--v8-letter-spacing-tight, -0.02em);
+}
+.coach-root .ctl-week-title span {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+
+.coach-root .ctl-day-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.coach-root .ctl-day {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  min-block-size: 56px;
+  padding: 5px 2px 6px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--cd-text);
+  font: inherit;
+  cursor: pointer;
+}
+.coach-root .ctl-day .ctl-day-dow {
+  color: var(--cd-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.coach-root .ctl-day b {
+  font-size: 17px;
+  line-height: 20px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ctl-day-dot {
+  inline-size: 5px;
+  block-size: 5px;
+  border-radius: 50%;
+  background: transparent;
+}
+.coach-root .ctl-day[data-session] {
+  background: var(--v8-surface-subtle, var(--cd-wash));
+}
+.coach-root .ctl-day[data-today] {
+  border-color: var(--v8-accent-border, var(--cd-accent));
+}
+.coach-root .ctl-day[data-done] .ctl-day-dot {
+  background: var(--v8-accent-primary, var(--cd-accent));
+}
+.coach-root .ctl-day[data-before-start] {
+  color: var(--cd-muted);
+}
+.coach-root .ctl-day:hover {
+  background: var(--v8-surface-interactive, var(--cd-wash));
+}
+.coach-root .ctl-day[aria-pressed="true"] {
+  background: var(--v8-action, var(--v8-accent-primary, var(--cd-accent)));
+  color: var(--v8-on-action, var(--cd-action-text));
+}
+.coach-root .ctl-day[aria-pressed="true"] .ctl-day-dow {
+  color: var(--v8-on-action, var(--cd-action-text));
+  opacity: 0.8;
+}
+.coach-root .ctl-day[aria-pressed="true"] .ctl-day-dot {
+  background: var(--v8-on-action, var(--cd-action-text));
+}
+.coach-root .ctl-day:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: 2px;
+}
+
+.coach-root .ctl-session-list {
+  display: grid;
+  gap: 8px;
+}
+.coach-root .ctl-session {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid transparent;
+  border-radius: var(--v8-radius-card, 20px);
+  background: var(--cd-surface);
+  box-shadow: var(--v8-shadow-card, none);
+}
+.coach-root .ctl-session[data-status="done"] {
+  opacity: 0.6;
+}
+.coach-root .ctl-session-row {
+  display: grid;
+  gap: 8px;
+  inline-size: 100%;
+  min-inline-size: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--v8-radius-compact, 10px);
+  background: transparent;
+  color: var(--cd-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.coach-root .ctl-session-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-inline-size: 0;
+}
+.coach-root .ctl-session-date {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-inline-size: 0;
+}
+.coach-root .ctl-session-date b {
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  white-space: nowrap;
+}
+.coach-root .ctl-session-date small {
+  color: var(--cd-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.coach-root .ctl-session-name {
+  display: grid;
+  gap: 2px;
+  min-inline-size: 0;
+}
+.coach-root .ctl-session-name b {
+  display: -webkit-box;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  font-size: 15px;
+  line-height: 20px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.coach-root .ctl-session-name small {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .ctl-session-row .v8-status {
+  flex: 0 0 auto;
+}
+.coach-root .ctl-session-start {
+  inline-size: 100%;
+  min-block-size: 44px;
+}
+
+/* Session logger */
+.coach-root .ctl-session-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.coach-root .ctl-session-head-title {
+  min-inline-size: 0;
+}
+.coach-root .ctl-session-head-title h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  letter-spacing: var(--v8-letter-spacing-tight, -0.02em);
+}
+.coach-root .ctl-session-head-title span {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+
+.coach-root .ctl-summary {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.coach-root .ctl-summary-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+.coach-root .ctl-summary-line span {
+  color: var(--cd-muted);
+  font-size: 12.5px;
+}
+
+.coach-root .ctl-exercises {
+  display: grid;
+  gap: 10px;
+}
+.coach-root .ctl-exercise-head h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+}
+.coach-root .ctl-exercise-rx {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 12.5px;
+}
+.coach-root .ctl-exercise-note {
+  margin: 4px 0 0;
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .ctl-last-time {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--v8-radius-field, 14px);
+  background: var(--v8-field, var(--cd-field));
+  color: var(--cd-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ctl-last-time > span:first-child {
+  color: var(--cd-text);
+  font-weight: 560;
+}
+
+.coach-root .ctl-sets {
+  display: grid;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.coach-root .ctl-set {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.coach-root .ctl-set-index {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.coach-root .ctl-set-index b {
+  inline-size: 28px;
+  block-size: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--v8-surface-selected, var(--cd-wash));
+  font-size: 13px;
+  font-weight: var(--v8-font-weight-semibold, 600);
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ctl-set-index small {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.coach-root .ctl-set-field {
+  position: relative;
+  flex: 1 1 0;
+  min-inline-size: 0;
+}
+.coach-root .ctl-set-field .v8-input {
+  block-size: 44px;
+  height: 44px;
+  min-block-size: 44px;
+  max-block-size: 44px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ctl-set-unit {
+  position: absolute;
+  inset-inline-end: 10px;
+  inset-block-start: 50%;
+  transform: translateY(-50%);
+  color: var(--cd-muted);
+  font-size: 11px;
+  pointer-events: none;
+}
+.coach-root .ctl-set-done {
+  flex: 0 0 auto;
+  inline-size: 36px;
+  block-size: 36px;
+  min-inline-size: 36px;
+  min-block-size: 36px;
+}
+.coach-root .ctl-set-done:not([aria-pressed="true"]) {
+  color: var(--v8-text-secondary, var(--cd-muted));
+}
+.coach-root .ctl-set-done[aria-pressed="true"] {
+  background: var(--v8-action, var(--cd-action-bg));
+  color: var(--v8-on-action, var(--cd-action-text));
+}
+.coach-root .ctl-ghost-icon {
+  background: transparent;
+}
+.coach-root .ctl-ghost-icon:hover:not(:disabled) {
+  background: var(--v8-surface-interactive, var(--cd-wash));
+}
+.coach-root .ctl-flag-active {
+  color: var(--cd-accent-text, var(--cd-text));
+}
+.coach-root .ctl-set-note {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 2px 52px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--v8-radius-field, 14px);
+  background: var(--v8-field, var(--cd-field));
+}
+.coach-root .ctl-set-note p {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 12.5px;
+}
+
+.coach-root .ctl-set-values {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-inline-size: 0;
+}
+.coach-root .ctl-set[data-done] .ctl-set-index,
+.coach-root .ctl-set[data-done] .ctl-set-field,
+.coach-root .ctl-set[data-done] .ctl-set-values {
+  opacity: 0.6;
+}
+.coach-root .ctl-set-value {
+  display: grid;
+  gap: 1px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .ctl-set-value small {
+  color: var(--cd-muted);
+  font-size: 10.5px;
+}
+.coach-root .ctl-flag-readonly {
+  color: var(--cd-accent-text, var(--cd-text));
+}
+
+.coach-root .ctl-footer {
+  position: sticky;
+  bottom: 76px;
+  display: flex;
+  margin-top: -16px;
+  padding: 26px 0 4px;
+}
+.coach-root .ctl-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent, var(--cd-bg) 16px);
+  pointer-events: none;
+}
+.coach-root .ctl-footer .v8-button {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-block-size: 44px;
+}
+
+@container (min-width: 768px) {
+  .coach-root .ctl-footer {
+    bottom: 10px;
+  }
+}

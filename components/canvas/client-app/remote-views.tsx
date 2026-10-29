@@ -1,0 +1,180 @@
+"use client";
+
+// Card 05a remote surfaces. Under `own` the home dashboard's tasks and
+// messages widgets and the tracker section read and write the /api/v1
+// own routes instead of canvas fixture records. Every other field of
+// SourceRecords stays canvas-model data for this card: competition,
+// settings, the nutrition plan view, activity targets and the training
+// logbook have no endpoint yet and keep the local path.
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  bindDashboardUnits,
+  recordsForCoach,
+} from "../coach/builder/coach-dashboard";
+import { DashboardBuilder } from "../coach/builder/dashboard-builder";
+import type {
+  ClientMessage,
+  ClientTask,
+  SourceRecords,
+} from "../coach/builder/model";
+import { createDashboardDraft } from "../coach/builder/schema";
+import type { CoachClient, Variant } from "../coach/model";
+import { useCoach } from "../coach/store";
+import { useLocalToday } from "../coach/targets/use-local-today";
+import { fetchOwnMessages, type OwnMessageWire } from "../data/messages";
+import {
+  fetchOwnTasks,
+  type OwnTaskWire,
+  setOwnTaskCompletion,
+} from "../data/tasks";
+import { RemoteClientTracker } from "../ethereal/client-tracker/remote-client-tracker";
+
+type OwnIdentity = { workspaceId: string; clientProfileId: string };
+
+function toClientTask(wire: OwnTaskWire): ClientTask {
+  return {
+    id: wire.id,
+    title: wire.title,
+    dueDate: wire.dueDate,
+    completed: wire.status === "COMPLETED",
+  };
+}
+
+function toClientMessage(
+  wire: OwnMessageWire,
+  clientName: string,
+): ClientMessage {
+  return {
+    id: wire.id,
+    date: wire.sentAt.slice(0, 10),
+    sender: wire.senderKind === "STAFF" ? "Coach" : clientName,
+    excerpt: wire.body,
+    unread: false,
+  };
+}
+
+export function RemoteDashboardTab({
+  configuration,
+  client,
+  own,
+}: {
+  configuration: Variant;
+  client: CoachClient;
+  own: OwnIdentity;
+}) {
+  const { state } = useCoach();
+  const baseRecords = useMemo(
+    () => recordsForCoach(configuration, client, state),
+    [configuration, client, state],
+  );
+  const dashboard = useMemo(
+    () =>
+      bindDashboardUnits(
+        configuration.dashboard ?? createDashboardDraft(),
+        configuration,
+      ),
+    [configuration],
+  );
+  const [tasks, setTasks] = useState<OwnTaskWire[] | null>(null);
+  const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchOwnTasks(own.workspaceId, "both")
+      .then((response) => {
+        if (!cancelled) setTasks(response.tasks);
+      })
+      .catch(() => {
+        if (!cancelled) setTasks([]);
+      });
+    fetchOwnMessages(own.workspaceId)
+      .then((response) => {
+        if (!cancelled) setMessages(response.messages);
+      })
+      .catch(() => {
+        if (!cancelled) setMessages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [own.workspaceId]);
+  const records = useMemo<SourceRecords>(
+    () => ({
+      ...baseRecords,
+      // Under own these lists are server truth. Before the fetch resolves
+      // they render empty, never fixture rows.
+      tasks: (tasks ?? []).map(toClientTask),
+      messages: (messages ?? []).map((wire) =>
+        toClientMessage(wire, client.name),
+      ),
+    }),
+    [baseRecords, tasks, messages, client.name],
+  );
+  const onRecordsChange = useCallback(
+    (next: SourceRecords) => {
+      for (const wire of tasks ?? []) {
+        const edited = next.tasks.find((task) => task.id === wire.id);
+        if (!edited || edited.completed === (wire.status === "COMPLETED"))
+          continue;
+        setOwnTaskCompletion(own.workspaceId, own.clientProfileId, wire.id, {
+          desired: edited.completed ? "COMPLETED" : "OPEN",
+          expectedRevision: wire.revision,
+        })
+          .then((result) =>
+            setTasks((current) =>
+              (current ?? []).map((task) =>
+                task.id === wire.id
+                  ? {
+                      ...task,
+                      status: result.status,
+                      revision: result.revision,
+                    }
+                  : task,
+              ),
+            ),
+          )
+          .catch(() =>
+            // Failed writes must not linger as local state: rebuilding the
+            // array resyncs the widget to wire truth on the next render.
+            setTasks((current) => [...(current ?? [])]),
+          );
+      }
+    },
+    [own, tasks],
+  );
+  return (
+    <DashboardBuilder
+      value={dashboard}
+      onChange={() => undefined}
+      sourceRecords={records}
+      onRecordsChange={onRecordsChange}
+      previewOnly
+    />
+  );
+}
+
+export function RemoteTrackerTab({
+  own,
+  clientName,
+}: {
+  own: OwnIdentity;
+  clientName: string;
+}) {
+  const asOf = useLocalToday();
+  const clientInitials = clientName
+    .split(/\s+/)
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <RemoteClientTracker
+      workspaceId={own.workspaceId}
+      clientProfileId={own.clientProfileId}
+      clientName={clientName}
+      clientInitials={clientInitials}
+      asOf={asOf}
+    />
+  );
+}

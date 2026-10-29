@@ -48,6 +48,7 @@ import {
   ClientHabitsEditor,
   ClientPlansSummary,
 } from "./setup-ui";
+import { TemporaryPlanEditor } from "./temporary-editor";
 import { TrainingEditor, TrainingPrescription } from "./training/editor";
 import {
   emptyClientPlans,
@@ -172,6 +173,21 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
         ? { section: "check-ins", review: route.review }
         : { section: "clients", client: client.id, tab: "Plans" },
     );
+  // Full-page temporary plan editor: `temporary:new`,
+  // `temporary:new@YYYY-MM-DD` (prefilled start) or `temporary:<id>`.
+  if (route.plan?.startsWith("temporary:")) {
+    const spec = route.plan.slice("temporary:".length);
+    const at = spec.indexOf("@");
+    const id = at === -1 ? spec : spec.slice(0, at);
+    const start = at === -1 ? undefined : spec.slice(at + 1);
+    return (
+      <TemporaryPlanEditor
+        client={client}
+        existingId={id === "new" ? undefined : id}
+        initialStartDate={start}
+      />
+    );
+  }
   if (!setup)
     return (
       <>
@@ -783,11 +799,19 @@ function PlanEditor({
 export function ActiveClientNutrition({
   client,
   date = TODAY,
+  onDateChange,
+  override,
 }: {
   client: CoachClient;
   date?: string;
+  /** When set, the picker becomes controlled by the parent. */
+  onDateChange?: (date: string) => void;
+  /** Temporary plan (or a specific option) applied instead of the schedule. */
+  override?: { plan?: MealPlan | IifymPlan; optionId?: string };
 }) {
-  const [selectedDate, setDate] = useState(date);
+  const [internalDate, setInternalDate] = useState(date);
+  const selectedDate = onDateChange ? date : internalDate;
+  const setDate = onDateChange ?? setInternalDate;
   const setup = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
@@ -809,13 +833,18 @@ export function ActiveClientNutrition({
       </>
     );
   if (setup.nutrition === "IIFYM") {
-    const plan = applicablePlan(p.nutrition.iifym, selectedDate);
+    const plan =
+      (override?.plan as IifymPlan | undefined) ??
+      applicablePlan(p.nutrition.iifym, selectedDate);
     const option = plan
-      ? scheduledOption(
-          plan.schedule,
-          plan.options.map((o) => o.id),
-          selectedDate,
-        )
+      ? override?.optionId &&
+        plan.options.some((o) => o.id === override.optionId)
+        ? override.optionId
+        : scheduledOption(
+            plan.schedule,
+            plan.options.map((o) => o.id),
+            selectedDate,
+          )
       : undefined;
     return (
       <>
@@ -831,7 +860,9 @@ export function ActiveClientNutrition({
       </>
     );
   }
-  const plan = applicablePlan(p.nutrition.mealPlan, selectedDate);
+  const plan =
+    (override?.plan as MealPlan | undefined) ??
+    applicablePlan(p.nutrition.mealPlan, selectedDate);
   if (!plan)
     return (
       <>
@@ -842,11 +873,14 @@ export function ActiveClientNutrition({
   const option = plan.variants.find(
     (o) =>
       o.id ===
-      scheduledOption(
-        plan.schedule,
-        plan.variants.map((o) => o.id),
-        selectedDate,
-      ),
+      (override?.optionId &&
+      plan.variants.some((v) => v.id === override.optionId)
+        ? override.optionId
+        : scheduledOption(
+            plan.schedule,
+            plan.variants.map((v) => v.id),
+            selectedDate,
+          )),
   );
   return (
     <>

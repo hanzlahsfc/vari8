@@ -114,6 +114,28 @@ export function macroEnergyShares(nutrients: Nutrients): MacroEnergyShares {
   };
 }
 
+/** Recorded-day macro actuals (card 09, #173): each field is the stored
+ * gram amount or `null` when that macro was not recorded for the day.
+ * `null` is not zero - it stays missing. */
+export type MacroActuals = {
+  protein: number | null;
+  carbohydrate: number | null;
+  fat: number | null;
+};
+
+/** Derived actuals kcal: 4 kcal per gram of protein or carbohydrate, 9
+ * per gram of fat, summed over the macros present. A missing macro
+ * contributes nothing; an all-empty day yields 0 kcal, never null. This
+ * value is display math only - it is never stored and never feeds the
+ * sheet's own constants. */
+export function caloriesFromMacros(actuals: MacroActuals): number {
+  return (
+    (actuals.protein ?? 0) * 4 +
+    (actuals.carbohydrate ?? 0) * 4 +
+    (actuals.fat ?? 0) * 9
+  );
+}
+
 /** Canvas `targetNumber`: fixed/minimum read their value, a range reads
  * its midpoint; an absent target reads 0. */
 export function targetNumber(target: TargetValue | undefined): number {

@@ -123,28 +123,29 @@ describe.skipIf(!enabled)(
       expect(clientMembership.status).toBe("ACTIVE");
       expect((await member(second.id, staff2.id)).role).toBe("COACH");
 
-      // The canvas client profile is linked to the seeded canvas demo
-      // client user (`33-checkins.seed.ts`, PR-M8); the credential client
-      // intentionally has no profile (own-scope media is 403 by design).
+      // The first canvas demo profile stays linked to the seeded demo
+      // client user (`33-checkins.seed.ts`, PR-M8). The credential client
+      // owns the James Reed profile, which the submission fixtures do not
+      // claim; the binding lets `getClientViewer` resolve its /me route.
       const emma = await prisma.user.findUniqueOrThrow({
         where: { email: "emma.anders@canvas-demo.test" },
       });
-      const profile = await prisma.clientProfile.findFirstOrThrow({
+      const emmaProfile = await prisma.clientProfile.findFirstOrThrow({
         where: { workspaceId: canvas.id, userId: emma.id },
       });
-      expect(profile.name).toBe("Emma Anders");
-      expect(
-        await prisma.clientProfile.count({
-          where: { workspaceId: canvas.id, userId: client.id },
-        }),
-      ).toBe(0);
+      expect(emmaProfile.name).toBe("Emma Anders");
+      const clientProfiles = await prisma.clientProfile.findMany({
+        where: { workspaceId: canvas.id, userId: client.id },
+      });
+      expect(clientProfiles).toHaveLength(1);
+      expect(clientProfiles[0]?.name).toBe("James Reed");
     });
 
     it("the first canvas demo client signs in and owns scheduled check-ins (CHECKIN-ENABLE)", async () => {
       // The trial client walkthrough signs in as the first canvas demo
       // client — `33-checkins.seed.ts` gives her a credential reusing
-      // SEED_CLIENT_PASSWORD — because the SEED-FIX credential client
-      // deliberately has no profile.
+      // SEED_CLIENT_PASSWORD - alongside the SEED-FIX credential client,
+      // which owns the James Reed profile.
       const emma = await expectCredential(
         "emma.anders@canvas-demo.test",
         SEED_ENV.SEED_CLIENT_PASSWORD,

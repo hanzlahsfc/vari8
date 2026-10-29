@@ -76,7 +76,9 @@ export function VariantSchedule({
       ? schedule.selectedVariantId
       : schedule.mode === "cycle"
         ? (schedule.steps[0]?.variantId ?? plan.activeVariantId)
-        : (schedule.days[1] ?? plan.activeVariantId);
+        : schedule.mode === "weekly"
+          ? (schedule.days[1] ?? plan.activeVariantId)
+          : plan.activeVariantId;
   const label = (id?: string) =>
     plan.variants.find((variant) => variant.id === id)?.label || "Not assigned";
   const cycleSummary =

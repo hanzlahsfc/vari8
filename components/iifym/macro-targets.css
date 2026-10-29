@@ -1,0 +1,80 @@
+/* Card 10 (#175) - coach macro-target editor layout. Reuses the shared
+   auth-field/auth-input/auth-button and catalog-table primitives; only
+   the option card, field grid and derived-kcal readout are new. */
+
+.mt-editor {
+  display: grid;
+  gap: 24px;
+}
+
+.mt-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.mt-option {
+  border: 1px solid var(--cd-line, #e3e0da);
+  border-radius: 12px;
+  padding: 14px;
+  margin: 12px 0;
+  display: grid;
+  gap: 12px;
+}
+
+.mt-option__head {
+  display: grid;
+  grid-template-columns: minmax(140px, 2fr) minmax(140px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.mt-kcal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--cd-line, #e3e0da);
+  border-radius: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt-kcal span {
+  color: var(--cd-muted, #6b6b6b);
+  font-size: 13px;
+}
+
+.mt-kcal strong {
+  font-weight: 600;
+}
+
+.mt-mode-note {
+  margin: 0;
+  color: var(--cd-muted, #6b6b6b);
+  font-size: 13px;
+  grid-column: 1 / -1;
+}
+
+.mt-weekdays td,
+.mt-weekdays th {
+  padding: 6px 10px;
+}
+
+.mt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.mt-effective {
+  min-width: 180px;
+}
+
+@media (max-width: 640px) {
+  .mt-option__head {
+    grid-template-columns: 1fr;
+  }
+}

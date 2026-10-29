@@ -1,0 +1,202 @@
+{
+  "id": "client-014",
+  "name": "Theo Grant",
+  "initials": "TG",
+  "label": "Prep",
+  "phase": "Prep",
+  "week": 2,
+  "checkInStatus": "overdue",
+  "lastCheckIn": "day -35",
+  "nextCheckIn": "day -28",
+  "unreadCount": 2,
+  "overdueTaskCount": 1,
+  "heightCm": 182,
+  "bodyweightKg": 103.2,
+  "bodyweightDate": "day -23",
+  "weightTrend": [
+    {
+      "date": "day -30",
+      "kg": 103.7
+    },
+    {
+      "date": "day -23",
+      "kg": 103.2
+    }
+  ],
+  "template": "Forma Prep",
+  "presentation": "meal_plan",
+  "coachingSince": "day -34",
+  "recurringCheckIn": "Every Sunday",
+  "email": "theo.grant@example.com",
+  "priorityMessages": false,
+  "trainingFlags": 0,
+  "additionalCheckInDates": [],
+  "clientTasks": [
+    {
+      "id": "theo-task-1",
+      "title": "Reschedule missed check-in",
+      "status": "overdue",
+      "dueDate": "day -28"
+    },
+    {
+      "id": "theo-task-2",
+      "title": "Confirm new training days",
+      "status": "open",
+      "dueDate": "day -19"
+    }
+  ],
+  "coachTasks": [
+    {
+      "id": "theo-coach-1",
+      "title": "Reach out about onboarding support",
+      "complete": false
+    }
+  ],
+  "internalNotes": [
+    {
+      "id": "theo-note-1",
+      "text": "New client; check that the first two weeks feel manageable before adding targets."
+    }
+  ],
+  "generalNotes": [
+    {
+      "id": "theo-general-1",
+      "text": "Recently started coaching; Sunday was the original check-in day."
+    }
+  ],
+  "checkIns": [
+    {
+      "id": "theo-checkin-1",
+      "date": "day -35",
+      "status": "feedback sent",
+      "summary": "Initial check-in covered schedule and beginner training options.",
+      "feedback": "Start with two repeatable sessions and tell me what feels unclear."
+    }
+  ],
+  "messages": [
+    {
+      "id": "theo-message-1",
+      "text": "Sorry, I missed the check-in. I’m still figuring out the new schedule.",
+      "from": "client",
+      "date": "2026-09-28T17:08"
+    },
+    {
+      "id": "theo-message-2",
+      "text": "No worries. We can make the first week simpler and build from there.",
+      "from": "coach",
+      "date": "2026-09-28T17:26"
+    }
+  ],
+  "onboarding": [
+    {
+      "question": "What would you most like help with?",
+      "answer": "Building a routine that fits around shift work."
+    },
+    {
+      "question": "What has made consistency difficult?",
+      "answer": "My work shifts change week to week."
+    }
+  ],
+  "archived": false,
+  "schedules": [
+    {
+      "effective": "day -24",
+      "weekdays": [
+        6
+      ]
+    }
+  ],
+  "plan": {
+    "calories": 2200,
+    "protein": 140,
+    "sets": 3,
+    "instructions": "Controlled reps. Keep two reps in reserve.",
+    "nutritionVariant": "Training day",
+    "program": "Week-based",
+    "weeks": 8
+  },
+  "entries": [
+    {
+      "date": "day -19",
+      "weight": 103.7,
+      "sleep": 7.2,
+      "steps": 7800,
+      "calories": 2140
+    },
+    {
+      "date": "day -18",
+      "weight": 103.6,
+      "sleep": 7.3,
+      "steps": 8010,
+      "calories": 2152
+    },
+    {
+      "date": "day -17",
+      "weight": 103.5,
+      "sleep": 7.4,
+      "steps": 8220,
+      "calories": 2164
+    },
+    {
+      "date": "day -16",
+      "weight": 103.4,
+      "sleep": 7.5,
+      "steps": 8430,
+      "calories": 2176
+    },
+    {
+      "date": "day -15",
+      "weight": 103.4,
+      "sleep": 7.6,
+      "steps": 8640,
+      "calories": 2188
+    },
+    {
+      "date": "day -14",
+      "weight": 103.3,
+      "sleep": 7.7,
+      "steps": 8850,
+      "calories": 2200
+    },
+    {
+      "date": "day -13",
+      "weight": 103.2,
+      "sleep": 7.8,
+      "steps": 9060,
+      "calories": 2212
+    }
+  ],
+  "habits": [
+    {
+      "id": "habit-client-014",
+      "name": "Evening walk",
+      "frequency": "Daily",
+      "goal": "20 minutes",
+      "reason": "Create a calm transition into the evening.",
+      "completed": 5
+    }
+  ],
+  "plans": {
+    "nutrition": {
+      "mealPlan": {
+        "history": []
+      },
+      "iifym": {
+        "history": []
+      }
+    },
+    "training": {
+      "history": []
+    },
+    "goals": [],
+    "activityTargets": []
+  },
+  "related": {
+    "submissions": [],
+    "messages": [],
+    "extras": [],
+    "trainingLogs": [],
+    "coachTodos": [],
+    "reviewDrafts": {}
+  }
+}

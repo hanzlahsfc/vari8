@@ -125,11 +125,16 @@ export function DashboardBuilder({
   onChange,
   sourceRecords,
   previewOnly = false,
+  onRecordsChange,
 }: {
   value: Draft;
   onChange: (value: Draft) => void;
   sourceRecords: SourceRecords;
   previewOnly?: boolean;
+  /** Card 05a: observes record edits (task completion) so an own-bound
+   *  caller can persist them remotely. Optional; editing stays
+   *  session-local for every host that does not pass it. */
+  onRecordsChange?: (records: SourceRecords) => void;
 }) {
   const draft = value;
   const setDraft = onChange;
@@ -227,6 +232,7 @@ export function DashboardBuilder({
   };
   const changeRecords = (next: SourceRecords) => {
     setRecords(next);
+    onRecordsChange?.(next);
     setAnnouncement("Sample preview updated for this editing session.");
   };
   const syncGesture = useCallback((value: Gesture | null) => {

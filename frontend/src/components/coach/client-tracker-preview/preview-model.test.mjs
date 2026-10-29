@@ -44,6 +44,7 @@ const config = {
 };
 const calorie = m.parameters.find((parameter) => parameter.id === "calories");
 const weight = m.parameters.find((parameter) => parameter.id === "weight");
+const stress = m.parameters.find((parameter) => parameter.id === "stress");
 
 test("calorie readings, headers, means, trends and edits all use the selected energy unit", () => {
   const entries = [
@@ -74,6 +75,17 @@ test("calorie readings, headers, means, trends and edits all use the selected en
   const kcal = { ...config, energyUnit: "kcal" };
   assert.equal(m.displayedValue(calorie, 2200, kcal), 2200);
   assert.equal(m.configuredUnit(calorie, kcal), "kcal");
+});
+
+test("per-field ratings do not inherit another field's word-label setting", () => {
+  assert.equal(m.fieldTrackerConfig(stress, config).ratingScale, "1-5");
+  assert.equal(m.configuredUnit(stress, config), "1–5");
+  assert.equal(m.formatValue(stress, 10, config), "5 / 5");
+  assert.equal(
+    m.formatValue(stress, 10, { ...config, ratingScales: { stress: "words" } }),
+    "High",
+  );
+  assert.equal(config.ratingScale, "1-10");
 });
 
 test("existing weight conversions remain delegated to the original tracker helpers", () => {

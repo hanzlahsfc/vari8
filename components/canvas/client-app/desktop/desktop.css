@@ -1,0 +1,56 @@
+.cd-client-desktop {
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  padding: 20px 32px 40px;
+}
+.cd-client-main {
+  margin-top: 8px;
+}
+.cd-messages-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  height: calc(100vh - 240px);
+  min-height: 480px;
+  border: 1px solid var(--cd-line);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.cd-plans-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 860px);
+  gap: 16px;
+  align-items: start;
+}
+.cd-plans-detail {
+  max-width: 860px;
+}
+.cd-client-desktop .cm-card.cm-sel {
+  border-color: var(--cd-accent);
+}
+.cd-checkins {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+/* reused mobile screens inside desktop: strip the phone shell sizing */
+.coach-root .cd-client-desktop .cm-app {
+  display: block;
+  height: auto;
+  min-height: 0;
+  width: auto;
+}
+.coach-root .cd-client-desktop .cm-app .cm-tabs {
+  display: none;
+}
+/* coach profile spacing between tabs and content */
+.coach-root .cd-client-desktop .cd-profile-tabs {
+  margin-bottom: 16px;
+}
+/* client route has no coach sidebar - suppress the painted nav panel */
+.client-app-route.coach-root::before {
+  display: none;
+}

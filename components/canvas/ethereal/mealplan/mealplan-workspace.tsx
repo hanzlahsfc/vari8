@@ -346,13 +346,15 @@ export function MealplanWorkspace() {
                 variantId: step.variantId === id ? active.id : step.variantId,
               })),
             }
-          : {
-              mode: "manual",
-              selectedVariantId:
-                plan.schedule.selectedVariantId === id
-                  ? active.id
-                  : plan.schedule.selectedVariantId,
-            };
+          : plan.schedule.mode === "manual"
+            ? {
+                mode: "manual",
+                selectedVariantId:
+                  plan.schedule.selectedVariantId === id
+                    ? active.id
+                    : plan.schedule.selectedVariantId,
+              }
+            : plan.schedule;
     update({
       ...plan,
       variants,

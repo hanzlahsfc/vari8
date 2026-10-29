@@ -1,34 +1,48 @@
 /*
  * Theme: pro-white (light counterpart)
- * Same token names as pro-dark. Color values are adjusted from the source
- * palette for WCAG AA contrast on the light base (see docs/ or tests); the
- * accent and success/phase colors use darker variants so they remain legible
- * as text. This is the ONLY place these hex values are allowed.
+ * Track C step 5: values redeclared from Lilly's token layer so every product
+ * surface renders in her visual language. Sources:
+ *   frontend/src/styles/vari8-tokens.css   (font stack, type/space/radius scale,
+ *                                         elevations)
+ *   frontend/src/lib/vari8-theme.ts       (vari8Theme({ mode: "light",
+ *                                         accent: "#EB91B8" }) resolved values)
+ * Same token names as pro-dark. Accent-as-text and border/focus roles use her
+ * contrast-resolved light variants (#8d576f / #b46f8d); the raw accent stays
+ * only where she fills an action and prints dark text on it. This file is the
+ * ONLY place these values are allowed.
  * Applied via <html data-theme="pro-white">.
  */
 [data-theme="pro-white"] {
-  /* Colors */
-  --color-base: #f7f7f5;
-  --color-surface: #ffffff;
-  --color-surface-2: #ececea;
-  --color-text-primary: #191919;
-  --color-text-secondary: #4a4a4a;
-  --color-accent: #b23325;
-  --color-success: #2f7550;
-  --color-phase-1: #3f5a8a;
-  --color-phase-2: #8a3f3f;
-  --color-phase-3: #6b3f8a;
-  --color-phase-4: #6f5f2a;
-  --color-border: #d7d7d3;
+  /* Colors  -  resolved v8 light surface/text/status roles at accent #EB91B8 */
+  --color-base: #f2f2f4; /* --v8-canvas */
+  --color-surface: #ffffff; /* --v8-surface */
+  --color-surface-2: #ededf0; /* --v8-surface-interactive */
+  --color-text-primary: #18181b; /* --v8-text */
+  --color-text-secondary: #5f5f67; /* --v8-text-secondary */
+  --color-accent: #eb91b8; /* --v8-action (fill only; text roles below) */
+  --color-on-accent: #000000; /* --v8-on-action */
+  --color-accent-hover: #ec95bb; /* --v8-action-hover */
+  --color-accent-active: #ed9abe; /* --v8-action-active */
+  --color-accent-text: #8d576f; /* --v8-accent-text (AA on light surfaces) */
+  --color-accent-border: #b46f8d; /* --v8-action-border */
+  --color-focus: #b46f8d; /* --v8-focus */
+  --color-danger: #a43c3d; /* --v8-danger */
+  --color-success: #237247; /* --v8-positive */
+  --color-phase-1: #385eab; /* --v8-info */
+  --color-phase-2: #237247; /* --v8-positive */
+  --color-phase-3: #865a12; /* --v8-warning */
+  --color-phase-4: #a43c3d; /* --v8-danger */
+  --color-border: #e7e7ea; /* --v8-border */
+  --color-border-control: #6e6e76; /* --v8-border-control */
 
-  /* Typography */
-  --font-sans: "Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-size-sm: 0.875rem;
-  --font-size-base: 1rem;
-  --font-size-lg: 1.25rem;
-  --font-size-2xl: 1.5rem;
+  /* Typography  -  --v8-font-family-ui + her type scale roles */
+  --font-sans: "VARI8 Geist", system-ui, sans-serif;
+  --font-size-sm: 0.875rem; /* --v8-font-size-sm */
+  --font-size-base: 0.9375rem; /* --v8-font-size-body */
+  --font-size-lg: 1.125rem; /* --v8-font-size-section-title */
+  --font-size-2xl: 1.875rem; /* --v8-font-size-page-title */
 
-  /* Spacing */
+  /* Spacing  -  identical to --v8-space-1..8; contract kept */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -36,6 +50,11 @@
   --space-6: 1.5rem;
   --space-8: 2rem;
 
-  /* Radius */
-  --radius-md: 0.5rem;
+  /* Radius  -  --v8-radius-field/control + pill for action buttons */
+  --radius-md: 0.875rem;
+  --radius-pill: 999px;
+
+  /* Elevation  -  --v8-shadow-card/-elevation-overlay (light variants) */
+  --shadow-card: 0 1px 2px rgb(16 16 16 / 4%), 0 6px 20px rgb(16 16 16 / 5%);
+  --shadow-overlay: 0 20px 48px rgb(0 0 0 / 18%);
 }

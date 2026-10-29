@@ -11,6 +11,7 @@ import {
   removeMealOption,
   replacementQuantity,
   replacePortionFood,
+  scaleFoodAlternatives,
 } from "./model.ts";
 
 const mealPlan = {
@@ -285,3 +286,69 @@ assert.deepEqual(
   ["target-b", "target-b"],
 );
 assert.equal(iifym.options[0].targets.protein.min, 100);
+
+// Alternatives scale with the main quantity.
+const scaleMap = new Map([
+  [
+    "skyr",
+    {
+      id: "skyr",
+      name: "Skyr",
+      unit: "g",
+      calories: 63,
+      amount: 100,
+      protein: 11,
+      carbs: 4,
+      fat: 0,
+    },
+  ],
+  [
+    "egg",
+    {
+      id: "egg",
+      name: "Egg",
+      unit: "pc",
+      calories: 72,
+      amount: 1,
+      protein: 6,
+      carbs: 0,
+      fat: 5,
+    },
+  ],
+]);
+{
+  const portion = {
+    foodId: "yoghurt",
+    quantity: 200,
+    swaps: [
+      { foodId: "skyr", quantity: 250 },
+      { foodId: "egg", quantity: 3 },
+    ],
+  };
+  // Halve the main quantity → alternatives halve, weighed food to 5 g steps,
+  // piece food to whole units, min one step.
+  const halved = scaleFoodAlternatives(portion, 100, scaleMap);
+  assert.equal(halved.quantity, 100);
+  assert.equal(halved.swaps[0].quantity, 125); // 250 * 0.5
+  assert.equal(halved.swaps[1].quantity, 2); // 3 * 0.5 = 1.5 → rounds to 2
+  // A 0 old quantity keeps the alternatives unchanged (the patch leaves
+  // swaps alone).
+  const zeroed = scaleFoodAlternatives(
+    { ...portion, quantity: 0 },
+    100,
+    scaleMap,
+  );
+  assert.equal(zeroed.quantity, 100);
+  assert.equal(zeroed.swaps, undefined);
+  // Rounds to the 5 g step (260 * 0.5 = 130 stays a 5 g multiple).
+  const stepped = scaleFoodAlternatives(
+    {
+      foodId: "yoghurt",
+      quantity: 200,
+      swaps: [{ foodId: "skyr", quantity: 261 }],
+    },
+    100,
+    scaleMap,
+  );
+  assert.equal(stepped.swaps[0].quantity, 130); // 130.5 → 130 (5 g step)
+}

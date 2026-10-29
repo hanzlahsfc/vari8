@@ -2,3 +2,15 @@
   flex: 0 0 auto;
   max-width: 108px;
 }
+
+/* The widget header already names the chart; keep the label for AT only. */
+.coach-root .v8-field:has(.cb-dw-chart-range) > .v8-field__label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}

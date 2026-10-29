@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   useEffect,
@@ -27,7 +27,6 @@ import {
 } from "@/components/vari8/components";
 import { DatePicker, TimePicker } from "@/components/vari8/inputs";
 import foodSource from "@/data/food-database.json";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import { createInitialClients } from "../clients/model";
 import { ClientPlanPreview } from "./client-plan-preview";
 import {
@@ -360,13 +359,15 @@ export function MealplanWorkspace() {
                 variantId: step.variantId === id ? active.id : step.variantId,
               })),
             }
-          : {
-              mode: "manual",
-              selectedVariantId:
-                plan.schedule.selectedVariantId === id
-                  ? active.id
-                  : plan.schedule.selectedVariantId,
-            };
+          : plan.schedule.mode === "manual"
+            ? {
+                mode: "manual",
+                selectedVariantId:
+                  plan.schedule.selectedVariantId === id
+                    ? active.id
+                    : plan.schedule.selectedVariantId,
+              }
+            : plan.schedule;
     update({
       ...plan,
       variants,

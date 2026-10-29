@@ -11,6 +11,11 @@ import {
   parseStaffEntryCursor,
   type StaffDailyEntryListResult,
 } from "@/lib/daily-entry/service";
+import {
+  listStaffNutritionLogs,
+  type StaffNutritionLogListResult,
+} from "@/lib/daily-entry/nutrition-log";
+import { caloriesFromMacros } from "@/lib/nutrition/math";
 import { createPrismaAuthorizationRepo } from "@/lib/workspace/access";
 
 import { StaffDailyReview } from "./staff-daily-review";
@@ -130,6 +135,22 @@ export default async function StaffClientDailyPage({
       ? null
       : `${basePath}?c=${encodeURIComponent(list.nextCursor)}`;
 
+  // Card 09 (#173): the coach's nutrition-log read for the last 30 days.
+  // Unavailable/consent paths hide the section rather than failing the
+  // page - the daily-entry list above carries the consent shell.
+  let nutrition: StaffNutritionLogListResult | null = null;
+  try {
+    nutrition = await listStaffNutritionLogs(
+      session,
+      { workspaceId, clientProfileId },
+      { registry: dailyEntryConsentRegistry(true) },
+    );
+  } catch (error) {
+    if (error instanceof AccessDeniedError) forbidden();
+    if (!(error instanceof DailyEntryError)) throw error;
+  }
+  if (nutrition && nutrition.state !== "ready") nutrition = null;
+
   return (
     <div className="catalog-page" data-testid="staff-daily-page">
       <header className="catalog-page__header">
@@ -161,6 +182,65 @@ export default async function StaffClientDailyPage({
           nextHref={nextHref}
         />
       )}
+
+      {nutrition !== null ? (
+        <section
+          aria-label={`Recorded macros for ${nutrition.clientName}`}
+          data-testid="staff-nutrition-log"
+        >
+          <h2 className="assignment-manager__subtitle">Recorded macros</h2>
+          {nutrition.items.length === 0 ? (
+            <div
+              className="empty-state"
+              data-testid="staff-nutrition-empty"
+              role="status"
+            >
+              <p>No macros recorded in the last 30 days.</p>
+            </div>
+          ) : (
+            <table
+              className="catalog-table"
+              data-testid="staff-nutrition-table"
+            >
+              <thead>
+                <tr>
+                  <th scope="col">Entry date</th>
+                  <th scope="col">Protein</th>
+                  <th scope="col">Carbohydrate</th>
+                  <th scope="col">Fat</th>
+                  <th scope="col">Calories</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nutrition.items.map((item) => (
+                  <tr key={item.entryDate} data-testid="staff-nutrition-row">
+                    <td>{item.entryDate}</td>
+                    <td>
+                      {item.protein === null
+                        ? "Not recorded"
+                        : `${item.protein} g`}
+                    </td>
+                    <td>
+                      {item.carbohydrate === null
+                        ? "Not recorded"
+                        : `${item.carbohydrate} g`}
+                    </td>
+                    <td>
+                      {item.fat === null ? "Not recorded" : `${item.fat} g`}
+                    </td>
+                    <td>{caloriesFromMacros(item)} kcal</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <p className="app-lede">
+            Calories derive at 4 kcal per gram of protein or carbohydrate and 9
+            per gram of fat over the macros recorded; a missing macro is not
+            recorded, never zero.
+          </p>
+        </section>
+      ) : null}
     </div>
   );
 }

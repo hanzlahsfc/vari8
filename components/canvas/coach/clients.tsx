@@ -4,29 +4,43 @@ import {
   CalendarDays,
   ClipboardCheck,
   MessageCircle,
-  Plus,
+  Pin,
   Trash2,
-  Users,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
-import { Checkbox, SegmentedControl, Tabs } from "../vari8/components";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Checkbox,
+  SegmentedControl,
+  Input as SharedInput,
+  Tabs,
+} from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
 import { FormGrid, Toolbar } from "../vari8/layouts";
+import { assignStaffClientTask, fetchStaffClientTasks } from "../data/clients";
+import {
+  createCoachTask,
+  deleteCoachTask,
+  fetchCoachTasks,
+  setCoachTaskCompleted,
+} from "../data/notes";
+import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
+import { AthleteTimelineTab } from "./athlete/timeline-tab";
+import { AthleteTrackerTab } from "./athlete/tracker-tab";
 import {
   addDays,
   assignTemplate,
   type CoachClient,
-  DAYS,
   eventsBetween,
   formatDate,
   TODAY,
   uid,
   unreadCount,
 } from "./model";
+import { ClientTrainingLogs } from "./client-training-logs";
+import { ClientMediaPanel } from "./media";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
-import { PreviewDialog } from "./templates";
 import "./workspace-polish.css";
 import {
   Avatar,
@@ -287,14 +301,74 @@ export function ClientsWorkspace() {
   );
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
-  const { state, setState, navigate, route, toast } = useCoach();
+  const {
+    state,
+    setState,
+    navigate,
+    route,
+    toast,
+    hydrated,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const tab = route.tab ?? "Overview";
-  const [preview, setPreview] = useState(false);
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
-  const [text, setText] = useState("");
-  const [newKind, setNewKind] = useState("Private coach note");
+  const [noteText, setNoteText] = useState("");
+  const [notePinned, setNotePinned] = useState(false);
+  const [todoText, setTodoText] = useState("");
+  const [taskText, setTaskText] = useState("");
+  const [taskDue, setTaskDue] = useState(addDays(TODAY, 7));
   const [extra, setExtra] = useState(false);
+  // W2-A4: both cards on the Notes and tasks tab read remote. One pass per
+  // opened profile resolves the backend profile id, then hydrates the client
+  // task list and the per-client coach to-dos.
+  const tasksSynced = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hydrated || !workspaceId || tasksSynced.current === c.id) return;
+    tasksSynced.current = c.id;
+    void (async () => {
+      try {
+        const clientProfileId = await clientProfileIdFor(c.name);
+        if (!clientProfileId) {
+          tasksSynced.current = null;
+          return;
+        }
+        const [tasks, todos] = await Promise.all([
+          fetchStaffClientTasks(workspaceId, clientProfileId),
+          fetchCoachTasks(workspaceId, clientProfileId),
+        ]);
+        setState((s) => ({
+          ...s,
+          clients: s.clients.map((client) =>
+            client.id !== c.id
+              ? client
+              : {
+                  ...client,
+                  clientTasks: tasks
+                    .filter((t) => t.status !== "cancelled")
+                    .map((t) => ({
+                      id: t.id,
+                      title: t.title,
+                      dueDate: t.dueDate,
+                      status:
+                        t.status === "open"
+                          ? ("open" as const)
+                          : ("complete" as const),
+                    })),
+                  coachTasks: todos.map((t) => ({
+                    id: t.id,
+                    title: t.title,
+                    complete: t.complete,
+                  })),
+                },
+          ),
+        }));
+      } catch {
+        tasksSynced.current = null;
+      }
+    })();
+  }, [hydrated, workspaceId, c.id, c.name, clientProfileIdFor, setState]);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -302,178 +376,23 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         client.id === c.id ? fn(client) : client,
       ),
     }));
-  const activeSchedule = c.schedules.at(-1);
   const history = state.submissions
     .filter((s) => s.clientId === c.id)
     .sort((a, b) => b.date.localeCompare(a.date));
-  const next = nextEvent(state, c.id);
-  const assignedSetup = c.assignment
-    ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
-    : undefined;
-  const hasEditablePlan =
-    Boolean(
-      c.plans &&
-        (c.plans.nutrition.mealPlan.draft ||
-          c.plans.nutrition.mealPlan.active ||
-          c.plans.nutrition.iifym.draft ||
-          c.plans.nutrition.iifym.active ||
-          c.plans.training.draft ||
-          c.plans.training.active ||
-          (c.plans.activityTargets?.length ?? 0) > 0 ||
-          c.plans.supplements !== undefined ||
-          c.plans.goals.length > 0),
-    ) || c.habits.length > 0;
   const profilePanel = (
     <>
-      {tab === "Overview" && (
-        <div className="cd-profile-grid">
-          <Surface>
-            <h2>Client setup</h2>
-            <div className="cd-stat-row">
-              <span>Current bodyweight</span>
-              <strong>{c.entries.at(-1)?.weight} kg</strong>
-            </div>
-            <div className="cd-stat-row">
-              <span>Assigned template</span>
-              <span>
-                <strong>{c.assignment?.snapshot.name ?? "Not assigned"}</strong>
-                {assignedSetup && (
-                  <small>
-                    {assignedSetup.views.join(" · ")} · Nutrition:{" "}
-                    {assignedSetup.views.some(
-                      (view) => view === "Nutrition" || view === "Mealplan",
-                    )
-                      ? assignedSetup.nutrition
-                      : "not included"}{" "}
-                    · Habits: {assignedSetup.habits ? "enabled" : "off"}
-                  </small>
-                )}
-              </span>
-            </div>
-
-            <div className="cd-actions cd-wrap cd-profile-actions">
-              <Button disabled={!c.assignment} onClick={() => setPreview(true)}>
-                <EyeIcon />
-                Preview assigned tool
-              </Button>
-              <Button primary={!c.assignment} onClick={() => setAssign(true)}>
-                <Users size={14} />
-                {c.assignment ? "Change assignment" : "Assign template"}
-              </Button>
-              {c.assignment && (
-                <Button
-                  primary
-                  onClick={() =>
-                    navigate({
-                      ...route,
-                      section: "clients",
-                      client: c.id,
-                      plan: "setup",
-                      tab: "Plans",
-                    })
-                  }
-                >
-                  {hasEditablePlan ? "Edit plans" : "Continue setup"}
-                  <ArrowUpRight size={14} />
-                </Button>
-              )}
-            </div>
-            <ClientPlansSummary client={c} />
-          </Surface>
-          <div className="cd-profile-side">
-            <Surface>
-              <h2>Coaching rhythm</h2>
-              <p className="cd-muted">Recurring check-ins · Europe/Vienna</p>
-              <div className="cd-weekdays">
-                {DAYS.map((d, i) => (
-                  <button
-                    type="button"
-                    key={d}
-                    aria-label={d}
-                    aria-pressed={activeSchedule?.weekdays.includes(i) ?? false}
-                    onClick={() => {
-                      const oldDays = c.schedules.at(-1)?.weekdays ?? [];
-                      const weekdays = oldDays.includes(i)
-                        ? oldDays.filter((d) => d !== i)
-                        : [...oldDays, i];
-                      update((c) => ({
-                        ...c,
-                        schedules: [
-                          ...c.schedules.filter(
-                            (s) => s.effective !== addDays(TODAY, 1),
-                          ),
-                          { effective: addDays(TODAY, 1), weekdays },
-                        ],
-                      }));
-                      toast(
-                        "Recurring schedule updated from tomorrow. Submitted history retained.",
-                      );
-                    }}
-                  >
-                    {d.slice(0, 2)}
-                  </button>
-                ))}
-              </div>
-              {c.schedules.some((s) => s.effective > TODAY) && (
-                <p className="cd-caption">
-                  From tomorrow:{" "}
-                  {c.schedules
-                    .at(-1)
-                    ?.weekdays.map((d) => DAYS[d])
-                    .join(", ") || "No recurring days"}
-                </p>
-              )}
-              <h3>Additional dates</h3>
-              {state.extras
-                .filter((e) => e.clientId === c.id)
-                .map((e) => (
-                  <div className="cd-setting-row" key={e.id}>
-                    <span>
-                      {formatDate(e.date)}
-                      <small>
-                        {e.type} · {e.note}
-                      </small>
-                    </span>
-                    <Button
-                      onClick={() =>
-                        navigate({ section: "check-ins", client: c.id })
-                      }
-                    >
-                      Manage
-                    </Button>
-                  </div>
-                ))}
-              {!state.extras.some((e) => e.clientId === c.id) && (
-                <p className="cd-muted">No additional dates.</p>
-              )}
-              <Button
-                className="cd-profile-add-date"
-                onClick={() => setExtra(true)}
-              >
-                <Plus size={14} />
-                Add date
-              </Button>
-            </Surface>
-            <Surface>
-              <h2>Priority messages</h2>
-              <Toggle
-                label="Allow priority flags"
-                detail="Applies to new chat flags. Training set notes stay separate."
-                checked={c.priorityMessages}
-                onChange={(priorityMessages) =>
-                  update((c) => ({ ...c, priorityMessages }))
-                }
-              />
-            </Surface>
-          </div>
-        </div>
-      )}
+      {tab === "Overview" && <AthleteOverview client={c} />}
+      {tab === "Timeline" && <AthleteTimelineTab client={c} />}
+      {tab === "Tracker" && <AthleteTrackerTab client={c} />}
       {tab === "Plans" && (
-        <ClientPlansSummary
-          client={c}
-          expanded
-          onAssign={() => setAssign(true)}
-        />
+        <>
+          <ClientPlansSummary
+            client={c}
+            expanded
+            onAssign={() => setAssign(true)}
+          />
+          <ClientTrainingLogs client={c} />
+        </>
       )}
       {tab === "Check-ins" && (
         <Surface>
@@ -518,207 +437,260 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         </Surface>
       )}
       {tab === "Notes & tasks" && (
-        <div className="cd-profile-grid">
+        <div className="cd-nt-grid">
           <Surface>
-            <h2>Private coach notes</h2>
+            <h2>Private note</h2>
             <p className="cd-muted">Visible only in your workspace.</p>
-            {c.internalNotes.map((n) => (
-              <div className="cd-setting-row" key={n.id}>
-                <p>{n.text}</p>
-                <IconButton
-                  label="Remove coach note"
-                  onClick={() =>
-                    update((c) => ({
-                      ...c,
-                      internalNotes: c.internalNotes.filter(
-                        (x) => x.id !== n.id,
-                      ),
-                    }))
-                  }
-                >
-                  <Trash2 size={14} />
-                </IconButton>
-              </div>
-            ))}
-            <h3>General coaching notes</h3>
-            {c.generalNotes.map((n) => (
-              <p className="cd-note-text" key={n.id}>
-                {n.text}
-              </p>
-            ))}
-            <h3>Your to-dos</h3>
-            {c.coachTasks.map((t) => (
-              <Checkbox
-                className="cd-task"
-                key={t.id}
-                label={t.title}
-                checked={t.complete}
-                onCheckedChange={(checked) =>
-                  update((c) => ({
-                    ...c,
-                    coachTasks: c.coachTasks.map((x) =>
-                      x.id === t.id ? { ...x, complete: checked } : x,
-                    ),
-                  }))
-                }
-              />
-            ))}
-            <Select
-              label="Add to"
-              value={newKind}
-              onChange={setNewKind}
-              options={[
-                "Private coach note",
-                "Coach to-do",
-                "Client-assigned task",
-              ]}
-            />
             <TextArea
-              label={newKind}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
+              label="Note"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
               rows={3}
+            />
+            <Toggle
+              label="Pin to overview"
+              checked={notePinned}
+              onChange={setNotePinned}
             />
             <Button
               primary
-              disabled={!text.trim()}
+              disabled={!noteText.trim()}
               onClick={() => {
-                const id = uid("note");
-                update((c) =>
-                  newKind === "Private coach note"
-                    ? {
-                        ...c,
-                        internalNotes: [
-                          ...c.internalNotes,
-                          { id, text: text.trim() },
-                        ],
-                      }
-                    : newKind === "Coach to-do"
-                      ? {
-                          ...c,
-                          coachTasks: [
-                            ...c.coachTasks,
-                            { id, title: text.trim(), complete: false },
-                          ],
-                        }
-                      : {
-                          ...c,
-                          clientTasks: [
-                            ...c.clientTasks,
-                            {
-                              id,
-                              title: text.trim(),
-                              dueDate: addDays(TODAY, 7),
-                              status: "open",
-                            },
-                          ],
-                        },
-                );
-                setText("");
+                update((c) => ({
+                  ...c,
+                  internalNotes: [
+                    ...c.internalNotes,
+                    {
+                      id: uid("note"),
+                      text: noteText.trim(),
+                      ...(notePinned ? { pinned: true } : {}),
+                    },
+                  ],
+                }));
+                setNoteText("");
+                setNotePinned(false);
               }}
             >
-              Add
+              Add note
             </Button>
+            <div className="cd-nt-list">
+              {[...c.internalNotes]
+                .sort(
+                  (a, b) =>
+                    Number(b.pinned ?? false) - Number(a.pinned ?? false),
+                )
+                .map((n) => (
+                  <div className="cd-nt-row" key={n.id}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={n.pinned ? "cd-nt-pin is-pinned" : "cd-nt-pin"}
+                      onClick={() =>
+                        update((c) => ({
+                          ...c,
+                          internalNotes: c.internalNotes.map((x) =>
+                            x.id === n.id ? { ...x, pinned: !x.pinned } : x,
+                          ),
+                        }))
+                      }
+                    >
+                      <Pin
+                        size={13}
+                        aria-hidden="true"
+                        fill={n.pinned ? "currentColor" : "none"}
+                      />
+                      {n.pinned ? "Unpin" : "Pin"}
+                    </Button>
+                    <p data-pinned={n.pinned || undefined}>{n.text}</p>
+                    <IconButton
+                      label="Remove note"
+                      onClick={() =>
+                        update((c) => ({
+                          ...c,
+                          internalNotes: c.internalNotes.filter(
+                            (x) => x.id !== n.id,
+                          ),
+                        }))
+                      }
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </div>
+                ))}
+            </div>
+            {c.generalNotes.length > 0 && (
+              <details className="cd-nt-general">
+                <summary>General coaching notes</summary>
+                {c.generalNotes.map((n) => (
+                  <p className="cd-note-text" key={n.id}>
+                    {n.text}
+                  </p>
+                ))}
+              </details>
+            )}
           </Surface>
           <Surface>
-            <h2>Client-assigned tasks</h2>
-            <p className="cd-muted">
-              {c.clientTasks.filter((t) => t.status === "complete").length}{" "}
-              completed ·{" "}
-              {c.clientTasks.filter((t) => t.status === "overdue").length}{" "}
-              overdue
-            </p>
-            {c.clientTasks.map((t) => (
-              <div className="cd-client-task" key={t.id}>
-                <Checkbox
-                  label={t.title}
-                  checked={t.status === "complete"}
-                  onCheckedChange={(checked) =>
-                    update((c) => ({
-                      ...c,
-                      clientTasks: c.clientTasks.map((x) =>
-                        x.id === t.id
-                          ? {
-                              ...x,
-                              status: checked
-                                ? "complete"
-                                : x.dueDate < TODAY
-                                  ? "overdue"
-                                  : "open",
-                            }
-                          : x,
+            <h2>Coach to-do</h2>
+            <p className="cd-muted">Your own reminders.</p>
+            <SharedInput
+              label="To-do"
+              value={todoText}
+              onChange={(e) => setTodoText(e.target.value)}
+            />
+            <Button
+              primary
+              disabled={!todoText.trim() || !workspaceId}
+              onClick={() => {
+                if (!workspaceId) return;
+                const title = todoText.trim();
+                const localId = uid("task");
+                update((client) => ({
+                  ...client,
+                  coachTasks: [
+                    ...client.coachTasks,
+                    { id: localId, title, complete: false },
+                  ],
+                }));
+                setTodoText("");
+                void (async () => {
+                  try {
+                    const clientProfileId = await clientProfileIdFor(c.name);
+                    if (!clientProfileId) return;
+                    const todo = await createCoachTask(
+                      workspaceId,
+                      title,
+                      clientProfileId,
+                    );
+                    update((client) => ({
+                      ...client,
+                      coachTasks: client.coachTasks.map((t) =>
+                        t.id === localId ? { ...t, id: todo.id } : t,
                       ),
-                    }))
+                    }));
+                  } catch {
+                    toast("To-do could not be saved.");
                   }
-                />
-                <small>
-                  {formatDate(t.dueDate)} · {t.status}
-                </small>
-              </div>
-            ))}
+                })();
+              }}
+            >
+              Add to-do
+            </Button>
+            <div className="cd-nt-list">
+              {c.coachTasks.map((t) => (
+                <div className="cd-nt-row" key={t.id}>
+                  <Checkbox
+                    className="cd-task"
+                    label={t.title}
+                    checked={t.complete}
+                    onCheckedChange={(checked) => {
+                      update((client) => ({
+                        ...client,
+                        coachTasks: client.coachTasks.map((x) =>
+                          x.id === t.id ? { ...x, complete: checked } : x,
+                        ),
+                      }));
+                      if (!workspaceId) return;
+                      setCoachTaskCompleted(workspaceId, t.id, checked).catch(
+                        () => toast("To-do could not be saved."),
+                      );
+                    }}
+                  />
+                  {t.deadline && <small>Due {formatDate(t.deadline)}</small>}
+                  <IconButton
+                    label={`Remove to-do: ${t.title}`}
+                    onClick={() => {
+                      update((client) => ({
+                        ...client,
+                        coachTasks: client.coachTasks.filter(
+                          (x) => x.id !== t.id,
+                        ),
+                      }));
+                      if (!workspaceId) return;
+                      deleteCoachTask(workspaceId, t.id).catch(() =>
+                        toast("To-do could not be removed."),
+                      );
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </IconButton>
+                </div>
+              ))}
+            </div>
+          </Surface>
+          <Surface>
+            <h2>Client task</h2>
+            <p className="cd-muted">Assigned to the client app.</p>
+            <SharedInput
+              label="Task"
+              value={taskText}
+              onChange={(e) => setTaskText(e.target.value)}
+            />
+            <DateField label="Deadline" value={taskDue} onChange={setTaskDue} />
+            <Button
+              primary
+              disabled={!taskText.trim() || !taskDue || !workspaceId}
+              onClick={() => {
+                if (!workspaceId) return;
+                const title = taskText.trim();
+                const dueDate = taskDue;
+                void (async () => {
+                  try {
+                    const clientProfileId = await clientProfileIdFor(c.name);
+                    if (!clientProfileId) return;
+                    const created = await assignStaffClientTask(
+                      workspaceId,
+                      clientProfileId,
+                      { title, dueDate },
+                    );
+                    update((client) => ({
+                      ...client,
+                      clientTasks: [
+                        ...client.clientTasks,
+                        { id: created.id, title, dueDate, status: "open" },
+                      ],
+                    }));
+                    setTaskText("");
+                  } catch {
+                    toast("Task could not be assigned.");
+                  }
+                })();
+              }}
+            >
+              Assign task
+            </Button>
+            <div className="cd-nt-list">
+              {c.clientTasks.map((t) => {
+                const status =
+                  t.status === "complete"
+                    ? "Done"
+                    : t.dueDate < TODAY
+                      ? "Overdue"
+                      : "Open";
+                return (
+                  <div className="cd-nt-row" key={t.id}>
+                    <span className="cd-nt-task-title">
+                      {t.title}
+                      <small>Due {formatDate(t.dueDate)}</small>
+                    </span>
+                    <Status text={status} />
+                  </div>
+                );
+              })}
+            </div>
           </Surface>
         </div>
       )}
-      {tab === "Onboarding" && (
-        <Surface>
-          <h2>Submitted onboarding</h2>
-          <p className="cd-muted">
-            Original answers retained with {c.name.split(" ")[0]}’s profile.
-          </p>
-          {c.onboarding.map((a) => (
-            <div className="cd-answer" key={a.question}>
-              <h3>{a.question}</h3>
-              <p>{a.answer}</p>
-            </div>
-          ))}
-        </Surface>
-      )}
+      {tab === "Media" && <ClientMediaPanel client={c} />}
     </>
   );
   return (
     <>
-      <PageTitle
-        title={c.name}
-        description={`${c.label} · ${c.phase} · Week ${c.week}`}
-        back={() => navigate({ section: "clients" })}
-        actions={
-          <>
-            <Button
-              onClick={() => navigate({ section: "check-ins", client: c.id })}
-            >
-              <CalendarDays size={16} />
-              Check-in calendar
-            </Button>
-            <Button
-              onClick={() => navigate({ section: "messages", client: c.id })}
-            >
-              <MessageCircle size={16} />
-              Open chat
-              {unreadCount(state, c.id) > 0 && (
-                <span>{unreadCount(state, c.id)}</span>
-              )}
-            </Button>
-          </>
-        }
+      <AthleteProfileHeader
+        client={c}
+        onBack={() => navigate({ section: "clients" })}
+        onAssign={() => setAssign(true)}
+        onAddDate={() => setExtra(true)}
       />
-      <div className="cd-profile-summary">
-        <Avatar client={c} />
-        <div>
-          <strong>{c.email}</strong>
-          <small>
-            Coaching since {formatDate(c.coachingSince, { year: "numeric" })} ·{" "}
-            {c.heightCm} cm
-          </small>
-        </div>
-        <div className="cd-profile-next">
-          <span>Next check-in</span>
-          <strong>
-            {next
-              ? formatDate(next.date, { weekday: "short" })
-              : "Not scheduled"}
-          </strong>
-        </div>
-      </div>
       <Tabs
         label="Client profile"
         value={tab}
@@ -733,23 +705,18 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         className="cd-profile-tabs"
         items={[
           "Overview",
+          "Timeline",
+          "Tracker",
           "Plans",
           "Check-ins",
           "Notes & tasks",
-          "Onboarding",
+          "Media",
         ].map((value) => ({
           value,
           label: value,
           content: value === tab ? profilePanel : null,
         }))}
       />
-      {preview && c.assignment && (
-        <PreviewDialog
-          template={c.assignment.snapshot}
-          client={c}
-          onClose={() => setPreview(false)}
-        />
-      )}
       {assign && (
         <Dialog
           title={`Assign a setup to ${c.name}`}
@@ -806,9 +773,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       )}
     </>
   );
-}
-function EyeIcon() {
-  return <ArrowUpRight size={14} />;
 }
 function AssignmentInline({
   client,

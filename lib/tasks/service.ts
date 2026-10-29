@@ -611,7 +611,11 @@ export async function listOwnClientTasks(
     option?: "open" | "completed" | "both";
   },
   deps: TaskDeps = {},
-): Promise<{ tasks: TaskView[]; hasMore: boolean }> {
+): Promise<{
+  clientProfileId: string;
+  tasks: TaskView[];
+  hasMore: boolean;
+}> {
   const db = deps.db ?? prisma;
   const userId = session?.user?.id;
   if (typeof userId !== "string" || userId.length === 0)
@@ -649,6 +653,7 @@ export async function listOwnClientTasks(
     })) as unknown as TaskRow[];
     const today = serverTodayUtc();
     return {
+      clientProfileId: profile.id,
       tasks: rows.slice(0, PAGE_SIZE).map((r) => toView(r, today)),
       hasMore: rows.length > PAGE_SIZE,
     };

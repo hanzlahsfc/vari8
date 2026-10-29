@@ -481,8 +481,9 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   // check-in history. Same Better Auth credential shape as
   // `00-workspace.seed.ts` (`providerId="credential"`, `accountId=user.id`,
   // `password=hashPassword`), reusing SEED_CLIENT_PASSWORD so the 8-var seed
-  // env contract stays unchanged. The SEED-FIX credential client keeps no
-  // profile — its own-scope media denial is asserted by design.
+  // env contract stays unchanged. The SEED-FIX credential client owns the
+  // James Reed profile instead (00-workspace.seed.ts binds names[1] after
+  // the bulk create), so its /me resolves while emma keeps clients[0].
   const clientPassword = process.env.SEED_CLIENT_PASSWORD;
   if (!clientPassword)
     throw new Error(

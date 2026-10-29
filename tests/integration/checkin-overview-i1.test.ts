@@ -299,11 +299,11 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
 
   // ── Assigned scope + read-only/actionable labelling ──────────────────
 
-  it("assigned coach sees only their clients' rows with canReview true; unassigned coach sees none", async () => {
+  it("coach sees every workspace row (D10/D22); canReview stays per-row by assignment", async () => {
     const s = await setup();
     const cp2 = await profile(s.w.id, (await user()).id);
     const a = await seedSubmission(s);
-    await seedSubmission(s, {
+    const b = await seedSubmission(s, {
       clientProfileId: cp2.id,
       dueAt: new Date("2030-06-02T09:00:00.000Z"),
     });
@@ -313,21 +313,26 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
     const otherCoach = await user();
     await member(s.w.id, otherCoach.id, "COACH");
 
+    // D10/D22: COACH read is workspace scope: both rows list; the review
+    // write stays assigned, so canReview is true only on the assigned row.
     const mine = await listCheckInReviewQueue(
       session(coach.id),
       { workspaceId: s.w.id },
       deps(),
     );
-    expect(mine.items.map((i) => i.submissionId)).toEqual([a.submission.id]);
-    expect(mine.items[0].canReview).toBe(true);
+    const mineById = new Map(mine.items.map((i) => [i.submissionId, i]));
+    expect(mineById.get(a.submission.id)?.canReview).toBe(true);
+    expect(mineById.get(b.submission.id)?.canReview).toBe(false);
 
-    const none = await listCheckInReviewQueue(
+    const other = await listCheckInReviewQueue(
       session(otherCoach.id),
       { workspaceId: s.w.id },
       deps(),
     );
-    expect(none.items).toEqual([]);
-    expect(none.nextCursor).toBeNull();
+    expect(other.items.map((i) => i.submissionId).sort()).toEqual(
+      [a.submission.id, b.submission.id].sort(),
+    );
+    expect(other.items.every((i) => i.canReview === false)).toBe(true);
   });
 
   it("assistant sees assigned rows read-only (canReview false); owner canReview is per-row by assignment", async () => {
@@ -553,7 +558,7 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
 
   // ── Revocation + stale rows ──────────────────────────────────────────
 
-  it("assignment revocation between listing and refetch removes the rows", async () => {
+  it("assignment revocation between listing and refetch keeps the row but flips canReview false", async () => {
     const s = await setup();
     await seedSubmission(s);
     const coach = await user();
@@ -566,17 +571,21 @@ describe.skipIf(!enabled)("CHECK-IN-OVERVIEW-I1 review queue (real PG)", () => {
       deps(),
     );
     expect(before.items).toHaveLength(1);
+    expect(before.items[0].canReview).toBe(true);
 
     await prisma.clientAssignment.update({
       where: { id: asn.id },
       data: { status: "REMOVED" },
     });
+    // D10/D22: the read stays workspace-wide after revocation; only the
+    // assignment-derived review hint flips off.
     const after = await listCheckInReviewQueue(
       session(coach.id),
       { workspaceId: s.w.id },
       deps(),
     );
-    expect(after.items).toEqual([]);
+    expect(after.items).toHaveLength(1);
+    expect(after.items[0].canReview).toBe(false);
   });
 
   it("a row reviewed after the snapshot disappears on refetch (stale-row contract)", async () => {

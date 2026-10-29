@@ -1,6 +1,7 @@
 "use client";
 
 import { PanelsTopLeft } from "lucide-react";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppearanceScreen } from "@/components/canvas/ethereal/appearance-views";
@@ -9,7 +10,6 @@ import { ClientTracker } from "@/components/canvas/ethereal/client-tracker/clien
 import { ClientsWorkspace } from "@/components/canvas/ethereal/clients/clients-workspace";
 import { MealplanWorkspace } from "@/components/canvas/ethereal/mealplan/mealplan-workspace";
 import { AppearanceProvider } from "@/lib/canvas/ethereal-appearance";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 
 type StudioPage =
   | "appearance"

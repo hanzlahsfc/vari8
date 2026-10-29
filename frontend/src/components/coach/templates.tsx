@@ -31,11 +31,12 @@ import {
   Select as Vari8Select,
 } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
-import {
-  bindDashboardUnits,
-  CoachDashboardEditor,
-} from "./builder/coach-dashboard";
+import { bindDashboardUnits } from "./builder/coach-dashboard";
 import { ClientPreview } from "./client-preview";
+import {
+  defaultDecimals,
+  defaultSummary,
+} from "./client-tracker-preview/preview-model";
 import {
   ALL_PARAMETERS,
   assignTemplate,
@@ -54,6 +55,7 @@ import {
   uid,
   type Variant,
 } from "./model";
+import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
 import {
   DEFAULT_TRAINING_DEFAULTS,
   DEFAULT_TRAINING_OPTIONS,
@@ -440,7 +442,6 @@ export function TemplateLibrary() {
 }
 const EDITOR_SECTIONS = [
   "Tabs",
-  "Dashboard",
   "Tracker",
   "Timeline / Roadmap",
   "Nutrition",
@@ -449,7 +450,6 @@ const EDITOR_SECTIONS = [
   "Habits",
 ];
 const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
-  Dashboard: "Dashboard",
   Tracker: "Tracker",
   "Timeline / Roadmap": "Timeline / Roadmap",
   Nutrition: "Nutrition",
@@ -608,10 +608,7 @@ export function TemplateEditor({ id }: { id: string }) {
           {error}
         </p>
       )}
-      <div
-        className="cd-editor-layout"
-        data-dashboard={section === "Dashboard"}
-      >
+      <div className="cd-editor-layout">
         <aside className="cd-editor-nav">
           <nav aria-label="Template configuration">
             {EDITOR_SECTIONS.map((s, i) => (
@@ -694,9 +691,6 @@ export function TemplateEditor({ id }: { id: string }) {
                   />
                 </div>
               </>
-            )}
-            {section === "Dashboard" && (
-              <DashboardConfig variant={variant} update={updateVariant} />
             )}
             {section === "Tracker" && (
               <TrackerConfig variant={variant} update={updateVariant} />
@@ -870,20 +864,6 @@ function OrderButtons({
     </span>
   );
 }
-function DashboardConfig({
-  variant,
-  update,
-}: {
-  variant: Variant;
-  update: (fn: (v: Variant) => Variant) => void;
-}) {
-  return (
-    <CoachDashboardEditor
-      variant={variant}
-      onChange={(dashboard) => update((v) => ({ ...v, dashboard }))}
-    />
-  );
-}
 function TrackerConfig({
   variant,
   update,
@@ -1028,10 +1008,17 @@ function TrackerConfig({
               const canConfigureChoices =
                 parameter.inputType === "choice" ||
                 parameter.inputType === "multi-choice";
+              const canConfigureDecimals =
+                !parameter.inputType &&
+                !parameter.units.some((unit) =>
+                  ["1–10", "1–5", "Word labels"].includes(unit),
+                );
               const hasSettings =
                 canConfigureUnit ||
                 canConfigureChoices ||
-                parameter.id === "period-start";
+                canConfigureDecimals ||
+                parameter.id === "period-start" ||
+                true; // week summary is available on every field
               const isOpen = detailsOpen[field.id] ?? false;
               return (
                 <article className="cd-tracker-selected-row" key={field.id}>
@@ -1167,6 +1154,62 @@ function TrackerConfig({
                           placeholder="Separate labels with commas"
                         />
                       )}
+                      {canConfigureDecimals && (
+                        <div className="cd-tracker-decimals">
+                          <span className="v8-field__label">Decimals</span>
+                          <SegmentedControl
+                            label="Decimals"
+                            value={String(
+                              field.decimals ?? defaultDecimals(parameter),
+                            )}
+                            onValueChange={(value) =>
+                              update((v) => ({
+                                ...v,
+                                fields: v.fields.map((item) =>
+                                  item.id === field.id
+                                    ? {
+                                        ...item,
+                                        decimals: Number(value) as 0 | 1 | 2,
+                                      }
+                                    : item,
+                                ),
+                              }))
+                            }
+                            options={[
+                              { value: "0", label: "0" },
+                              { value: "1", label: "1" },
+                              { value: "2", label: "2" },
+                            ]}
+                          />
+                        </div>
+                      )}
+                      <Select
+                        label="Week summary"
+                        value={field.summary ?? defaultSummary(parameter)}
+                        options={[
+                          { value: "avg", label: "Average" },
+                          { value: "sum", label: "Total" },
+                          { value: "count", label: "Count" },
+                          { value: "none", label: "None" },
+                        ]}
+                        onChange={(value) =>
+                          update((v) => ({
+                            ...v,
+                            fields: v.fields.map((item) =>
+                              item.id === field.id
+                                ? {
+                                    ...item,
+                                    summary: value as
+                                      | "avg"
+                                      | "sum"
+                                      | "count"
+                                      | "none",
+                                  }
+                                : item,
+                            ),
+                          }))
+                        }
+                      />
                     </div>
                   )}
                 </article>
@@ -2261,7 +2304,9 @@ export function FormPreview({
               client.habits.map((habit) => (
                 <div className="cd-stat-row" key={habit.id}>
                   <span>
-                    {habit.name} · {habit.frequency} · {habit.goal}
+                    {habit.name} ·{" "}
+                    {habitFrequencyLabel(parseHabitFrequency(habit.frequency))}{" "}
+                    · {habit.goal}
                   </span>
                   <strong>{habit.completed} completed</strong>
                 </div>

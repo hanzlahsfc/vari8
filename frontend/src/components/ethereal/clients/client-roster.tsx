@@ -9,7 +9,7 @@ import {
   MessageCircle,
   Search,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Input, SegmentedControl, Select } from "@/components/vari8/components";
 import {
@@ -19,7 +19,6 @@ import {
   type WorkspaceClient,
 } from "./model";
 import "./client-roster.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type RosterFilter = "all" | "attention" | "unread";
 type RosterSort = "next-check-in" | "name" | "attention";

@@ -82,7 +82,7 @@ export type DailyEntryDeps = {
 
 // ── Concurrency protocol (mirrors the reviewed client-setup service) ──────
 
-async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
+export async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   return sharedWithSerializedRetry(fn, {
     maxAttempts: 8,
     backoffBaseMs: 10,
@@ -91,7 +91,7 @@ async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
-async function advisoryLock(
+export async function advisoryLock(
   tx: Prisma.TransactionClient,
   key: string,
 ): Promise<void> {
@@ -103,7 +103,7 @@ async function advisoryLock(
   );
 }
 
-async function lockRow(
+export async function lockRow(
   tx: Prisma.TransactionClient,
   sql: string,
   ...params: string[]
@@ -235,7 +235,7 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
 
 // ── Shared context resolution ─────────────────────────────────────────────
 
-async function resolveOwnClient(
+export async function resolveOwnClient(
   tx: Prisma.TransactionClient,
   workspaceId: string,
   userId: string,
@@ -248,7 +248,7 @@ async function resolveOwnClient(
 
 /** Consent read in deterministic kind order — write path locks each kind's
  * rows FOR UPDATE; read path uses the same order without the lock. */
-async function checkRequiredConsent(
+export async function checkRequiredConsent(
   tx: PrismaLike,
   clientProfileId: string,
   registry: ConsentPolicyRegistry,
@@ -821,6 +821,437 @@ export async function listStaffDailyEntries(
       ? (items[items.length - 1]?.entryDate ?? null)
       : null;
   return { state: "ready", clientName: profile.name, items, nextCursor };
+}
+
+// ---------------------------------------------------------------------------
+// W2-FE2 staff tracker span read. The coach Tracker tab needs every logged
+// day's per-field values plus the staff-authored notes in one call - the
+// header list above cannot carry them. Same authorization contract as
+// listStaffDailyEntries (dailyTracking read, workspace|assigned scope);
+// every lookup is batched so queries never scale with days or fields.
+// ---------------------------------------------------------------------------
+
+export type StaffTrackerValueRow = {
+  parameterKey: string;
+  kind: string;
+  display: string;
+};
+
+export type StaffTrackerNote = {
+  entryDate: string;
+  body: string;
+};
+
+export type StaffTrackerCellNote = StaffTrackerNote & {
+  parameterKey: string;
+};
+
+export type StaffTrackerValuesResult =
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      clientName: string;
+      entries: { entryDate: string; values: StaffTrackerValueRow[] }[];
+      cellNotes: StaffTrackerCellNote[];
+      dayNotes: StaffTrackerNote[];
+      parameters: { key: string; kind: string }[];
+    };
+
+type TrackerValueWireRow = {
+  parameterId: string;
+  kind: string;
+  valueNumeric: Prisma.Decimal | null;
+  valueRating: number | null;
+  valueOptionId: string | null;
+  valueText: string | null;
+  valueMinutes: number | null;
+  valueSystolic: number | null;
+  valueDiastolic: number | null;
+  valueOptionIds: unknown;
+};
+
+function trackerValueDisplay(
+  row: TrackerValueWireRow,
+  optionLabels: Map<string, string>,
+): string {
+  switch (row.kind) {
+    case "MEASUREMENT":
+      return row.valueNumeric?.toString() ?? "";
+    case "RATING":
+    case "LOCATION_RATING":
+      return row.valueRating === null ? "" : String(row.valueRating);
+    case "OPTION":
+      return row.valueOptionId === null
+        ? ""
+        : (optionLabels.get(row.valueOptionId) ?? "");
+    case "MULTI_CHOICE": {
+      const ids = Array.isArray(row.valueOptionIds)
+        ? (row.valueOptionIds as string[])
+        : [];
+      return ids.map((id) => optionLabels.get(id) ?? "").join(", ");
+    }
+    case "BLOOD_PRESSURE":
+      return row.valueSystolic === null || row.valueDiastolic === null
+        ? ""
+        : `${row.valueSystolic} / ${row.valueDiastolic}`;
+    case "TIME":
+      return row.valueText ?? "";
+    case "DURATION":
+      return row.valueMinutes === null ? "" : String(row.valueMinutes);
+    case "TEXT":
+    case "CONTEXT":
+    default:
+      return row.valueText ?? "";
+  }
+}
+
+// The tab renders roughly 11 weeks; the cap bounds the span while staying
+// far above anything the tracker UI can display.
+const TRACKER_SPAN_LIMIT = 400;
+
+export async function listStaffTrackerValues(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: DailyEntryDeps = {},
+): Promise<StaffTrackerValuesResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { name: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+
+  try {
+    await checkRequiredConsent(db, input.clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { state: "consent_missing" };
+    throw error;
+  }
+
+  const entries = (
+    await db.dailyEntry.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        currentRevisionId: { not: null },
+      },
+      // Bounded span: newest TRACKER_SPAN_LIMIT days, returned ascending.
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, currentRevisionId: true },
+    })
+  ).reverse();
+  const revisionIds = entries.map((entry) => entry.currentRevisionId as string);
+  const revisions = revisionIds.length
+    ? await db.dailyEntryRevision.findMany({
+        where: { id: { in: revisionIds } },
+        select: {
+          id: true,
+          values: {
+            select: {
+              parameterId: true,
+              kind: true,
+              valueNumeric: true,
+              valueRating: true,
+              valueOptionId: true,
+              valueText: true,
+              valueMinutes: true,
+              valueSystolic: true,
+              valueDiastolic: true,
+              valueOptionIds: true,
+            },
+          },
+        },
+      })
+    : [];
+  const valuesByRevision = new Map(revisions.map((r) => [r.id, r.values]));
+
+  const comments = (
+    await db.trackerComment.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, parameterId: true, body: true },
+    })
+  ).reverse();
+  const dayNotes = (
+    await db.trackerDayNote.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, body: true },
+    })
+  ).reverse();
+
+  // Every workspace parameter definition, one batched read: the display
+  // mapping needs labels for the params present in the span, and the caller
+  // needs the full key list so a cell note resolves its parameter even when
+  // that field logged no values inside the window.
+  const parameters = await db.parameterDefinition.findMany({
+    where: { workspaceId: input.workspaceId },
+    select: { id: true, key: true, kind: true, options: true },
+  });
+  const paramById = new Map(parameters.map((p) => [p.id, p]));
+  const optionLabelsByParam = new Map<string, Map<string, string>>();
+  for (const p of parameters) {
+    const options = Array.isArray(p.options) ? p.options : [];
+    optionLabelsByParam.set(
+      p.id,
+      new Map(
+        options
+          .map((option) => {
+            const o = option as { optionId?: unknown; label?: unknown };
+            return typeof o.optionId === "string" && typeof o.label === "string"
+              ? ([o.optionId, o.label] as const)
+              : null;
+          })
+          .filter((row): row is readonly [string, string] => row !== null),
+      ),
+    );
+  }
+
+  return {
+    state: "ready",
+    clientName: profile.name,
+    entries: entries.map((entry) => ({
+      entryDate: entry.entryDate.toISOString().slice(0, 10),
+      values: (
+        valuesByRevision.get(entry.currentRevisionId as string) ?? []
+      ).flatMap((value) => {
+        const parameter = paramById.get(value.parameterId);
+        if (!parameter) return [];
+        return [
+          {
+            parameterKey: parameter.key,
+            kind: value.kind,
+            display: trackerValueDisplay(
+              value,
+              optionLabelsByParam.get(value.parameterId) ?? new Map(),
+            ),
+          },
+        ];
+      }),
+    })),
+    cellNotes: comments.flatMap((comment) => {
+      const parameter = paramById.get(comment.parameterId);
+      if (!parameter) return [];
+      return [
+        {
+          entryDate: comment.entryDate.toISOString().slice(0, 10),
+          parameterKey: parameter.key,
+          body: comment.body,
+        },
+      ];
+    }),
+    dayNotes: dayNotes.map((note) => ({
+      entryDate: note.entryDate.toISOString().slice(0, 10),
+      body: note.body,
+    })),
+    parameters: parameters.map((p) => ({ key: p.key, kind: p.kind })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// W2-FE2 staff tracker note writes. The v1 layer already enforces the
+// notes.write capability (owner+coach workspace scope; client and
+// non-members denied); the service then applies the authoritative
+// coachNotes/write matrix (coach assigned scope, everyone else denied)
+// and upserts on the natural keys.
+// ---------------------------------------------------------------------------
+
+const TRACKER_NOTE_MAX = 2000;
+
+export async function writeStaffTrackerNote(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    parameterKey?: string | null;
+    body: string | null;
+  },
+  deps: DailyEntryDeps = {},
+): Promise<{ state: "ok" }> {
+  const db = deps.db ?? defaultPrisma;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "coachNotes", "write");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128 ||
+    typeof input.entryDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.entryDate) ||
+    (input.body !== null &&
+      (typeof input.body !== "string" || input.body.length > TRACKER_NOTE_MAX))
+  )
+    throw new DailyEntryError("invalid_input");
+  const entryDate = new Date(`${input.entryDate}T00:00:00Z`);
+  if (
+    Number.isNaN(entryDate.getTime()) ||
+    entryDate.toISOString().slice(0, 10) !== input.entryDate
+  )
+    throw new DailyEntryError("invalid_input");
+
+  // coachNotes/write is the authoritative matrix: COACH resolves assigned
+  // scope (ACTIVE ClientAssignment to this client required); owner, client,
+  // assistant, support and non-members deny. The route capability only
+  // gates membership-level write, so the assignment check must live here.
+  const ctx = await authorize(
+    session,
+    {
+      resource: "coachNotes",
+      action: "write",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "assigned" && ctx.grantedScope !== "workspace")
+    throw new AccessDeniedError("role_denied", "coachNotes", "write");
+
+  const member = await db.workspaceMember.findFirst({
+    where: {
+      userId,
+      workspaceId: input.workspaceId,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!member)
+    throw new AccessDeniedError("role_denied", "coachNotes", "write");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { id: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "coachNotes",
+      "write",
+    );
+
+  const body = input.body?.trim() ?? "";
+  // A provided-but-blank parameterKey is a malformed cell-note write, not a
+  // day note - it must not fall through to the day-note delete/upsert.
+  if (typeof input.parameterKey === "string" && !input.parameterKey.trim())
+    throw new DailyEntryError("invalid_input");
+  const parameterKey =
+    typeof input.parameterKey === "string" ? input.parameterKey.trim() : null;
+
+  if (parameterKey === null) {
+    if (body === "") {
+      await db.trackerDayNote.deleteMany({
+        where: {
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+          entryDate,
+        },
+      });
+      return { state: "ok" };
+    }
+    await db.trackerDayNote.upsert({
+      where: {
+        clientProfileId_entryDate: {
+          clientProfileId: input.clientProfileId,
+          entryDate,
+        },
+      },
+      update: { body, authorMemberId: member.id },
+      create: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        body,
+        authorMemberId: member.id,
+      },
+    });
+    return { state: "ok" };
+  }
+
+  const parameter = await db.parameterDefinition.findFirst({
+    where: { workspaceId: input.workspaceId, key: parameterKey },
+    select: { id: true },
+  });
+  // A delete on a parameter that no longer exists is a no-op, not a client
+  // error - the sync loop must not retry a failing key forever.
+  if (!parameter) {
+    if (body === "") return { state: "ok" };
+    throw new DailyEntryError("invalid_input");
+  }
+
+  if (body === "") {
+    await db.trackerComment.deleteMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        parameterId: parameter.id,
+      },
+    });
+    return { state: "ok" };
+  }
+  await db.trackerComment.upsert({
+    where: {
+      clientProfileId_entryDate_parameterId: {
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        parameterId: parameter.id,
+      },
+    },
+    update: { body, authorMemberId: member.id },
+    create: {
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+      entryDate,
+      parameterId: parameter.id,
+      body,
+      authorMemberId: member.id,
+    },
+  });
+  return { state: "ok" };
 }
 
 export type StaffDailyEntryDetail = {

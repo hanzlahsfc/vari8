@@ -560,7 +560,7 @@
       "surfaceName": "Coach shell, navigation, client roster, client profile",
       "screen": "Client profile, Onboarding tab",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Onboarding"],
+      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Client settings"],
       "rowsTotal": 45,
       "rowsMatched": 17,
       "matchedRows": [
@@ -933,7 +933,7 @@
       "route": "/coach",
       "clicks": [
         "Check-ins",
-        "EA Emma Anders Recurring · Full Awaiting feedback",
+        "EA Emma Anders Recurring \u00b7 Full Awaiting feedback",
         "Open review"
       ],
       "rowsTotal": 28,
@@ -1002,6 +1002,7 @@
         "Clients",
         "EC Ethan Cole Lifestyle",
         "Edit plans",
+        "Habits",
         "Edit habits"
       ],
       "rowsTotal": 13,
@@ -1149,12 +1150,7 @@
       "surfaceName": "Templates, template setup, tracker setup and config",
       "screen": "Template tracker setup (parameter library)",
       "route": "/coach",
-      "clicks": [
-        "Add template",
-        "02 Dashboard",
-        "Move Bodyweight trend",
-        "03 Tracker"
-      ],
+      "clicks": ["Add template", "01 Tabs", "02 Tracker", "Move down"],
       "rowsTotal": 29,
       "rowsMatched": 3,
       "matchedRows": [
@@ -1182,7 +1178,13 @@
       "surfaceName": "Templates, template setup, tracker setup and config",
       "screen": "Client setup, assign template",
       "route": "/coach",
-      "clicks": ["Clients", "EF Eva Fischer Lifestyle", "Assign template"],
+      "clicks": [
+        "Clients",
+        "EF Eva Fischer Lifestyle",
+        "Edit plans",
+        "Open client setup",
+        "Choose a saved template"
+      ],
       "rowsTotal": 29,
       "rowsMatched": 6,
       "matchedRows": [
@@ -1225,7 +1227,13 @@
       "surfaceName": "Nutrition plan, food database, client plan preview",
       "screen": "Meal plan editor",
       "route": "/coach",
-      "clicks": ["Clients", "CP Chloe Park Lifestyle", "Plans", "Create"],
+      "clicks": [
+        "Clients",
+        "CP Chloe Park Lifestyle",
+        "Plans",
+        "Edit plans",
+        "Edit plan"
+      ],
       "rowsTotal": 29,
       "rowsMatched": 3,
       "matchedRows": [
@@ -1255,12 +1263,10 @@
       "route": "/coach",
       "clicks": [
         "Add template",
-        "02 Dashboard",
-        "Move Bodyweight trend",
-        "03 Tracker",
+        "02 Tracker",
         "Settings for Bodyweight",
-        "04 Timeline / Roadmap",
-        "05 Nutrition"
+        "03 Timeline / Roadmap",
+        "04 Nutrition"
       ],
       "rowsTotal": 29,
       "rowsMatched": 0,
@@ -1276,7 +1282,7 @@
       "clicks": [
         "Clients",
         "EA Emma Anders Lifestyle",
-        "Open chat 1",
+        "Open chat (1 unread)",
         "Training program"
       ],
       "rowsTotal": 31,
@@ -1308,9 +1314,10 @@
       "route": "/coach",
       "clicks": [
         "Clients",
-        "EA Emma Anders Lifestyle",
+        "CP Chloe Park Lifestyle",
         "Edit plans",
-        "Create",
+        "Training",
+        "Set up plan",
         "Add session",
         "Add exercise",
         "Manage library"
@@ -1383,7 +1390,7 @@
       "surfaceName": "Coach dashboard builder and widgets",
       "screen": "Template dashboard editor",
       "route": "/coach",
-      "clicks": ["Add template", "02 Dashboard"],
+      "clicks": ["Add template", "01 Tabs"],
       "rowsTotal": 43,
       "rowsMatched": 4,
       "matchedRows": [
@@ -1765,11 +1772,7 @@
       "surfaceName": "Identity and access: the canvas has no auth; map its implied users and views (coach vs client, which client is \"me\") to backend auth, roles, invites, onboarding, consent",
       "screen": "Preview assigned tool",
       "route": "/coach",
-      "clicks": [
-        "Clients",
-        "EA Emma Anders Lifestyle",
-        "Preview assigned tool"
-      ],
+      "clicks": ["Clients", "EA Emma Anders Lifestyle", "Open client app"],
       "rowsTotal": 30,
       "rowsMatched": 2,
       "matchedRows": [
@@ -1793,6 +1796,7 @@
         "Clients",
         "EA Emma Anders Lifestyle",
         "Edit plans",
+        "Supplements",
         "Set up plan"
       ]
     },
@@ -1804,6 +1808,7 @@
         "Clients",
         "EA Emma Anders Lifestyle",
         "Edit plans",
+        "Activity targets",
         "Set targets"
       ]
     }

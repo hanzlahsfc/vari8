@@ -62,6 +62,10 @@ import {
   type CheckInTrackerContextResult,
 } from "./tracker-context";
 import {
+  readCheckInReviewPanel,
+  type CheckInReviewPanelDetail,
+} from "./review-panel";
+import {
   createCheckInScheduleRule,
   setCheckInScheduleRuleStatus,
   generateCheckInScheduleRuleInstances,
@@ -293,6 +297,27 @@ export async function readStaffCheckInSubmissionDetail(
 ): Promise<CheckInSafeResult<StaffCheckInSubmissionDetail>> {
   return guard(process.env, () =>
     readCheckInSubmissionDetail(session as never, input, deps),
+  );
+}
+
+/**
+ * FULL-PACKAGE SLICE of #171 - coach review-panel read: the audited
+ * submission detail payload plus the same-form previous-submission
+ * change summary in ONE call. The detail read remains the
+ * authorization/consent/audit gate; a denied or foreign tuple maps to
+ * the same closed vocabulary as the base detail read.
+ */
+export async function readCheckInReviewPanelFromAction(
+  session: Session,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    submissionId: string;
+  },
+  deps: CheckInInstanceDeps = {},
+): Promise<CheckInSafeResult<CheckInReviewPanelDetail>> {
+  return guard(process.env, () =>
+    readCheckInReviewPanel(session as never, input, deps),
   );
 }
 
