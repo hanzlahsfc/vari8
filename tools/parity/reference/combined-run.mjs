@@ -198,7 +198,11 @@ export function validateCombinedRun({
         scroller.name !== `${scroller.name.split("#")[0]}#${scroller.idx}` ||
         scroller.name.split("#").length !== 2 ||
         scroller.name !== scroller.name.toLowerCase() ||
-        !/^[^\s\u0000-\u001f\u007f#]+$/.test(scroller.name.split("#")[0])
+        // DOM createElement validates names against the XML Name
+        // production — start letter/underscore, then letters/digits/.-_
+        // (Unicode included); ":" omitted because HTML tagName is never
+        // prefixed. Slash, whitespace, controls and # can never appear
+        !/^[\p{L}_][\p{L}\p{N}_.-]*$/u.test(scroller.name.split("#")[0])
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,
