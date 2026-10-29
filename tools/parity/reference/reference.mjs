@@ -235,6 +235,16 @@ export function validateRun({ directory, manifest, shots, provenance }) {
   for (const screen of manifest.screens) {
     if (!expected.has(screen.id) || seen.has(screen.id))
       throw new Error(`unexpected/duplicate capture ${screen.id}`);
+    // the ID must be exactly stem@viewport — a mismatched tuple that
+    // happens to share an expected id or a real viewport is a forgery,
+    // not a valid capture
+    if (
+      !CONTRACT.viewports[screen.vp] ||
+      screen.id !== `${screen.stem}@${screen.vp}`
+    )
+      throw new Error(
+        `id/stem/viewport mismatch: id ${JSON.stringify(screen.id)} vs stem ${JSON.stringify(screen.stem)} vp ${JSON.stringify(screen.vp)}`,
+      );
     seen.add(screen.id);
     const shot = shots.find(
       (s) => s.file.replace(/\.(png|webp)$/, "") === screen.stem,

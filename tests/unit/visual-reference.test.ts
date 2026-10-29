@@ -446,6 +446,20 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/state/);
   screens[0].finalUrl = oldUrl;
+  // wrong-viewport tuple: a @1440 screen claiming vp 390 must refuse
+  const vpScreen = screens.find((s) => s.vp === "1440")!;
+  const savedVp = vpScreen.vp;
+  vpScreen.vp = "390";
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/id\/stem\/viewport mismatch/);
+  vpScreen.vp = savedVp;
+  // an unknown viewport key with a valid expected id must refuse too
+  vpScreen.vp = "720" as unknown as typeof savedVp;
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/id\/stem\/viewport mismatch/);
+  vpScreen.vp = savedVp;
   expect(() =>
     validateRun({
       directory: d,
