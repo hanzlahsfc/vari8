@@ -71,23 +71,33 @@ export function PhotosPanel({
   useEffect(() => {
     if (!entries) return;
     let cancelled = false;
+    const requestedSet = requested.current;
+    const inFlight = new Set<string>();
+    const resolved = new Set<string>();
     for (const entry of entries) {
-      if (requested.current.has(entry.mediaObjectId)) continue;
-      requested.current.add(entry.mediaObjectId);
+      if (requestedSet.has(entry.mediaObjectId)) continue;
+      requestedSet.add(entry.mediaObjectId);
+      inFlight.add(entry.mediaObjectId);
       void fetchMediaDownload(workspaceId, entry.mediaObjectId)
         .then(({ download }) => {
           if (cancelled) return;
+          resolved.add(entry.mediaObjectId);
           setUrls((current) => ({
             ...current,
             [entry.mediaObjectId]: download.url,
           }));
         })
         .catch(() => {
-          requested.current.delete(entry.mediaObjectId);
+          requestedSet.delete(entry.mediaObjectId);
         });
     }
     return () => {
       cancelled = true;
+      // Entries reloaded mid-mint: ids that never wrote a url must be
+      // released so the next pass mints them again; resolved ids keep
+      // their deduped urls.
+      for (const id of inFlight)
+        if (!resolved.has(id)) requestedSet.delete(id);
     };
   }, [entries, workspaceId]);
 
