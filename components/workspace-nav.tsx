@@ -7,7 +7,6 @@ import {
   type WorkspaceRole,
 } from "@/lib/auth/rbac";
 import { isCheckInsEnabled } from "@/lib/checkin/forms-gate";
-import { isSheetViewerEnabled } from "@/lib/sheet-viewer";
 import { isOnboardingAssignmentsEnabled } from "@/lib/onboarding/assignments-gate";
 import { isCoachingTemplatesEnabled } from "@/lib/coaching/gate";
 import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
@@ -126,17 +125,9 @@ export function WorkspaceNav({
       resource: "foodExerciseMasterData",
       action: "read",
     },
-    // Dev-only workbook reference (/sheets): same flag the route checks via
-    // requireSheetViewer, evaluated per request in this server component, so
-    // the link never renders in a build where the route 404s. Cosmetic only.
-    {
-      href: "/sheets",
-      label: "Workbook Sheets",
-      resource: "workspaceSettings",
-      action: "read",
-      roles: ["WORKSPACE_OWNER", "COACH", "ASSISTANT_COACH"],
-      enabled: isSheetViewerEnabled(process.env.ENABLE_SHEET_VIEWER),
-    },
+    // Dev-only workbook reference (/sheets): intentionally not linked from
+    // navigation; the flag-gated route is reached directly.
+
     // P-025-A: staff Check-In form-definition library — gated by the shared
     // resolver (ENABLE_CHECK_INS + trusted dev/test runtime) and pinned to
     // owner/coach (the scope cell denies every other role; the explicit pin
