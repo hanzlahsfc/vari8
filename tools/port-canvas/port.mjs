@@ -107,8 +107,7 @@ const HAND_MERGE = new Set([
   "components/client-app/mobile/home.tsx",
   "components/client-app/mobile/logbook.tsx",
   "components/client-app/mobile/training.tsx",
-  // Same lint group: the overlap notice carries &quot; escapes and ASCII
-  // hyphens where the twin text has the quote and typographic dashes.
+  // Only the overlap notice (twin lines 359-360) is changed, with &quot; escapes and ASCII hyphens; the other two dashes (lines 3, 347) stay verbatim.
   "components/coach/plans/temporary-editor.tsx",
 ]);
 
