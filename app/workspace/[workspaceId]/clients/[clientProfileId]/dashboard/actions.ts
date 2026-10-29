@@ -135,10 +135,7 @@ export async function editClientHabit(input: {
     input.schedule === undefined
       ? undefined
       : { ...input.schedule, weekdays: weekdaysFromInput(input.schedule) };
-  return editHabitFromAction(
-    { user: { id: userId } },
-    { ...input, schedule },
-  );
+  return editHabitFromAction({ user: { id: userId } }, { ...input, schedule });
 }
 
 export async function archiveClientHabit(input: {
