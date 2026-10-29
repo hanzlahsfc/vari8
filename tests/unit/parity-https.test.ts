@@ -404,62 +404,87 @@ describe("combined-run source and pin enforcement", () => {
           expect(parsed, `tag ${JSON.stringify(tag)}`).toEqual({ tag, idx: 3 });
         }
       }
-      // systematic ASCII enumeration: every char as start and as a
-      // mid-name char — acceptance comes from the browser, not our regex
-      const ascii = await page.evaluate(() => {
+      // systematic enumeration: every ASCII char (C0 and DEL included)
+      // as start and as a mid-name char, then the same continuation
+      // matrix after letter and ':'/'_'/non-ASCII starts — the branches
+      // differ, and the strict branch accepts ALL code points ≥ U+0080.
+      // Acceptance comes from the browser, not our regex.
+      const prefixes = ["x", ":", "_", "é", "😀"];
+      const ascii = await page.evaluate((prefixes) => {
         const out: Record<string, string | null> = {};
-        for (let i = 0x20; i < 0x7f; i++) {
+        const put = (key: string, name: string) => {
+          try {
+            out[key] = document.createElement(name).tagName.toLowerCase();
+          } catch {
+            out[key] = null;
+          }
+        };
+        for (let i = 0x00; i <= 0x7f; i++) {
           const c = String.fromCharCode(i);
-          try {
-            out[`s${i}`] = document
-              .createElement(c + "x")
-              .tagName.toLowerCase();
-          } catch {
-            out[`s${i}`] = null;
-          }
-          try {
-            out[`m${i}`] = document
-              .createElement("x" + c)
-              .tagName.toLowerCase();
-          } catch {
-            out[`m${i}`] = null;
-          }
+          put(`s${i}`, c + "x");
+          put(`m${i}`, "x" + c);
         }
-        // per-branch continuation: same char after letter vs
-        // non-letter starts — the browser distinguishes them
-        for (const pfx of ["x", ":", "_", "é"]) {
-          for (let i = 0x20; i < 0x7f; i++) {
-            const c = String.fromCharCode(i);
-            try {
-              out[`${pfx}${i}`] = document
-                .createElement(pfx + c)
-                .tagName.toLowerCase();
-            } catch {
-              out[`${pfx}${i}`] = null;
-            }
-          }
+        // per-branch continuation matrix: all of ASCII (C0, DEL), the
+        // whole 0x80-0xff block plus representative non-ASCII boundary
+        // cases and astral code points
+        const cont: number[] = [];
+        for (let i = 0x00; i <= 0xff; i++) cont.push(i);
+        cont.push(
+          0x2c0,
+          0x300,
+          0x370,
+          0x375,
+          0xb7,
+          0xd7,
+          0xf7,
+          0x2028,
+          0x2029,
+          0x203f,
+          0x2040,
+          0x3000,
+          0xfeff,
+          0xfffd,
+          0xfffe,
+          0xffff,
+          0x1f600,
+          0xe0001,
+          0x10ffff,
+        );
+        for (let p = 0; p < prefixes.length; p++)
+          for (const i of cont)
+            put(`p${p}.${i}`, prefixes[p] + String.fromCodePoint(i));
+        // the writer reads the parsed DOM, so the HTML parser is an
+        // oracle too: C0 bytes land inside parsed tag names verbatim
+        // (U+0009/0A/0C/0D terminate the name into an attribute instead)
+        for (let i = 0x01; i <= 0x1f; i++) {
+          const c = String.fromCharCode(i);
+          const doc = new DOMParser().parseFromString(
+            `<body><a${c}b>t</a${c}b></body>`,
+            "text/html",
+          );
+          out[`h${i}`] =
+            doc.body.firstElementChild?.tagName.toLowerCase() ?? null;
         }
         return out;
-      });
-      for (const [k, tag] of Object.entries(ascii)) {
-        if (!/^[sm]/.test(k)) continue; // only s*/m* start/mid keys
-        const c = String.fromCharCode(Number(k.slice(1)));
-        const candidate = k[0] === "s" ? `${c}x` : `x${c}`;
-        // the oracle's authority is the emitted tagName — the writer
-        // sees the browser's lowercased output, not the raw input
-        const parsed = scrollerNameTag(`${tag ?? candidate}#0`);
-        if (tag === null) {
-          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toBeNull();
-        } else {
-          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toEqual({
-            tag,
-            idx: 0,
-          });
-        }
-      }
-      // the five consolidated counterexamples, browser-verified
+      }, prefixes);
+      // the consolidated counterexamples, browser-verified: strict-branch
+      // punctuation refuses; non-ASCII and non-whitespace C0
+      // continuations emit
       const branch = await page.evaluate(() =>
-        [":!", "_?", "é[", "a\u2028", "a\ufeff"].map((n) => {
+        [
+          ":!",
+          "_?",
+          "é[",
+          "a\u2028",
+          "a\ufeff",
+          "a\u0001",
+          "a\u000b",
+          "a\u001f",
+          "é\u00d7",
+          ":\u00a0",
+          ":\u2028",
+          "_😀",
+        ].map((n) => {
           try {
             return [n, document.createElement(n).tagName.toLowerCase()];
           } catch {
@@ -477,11 +502,29 @@ describe("combined-run source and pin enforcement", () => {
             idx: 0,
           });
       }
-      // per-branch ASCII continuation truth table
+      // start/mid matrix
       for (const [k, tag] of Object.entries(ascii)) {
-        if (/^[sm]/.test(k)) continue; // s*/m* already covered
-        const pfx = k[0];
-        const candidate = `${pfx}${String.fromCharCode(Number(k.slice(1)))}`;
+        if (!/^[sm]/.test(k)) continue;
+        const c = String.fromCharCode(Number(k.slice(1)));
+        const candidate = k[0] === "s" ? `${c}x` : `x${c}`;
+        // the oracle's authority is the emitted tagName — the writer
+        // sees the browser's lowercased output, not the raw input
+        const parsed = scrollerNameTag(`${tag ?? candidate}#0`);
+        if (tag === null) {
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toBeNull();
+        } else {
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toEqual({
+            tag,
+            idx: 0,
+          });
+        }
+      }
+      // per-branch continuation truth table
+      for (const [k, tag] of Object.entries(ascii)) {
+        if (!k.startsWith("p")) continue;
+        const [pi, cp] = k.slice(1).split(".");
+        const candidate =
+          prefixes[Number(pi)] + String.fromCodePoint(Number(cp));
         const parsed = scrollerNameTag(`${tag ?? candidate}#0`);
         if (tag === null)
           expect(parsed, `${k} ${JSON.stringify(candidate)}`).toBeNull();
@@ -490,6 +533,18 @@ describe("combined-run source and pin enforcement", () => {
             tag,
             idx: 0,
           });
+      }
+      // HTML-parser-emitted names: writer output the createElement
+      // matrix cannot see (a\x01b parses to the same tag the writer
+      // would record)
+      for (const [k, tag] of Object.entries(ascii)) {
+        if (!k.startsWith("h")) continue;
+        if (tag === null) continue;
+        const parsed = scrollerNameTag(`${tag}#0`);
+        expect(parsed, `${k} parser-emitted ${JSON.stringify(tag)}`).toEqual({
+          tag,
+          idx: 0,
+        });
       }
       expect(scrollerNameTag("#3")).toBeNull(); // empty tag
       expect(scrollerNameTag("div#03")).toBeNull(); // leading-zero idx
@@ -500,6 +555,139 @@ describe("combined-run source and pin enforcement", () => {
       await browser.close();
     }
   }, 30000);
+
+  it("both validators apply the DOM-name grammar to real scroller identities", async () => {
+    // not synthetic fixtures: the committed proposed reference and the
+    // committed combined package are the real inputs, with one scroller
+    // name rewritten in the manifest clone — everything else (artifacts,
+    // provenance, shot index, final-index binding, call-site lowercase
+    // check) is the genuine validator path
+    const { CONTRACT, validateRun } =
+      await import("../../tools/parity/reference/reference.mjs");
+    const { validateCombinedRun } =
+      await import("../../tools/parity/reference/combined-run.mjs");
+    const readJson = (p: string) =>
+      JSON.parse(fs.readFileSync(p, "utf8")) as never;
+    interface Shot {
+      file: string;
+    }
+    interface Scroll {
+      scroller: string;
+    }
+    interface Scroller {
+      name: string;
+      idx: number;
+    }
+    interface Screen {
+      captureEvidence?: { scrollers?: Scroller[] };
+      scrolls?: Scroll[];
+    }
+    interface Manifest {
+      screens: Screen[];
+    }
+    const gitShow = (ref: string) =>
+      execFileSync("git", ["show", ref], { encoding: "utf8" });
+    const shotsAt = (commit: string) =>
+      (
+        JSON.parse(gitShow(`${commit}:icm/04-briefing/shots/index.json`)) as {
+          shots: Shot[];
+        }
+      ).shots;
+    // validateRun's shot set is the pinned receipt inventory resolved
+    // against the evidence-time index — verify-evidence's own inputs
+    const stems = new Set<string>(
+      (
+        readJson("tools/parity/reference/evidence/receipts/canonical.json") as {
+          results: { id: string }[];
+        }
+      ).results.map((r) => r.id.split("@")[0]),
+    );
+    const evidenceShots = shotsAt(CONTRACT.candidateSource);
+    const refShots = [...stems].map((stem) =>
+      evidenceShots.find((sh) => sh.file.replace(/\.(png|webp)$/, "") === stem),
+    ) as Shot[];
+    const pkg = "tools/parity/reference/combined/p437-run";
+    const combinedProvenance = readJson(
+      `${pkg}/receipts/combined-provenance.json`,
+    ) as { source: { sha: string } };
+    const runners = [
+      [
+        "validateRun",
+        (manifest: Manifest) =>
+          validateRun({
+            directory: "tools/parity/reference/proposed",
+            manifest: manifest as never,
+            shots: refShots as never,
+            provenance: readJson(
+              "tools/parity/reference/proposed/provenance.json",
+            ),
+          }),
+      ],
+      [
+        "validateCombinedRun",
+        (manifest: Manifest) =>
+          validateCombinedRun({
+            directory: `${pkg}/current`,
+            manifest: manifest as never,
+            shots: shotsAt(combinedProvenance.source.sha) as never,
+            provenance: combinedProvenance,
+          }),
+      ],
+    ] as const;
+    const manifests = [
+      readJson("tools/parity/reference/proposed/manifest.json") as Manifest,
+      readJson(`${pkg}/current/manifest.json`) as Manifest,
+    ];
+    const withScrollerName = (base: Manifest, name: string) => {
+      const clone = structuredClone(base);
+      const screen = clone.screens.find(
+        (s) => s.captureEvidence?.scrollers?.length && s.scrolls?.length,
+      )!;
+      const scroller = screen.captureEvidence!.scrollers![0];
+      const renamed = name.replaceAll("{idx}", String(scroller.idx));
+      for (const s of screen.scrolls!)
+        if (s.scroller === scroller.name) s.scroller = renamed;
+      scroller.name = renamed;
+      return clone;
+    };
+    for (const [label, run] of runners) {
+      const base = manifests[label === "validateRun" ? 0 : 1];
+      // writer-emitted identities, including the non-ASCII and C0
+      // continuations the browser produces — each must pass the whole
+      // validation, not just the name check
+      for (const name of [
+        "div#{idx}",
+        "a\u2028#{idx}",
+        "a\u0001#{idx}",
+        "_😀#{idx}",
+        "é\u00d7#{idx}",
+      ])
+        expect(
+          () => run(withScrollerName(base, name)),
+          `${label} ${name}`,
+        ).not.toThrow();
+      // forged identities refuse with the specific reason — impossible
+      // DOM names, malformed suffixes, case and index binding
+      for (const name of [
+        ":!#{idx}",
+        "_?#{idx}",
+        "é[#{idx}",
+        "a b#{idx}",
+        "a\tb#{idx}",
+        "a\u0000b#{idx}",
+        "a/b#{idx}",
+        "1div#{idx}",
+        "Div#{idx}",
+        "#{idx}",
+        "div#0{idx}",
+        "div",
+      ])
+        expect(
+          () => run(withScrollerName(base, name)),
+          `${label} ${name}`,
+        ).toThrow(/forged scroller identity/);
+    }
+  }, 120000);
 
   it("generates byte-identical location-independent adapters", () => {
     const dir = fs.mkdtempSync("/tmp/parity-adapter-");

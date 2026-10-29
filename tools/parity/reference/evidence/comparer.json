@@ -21,7 +21,7 @@
   "components": {
     "reference": {
       "path": "tools/parity/reference/reference.mjs",
-      "sha256": "478397de338e4ab50070dd1def2ff4fcf5e029f98434e2a0861df4083708e671"
+      "sha256": "4760bc29451e87479aa46769e89b93feabfde5c1fc11bab936299f8ace1c53b0"
     },
     "referenceCompare": {
       "path": "tools/parity/reference/compare.mjs",

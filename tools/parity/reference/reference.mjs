@@ -171,23 +171,24 @@ export function scrollerNameTag(name) {
   const tag = name.slice(0, i);
   const suffix = name.slice(i + 1);
   if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
-  // the browser's element-name contract has two branches (verified
-  // against real chromium createElement/tagName):
-  //   ASCII-letter start → lenient continuation: anything except
-  //     '/', '>', ASCII whitespace and C0 controls (mid-name '<',
-  //     '#', '=', quotes, U+2028 and U+FEFF are all emitted)
-  //   ':'/'_'/non-ASCII start → strict continuation: XML NameChars
-  //     only (letters, digits, combining marks, '.', '-', '_', ':',
-  //     middle dot and joiners) — ':!', '_?' and 'é[' all refuse
+  // WHATWG "valid element local name" verbatim (dom.spec.whatwg.org —
+  // createElement's own gate and the superset of everything the HTML
+  // parser can produce):
+  //   ASCII-letter start → refuse only ASCII whitespace, U+0000, '/'
+  //     and '>' — other C0 such as \x01, \x0b and \x1f are legitimate
+  //     writer output (the parser appends them to tag names), as are
+  //     '<', '#', '=', quotes, U+2028 and U+FEFF
+  //   ':', '_' or any code point ≥ U+0080 start → subsequent code
+  //     points are ASCII alpha/digit, '-', '.', ':', '_' or ≥ U+0080
+  //     — every non-ASCII is permitted; ':!', '_?' and 'é[' still
+  //     refuse
   const first = tag.codePointAt(0);
   const letterStart =
     (first >= 0x61 && first <= 0x7a) || (first >= 0x41 && first <= 0x5a);
   if (letterStart) {
-    if (/[/>\t\n\f\r \u0000-\u001f]/u.test(tag)) return null;
+    if (/[/>\t\n\f\r \u0000]/u.test(tag)) return null;
   } else if (
-    !/^(?:[:_]|[^\x00-\x7f])[\p{L}\p{N}\p{M}:_.\-\u00B7\u203F\u2040]*$/u.test(
-      tag,
-    )
+    !/^(?:[:_]|[^\x00-\x7f])(?:[A-Za-z0-9.\-:_]|[^\x00-\x7f])*$/u.test(tag)
   )
     return null;
   return { tag, idx: Number(suffix) };
