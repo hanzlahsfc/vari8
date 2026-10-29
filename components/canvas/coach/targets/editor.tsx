@@ -7,6 +7,13 @@ import {
 } from "@/components/canvas/vari8/components";
 import { FormGrid } from "@/components/canvas/vari8/layouts";
 import { type CoachClient, type Route, uid } from "../model";
+import {
+  changeToWrite,
+  fetchActivityTargets,
+  saveActivityTargetRemote,
+  versionsFromWire,
+} from "../../data/activity-targets";
+import { ApiClientError } from "../../data/http";
 import { emptyClientPlans } from "../plans/types";
 import { useCoach } from "../store";
 import { Button, Dialog, Surface } from "../ui";
@@ -144,7 +151,14 @@ const previewVersion = (
 const hasErrors = (errors: FieldErrors) => Object.values(errors).some(Boolean);
 
 export function ActivityTargetEditor({ client }: { client: CoachClient }) {
-  const { setState, toast, guard, navigate } = useCoach();
+  const {
+    setState,
+    toast,
+    guard,
+    navigate,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const today = useLocalToday();
   const versions = client.plans?.activityTargets ?? [];
   const [stepsDraft, setStepsDraft] = useState<StepsDraft>(() =>
@@ -168,6 +182,11 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
     effectiveFrom: string;
   } | null>(null);
   const [leaving, setLeaving] = useState<Route | null>(null);
+  const [saving, setSaving] = useState(false);
+  // Issue #169: when the canvas is attached to a server workspace the dated
+  // versions persist through the API; remote.current null keeps the local
+  // demo path.
+  const remote = useRef<{ clientProfileId: string } | null>(null);
 
   const dirty = (metric: ActivityMetric) =>
     JSON.stringify(metric === "steps" ? stepsDraft : cardioDraft) !==
@@ -198,6 +217,59 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
       window.removeEventListener("beforeunload", unload);
     };
   }, [guard]);
+
+  // Issue #169 hydration: a successful server read is authoritative - the
+  // fetched versions replace the local copy and re-baseline both drafts.
+  // On a failed read the local copy stays visible and saves still attempt
+  // the server. Reads happen only here and after a save; nothing autosaves.
+  useEffect(() => {
+    if (!workspaceId) return;
+    let live = true;
+    void (async () => {
+      const clientProfileId = await clientProfileIdFor(client.name);
+      if (!live || !clientProfileId) return;
+      try {
+        const res = await fetchActivityTargets(workspaceId, clientProfileId);
+        if (!live) return;
+        remote.current = { clientProfileId };
+        const next = versionsFromWire(res.versions);
+        setState((current) => ({
+          ...current,
+          clients: current.clients.map((item) =>
+            item.id === client.id
+              ? {
+                  ...item,
+                  plans: {
+                    ...(item.plans ?? emptyClientPlans()),
+                    activityTargets: next,
+                  },
+                }
+              : item,
+          ),
+        }));
+        const date = localToday();
+        const freshSteps = stepsDraftFor(
+          resolveActivityTarget({ versions: next, metric: "steps", date }),
+        );
+        const freshCardio = cardioDraftFor(
+          resolveActivityTarget({ versions: next, metric: "cardio", date }),
+        );
+        setStepsDraft(freshSteps);
+        setCardioDraft(freshCardio);
+        setBaselines({ steps: freshSteps, cardio: freshCardio });
+        setTouched({ steps: false, cardio: false });
+        setCommitErrors({});
+      } catch {
+        remote.current = { clientProfileId };
+        toast(
+          "Saved activity targets could not be loaded; showing the local copy.",
+        );
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, clientProfileIdFor, client.id, client.name, setState, toast]);
 
   const persist = (next: ActivityTargetVersion[], saved: ActivityMetric[]) => {
     setState((current) => ({
@@ -242,6 +314,53 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
 
   const write = (change: ActivityChange, options?: { confirmed?: boolean }) => {
     const effectiveFrom = localToday();
+    const target = remote.current;
+    if (workspaceId && target) {
+      // Remote path: PUT one day-effective write, then read the canonical
+      // view back so ids and revisions come from the rows. A 409
+      // confirmation_required becomes the same-day replace dialog.
+      const payload = changeToWrite(change);
+      setSaving(true);
+      void (async () => {
+        try {
+          await saveActivityTargetRemote(workspaceId, target.clientProfileId, {
+            metric: payload.metric,
+            effectiveFrom,
+            target: payload.target,
+            confirmSameDay: options?.confirmed,
+          });
+          const res = await fetchActivityTargets(
+            workspaceId,
+            target.clientProfileId,
+          );
+          persist(versionsFromWire(res.versions), [change.metric]);
+          toast(
+            change.target === null
+              ? `${METRIC_LABELS[change.metric]} target stopped`
+              : `${METRIC_LABELS[change.metric]} target saved`,
+          );
+        } catch (error) {
+          if (
+            error instanceof ApiClientError &&
+            error.code === "confirmation_required"
+          ) {
+            setPending({ change, effectiveFrom });
+          } else if (
+            error instanceof ApiClientError &&
+            error.code === "invalid_input"
+          ) {
+            setCommitErrors({
+              [change.metric]: "The server rejected this target.",
+            });
+          } else {
+            toast("Activity target could not be saved to the server.");
+          }
+        } finally {
+          setSaving(false);
+        }
+      })();
+      return false;
+    }
     const result = writeActivityTarget({
       versions,
       change,
@@ -291,28 +410,11 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
     const entry = pending;
     if (!entry) return;
     setPending(null);
-    const effectiveFrom = localToday();
-    const result = writeActivityTarget({
-      versions,
-      change: entry.change,
-      effectiveFrom,
-      id: uid("target"),
-      confirmSameDay: effectiveFrom === entry.effectiveFrom,
+    // Still the same local day -> confirm the replace; the day rolled over
+    // -> the write lands as a normal new version.
+    write(entry.change, {
+      confirmed: localToday() === entry.effectiveFrom,
     });
-    if (result.kind === "invalid") {
-      setCommitErrors({ [entry.change.metric]: result.errors.join(" ") });
-      return;
-    }
-    if (result.kind === "confirmation-required") {
-      setPending({ change: entry.change, effectiveFrom });
-      return;
-    }
-    persist(result.versions, [entry.change.metric]);
-    toast(
-      entry.change.target === null
-        ? `${METRIC_LABELS[entry.change.metric]} target stopped`
-        : `${METRIC_LABELS[entry.change.metric]} target saved`,
-    );
   };
 
   const stepsCurrent = resolveActivityTarget({
@@ -360,9 +462,10 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
   return (
     <div className="at-editor">
       <p className="at-intro">
-        Prescriptions apply from today, {today}, including midweek changes. They
-        are stored in this browser&apos;s local demo workspace; earlier days keep
-        their earlier prescriptions.
+        Prescriptions apply from today, {today}, including midweek changes.{" "}
+        {workspaceId
+          ? "They are stored in the client’s workspace; earlier days keep their earlier prescriptions."
+          : "They are stored in this browser’s local demo workspace; earlier days keep their earlier prescriptions."}
       </p>
       <div className="at-panels">
         <Surface className="at-panel">
@@ -439,7 +542,7 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
           <div className="cd-actions">
             <Button
               primary
-              disabled={!dirty("steps")}
+              disabled={!dirty("steps") || saving}
               onClick={() => save("steps")}
             >
               Save steps
@@ -507,7 +610,7 @@ export function ActivityTargetEditor({ client }: { client: CoachClient }) {
           <div className="cd-actions">
             <Button
               primary
-              disabled={!dirty("cardio")}
+              disabled={!dirty("cardio") || saving}
               onClick={() => save("cardio")}
             >
               Save cardio

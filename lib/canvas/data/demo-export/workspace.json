@@ -1,0 +1,4576 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "id": "strength",
+      "name": "Strength & balance",
+      "description": "A complete coaching setup for sustainable strength, nutrition and everyday progress.",
+      "updated": "2026-10-12",
+      "defaultVariant": "meal-plan",
+      "variants": [
+        {
+          "id": "meal-plan",
+          "name": "Meal plan",
+          "nutrition": "Meal plan",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": true,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            },
+            {
+              "id": "w-training",
+              "name": "Training week",
+              "category": "Training",
+              "source": "sessions",
+              "summary": "Completed sessions",
+              "size": "small"
+            },
+            {
+              "id": "w-sleep",
+              "name": "Recovery",
+              "category": "Lifestyle",
+              "source": "sleep",
+              "summary": "Weekly average",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1-10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1-10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ],
+      "legacyConfigurations": [
+        {
+          "id": "iifym",
+          "name": "IIFYM",
+          "nutrition": "IIFYM",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": true,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            },
+            {
+              "id": "w-training",
+              "name": "Training week",
+              "category": "Training",
+              "source": "sessions",
+              "summary": "Completed sessions",
+              "size": "small"
+            },
+            {
+              "id": "w-sleep",
+              "name": "Recovery",
+              "category": "Lifestyle",
+              "source": "sleep",
+              "summary": "Weekly average",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1-10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1-10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "performance",
+      "name": "Performance foundation",
+      "description": "Training-led coaching with recovery, activity and a detailed weekly review.",
+      "updated": "2026-10-10",
+      "defaultVariant": "performance",
+      "variants": [
+        {
+          "id": "performance",
+          "name": "Performance",
+          "nutrition": "Meal plan",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": true,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            },
+            {
+              "id": "w-training",
+              "name": "Training week",
+              "category": "Training",
+              "source": "sessions",
+              "summary": "Completed sessions",
+              "size": "small"
+            },
+            {
+              "id": "w-sleep",
+              "name": "Recovery",
+              "category": "Lifestyle",
+              "source": "sleep",
+              "summary": "Weekly average",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1-10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1-10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ],
+      "legacyConfigurations": []
+    },
+    {
+      "id": "essentials",
+      "name": "Everyday essentials",
+      "description": "A lighter starting point. The essentials, with room to make it their own.",
+      "updated": "2026-10-08",
+      "defaultVariant": "meal-plan",
+      "variants": [
+        {
+          "id": "meal-plan",
+          "name": "Meal plan",
+          "nutrition": "Meal plan",
+          "cycleTrackingEnabled": false,
+          "views": [
+            "Dashboard",
+            "Tracker",
+            "Timeline / Roadmap",
+            "Nutrition",
+            "Training Program",
+            "Check-In"
+          ],
+          "habits": false,
+          "dashboard": {
+            "version": 1,
+            "name": "Daily overview",
+            "widgets": [
+              {
+                "id": "seed-BN01",
+                "kind": "BN01",
+                "settings": {
+                  "title": "Bodyweight trend",
+                  "source": "bodyweight",
+                  "summary": "daily",
+                  "period": "30d",
+                  "target": false,
+                  "size": "Wide",
+                  "fields": [],
+                  "option": "default",
+                  "unit": "kg"
+                }
+              },
+              {
+                "id": "seed-BN15",
+                "kind": "BN15",
+                "settings": {
+                  "title": "Nutrition today",
+                  "source": "nutrition:active",
+                  "summary": "daily",
+                  "period": "today",
+                  "target": true,
+                  "size": "Wide",
+                  "fields": [
+                    "protein",
+                    "carbs",
+                    "fat"
+                  ],
+                  "option": "circles",
+                  "unit": "g"
+                }
+              },
+              {
+                "id": "seed-TL26",
+                "kind": "TL26",
+                "settings": {
+                  "title": "Your training",
+                  "source": "workouts",
+                  "summary": "current",
+                  "period": "week",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [
+                    "exercise",
+                    "sets",
+                    "reps"
+                  ],
+                  "option": "current",
+                  "unit": ""
+                }
+              },
+              {
+                "id": "seed-TL11",
+                "kind": "TL11",
+                "settings": {
+                  "title": "Sleep duration",
+                  "source": "sleep",
+                  "summary": "average",
+                  "period": "7d",
+                  "target": false,
+                  "size": "Regular",
+                  "fields": [],
+                  "option": "hours",
+                  "unit": "h"
+                }
+              }
+            ],
+            "layouts": {
+              "desktop": {
+                "seed-BN01": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 0,
+                  "y": 0
+                },
+                "seed-BN15": {
+                  "w": 6,
+                  "h": 3,
+                  "size": "Wide",
+                  "x": 6,
+                  "y": 0
+                },
+                "seed-TL26": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 0,
+                  "y": 3
+                },
+                "seed-TL11": {
+                  "w": 4,
+                  "h": 3,
+                  "size": "Regular",
+                  "x": 4,
+                  "y": 3
+                }
+              }
+            },
+            "widths": {
+              "desktop": 1040
+            }
+          },
+          "widgets": [
+            {
+              "id": "w-weight",
+              "name": "Weight trend",
+              "category": "Lifestyle",
+              "source": "weight",
+              "summary": "Weekly average",
+              "size": "wide"
+            },
+            {
+              "id": "w-nutrition",
+              "name": "Daily nutrition",
+              "category": "Nutrition",
+              "source": "calories",
+              "summary": "Target vs actual",
+              "size": "small"
+            }
+          ],
+          "fields": [
+            {
+              "id": "weight",
+              "unit": "kg"
+            },
+            {
+              "id": "time",
+              "unit": "24-hour"
+            },
+            {
+              "id": "sleep",
+              "unit": "hours"
+            },
+            {
+              "id": "energy",
+              "unit": "1-10"
+            },
+            {
+              "id": "steps",
+              "unit": "steps"
+            },
+            {
+              "id": "calories",
+              "unit": "kcal"
+            },
+            {
+              "id": "protein",
+              "unit": "g"
+            }
+          ],
+          "roadmap": [
+            {
+              "source": "weight",
+              "calculation": "Weekly average",
+              "comparison": false
+            },
+            {
+              "source": "calories",
+              "calculation": "Target vs actual",
+              "comparison": true
+            },
+            {
+              "source": "sleep",
+              "calculation": "Weekly average",
+              "comparison": false
+            }
+          ],
+          "roadmapPhases": true,
+          "phaseOptions": [
+            "Fat loss",
+            "Maintenance",
+            "Muscle gain",
+            "Recovery"
+          ],
+          "training": {
+            "fields": [
+              "Sets",
+              "Fixed reps",
+              "Rep ranges",
+              "Tempo",
+              "Set type",
+              "Rest / pause",
+              "Detailed instructions",
+              "Progression notes"
+            ],
+            "volume": true,
+            "breakdown": "Muscle groups / week",
+            "presentation": "Table"
+          },
+          "questions": [
+            {
+              "id": "q-energy",
+              "label": "How did you feel this week?",
+              "type": "Long text",
+              "required": true,
+              "options": ""
+            },
+            {
+              "id": "q-training",
+              "label": "How was your training?",
+              "type": "Rating",
+              "required": true,
+              "options": "1-10"
+            },
+            {
+              "id": "q-note",
+              "label": "Anything you would like me to know?",
+              "type": "Long text",
+              "required": false,
+              "options": ""
+            }
+          ],
+          "summaries": [
+            "weight",
+            "calories",
+            "sleep",
+            "habits"
+          ]
+        }
+      ],
+      "legacyConfigurations": []
+    }
+  ],
+  "extras": [
+    {
+      "id": "extra-maya",
+      "clientId": "client-005",
+      "date": "day -11",
+      "type": "Custom",
+      "note": "Mid-week energy and recovery update"
+    },
+    {
+      "id": "extra-emma",
+      "clientId": "client-001",
+      "date": "day -10",
+      "type": "Custom",
+      "note": "How is the knee after the adjusted session?"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "submission-emma",
+      "clientId": "client-001",
+      "date": "day -13",
+      "eventId": "recurring:client-001:2026-10-12",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel this week?",
+          "answer": "Energy was good and the morning routine really helped. A busy Friday, but meal prep kept me on track."
+        },
+        {
+          "question": "How was your training?",
+          "answer": "8 / 10 - feeling stronger"
+        },
+        {
+          "question": "Anything you would like me to know?",
+          "answer": "My left knee felt unsettled on the last split-squat set. Could we look at the setup?"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "calories",
+        "sleep",
+        "habits"
+      ],
+      "visuals": [
+        "Front · 12 October",
+        "Side · 12 October"
+      ],
+      "note": "Kept all three sessions this week.",
+      "flags": [
+        {
+          "exercise": "Bulgarian split squat",
+          "set": 3,
+          "date": "day -14",
+          "text": "Left knee feels unsettled near the bottom. Is my stance too short?"
+        }
+      ]
+    },
+    {
+      "id": "submission-lily",
+      "clientId": "client-003",
+      "date": "day -13",
+      "eventId": "extra-lily-submitted",
+      "type": "Custom",
+      "answers": [
+        {
+          "question": "Bodyweight",
+          "answer": "67.0 kg"
+        },
+        {
+          "question": "Sleep",
+          "answer": "7.8 hours"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "sleep"
+      ],
+      "visuals": [],
+      "note": "Just a quick update after the weekend. Feeling rested!",
+      "flags": []
+    },
+    {
+      "id": "submission-oliver",
+      "clientId": "client-004",
+      "date": "day -17",
+      "eventId": "recurring:client-004:2026-10-08",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel?",
+          "answer": "A consistent week, no concerns."
+        }
+      ],
+      "metrics": [
+        "weight",
+        "sleep"
+      ],
+      "visuals": [],
+      "note": "",
+      "flags": [],
+      "response": {
+        "text": "Keep the controlled tempo this week. Great consistency.",
+        "changes": [],
+        "date": "day -16T08:30:00Z"
+      }
+    },
+    {
+      "id": "demo-submission-week",
+      "clientId": "client-007",
+      "date": "day -7",
+      "eventId": "recurring:client-007:2026-10-18",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel this week?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your training?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Anything you would like me to know?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your energy this week?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Bodyweight average",
+          "answer": "71.9 kg"
+        },
+        {
+          "question": "Wins this week",
+          "answer": "Hit all four sessions and kept steps above target every weekday."
+        },
+        {
+          "question": "Progress photos",
+          "answer": "Uploaded front and side photos for 2026-10-18"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "calories",
+        "sleep",
+        "habits"
+      ],
+      "visuals": [
+        "Front · 2026-10-18",
+        "Side · 2026-10-18"
+      ],
+      "note": "Submitted from the client app.",
+      "flags": [],
+      "response": {
+        "text": "Great week, Amara - the step consistency is showing in the trend. Keep the same approach; we'll review photos at the next check-in.",
+        "changes": [],
+        "date": "day -7T18:30:00Z"
+      },
+      "photos": [
+        {
+          "pose": "Front relaxed",
+          "src": "demo/physique/front-relaxed-2.svg"
+        },
+        {
+          "pose": "Side relaxed",
+          "src": "demo/physique/side-relaxed-2.svg"
+        },
+        {
+          "pose": "Back relaxed",
+          "src": "demo/physique/back-relaxed-2.svg"
+        },
+        {
+          "pose": "Front double biceps",
+          "src": "demo/physique/front-double-biceps-2.svg"
+        }
+      ]
+    },
+    {
+      "id": "demo-submission-latest",
+      "clientId": "client-007",
+      "date": "day -1",
+      "eventId": "recurring:client-007:2026-10-24",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel this week?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your training?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Anything you would like me to know?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your energy this week?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Bodyweight average",
+          "answer": "71.9 kg"
+        },
+        {
+          "question": "Wins this week",
+          "answer": "Hit all four sessions and kept steps above target every weekday."
+        },
+        {
+          "question": "Progress photos",
+          "answer": "Uploaded front and side photos for 2026-10-24"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "calories",
+        "sleep",
+        "habits"
+      ],
+      "visuals": [],
+      "note": "Submitted from the client app.",
+      "flags": [],
+      "photos": [
+        {
+          "pose": "Front relaxed",
+          "src": "demo/physique/front-relaxed-2.svg"
+        },
+        {
+          "pose": "Side relaxed",
+          "src": "demo/physique/side-relaxed-2.svg"
+        },
+        {
+          "pose": "Back relaxed",
+          "src": "demo/physique/back-relaxed-2.svg"
+        },
+        {
+          "pose": "Front double biceps",
+          "src": "demo/physique/front-double-biceps-2.svg"
+        }
+      ]
+    },
+    {
+      "id": "demo-submission-first",
+      "clientId": "client-007",
+      "date": "day -63",
+      "eventId": "recurring:client-007:2026-08-23",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel this week?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your training?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Anything you would like me to know?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your energy this week?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Bodyweight average",
+          "answer": "71.9 kg"
+        },
+        {
+          "question": "Wins this week",
+          "answer": "Hit all four sessions and kept steps above target every weekday."
+        },
+        {
+          "question": "Progress photos",
+          "answer": "Uploaded front and side photos for 2026-08-23"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "calories",
+        "sleep",
+        "habits"
+      ],
+      "visuals": [
+        "Front · 2026-08-23",
+        "Side · 2026-08-23"
+      ],
+      "photos": [
+        {
+          "pose": "Front relaxed",
+          "src": "demo/physique/front-relaxed-1.svg"
+        },
+        {
+          "pose": "Side relaxed",
+          "src": "demo/physique/side-relaxed-1.svg"
+        },
+        {
+          "pose": "Back relaxed",
+          "src": "demo/physique/back-relaxed-1.svg"
+        },
+        {
+          "pose": "Front double biceps",
+          "src": "demo/physique/front-double-biceps-1.svg"
+        }
+      ],
+      "note": "Submitted from the client app.",
+      "flags": [],
+      "response": {
+        "text": "Solid week - the step consistency is showing in the trend. Keep the same approach.",
+        "changes": [],
+        "date": "day -63T18:30:00Z"
+      }
+    },
+    {
+      "id": "demo-submission-mid",
+      "clientId": "client-007",
+      "date": "day -35",
+      "eventId": "recurring:client-007:2026-09-20",
+      "type": "Full",
+      "answers": [
+        {
+          "question": "How did you feel this week?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your training?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Anything you would like me to know?",
+          "answer": "Solid week overall - training felt strong and the evening routine stuck."
+        },
+        {
+          "question": "How was your energy this week?",
+          "answer": "8 / 10 - energy held up even on the busy days"
+        },
+        {
+          "question": "Bodyweight average",
+          "answer": "71.9 kg"
+        },
+        {
+          "question": "Wins this week",
+          "answer": "Hit all four sessions and kept steps above target every weekday."
+        },
+        {
+          "question": "Progress photos",
+          "answer": "Uploaded front and side photos for 2026-09-20"
+        }
+      ],
+      "metrics": [
+        "weight",
+        "calories",
+        "sleep",
+        "habits"
+      ],
+      "visuals": [
+        "Front · 2026-09-20",
+        "Side · 2026-09-20"
+      ],
+      "photos": [
+        {
+          "pose": "Front relaxed",
+          "src": "demo/physique/front-relaxed-1.svg"
+        },
+        {
+          "pose": "Side relaxed",
+          "src": "demo/physique/side-relaxed-1.svg"
+        },
+        {
+          "pose": "Back relaxed",
+          "src": "demo/physique/back-relaxed-1.svg"
+        },
+        {
+          "pose": "Front double biceps",
+          "src": "demo/physique/front-double-biceps-1.svg"
+        }
+      ],
+      "note": "Submitted from the client app.",
+      "flags": [],
+      "response": {
+        "text": "Solid week - the step consistency is showing in the trend. Keep the same approach.",
+        "changes": [],
+        "date": "day -35T18:30:00Z"
+      }
+    }
+  ],
+  "messages": [
+    {
+      "id": "seed-coach-0",
+      "clientId": "client-001",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-001",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-0",
+      "clientId": "client-001",
+      "text": "Just sent my check-in! I added a note about the split squats. Everything else felt really good this week.",
+      "from": "client",
+      "date": "day -12T09:40:00Z",
+      "read": false,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-1",
+      "clientId": "client-002",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-002",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-1",
+      "clientId": "client-002",
+      "text": "Work has been running late. I’ll send my update this evening.",
+      "from": "client",
+      "date": "day -12T09:37:00Z",
+      "read": false,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-2",
+      "clientId": "client-003",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-003",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-2",
+      "clientId": "client-003",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T09:34:00Z",
+      "read": false,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-3",
+      "clientId": "client-004",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-004",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-3",
+      "clientId": "client-004",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T08:31:00Z",
+      "read": false,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-4",
+      "clientId": "client-005",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-005",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-4",
+      "clientId": "client-005",
+      "text": "A quick question before tomorrow’s session - could we check the rest times?",
+      "from": "client",
+      "date": "day -12T08:28:00Z",
+      "read": false,
+      "priority": true,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-5",
+      "clientId": "client-006",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-006",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-5",
+      "clientId": "client-006",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T08:25:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-6",
+      "clientId": "client-007",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-007",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-6",
+      "clientId": "client-007",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T07:22:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-7",
+      "clientId": "client-008",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-008",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-7",
+      "clientId": "client-008",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T07:19:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-8",
+      "clientId": "client-009",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-009",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-8",
+      "clientId": "client-009",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T07:16:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": []
+    },
+    {
+      "id": "seed-coach-9",
+      "clientId": "client-010",
+      "text": "How did the adjusted session feel? We can look at it together in your check-in.",
+      "from": "coach",
+      "date": "day -13T08:10:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": [],
+      "link": {
+        "label": "Training program",
+        "route": {
+          "section": "clients",
+          "client": "client-010",
+          "plan": "training"
+        }
+      }
+    },
+    {
+      "id": "seed-client-9",
+      "clientId": "client-010",
+      "text": "The new routine is feeling good. Thanks for the guidance!",
+      "from": "client",
+      "date": "day -12T06:13:00Z",
+      "read": true,
+      "priority": false,
+      "attachments": []
+    }
+  ],
+  "drafts": {},
+  "reviewDrafts": {},
+  "editorDrafts": {},
+  "preferences": {
+    "mode": "dark",
+    "accent": "#EB91B8",
+    "availability": "Weekdays · 09:00-18:00",
+    "notifications": true,
+    "priorityNotifications": true
+  },
+  "exerciseLibrary": [
+    {
+      "id": "library-back-squat",
+      "name": "Back squat",
+      "muscle": "quadriceps",
+      "secondaryMuscles": [
+        "glutes",
+        "core"
+      ],
+      "notes": "Brace before each rep; keep the whole foot grounded."
+    },
+    {
+      "id": "library-bench-press",
+      "name": "Bench press",
+      "muscle": "chest",
+      "secondaryMuscles": [
+        "triceps",
+        "shoulders"
+      ],
+      "notes": "Set the shoulder blades before unracking."
+    },
+    {
+      "id": "library-deadlift",
+      "name": "Deadlift",
+      "muscle": "hamstrings",
+      "secondaryMuscles": [
+        "glutes",
+        "back"
+      ],
+      "notes": "Build tension against the bar before lifting."
+    },
+    {
+      "id": "library-row",
+      "name": "Chest-supported row",
+      "muscle": "back",
+      "secondaryMuscles": [
+        "biceps"
+      ],
+      "notes": "Pause briefly with the shoulder blades drawn back."
+    },
+    {
+      "id": "library-lat-pulldown",
+      "name": "Lat pulldown",
+      "muscle": "back",
+      "secondaryMuscles": [
+        "biceps"
+      ],
+      "notes": "Lead with the elbows and keep the torso steady."
+    },
+    {
+      "id": "library-shoulder-press",
+      "name": "Dumbbell shoulder press",
+      "muscle": "shoulders",
+      "secondaryMuscles": [
+        "triceps"
+      ],
+      "notes": "Use a comfortable range without arching the lower back."
+    },
+    {
+      "id": "library-hip-thrust",
+      "name": "Hip thrust",
+      "muscle": "glutes",
+      "secondaryMuscles": [
+        "hamstrings"
+      ],
+      "notes": "Finish with the hips, keeping the ribs stacked over the pelvis."
+    },
+    {
+      "id": "library-leg-extension",
+      "name": "Leg extension",
+      "muscle": "quadriceps",
+      "secondaryMuscles": [],
+      "notes": "Control the lowering phase; avoid bouncing at the bottom."
+    },
+    {
+      "id": "library-calf-raise",
+      "name": "Standing calf raise",
+      "muscle": "calves",
+      "secondaryMuscles": [],
+      "notes": "Use a full stretch and controlled pause at the top."
+    },
+    {
+      "id": "library-plank",
+      "name": "Forearm plank",
+      "muscle": "core",
+      "secondaryMuscles": [
+        "shoulders"
+      ],
+      "notes": "Maintain a straight line from head to heels; stop before form changes."
+    },
+    {
+      "id": "library-romanian-deadlift",
+      "name": "Romanian deadlift",
+      "muscle": "hamstrings",
+      "secondaryMuscles": [
+        "glutes",
+        "back"
+      ],
+      "notes": "Keep the bar close and stop the hinge before the back position changes."
+    },
+    {
+      "id": "library-cable-kickback",
+      "name": "Cable glute kickback",
+      "muscle": "glutes",
+      "secondaryMuscles": [],
+      "notes": "Move from the hip and keep the pelvis steady."
+    },
+    {
+      "id": "library-hip-abduction",
+      "name": "Seated hip abduction",
+      "muscle": "glutes",
+      "secondaryMuscles": [],
+      "notes": "Use a controlled range and pause briefly at the open position."
+    },
+    {
+      "id": "library-lateral-raise",
+      "name": "Dumbbell lateral raise",
+      "muscle": "shoulders",
+      "secondaryMuscles": [],
+      "notes": "Raise with a soft elbow and keep the torso quiet."
+    },
+    {
+      "id": "library-rear-delt-fly",
+      "name": "Cable rear-delt fly",
+      "muscle": "shoulders",
+      "secondaryMuscles": [
+        "back"
+      ],
+      "notes": "Sweep the arms wide without shrugging."
+    },
+    {
+      "id": "library-split-squat",
+      "name": "Dumbbell split squat",
+      "muscle": "glutes",
+      "secondaryMuscles": [
+        "quadriceps"
+      ],
+      "notes": "Use a steady stance and a comfortable depth."
+    },
+    {
+      "id": "library-glute-bridge",
+      "name": "Barbell glute bridge",
+      "muscle": "glutes",
+      "secondaryMuscles": [
+        "hamstrings"
+      ],
+      "notes": "Finish with the hips while keeping the ribs stacked."
+    },
+    {
+      "id": "library-seated-leg-curl",
+      "name": "Seated leg curl",
+      "muscle": "hamstrings",
+      "secondaryMuscles": [],
+      "notes": "Control the return and keep the hips settled."
+    },
+    {
+      "id": "library-cable-lateral-raise",
+      "name": "Cable lateral raise",
+      "muscle": "shoulders",
+      "secondaryMuscles": [],
+      "notes": "Keep tension through the lower half of the range."
+    },
+    {
+      "id": "library-cable-triceps-extension",
+      "name": "Rope triceps pressdown",
+      "muscle": "triceps",
+      "secondaryMuscles": [],
+      "notes": "Keep the upper arms still as the elbows extend."
+    },
+    {
+      "id": "library-dumbbell-curl",
+      "name": "Dumbbell curl",
+      "muscle": "biceps",
+      "secondaryMuscles": [],
+      "notes": "Keep the shoulder relaxed and lower under control."
+    }
+  ],
+  "demoSeeds": {
+    "amaraTraining": 1,
+    "clientAppDemo": 1,
+    "trainingLogDemo": 1,
+    "athleteProfileDemo": 1,
+    "athleteDataDemo": 11
+  },
+  "trainingLogs": [
+    {
+      "id": "demo-log-2026-10-13-Tuesday-amara-upper-a-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 1,
+      "occurrenceKey": "Tuesday:amara-upper-a:0",
+      "sessionId": "amara-upper-a",
+      "sessionName": "Upper A · Delts and back",
+      "scheduledDate": "day -12",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-upper-a-lateral-raise",
+          "exerciseKey": "library-lateral-raise",
+          "prescription": {
+            "id": "amara-upper-a-lateral-raise",
+            "libraryId": "library-lateral-raise",
+            "name": "Dumbbell lateral raise",
+            "muscle": "shoulders",
+            "secondaryMuscles": [],
+            "generalNotes": "Raise with a soft elbow and keep the torso quiet.",
+            "instructions": "Keep a soft elbow and a quiet torso.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-lateral-raise-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-lateral-raise-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-lateral-raise-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-lateral-raise-set-1",
+              "done": true,
+              "weight": 37.5,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-lateral-raise-set-2",
+              "done": true,
+              "weight": 37.5,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-lateral-raise-set-3",
+              "done": true,
+              "weight": 37.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-press",
+          "exerciseKey": "library-shoulder-press",
+          "prescription": {
+            "id": "amara-upper-a-press",
+            "libraryId": "library-shoulder-press",
+            "name": "Dumbbell shoulder press",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "triceps"
+            ],
+            "generalNotes": "Use a comfortable range without arching the lower back.",
+            "instructions": "Press in a comfortable range without arching the lower back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-press-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-press-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-press-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-press-set-1",
+              "done": true,
+              "weight": 42.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-press-set-2",
+              "done": true,
+              "weight": 42.5,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-press-set-3",
+              "done": true,
+              "weight": 42.5,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-pulldown",
+          "exerciseKey": "library-lat-pulldown",
+          "prescription": {
+            "id": "amara-upper-a-pulldown",
+            "libraryId": "library-lat-pulldown",
+            "name": "Lat pulldown",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Lead with the elbows and keep the torso steady.",
+            "instructions": "Lead with the elbows and keep the torso steady.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-pulldown-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-pulldown-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-pulldown-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-pulldown-set-1",
+              "done": true,
+              "weight": 60,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-pulldown-set-2",
+              "done": true,
+              "weight": 60,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-pulldown-set-3",
+              "done": true,
+              "weight": 60,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-row",
+          "exerciseKey": "library-row",
+          "prescription": {
+            "id": "amara-upper-a-row",
+            "libraryId": "library-row",
+            "name": "Chest-supported row",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Pause briefly with the shoulder blades drawn back.",
+            "instructions": "Pause briefly with the shoulder blades drawn back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-row-set-1",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-row-set-2",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-row-set-1",
+              "done": true,
+              "weight": 32.5,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-row-set-2",
+              "done": true,
+              "weight": 32.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-rear-delt",
+          "exerciseKey": "library-rear-delt-fly",
+          "prescription": {
+            "id": "amara-upper-a-rear-delt",
+            "libraryId": "library-rear-delt-fly",
+            "name": "Cable rear-delt fly",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "back"
+            ],
+            "generalNotes": "Sweep the arms wide without shrugging.",
+            "instructions": "Sweep the arms wide without shrugging.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-rear-delt-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-rear-delt-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-rear-delt-set-1",
+              "done": true,
+              "weight": 47.5,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-rear-delt-set-2",
+              "done": true,
+              "weight": 47.5,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -12T18:00:00",
+      "finishedAt": "day -12T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-15-Thursday-amara-lower-b-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 1,
+      "occurrenceKey": "Thursday:amara-lower-b:0",
+      "sessionId": "amara-lower-b",
+      "sessionName": "Lower B · Glutes and hamstrings",
+      "scheduledDate": "day -10",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-lower-b-rdl",
+          "exerciseKey": "library-romanian-deadlift",
+          "prescription": {
+            "id": "amara-lower-b-rdl",
+            "libraryId": "library-romanian-deadlift",
+            "name": "Romanian deadlift",
+            "muscle": "hamstrings",
+            "secondaryMuscles": [
+              "glutes",
+              "back"
+            ],
+            "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
+            "instructions": "Keep the weights close and use a controlled hip hinge.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-rdl-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-rdl-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-rdl-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-rdl-set-1",
+              "done": true,
+              "weight": 50,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-rdl-set-2",
+              "done": true,
+              "weight": 50,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-rdl-set-3",
+              "done": true,
+              "weight": 50,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "Left knee felt tight on the last rep",
+              "flagged": true
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-split-squat",
+          "exerciseKey": "library-split-squat",
+          "prescription": {
+            "id": "amara-lower-b-split-squat",
+            "libraryId": "library-split-squat",
+            "name": "Dumbbell split squat",
+            "muscle": "glutes",
+            "secondaryMuscles": [
+              "quadriceps"
+            ],
+            "generalNotes": "Use a steady stance and a comfortable depth.",
+            "instructions": "Use a steady stance and a comfortable depth on each side.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-split-squat-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-split-squat-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-split-squat-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-split-squat-set-1",
+              "done": true,
+              "weight": 65,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-split-squat-set-2",
+              "done": true,
+              "weight": 65,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-split-squat-set-3",
+              "done": true,
+              "weight": 65,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-bridge",
+          "exerciseKey": "library-glute-bridge",
+          "prescription": {
+            "id": "amara-lower-b-bridge",
+            "libraryId": "library-glute-bridge",
+            "name": "Barbell glute bridge",
+            "muscle": "glutes",
+            "secondaryMuscles": [
+              "hamstrings"
+            ],
+            "generalNotes": "Finish with the hips while keeping the ribs stacked.",
+            "instructions": "Finish with the hips while keeping the ribs stacked.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-bridge-set-1",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-bridge-set-2",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-bridge-set-3",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-bridge-set-1",
+              "done": true,
+              "weight": 35,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-bridge-set-2",
+              "done": true,
+              "weight": 35,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-bridge-set-3",
+              "done": true,
+              "weight": 35,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-curl",
+          "exerciseKey": "library-seated-leg-curl",
+          "prescription": {
+            "id": "amara-lower-b-curl",
+            "libraryId": "library-seated-leg-curl",
+            "name": "Seated leg curl",
+            "muscle": "hamstrings",
+            "secondaryMuscles": [],
+            "generalNotes": "Control the return and keep the hips settled.",
+            "instructions": "Control the return and keep the hips settled.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-curl-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-curl-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-curl-set-3",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-curl-set-1",
+              "done": true,
+              "weight": 67.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-curl-set-2",
+              "done": true,
+              "weight": 67.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-curl-set-3",
+              "done": true,
+              "weight": 67.5,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-abduction",
+          "exerciseKey": "library-hip-abduction",
+          "prescription": {
+            "id": "amara-lower-b-abduction",
+            "libraryId": "library-hip-abduction",
+            "name": "Seated hip abduction",
+            "muscle": "glutes",
+            "secondaryMuscles": [],
+            "generalNotes": "Use a controlled range and pause briefly at the open position.",
+            "instructions": "Use a smooth range and pause briefly at the open position.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-abduction-set-1",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-abduction-set-2",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-abduction-set-1",
+              "done": true,
+              "weight": 55,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-abduction-set-2",
+              "done": true,
+              "weight": 55,
+              "reps": 20,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -10T18:00:00",
+      "finishedAt": "day -10T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-17-Saturday-amara-upper-b-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 1,
+      "occurrenceKey": "Saturday:amara-upper-b:0",
+      "sessionId": "amara-upper-b",
+      "sessionName": "Upper B · Delts and arms",
+      "scheduledDate": "day -8",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-upper-b-lateral-raise",
+          "exerciseKey": "library-cable-lateral-raise",
+          "prescription": {
+            "id": "amara-upper-b-lateral-raise",
+            "libraryId": "library-cable-lateral-raise",
+            "name": "Cable lateral raise",
+            "muscle": "shoulders",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep tension through the lower half of the range.",
+            "instructions": "Keep tension through the lower half of the range.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-lateral-raise-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-lateral-raise-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-lateral-raise-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-lateral-raise-set-1",
+              "done": true,
+              "weight": 27.5,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-lateral-raise-set-2",
+              "done": true,
+              "weight": 27.5,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-lateral-raise-set-3",
+              "done": true,
+              "weight": 27.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-press",
+          "exerciseKey": "library-shoulder-press",
+          "prescription": {
+            "id": "amara-upper-b-press",
+            "libraryId": "library-shoulder-press",
+            "name": "Dumbbell shoulder press",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "triceps"
+            ],
+            "generalNotes": "Use a comfortable range without arching the lower back.",
+            "instructions": "Press in a comfortable range without arching the lower back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-press-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-press-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-press-set-1",
+              "done": true,
+              "weight": 42.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-press-set-2",
+              "done": true,
+              "weight": 42.5,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-rear-delt",
+          "exerciseKey": "library-rear-delt-fly",
+          "prescription": {
+            "id": "amara-upper-b-rear-delt",
+            "libraryId": "library-rear-delt-fly",
+            "name": "Cable rear-delt fly",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "back"
+            ],
+            "generalNotes": "Sweep the arms wide without shrugging.",
+            "instructions": "Sweep the arms wide without shrugging.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-rear-delt-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-rear-delt-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-rear-delt-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-rear-delt-set-1",
+              "done": true,
+              "weight": 47.5,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-rear-delt-set-2",
+              "done": true,
+              "weight": 47.5,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-rear-delt-set-3",
+              "done": true,
+              "weight": 47.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-pulldown",
+          "exerciseKey": "library-lat-pulldown",
+          "prescription": {
+            "id": "amara-upper-b-pulldown",
+            "libraryId": "library-lat-pulldown",
+            "name": "Lat pulldown",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Lead with the elbows and keep the torso steady.",
+            "instructions": "Lead with the elbows and keep the torso steady.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-pulldown-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-pulldown-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-pulldown-set-1",
+              "done": true,
+              "weight": 60,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-pulldown-set-2",
+              "done": true,
+              "weight": 60,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-triceps",
+          "exerciseKey": "library-cable-triceps-extension",
+          "prescription": {
+            "id": "amara-upper-b-triceps",
+            "libraryId": "library-cable-triceps-extension",
+            "name": "Rope triceps pressdown",
+            "muscle": "triceps",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep the upper arms still as the elbows extend.",
+            "instructions": "Keep the upper arms still as the elbows extend.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-triceps-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-triceps-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-triceps-set-1",
+              "done": true,
+              "weight": 42.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-triceps-set-2",
+              "done": true,
+              "weight": 42.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-biceps",
+          "exerciseKey": "library-dumbbell-curl",
+          "prescription": {
+            "id": "amara-upper-b-biceps",
+            "libraryId": "library-dumbbell-curl",
+            "name": "Dumbbell curl",
+            "muscle": "biceps",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep the shoulder relaxed and lower under control.",
+            "instructions": "Keep the shoulder relaxed and lower under control.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-biceps-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-biceps-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-biceps-set-1",
+              "done": true,
+              "weight": 27.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-biceps-set-2",
+              "done": true,
+              "weight": 27.5,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -8T18:00:00",
+      "finishedAt": "day -8T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-19-Monday-amara-lower-a-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 2,
+      "occurrenceKey": "Monday:amara-lower-a:0",
+      "sessionId": "amara-lower-a",
+      "sessionName": "Lower A · Glute emphasis",
+      "scheduledDate": "day -6",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-lower-a-hip-thrust",
+          "exerciseKey": "library-hip-thrust",
+          "prescription": {
+            "id": "amara-lower-a-hip-thrust",
+            "libraryId": "library-hip-thrust",
+            "name": "Hip thrust",
+            "muscle": "glutes",
+            "secondaryMuscles": [
+              "hamstrings"
+            ],
+            "generalNotes": "Finish with the hips, keeping the ribs stacked over the pelvis.",
+            "instructions": "Pause briefly at the top; keep the ribs stacked.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-a-hip-thrust-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-hip-thrust-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-hip-thrust-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-a-hip-thrust-set-1",
+              "done": true,
+              "weight": 45,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-hip-thrust-set-2",
+              "done": true,
+              "weight": 45,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-hip-thrust-set-3",
+              "done": true,
+              "weight": 45,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-a-squat",
+          "exerciseKey": "library-back-squat",
+          "prescription": {
+            "id": "amara-lower-a-squat",
+            "libraryId": "library-back-squat",
+            "name": "Back squat",
+            "muscle": "quadriceps",
+            "secondaryMuscles": [
+              "glutes",
+              "core"
+            ],
+            "generalNotes": "Brace before each rep; keep the whole foot grounded.",
+            "instructions": "Brace before each rep and keep the whole foot grounded.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-a-squat-set-1",
+                "reps": 8,
+                "repsMax": 10,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-squat-set-2",
+                "reps": 8,
+                "repsMax": 10,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-squat-set-3",
+                "reps": 8,
+                "repsMax": 10,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-a-squat-set-1",
+              "done": true,
+              "weight": 70,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-squat-set-2",
+              "done": true,
+              "weight": 70,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-squat-set-3",
+              "done": true,
+              "weight": 70,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-a-rdl",
+          "exerciseKey": "library-romanian-deadlift",
+          "prescription": {
+            "id": "amara-lower-a-rdl",
+            "libraryId": "library-romanian-deadlift",
+            "name": "Romanian deadlift",
+            "muscle": "hamstrings",
+            "secondaryMuscles": [
+              "glutes",
+              "back"
+            ],
+            "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
+            "instructions": "Keep the weights close and use a controlled hip hinge.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-a-rdl-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-rdl-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-rdl-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-a-rdl-set-1",
+              "done": true,
+              "weight": 52.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-rdl-set-2",
+              "done": true,
+              "weight": 52.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-rdl-set-3",
+              "done": true,
+              "weight": 52.5,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-a-kickback",
+          "exerciseKey": "library-cable-kickback",
+          "prescription": {
+            "id": "amara-lower-a-kickback",
+            "libraryId": "library-cable-kickback",
+            "name": "Cable glute kickback",
+            "muscle": "glutes",
+            "secondaryMuscles": [],
+            "generalNotes": "Move from the hip and keep the pelvis steady.",
+            "instructions": "Move from the hip without rotating the pelvis.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-a-kickback-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-kickback-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-a-kickback-set-1",
+              "done": true,
+              "weight": 57.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-kickback-set-2",
+              "done": true,
+              "weight": 57.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-a-abduction",
+          "exerciseKey": "library-hip-abduction",
+          "prescription": {
+            "id": "amara-lower-a-abduction",
+            "libraryId": "library-hip-abduction",
+            "name": "Seated hip abduction",
+            "muscle": "glutes",
+            "secondaryMuscles": [],
+            "generalNotes": "Use a controlled range and pause briefly at the open position.",
+            "instructions": "Use a smooth range and pause briefly at the open position.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-a-abduction-set-1",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-a-abduction-set-2",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-a-abduction-set-1",
+              "done": true,
+              "weight": 57.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-a-abduction-set-2",
+              "done": true,
+              "weight": 57.5,
+              "reps": 20,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -6T18:00:00",
+      "finishedAt": "day -6T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-20-Tuesday-amara-upper-a-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 2,
+      "occurrenceKey": "Tuesday:amara-upper-a:0",
+      "sessionId": "amara-upper-a",
+      "sessionName": "Upper A · Delts and back",
+      "scheduledDate": "day -5",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-upper-a-lateral-raise",
+          "exerciseKey": "library-lateral-raise",
+          "prescription": {
+            "id": "amara-upper-a-lateral-raise",
+            "libraryId": "library-lateral-raise",
+            "name": "Dumbbell lateral raise",
+            "muscle": "shoulders",
+            "secondaryMuscles": [],
+            "generalNotes": "Raise with a soft elbow and keep the torso quiet.",
+            "instructions": "Keep a soft elbow and a quiet torso.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-lateral-raise-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-lateral-raise-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-lateral-raise-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-lateral-raise-set-1",
+              "done": true,
+              "weight": 40,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-lateral-raise-set-2",
+              "done": true,
+              "weight": 40,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-lateral-raise-set-3",
+              "done": true,
+              "weight": 40,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-press",
+          "exerciseKey": "library-shoulder-press",
+          "prescription": {
+            "id": "amara-upper-a-press",
+            "libraryId": "library-shoulder-press",
+            "name": "Dumbbell shoulder press",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "triceps"
+            ],
+            "generalNotes": "Use a comfortable range without arching the lower back.",
+            "instructions": "Press in a comfortable range without arching the lower back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-press-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-press-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-press-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-press-set-1",
+              "done": true,
+              "weight": 45,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-press-set-2",
+              "done": true,
+              "weight": 45,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-press-set-3",
+              "done": true,
+              "weight": 45,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-pulldown",
+          "exerciseKey": "library-lat-pulldown",
+          "prescription": {
+            "id": "amara-upper-a-pulldown",
+            "libraryId": "library-lat-pulldown",
+            "name": "Lat pulldown",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Lead with the elbows and keep the torso steady.",
+            "instructions": "Lead with the elbows and keep the torso steady.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-pulldown-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-pulldown-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-pulldown-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-pulldown-set-1",
+              "done": true,
+              "weight": 62.5,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-pulldown-set-2",
+              "done": true,
+              "weight": 62.5,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-pulldown-set-3",
+              "done": true,
+              "weight": 62.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-row",
+          "exerciseKey": "library-row",
+          "prescription": {
+            "id": "amara-upper-a-row",
+            "libraryId": "library-row",
+            "name": "Chest-supported row",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Pause briefly with the shoulder blades drawn back.",
+            "instructions": "Pause briefly with the shoulder blades drawn back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-row-set-1",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-row-set-2",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-row-set-1",
+              "done": true,
+              "weight": 35,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-row-set-2",
+              "done": true,
+              "weight": 35,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-a-rear-delt",
+          "exerciseKey": "library-rear-delt-fly",
+          "prescription": {
+            "id": "amara-upper-a-rear-delt",
+            "libraryId": "library-rear-delt-fly",
+            "name": "Cable rear-delt fly",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "back"
+            ],
+            "generalNotes": "Sweep the arms wide without shrugging.",
+            "instructions": "Sweep the arms wide without shrugging.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-a-rear-delt-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-a-rear-delt-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-a-rear-delt-set-1",
+              "done": true,
+              "weight": 50,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-a-rear-delt-set-2",
+              "done": true,
+              "weight": 50,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -5T18:00:00",
+      "finishedAt": "day -5T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-22-Thursday-amara-lower-b-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 2,
+      "occurrenceKey": "Thursday:amara-lower-b:0",
+      "sessionId": "amara-lower-b",
+      "sessionName": "Lower B · Glutes and hamstrings",
+      "scheduledDate": "day -3",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-lower-b-rdl",
+          "exerciseKey": "library-romanian-deadlift",
+          "prescription": {
+            "id": "amara-lower-b-rdl",
+            "libraryId": "library-romanian-deadlift",
+            "name": "Romanian deadlift",
+            "muscle": "hamstrings",
+            "secondaryMuscles": [
+              "glutes",
+              "back"
+            ],
+            "generalNotes": "Keep the bar close and stop the hinge before the back position changes.",
+            "instructions": "Keep the weights close and use a controlled hip hinge.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-rdl-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-rdl-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-rdl-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-rdl-set-1",
+              "done": true,
+              "weight": 52.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-rdl-set-2",
+              "done": true,
+              "weight": 52.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-rdl-set-3",
+              "done": true,
+              "weight": 52.5,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-split-squat",
+          "exerciseKey": "library-split-squat",
+          "prescription": {
+            "id": "amara-lower-b-split-squat",
+            "libraryId": "library-split-squat",
+            "name": "Dumbbell split squat",
+            "muscle": "glutes",
+            "secondaryMuscles": [
+              "quadriceps"
+            ],
+            "generalNotes": "Use a steady stance and a comfortable depth.",
+            "instructions": "Use a steady stance and a comfortable depth on each side.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-split-squat-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-split-squat-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-split-squat-set-3",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-split-squat-set-1",
+              "done": true,
+              "weight": 67.5,
+              "reps": 9,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-split-squat-set-2",
+              "done": true,
+              "weight": 67.5,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-split-squat-set-3",
+              "done": true,
+              "weight": 67.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-bridge",
+          "exerciseKey": "library-glute-bridge",
+          "prescription": {
+            "id": "amara-lower-b-bridge",
+            "libraryId": "library-glute-bridge",
+            "name": "Barbell glute bridge",
+            "muscle": "glutes",
+            "secondaryMuscles": [
+              "hamstrings"
+            ],
+            "generalNotes": "Finish with the hips while keeping the ribs stacked.",
+            "instructions": "Finish with the hips while keeping the ribs stacked.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-bridge-set-1",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-bridge-set-2",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-bridge-set-3",
+                "reps": 10,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-bridge-set-1",
+              "done": true,
+              "weight": 37.5,
+              "reps": 10,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-bridge-set-2",
+              "done": true,
+              "weight": 37.5,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-bridge-set-3",
+              "done": true,
+              "weight": 37.5,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-curl",
+          "exerciseKey": "library-seated-leg-curl",
+          "prescription": {
+            "id": "amara-lower-b-curl",
+            "libraryId": "library-seated-leg-curl",
+            "name": "Seated leg curl",
+            "muscle": "hamstrings",
+            "secondaryMuscles": [],
+            "generalNotes": "Control the return and keep the hips settled.",
+            "instructions": "Control the return and keep the hips settled.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-curl-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-curl-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-curl-set-3",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-curl-set-1",
+              "done": true,
+              "weight": 70,
+              "reps": 11,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-curl-set-2",
+              "done": true,
+              "weight": 70,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-curl-set-3",
+              "done": true,
+              "weight": 70,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-lower-b-abduction",
+          "exerciseKey": "library-hip-abduction",
+          "prescription": {
+            "id": "amara-lower-b-abduction",
+            "libraryId": "library-hip-abduction",
+            "name": "Seated hip abduction",
+            "muscle": "glutes",
+            "secondaryMuscles": [],
+            "generalNotes": "Use a controlled range and pause briefly at the open position.",
+            "instructions": "Use a smooth range and pause briefly at the open position.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-lower-b-abduction-set-1",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-lower-b-abduction-set-2",
+                "reps": 15,
+                "repsMax": 20,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-lower-b-abduction-set-1",
+              "done": true,
+              "weight": 57.5,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-lower-b-abduction-set-2",
+              "done": true,
+              "weight": 57.5,
+              "reps": 20,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "finished",
+      "startedAt": "day -3T18:00:00",
+      "finishedAt": "day -3T19:00:00"
+    },
+    {
+      "id": "demo-log-2026-10-24-Saturday-amara-upper-b-0",
+      "clientId": "client-007",
+      "planId": "amara-training-example",
+      "week": 2,
+      "occurrenceKey": "Saturday:amara-upper-b:0",
+      "sessionId": "amara-upper-b",
+      "sessionName": "Upper B · Delts and arms",
+      "scheduledDate": "day -1",
+      "logFields": [
+        "weight",
+        "reps",
+        "note"
+      ],
+      "loadUnit": "kg",
+      "exercises": [
+        {
+          "exerciseId": "amara-upper-b-lateral-raise",
+          "exerciseKey": "library-cable-lateral-raise",
+          "prescription": {
+            "id": "amara-upper-b-lateral-raise",
+            "libraryId": "library-cable-lateral-raise",
+            "name": "Cable lateral raise",
+            "muscle": "shoulders",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep tension through the lower half of the range.",
+            "instructions": "Keep tension through the lower half of the range.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-lateral-raise-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-lateral-raise-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-lateral-raise-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-lateral-raise-set-1",
+              "done": true,
+              "weight": 30,
+              "reps": 13,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-lateral-raise-set-2",
+              "done": true,
+              "weight": 30,
+              "reps": 14,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-lateral-raise-set-3",
+              "done": true,
+              "weight": 30,
+              "reps": 15,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-press",
+          "exerciseKey": "library-shoulder-press",
+          "prescription": {
+            "id": "amara-upper-b-press",
+            "libraryId": "library-shoulder-press",
+            "name": "Dumbbell shoulder press",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "triceps"
+            ],
+            "generalNotes": "Use a comfortable range without arching the lower back.",
+            "instructions": "Press in a comfortable range without arching the lower back.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-press-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-press-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "2 min",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-press-set-1",
+              "done": true,
+              "weight": 45,
+              "reps": 12,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-press-set-2",
+              "done": true,
+              "weight": 45,
+              "reps": 8,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-rear-delt",
+          "exerciseKey": "library-rear-delt-fly",
+          "prescription": {
+            "id": "amara-upper-b-rear-delt",
+            "libraryId": "library-rear-delt-fly",
+            "name": "Cable rear-delt fly",
+            "muscle": "shoulders",
+            "secondaryMuscles": [
+              "back"
+            ],
+            "generalNotes": "Sweep the arms wide without shrugging.",
+            "instructions": "Sweep the arms wide without shrugging.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-rear-delt-set-1",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-rear-delt-set-2",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-rear-delt-set-3",
+                "reps": 12,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-rear-delt-set-1",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-rear-delt-set-2",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-rear-delt-set-3",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-pulldown",
+          "exerciseKey": "library-lat-pulldown",
+          "prescription": {
+            "id": "amara-upper-b-pulldown",
+            "libraryId": "library-lat-pulldown",
+            "name": "Lat pulldown",
+            "muscle": "back",
+            "secondaryMuscles": [
+              "biceps"
+            ],
+            "generalNotes": "Lead with the elbows and keep the torso steady.",
+            "instructions": "Lead with the elbows and keep the torso steady.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-pulldown-set-1",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-pulldown-set-2",
+                "reps": 8,
+                "repsMax": 12,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "90 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-pulldown-set-1",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-pulldown-set-2",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-triceps",
+          "exerciseKey": "library-cable-triceps-extension",
+          "prescription": {
+            "id": "amara-upper-b-triceps",
+            "libraryId": "library-cable-triceps-extension",
+            "name": "Rope triceps pressdown",
+            "muscle": "triceps",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep the upper arms still as the elbows extend.",
+            "instructions": "Keep the upper arms still as the elbows extend.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-triceps-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-triceps-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-triceps-set-1",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-triceps-set-2",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        },
+        {
+          "exerciseId": "amara-upper-b-biceps",
+          "exerciseKey": "library-dumbbell-curl",
+          "prescription": {
+            "id": "amara-upper-b-biceps",
+            "libraryId": "library-dumbbell-curl",
+            "name": "Dumbbell curl",
+            "muscle": "biceps",
+            "secondaryMuscles": [],
+            "generalNotes": "Keep the shoulder relaxed and lower under control.",
+            "instructions": "Keep the shoulder relaxed and lower under control.",
+            "progression": "Double progression",
+            "sets": [
+              {
+                "id": "amara-upper-b-biceps-set-1",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              },
+              {
+                "id": "amara-upper-b-biceps-set-2",
+                "reps": 10,
+                "repsMax": 15,
+                "tempo": "Controlled",
+                "type": "Working",
+                "rest": "60 sec",
+                "instructions": ""
+              }
+            ]
+          },
+          "sets": [
+            {
+              "setId": "amara-upper-b-biceps-set-1",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            },
+            {
+              "setId": "amara-upper-b-biceps-set-2",
+              "done": false,
+              "weight": null,
+              "reps": null,
+              "rpe": null,
+              "rir": null,
+              "note": "",
+              "flagged": false
+            }
+          ]
+        }
+      ],
+      "status": "in-progress",
+      "startedAt": "day -1T18:00:00"
+    }
+  ]
+}

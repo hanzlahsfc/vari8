@@ -133,9 +133,13 @@ describe("system index generator", () => {
       "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
     );
     // Canary on the page count: update the literal deliberately when a PR adds or
-    // removes a page route, never by regenerating. 55 = 52 + the three
-    // app/(canvas)/me/* pages landed with PR #140.
-    expect(routes).toContain("Counts: 55 backend pages");
+    // removes a page route, never by regenerating. 58 = 56 + the card-08
+    // staff progress-photos page under clients/[clientProfileId]/photos
+    // and the app/workspace/[workspaceId]/clients/[clientProfileId]/macro-targets
+    // coach page landed with card 10 (#175). 60 = 58 + the T5 page
+    // app/(canvas)/coach/dashboard/page.tsx and the W2-T1
+    // app/workspace/[workspaceId]/settings page.
+    expect(routes).toContain("Counts: 60 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(
@@ -277,10 +281,11 @@ describe("system index generator", () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      // Imported by the root layout, which wraps /, /coach, /dev/design-system (the frontend
-      // design system playground, dev only) and /ethereal.
+      // Imported by the root layout, which wraps /, /client, /coach,
+      // /dev/design-system (the frontend design system playground, dev only)
+      // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /dev/design-system, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |",
       );
     }
   });
@@ -301,7 +306,9 @@ describe("system index generator", () => {
     expect(coach).not.toContain(
       "`frontend/src/components/ethereal/clients/clients-workspace.tsx`",
     );
-    // "meal plan editor" shows both, each under its surface.
+    // "meal plan editor" shows both, each under its surface; the coach
+    // surface mounts NutritionEditor while the client app renders its own
+    // meal-plan screens.
     expect(coach).toContain(
       "| `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /coach |",
     );

@@ -9,6 +9,7 @@ import {
   type ActionResult,
 } from "@/lib/coaching/client-setup-boundary";
 import { isClientSetupEnabled } from "@/lib/coaching/client-setup-gate";
+import { issueClientInviteLink } from "@/lib/workspace/invite-links";
 
 /**
  * P-016 — client setup / template assignment server actions.
@@ -178,4 +179,39 @@ export async function cancelSetupAssignment(
       }),
     listPath(ws),
   );
+}
+
+const MAX_EMAIL_LEN = 320;
+
+/**
+ * T3 - issue a client invite link alongside the pin/assignment flow. Same
+ * gate order: DEV FLAG → session gate → bounded fields → service. The
+ * returned link carries the raw token once, to the issuing coach only.
+ */
+export async function issueClientInvite(
+  workspaceId: string,
+  formData: FormData,
+): Promise<ActionResult<{ link: string }>> {
+  if (!isClientSetupEnabled(process.env.ENABLE_CLIENT_SETUP)) return fail(OFF);
+  const gate = await sessionGate();
+  if (!gate.ok) return gate;
+  const ws = boundedArg(workspaceId);
+  if (!ws || !isFormData(formData)) return fail(INVALID);
+  const boundWorkspaceId = singleString(formData, "workspaceId", MAX_ID_LEN);
+  const email = singleString(formData, "email", MAX_EMAIL_LEN);
+  if (boundWorkspaceId === null || boundWorkspaceId !== ws || email === null) {
+    return fail(INVALID);
+  }
+  let result;
+  try {
+    result = await issueClientInviteLink(gate.session, {
+      workspaceId: ws,
+      targetEmail: email,
+    });
+  } catch {
+    return fail(GENERIC);
+  }
+  if (!result.ok) return result;
+  revalidate(listPath(ws));
+  return { ok: true, value: { link: result.link } };
 }

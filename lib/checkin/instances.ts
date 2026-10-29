@@ -2218,7 +2218,7 @@ export type StaffCheckInSubmissionDetail = {
   fields: StaffCheckInSubmissionFieldView[];
 };
 
-function displayCheckInAnswer(
+export function displayCheckInAnswer(
   field: CheckInField,
   answer:
     | {

@@ -76,6 +76,8 @@ export const RESOURCES = [
   // PR-SUPP: saved supplement plan per client (schedule-only; staff
   // author for assigned clients, clients read their own saved plan).
   "supplementPlans",
+  // Issue #169 (Stage 5 card 07): day-effective activity target versions.
+  "activityTargets",
 ] as const;
 export type Resource = (typeof RESOURCES)[number];
 
@@ -134,7 +136,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   dailyTracking: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "denied"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
@@ -149,7 +153,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   mealPlans: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "denied"),
@@ -172,7 +178,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   checkinInstances: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "workspace"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "denied"),
@@ -183,7 +191,9 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   checkinsCoachReviews: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
-    COACH: c("assigned", "assigned"),
+    // D10/D22: COACH reads every client of the workspace; write stays
+    // assigned per decision #111.
+    COACH: c("workspace", "assigned"),
     ASSISTANT_COACH: c("assigned", "denied"),
     SUPPORT: D,
     CLIENT: c("own", "own"),
@@ -428,6 +438,18 @@ export const RBAC_MATRIX: Record<Resource, Record<PrincipalRole, ScopeCell>> = {
   // they hold an ACTIVE assignment to; owners keep workspace-wide read;
   // assistants read-only; clients read their own saved plan.
   supplementPlans: {
+    PLATFORM_ADMIN: D,
+    WORKSPACE_OWNER: c("workspace", "assigned"),
+    COACH: c("assigned", "assigned"),
+    ASSISTANT_COACH: c("assigned", "denied"),
+    SUPPORT: D,
+    CLIENT: c("own", "denied"),
+  },
+  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans -
+  // staff author only for clients they hold an ACTIVE assignment to; owner
+  // keeps workspace-wide read; assistants read-only; clients read their own
+  // versions and never write.
+  activityTargets: {
     PLATFORM_ADMIN: D,
     WORKSPACE_OWNER: c("workspace", "assigned"),
     COACH: c("assigned", "assigned"),

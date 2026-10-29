@@ -328,17 +328,12 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
     await assignment(s.w.id, s.cp.id, dualPaMember.id, "COACH");
     const platformOnly = await user("PLATFORM_ADMIN");
     const clientMember = s.clientUser;
-    const foreign = await setup();
-    const foreignMember = await member(s.w.id, foreign.owner.id, "COACH");
-    void foreignMember;
 
     for (const uid2 of [
-      unassigned.id,
       support.id,
       dualPa.id,
       platformOnly.id,
       clientMember.id,
-      foreign.owner.id,
     ]) {
       await expect(
         readCheckInSubmissionDetail(
@@ -355,19 +350,18 @@ describe.skipIf(!enabled)("P-025-C check-in staff review (real PG)", () => {
     expect(await audits(s.w.id, "checkin_submission")).toHaveLength(
       before.length,
     );
-    // The unassigned/foreign coach denial is the closed not_assigned /
-    // role_denied class — never a leaked payload.
-    await expect(
-      readCheckInSubmissionDetail(
-        session(unassigned.id),
-        {
-          workspaceId: s.w.id,
-          clientProfileId: s.cp.id,
-          submissionId,
-        },
-        deps(),
-      ),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    // D10/D22: COACH read is workspace scoped, so an unassigned ACTIVE
+    // coach now reads the submission (and commits its own READ audit).
+    const detail = await readCheckInSubmissionDetail(
+      session(unassigned.id),
+      {
+        workspaceId: s.w.id,
+        clientProfileId: s.cp.id,
+        submissionId,
+      },
+      deps(),
+    );
+    expect(detail.submissionId).toBe(submissionId);
   });
 
   // ── Terminal mark: exactly one acknowledgement per submission ───────

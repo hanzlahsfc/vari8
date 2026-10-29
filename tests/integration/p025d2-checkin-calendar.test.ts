@@ -448,15 +448,19 @@ describe.skipIf(!enabled)("P-025-D2 calendar list (real PG)", () => {
     ).rejects.toBeInstanceOf(AccessDeniedError);
   });
 
-  it("unassigned coach and inactive member fail closed", async () => {
+  it("unassigned coach reads the calendar under workspace scope (D10/D22)", async () => {
     const s = await setup({ assign: "none" });
-    await expect(
-      listCheckInInstancesForClient(
-        s.coach,
-        { workspaceId: s.w.id, clientProfileId: s.cp.id, range: OCT },
-        deps(),
-      ),
-    ).rejects.toBeInstanceOf(AccessDeniedError);
+    const r = await listCheckInInstancesForClient(
+      s.coach,
+      { workspaceId: s.w.id, clientProfileId: s.cp.id, range: OCT },
+      deps(),
+    );
+    expect(r.items).toHaveLength(4);
+    expect(r.items.map((i) => i.instanceId)).toContain(s.instanceIds.submitted);
+  });
+
+  it("inactive member fails closed", async () => {
+    const s = await setup({ assign: "none" });
     const suspU = await user();
     await member(s.w.id, suspU.id, "WORKSPACE_OWNER", "SUSPENDED");
     await expect(

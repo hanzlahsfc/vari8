@@ -1,0 +1,182 @@
+{
+  "id": "client-015",
+  "name": "Eva Fischer",
+  "initials": "EF",
+  "label": "Lifestyle",
+  "phase": "Maintenance",
+  "week": 9,
+  "checkInStatus": "on track",
+  "lastCheckIn": "day -24",
+  "nextCheckIn": "day -17",
+  "unreadCount": 1,
+  "overdueTaskCount": 0,
+  "heightCm": 166,
+  "bodyweightKg": 63.5,
+  "bodyweightDate": "day -24",
+  "weightTrend": [
+    {
+      "date": "day -31",
+      "kg": 63.2
+    },
+    {
+      "date": "day -24",
+      "kg": 63.5
+    }
+  ],
+  "template": "Forma Lifestyle",
+  "presentation": "meal_plan",
+  "coachingSince": "day -83",
+  "recurringCheckIn": "Every Thursday",
+  "email": "eva.fischer@example.com",
+  "priorityMessages": false,
+  "trainingFlags": 0,
+  "additionalCheckInDates": [],
+  "clientTasks": [
+    {
+      "id": "eva-task-1",
+      "title": "Try the new breakfast option",
+      "status": "complete",
+      "dueDate": "day -21"
+    }
+  ],
+  "coachTasks": [],
+  "internalNotes": [
+    {
+      "id": "eva-note-1",
+      "text": "Maintenance is stable; review how breakfast change affects afternoon hunger."
+    }
+  ],
+  "generalNotes": [
+    {
+      "id": "eva-general-1",
+      "text": "Thursday check-in; prefers German-language resources when available."
+    }
+  ],
+  "checkIns": [
+    {
+      "id": "eva-checkin-1",
+      "date": "day -24",
+      "status": "feedback sent",
+      "summary": "Weight remains stable and afternoon hunger has eased.",
+      "feedback": "Keep the breakfast option for another week and note how it feels on training days."
+    }
+  ],
+  "messages": [
+    {
+      "id": "eva-message-1",
+      "text": "The yogurt and oats breakfast kept me full until lunch.",
+      "from": "client",
+      "date": "2026-10-02T14:12"
+    }
+  ],
+  "onboarding": [
+    {
+      "question": "What is your main goal?",
+      "answer": "Maintain my progress and feel less hungry in the afternoon."
+    },
+    {
+      "question": "Any communication preferences?",
+      "answer": "German resources are helpful when available."
+    }
+  ],
+  "archived": false,
+  "schedules": [
+    {
+      "effective": "day -24",
+      "weekdays": []
+    }
+  ],
+  "plan": {
+    "calories": 2200,
+    "protein": 140,
+    "sets": 3,
+    "instructions": "Controlled reps. Keep two reps in reserve.",
+    "nutritionVariant": "Training day",
+    "program": "Week-based",
+    "weeks": 8
+  },
+  "entries": [
+    {
+      "date": "day -19",
+      "weight": 64,
+      "sleep": 7.2,
+      "steps": 7800,
+      "calories": 2140
+    },
+    {
+      "date": "day -18",
+      "weight": 63.9,
+      "sleep": 7.3,
+      "steps": 8010,
+      "calories": 2152
+    },
+    {
+      "date": "day -17",
+      "weight": 63.8,
+      "sleep": 7.4,
+      "steps": 8220,
+      "calories": 2164
+    },
+    {
+      "date": "day -16",
+      "weight": 63.7,
+      "sleep": 7.5,
+      "steps": 8430,
+      "calories": 2176
+    },
+    {
+      "date": "day -15",
+      "weight": 63.7,
+      "sleep": 7.6,
+      "steps": 8640,
+      "calories": 2188
+    },
+    {
+      "date": "day -14",
+      "weight": 63.6,
+      "sleep": 7.7,
+      "steps": 8850,
+      "calories": 2200
+    },
+    {
+      "date": "day -13",
+      "weight": 63.5,
+      "sleep": 7.8,
+      "steps": 9060,
+      "calories": 2212
+    }
+  ],
+  "habits": [
+    {
+      "id": "habit-client-015",
+      "name": "Evening walk",
+      "frequency": "Daily",
+      "goal": "20 minutes",
+      "reason": "Create a calm transition into the evening.",
+      "completed": 5
+    }
+  ],
+  "plans": {
+    "nutrition": {
+      "mealPlan": {
+        "history": []
+      },
+      "iifym": {
+        "history": []
+      }
+    },
+    "training": {
+      "history": []
+    },
+    "goals": [],
+    "activityTargets": []
+  },
+  "related": {
+    "submissions": [],
+    "messages": [],
+    "extras": [],
+    "trainingLogs": [],
+    "coachTodos": [],
+    "reviewDrafts": {}
+  }
+}

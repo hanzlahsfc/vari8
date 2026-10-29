@@ -15,6 +15,12 @@ import {
   Select as SharedSelect,
 } from "@/components/canvas/vari8/components";
 import { SearchableSelect } from "@/components/canvas/vari8/inputs";
+import { ApiClientError } from "../../data/http";
+import {
+  fetchSupplementPlan,
+  planFromView,
+  saveSupplementPlanRemote,
+} from "../../data/supplements";
 import { type CoachClient, type Route, uid } from "../model";
 import { emptyClientPlans } from "../plans/types";
 import { useCoach } from "../store";
@@ -45,6 +51,9 @@ import "./supplements.css";
 
 const formatAmount = (amount: number) =>
   Number(amount.toFixed(2)).toLocaleString("en-US");
+
+const serializeDrafts = (name: string, list: ItemDraft[]) =>
+  JSON.stringify({ name: name.trim(), items: list });
 
 function SupplementRow({
   draft,
@@ -253,20 +262,33 @@ function SupplementRow({
 }
 
 export function SupplementEditor({ client }: { client: CoachClient }) {
-  const { setState, toast, guard, navigate } = useCoach();
+  const {
+    setState,
+    toast,
+    guard,
+    navigate,
+    workspaceId,
+    clientProfileIdFor,
+  } = useCoach();
   const saved = client.plans?.supplements;
+  const [applied, setApplied] = useState(saved);
   const [name, setName] = useState(saved?.name ?? "Supplement plan");
   const [items, setItems] = useState<ItemDraft[]>(
     () => saved?.items.map(draftOf) ?? [],
   );
-  const serialize = (n: string, list: ItemDraft[]) =>
-    JSON.stringify({ name: n.trim(), items: list });
-  const [baseline, setBaseline] = useState(() => serialize(name, items));
+  const [baseline, setBaseline] = useState(() => serializeDrafts(name, items));
   const [showErrors, setShowErrors] = useState(false);
   const [leaving, setLeaving] = useState<Route | null>(null);
   const [preview, setPreview] = useState(false);
+  const [saving, setSaving] = useState(false);
+  // Issue #162 slice: when the canvas is attached to a server workspace the
+  // supplement plan persists through the API. `revision` null means the
+  // server read failed, so the next save probes revision 0 and can conflict.
+  const remote = useRef<{ clientProfileId: string; revision: number | null } | null>(
+    null,
+  );
 
-  const dirty = serialize(name, items) !== baseline;
+  const dirty = serializeDrafts(name, items) !== baseline;
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
 
@@ -285,6 +307,42 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
       window.removeEventListener("beforeunload", unload);
     };
   }, [guard]);
+
+  // Issue #162 slice hydration: a successful server read is authoritative -
+  // a plan replaces the local copy, an absent plan clears it. On a failed
+  // read the local copy stays visible and saves still attempt the server.
+  // Reads happen only here and after a save; nothing autosaves.
+  useEffect(() => {
+    if (!workspaceId) return;
+    let live = true;
+    void (async () => {
+      const clientProfileId = await clientProfileIdFor(client.name);
+      if (!live || !clientProfileId) return;
+      try {
+        const res = await fetchSupplementPlan(workspaceId, clientProfileId);
+        if (!live) return;
+        remote.current = {
+          clientProfileId,
+          revision: res.plan?.revision ?? 0,
+        };
+        const plan = res.plan ? planFromView(res.plan, client.id) : null;
+        const drafts = plan?.items.map(draftOf) ?? [];
+        const planName = plan?.name ?? "Supplement plan";
+        setApplied(plan ?? undefined);
+        setName(planName);
+        setItems(drafts);
+        setBaseline(serializeDrafts(planName, drafts));
+      } catch {
+        remote.current = { clientProfileId, revision: null };
+        toast(
+          "Saved supplement plan could not be loaded; showing the local copy.",
+        );
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [workspaceId, clientProfileIdFor, client.id, client.name, toast]);
 
   const update = (id: string, patch: Partial<ItemDraft>) =>
     setItems((list) =>
@@ -316,28 +374,15 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
   };
 
   const reset = () => {
-    setName(saved?.name ?? "Supplement plan");
-    setItems(saved?.items.map(draftOf) ?? []);
+    const restoredName = applied?.name ?? "Supplement plan";
+    const restoredRows = applied?.items.map(draftOf) ?? [];
+    setName(restoredName);
+    setItems(restoredRows);
+    setBaseline(serializeDrafts(restoredName, restoredRows));
     setShowErrors(false);
   };
 
-  const save = () => {
-    const invalid = items.some(
-      (it) => Object.values(rowErrors(it)).some(Boolean) || !savedItem(it),
-    );
-    if (invalid) {
-      setShowErrors(true);
-      return;
-    }
-    const plan: SupplementPlan = {
-      id: saved?.id ?? uid("supplement-plan"),
-      clientId: client.id,
-      name: name.trim() || "Supplement plan",
-      savedAt: new Date().toISOString(),
-      items: items
-        .map(savedItem)
-        .filter((item): item is SupplementItem => item !== null),
-    };
+  const applyPlan = (plan: SupplementPlan, drafts: ItemDraft[]) => {
     setState((current) => ({
       ...current,
       clients: current.clients.map((entry) =>
@@ -352,10 +397,77 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
           : entry,
       ),
     }));
+    setApplied(plan);
     setName(plan.name);
-    setBaseline(serialize(plan.name, items));
+    setItems(drafts);
+    setBaseline(serializeDrafts(plan.name, drafts));
     setShowErrors(false);
     toast("Supplement plan saved.");
+  };
+
+  const save = async () => {
+    const invalid = items.some(
+      (it) => Object.values(rowErrors(it)).some(Boolean) || !savedItem(it),
+    );
+    if (invalid) {
+      setShowErrors(true);
+      return;
+    }
+    const savedItems = items
+      .map(savedItem)
+      .filter((item): item is SupplementItem => item !== null);
+    const planName = name.trim() || "Supplement plan";
+    const target = remote.current;
+    if (workspaceId && target) {
+      // Remote path: PUT the full ordered list, then read the canonical
+      // view back so the plan id, savedAt and revision come from the row.
+      setSaving(true);
+      try {
+        await saveSupplementPlanRemote(workspaceId, target.clientProfileId, {
+          expectedRevision: target.revision ?? 0,
+          name: planName,
+          items: savedItems,
+        });
+        const res = await fetchSupplementPlan(
+          workspaceId,
+          target.clientProfileId,
+        );
+        remote.current = {
+          clientProfileId: target.clientProfileId,
+          revision: res.plan?.revision ?? target.revision,
+        };
+        const plan = res.plan
+          ? planFromView(res.plan, client.id)
+          : {
+              id: saved?.id ?? uid("supplement-plan"),
+              clientId: client.id,
+              name: planName,
+              savedAt: new Date().toISOString(),
+              items: savedItems,
+            };
+        applyPlan(plan, plan.items.map(draftOf));
+      } catch (error) {
+        setSaving(false);
+        toast(
+          error instanceof ApiClientError && error.code === "conflict"
+            ? "Supplement plan changed elsewhere. Reload before saving."
+            : "Supplement plan could not be saved to the server.",
+        );
+        return;
+      }
+      setSaving(false);
+      return;
+    }
+    applyPlan(
+      {
+        id: saved?.id ?? uid("supplement-plan"),
+        clientId: client.id,
+        name: planName,
+        savedAt: new Date().toISOString(),
+        items: savedItems,
+      },
+      items,
+    );
   };
 
   return (
@@ -391,7 +503,7 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
           <Plus size={14} />
           Add supplement
         </Button>
-        <Button primary onClick={save} disabled={!dirty}>
+        <Button primary onClick={() => void save()} disabled={!dirty || saving}>
           <Save size={14} />
           Save plan
         </Button>
@@ -430,7 +542,7 @@ export function SupplementEditor({ client }: { client: CoachClient }) {
             Shows the saved plan. Unsaved draft changes are not visible to the
             client.
           </p>
-          <SupplementPlanView plan={saved} clientName={client.name} />
+          <SupplementPlanView plan={applied} clientName={client.name} />
         </Dialog>
       )}
     </div>

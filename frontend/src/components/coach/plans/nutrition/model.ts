@@ -50,6 +50,34 @@ export function addFoodAlternative(
   };
 }
 
+/** When a portion's quantity changes, its alternatives keep the same ratio to
+ *  the main food: newAlt = oldAlt x newQty / oldQty. Rounded like the editor —
+ *  5 for weighed units (g/ml), whole units for piece foods — min one step.
+ *  If the old quantity was 0, the alternatives are kept unchanged. */
+export function scaleFoodAlternatives(
+  portion: FoodPortion,
+  newQuantity: number,
+  foodMap: Map<string, Food>,
+): Partial<FoodPortion> {
+  if (!portion.swaps?.length || portion.quantity <= 0)
+    return { quantity: newQuantity };
+  const ratio = newQuantity / portion.quantity;
+  return {
+    quantity: newQuantity,
+    swaps: portion.swaps.map((swap) => {
+      const food = foodMap.get(swap.foodId);
+      const step = food && /^(g|ml)$/i.test(food.unit) ? 5 : 1;
+      return {
+        ...swap,
+        quantity: Math.max(
+          step,
+          Math.round((swap.quantity * ratio) / step) * step,
+        ),
+      };
+    }),
+  };
+}
+
 export function replacePortionFood(
   portion: FoodPortion,
   source: Food,
@@ -171,13 +199,15 @@ function remapSchedule(
       ) as typeof schedule.days,
     };
   }
-  return {
-    ...schedule,
-    steps: schedule.steps.map((step) => ({
-      ...step,
-      variantId: remap(step.variantId),
-    })),
-  };
+  if (schedule.mode === "cycle")
+    return {
+      ...schedule,
+      steps: schedule.steps.map((step) => ({
+        ...step,
+        variantId: remap(step.variantId),
+      })),
+    };
+  return schedule;
 }
 
 export function removeMealOption(plan: MealPlan, optionId: string): MealPlan {

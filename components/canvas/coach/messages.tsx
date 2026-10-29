@@ -18,6 +18,14 @@ import {
 import { Fragment, useEffect, useRef, useState } from "react";
 import { SegmentedControl } from "../vari8/components";
 import { TextArea } from "../vari8/inputs";
+import {
+  fetchStaffConversations,
+  fetchStaffThread,
+  markStaffThreadRead,
+  saveStaffDraft,
+  sendStaffMessage,
+  toCanvasMessage,
+} from "../data/messages";
 import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import { uploadCanvasMedia } from "./media-card";
@@ -48,6 +56,7 @@ export function MessagesWorkspace() {
     navigate,
     attach,
     toast,
+    hydrated,
     workspaceId,
     clientProfileIdFor,
   } = useCoach();
@@ -105,6 +114,79 @@ export function MessagesWorkspace() {
           ? unreadCount(state, c.id) > 0
           : state.messages.some((m) => m.clientId === c.id && m.priority))),
   );
+  // W2-A4: messages and drafts are remote. The conversation list names the
+  // threads; each listed thread is read in full and keyed by the canvas
+  // client carrying that name. The backend wins on every reload.
+  const threadsLoaded = useRef(false);
+  const threadsReady = useRef(false);
+  const serverDrafts = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!hydrated || !workspaceId || threadsLoaded.current) return;
+    threadsLoaded.current = true;
+    void (async () => {
+      try {
+        const { conversations } = await fetchStaffConversations(workspaceId);
+        const threads = await Promise.all(
+          conversations.map((c) =>
+            fetchStaffThread(workspaceId, c.clientProfileId),
+          ),
+        );
+        const canvasIds = new Map(state.clients.map((c) => [c.name, c.id]));
+        const rows: Message[] = [];
+        const bodies: Record<string, string> = {};
+        conversations.forEach((conversation, index) => {
+          const canvasId = canvasIds.get(conversation.clientName);
+          if (!canvasId) return;
+          for (const row of threads[index].messages)
+            rows.push(toCanvasMessage(row, canvasId));
+          bodies[canvasId] = threads[index].draft?.body ?? "";
+        });
+        serverDrafts.current = bodies;
+        setState((s) => {
+          const drafts = { ...s.drafts };
+          for (const [id, body] of Object.entries(bodies))
+            drafts[id] = {
+              text: body,
+              attachments: s.drafts[id]?.attachments ?? [],
+            };
+          return { ...s, messages: rows, drafts };
+        });
+      } catch {
+        threadsLoaded.current = false;
+      } finally {
+        threadsReady.current = true;
+      }
+    })();
+  }, [hydrated, workspaceId, setState, state.clients]);
+  // W2-A4: opening a thread marks it read on the server (idempotent); the
+  // local paint below clears the badge in the same frame.
+  const selectedName = client?.name;
+  useEffect(() => {
+    if (!hydrated || !workspaceId || !selectedName) return;
+    void (async () => {
+      const clientProfileId = await clientProfileIdFor(selectedName);
+      if (clientProfileId)
+        await markStaffThreadRead(workspaceId, clientProfileId);
+    })().catch(() => {});
+  }, [hydrated, workspaceId, selectedName, clientProfileIdFor]);
+  // W2-A4: draft text saves remote on a 500ms pause; the local draft keeps the
+  // composer responsive and holds the attachments the wire has no field for.
+  const draftText = draft.text;
+  useEffect(() => {
+    if (!hydrated || !workspaceId || !client || !threadsReady.current) return;
+    const canvasId = client.id;
+    const name = client.name;
+    if ((serverDrafts.current[canvasId] ?? "") === draftText) return;
+    const timer = setTimeout(() => {
+      serverDrafts.current[canvasId] = draftText;
+      void (async () => {
+        const clientProfileId = await clientProfileIdFor(name);
+        if (clientProfileId)
+          await saveStaffDraft(workspaceId, clientProfileId, draftText);
+      })().catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [hydrated, workspaceId, client, clientProfileIdFor, draftText]);
   useEffect(() => {
     if (!selectedId) return;
     setState((s) =>
@@ -148,27 +230,80 @@ export function MessagesWorkspace() {
   const send = () => {
     if (!client || (!draft.text.trim() && !draft.attachments.length && !link))
       return;
-    const m: Message = {
-      id: uid("message"),
-      clientId: client.id,
-      text: draft.text.trim(),
-      from: "coach",
-      date: new Date().toISOString(),
-      read: true,
-      priority: false,
-      attachments: draft.attachments,
-      link,
-      local: true,
-    };
+    const text = draft.text.trim();
+    const attachments = draft.attachments;
+    const sentLink = link;
+    const canvasId = client.id;
+    const appendLocal = () =>
+      setState((s) => ({
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("message"),
+            clientId: canvasId,
+            text,
+            from: "coach",
+            date: new Date().toISOString(),
+            read: true,
+            priority: false,
+            attachments,
+            link: sentLink,
+            local: true,
+          },
+        ],
+      }));
     setState((s) => ({
       ...s,
-      messages: [...s.messages, m],
-      drafts: { ...s.drafts, [client.id]: { text: "", attachments: [] } },
+      drafts: { ...s.drafts, [canvasId]: { text: "", attachments: [] } },
     }));
     setLink(undefined);
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
+    // W2-A4: the send POSTs and the returned wire row is what lands in the
+    // thread. A textless send has no body field and attachments have no wire
+    // route yet (w2-t8), so those keep the local row.
+    if (!workspaceId || !text) {
+      appendLocal();
+      return;
+    }
+    void (async () => {
+      try {
+        const clientProfileId = await clientProfileIdFor(client.name);
+        if (!clientProfileId) {
+          appendLocal();
+          return;
+        }
+        const { message } = await sendStaffMessage(
+          workspaceId,
+          clientProfileId,
+          text,
+        );
+        serverDrafts.current[canvasId] = "";
+        setState((s) => ({
+          ...s,
+          messages: [
+            ...s.messages,
+            {
+              ...toCanvasMessage(message, canvasId),
+              attachments,
+              link: sentLink,
+            },
+          ],
+        }));
+        await saveStaffDraft(workspaceId, clientProfileId, "");
+      } catch {
+        setState((s) => ({
+          ...s,
+          drafts: {
+            ...s.drafts,
+            [canvasId]: { text, attachments },
+          },
+        }));
+        toast("Message could not be sent.");
+      }
+    })();
   };
   const flag = (m: Message) => {
     if (!client || (!client.priorityMessages && !m.priority)) return;

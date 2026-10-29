@@ -1,69 +1,40 @@
-# Coaching UI frontend
+# Coaching UI Studio
 
-This is the current standalone frontend snapshot. The repository's existing
-full-stack application remains at the root; this preview is not wired to its backend.
-All people and readings in the preview are illustrative.
+A standalone Next.js coaching UI prototype built with React, Tailwind CSS, shadcn/ui, and Motion for React. The primary workspace is `/coach`; `/ethereal` remains the component and appearance studio. Examples use illustrative data, with workspace state stored in this browser.
 
-## Run the frontend
+## Run locally
 
-Use Node.js 24. From the repository root:
+Use Node.js 24, as recorded in `.nvmrc`. From the repository root:
 
 ```sh
-cd frontend
 npm ci
-npm run dev -- --port 3001
+npm run preview:up
 ```
 
-Open [the coach workspace](http://127.0.0.1:3001/coach). The template library's
-Preview opens the client experience, including the daily tracker, weekly ledger,
-trends, and eight weeks of example data. `/ethereal` opens the original design studio.
+Open [http://127.0.0.1:3000/coach](http://127.0.0.1:3000/coach). The runner keeps the development preview available after the command exits. Reports under `reports/` are available at [http://127.0.0.1:3001](http://127.0.0.1:3001); the report server does not expose other project files.
 
-For a production preview:
+Check, start, and stop the project-owned preview with `npm run preview:status`, `npm run preview:up`, and `npm run preview:down`. The runner records PIDs and logs under ignored `.agent-runs/local-preview/`, reuses only its own healthy services, and refuses occupied ports without stopping their listeners. Use `npm run dev` when you specifically need a foreground server. Next.js 16 writes development output to `.next/dev`, separate from the production `.next` build output, so running `npm run build` does not require restarting the development preview.
+
+## Current app
+
+`/coach` opens the coach workspace for templates, clients, check-ins, messages, notes, and plan editing. `/` and `/ethereal` open the Ethereal component studio. Client previews and sample readings are illustrative. The coach workspace saves locally in browser storage; this preview has no backend connection, account system, or server-enforced authorization.
+
+## Development commands
 
 ```sh
-npm run build
-npm run start -- --port 3001
+npm run lint       # Biome checks
+npm run typecheck  # Next.js type generation and TypeScript checks
+npm run build      # Production build
+npm run preview:test # Local preview runner safety checks
+npm run format     # Format files in place
+npm run agent-context:check # Validate scoped project context and mappings
+npm run agent-context:test  # Test context handoff failure and privacy cases
 ```
 
-## Check the frontend
+`package-lock.json` records the dependency versions installed by `npm ci`. Development and production builds use Next.js's Webpack option.
 
-```sh
-npm test
-npm run typecheck
-npm run lint
-npm run build
-npm run check
-```
+## Repository contents
 
-`npm test` discovers `*.test.*` and `*.checks.*` files under `src/` and
-`scripts/`, including the TypeScript meal-plan model tests. `npm run check`
-runs the same test, project-context, type, lint, and production-build gates used
-by frontend CI. `npm run agent-context:test` runs the focused handoff/reference
-checker tests; `npm run agent-context:check` verifies the context contract.
+`src/app/` defines the routes, `src/components/` contains the interface components, `src/lib/` contains shared data and appearance logic, and `public/` holds fonts and other static assets.
 
-## Project context
-
-Read [AGENTS.md](AGENTS.md) and [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) before
-changing product behavior. Use [the workflow router](docs/agent-workflow/CONTEXT.md)
-to select only the relevant stage and role context. The ICM structure is a
-file-based context and handoff adaptation; it does not add a runtime framework
-or substitute for application authorization. See [the ICM reference](docs/references/icm.md)
-for the paper, local mapping, and adaptation limits.
-
-For branch sync, frontend checks, and draft PR commands, follow the
-[FRONTEND pull request workflow](docs/PR-WORKFLOW.md). It targets the explicit
-`great-tracker` remote and opens feature-branch PRs into `FRONTEND`. Hanzlah
-owns the later `FRONTEND` to `main` promotion.
-
-The frontend uses Next.js 16, React 19, Tailwind CSS, shadcn/ui, Motion for React,
-and Biome. It owns its dependency lockfile, TypeScript configuration, and local
-browser storage. Run its commands from this directory. Root checks exclude this
-independent project.
-
-## Contents
-
-`src/` contains the app, `public/` contains fonts/assets, and `scripts/` contains
-source-data utilities. `TRACKER-REDESIGN.md` and `MEALPLANS.md` describe the current
-UI. Verification screenshots and earlier snapshots remain local and are not
-included in this published project. No dependencies, build outputs, environment
-files, or local version archives are committed.
+The repository contains the current coaching UI and its configuration. Previous app editions and their commit history have been removed. Local version archives, snapshots, review captures, dependency folders, build output, environment files, and per-run agent evidence are excluded from Git and normal lint discovery. See [AGENTS.md](AGENTS.md) for the portable agent entrypoint, [PROJECT_CONTEXT.md](PROJECT_CONTEXT.md) for the product boundary and source map, and [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md) for opening feature-branch PRs into `FRONTEND`; Hanzlah owns the later `FRONTEND` to `main` promotion.

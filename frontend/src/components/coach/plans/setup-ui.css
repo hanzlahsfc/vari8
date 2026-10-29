@@ -291,3 +291,387 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Plans tab card grid */
+.coach-root .cp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.coach-root .cp-card {
+  min-width: 0;
+}
+.coach-root .cp-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.coach-root .cp-card-head h3 {
+  margin: 0;
+}
+.coach-root .cp-card-name {
+  margin: 10px 0 0;
+  font-weight: 600;
+}
+.coach-root .cp-sub {
+  margin: 4px 0 0;
+  color: var(--cd-muted);
+  font-size: 0.85rem;
+}
+.coach-root .cp-opts {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.coach-root .cp-opt {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--cd-line);
+  border-radius: 12px;
+  background: var(--cd-field);
+}
+.coach-root .cp-opt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.coach-root .cp-opt-head small {
+  color: var(--cd-muted);
+}
+.coach-root .cp-opt-kcal {
+  font-size: 1.15rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cp-opt-kcal small {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--cd-muted);
+}
+.coach-root .cp-temps {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+.coach-root .cp-temp {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+.coach-root .cp-temp b {
+  font-size: 0.85rem;
+  font-weight: 550;
+}
+.coach-root .cp-temp small {
+  color: var(--cd-muted);
+}
+.coach-root .cp-temp > span:first-child {
+  min-width: 0;
+}
+.coach-root .cp-temp-actions {
+  display: flex;
+  gap: 6px;
+}
+.coach-root .cp-target-row,
+.coach-root .cp-habit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.coach-root .cp-target-row:last-of-type,
+.coach-root .cp-habit-row:last-of-type {
+  border-bottom: 0;
+}
+.coach-root .cp-target-row > span:first-child,
+.coach-root .cp-habit-row {
+  min-width: 0;
+}
+.coach-root .cp-habit-row {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.coach-root .cp-habit-row small {
+  color: var(--cd-muted);
+}
+.coach-root .cp-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+/* Temporary plan + target dialogs */
+.coach-root .cp-temp-form,
+.coach-root .cp-target-form,
+.coach-root .cp-temp-editor {
+  display: grid;
+  gap: 14px;
+}
+.coach-root .cp-temp-dates,
+.coach-root .cp-target-range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.coach-root .cp-temp-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.coach-root .cp-temp-actions-spacer {
+  flex: 1;
+}
+/* Habit frequency control */
+.coach-root .cp-freq {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+.coach-root .cp-weekday-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.coach-root .cp-weekday-chip {
+  padding: 5px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.coach-root .cp-weekday-chip[data-on] {
+  border-color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
+  color: inherit;
+}
+@media (max-width: 900px) {
+  .coach-root .cp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Habit editor: single-column form */
+.coach-root .cp-habit-stack {
+  display: grid;
+  gap: 16px;
+  max-width: 560px;
+}
+.coach-root .cp-habit-stack .v8-segmented {
+  width: fit-content;
+  max-width: 100%;
+}
+.coach-root .cp-habit-stack .v8-segmented__option {
+  white-space: nowrap;
+}
+/* Add-habit action aligns to the right edge of the form fields */
+.coach-root .cd-habit-form .cd-dialog-actions {
+  max-width: 560px;
+}
+/* Plans card: equal heights + secondary chip */
+.coach-root .cp-grid {
+  align-items: stretch;
+}
+.coach-root .cp-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.coach-root .cp-card-actions {
+  margin-top: auto;
+  padding-top: 14px;
+}
+.coach-root .cp-chip-sub {
+  font-size: 0.75rem;
+  color: var(--cd-muted);
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+/* two-column plans layout (matches client desktop plans) */
+.cp-split {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 860px);
+  gap: 16px;
+  align-items: start;
+}
+.cp-side {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.cp-detail {
+  max-width: 860px;
+}
+/* mobile screens reused inside the coach detail: strip the phone shell */
+.coach-root .cp-detail.cm-app {
+  display: block;
+  height: auto;
+  min-height: 0;
+  width: auto;
+}
+.coach-root .cm-card.cm-sel {
+  border-color: var(--cd-accent);
+}
+.cp-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.cp-detail-head .cp-card-head {
+  margin-bottom: 0;
+}
+.cp-detail-head .cp-card-actions {
+  margin-top: 0;
+}
+.cp-meta {
+  margin-bottom: 16px;
+}
+
+/* S3: nutrition plans list */
+.cp-plans {
+  padding: 10px 12px;
+}
+.cp-plan-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+}
+.cp-plan-row + .cp-plan-row {
+  border-top: 1px solid var(--cd-line);
+}
+.cp-plan-row:first-child {
+  padding-top: 0;
+}
+.cp-plan-row:last-child {
+  padding-bottom: 0;
+}
+
+/* left list: keep status chips on one line; the key line wraps instead */
+.coach-root .cp-side .cm-navcard .cd-status {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* T1: plans-list sections + current emphasis + macro lines */
+.cp-plan-sec {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  padding: 10px 0 4px;
+}
+.cp-plan-sec:first-child {
+  padding-top: 0;
+}
+.cp-plan-macros {
+  font-size: 12px;
+  color: var(--cd-muted);
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+
+/* U1: nutrition cards */
+.cp-nut-card {
+  padding: 12px 14px;
+}
+.cp-nut-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.cp-nut-sub {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  margin: 14px 0 6px;
+}
+.cp-nut-temp {
+  padding: 8px 0;
+  border-top: 1px solid var(--cd-line);
+}
+.cp-macro-table {
+  display: grid;
+  gap: 2px;
+}
+.cp-macro-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(4, minmax(0, auto));
+  gap: 8px 14px;
+  align-items: baseline;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+.cp-macro-row:last-child {
+  border-bottom: 0;
+}
+.cp-macro-row > span:not(:first-child) {
+  text-align: right;
+  min-width: 38px;
+}
+.cp-macro-row.cp-macro-head {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cd-muted);
+  padding-bottom: 3px;
+}
+.cp-macro-row.cp-macro-temp,
+.cp-macro-row.cp-macro-sm {
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.cp-nut-collapse {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+  text-align: left;
+}
+.cp-nut-prev {
+  padding: 10px 14px;
+  border-top: 1px solid var(--cd-line);
+}
+
+.cp-nut-prev-card {
+  margin-top: 16px;
+}

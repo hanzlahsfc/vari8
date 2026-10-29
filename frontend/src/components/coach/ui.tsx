@@ -1,13 +1,12 @@
 "use client";
 import { ArrowLeft, Check, Search } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   type ButtonHTMLAttributes,
   type ReactNode,
   useEffect,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   type ButtonVariant,
   type ControlSize,

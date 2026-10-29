@@ -657,6 +657,38 @@
   min-width: 0;
   width: 100%;
 }
+@supports (justify-content: safe center) {
+  .coach-root .cb-pc-bodyweight {
+    justify-content: safe center;
+  }
+}
+.coach-root .cb-pc-bodyweight .cb-pc-chart-controls {
+  flex: 0 0 auto;
+}
+.coach-root .cb-pc-bodyweight .cb-pc-plot {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.coach-root .cb-pc-bodyweight .cb-pc-smooth-trend-surface {
+  display: flex;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+.coach-root .cb-pc-bodyweight-plot svg {
+  display: block;
+  overflow: visible;
+  width: 100%;
+}
+.coach-root .cb-pc-bodyweight .cb-pc-smooth-trend-surface svg {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+.coach-root .cb-pc-bodyweight .cb-pc-smooth-dates,
+.coach-root .cb-pc-bodyweight .cb-pc-plot figcaption {
+  flex: 0 0 auto;
+}
 .coach-root .cb-pc-bodyweight-metrics {
   align-items: end;
   display: grid;
@@ -724,11 +756,6 @@
   margin: 0;
   min-height: 0;
   min-width: 0;
-  width: 100%;
-}
-.coach-root .cb-pc-bodyweight-plot svg {
-  display: block;
-  overflow: visible;
   width: 100%;
 }
 .coach-root .cb-pc-bodyweight-grid {

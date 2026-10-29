@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type FormEvent,
   useEffect,
@@ -31,7 +31,6 @@ import {
 } from "./model";
 import { WidgetContent } from "./widget-content";
 import "./gallery.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type GalleryMode = "add" | "configure" | "replace";
 

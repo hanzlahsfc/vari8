@@ -12,7 +12,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -29,7 +29,6 @@ import {
   Input,
   Select,
 } from "@/components/vari8/components";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import { BuilderGallery } from "./gallery";
 import {
   addToLayout,

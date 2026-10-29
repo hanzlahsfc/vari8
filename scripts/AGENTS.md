@@ -2,8 +2,8 @@
 
 <!-- BEGIN GENERATED: scripts/index/generate.ts (npm run index) -->
 Purpose: Runnable maintenance and import scripts (`tsx scripts/<name>.ts`). Includes the system index generator.
-Top-level files: check-nutrition-source-accuracy.ts, db-fresh.ts, dry-run-nutrition-source.ts, extract-sheets.ts,
-  import-exercise.ts, import-nutrition.ts
+Top-level files: check-nutrition-source-accuracy.ts, db-fresh.ts, dry-run-nutrition-source.ts,
+  extract-legacy-sheet-full.ts, extract-sheets.ts, import-exercise.ts, import-nutrition.ts
 Read next: docs/index/README.md while working in here.
 Rules: see the repo-root AGENTS.md and CONTEXT.md.
 <!-- END GENERATED -->

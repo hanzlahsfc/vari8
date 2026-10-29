@@ -368,6 +368,546 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   disposable `app_parity_https` was dropped. Full record:
   `icm/05-build/reports/PARITY-HTTPS.md`.
 
+## 2026-10-28 - w2-fe3: FRONTEND PR 211 merged, canvas port landed, gates green
+
+- Lane `w2/fe3` off `ad257ba`. Merge `6eda6fa` (parents `ad257ba` +
+  `8e6503f`); `frontend/` byte-identical to the PR 211 tip (empty diff).
+- Canvas twin: 39 files ported via `tools/port-canvas/port.mjs`; 8 local-delta
+  files three-way merged (client route, athlete overview, timeline tab,
+  coach css, model, plans setup, store, mealplan workspace). New hand-merge
+  entries recorded in the port map.
+- `/client` renders the PR 211 `ClientDesktop`/`MobileApp` pair (900 px
+  breakpoint, `?view=phone` toggle); `/me` keeps the session-wired
+  `ClientApp` shell on `own` identity.
+- Demo export re-pointed to revision 11 (client-007, workspace.json,
+  README, provenance); `public/demo/physique` assets carried over from the
+  frontend public tree.
+- Parity: click recipes re-derived for the module-rail plans UI, baseline
+  recaptured from the tip (74/74). Root compare exits 1 with 64 diffs,
+  classified: truth text (workspace/role/counts), flag-boundary 403
+  surfaces (checkins, iifym, supplements; inherited, zero backend diff),
+  seeded-data divergence, union deltas (Legacy sheet, extra widget), and
+  local-only features (temporary nutrition plans, no backend model).
+- Gates: `typecheck` 0, `lint` 0 (105 inherited warnings), `test` 0
+  (131 files, 1501 tests), `build` 0, `index`/`index:check` 0, frontend
+  `lint` 0, frontend `test` 0 (322 tests), frontend `typecheck` 0, dash
+  gate 0 authored lines. Lane DB `app_fp_w2fe3` fresh deploy + double
+  seed idempotent, dropped after capture.
+- Browser pass (real logins, prod build): coach roster, Amara tracker and
+  plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
+  login, `/client` mobile and desktop. Evidence under
+  `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
+
+## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
+
+- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
+  keyed `(workspaceId, memberId, key)` with closed key registry
+  (`attention.unread_messages`, `attention.priority_messages`,
+  `email.messages`; default enabled when no row). Migration dir
+  `20261027000000_member_preferences` with `down.sql`.
+- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
+  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
+  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
+  pref check at send time, failures logged as `notification_delivery_failed`,
+  never roll back the message). `sendOwnMessage` notifies post-commit only on
+  a newly created row (idempotent replays do not re-mail).
+- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
+  `defineApiV1Route`; member-scoped to the caller's resolved membership,
+  non-member/denied 403.
+- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
+  (profile + preference groups). Component authored first in
+  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
+  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
+  demo mount at `frontend/src/app/coach/settings` (localStorage).
+- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
+  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
+  check on changed files 0), `test` 1 in full-parallel run
+  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
+  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
+  `index`/`index:check` 0, settings integration 5/5 on real PG.
+- Browser pass on prod build (`next start` http:4200 + tls-proxy
+  https:4298): coach real login, settings surface, `email.messages` off →
+  second session persists off, client message mails owner but not the
+  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
+  1440/390 + mailbox.jsonl in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
+  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
+- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
+  count 0 saved to `pg_database-absent.txt`.
+
+## 2026-10-25 - Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
+
+- Verification only, no product repair. Boot gates all green: `npm ci` 0,
+  `prisma generate` 0, `index`/`index:check` 0 (no index drift),
+  `typecheck` 0, `lint` 0 (89 warnings), `test` 0 (116 files, 1380 tests),
+  `build` 0. `npm run check` absent by design.
+- Lane DBs on 127.0.0.1:5433: `app_fp_stage10_b1` default seed (7 modules,
+  `50-demo-coverage` absent) and `app_fp_stage10_b1d` demo seed ×2 (8
+  modules, `50-demo-coverage` present; run 2 idempotent - normalized dump
+  diff empty, 155 seeded CUIDs identical). Both dropped at teardown -
+  the verifier found them still present on 5433, the repair-1 pass
+  dropped them and re-checked `pg_database` (zero `app_fp_stage10%`
+  rows, output in `teardown-databases.txt`).
+- Live sweep against the production build (44 distinct slugs, 91 PNGs at
+  1440 + 125 at 390 = 216 pre-repair; repair-1 added 4 slugs / 44 PNGs
+  → 48 slugs / 260 PNGs): unauth `/` `/coach` `/me` → 307; staff +
+  client logins; surfaces at 1440 and 390 - coach canvas (roster,
+  client overview/timeline/plans/check-ins/notes+tasks/habits/targets,
+  all five plan-part editors, client setup, check-in board/review,
+  messages, notes, templates + template editor, legacy-sheet dialog,
+  ethereal, workspace home, **staff progress-photos gallery +
+  comparator**, the stage-6 surface added in repair-1) and client app
+  (home, plans + nutrition + roadmap, tracker, training, check-ins
+  incl. list, **check-in submit flow end-to-end**, photos) plus `/me`
+  tracker. Denials hold: foreign workspace 403 (page+API), cross-client
+  API 404 in `sweep-results.json` (client session →
+  `…/clients/<foreign-profile>/tasks`; the verifier's client-session
+  sample returned 403 - both inside the expected 403/404 band),
+  client→`/coach` 307→`/me`.
+- Parity (owner ruling 2026-10-25): 10 stale click recipes re-derived
+  against the merged UI (profile tabs, renumbered template nav 01-07,
+  `.cd-plan-module`→`.cp-card` scoping, `Open chat (1 unread)`,
+  `Edit plans → Open client setup`, `Open client app`); dev-mode replay
+  74/74 clean. Committed as `44eec07`. Baseline regen BLOCKED -
+  `PARITY_APP=frontend ... --update-baseline` exits 2: `frontend/` prod
+  build fails typecheck on `dialog.tsx:109` `labelHidden`, an inherited
+  defect present at merge base `6d3a07f` (fix lives on unmerged
+  `c605b78`/`29fbb31`). `npm run parity` vs the stale baseline exits 1
+  (74/74 fail - expected pre-PR-204 signature; captures clean); runner
+  self-spawn mode also exit-2's because its `http:` `BETTER_AUTH_URL`
+  trips the inherited prod boot guard (worked around via `PARITY_URL`
+  against a manually started server).
+- Sheets pixel harness: **11/11 tabs PASS** vs the LibreOffice refs
+  (worst score 0.001, timeline) using the established same-geometry
+  frame (`ls-scroll` chrome-stripped capture, A1:AF45 clip) - raw
+  window shots fail by construction, kept as counter-evidence.
+- `npm run format:check` exits 1: 57 files fail, all inherited at merge
+  base `6d3a07f`; zero package-introduced. No files reformatted.
+- Defects recorded, unrepaired: F1 inherited `frontend/` typecheck
+  failure above (blocks parity baseline); F2 parity runner self-spawn
+  vs http-auth guard (inherited interplay); F3 iifym/supplements APIs
+  403 under the card env (feature flags unset - config boundary, by
+  design); `BETTER_AUTH_URL`-unset boot warning (cosmetic).
+- Repair-1 (verifier REPAIR vs `d85dddc`, closed on `fp/stage-10`):
+  b1/b1d actually dropped (were still present); staff photos gallery +
+  comparator and client check-in submit exercised at 1440/390 on a
+  fresh `app_fp_stage10_r1d` lane (`sweep-r1-results.json` 4/4, PNGs in
+  evidence dir); report counts corrected (44→48 slugs, real per-width
+  numbers), `format-failing-files.txt` completed to 57, cross-client
+  denial attributed to its actor/sample. Full detail: REPORT.md §10.
+- Full record: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-10/REPORT.md`.
+  NOT done: owner sign-off; no push, no PR.
+
+## 2026-10-25 - Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
+
+- `scripts/seed/50-demo-coverage.seed.ts` - opt-in module gated on
+  `VARI8_SEED_DEMO=1` (skipped in `scripts/seed/index.ts` and self-gated
+  in-module). Reads the byte-verbatim JSON snapshot in
+  `scripts/seed/demo-export/` (provenance `trackc/merge-frontend-9491897`,
+  SHA `9491897b…`; `PROVENANCE.md` inside the fixture dir) and fills the
+  `canvas-demo` workspace: 15 client logins, check-in forms + schedule
+  rules + instances, submissions with typed answers/reviews/photos,
+  conversations + messages, coach notes and tasks, client tasks, habits,
+  daily entries + nutrition logs, meal/IIFYM/supplement/training plans,
+  activity targets, goals, training session/set logs, workspace
+  preferences onto the workspace settings columns, and a per-client
+  dashboard draft (Tasks + Messages + Bodyweight trend + Your training).
+- Mapping doc + credentials list + run report live outside the repo in
+  `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-11/`
+  (MAPPING.md covers every export field, mapped or unmapped-with-reason;
+  CREDENTIALS.md lists the 15 demo emails - three name-matched clients
+  keep the default profile's `@canvas-demo.test` accounts - no passwords
+  anywhere).
+- Verification: flag-off seed dump on a fresh lane diffs EMPTY against
+  the stage-9 base lane (normalized); opt-in seed is idempotent across
+  two runs (normalized diff EMPTY, 78-table row counts equal); workspace
+  preference columns carry the fixture values. Gates `index` /
+  `typecheck` / `lint` / `index:check` / `test` (116 files, 1380 tests) /
+  `build` all exit 0. Live proof on a lane DB: coach and client surfaces
+  render seeded data at 1440 + 390 with denials holding; 10 screenshots
+  in the evidence dir.
+- Independent verifier repair round 1 fixed here: three CREDENTIALS
+  emails corrected to the real seeded values, `workspace.preferences`
+  now written and mapped, this STATUS entry added.
+- NOT done: owner sign-off; no push, no PR.
+
+## 2026-10-25 - Stage 9 card 12: legacy PRGRSS 2.0 sheets view on the real client store
+
+- Ported Lilly's `legacy-sheet/` folder into `components/canvas/client/legacy-sheet/`
+  (frontend/ stays the verbatim parity source). Dialog mounts on the coach athlete
+  overview header ("Legacy sheet" button), not on the client record.
+- Store binding (`bind.ts`, `data/legacy-sheet.ts`): DAILY TRACKER day rows read and
+  write `client.tracking.entries` through the same `withTrackingValue` seam the
+  coach tracker uses (weight, steps, cardio minutes); macro cells project the
+  staff `nutrition-logs` read; DASHBOARD macro targets read staff iifym. Bound
+  cells carry provenance labels; formula-shape and not-calculated badges kept.
+- `compute.ts` holds the plain-TS domain computations (week window projection
+  from `ClientPhase.startDate`, macro kcal 4/4/9, week-target stamps).
+  `Coach Tools` → `Update Timeline` applies `applyWeekTargets(today)` on click.
+- `styles.ts` is generated by `refine_geometry.py` (evidence dir): per-cell fills,
+  track geometry and border lines measured from the sanitised workbook's
+  LibreOffice print renders, snapped to reference pixels.
+- Verification: 15 unit tests green; `tsc --noEmit` clean; production build
+  green; authenticated Playwright captures of all 11 tabs pass the
+  masked-block diff gate against the LibreOffice references (worst score
+  0.001, worst tab within budget). Edit committed through the store persists
+  across dialog reopen; nutrition-logs GET verified 200; narrow 390px capture
+  taken.
+
+## 2026-10-25 - Stage 8 card 11 (built, pending owner screen review): training session and set log end to end (#176)
+
+- Schema/migration: `20261023040000_training_log` (+`down.sql`) adds
+  `TrainingSessionLog` (unique per client/program/session/week/date -
+  the replay-safe natural key; `pinnedVersionId` FK to the version live
+  at start; status IN_PROGRESS/COMPLETED/PARTIAL/SKIPPED) and
+  `TrainingSetLog` (idempotent per session-log/exercise/set position;
+  actuals as validated JSON - the coach's own template defines the set
+  fields, the log carries no fixed field list).
+- Service (`lib/trainingprogram/service.ts`): `startTrainingSessionLog`
+  (pins governing published version, replay-safe), `saveTrainingSetLog`
+  (M6 `setLogEntrySchema` before write, replace-on-resave, terminal
+  sessions refuse), `finishTrainingSessionLog` (completed → COMPLETED
+  or PARTIAL by unlogged prescribed sets; explicit `skipped`),
+  `readOwnSessionLog`/`readOwnTrainingLogWeek` (materialized from the
+  PINNED payload, not the live one), `readStaffTrainingLogs`.
+  `readOwnTrainingProgram` gained optional `week` for logbook
+  navigation without touching date-derived lifecycle. `lib/audit.ts`
+  allowlist: two resource types + `sessionOutcome` field.
+- Check-in surface (`lib/checkin/review-panel.ts`):
+  `flaggedTrainingNotes` on the panel wire - set rows with flags +
+  non-empty note, exercise names resolved through each log's pinned
+  payload (`weeks[].sessions[].exercises[]`), newest first.
+- Routes (api/v1): own `GET training-program`, `GET training-logs?week`,
+  `POST training-logs/sessions`, `GET sessions/[id]`,
+  `POST sessions/[id]/sets`, `POST sessions/[id]/finish`; staff
+  `GET clients/[cp]/training-logs`. `_result.ts` maps the closed
+  `TrainingError`/`AccessDeniedError` vocabulary to 400/403/404/409/503.
+- Client UI: `components/canvas/data/training-logs.ts` wire module +
+  `RemoteTrainingLogbook` - reuses Lilly's `SessionLogger` and ctl-*
+  classes, converts pinned server prescriptions to canvas types,
+  synthesizes positional set ids only for scalar `sets`, persists only
+  changed sets through a write queue, hydrates stub logs before open,
+  week navigation. Mounted for signed-in clients (`own`) in
+  `client-app.tsx`; unsigned demo keeps the local logbook.
+- Coach UI: `ClientTrainingLogs` surface under client detail → Plans
+  tab - each log (date · week · program · status badge) with per-set
+  actuals; demo falls back to local fixture logs. `checkins.ts` maps
+  `flaggedTrainingNotes` into `sub.flags` for the review card;
+  `mergeCheckinLoad` now preserves them (a board reload used to drop
+  detail-read flags).
+- Tests: 11 integration on a disposable PG - start/resume, replay,
+  replace-on-resave, v1 pinned beside actuals after v2 publish,
+  PARTIAL/COMPLETED/SKIPPED, terminal-write refusal, cross-client
+  denial, flagged note on review, invalid-payload pre-write rejection.
+- Gates: `npm ci` · `prisma generate` · `migrate deploy` (lane) ·
+  `typecheck` · `lint` (0 errors) · `index:check` · `test` (115/1365) ·
+  `build` - all exit 0.
+- Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
+  127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+  returns both; replay start same id; re-save same set keeps one row;
+  flagged note + note flag on set 3; finish → PARTIAL; skipped session
+  refuses writes 409; publish v2 (week-6 boundary 4-5→12-14) → log
+  still reads pinned v1 (4-5) beside actuals while program is v2;
+  staff read returns both logs. Screenshots 1440+390 client logbook,
+  session logger (v1 beside actuals), coach client detail, check-in
+  flag - all in the card-11 evidence dir with proof reports.
+- Preview for review R2-4: production server `http://127.0.0.1:3972`,
+  lane DB kept alive. Sign in `emma.anders@canvas-demo.test` /
+  `coach@c11proof.test` (seed env passwords only). No push, no PR until
+  Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
+## 2026-10-25 - Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
+
+- Schema: none added - existing `IifymPlan` (shared draft, `draftRevision` CAS,
+  plan-scoped `timezone`) + `IifymPlanVersion` (immutable payload snapshot,
+  `publishOriginRevision` dedupe authority) carry the whole card.
+- Service: `lib/iifym/` - `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
+  resolver, enforced at the top of every exported service function: flag off →
+  `plan_not_accessible`/403), `limits.ts`, `payload.ts` (strict draft
+  normalizer; macros options reject `calories`, calorie options reject macros),
+  `service.ts` (draft save / timezone confirm / publish / staff+own reads -
+  meal-plan protocol cloned: advisory lock, serializable tx, consent under
+  locks, replay-lookup before stale/publish checks, audit last).
+- Routes (api/v1): own `GET workspaces/{ws}/iifym-plans` (current version
+  payload + upcoming header only - draft never leaves the server); staff
+  `GET|PUT clients/{cp}/iifym-plans`, `POST .../publish`,
+  `POST .../timezone`. `_result.ts` maps the closed error vocabulary:
+  400/403/409, never 404, foreign workspace → 403.
+- Coach UI: `app/workspace/[ws]/clients/[cp]/macro-targets` +
+  `components/iifym/` - option editor (macro mode: P/C/F with derived-kcal
+  readout; calorie mode entered directly + labelled), weekly weekday
+  assignment grid (+manual; a stored `cycle` schedule is preserved, not
+  clobbered), explicit "Confirm timezone" action (`setIifymTimezone` via the
+  timezone route - the coach's browser zone is never auto-stamped), publish
+  with effective date, version table. Clients roster row links to it.
+- Client UI: `nutrition-targets.tsx` beside card-09 `NutritionActuals` in a
+  `ca-nutrition-split` - resolves the weekday option for the displayed date
+  through the canvas's own `scheduledOption`, derives kcal at 4/4/9 in macro
+  mode, labels calorie mode; empty/error states when no version is live.
+- Tests: 11 unit (payload normalize/derived-calorie rules), 7 integration on a
+  disposable PG (two-option publish + weekday resolution via the real
+  `scheduledOption`, byte-identical replay incl. after v2, foreign-workspace
+  denial, flag-off closure, immutability, consent missing).
+- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn -
+  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` -
+  all exit 0.
+- Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+  options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
+  13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
+  published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
+  403; second instance without `ENABLE_IIFYM_PLANS` returns 403
+  `plan_not_accessible` on all four endpoints; nutrition actuals written via
+  card-09 route for the side-by-side. Screenshots 1440/390 coach+client and
+  `PROOF.md` in the card-10 evidence dir.
+- Independent review (verifier subagent): REPAIR → fixed. MAJOR-1 flag was
+  page-gated only - now enforced in the service and proven live flag-off.
+  MAJOR-2 browser auto-stamp replaced by explicit confirm route. Minors:
+  dead exports dropped (`readStaffIifymVersion`, cursor pagination), cycle
+  schedule preserved in editor, create-without-title 403→400, test imports
+  the real `scheduledOption`.
+- Preview for review R2-4: production server on `http://127.0.0.1:3971`
+  (`ENABLE_IIFYM_PLANS=1` etc.), lane DB kept alive for the preview. Sign in:
+  `coach@card10.test` / `emma.anders@canvas-demo.test` (fixture passwords in
+  the seed env only). No push, no PR until Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
+## 2026-10-25 - Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
+
+- Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on
+  `(workspaceId, clientProfileId, entryDate)`; nullable `protein`,
+  `carbohydrate`, `fat`; no calories column anywhere. Migration
+  `db/migrations/20261023030000_nutrition_log/` with `down.sql`.
+- Math: `MacroActuals` + `caloriesFromMacros` (4/4/9, missing macro
+  contributes nothing, all-missing = 0, explicit 0 stays "0 g") in
+  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline -
+  canvas never imports server modules.
+- Service: `lib/daily-entry/nutrition-log.ts` - own read/save reusing the
+  `saveDailyEntry` lock/auth/consent protocol, staff 30-day range read.
+  Logs bind to the daily entry/date, so meal-plan ↔ IIFYM switches keep
+  earlier entries; template-independent.
+- Routes: own `GET ?date=` + `PUT /[entryDate]` under
+  `nutrition-logs/`, staff `GET clients/[id]/nutrition-logs?from&to=`.
+- Client UI: `nutrition-actuals.tsx` panel on the Nutrition screen
+  (`own`-gated, illustrative path untouched): blank fields stay blank,
+  "Not recorded" never zero, derived kcal live + after save, recent-days
+  list, empty-day state. Coach daily page gained a read-only "Recorded
+  macros" table, hidden when the daily-entry surface is unavailable.
+- Tests: 6 unit (`caloriesFromMacros`), 18 integration on lane DB
+  `app_fp_stage7` (partial/full/zero macros, reload, staff range,
+  pin-switch retention, auth guards).
+- Gates: `npm ci`, `prisma generate`, `typecheck`, `lint` (0 err),
+  `index:check`, `test` (111 files / 1323), `build` - all exit 0.
+- Live proof on `app_fp_stage7` (seeded, synthetic `card09-*` fixtures):
+  Playwright driver, 14/14 PASS - empty day, protein-only 720 kcal,
+  150/200/60 → 1940 kcal hand-checked, reload persistence, IIFYM-variant
+  client keeps entries, coach table shows 1940 + 400 kcal rows.
+  Screenshots 1440/390 + `PROOF.md` in the card-09 evidence dir.
+- Preview for review R2-4: served on `https://127.0.0.1:3967` (TLS proxy
+  → backend 3968), `APP_ENV=test`, `MEDIA_STORAGE_ADAPTER=local`,
+  `ENABLE_DAILY_ENTRY=1`. Port 3964 is owned by the sibling
+  merge-preview lane and was left alone - flag for Marcel.
+- Commits: `9731f3a` schema+math, `0ce232e` service, `b412a50` routes,
+  `91937c1` client panel, `edbe706` coach section + index. No push.
+- NOT done: independent review, owner screen sign-off, lane DB drop
+  (kept for the preview).
+
+## 2026-10-25 - Stage 6 card 08 (#172): progress photos with comparison - built, live-verified, awaiting R2-4 screen review
+
+- Migration `db/migrations/20261023020000_progress_photo/` (+ `down.sql`
+  ending in the `_prisma_migrations` delete): `progress_photo_entry` -
+  unique `media_object_id` link, `taken_on` DATE, optional
+  `checkin_submission_id`, `client_visible` default true, `deleted_at`
+  soft delete. Raw composite FKs pin media/submission to the same
+  workspace (submission also to the same client), all RESTRICT. No
+  pose or shot-variant column or enum anywhere; the product surface
+  greps clean for the banned term.
+- `db/schema.prisma`: `ProgressPhotoEntry` model + back-relations on
+  Workspace/ClientProfile/MediaObject/CheckInSubmission.
+- API under
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/`:
+  `service.ts` + routes - GET list + POST create (route.ts), GET/DELETE
+  `[entryId]` (route.ts), GET `compare?first&second` (compare/route.ts).
+  Reads `clientData.read`, writes `message.write`. Client callers are
+  resolved to their own profile server-side and constrained to it
+  regardless of path ids; staff need an active member with staff scope.
+  Compare requires both entries under the same requested client -
+  cross-client pairs return `not_found`, never leak existence. Deleted
+  entries are filtered from list/get/compare; the media_object row is
+  untouched by delete (retention pass owns it).
+- Upload keeps the media intent + presigned PUT seam
+  (`components/canvas/data/media.ts`); `progress-photos.ts` provider adds
+  `uploadOwnProgressPhoto` (intent → PUT → dated entry create) plus
+  list/create/delete/compare. `fetchMediaDownload` alias clarifies the
+  staff-side mint caller.
+- Client UI: `components/canvas/client-app/photos.tsx` - dated upload
+  (DatePicker, defaults today), own gallery with delete; mounted as a
+  remote-only `photos` section (sections.ts/client-app.tsx) visible only
+  for a signed-in client with an `own` binding.
+- Coach UI: real staff page
+  `app/workspace/[workspaceId]/clients/[clientProfileId]/photos/`
+  (page.tsx + photos-panel.tsx) - gallery mints fresh download urls per
+  entry, two-entry comparator via the compare route, soft-delete buttons.
+  Roster `app/workspace/[workspaceId]/clients/page.tsx` gains a Photos
+  column link for owner/coach. Styles in `app/globals.css`.
+- Gates (all exit 0): `npm ci`, `npx prisma generate`,
+  `npm run typecheck`, `npm run lint` (warnings only, matching baseline),
+  `npm run index` + `index:check`, `npm run test` (111 files / 1317
+  tests), `npm run build`. `tests/unit/system-index.test.ts` canary
+  bumped 56→57 pages deliberately.
+- `tests/integration/api-v1-progress-photos.test.ts`: 8 tests green on
+  lane db `app_fp_stage6` (real Postgres, migration deployed,
+  `MEDIA_STORAGE_ADAPTER=local`) - list/create/compare/soft-delete,
+  own-scope pinning, cross-client refusal, media survives entry delete.
+- Live probes on the built artifact (`next start`, port 3966; 3964 was
+  held by the merge-preview lane): real upload through the media routes,
+  dated entry in coach gallery, same-client compare 200, cross-client
+  compare 404 both directions, client→other-client list/entry/media-mint
+  403/404, client cross-client compare 404, soft delete 200 + entry gone
+  - media still mintable + rows retained in db.
+- Screenshots 1440 + 390 (client gallery incl. real UI upload of two
+  dated photos, coach gallery + comparator mid-compare, roster link row)
+  under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
+  logs and report.
+- NOT pushed, no PR - awaiting Marcel's visual review of the screens
+  (preview requirement was port 3964; sibling lanes occupy it, live
+  instance for this card ran on 3966 - coordinate before publish).
+
+## 2026-10-25 - Stage 5 card 07 (#169): activity targets with a day-effective resolver landed; awaiting Marcel's 3964 screen review
+
+- `db/migrations/20261023010000_activity_target/` (new): `activity_target`
+  - one row per (client, metric, day); kind set = prescription, kind NULL +
+    stopped_at = stop version. Raw CHECKs: metric closed set ('steps',
+    'cardioMin'), cardio columns together and exactly on CARDIO, ordered
+    range bounds, positive prescription numbers (sessions_per_week whole, no
+    cap; minutes_per_session NUMERIC fractional), kind/stopped_at pairing,
+    revision > 0. Composite workspace-coherence FKs per convention; `down.sql`
+    per db/AGENTS.md.
+- `lib/activity-targets/` (new): `model.ts` pure resolver + write planner
+  (latest row with effectiveFrom <= date wins; same-day replace needs the
+  confirm flag and bumps revision); `service.ts` serializable tx with
+  advisory locks, in-tx authorize (new `activityTargets` RBAC resource -
+  staff workspace|assigned, client own-read/write-denied), revision CAS on
+  same-day replace, audit CREATE/UPDATE (structural meta only);
+  `boundary.ts` closed safe vocabulary incl. `confirmation_required`;
+  thin route `GET/PUT .../clients/[clientProfileId]/activity-targets` on
+  plan.read / plan.write.
+- `components/canvas/data/activity-targets.ts` (new): remote provider +
+  wire↔canvas mapping (wire 'cardioMin' ↔ canvas 'cardio').
+- Surfaces: coach `targets/editor.tsx` hydrates and saves remotely when a
+  workspace is attached (confirm dialog on 409 confirmation_required,
+  local demo fallback kept); `RemoteClientTracker` renders `TargetSummary`
+  for the selected date (new `renderTargets` slot on the ethereal
+  tracking view); `/client` Plans part + `/me` tracker read own-scope
+  versions; coach `timeline-tab` hydrates persisted versions through the
+  same canvas resolver.
+- `tests/unit/activity-targets.test.ts` (new, 19 tests): Wednesday change,
+  earlier days keep old target, same-day refuse/confirm + revision bump,
+  metric scoping, stops, unsorted rows, client isolation, all step kinds,
+  range + cardio validation, date boundaries. `tests/unit/rbac.test.ts`
+  gained the activityTargets row (34 resources).
+- Gates: npm ci 0, prisma generate 0, typecheck 0, lint 0 (warnings all
+  pre-existing), index 0, index:check 0, test 0 (112 files / 1336),
+  build 0 (route listed). Lane DB app_fp_stage5: migrate deploy 0, all
+  CHECKs/FKs verified, seed 0, service probe 14/14 (Wed change, same-day
+  refuse/confirm, revision CAS, metric scoping, stop, denied paths,
+  own-scope isolation, audit). Screenshots at 1440 + 390 under
+  `Vari8-evidence/FULL-PACKAGE/STAGE-5/card-07/` (also gates.txt +
+  probe-output.txt). Preview: managed runner on 127.0.0.1:3997 left running
+  (3964/3000/3001 held by sibling lanes).
+- NOT done: push/PR - held per card rule until Marcel approves the screens.
+
+## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
+
+- `lib/messages/service.ts` (new): own-thread list + client send, one
+  Conversation per (workspaceId, clientProfileId), `clientRequestId`
+  idempotent retry via the (conversationId, clientRequestId) unique index.
+  No `messages` RBAC resource exists, so ownership binds by resolving the
+  caller's own ClientProfile in the workspace (same first step as
+  `listOwnClientTasks`); callers without a linked profile are denied.
+- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
+  `clientProfileId` (recon decision - the PATCH path needs it; backward
+  compatible for `{tasks, hasMore}` callers).
+- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
+  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
+  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
+  `clients/[clientProfileId]/daily-entries/history` GET
+  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
+  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
+  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
+  (`own.write` → `setClientTaskCompletion`),
+  `checkins/instances/[instanceId]` GET (`own.read` →
+  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
+  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
+  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
+  400/403/409 per the card table - never 404.
+- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
+  functions over the new routes (wire shapes mirror the lib services).
+  LocalStorage slices untouched; coach store hydration contract unmoved.
+- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
+  pre-existing unused-type-import warnings in data providers).
+- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
+  (provider remote calls).
+- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
+  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
+  probes, coach↔client round trips, screenshots, the seven substitute
+  gates, independent review, evidence report. Verification claims stand on
+  none of that yet - typecheck/lint only.
+- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
+  `01-service-signatures.md` already there).
+
+## 2026-10-25 - Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
+
+- Thin route
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts`:
+  `GET` `plan.read` selects `readStaffSupplementPlan` (workspace scope) or
+  `readOwnSupplementPlan` (own scope); `PUT` `plan.write` denies clients at
+  the capability gate. Backend untouched - the merged
+  `lib/supplements/{model,service,boundary,gate}.ts` is called through its
+  safe `*FromAction` boundary with a closed error mapping.
+- `components/canvas/data/supplements.ts` is the remote provider
+  (apiFetch) with `planFromView`/`toWireItems` mappers; registered in
+  `data/index.ts` as a remote domain with no localStorage slice. The coach
+  `SupplementEditor` hydrates from the API on mount and PUTs the full
+  ordered list on Save; no autosave. Slice wiring is marked temporary for
+  the owning #162 follow-up.
+- Gates: `npm run typecheck` 0; `npm run lint` 0 (89 known warnings);
+  `npm run format:check` 0; `npm run index` + `index:check` 0;
+  `npm run test` 0 (1292, +3 provider tests); `npm run build` 0.
+- Lane db `app_fp_card02`: `prisma migrate deploy` 0,
+  `20261023000000_supplement_plan` applied exactly once; db dropped.
+- Probes on the built artifact (https origin via disposable TLS proxy,
+  `APP_ENV=test ENABLE_SUPPLEMENTS=1`): coach GET 200 / PUT 200 / GET 200
+  ordered; profile-linked client GET 200 same items; client PUT 403;
+  foreign-workspace GET 403. Seeded walk added two items with statuses,
+  saved, reloaded - order and rows persisted.
+- No consent gate on supplements (owner decision 2026-10-22);
+  `ENABLE_CONSENT_GATES` unset. Evidence report:
+  `Vari8-evidence/FULL-PACKAGE/STAGE-1/card-02/REPORT.md`.
+
+## 2026-10-25 - deterministic demo-export snapshot for backend seeding - verified locally
+
+- This work is on branch `frontend-demo-export-20261025`, based on
+  `FRONTEND` at `9383578a`; commit pending, no push yet.
+- Contents: `frontend/src/data/demo-export/` - a generated snapshot of the
+  fully populated demo coach state (workspace.json + 15 client files +
+  index.json) for backend seeding, plus `frontend/scripts/export-demo.mjs`
+  (`npm run export:demo`) which regenerates it deterministically against the
+  pinned anchor `2026-10-25`. All calendar dates serialize as `day <n>`
+  offsets from the anchor; fixed-date and free-text keys are whitelisted and
+  documented in `frontend/src/data/demo-export/README.md`. `seedState` gained
+  an optional `today` parameter and three demo ids are now stable literals
+  (`demo-variant-refeed`, `demo-timeline-deload`, `demo-timeline-dietbreak`).
+- `npm run export:demo` regenerates byte-identical files across runs and
+  machines (verified via SHA-256 in both the source workspace and this
+  worktree); the script re-anchors every offset and deep-compares against the
+  pre-conversion state before writing.
+- `npm run check` in `frontend/`: tests 319/319, agent-context:check,
+  typecheck, lint (300 files) and build all exit 0. Published-only test files
+  were renormalized to Biome format; no tests removed or weakened.
+
 ## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
 
 - Independent review found the complete base-to-head
@@ -491,6 +1031,18 @@ app-db-1` adapter.
 - The scoped repair/evidence commits were pushed to
   `origin/beta/k6-gate`; independent review remains pending. Issue #178
   stays open with capacity/staging unchanged.
+
+## 2026-10-23 - frontend UI redesign branch for review - verified locally
+
+- This work is on branch `frontend-ui-redesign-20261023`, based on
+  `FRONTEND` at `51fa6a2`. It is a review branch for Marcel to diff against `FRONTEND`; no PR yet.
+- Contents: visual reset (tokens, shared controls, light/dark), standalone
+  client app at `/client` with training logbook, athlete overview v2
+  (nutrition/activity targets, situative timeline, template-driven layout),
+  demo data and specs under `frontend/docs/`.
+- `npm run check` in `frontend/`: tests 316/316, agent-context:check,
+  typecheck, lint and build all exit 0. Test-loader shims and two
+  visual-reset check files were updated; no tests removed or weakened.
 
 ## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
 

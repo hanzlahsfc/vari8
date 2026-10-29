@@ -8,7 +8,7 @@ Add a separate Supplements plan under each client's Plans tab, alongside Nutriti
 
 The coach configures the plan. The client sees a read-only version. No taken checkboxes, supplement adherence logging or backend connection are part of this feature.
 
-Use `supplement.xlsx` as the catalogue and behavior reference. Preserve its useful fields and relationships, not its spreadsheet layout, helper columns or formula errors.
+Use the supplied `supplement.xlsx` workbook as the catalogue and behavior reference. Preserve its useful fields and relationships, not its spreadsheet layout, helper columns or formula errors.
 
 ## Confirmed requirements
 

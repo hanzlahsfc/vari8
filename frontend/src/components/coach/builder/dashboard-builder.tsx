@@ -12,7 +12,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import {
   type KeyboardEvent,
   type PointerEvent,
@@ -62,7 +62,6 @@ import {
 import { DetailContent, WidgetContent } from "./widget-content";
 import { widgetDetailKey } from "./widget-geometry";
 import "./builder.css";
-import { useReducedMotion } from "@/lib/reduced-motion";
 
 type Gesture = {
   id: string;
