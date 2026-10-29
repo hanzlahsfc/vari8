@@ -710,7 +710,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .coach-root .ct-tracking .ct-trends-controls {
     align-items: stretch;
     grid-template-columns: 1fr;

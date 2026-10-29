@@ -352,7 +352,7 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 640px) {
+@container (max-width: 640px) {
   .coach-root .ct-tracking .ct-week-heading {
     align-items: start;
   }

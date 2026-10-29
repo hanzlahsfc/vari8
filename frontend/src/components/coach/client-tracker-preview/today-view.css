@@ -412,7 +412,7 @@
   margin-top: 18px;
 }
 
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .coach-root .ct-tracking .ct-day-heading {
     margin-bottom: 13px;
   }
