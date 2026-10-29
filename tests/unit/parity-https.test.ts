@@ -404,9 +404,47 @@ describe("combined-run source and pin enforcement", () => {
           expect(parsed, `tag ${JSON.stringify(tag)}`).toEqual({ tag, idx: 3 });
         }
       }
+      // systematic ASCII enumeration: every char as start and as a
+      // mid-name char — acceptance comes from the browser, not our regex
+      const ascii = await page.evaluate(() => {
+        const out = {};
+        for (let i = 0x20; i < 0x7f; i++) {
+          const c = String.fromCharCode(i);
+          try {
+            out[`s${i}`] = document
+              .createElement(c + "x")
+              .tagName.toLowerCase();
+          } catch {
+            out[`s${i}`] = null;
+          }
+          try {
+            out[`m${i}`] = document
+              .createElement("x" + c)
+              .tagName.toLowerCase();
+          } catch {
+            out[`m${i}`] = null;
+          }
+        }
+        return out;
+      });
+      for (const [k, tag] of Object.entries(ascii)) {
+        const c = String.fromCharCode(Number(k.slice(1)));
+        const candidate = k[0] === "s" ? `${c}x` : `x${c}`;
+        // the oracle's authority is the emitted tagName — the writer
+        // sees the browser's lowercased output, not the raw input
+        const parsed = scrollerNameTag(`${tag ?? candidate}#0`);
+        if (tag === null) {
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toBeNull();
+        } else {
+          expect(parsed, `${k} ${JSON.stringify(candidate)}`).toEqual({
+            tag,
+            idx: 0,
+          });
+        }
+      }
       expect(scrollerNameTag("#3")).toBeNull(); // empty tag
       expect(scrollerNameTag("div#03")).toBeNull(); // leading-zero idx
-      expect(scrollerNameTag("Div#3")).toBeTruthy(); // tag itself is browser-valid; lowercase is enforced at the call site
+      expect(scrollerNameTag("Div#3")).toBeNull(); // uppercase isn't writer output — tagName is always lowercase
     } finally {
       await browser.close();
     }

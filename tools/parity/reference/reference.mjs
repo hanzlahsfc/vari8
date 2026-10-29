@@ -171,13 +171,17 @@ export function scrollerNameTag(name) {
   const tag = name.slice(0, i);
   const suffix = name.slice(i + 1);
   if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
-  // the browser's element-name contract (verified against real
-  // chromium createElement/tagName): a name cannot start with an
-  // ASCII digit, -, ., < or #, and can never contain /, >,
-  // whitespace or C0 controls — everything else the DOM emits is
-  // legitimate writer output (Unicode, colons, combining marks,
-  // mid-name < and #, emoji, superscripts)
-  if (/^[-0-9.<#]/u.test(tag) || /[/>\s\u0000-\u001f]/u.test(tag)) return null;
+  // the browser's element-name contract (verified exhaustively
+  // against real chromium createElement/tagName across all ASCII):
+  // the FIRST code point must be an ASCII letter, ':' or '_' — or
+  // any non-ASCII char (Unicode letters, combining marks, digits,
+  // emoji, superscripts all valid); every ASCII punctuation except
+  // ':'/'_' is rejected at start. Subsequent code points may be
+  // anything except '/', '>', whitespace and C0 controls — mid-name
+  // '<', '#', '-', '.', '=', quotes and digits are all legitimate
+  // writer output
+  if (!/^(?:[a-z:_]|[^\x00-\x7f])[^/>\s\u0000-\u001f]*$/u.test(tag))
+    return null;
   return { tag, idx: Number(suffix) };
 }
 function artifact(directory, relative) {
