@@ -126,20 +126,15 @@ describe("system index generator", () => {
     }
   });
 
-  it("F1: indexes a route-segment directory such as app/sheets", () => {
+  it("F1: indexes a route-segment directory such as app/library/foods", () => {
     const routes = buildRoutes();
-    expect(routes).toContain("| `/sheets` | `app/sheets/page.tsx` |");
     expect(routes).toContain(
-      "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
+      "| `/library/foods` | `app/library/foods/page.tsx` |",
     );
     // Canary on the page count: update the literal deliberately when a PR adds or
-    // removes a page route, never by regenerating. 58 = 56 + the card-08
-    // staff progress-photos page under clients/[clientProfileId]/photos
-    // and the app/workspace/[workspaceId]/clients/[clientProfileId]/macro-targets
-    // coach page landed with card 10 (#175). 60 = 58 + the T5 page
-    // app/(canvas)/coach/dashboard/page.tsx and the W2-T1
-    // app/workspace/[workspaceId]/settings page.
-    expect(routes).toContain("Counts: 60 backend pages");
+    // removes a page route, never by regenerating. 58 = 60 minus the scrapped
+    // /sheets and /sheets/[slug] sheet-viewer routes.
+    expect(routes).toContain("Counts: 58 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(

@@ -125,9 +125,6 @@ export function WorkspaceNav({
       resource: "foodExerciseMasterData",
       action: "read",
     },
-    // Dev-only workbook reference (/sheets): intentionally not linked from
-    // navigation; the flag-gated route is reached directly.
-
     // P-025-A: staff Check-In form-definition library — gated by the shared
     // resolver (ENABLE_CHECK_INS + trusted dev/test runtime) and pinned to
     // owner/coach (the scope cell denies every other role; the explicit pin
