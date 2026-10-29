@@ -7,6 +7,7 @@ import {
   CONTRACT,
   assertContract,
   fileHash,
+  scrollerNameTag,
   sha256,
   validateRun,
 } from "./reference.mjs";

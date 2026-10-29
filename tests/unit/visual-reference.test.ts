@@ -629,6 +629,25 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     scrollScreen.scrolls[0].x = 0;
     scrollScreen.scrolls[0].y = 0;
   }
+  // positive path: validateCombinedRun must COMPLETE with valid scroll
+  // metadata — a missing-helper ReferenceError would surface here,
+  // not be hidden by an expected-throw
+  const { validateCombinedRun } =
+    await import("../../tools/parity/reference/combined-run.mjs");
+  const combinedProvenance = {
+    ...provenance,
+    role: "combined",
+    source: { ...provenance.source, tree: "1".repeat(40) },
+    inputs: { prep: { head: CONTRACT.referenceSource } },
+  };
+  expect(() =>
+    validateCombinedRun({
+      directory: d,
+      manifest,
+      shots,
+      provenance: combinedProvenance,
+    }),
+  ).not.toThrow();
   expect(() =>
     validateRun({
       directory: d,

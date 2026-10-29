@@ -27,6 +27,7 @@ import { assertRecordedTooling } from "../../tools/parity/reference/combined-pin
 import {
   createAdapter,
   fileHash,
+  scrollerNameTag,
 } from "../../tools/parity/reference/reference.mjs";
 import {
   assertCleanMaterialCheckout,
@@ -356,6 +357,60 @@ describe("combined-run source and pin enforcement", () => {
       }),
     ).not.toThrow();
   });
+
+  it("browser-emitted scroller names pass scrollerNameTag verbatim", async () => {
+    // oracle = real chromium createElement/tagName — not our regex
+    const { chromium } = await import("@playwright/test");
+    const browser = await chromium.launch();
+    try {
+      const page = await browser.newPage();
+      const results = await page.evaluate(() =>
+        [
+          "div",
+          "section",
+          "my-scroll",
+          "h1",
+          "math-α",
+          "café-x",
+          "tag·name",
+          "svg:rect",
+          "div<name",
+          "1div",
+          ":div",
+          "a/b",
+          "a#1",
+          "²div",
+          "a b",
+          "a\tb",
+          "a\u0000b",
+        ].map((n) => {
+          try {
+            return [n, document.createElement(n).tagName.toLowerCase()];
+          } catch {
+            return [n, null];
+          }
+        }),
+      );
+      for (const [input, tag] of results) {
+        const parsed = scrollerNameTag(`${tag ?? input}#3`);
+        if (tag === null) {
+          // the browser cannot emit this name — the helper must refuse
+          expect(
+            parsed,
+            `browser-rejected ${JSON.stringify(input)}`,
+          ).toBeNull();
+        } else {
+          // real writer output — must parse with exact index binding
+          expect(parsed, `tag ${JSON.stringify(tag)}`).toEqual({ tag, idx: 3 });
+        }
+      }
+      expect(scrollerNameTag("#3")).toBeNull(); // empty tag
+      expect(scrollerNameTag("div#03")).toBeNull(); // leading-zero idx
+      expect(scrollerNameTag("Div#3")).toBeTruthy(); // tag itself is browser-valid; lowercase is enforced at the call site
+    } finally {
+      await browser.close();
+    }
+  }, 30000);
 
   it("generates byte-identical location-independent adapters", () => {
     const dir = fs.mkdtempSync("/tmp/parity-adapter-");

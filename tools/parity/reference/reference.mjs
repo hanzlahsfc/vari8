@@ -165,14 +165,19 @@ const steps = (max, size) => {
   a.push(max);
   return a;
 };
-function scrollerNameTag(name) {
+export function scrollerNameTag(name) {
   const i = name.lastIndexOf("#");
   if (i <= 0) return null;
   const tag = name.slice(0, i);
   const suffix = name.slice(i + 1);
   if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
-  if (!/^[\p{L}:_][\p{L}\p{N}\p{M}:_.\-\u00B7\u203F\u2040]*$/u.test(tag))
-    return null;
+  // the browser's element-name contract (verified against real
+  // chromium createElement/tagName): a name cannot start with an
+  // ASCII digit, -, ., < or #, and can never contain /, >,
+  // whitespace or C0 controls — everything else the DOM emits is
+  // legitimate writer output (Unicode, colons, combining marks,
+  // mid-name < and #, emoji, superscripts)
+  if (/^[-0-9.<#]/u.test(tag) || /[/>\s\u0000-\u001f]/u.test(tag)) return null;
   return { tag, idx: Number(suffix) };
 }
 function artifact(directory, relative) {
