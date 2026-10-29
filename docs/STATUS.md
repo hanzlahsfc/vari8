@@ -324,10 +324,10 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   owner-parked and untouched. REPORT.md written at
   `Vari8-evidence/FULL-PACKAGE-2/W2C4/REPORT.md`.
 - Repair gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
-  tests/unit/coach-store-roster.test.tsx` exit 0 (12/12); `npm run
-  test` exit 0 (1393/1393); `npm run lint` exit 0 (89 inherited
+tests/unit/coach-store-roster.test.tsx` exit 0 (12/12); `npm run
+test` exit 0 (1393/1393); `npm run lint` exit 0 (89 inherited
   warnings); `npm run typecheck` exit 0; `cd frontend && npm run
-  lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
+lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
   0 (U+2013 and U+2014); twin parity diff 0 lines. `npm run index`
   not required (no tracked file added, renamed or deleted).
 - Repair round 2 (verdict R1, regression from repair 1): restored the
@@ -354,10 +354,10 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   `readCoachState` in `frontend/src` returns no matches), so the
   defect exists only on the canvas side.
 - Repair-2 gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
-  tests/unit/coach-store-roster.test.tsx` exit 0 (13/13); `npm run
-  test` exit 0 (1394/1394, 118/118 files); `npm run lint` exit 0 (89
+tests/unit/coach-store-roster.test.tsx` exit 0 (13/13); `npm run
+test` exit 0 (1394/1394, 118/118 files); `npm run lint` exit 0 (89
   inherited warnings); `npm run typecheck` exit 0; `npx prettier
-  --check` on the two changed files exit 0; `npm run index` and
+--check` on the two changed files exit 0; `npm run index` and
   `npm run index:check` exit 0; dash count on `git diff 2de07c6`
   added lines = 0 (U+2013 and U+2014); twin parity diff on
   `nutrition-targets.tsx` = 0 lines.
@@ -392,7 +392,7 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   `api-v1-plans.test.ts`, identical at `0b38af5` on the same lane DB);
   `npx vitest run` exit 0 (1394/1394) after `npm run index`
   regenerated `docs/index/SYMBOLS.md` for the new export; `npm run
-  typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
+typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
   `npm run index:check` exit 0; dash count on `git diff 0b38af5..HEAD`
   added lines = 0. Lane DB `app_fp_w2c4r4` dropped, absence proven by
   a pg_database query saved in evidence.
@@ -425,7 +425,7 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 310
   files), `npx vitest run` 0 (123 files, 1437 tests, 0 failures; the
   inherited logging.test.ts env pair did not occur), `npm run
-  index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
+index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
   count 0.
 - NOT done: no push, no PR, no fetch. Lane database not needed (no
   gate demanded one).
@@ -580,7 +580,7 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
   files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
   inherited logging.test.ts env pair did not occur), `npm run
-  index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
   count 0.
 - NOT done: no push, no PR, no fetch. Lane database not needed (no
   gate demanded one).
@@ -591,11 +591,11 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
   w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
 - Conflicted files and resolutions: `frontend/src/components/client-app/
-  client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+client-app.css` union (t6 `ca-shared-media` block kept in place, c6
   `ca-checkin-*` styles appended intact; selector sets disjoint so neither
   cascade regresses). `docs/STATUS.md` union, both sides' entries newest
   first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
-  index` regenerated the merged tree (174 components, 58 API routes).
+index` regenerated the merged tree (174 components, 58 API routes).
   Canvas twin `components/canvas/client-app/client-app.css` auto-merged
   but placed `ca-shared-media` at EOF; the identical resolution was applied
   so parity holds.
@@ -636,7 +636,7 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   2026-10-26. Index docs regenerated via `npm run index` on the merged
   tree; `npm run index:check` 0 on both runs.
 - Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
-  generate` (stale client missed `clientPhase`/`clientWeekNote`);
+generate` (stale client missed `clientPhase`/`clientWeekNote`);
   `npm run lint` 0 (0 errors, 94 pre-existing warnings);
   `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
   files (the inherited logging.test.ts env pair stayed green here, also
@@ -888,8 +888,7 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
 - B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
   stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
   over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
-  so the route verified signed URLs against the wrong secret and answered
-  403. Full suite reproduction: standalone logging.test.ts red under the
+  so the route verified signed URLs against the wrong secret and answered 403. Full suite reproduction: standalone logging.test.ts red under the
   lane env before the stub, green after. Product code unchanged.
 - Live proof on a lane dev server (seeded coach, 1440 and 390): the
   profile overview fires 0 tracker values or training-logs GETs before
@@ -1071,10 +1070,10 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
   `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
   LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
   `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
-  + `client-app.css` kept in parity for shared blocks. Product
-  onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
-  panel + page, `app/globals.css`). Helpers covered by
-  `tests/unit/checkin-client-surface.test.ts` (16 tests).
+  - `client-app.css` kept in parity for shared blocks. Product
+    onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+    panel + page, `app/globals.css`). Helpers covered by
+    `tests/unit/checkin-client-surface.test.ts` (16 tests).
 - Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
   (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
   (120 files, 1407 tests), `npm run build` 0, `npm run index` +
@@ -1363,7 +1362,7 @@ false`, tenant-coherent FKs and indexes.
   gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
   `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
   0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
-  npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
   `labelHidden` (stage-10 F1, present at merge base).
 - Browser proof: production build via `next start` on http 4403 behind the
   disposable TLS proxy on https 4402 (F2 workaround; production auth
@@ -7370,4 +7369,3 @@ repairs; flagged one new failure mode — unretried P2034 from the
 RepeatableRead reads' member-row FOR UPDATE surfacing as
 `not_available`. Reads now use `withSerializedRetry`; `mapError` maps
 raw P2034 → `serialization_conflict`. Integration 28/28 re-green.)
-
