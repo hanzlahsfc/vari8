@@ -4,11 +4,15 @@
 /**
  * Card 09 (#173): the client's daily macro actuals on the Nutrition
  * screen. Reads and writes the own nutrition-logs routes; each macro is
- * independently recorded or "Not recorded" (never zero). Calories are
- * derived here at render as 4 kcal/g protein, 4 kcal/g carbohydrate and
- * 9 kcal/g fat over the macros present - matching
+ * independently recorded or "Not recorded" (never zero). The wire
+ * carries the stored `calories`; the display prefers it and falls back
+ * to deriving 4 kcal/g protein, 4 kcal/g carbohydrate and 9 kcal/g fat
+ * over the macros present only when it is null - matching
  * `caloriesFromMacros` in lib/nutrition/math.ts, duplicated because the
- * canvas never imports server modules. There is no calories input.
+ * canvas never imports server modules. There is no calories input:
+ * saves send the derivation over the rounded draft macros, or null when
+ * all three are null or the derived value would exceed the backend
+ * bound.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -33,6 +37,9 @@ type MacroId = (typeof MACRO_FIELDS)[number]["id"];
 
 const NOT_RECORDED = "Not recorded";
 
+/** Canvas-local mirror of MAX_CALORIES_KCAL in lib/daily-entry/nutrition-log.ts. */
+const MAX_CALORIES_KCAL = 10000;
+
 /** 4/4/9 over the macros present; a missing macro contributes nothing. */
 function derivedKcal(macros: NutritionLogMacrosWire): number {
   return (
@@ -51,6 +58,11 @@ function parseInput(raw: string): number | null {
   if (trimmed === "") return null;
   const value = Number(trimmed);
   return Number.isFinite(value) ? value : null;
+}
+
+/** Decimal(9,3) column scale: sent, derived and stored values agree. */
+function roundMacro(value: number | null): number | null {
+  return value === null ? null : Math.round(value * 1000) / 1000;
 }
 
 export function NutritionActuals({
@@ -113,16 +125,33 @@ export function NutritionActuals({
   const history = current !== null && !current.error ? current.history : [];
 
   const draftMacros: NutritionLogMacrosWire = {
-    protein: parseInput(drafts.protein),
-    carbohydrate: parseInput(drafts.carbohydrate),
-    fat: parseInput(drafts.fat),
+    protein: roundMacro(parseInput(drafts.protein)),
+    carbohydrate: roundMacro(parseInput(drafts.carbohydrate)),
+    fat: roundMacro(parseInput(drafts.fat)),
   };
   const draftKcal = derivedKcal(draftMacros);
+  // D-C14-WRITE-RULE: send the derivation every save so a macro edit
+  // cannot leave a stale stored kcal under the stored-preferred display.
+  // Null when all three are null (a cleared entry clears the stored
+  // value too) or when the derived value would exceed the backend bound
+  // and the PUT would reject with invalid_input; the display then falls
+  // back to the identical derivation, so the shown number does not
+  // change.
+  const draftCalories =
+    (draftMacros.protein === null &&
+      draftMacros.carbohydrate === null &&
+      draftMacros.fat === null) ||
+    draftKcal > MAX_CALORIES_KCAL
+      ? null
+      : draftKcal;
 
   const save = () => {
     setSaving(true);
     setNotice(null);
-    saveNutritionLogRemote(workspaceId, date, draftMacros)
+    saveNutritionLogRemote(workspaceId, date, {
+      ...draftMacros,
+      calories: draftCalories,
+    })
       .then(() => {
         // Refetch so the saved summary and recent-days list read the
         // server's persisted row, not the local echo.
@@ -187,7 +216,7 @@ export function NutritionActuals({
           ))}
           <div>
             <dt>Calories</dt>
-            <dd>{derivedKcal(surfaceLog)} kcal</dd>
+            <dd>{surfaceLog.calories ?? derivedKcal(surfaceLog)} kcal</dd>
           </div>
         </dl>
       )}
@@ -233,7 +262,7 @@ export function NutritionActuals({
               <div className="ca-checkin-item-head">
                 <strong>{day.entryDate}</strong>
                 <span className="ca-checkin-status">
-                  {derivedKcal(day)} kcal
+                  {day.calories ?? derivedKcal(day)} kcal
                 </span>
               </div>
               <p className="cd-muted">

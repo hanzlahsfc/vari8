@@ -11,9 +11,12 @@
  * earlier entries.
  *
  * Each macro is an independent nullable value: `null` is not recorded,
- * never zero. An all-null save clears the row back to the empty-day
- * state. Calories are never stored or accepted - they derive at read
- * time through `caloriesFromMacros` (4/4/9) in lib/nutrition/math.
+ * never zero. An all-absent save clears the row back to the empty-day
+ * state. Calories, day type and plan-followed are stored nullable
+ * columns beside the macros: an omitted key leaves the stored value
+ * unchanged, an explicit `null` clears it. When no calories are stored
+ * the readers still derive 4/4/9 through `caloriesFromMacros` in
+ * lib/nutrition/math as the display fallback.
  */
 
 import { Prisma } from "@prisma/client";
@@ -39,6 +42,9 @@ export { DailyEntryError } from "./gate";
 /** Gram bound shared by the three macro CHECKs and service validation. */
 export const MAX_MACRO_GRAMS = 10000;
 
+/** Kcal bound shared by the calories CHECK and service validation. */
+export const MAX_CALORIES_KCAL = 10000;
+
 /** Days the own surface returns alongside the selected day. */
 export const NUTRITION_LOG_HISTORY_LIMIT = 30;
 
@@ -55,6 +61,9 @@ export type SaveNutritionLogInput = {
   workspaceId: string;
   entryDate: string;
   macros: NutritionMacroValues;
+  calories?: number | null;
+  dayType?: string | null;
+  planFollowed?: boolean | null;
 };
 
 export type SaveNutritionLogResult = { status: "saved" | "no_op" };
@@ -69,18 +78,51 @@ function validMacro(value: unknown): value is number | null {
   );
 }
 
+/**
+ * Calories accept `undefined` (key omitted: keep the stored value) on
+ * top of `null` (clear) and a finite kcal inside the bound.
+ */
+function validCalories(value: unknown): value is number | null | undefined {
+  return (
+    value === undefined ||
+    value === null ||
+    (typeof value === "number" &&
+      Number.isFinite(value) &&
+      value >= 0 &&
+      value <= MAX_CALORIES_KCAL)
+  );
+}
+
+type MergedNutritionLogValues = NutritionMacroValues & {
+  calories: number | null;
+  dayType: string | null;
+  planFollowed: boolean | null;
+};
+
+type StoredNutritionLogValues = {
+  protein: unknown;
+  carbohydrate: unknown;
+  fat: unknown;
+  calories: unknown;
+  dayType: string | null;
+  planFollowed: boolean | null;
+};
+
+function numericEq(stored: unknown, next: number | null): boolean {
+  return stored === null ? next === null : Number(stored) === next;
+}
+
 function macrosEqual(
-  stored: { protein: unknown; carbohydrate: unknown; fat: unknown },
-  next: NutritionMacroValues,
+  stored: StoredNutritionLogValues,
+  next: MergedNutritionLogValues,
 ): boolean {
   return (
-    (stored.protein === null
-      ? next.protein === null
-      : Number(stored.protein) === next.protein) &&
-    (stored.carbohydrate === null
-      ? next.carbohydrate === null
-      : Number(stored.carbohydrate) === next.carbohydrate) &&
-    (stored.fat === null ? next.fat === null : Number(stored.fat) === next.fat)
+    numericEq(stored.protein, next.protein) &&
+    numericEq(stored.carbohydrate, next.carbohydrate) &&
+    numericEq(stored.fat, next.fat) &&
+    numericEq(stored.calories, next.calories) &&
+    stored.dayType === next.dayType &&
+    stored.planFollowed === next.planFollowed
   );
 }
 
@@ -108,7 +150,14 @@ export async function saveNutritionLog(
     typeof input.macros !== "object" ||
     !validMacro(input.macros.protein) ||
     !validMacro(input.macros.carbohydrate) ||
-    !validMacro(input.macros.fat)
+    !validMacro(input.macros.fat) ||
+    !validCalories(input.calories) ||
+    (input.dayType !== undefined &&
+      input.dayType !== null &&
+      typeof input.dayType !== "string") ||
+    (input.planFollowed !== undefined &&
+      input.planFollowed !== null &&
+      typeof input.planFollowed !== "boolean")
   )
     throw new DailyEntryError("invalid_input");
   const macros = input.macros;
@@ -186,13 +235,45 @@ export async function saveNutritionLog(
 
         const existing = await tx.nutritionLog.findUnique({
           where: { dailyEntryId: entry.id },
-          select: { id: true, protein: true, carbohydrate: true, fat: true },
+          select: {
+            id: true,
+            protein: true,
+            carbohydrate: true,
+            fat: true,
+            calories: true,
+            dayType: true,
+            planFollowed: true,
+          },
         });
 
+        const storedCalories =
+          existing?.calories === null || existing?.calories === undefined
+            ? null
+            : Number(existing.calories);
+        // Omitted keys keep the stored value; explicit null clears it.
+        const merged: MergedNutritionLogValues = {
+          protein: macros.protein,
+          carbohydrate: macros.carbohydrate,
+          fat: macros.fat,
+          calories:
+            input.calories === undefined ? storedCalories : input.calories,
+          dayType:
+            input.dayType === undefined
+              ? (existing?.dayType ?? null)
+              : input.dayType,
+          planFollowed:
+            input.planFollowed === undefined
+              ? (existing?.planFollowed ?? null)
+              : input.planFollowed,
+        };
+
         const allAbsent =
-          macros.protein === null &&
-          macros.carbohydrate === null &&
-          macros.fat === null;
+          merged.protein === null &&
+          merged.carbohydrate === null &&
+          merged.fat === null &&
+          merged.calories === null &&
+          merged.dayType === null &&
+          merged.planFollowed === null;
         if (allAbsent) {
           if (!existing) return { status: "no_op" };
           await tx.nutritionLog.delete({ where: { id: existing.id } });
@@ -206,22 +287,44 @@ export async function saveNutritionLog(
           return { status: "saved" };
         }
 
-        if (existing && macrosEqual(existing, macros))
+        if (existing && macrosEqual(existing, merged))
           return { status: "no_op" };
 
         const row = {
           protein:
-            macros.protein === null ? null : new Prisma.Decimal(macros.protein),
+            merged.protein === null ? null : new Prisma.Decimal(merged.protein),
           carbohydrate:
-            macros.carbohydrate === null
+            merged.carbohydrate === null
               ? null
-              : new Prisma.Decimal(macros.carbohydrate),
-          fat: macros.fat === null ? null : new Prisma.Decimal(macros.fat),
+              : new Prisma.Decimal(merged.carbohydrate),
+          fat: merged.fat === null ? null : new Prisma.Decimal(merged.fat),
+          calories:
+            merged.calories === null
+              ? null
+              : new Prisma.Decimal(merged.calories),
+          dayType: merged.dayType,
+          planFollowed: merged.planFollowed,
         };
+        // An update writes only the keys present in the input: an
+        // omitted optional key keeps the stored value untouched.
         const log = existing
           ? await tx.nutritionLog.update({
               where: { id: existing.id },
-              data: { ...row, updatedByMemberId: member.id },
+              data: {
+                protein: row.protein,
+                carbohydrate: row.carbohydrate,
+                fat: row.fat,
+                ...(input.calories !== undefined
+                  ? { calories: row.calories }
+                  : {}),
+                ...(input.dayType !== undefined
+                  ? { dayType: row.dayType }
+                  : {}),
+                ...(input.planFollowed !== undefined
+                  ? { planFollowed: row.planFollowed }
+                  : {}),
+                updatedByMemberId: member.id,
+              },
               select: { id: true },
             })
           : await tx.nutritionLog.create({
@@ -257,6 +360,7 @@ export type NutritionLogDay = {
   protein: number | null;
   carbohydrate: number | null;
   fat: number | null;
+  calories: number | null;
   dayType: string | null;
   planFollowed: boolean | null;
 };
@@ -277,6 +381,7 @@ function toDay(row: {
   protein: unknown;
   carbohydrate: unknown;
   fat: unknown;
+  calories: unknown;
   dayType: string | null;
   planFollowed: boolean | null;
 }): NutritionLogDay {
@@ -285,6 +390,7 @@ function toDay(row: {
     protein: row.protein === null ? null : Number(row.protein),
     carbohydrate: row.carbohydrate === null ? null : Number(row.carbohydrate),
     fat: row.fat === null ? null : Number(row.fat),
+    calories: row.calories === null ? null : Number(row.calories),
     dayType: row.dayType,
     planFollowed: row.planFollowed,
   };
@@ -367,6 +473,7 @@ export async function loadNutritionLogSurface(
           protein: true,
           carbohydrate: true,
           fat: true,
+          calories: true,
           dayType: true,
           planFollowed: true,
         },
@@ -384,6 +491,7 @@ export async function loadNutritionLogSurface(
       protein: true,
       carbohydrate: true,
       fat: true,
+      calories: true,
       dayType: true,
       planFollowed: true,
     },
@@ -400,6 +508,7 @@ export async function loadNutritionLogSurface(
             carbohydrate:
               logRow.carbohydrate === null ? null : Number(logRow.carbohydrate),
             fat: logRow.fat === null ? null : Number(logRow.fat),
+            calories: logRow.calories === null ? null : Number(logRow.calories),
             dayType: logRow.dayType,
             planFollowed: logRow.planFollowed,
           },
@@ -517,6 +626,7 @@ export async function listStaffNutritionLogs(
       protein: true,
       carbohydrate: true,
       fat: true,
+      calories: true,
       dayType: true,
       planFollowed: true,
     },

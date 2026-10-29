@@ -228,16 +228,21 @@ export default async function StaffClientDailyPage({
                     <td>
                       {item.fat === null ? "Not recorded" : `${item.fat} g`}
                     </td>
-                    <td>{caloriesFromMacros(item)} kcal</td>
+                    <td>
+                      {item.calories === null
+                        ? `${caloriesFromMacros(item)} kcal`
+                        : `${item.calories} kcal`}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
           <p className="app-lede">
-            Calories derive at 4 kcal per gram of protein or carbohydrate and 9
-            per gram of fat over the macros recorded; a missing macro is not
-            recorded, never zero.
+            A stored calorie value shows as recorded; without one calories
+            derive at 4 kcal per gram of protein or carbohydrate and 9 per gram
+            of fat over the macros recorded; a missing macro is not recorded,
+            never zero.
           </p>
         </section>
       ) : null}

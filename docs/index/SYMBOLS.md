@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 186 modules with exports, 1842 exported symbols.
+Counts: 186 modules with exports, 1843 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -857,13 +857,14 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/daily-entry/nutrition-log.ts`
 
 - `export { DailyEntryError } from "./gate"`
+- `export const MAX_CALORIES_KCAL = 10000`
 - `export const MAX_MACRO_GRAMS = 10000`
 - `export const NUTRITION_LOG_HISTORY_LIMIT = 30`
-- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; dayType: string | null; planFollowed: boolean | null; }`
+- `export type NutritionLogDay = { entryDate: string; protein: number | null; carbohydrate: number | null; fat: number | null; calories: number | null; dayType: string | null; planFollowed: boolean | ...`
 - `export type NutritionLogSurface = | { state: "ready"; entryDate: string; log: Omit<NutritionLogDay, "entryDate"> | null; history: NutritionLogDay[]; } | { state: "not_applicable" } | { state: "cons...`
 - `export type NutritionMacroValues = { protein: number | null; carbohydrate: number | null; fat: number | null; }`
 - `export const STAFF_NUTRITION_LOG_MAX_SPAN_DAYS = 366`
-- `export type SaveNutritionLogInput = { workspaceId: string; entryDate: string; macros: NutritionMacroValues; }`
+- `export type SaveNutritionLogInput = { workspaceId: string; entryDate: string; macros: NutritionMacroValues; calories?: number | null; dayType?: string | null; planFollowed?: boolean | null; }`
 - `export type SaveNutritionLogResult = { status: "saved" | "no_op" }`
 - `export type StaffNutritionLogListResult = | { state: "ready"; clientName: string; items: NutritionLogDay[]; } | { state: "consent_missing" }`
 - `export async function listStaffNutritionLogs(session: SessionLike, input: { workspaceId: string; clientProfileId: string; from?: string; to?: string; }, deps: DailyEntryDeps = {}): Promise<StaffNut...`
