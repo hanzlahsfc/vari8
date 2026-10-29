@@ -413,7 +413,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   };
   expect(
     validateRun({ directory: d, manifest, shots, provenance }),
-  ).toHaveLength(148);
+  ).toHaveLength(140);
   const saved = screens[0].sha256;
   screens[0].sha256 = "0".repeat(64);
   expect(() =>

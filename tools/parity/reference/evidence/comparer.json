@@ -21,7 +21,7 @@
   "components": {
     "reference": {
       "path": "tools/parity/reference/reference.mjs",
-      "sha256": "b93f285c22457c889bc98f3c61a8cbd540cea309fc1cfbe8d1c3b6b3f6931fce"
+      "sha256": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674"
     },
     "referenceCompare": {
       "path": "tools/parity/reference/compare.mjs",
@@ -49,7 +49,7 @@
     },
     "combinedRun": {
       "path": "tools/parity/reference/combined-run.mjs",
-      "sha256": "9b6991bd3d18de8569027ee7a458555d5ed190b1cb11ddd44ef0ce5574617ffb"
+      "sha256": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679"
     },
     "combinedPins": {
       "path": "tools/parity/reference/combined-pins.mjs",
@@ -87,7 +87,7 @@
   "locks": {
     "root": {
       "path": "package-lock.json",
-      "sha256": "3ee4d891de92466789045256e974f3f2e88779d6fec3b39b064240b5e71215a7"
+      "sha256": "b014fb81ddd3c10b14b3119eb7f7add4e9e3751c5c1d538861c0cf300c4f780c"
     },
     "reference": {
       "path": "tools/parity/reference/package-lock.json",
@@ -114,7 +114,7 @@
   },
   "contract": {
     "path": "tools/parity/reference/contract.json",
-    "sha256": "b36b9b9b6336d2ce04204fae2e5f32381a9b67f36ac168a0c991e66e81ffa3f9"
+    "sha256": "4a29fd5c68cd00fb544be375622652849dd2a6e21e55804b92a5baa1699b6363"
   },
   "commands": [
     "node tools/parity/reference/evidence/verify-evidence.mjs",
