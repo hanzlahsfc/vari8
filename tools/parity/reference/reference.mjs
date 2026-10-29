@@ -300,12 +300,34 @@ export function validateRun({ directory, manifest, shots, provenance }) {
     // inventory AND the capture coordinates; a same-screen swap
     // between coordinates or a wrong scroller is a forgery
     for (const scroll of screen.scrolls) {
-      const scroller = screen.captureEvidence.scrollers.find(
+      // coordinates are numbers from the writer's steps() — strings,
+      // nulls and non-finite values are malformed, never coerced
+      if (
+        typeof scroll.x !== "number" ||
+        typeof scroll.y !== "number" ||
+        !Number.isFinite(scroll.x) ||
+        !Number.isFinite(scroll.y)
+      )
+        throw new Error(
+          `malformed scroll coordinates ${screen.id}: ${JSON.stringify({ x: scroll.x, y: scroll.y })}`,
+        );
+      const matches = screen.captureEvidence.scrollers.filter(
         (s) => s.name === scroll.scroller,
       );
-      if (!scroller)
+      if (matches.length !== 1)
         throw new Error(
-          `unknown scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
+          `${matches.length ? "ambiguous" : "unknown"} scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
+        );
+      const scroller = matches[0];
+      // the writer derives name = tag#idx — a name whose index suffix
+      // disagrees with idx is a forged pair, not a valid scroller
+      if (
+        !Number.isInteger(scroller.idx) ||
+        scroller.idx < 0 ||
+        !scroller.name.endsWith(`#${scroller.idx}`)
+      )
+        throw new Error(
+          `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,
         );
       // s.idx is the DOM element index — the capture writer's identity,
       // not an array position; tag#idx in the name agrees with it

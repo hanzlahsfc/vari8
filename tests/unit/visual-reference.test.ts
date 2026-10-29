@@ -56,6 +56,7 @@ type FixtureScreen = {
     state: string[];
     scrollers: {
       name: string;
+      idx: number;
       maxX: number;
       maxY: number;
       cw: number;
@@ -460,7 +461,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   ).toThrow(/hash/);
   screens[0].sha256 = saved;
   screens[0].captureEvidence.scrollers = [
-    { name: "div#0", maxX: 1, maxY: 0, cw: 390, ch: 10 },
+    { name: "div#0", idx: 0, maxX: 1, maxY: 0, cw: 390, ch: 10 },
   ];
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
@@ -526,6 +527,39 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       validateRun({ directory: d, manifest, shots, provenance }),
     ).toThrow(/unknown scroller|scroll/);
     scrollScreen.scrolls[0].scroller = "div#0";
+    // forged name/idx pair — name says #0, idx field says 7
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 7, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/forged scroller identity/);
+    // ambiguous duplicate scroller names refuse
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/ambiguous scroller|scroll/);
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    // malformed coordinate types refuse — never coerced
+    for (const [x, y] of [
+      ["0" as unknown as number, 0],
+      [0, null as unknown as number],
+      [Number.NaN, 0],
+      [0, Number.POSITIVE_INFINITY],
+    ]) {
+      scrollScreen.scrolls[0].x = x;
+      scrollScreen.scrolls[0].y = y;
+      expect(() =>
+        validateRun({ directory: d, manifest, shots, provenance }),
+      ).toThrow(/malformed scroll coordinates|scroll/);
+    }
+    scrollScreen.scrolls[0].x = 0;
+    scrollScreen.scrolls[0].y = 0;
   }
   expect(() =>
     validateRun({
