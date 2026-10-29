@@ -28,6 +28,7 @@ export type PreferenceGroupView = {
 export type SettingsSurfaceProps = {
   profile: SettingsProfile;
   preferenceGroups: PreferenceGroupView[];
+  appVersion?: string;
   saving?: boolean;
   notice?: string;
   error?: string;
@@ -43,6 +44,7 @@ export type SettingsSurfaceProps = {
 export function SettingsSurface({
   profile,
   preferenceGroups,
+  appVersion,
   saving = false,
   notice,
   error,
@@ -86,6 +88,12 @@ export function SettingsSurface({
                     <dt>Role</dt>
                     <dd>{profile.role}</dd>
                   </div>
+                  {appVersion && (
+                    <div className="v8-settings__fact">
+                      <dt>App version</dt>
+                      <dd>{appVersion}</dd>
+                    </div>
+                  )}
                 </dl>
                 <div className="v8-settings__actions">
                   <Button
