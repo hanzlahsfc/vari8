@@ -9,10 +9,8 @@ import {
   Pin,
   Plus,
   Settings,
-  Table2,
 } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { LegacySheetDialog } from "../../client/legacy-sheet/dialog";
 import {
   displayWeek,
   scheduledSessions,
@@ -101,7 +99,6 @@ export function AthleteProfileHeader({
   const phase = currentPhase(client.phases, today);
   const unread = unreadCount(state, client.id);
   const [settings, setSettings] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const subline = phase
     ? `${phase.name} · Week ${String(phase.week)} of ${String(phase.weeks)}`
     : [client.label, client.phase, `Week ${String(client.week)}`]
@@ -142,9 +139,6 @@ export function AthleteProfileHeader({
         >
           <ExternalLink size={15} aria-hidden="true" /> Open client app
         </Button>
-        <Button variant="secondary" onClick={() => setSheetOpen(true)}>
-          <Table2 size={15} aria-hidden="true" /> Legacy sheet
-        </Button>
         <IconButton
           label={`Open chat${unread ? ` (${String(unread)} unread)` : ""}`}
           onClick={() => navigate({ section: "messages", client: client.id })}
@@ -164,11 +158,6 @@ export function AthleteProfileHeader({
           onClose={() => setSettings(false)}
         />
       )}
-      <LegacySheetDialog
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-        client={client}
-      />
     </header>
   );
 }
