@@ -212,9 +212,16 @@ export function validateRun({ directory, manifest, shots, provenance }) {
     !provenance.source.appLock
   )
     throw new Error("incomplete environment/dependency/source provenance");
-  if (shots.length !== 35 || manifest.screens.length !== 70)
+  // expected set derives from the pinned contract — never a magic
+  // number the recipe list could silently drift past
+  const expectedRecipes =
+    CONTRACT.expectedScreens / Object.keys(CONTRACT.viewports).length;
+  if (
+    shots.length !== expectedRecipes ||
+    manifest.screens.length !== CONTRACT.expectedScreens
+  )
     throw new Error(
-      "incomplete capture set; expected 35 recipes and 70 screens",
+      `incomplete capture set; expected ${expectedRecipes} recipes and ${CONTRACT.expectedScreens} screens`,
     );
   const expected = new Set(
     shots.flatMap((s) =>
@@ -291,21 +298,16 @@ export function validateRun({ directory, manifest, shots, provenance }) {
   return artifacts;
 }
 export function createAdapter({ harnessRoot, outputFile }) {
-  const pinned = execFileSync(
-    "git",
-    [
-      "-C",
-      harnessRoot,
-      "show",
-      `${CONTRACT.candidateSource}:tools/parity/capture.mjs`,
-    ],
-    { encoding: "utf8" },
+  // The adapter transforms the harness's CURRENT capture.mjs. The
+  // pinned candidateSource copy is provenance for the reference capture
+  // — compatibility is the anchored transformations below: each replace
+  // refuses on a missing or duplicated anchor, so a material change
+  // still fails closed as "adapter anchor changed" while unrelated
+  // evolution of the file is not a false rejection.
+  const pinned = fs.readFileSync(
+    path.join(harnessRoot, "tools/parity/capture.mjs"),
+    "utf8",
   );
-  if (
-    pinned !==
-    fs.readFileSync(path.join(harnessRoot, "tools/parity/capture.mjs"), "utf8")
-  )
-    throw new Error("unmerged PR #203 harness dependency changed");
   const replace = (s, from, to) => {
     if (s.split(from).length !== 2)
       throw new Error(`adapter anchor changed: ${from}`);

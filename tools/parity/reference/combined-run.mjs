@@ -77,9 +77,16 @@ export function validateCombinedRun({
     !provenance.source.appLock
   )
     throw new Error("incomplete environment/dependency/source provenance");
-  if (shots.length !== 35 || manifest.screens.length !== 70)
+  // expected set derives from the pinned contract — never a magic
+  // number the recipe list could silently drift past
+  const expectedRecipes =
+    CONTRACT.expectedScreens / Object.keys(CONTRACT.viewports).length;
+  if (
+    shots.length !== expectedRecipes ||
+    manifest.screens.length !== CONTRACT.expectedScreens
+  )
     throw new Error(
-      "incomplete capture set; expected 35 recipes and 70 screens",
+      `incomplete capture set; expected ${expectedRecipes} recipes and ${CONTRACT.expectedScreens} screens`,
     );
   const expected = new Set(
     shots.flatMap((s) =>

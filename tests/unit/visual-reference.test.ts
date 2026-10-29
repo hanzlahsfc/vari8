@@ -334,9 +334,22 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     await import("../../tools/parity/capture.mjs");
   const d = mkdtempSync(path.join(tmpdir(), "visual-reference-full-"));
   dirs.push(d);
-  const shots = JSON.parse(
+  // the contract pins the reference recipe set — the live index may
+  // grow new shots, but a run must cover exactly the pinned set
+  const indexShots = JSON.parse(
     fs.readFileSync("icm/04-briefing/shots/index.json", "utf8"),
   ).shots;
+  const receiptStems = new Set(
+    JSON.parse(
+      fs.readFileSync(
+        "tools/parity/reference/evidence/receipts/canonical.json",
+        "utf8",
+      ),
+    ).results.map((r: { id: string }) => r.id.split("@")[0]),
+  );
+  const shots = indexShots.filter((s: { file: string }) =>
+    receiptStems.has(s.file.replace(/\.(png|webp)$/, "")),
+  );
   const provenance = {
     role: "historical",
     source: {

@@ -278,11 +278,40 @@ describe("combined-run artifact validation", () => {
           adapter: { adapterSha256: "0".repeat(64) },
         },
       }),
-    ).toThrow(/unexpected|missing capture artifact/);
+    ).toThrow(/incomplete capture set|missing capture artifact|unexpected/);
   });
 });
 
 describe("combined-run source and pin enforcement", () => {
+  it("anchor mutations refuse; compatible evolution does not", () => {
+    const dir = fs.mkdtempSync("/tmp/parity-anchor-");
+    const harness = path.join(dir, "harness");
+    fs.mkdirSync(path.join(harness, "tools/parity"), { recursive: true });
+    const current = fs.readFileSync("tools/parity/capture.mjs", "utf8");
+    // a non-anchor edit is compatible — the adapter still applies
+    fs.writeFileSync(
+      path.join(harness, "tools/parity/capture.mjs"),
+      current + "\n// compatible comment\n",
+    );
+    expect(() =>
+      createAdapter({
+        harnessRoot: harness,
+        outputFile: path.join(dir, "a.mjs"),
+      }),
+    ).not.toThrow();
+    // an anchor removed is a breaking change — refuses closed
+    fs.writeFileSync(
+      path.join(harness, "tools/parity/capture.mjs"),
+      current.replace('import { chromium } from "@playwright/test";', ""),
+    );
+    expect(() =>
+      createAdapter({
+        harnessRoot: harness,
+        outputFile: path.join(dir, "b.mjs"),
+      }),
+    ).toThrow(/adapter anchor changed/);
+  });
+
   it("generates byte-identical location-independent adapters", () => {
     const dir = fs.mkdtempSync("/tmp/parity-adapter-");
     const a = path.join(dir, "first/d32-capture-adapter.mjs");
