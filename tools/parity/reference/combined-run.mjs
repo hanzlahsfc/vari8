@@ -192,7 +192,12 @@ export function validateCombinedRun({
         typeof scroller.name !== "string" ||
         !Number.isInteger(scroller.idx) ||
         scroller.idx < 0 ||
-        !new RegExp(`^[a-z][a-z0-9-]*#${scroller.idx}$`).test(scroller.name)
+        // writer emits `${tagName.toLowerCase()}#${idx}` — tag is whatever
+        // the DOM produces (Unicode included), `#` splits exactly once,
+        // the integer suffix must equal idx verbatim (no leading zeros)
+        scroller.name !== `${scroller.name.split("#")[0]}#${scroller.idx}` ||
+        scroller.name.split("#").length !== 2 ||
+        scroller.name !== scroller.name.toLowerCase()
       )
         throw new Error(
           `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,

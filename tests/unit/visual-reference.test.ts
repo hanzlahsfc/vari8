@@ -573,6 +573,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
       { name: "section#143", idx: 143 },
       { name: "my-scroll#143", idx: 143 },
       { name: "my-app#1", idx: 1 },
+      { name: "math-α#143", idx: 143 },
       { name: "h1#22", idx: 22 },
     ]) {
       // the scroll png must encode this scroller's actual idx
@@ -625,7 +626,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/provenance/);
-}, 15000);
+}, 30000); // ~25 real validateRun calls post-scroll-matrix — measured need, not a hidden budget
 
 it("rejects current-app expected output even before reading capture artifacts", async () => {
   const { compareRuns } =
