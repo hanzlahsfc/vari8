@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 60 backend pages, 90 API routes, 14 layouts, 5 canvas pages.
+Counts: 60 backend pages, 92 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -132,6 +132,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tasks/[taskId]/staff/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-columns` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-columns/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/tracker-notes/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs` | `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/training-programs/route.ts` | - | none detected |
@@ -164,6 +165,7 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/api/v1/workspaces/[workspaceId]/session` | `app/api/v1/workspaces/[workspaceId]/session/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/settings` | `app/api/v1/workspaces/[workspaceId]/settings/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/tasks` | `app/api/v1/workspaces/[workspaceId]/tasks/route.ts` | - | none detected |
+| `/api/v1/workspaces/[workspaceId]/tracker-columns` | `app/api/v1/workspaces/[workspaceId]/tracker-columns/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs` | `app/api/v1/workspaces/[workspaceId]/training-logs/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/route.ts` | - | none detected |
 | `/api/v1/workspaces/[workspaceId]/training-logs/sessions/[sessionLogId]` | `app/api/v1/workspaces/[workspaceId]/training-logs/sessions/[sessionLogId]/route.ts` | - | none detected |

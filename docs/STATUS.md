@@ -281,6 +281,44 @@ migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV
 - Screenshot: none applies; no mounted surface on this base consumes the
   route (the canvas client-app meal plan is demo data).
 
+## 2026-10-28 - w2-t14 repair 1: item-sort mutation guard + real HTTP proof on `w2/t14`
+
+- Round-1 verifier (hermes-verify, independent family) REPAIR on 6ab35547:
+  the item-sort mutation in `projectSnapshot` survived because the fixture's
+  out-of-order items sat in different groups; and the two route handlers had
+  no HTTP-level proof, only service-level calls.
+- Repair 1 in `tests/integration/w2-t14-tracker-columns.test.ts`: new case
+  seeds two items sharing one section and one group ("Probe") whose
+  definition array order (late, order 20) disagrees with declared order
+  (early, order 5) and asserts emitted `[early, late]`. Every existing
+  assertion untouched.
+- Mutation A re-run (item `(order ?? 0)` sort dropped in
+  `lib/daily-entry/service.ts`): suite exit 1, only the new test fails;
+  source restored byte-identical (`cmp` + clean `git diff`).
+- Repair 2: real HTTP against `next dev` on lane DB `app_fp_w2t14r` after
+  `npm run seed:dev`. Client caller `emma.anders@canvas-demo.test` (seeded
+  demo user from `33-checkins.seed.ts`, credential password =
+  `SEED_CLIENT_PASSWORD`, owns the pinned Emma Anders profile; the
+  `SEED_CLIENT_EMAIL` user keeps no profile by seed design). Staff caller
+  `SEED_COACH_EMAIL` (Sofia Miller, COACH). 15/15 checks PASS: own route
+  200 `ready` with pinned groups (`seed-de-tv-1`, single null group, five
+  columns in declared order incl. decimals/summary/max/unit projection);
+  staff route 200 identical body; client-scope caller on staff route 403
+  `forbidden` for own and foreign `clientProfileId`; staff on unknown
+  profile 403 (denied before read); anonymous 401 on both routes; coach on
+  own route 200 `not_applicable`.
+- Gates: typecheck 0, eslint 0, prettier --check 0, index:check 0 (no
+  generated-index movement; test file only), added-lines U+2013/U+2014
+  scan 0.
+- Lane `app_fp_w2t14r` created via `lane-db` + `prisma migrate deploy`,
+  dropped after proof with `pg_database` absence proof saved. Census still
+  lists stale `app_fp_w2t14` from the round-1 lane (its PROOF claimed a
+  drop); left in place and flagged, not mine to delete unasked.
+- Evidence: `Vari8-evidence/LEAD/PROOF/w2-t14/round2/`
+  (integration-test.log, mutation-itemsort.log, http-proof.log +
+  http-prove.mjs, typecheck/eslint/prettier/indexcheck logs,
+  pg_database-absence.txt, pg_database-census.txt, precheck.txt).
+
 ## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
 
 - Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
