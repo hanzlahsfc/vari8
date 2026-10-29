@@ -9,7 +9,7 @@ import { sessionOf, unwrapTraining } from "./_result";
  * GET /api/v1/workspaces/:workspaceId/training-logs?week=N
  *
  * PR-M10 (#176) client logbook list: the caller's own session logs for one
- * program week — no client id in the path because the service binds the
+ * program week. No client id in the path because the service binds the
  * caller's own client profile.
  */
 export const dynamic = "force-dynamic";

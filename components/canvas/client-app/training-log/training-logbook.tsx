@@ -138,7 +138,7 @@ export function TrainingLogbook({
         <div className="ctl-week-title">
           <h2>Week {week}</h2>
           <span>
-            {formatDate(range.start, { day: "numeric", month: undefined })}–
+            {formatDate(range.start, { day: "numeric", month: undefined })}-
             {formatDate(range.end, { day: "numeric", month: "short" })}
           </span>
         </div>

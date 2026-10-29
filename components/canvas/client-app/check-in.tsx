@@ -92,7 +92,8 @@ function choiceOptions(question: Question) {
       .filter(Boolean);
   if (question.options === "Word labels")
     return ["Low", "Okay", "Good", "Excellent"];
-  const count = question.options === "1–5" ? 5 : 10;
+  // Wire option ids carry the en dash verbatim; keep the escape.
+  const count = question.options === "1\u20135" ? 5 : 10;
   return Array.from({ length: count }, (_, i) => String(i + 1));
 }
 

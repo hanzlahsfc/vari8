@@ -1,7 +1,7 @@
 /**
  * Card 05a tracker adapter: a ready daily-entry surface maps into the shared
  * TrackingView model (definitions, groups, current values, history), and user
- * edits map back into the canonical `raw` contract — OPTION as a positional
+ * edits map back into the canonical `raw` contract: OPTION as a positional
  * index, SCALE_1_5 ratings through the cell's 1-10 space.
  */
 import { describe, expect, it } from "vitest";

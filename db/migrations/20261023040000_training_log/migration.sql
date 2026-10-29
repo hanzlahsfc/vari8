@@ -1,23 +1,23 @@
 -- PR-M10 (#176): the client's performed training-session log.
 --
--- training_session_log: one row per session occurrence — the natural key
+-- training_session_log: one row per session occurrence. The natural key
 -- (workspace, client, program, session, booked week, performed date) is the
 -- resume/replay identity. pinned_version_id + session_id + booked_week are
 -- resolved ONCE at start: a later publish leaves this row beside the old
 -- prescription, never rewriting history. performed_date is a declared
--- local calendar date under the program's immutable anchor timezone — a
+-- local calendar date under the program's immutable anchor timezone: a
 -- date, never an instant. Status carries the terminal states explicitly
 -- (skipped and partial sessions are states, not zeros).
 --
 -- training_set_log: one row per logged set. The set payload is the
--- validated SetLogEntry shape (M6/PR #116) stored as JSONB — whatever
+-- validated SetLogEntry shape (M6/PR #116) stored as JSONB: whatever
 -- actuals the coach's own template defines, never one column per field.
 -- set_key ("p:{prescribedSetId}" or "a:{client-added id}") with the
 -- (session_log, exercise, set_key) unique is the idempotency authority:
 -- saving the same set twice updates the row instead of doubling.
 --
 -- Composite coherence FKs and CHECKs follow the established raw-SQL
--- convention. Restrict FKs — logged history is never cascade-deleted.
+-- convention. Restrict FKs: logged history is never cascade-deleted.
 
 CREATE TABLE "public"."training_session_log" (
     "id" TEXT NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE "public"."training_set_log" (
     CONSTRAINT "training_set_log_pkey" PRIMARY KEY ("id")
 );
 
--- One log per session occurrence — start/resume idempotency key.
+-- One log per session occurrence: start/resume idempotency key.
 CREATE UNIQUE INDEX "training_session_log_natural_key"
     ON "public"."training_session_log"("workspace_id", "client_profile_id", "program_id", "session_id", "booked_week", "performed_date");
 -- Composite coherence target for the raw set-log FK.
@@ -61,7 +61,7 @@ CREATE UNIQUE INDEX "training_session_log_id_workspace_id_client_profile_id_key"
 CREATE INDEX "training_session_log_client_date_idx"
     ON "public"."training_session_log"("workspace_id", "client_profile_id", "performed_date");
 
--- One row per logged set — the per-set save idempotency key.
+-- One row per logged set: the per-set save idempotency key.
 CREATE UNIQUE INDEX "training_set_log_set_key"
     ON "public"."training_set_log"("session_log_id", "exercise_id", "set_key");
 CREATE INDEX "training_set_log_client_idx"

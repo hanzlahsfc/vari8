@@ -9,7 +9,7 @@ import { sessionOf, unwrap } from "../../_result";
  * GET /api/v1/workspaces/:workspaceId/checkins/instances/next
  *
  * Card 05b: the earliest unfinished scheduled Check-In for the calling
- * client — how the own check-in screen learns its instanceId without a
+ * client: how the own check-in screen learns its instanceId without a
  * staff-scoped list. `next` is null for the truthful no-pending state.
  * Static `next` resolves before the `[instanceId]` dynamic segment.
  */

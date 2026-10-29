@@ -2,7 +2,7 @@
 
 // Card 11/#176 remote logbook. The canvas surface stays Lilly's: the
 // same ctl-* classes, the same SessionLogger. What changed is the data
-// source — the week list, the pinned prescription and every set write
+// source: the week list, the pinned prescription and every set write
 // go through /api/v1 training-logs routes instead of the local demo
 // store. Session scheduling differs too: the server's materialized week
 // carries undated sessions (no weekday placement), so an unlogged
@@ -239,7 +239,7 @@ function fullLog(
   };
 }
 
-/** Sets that differ between two canvas logs — the rows to persist. */
+/** Sets that differ between two canvas logs: the rows to persist. */
 function changedSets(
   next: TrainingSessionLog,
   prev: TrainingSessionLog | undefined,
@@ -309,7 +309,7 @@ export function RemoteTrainingLogbook({
   // Remote writes queued or in flight; the beforeunload guard follows this.
   const [pendingWrites, setPendingWrites] = useState(0);
 
-  // Serialized write queue — start must land before the first set save.
+  // Serialized write queue: start must land before the first set save.
   const queue = useRef<Promise<void>>(Promise.resolve());
   const startedRef = useRef<Map<string, string>>(new Map());
   const naturalKey = (sessionId: string, date: string) =>
@@ -500,7 +500,7 @@ export function RemoteTrainingLogbook({
           setSaveError(false);
         } catch {
           setSaveError(true);
-          // Resync the open log to wire truth — failed writes never linger.
+          // Resync the open log to wire truth: failed writes never linger.
           const logId = startedRef.current.get(key);
           if (logId)
             fetchOwnSessionLog(own.workspaceId, logId)
@@ -650,7 +650,7 @@ export function RemoteTrainingLogbook({
         <div className="ctl-week-title">
           <h2>Week {week}</h2>
           <span>
-            {formatDate(range.start, { day: "numeric", month: undefined })}–
+            {formatDate(range.start, { day: "numeric", month: undefined })}-
             {formatDate(range.end, { day: "numeric", month: "short" })}
           </span>
         </div>
@@ -700,7 +700,7 @@ export function RemoteTrainingLogbook({
       </fieldset>
       {saveError && (
         <p className="cd-caption" role="alert">
-          A set could not be saved — the last saved state is shown.
+          A set could not be saved: the last saved state is shown.
         </p>
       )}
       <div className="ctl-session-list">

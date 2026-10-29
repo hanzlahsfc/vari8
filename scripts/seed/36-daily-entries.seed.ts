@@ -10,7 +10,7 @@ import {
 import type { SeedContext } from "./index";
 
 /**
- * Card 05 — daily-tracker week seed.
+ * Card 05: daily-tracker week seed.
  *
  * Gives the seeded sign-in client (00-workspace links it to the first canvas
  * demo client profile) a full week of tracker content so the own daily-entry
@@ -18,7 +18,7 @@ import type { SeedContext } from "./index";
  *
  *   - One CoachingTemplate + version 1 whose definition carries five
  *     GENERAL_HEALTH parameters (measurement, rating 1-5, option, text,
- *     measurement with bounds) — the kind mix the client tracker renders.
+ *     measurement with bounds): the kind mix the client tracker renders.
  *   - One ParameterDefinition row per snapshot parameter (raw SQL coherence
  *     FKs on version parameters and revision values require real rows).
  *   - The client's ClientSetup plus one ACTIVE ClientSetupPin on that
@@ -121,7 +121,7 @@ type SnapshotParam = {
 };
 
 // Mirrors the service's projectSnapshot ordering: sections by order, items
-// by order — eligibility is evaluated by the service, not re-checked here.
+// by order. Eligibility is evaluated by the service, not re-checked here.
 function projectSnapshot(definition: unknown): SnapshotParam[] {
   const def = definition as {
     sections?: Array<{
@@ -435,7 +435,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       select: { id: true },
     }));
 
-  // Bind to whatever pin is ACTIVE — never supersede another flow's pin.
+  // Bind to whatever pin is ACTIVE: never supersede another flow's pin.
   let pin = await prisma.clientSetupPin.findFirst({
     where: { clientSetupId: setup.id, status: "ACTIVE" },
     select: {

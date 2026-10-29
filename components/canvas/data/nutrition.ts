@@ -83,7 +83,7 @@ export function saveMealPlans(plans: Record<string, MealPlan>): void {
 
 /* -------------------------------------------------------------------------
  * Card 05a remote surface: nutrition entries live on the same daily-entry
- * routes as the tracker (Routes table row "Nutrition entries — as the
+ * routes as the tracker (Routes table row "Nutrition entries, as the
  * tracker rows above"). The screen reads these aliases so its provider is
  * named in its own domain file.
  * ---------------------------------------------------------------------- */

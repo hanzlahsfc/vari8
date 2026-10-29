@@ -155,8 +155,8 @@ export function LegacySheetDialog({
 
   const tab = tabBySlug(activeSlug) ?? WORKBOOK[0];
   const selection = selections[tab.slug] ?? selectionStart(tab);
-  // The week rows anchor at the block start — DASHBOARD!H13, the client's
-  // first phase start in the store — or the imported anchor when the client
+  // The week rows anchor at the block start, DASHBOARD!H13, the client's
+  // first phase start in the store, or the imported anchor when the client
   // has no phases yet.
   const weekAnchor =
     client.phases?.[0]?.startDate ??
@@ -182,7 +182,7 @@ export function LegacySheetDialog({
     setNameEdit(null);
   };
 
-  /** One commit path per bound cell — the same records the tracker edits. */
+  /** One commit path per bound cell: the same records the tracker edits. */
   const commit = (row: number, col: number, raw: string) => {
     const edit = boundEditFor(tab.slug, row, col, today);
     if (!edit) return;

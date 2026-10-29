@@ -9,7 +9,7 @@ import { readBody, sessionOf, unwrapTask } from "../../../../tasks/_result";
  * PATCH /api/v1/workspaces/:workspaceId/clients/:clientProfileId/tasks/:taskId
  *
  * Card 05a client row: the own-only completion transition. The service
- * rejects every scope that is not the owning client's "own" — staff roles
+ * rejects every scope that is not the owning client's "own": staff roles
  * are denied inside the transaction even with a workspace grant.
  */
 export const dynamic = "force-dynamic";

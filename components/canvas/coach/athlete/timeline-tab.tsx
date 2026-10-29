@@ -299,7 +299,7 @@ function weekNutritionPlan(
   return plan ?? { source: "mealPlan", plan: undefined };
 }
 
-/** The slot's planned macro targets for a week ("—" when absent). */
+/** The slot's planned macro targets for a week ("-" when absent). */
 function slotNutrients(ctx: Ctx, slot: Slot): Nutrients | undefined {
   const { source, plan } = weekNutritionPlan(ctx.client, ctx.week);
   if (!plan) return undefined;
@@ -365,7 +365,7 @@ type Cell = {
   value: string;
   sub?: string;
   tone?: "on" | "off";
-  /** Muted value shown in future weeks (targets); default "—". */
+  /** Muted value shown in future weeks (targets); default "-". */
   future?: string;
   /** Render normally in future weeks (note, changes, check-in). */
   plain?: boolean;
@@ -443,7 +443,7 @@ const planCell =
     const n = slot ? slotNutrients(ctx, slot) : undefined;
     const target = n?.[key];
     const value =
-      target === undefined ? "—" : integer.format(Math.round(target));
+      target === undefined ? "-" : integer.format(Math.round(target));
     let sub = "";
     let tone: Cell["tone"];
     const actual = slot ? loggedFor(ctx, slot, key) : undefined;
@@ -470,12 +470,12 @@ const weekActivityTarget = (ctx: Ctx, metric: "steps" | "cardio") =>
 
 function stepsTarget(ctx: Ctx): { label: string; value: number | undefined } {
   const t = weekActivityTarget(ctx, "steps");
-  if (!t || typeof t !== "object") return { label: "—", value: undefined };
+  if (!t || typeof t !== "object") return { label: "-", value: undefined };
   if ("min" in t && "max" in t) {
     const label =
       t.min % 1000 === 0 && t.max % 1000 === 0
-        ? `${String(t.min / 1000)}–${String(t.max / 1000)}k`
-        : `${integer.format(t.min)}–${integer.format(t.max)}`;
+        ? `${String(t.min / 1000)}-${String(t.max / 1000)}k`
+        : `${integer.format(t.min)}-${integer.format(t.max)}`;
     return { label, value: (t.min + t.max) / 2 };
   }
   if ("value" in t && typeof t.value === "number") {
@@ -483,13 +483,13 @@ function stepsTarget(ctx: Ctx): { label: string; value: number | undefined } {
       t.kind === "minimum" ? "≥ " : t.kind === "maximum" ? "≤ " : "";
     return { label: `${prefix}${integer.format(t.value)}`, value: t.value };
   }
-  return { label: "—", value: undefined };
+  return { label: "-", value: undefined };
 }
 
 function cardioTarget(ctx: Ctx): { label: string; value: number | undefined } {
   const t = weekActivityTarget(ctx, "cardio");
   if (!t || typeof t !== "object" || !("sessionsPerWeek" in t))
-    return { label: "—", value: undefined };
+    return { label: "-", value: undefined };
   return {
     label: `${String(t.sessionsPerWeek)} × ${String(t.minutesPerSession)}`,
     value: t.sessionsPerWeek * t.minutesPerSession,
@@ -541,8 +541,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const avg = weekWeightAvg(ctx);
       return {
-        value: avg === undefined ? "—" : number1.format(avg),
-        future: "—",
+        value: avg === undefined ? "-" : number1.format(avg),
+        future: "-",
       };
     },
   },
@@ -559,9 +559,9 @@ const COLS: ColDef[] = [
       return {
         value:
           diff === undefined
-            ? "—"
+            ? "-"
             : `${diff >= 0 ? "+" : "−"}${number1.format(Math.abs(diff))}`,
-        future: "—",
+        future: "-",
       };
     },
   },
@@ -580,9 +580,9 @@ const COLS: ColDef[] = [
       return {
         value:
           rate === undefined
-            ? "—"
+            ? "-"
             : `${rate >= 0 ? "+" : "−"}${number1.format(Math.abs(rate))}%`,
-        future: "—",
+        future: "-",
       };
     },
   },
@@ -679,8 +679,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const v = avgOf(ctx, "calories");
       return {
-        value: v === undefined ? "—" : integer.format(Math.round(v)),
-        future: "—",
+        value: v === undefined ? "-" : integer.format(Math.round(v)),
+        future: "-",
       };
     },
   },
@@ -693,8 +693,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const v = avgOf(ctx, "steps");
       return {
-        value: v === undefined ? "—" : integer.format(Math.round(v)),
-        future: "—",
+        value: v === undefined ? "-" : integer.format(Math.round(v)),
+        future: "-",
       };
     },
   },
@@ -707,8 +707,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const v = weekCardioMinutes(ctx);
       return {
-        value: v > 0 ? `${integer.format(Math.round(v))} min` : "—",
-        future: "—",
+        value: v > 0 ? `${integer.format(Math.round(v))} min` : "-",
+        future: "-",
       };
     },
   },
@@ -722,8 +722,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const v = avgOf(ctx, "sleep");
       return {
-        value: v === undefined ? "—" : `${number1.format(v)} h`,
-        future: "—",
+        value: v === undefined ? "-" : `${number1.format(v)} h`,
+        future: "-",
       };
     },
   },
@@ -736,8 +736,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const v = avgOf(ctx, "water");
       return {
-        value: v === undefined ? "—" : `${number1.format(v)} L`,
-        future: "—",
+        value: v === undefined ? "-" : `${number1.format(v)} L`,
+        future: "-",
       };
     },
   },
@@ -753,7 +753,7 @@ const COLS: ColDef[] = [
         ctx.week.sunday,
       ).find((e) => e.clientId === ctx.client.id);
       return {
-        value: event?.status ?? "—",
+        value: event?.status ?? "-",
         sub: event ? formatDate(event.date, { weekday: "short" }) : undefined,
         plain: true,
       };
@@ -769,8 +769,8 @@ const COLS: ColDef[] = [
     cell: (ctx) => {
       const s = weekSessions(ctx);
       return {
-        value: s.planned ? `${String(s.done)}/${String(s.planned)}` : "—",
-        future: s.planned ? `–/${String(s.planned)}` : "—",
+        value: s.planned ? `${String(s.done)}/${String(s.planned)}` : "-",
+        future: s.planned ? `-/${String(s.planned)}` : "-",
       };
     },
   },
@@ -782,7 +782,7 @@ const COLS: ColDef[] = [
     width: "88px",
     cell: (ctx) => {
       const s = weekSessions(ctx);
-      return { value: s.name ?? "—", future: s.name ?? "—" };
+      return { value: s.name ?? "-", future: s.name ?? "-" };
     },
   },
   // ── Notes ──
@@ -799,7 +799,7 @@ const COLS: ColDef[] = [
     group: "Notes",
     width: "minmax(160px, 1fr)",
     cell: (ctx) => ({
-      value: ctx.client.weekNotes?.[ctx.week.monday] ?? "—",
+      value: ctx.client.weekNotes?.[ctx.week.monday] ?? "-",
       plain: true,
     }),
   },
@@ -1547,8 +1547,8 @@ export function AthleteTimelineTab({ client }: { client: CoachClient }) {
                   {collapsed && summary && (
                     <span className="apt-phase-summary">
                       {group.range
-                        ? `${dayShort(group.range.startDate)} – ${dayShort(group.range.endDate)}`
-                        : `${dayShort(firstDay)} – ${dayShort(lastDay)}`}
+                        ? `${dayShort(group.range.startDate)} - ${dayShort(group.range.endDate)}`
+                        : `${dayShort(firstDay)} - ${dayShort(lastDay)}`}
                       {summary.weight && ` · ${summary.weight}`}
                       {summary.rate && ` · ${summary.rate}`}
                       {summary.kcal && ` · ${summary.kcal}`}
@@ -1690,7 +1690,7 @@ function WeekRow({
         data-future={isFuture && !cell.plain ? true : undefined}
         title={rc.slot ? `${col.label} · ${rc.slot.label}` : col.label}
       >
-        <b>{isFuture && !cell.plain ? (cell.future ?? "—") : cell.value}</b>
+        <b>{isFuture && !cell.plain ? (cell.future ?? "-") : cell.value}</b>
         <span className="apt-cell-sub">
           {isFuture && !cell.plain ? "" : (cell.sub ?? "")}
         </span>
@@ -1716,7 +1716,7 @@ function WeekRow({
         </span>
         <span className="apt-dates apt-sticky-2">
           <span>
-            {formatDate(week.monday, { month: "short", day: "numeric" })} –{" "}
+            {formatDate(week.monday, { month: "short", day: "numeric" })} -{" "}
             {formatDate(week.sunday, { month: "short", day: "numeric" })}
           </span>
           <span className="apt-tagline">
@@ -2136,7 +2136,7 @@ function PhasePlanDialog({
                   />
                   <span className="apt-phase-dates">
                     {range
-                      ? `${dayShort(range.startDate)} – ${dayShort(range.endDate)}`
+                      ? `${dayShort(range.startDate)} - ${dayShort(range.endDate)}`
                       : ""}
                   </span>
                 </div>
@@ -2158,7 +2158,7 @@ function PhasePlanDialog({
                   <div className="apt-phase-start">
                     <span className="v8-field__label">Start</span>
                     <span className="apt-phase-startval">
-                      {range ? dayShort(range.startDate) : "—"}
+                      {range ? dayShort(range.startDate) : "-"}
                     </span>
                   </div>
                 )}

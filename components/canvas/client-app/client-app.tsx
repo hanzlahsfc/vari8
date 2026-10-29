@@ -85,7 +85,7 @@ function ActivityTargetsPart({ client }: { client: CoachClient }) {
 
 // Card 05b: the client Supplements section reads the saved plan through the
 // card 02 route (own scope resolves the caller's profile server-side) and is
-// strictly read-only — there is no plan-write surface on the client.
+// strictly read-only: there is no plan-write surface on the client.
 function RemoteSupplementsPart({
   workspaceId,
   clientProfileId,

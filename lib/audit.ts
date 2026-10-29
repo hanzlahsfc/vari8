@@ -208,7 +208,7 @@ export const AUDIT_RESOURCE_TYPES = [
   // PR-M10 (#176): client training session-log lifecycle (CREATE on start,
   // UPDATE on terminal transition + set saves, READ on the resume read).
   // IDs and structural markers only (performed date, pinned version seq,
-  // booked week, terminal outcome) — never set actuals, notes, or
+  // booked week, terminal outcome): never set actuals, notes, or
   // prescription text.
   "training_session_log",
   "training_set_log",
@@ -244,7 +244,7 @@ export type AuditMeta = {
   /** TRAINING-I1B-2: pinned prescription week on booking create. */
   bookedWeek?: number;
   /** PR-M10 (#176): terminal outcome recorded on a training session log
-   * (the row's stored state — skipped and partial are states, not zeros). */
+   * (the row's stored state: skipped and partial are states, not zeros). */
   sessionOutcome?: "COMPLETED" | "PARTIAL" | "SKIPPED";
 };
 

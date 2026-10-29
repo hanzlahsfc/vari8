@@ -84,7 +84,7 @@ const daysBetween = (start: string, end: string) =>
       DAY_MS,
   );
 
-/** Single header above the client tabs — shared by every tab. */
+/** Single header above the client tabs: shared by every tab. */
 export function AthleteProfileHeader({
   client,
   onBack,
@@ -324,7 +324,7 @@ function ClientSettingsDialog({
 
 // ─── Shared card pieces ─────────────────────────────────────────────
 
-/** Clickable card header — every overview card links to its data home. */
+/** Clickable card header: every overview card links to its data home. */
 function CardLink({
   title,
   sub,
@@ -381,7 +381,7 @@ const accuracyTone = (ratio: number | undefined) =>
         : "warning";
 
 function AccuracyChip({ ratio }: { ratio: number | undefined }) {
-  if (ratio === undefined) return <span className="ap-acc ap-sub">—</span>;
+  if (ratio === undefined) return <span className="ap-acc ap-sub">-</span>;
   const pct = Math.round(ratio * 100);
   return (
     <span className="ap-acc" data-tone={accuracyTone(ratio)}>
@@ -398,11 +398,11 @@ const targetMid = (target: NumericTarget): number | undefined =>
       : undefined;
 
 const targetText = (target: NumericTarget, decimals = false): string => {
-  if (target === undefined) return "—";
+  if (target === undefined) return "-";
   const format = decimals ? number1 : integer;
   if (typeof target === "number") return format.format(target);
   if (target.kind === "range")
-    return `${format.format(target.min)}–${format.format(target.max)}`;
+    return `${format.format(target.min)}-${format.format(target.max)}`;
   return `${target.kind === "minimum" ? "≥" : ""}${format.format(target.value)}`;
 };
 
@@ -552,7 +552,7 @@ function PhaseProgressCard({
                   day: "numeric",
                   month: "short",
                 })}{" "}
-                –{" "}
+                -{" "}
                 {formatDate(phase.endDate, { day: "numeric", month: "short" })}
               </span>
             )}
@@ -573,7 +573,7 @@ function PhaseProgressCard({
                   key={range.name + range.startDate}
                   className="ap-phase-seg"
                   style={{ width: `${width}%` }}
-                  title={`${range.name} · ${formatDate(range.startDate, { weekday: "short" })} – ${formatDate(range.endDate, { weekday: "short" })}`}
+                  title={`${range.name} · ${formatDate(range.startDate, { weekday: "short" })} - ${formatDate(range.endDate, { weekday: "short" })}`}
                 >
                   <span
                     className="ap-phase-fill"
@@ -828,7 +828,7 @@ function NutritionCard({
                   ø{" "}
                   {kcalActual !== undefined
                     ? integer.format(Math.round(kcalActual))
-                    : "—"}
+                    : "-"}
                   <AccuracyChip
                     ratio={accuracyRatio(kcalActual, column.targets?.calories)}
                   />
@@ -850,7 +850,7 @@ function NutritionCard({
                             ø{" "}
                             {actual !== undefined
                               ? number1.format(Math.round(actual * 10) / 10)
-                              : "—"}
+                              : "-"}
                           </span>
                           <AccuracyChip
                             ratio={accuracyRatio(
@@ -875,7 +875,7 @@ function NutritionCard({
           <span className="ap-nt-temp-kind">{kindLabel(temp.kind)}</span>
           <span className="ap-nt-temp-text">
             {temp.label} ·{" "}
-            {formatDate(temp.startDate, { day: "numeric", month: "short" })} –{" "}
+            {formatDate(temp.startDate, { day: "numeric", month: "short" })} -{" "}
             {formatDate(temp.endDate, { day: "numeric", month: "short" })}
             {tempTargets && (
               <>
@@ -972,7 +972,7 @@ function MiniBars({
                   {bar.valueLabel ??
                     (bar.value !== undefined
                       ? integer.format(Math.round(bar.value))
-                      : "—")}
+                      : "-")}
                 </small>
               )}
               <small>{bar.label}</small>
@@ -1234,7 +1234,7 @@ function BodyweightCard({
   const latest = points.at(-1);
   const fmt = (v: number | undefined, signed = false) =>
     v === undefined
-      ? "—"
+      ? "-"
       : `${signed && v > 0 ? "+" : v < 0 ? "−" : ""}${number1.format(Math.abs(v))}`;
   return (
     <Surface className="ap-card ap-w-s8">
@@ -1246,7 +1246,7 @@ function BodyweightCard({
       <div className="ap-bw-stats">
         <div>
           <b className="ap-big">
-            {latest ? `${number1.format(latest.value)} kg` : "—"}
+            {latest ? `${number1.format(latest.value)} kg` : "-"}
           </b>
           <span className="ap-sub">Latest</span>
         </div>
@@ -1338,7 +1338,7 @@ function ExpenditureCard({
         3,
       ),
       value,
-      valueLabel: value !== undefined ? compact.format(Math.round(value)) : "—",
+      valueLabel: value !== undefined ? compact.format(Math.round(value)) : "-",
       target: stepsT,
     };
   });
@@ -1356,7 +1356,7 @@ function ExpenditureCard({
           ø{" "}
           {stepsActual !== undefined
             ? integer.format(Math.round(stepsActual))
-            : "—"}
+            : "-"}
           <AccuracyChip ratio={accuracyRatio(stepsActual, stepsT)} />
         </span>
       </div>

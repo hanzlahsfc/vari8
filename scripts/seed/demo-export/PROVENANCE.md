@@ -1,4 +1,4 @@
-# Provenance — demo-export fixture
+# Provenance - demo-export fixture
 
 Copied byte-verbatim into this seed fixture directory for Stage 11
 (`fp/stage-11`). The snapshot is Lilly's deterministic demo coaching export,

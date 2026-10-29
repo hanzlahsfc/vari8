@@ -8,7 +8,7 @@ import { readBody, sessionOf, unwrapTraining } from "../_result";
 /**
  * POST /api/v1/workspaces/:workspaceId/training-logs/sessions
  *
- * PR-M10 (#176): start a session — or resume it when the natural key
+ * PR-M10 (#176): start a session, or resume it when the natural key
  * already exists. The response pins the prescription version that was
  * live at first start; replays return the same sessionLogId.
  */

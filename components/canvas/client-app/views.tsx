@@ -112,10 +112,10 @@ export function trackerConfig(configuration: Variant): TrackerConfig {
         : "kcal",
     ratingScales: Object.fromEntries(
       configuration.fields
-        .filter((field) => ["1–10", "1–5", "Word labels"].includes(field.unit))
+        .filter((field) => ["1\u201310", "1\u20135", "Word labels"].includes(field.unit))
         .map((field) => [
           field.id,
-          field.unit === "1–5"
+          field.unit === "1\u20135"
             ? ("1-5" as const)
             : field.unit === "Word labels"
               ? ("words" as const)
@@ -264,7 +264,7 @@ const segmentDay = (date: string) =>
 const segmentDayRange = (segment: ActivitySegment) =>
   segment.start === segment.end
     ? segmentDay(segment.start)
-    : `${segmentDay(segment.start)}–${segmentDay(segment.end)}`;
+    : `${segmentDay(segment.start)}-${segmentDay(segment.end)}`;
 const ACTIVITY_COLUMN_LABELS: Record<ActivityMetric, string> = {
   steps: "Steps target",
   cardio: "Cardio target",
@@ -319,7 +319,7 @@ export function RoadmapTab({
                 <span key={range.id}>
                   {range.name}
                   <small>
-                    {formatDate(range.startDate)}–{formatDate(range.endDate)}
+                    {formatDate(range.startDate)}-{formatDate(range.endDate)}
                   </small>
                 </span>
               ))}
@@ -367,7 +367,7 @@ export function RoadmapTab({
                         </td>
                       )}
                       <td>
-                        {formatDate(row.start)}–{formatDate(row.end)}
+                        {formatDate(row.start)}-{formatDate(row.end)}
                         {isCurrent && (
                           <small className="cd-current-week">
                             Current week
@@ -467,7 +467,7 @@ function ClientNutritionTab({
           <span className="cd-nutrition-banner-text">
             {resolved.temporary.startDate === resolved.temporary.endDate
               ? formatDate(resolved.temporary.startDate)
-              : `${formatDate(resolved.temporary.startDate)} – ${formatDate(resolved.temporary.endDate)}`}
+              : `${formatDate(resolved.temporary.startDate)} - ${formatDate(resolved.temporary.endDate)}`}
             {resolved.label ? ` · ${resolved.label} applies` : ""}
           </span>
         </div>
@@ -537,7 +537,7 @@ function IllustrativeNutritionTab({
     const macroLabel = (target: ReturnType<typeof targetFor>) => {
       if (!target) return "Not set";
       if (target.kind === "range")
-        return `${Math.round(target.low)}–${Math.round(target.high ?? target.low)} g`;
+        return `${Math.round(target.low)}-${Math.round(target.high ?? target.low)} g`;
       if (target.kind === "minimum") return `≥${Math.round(target.low)} g`;
       return `${Math.round(target.low)} g`;
     };

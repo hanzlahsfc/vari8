@@ -66,7 +66,7 @@ export type CheckInSubmissionChangeSummary = {
   unchanged: number;
 };
 
-/** A set-log note the client flagged for the coach — the "Flagged
+/** A set-log note the client flagged for the coach: the "Flagged
  * training notes" block on the review surface. The exercise name
  * resolves through the session log's PINNED version payload, so the
  * label matches what the client actually saw. */
@@ -311,7 +311,7 @@ export async function readCheckInReviewPanel(
     : null;
 
   // Same-scope follow-up read: set-log notes the client flagged for
-  // review — only rows with BOTH a non-empty flags array and a non-empty
+  // review. Only rows with BOTH a non-empty flags array and a non-empty
   // note qualify, so a bare flag with nothing to read never surfaces.
   const flaggedRows = await db.$queryRawUnsafe<
     {

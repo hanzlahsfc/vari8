@@ -1,6 +1,6 @@
 // Card 05b: own-scope media surface. Upload is the two-step intent +
 // presigned PUT the `/api/v1/media` routes expose; a client caller never
-// names a clientProfileId — the service resolves it from the session.
+// names a clientProfileId: the service resolves it from the session.
 // Download mints a short-lived GET url, same shape the staff card uses.
 
 import { apiFetch } from "./http";
@@ -62,7 +62,7 @@ export async function uploadOwnMedia(
   return intent.mediaObject.id;
 }
 
-/** GET media/:mediaObjectId — fresh presigned download url for own media. */
+/** GET media/:mediaObjectId: fresh presigned download url for own media. */
 export function fetchOwnMediaDownload(
   workspaceId: string,
   mediaObjectId: string,

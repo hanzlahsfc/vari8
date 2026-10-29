@@ -9,7 +9,7 @@ import { sessionOf, unwrapTask } from "./_result";
  * GET /api/v1/workspaces/:workspaceId/tasks?option=open|completed|both
  *
  * Card 05a client row: the caller's own task list. The service resolves
- * the caller's own client profile and returns it as `clientProfileId` —
+ * the caller's own client profile and returns it as `clientProfileId`:
  * the PATCH /clients/:clientProfileId/tasks/:taskId target.
  */
 export const dynamic = "force-dynamic";

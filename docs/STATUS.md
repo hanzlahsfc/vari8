@@ -331,7 +331,7 @@
 - Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
   count 0 saved to `pg_database-absent.txt`.
 
-## 2026-10-25 — Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
+## 2026-10-25 - Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
 
 - Verification only, no product repair. Boot gates all green: `npm ci` 0,
   `prisma generate` 0, `index`/`index:check` 0 (no index drift),
@@ -339,15 +339,15 @@
   `build` 0. `npm run check` absent by design.
 - Lane DBs on 127.0.0.1:5433: `app_fp_stage10_b1` default seed (7 modules,
   `50-demo-coverage` absent) and `app_fp_stage10_b1d` demo seed ×2 (8
-  modules, `50-demo-coverage` present; run 2 idempotent — normalized dump
-  diff empty, 155 seeded CUIDs identical). Both dropped at teardown —
+  modules, `50-demo-coverage` present; run 2 idempotent: normalized dump
+  diff empty, 155 seeded CUIDs identical). Both dropped at teardown,
   the verifier found them still present on 5433, the repair-1 pass
   dropped them and re-checked `pg_database` (zero `app_fp_stage10%`
   rows, output in `teardown-databases.txt`).
 - Live sweep against the production build (44 distinct slugs, 91 PNGs at
   1440 + 125 at 390 = 216 pre-repair; repair-1 added 4 slugs / 44 PNGs
   → 48 slugs / 260 PNGs): unauth `/` `/coach` `/me` → 307; staff +
-  client logins; surfaces at 1440 and 390 — coach canvas (roster,
+  client logins; surfaces at 1440 and 390: coach canvas (roster,
   client overview/timeline/plans/check-ins/notes+tasks/habits/targets,
   all five plan-part editors, client setup, check-in board/review,
   messages, notes, templates + template editor, legacy-sheet dialog,
@@ -358,31 +358,31 @@
   tracker. Denials hold: foreign workspace 403 (page+API), cross-client
   API 404 in `sweep-results.json` (client session →
   `…/clients/<foreign-profile>/tasks`; the verifier's client-session
-  sample returned 403 — both inside the expected 403/404 band),
+  sample returned 403, both inside the expected 403/404 band),
   client→`/coach` 307→`/me`.
 - Parity (owner ruling 2026-10-25): 10 stale click recipes re-derived
-  against the merged UI (profile tabs, renumbered template nav 01–07,
+  against the merged UI (profile tabs, renumbered template nav 01-07,
   `.cd-plan-module`→`.cp-card` scoping, `Open chat (1 unread)`,
   `Edit plans → Open client setup`, `Open client app`); dev-mode replay
-  74/74 clean. Committed as `44eec07`. Baseline regen BLOCKED —
+  74/74 clean. Committed as `44eec07`. Baseline regen BLOCKED:
   `PARITY_APP=frontend ... --update-baseline` exits 2: `frontend/` prod
   build fails typecheck on `dialog.tsx:109` `labelHidden`, an inherited
   defect present at merge base `6d3a07f` (fix lives on unmerged
   `c605b78`/`29fbb31`). `npm run parity` vs the stale baseline exits 1
-  (74/74 fail — expected pre-PR-204 signature; captures clean); runner
+  (74/74 fail, expected pre-PR-204 signature; captures clean); runner
   self-spawn mode also exit-2's because its `http:` `BETTER_AUTH_URL`
   trips the inherited prod boot guard (worked around via `PARITY_URL`
   against a manually started server).
 - Sheets pixel harness: **11/11 tabs PASS** vs the LibreOffice refs
   (worst score 0.001, timeline) using the established same-geometry
-  frame (`ls-scroll` chrome-stripped capture, A1:AF45 clip) — raw
+  frame (`ls-scroll` chrome-stripped capture, A1:AF45 clip). Raw
   window shots fail by construction, kept as counter-evidence.
 - `npm run format:check` exits 1: 57 files fail, all inherited at merge
   base `6d3a07f`; zero package-introduced. No files reformatted.
 - Defects recorded, unrepaired: F1 inherited `frontend/` typecheck
   failure above (blocks parity baseline); F2 parity runner self-spawn
   vs http-auth guard (inherited interplay); F3 iifym/supplements APIs
-  403 under the card env (feature flags unset — config boundary, by
+  403 under the card env (feature flags unset, config boundary, by
   design); `BETTER_AUTH_URL`-unset boot warning (cosmetic).
 - Repair-1 (verifier REPAIR vs `d85dddc`, closed on `fp/stage-10`):
   b1/b1d actually dropped (were still present); staff photos gallery +
@@ -394,9 +394,9 @@
 - Full record: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-10/REPORT.md`.
   NOT done: owner sign-off; no push, no PR.
 
-## 2026-10-25 — Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
+## 2026-10-25 - Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
 
-- `scripts/seed/50-demo-coverage.seed.ts` — opt-in module gated on
+- `scripts/seed/50-demo-coverage.seed.ts`: opt-in module gated on
   `VARI8_SEED_DEMO=1` (skipped in `scripts/seed/index.ts` and self-gated
   in-module). Reads the byte-verbatim JSON snapshot in
   `scripts/seed/demo-export/` (provenance `trackc/merge-frontend-9491897`,
@@ -411,8 +411,8 @@
 - Mapping doc + credentials list + run report live outside the repo in
   `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-11/`
   (MAPPING.md covers every export field, mapped or unmapped-with-reason;
-  CREDENTIALS.md lists the 15 demo emails — three name-matched clients
-  keep the default profile's `@canvas-demo.test` accounts — no passwords
+  CREDENTIALS.md lists the 15 demo emails: three name-matched clients
+  keep the default profile's `@canvas-demo.test` accounts, no passwords
   anywhere).
 - Verification: flag-off seed dump on a fresh lane diffs EMPTY against
   the stage-9 base lane (normalized); opt-in seed is idempotent across
@@ -427,7 +427,7 @@
   now written and mapped, this STATUS entry added.
 - NOT done: owner sign-off; no push, no PR.
 
-## 2026-10-25 — Stage 9 card 12: legacy PRGRSS 2.0 sheets view on the real client store
+## 2026-10-25 - Stage 9 card 12: legacy PRGRSS 2.0 sheets view on the real client store
 
 - Ported Lilly's `legacy-sheet/` folder into `components/canvas/client/legacy-sheet/`
   (frontend/ stays the verbatim parity source). Dialog mounts on the coach athlete
@@ -450,14 +450,14 @@
   across dialog reopen; nutrition-logs GET verified 200; narrow 390px capture
   taken.
 
-## 2026-10-25 — Stage 8 card 11 (built, pending owner screen review): training session and set log end to end (#176)
+## 2026-10-25 - Stage 8 card 11 (built, pending owner screen review): training session and set log end to end (#176)
 
 - Schema/migration: `20261023040000_training_log` (+`down.sql`) adds
-  `TrainingSessionLog` (unique per client/program/session/week/date —
+  `TrainingSessionLog` (unique per client/program/session/week/date:
   the replay-safe natural key; `pinnedVersionId` FK to the version live
   at start; status IN_PROGRESS/COMPLETED/PARTIAL/SKIPPED) and
   `TrainingSetLog` (idempotent per session-log/exercise/set position;
-  actuals as validated JSON — the coach's own template defines the set
+  actuals as validated JSON: the coach's own template defines the set
   fields, the log carries no fixed field list).
 - Service (`lib/trainingprogram/service.ts`): `startTrainingSessionLog`
   (pins governing published version, replay-safe), `saveTrainingSetLog`
@@ -470,7 +470,7 @@
   navigation without touching date-derived lifecycle. `lib/audit.ts`
   allowlist: two resource types + `sessionOutcome` field.
 - Check-in surface (`lib/checkin/review-panel.ts`):
-  `flaggedTrainingNotes` on the panel wire — set rows with flags +
+  `flaggedTrainingNotes` on the panel wire: set rows with flags +
   non-empty note, exercise names resolved through each log's pinned
   payload (`weeks[].sessions[].exercises[]`), newest first.
 - Routes (api/v1): own `GET training-program`, `GET training-logs?week`,
@@ -479,35 +479,35 @@
   `GET clients/[cp]/training-logs`. `_result.ts` maps the closed
   `TrainingError`/`AccessDeniedError` vocabulary to 400/403/404/409/503.
 - Client UI: `components/canvas/data/training-logs.ts` wire module +
-  `RemoteTrainingLogbook` — reuses Lilly's `SessionLogger` and ctl-*
+  `RemoteTrainingLogbook`: reuses Lilly's `SessionLogger` and ctl-*
   classes, converts pinned server prescriptions to canvas types,
   synthesizes positional set ids only for scalar `sets`, persists only
   changed sets through a write queue, hydrates stub logs before open,
   week navigation. Mounted for signed-in clients (`own`) in
   `client-app.tsx`; unsigned demo keeps the local logbook.
 - Coach UI: `ClientTrainingLogs` surface under client detail → Plans
-  tab — each log (date · week · program · status badge) with per-set
+  tab: each log (date · week · program · status badge) with per-set
   actuals; demo falls back to local fixture logs. `checkins.ts` maps
   `flaggedTrainingNotes` into `sub.flags` for the review card;
   `mergeCheckinLoad` now preserves them (a board reload used to drop
   detail-read flags).
-- Tests: 11 integration on a disposable PG — start/resume, replay,
+- Tests: 11 integration on a disposable PG: start/resume, replay,
   replace-on-resave, v1 pinned beside actuals after v2 publish,
   PARTIAL/COMPLETED/SKIPPED, terminal-write refusal, cross-client
   denial, flagged note on review, invalid-payload pre-write rejection.
 - Gates: `npm ci` · `prisma generate` · `migrate deploy` (lane) ·
   `typecheck` · `lint` (0 errors) · `index:check` · `test` (115/1365) ·
-  `build` — all exit 0.
+  `build`, all exit 0.
 - Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
   127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
 MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
   returns both; replay start same id; re-save same set keeps one row;
   flagged note + note flag on set 3; finish → PARTIAL; skipped session
-  refuses writes 409; publish v2 (week-6 boundary 4–5→12–14) → log
-  still reads pinned v1 (4–5) beside actuals while program is v2;
+  refuses writes 409; publish v2 (week-6 boundary 4-5→12-14) → log
+  still reads pinned v1 (4-5) beside actuals while program is v2;
   staff read returns both logs. Screenshots 1440+390 client logbook,
   session logger (v1 beside actuals), coach client detail, check-in
-  flag — all in the card-11 evidence dir with proof reports.
+  flag, all in the card-11 evidence dir with proof reports.
 - Preview for review R2-4: production server `http://127.0.0.1:3972`,
   lane DB kept alive. Sign in `emma.anders@canvas-demo.test` /
   `coach@c11proof.test` (seed env passwords only). No push, no PR until
@@ -940,7 +940,7 @@ app-db-1` adapter.
   typecheck, lint and build all exit 0. Test-loader shims and two
   visual-reset check files were updated; no tests removed or weakened.
 
-## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
+## 2026-10-22 - CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
 
 - Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `09b1424`
   (`Vari8-Beta` with #160 merged, so `frontend/` carries `51fa6a2`). Source

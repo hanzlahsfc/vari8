@@ -9,7 +9,7 @@ import { readBody, sessionOf, unwrapTraining } from "../../../_result";
 /**
  * POST .../training-logs/sessions/:sessionLogId/sets
  *
- * PR-M10 (#176): manual save per set. The payload is the M6 set entry —
+ * PR-M10 (#176): manual save per set. The payload is the M6 set entry:
  * actuals for whatever fields the coach's template defines. Saving the
  * same set twice updates the row; it never duplicates.
  */

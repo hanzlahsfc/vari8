@@ -31,7 +31,7 @@ const compressDays = (days: string[]): string => {
   for (let i = 1; i <= days.length; i += 1) {
     if (i === days.length || index[i] !== index[i - 1] + 1) {
       runs.push(
-        start === i - 1 ? days[start] : `${days[start]}–${days[i - 1]}`,
+        start === i - 1 ? days[start] : `${days[start]}-${days[i - 1]}`,
       );
       start = i;
     }
@@ -53,7 +53,7 @@ export function optionDaysLabel(
     for (const step of schedule.steps) {
       if (step.variantId === optionId)
         spans.push(
-          step.days === 1 ? `Day ${day}` : `Days ${day}–${day + step.days - 1}`,
+          step.days === 1 ? `Day ${day}` : `Days ${day}-${day + step.days - 1}`,
         );
       day += step.days;
     }
@@ -176,7 +176,7 @@ export function otherTargetLabel(
     case "maximum":
       return `${name} ≤ ${target.value}${suffix}`;
     case "range":
-      return `${name} ${target.min}–${target.max}${suffix}`;
+      return `${name} ${target.min}-${target.max}${suffix}`;
     case "exact":
       return `${name} = ${target.value}${suffix}`;
   }

@@ -330,7 +330,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -397,7 +397,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",

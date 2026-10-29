@@ -34,7 +34,7 @@
   font-optical-sizing: auto;
   isolation: isolate;
 }
-/* Fill the sidebar column for the full document height — the fixed sidebar
+/* Fill the sidebar column for the full document height: the fixed sidebar
    only paints one viewport in long pages and full-page captures. */
 .coach-root::before {
   content: "";

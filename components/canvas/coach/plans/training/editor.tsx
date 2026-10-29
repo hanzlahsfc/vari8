@@ -996,10 +996,10 @@ function ExerciseSummary({
                 hasField(configuration, "Rep ranges") &&
                 prescription.repsMax !== undefined &&
                 prescription.repsMax > prescription.reps
-                  ? `${prescription.reps}–${prescription.repsMax}`
+                  ? `${prescription.reps}-${prescription.repsMax}`
                   : prescription.reps
               } reps`
-            : "—";
+            : "-";
         return (
           <div
             className="tr-prescription-group"
@@ -1015,7 +1015,7 @@ function ExerciseSummary({
                   ? hasField(configuration, "Sets")
                     ? `${count} ${count === 1 ? "set" : "sets"}`
                     : `${count}×`
-                  : "—"}
+                  : "-"}
               </span>
             </span>
             <span
@@ -1032,8 +1032,8 @@ function ExerciseSummary({
               <span className="tr-prescription-label">Tempo</span>
               <span className="tr-prescription-value">
                 {hasField(configuration, "Tempo")
-                  ? prescription.tempo || "—"
-                  : "—"}
+                  ? prescription.tempo || "-"
+                  : "-"}
               </span>
             </span>
             <span
@@ -1043,7 +1043,7 @@ function ExerciseSummary({
             >
               <span className="tr-prescription-label">Details</span>
               <span className="tr-prescription-value" title={detail}>
-                {detail || "—"}
+                {detail || "-"}
               </span>
             </span>
           </div>

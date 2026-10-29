@@ -1,5 +1,5 @@
 /**
- * Card 05a route plumbing for the daily-entry surface — the same role
+ * Card 05a route plumbing for the daily-entry surface, the same role
  * `checkins/_result.ts` plays for the check-in boundary: the daily-entry
  * service throws `DailyEntryError` and `AccessDeniedError`, the v1 helper
  * only speaks ApiError, so this module translates the closed codes.

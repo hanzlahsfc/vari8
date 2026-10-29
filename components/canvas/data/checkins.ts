@@ -531,7 +531,7 @@ export async function loadCheckInReview(
         .filter((field) => field.kind !== "visual")
         .map((field) => ({ question: field.label, answer: field.display })),
       visuals: panel.fields.flatMap((field) => field.mediaIds),
-      // #176: the flagged set notes the review surface draws — the
+      // #176: the flagged set notes the review surface draws. The
       // server resolves exercise names through each log's pinned
       // version, so the label matches what the client logged against.
       flags: (panel.flaggedTrainingNotes ?? []).map((note) => ({
@@ -649,7 +649,7 @@ export async function sendFeedback(input: {
 }
 
 // ---------------------------------------------------------------------------
-// Card 05b: the client-facing own check-in surface. Three calls — the "next"
+// Card 05b: the client-facing own check-in surface. Three calls: the "next"
 // header that hands the screen its instanceId, the own detail that renders
 // the pinned definition, and the submit that carries the answers payload.
 // ---------------------------------------------------------------------------
@@ -707,14 +707,14 @@ export type OwnCheckInInstanceDetailWire = {
   feedbackNextCursor: string | null;
 };
 
-/** GET checkins/instances/next — the caller's earliest unfinished check-in. */
+/** GET checkins/instances/next: the caller's earliest unfinished check-in. */
 export function fetchOwnNextCheckIn(
   workspaceId: string,
 ): Promise<{ next: OwnNextCheckInWire }> {
   return apiFetch(`/workspaces/${workspaceId}/checkins/instances/next`);
 }
 
-/** GET checkins/instances/:instanceId — own detail + pinned definition. */
+/** GET checkins/instances/:instanceId: own detail + pinned definition. */
 export function fetchOwnCheckInInstance(
   workspaceId: string,
   instanceId: string,
@@ -724,7 +724,7 @@ export function fetchOwnCheckInInstance(
   );
 }
 
-/** POST checkins/instances/:instanceId/submit — one own submission. */
+/** POST checkins/instances/:instanceId/submit: one own submission. */
 export function submitOwnCheckIn(
   workspaceId: string,
   instanceId: string,

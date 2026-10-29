@@ -25,7 +25,7 @@ export function exerciseKey(exercise: TrainingExercise): string {
 const DAY_MS = 86400000;
 const dayNumber = (date: string) => Date.parse(`${date}T12:00:00Z`) / DAY_MS;
 
-/** Mon–Sun calendar-week index; content selection still uses trainingWeek(). */
+/** Mon-Sun calendar-week index; content selection still uses trainingWeek(). */
 export function displayWeek(plan: TrainingPlan, date: string): number {
   return Math.max(
     1,
@@ -63,7 +63,7 @@ const WEEKDAYS = [
   "Sunday",
 ] as const;
 
-/** Dated occurrences inside the week's Mon–Sun range; cycle rotations return none. */
+/** Dated occurrences inside the week's Mon-Sun range; cycle rotations return none. */
 export function scheduledSessions(
   plan: TrainingPlan,
   week: number,

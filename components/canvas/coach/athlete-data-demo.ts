@@ -1,7 +1,7 @@
 // Athlete data demo (phase A1): persists ~10 weeks of tracker history, a
 // two-day temporary refeed plan, photo check-ins, pinned notes and a training
 // focus on the demo client. Fills only missing data and runs once via
-// demoSeeds.athleteDataDemo. Deterministic — no Math.random, no clock reads.
+// demoSeeds.athleteDataDemo. Deterministic: no Math.random, no clock reads.
 
 import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
@@ -46,7 +46,7 @@ export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 const TRACKING_DAYS = 70;
 const MISSING_INDEXES = new Set([8, 23, 37, 55, 63]);
 const NO_FAT_INDEX = 61;
-// Mon/Wed/Sat — matches her 3×20 min cardio target.
+// Mon/Wed/Sat: matches her 3×20 min cardio target.
 const CARDIO_WEEKDAYS = new Set([1, 3, 6]);
 const DEMO_FIELDS = [
   "weight",
@@ -91,13 +91,13 @@ const DEMO_HISTORY_TARGETS_A = { protein: 190, carbs: 260, fat: 62 } as const;
 const DEMO_HISTORY_TARGETS_B = { protein: 180, carbs: 240, fat: 58 } as const;
 const DEMO_REFEED_EVENT_IDS = new Set([
   "demo-refeed-upcoming",
-  // Temporary plans own refeeds now — the old past-refeed tag is stale.
+  // Temporary plans own refeeds now. The old past-refeed tag is stale.
   "demo-refeed-past",
 ]);
 const DEMO_REFEED_EVENT_NOTES = new Set(["Keep sodium consistent."]);
 const DEMO_PINNED_NOTES = [
-  "Left quad lags — keep unilateral work early in lower sessions.",
-  "Digestion issues with dairy — keep it out pre-show.",
+  "Left quad lags: keep unilateral work early in lower sessions.",
+  "Digestion issues with dairy: keep it out pre-show.",
 ];
 const DEMO_TRAINING_FOCUS = "Hypertrophy · lower-body priority";
 const DEMO_OTHER_TARGETS = [
@@ -159,7 +159,7 @@ function targetNumber(target: TargetValue | undefined): number | undefined {
 
 /**
  * Planned macro totals for the option scheduled on `date`. Dates before the
- * plan's start fall back to the current plan's own schedule — the demo log
+ * plan's start fall back to the current plan's own schedule: the demo log
  * pretends she ran the same approach throughout the block.
  */
 export function demoMacroTotals(
@@ -222,9 +222,9 @@ function stepsCenter(
 
 /**
  * ~10 weeks of tracker history ending yesterday: bodyweight trending down
- * ~0.5 %/week, macros tracking the scheduled option at ~90–105 % adherence,
- * steps around the activity target, cardio on Mon/Wed/Sat, sleep 6.5–8.2 h,
- * water 3.5–5 L. Five days missing, one day missing fat.
+ * ~0.5 %/week, macros tracking the scheduled option at ~90-105 % adherence,
+ * steps around the activity target, cardio on Mon/Wed/Sat, sleep 6.5-8.2 h,
+ * water 3.5-5 L. Five days missing, one day missing fat.
  */
 export function demoTrackingEntries(
   client: CoachClient,
@@ -275,7 +275,7 @@ export function demoTrackingEntries(
   return entries;
 }
 
-/** The dates demoTrackingEntries() generates — used to tell demo-owned
+/** The dates demoTrackingEntries() generates, used to tell demo-owned
  *  entries apart from a coach's own logs when re-deriving on a revision
  *  bump. */
 const CYCLE_ANCHOR = 6;
@@ -345,7 +345,7 @@ function demoTrackingDates(today: string): Set<string> {
 /**
  * Re-quantify the seeded meal plan to prep-realistic totals (≈2,050 kcal,
  * P 170 / C 210 / F 55). Each portion is classed by dominant macro and its
- * class nudged toward the target over a few passes — cross-macro
+ * class nudged toward the target over a few passes: cross-macro
  * contributions (e.g. protein in carb foods) make a single pass overshoot.
  */
 function scaleMealPlanToTargets(
@@ -411,13 +411,13 @@ function scaleRefeedPlan(plan: MealPlan): MealPlan {
 function answerFor(question: Question): string {
   switch (question.type) {
     case "Rating":
-      return "8 / 10 — energy held up even on the busy days";
+      return "8 / 10: energy held up even on the busy days";
     case "Numeric":
       return /weight/i.test(question.label) ? "71.9 kg" : "7";
     case "Long text":
       return /win/i.test(question.label)
         ? "Hit all four sessions and kept steps above target every weekday."
-        : "Solid week overall — training felt strong and the evening routine stuck.";
+        : "Solid week overall: training felt strong and the evening routine stuck.";
     case "Visual upload":
       return "Uploaded check-in photos";
     case "Choice": {
@@ -454,7 +454,7 @@ function demoSubmission(
     flags: [],
     response: responded
       ? {
-          text: "Solid week — the step consistency is showing in the trend. Keep the same approach.",
+          text: "Solid week: the step consistency is showing in the trend. Keep the same approach.",
           changes: [],
           date: `${date}T18:30:00Z`,
         }

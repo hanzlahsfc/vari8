@@ -9,7 +9,7 @@ import { sessionOf, unwrap } from "../../_result";
  * GET /api/v1/workspaces/:workspaceId/checkins/instances/:instanceId
  *
  * Card 05a own read (R3-B2): the client's own check-in instance detail.
- * The card 03 staff routes are not reused — the boundary's own-scope
+ * The card 03 staff routes are not reused: the boundary's own-scope
  * wrapper re-binds the caller inside the service.
  */
 export const dynamic = "force-dynamic";

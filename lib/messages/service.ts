@@ -5,7 +5,7 @@
  *
  * There is no `messages` RBAC resource yet, so this service does not go
  * through `authorize()`: ownership is bound by resolving the caller's own
- * ClientProfile inside the workspace — the same binding
+ * ClientProfile inside the workspace: the same binding
  * `listOwnClientTasks` applies before its own-scope re-authorization. The
  * route layer's capability check (own.read / message.write) supplies the
  * role scope; a caller without a linked client profile is denied here.
@@ -132,7 +132,7 @@ function toView(row: MessageRow): MessageView {
 
 /**
  * The caller's own thread. A client with no conversation yet reads an empty
- * thread — the first send creates the row — so a missing conversation is
+ * thread. The first send creates the row, so a missing conversation is
  * `[]`, never an error. A caller with no linked client profile is denied.
  */
 export async function listOwnMessages(
@@ -169,7 +169,7 @@ export async function listOwnMessages(
 
 /**
  * Client-authored send. Idempotent: a supplied clientRequestId that already
- * has a durable row returns that row instead of inserting a second copy —
+ * has a durable row returns that row instead of inserting a second copy:
  * the retry the unique index exists for.
  */
 export async function sendOwnMessage(

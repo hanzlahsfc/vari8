@@ -8,7 +8,7 @@ import { sessionOf, unwrapTraining } from "../../_result";
 /**
  * GET /api/v1/workspaces/:workspaceId/training-logs/sessions/:sessionLogId
  *
- * PR-M10 (#176): the resume read — pinned prescription (projection
+ * PR-M10 (#176): the resume read. Pinned prescription (projection
  * filtered through the pinned field config) beside every logged set.
  */
 export const dynamic = "force-dynamic";

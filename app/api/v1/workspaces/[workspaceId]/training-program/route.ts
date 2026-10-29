@@ -8,7 +8,7 @@ import { sessionOf, unwrapTraining } from "../training-logs/_result";
 /**
  * GET /api/v1/workspaces/:workspaceId/training-program?week=N
  *
- * PR-M10 (#176): the caller's own program view — state, agenda and one
+ * PR-M10 (#176): the caller's own program view, state, agenda and one
  * materialized week of the governing version (defaults to the current
  * week; `week` navigates inside the program bounds). The service binds
  * the caller's own client profile and refuses non-own scope.

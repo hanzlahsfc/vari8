@@ -45,7 +45,7 @@ const numOrNull = (raw: string): number | null => {
 };
 
 function repsText(set: { reps: number; repsMax?: number }): string {
-  return `×${set.repsMax !== undefined && set.repsMax > set.reps ? `${set.reps}–${set.repsMax}` : set.reps}`;
+  return `×${set.repsMax !== undefined && set.repsMax > set.reps ? `${set.reps}-${set.repsMax}` : set.reps}`;
 }
 
 function previousLine(set: LoggedSet, fields: string[], unit: string): string {
@@ -55,7 +55,7 @@ function previousLine(set: LoggedSet, fields: string[], unit: string): string {
   if (fields.includes("reps") && set.reps !== null) parts.push(`× ${set.reps}`);
   if (fields.includes("rpe") && set.rpe !== null) parts.push(`RPE ${set.rpe}`);
   if (fields.includes("rir") && set.rir !== null) parts.push(`RIR ${set.rir}`);
-  return parts.join(" ") || "—";
+  return parts.join(" ") || "-";
 }
 
 function prescriptionText(
@@ -78,13 +78,13 @@ function prescriptionText(
           hasField(configuration, "Rep ranges") &&
           set.repsMax !== undefined &&
           set.repsMax > set.reps
-            ? `${set.reps}–${set.repsMax}`
+            ? `${set.reps}-${set.repsMax}`
             : `${set.reps}`,
         )
         .join(" / ")} reps`,
     );
   if (hasField(configuration, "Tempo") && exercise.sets.some((s) => s.tempo))
-    parts.push(`Tempo ${exercise.sets.map((s) => s.tempo || "—").join(" / ")}`);
+    parts.push(`Tempo ${exercise.sets.map((s) => s.tempo || "-").join(" / ")}`);
   if (hasField(configuration, "Set type")) {
     const types = [
       ...new Set(exercise.sets.map((s) => s.type).filter(Boolean)),
@@ -449,7 +449,7 @@ export function SessionLogger({
                                 <small>
                                   {field.id === "weight" ? unit : field.label}
                                 </small>
-                                {set[field.id as SetField] ?? "—"}
+                                {set[field.id as SetField] ?? "-"}
                               </span>
                             ))}
                             {set.flagged && (
@@ -465,7 +465,7 @@ export function SessionLogger({
                                   <Check size={12} aria-hidden="true" /> Done
                                 </>
                               ) : (
-                                "—"
+                                "-"
                               )}
                             </Status>
                           </span>
@@ -496,7 +496,7 @@ export function SessionLogger({
                               />
                             </>
                           ) : (
-                            <p>{set.note || "—"}</p>
+                            <p>{set.note || "-"}</p>
                           )}
                         </div>
                       )}

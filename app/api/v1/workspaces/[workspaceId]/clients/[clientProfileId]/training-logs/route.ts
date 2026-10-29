@@ -9,7 +9,7 @@ import { sessionOf, unwrapTraining } from "../../../training-logs/_result";
  * GET /api/v1/workspaces/:workspaceId/clients/:clientProfileId/training-logs?cursor=
  *
  * PR-M10 (#176) staff row: the coach's client-detail read of the logged
- * sessions — pinned prescription beside the actual sets, newest performed
+ * sessions: pinned prescription beside the actual sets, newest performed
  * date first. The service re-authorizes trainingPlansLogs and refuses a
  * client caller.
  */

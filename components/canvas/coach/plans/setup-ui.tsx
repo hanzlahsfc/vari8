@@ -280,7 +280,7 @@ export function ClientPhasePlanEditor({
                 )}
                 {range && (
                   <p className="cd-phase-range">
-                    {range.startDate} – {range.endDate}
+                    {range.startDate} - {range.endDate}
                   </p>
                 )}
               </article>
@@ -302,7 +302,7 @@ export function ClientPhasePlanEditor({
               className="cd-phase-timeline-segment"
               key={range.id}
               style={{ flexGrow: range.durationWeeks }}
-              title={`${range.name}: ${range.startDate} – ${range.endDate}`}
+              title={`${range.name}: ${range.startDate} - ${range.endDate}`}
             >
               <strong>{range.name}</strong>
               <span>{range.durationWeeks} weeks</span>
@@ -615,7 +615,7 @@ export function ClientPlansSummary({
                       <span className="cp-opt-kcal">
                         {option.calories !== undefined
                           ? integer.format(Math.round(option.calories))
-                          : "—"}
+                          : "-"}
                         <small> kcal</small>
                       </span>
                       <span className="cp-sub">
@@ -640,7 +640,7 @@ export function ClientPlansSummary({
                               day: "numeric",
                               month: "short",
                             })}{" "}
-                            –{" "}
+                            -{" "}
                             {formatDate(temp.endDate, {
                               day: "numeric",
                               month: "short",

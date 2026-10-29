@@ -1,6 +1,6 @@
 // Card 11/#176 client+staff wire for the training session/set log
 // surface. Thin typed fetchers over the /api/v1 training-logs and
-// training-program routes; the canvas providers call these — nothing
+// training-program routes; the canvas providers call these. Nothing
 // else reaches the transport.
 
 import { apiFetch } from "./http";

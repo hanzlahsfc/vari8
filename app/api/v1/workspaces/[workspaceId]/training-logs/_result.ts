@@ -1,5 +1,5 @@
 /**
- * PR-M10 (#176) route plumbing for the training session/set log surface —
+ * PR-M10 (#176) route plumbing for the training session/set log surface,
  * the same role `daily-entries/_result.ts` plays for the client store seam:
  * the service throws `TrainingError` and `AccessDeniedError`, the v1 helper
  * only speaks ApiError, so this module translates the closed codes.

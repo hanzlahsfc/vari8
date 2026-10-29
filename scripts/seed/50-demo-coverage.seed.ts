@@ -20,13 +20,13 @@ import {
 import type { SeedContext } from "./index";
 
 /**
- * STAGE 11 — opt-in demo coverage profile (VARI8_SEED_DEMO=1).
+ * STAGE 11: opt-in demo coverage profile (VARI8_SEED_DEMO=1).
  *
  * Fills the `canvas-demo` workspace with Lilly's merged frontend demo state
  * from the byte-verbatim JSON snapshot in `./demo-export/` (provenance in
  * `demo-export/PROVENANCE.md`; source ref trackc/merge-frontend-9491897 @
  * 9491897b9dbd1a13855854ae2a2d5fa8d8ae8230). The seed never parses the demo
- * `.ts` files — this JSON fixture is the only runtime input.
+ * `.ts` files: this JSON fixture is the only runtime input.
  *
  * Determinism: every calendar value resolves `day <n>` / `day <n>T<time>`
  * tokens against the snapshot anchor `index.json.generatedAt`
@@ -40,7 +40,7 @@ import type { SeedContext } from "./index";
 
 const WORKSPACE_SLUG = "canvas-demo";
 const TIMEZONE = "Europe/Vienna";
-const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00 — documented schedule default
+const CHECKIN_LOCAL_MINUTES = 9 * 60; // 09:00, documented schedule default
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "demo-export");
 
@@ -479,7 +479,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         } else if (answerKind !== "VISUAL") {
           row.valueText = text;
         }
-        // VISUAL answers carry no scalar column — the media join is the
+        // VISUAL answers carry no scalar column: the media join is the
         // payload (checkin_submission_answer_kind_column_check).
         await prisma.checkInSubmissionAnswer.upsert({
           where: { id: row.id as string },
@@ -498,7 +498,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
             join(FIXTURE, "../../../frontend/public", src),
           ) as Buffer;
         } catch {
-          continue; // media asset absent on this tree — row skips, note in MAPPING
+          continue; // media asset absent on this tree: row skips, note in MAPPING
         }
         const storageKey = `${clientObjectPrefix(workspace.id, profile.id)}${sub.id}-${file}`;
         await writeLocalObject(storageKey, new Uint8Array(bytes));
@@ -1699,7 +1699,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
               ...(fieldCells[`${exKey}/reps`] ?? {}),
               [w]: rx
                 ? rx.repsMax && rx.repsMax !== rx.reps
-                  ? `${rx.reps}–${rx.repsMax}`
+                  ? `${rx.reps}-${rx.repsMax}`
                   : `${rx.reps}`
                 : "",
             };

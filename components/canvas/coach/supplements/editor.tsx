@@ -110,10 +110,10 @@ function SupplementRow({
     ? formatAmount(dosage.amount)
     : snapshot
       ? "Not provided"
-      : "—";
+      : "-";
   const unitText = dosage
     ? dosage.unit
-    : (snapshot?.declaredUnit ?? snapshot?.quantityUnit ?? "—");
+    : (snapshot?.declaredUnit ?? snapshot?.quantityUnit ?? "-");
   return (
     <Surface className="supp-row">
       <div className="supp-row-head">

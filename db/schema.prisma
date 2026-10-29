@@ -2198,14 +2198,14 @@ model TrainingSessionBooking {
 
 // ── PR-M10 (#176): the client's performed session log. One row per session
 // occurrence (natural key on program + session + booked week + performed
-// date), pinning the prescription version that governed at start — later
+// date), pinning the prescription version that governed at start. Later
 // publishes never rewrite the pinned payload beside the logged actuals.
 // The set payload stores whatever fields the coach's own template defines
 // (P01/O5): actuals travel as a validated JSONB SetLogEntry, never one
 // column per field. Terminal states are explicit rows, not zeros.
 model TrainingSessionLog {
   id              String    @id @default(cuid())
-  // Denormalized tenant/client stamps — part of the composite coherence
+  // Denormalized tenant/client stamps: part of the composite coherence
   // targets (raw-SQL FKs, established convention).
   workspaceId     String    @map("workspace_id")
   clientProfileId String    @map("client_profile_id")
@@ -2231,7 +2231,7 @@ model TrainingSessionLog {
   pinnedVersion TrainingProgramVersion @relation(fields: [pinnedVersionId], references: [id], onDelete: Restrict)
   sets          TrainingSetLog[]
 
-  // One log per session occurrence — the resume/replay natural key.
+  // One log per session occurrence: the resume/replay natural key.
   @@unique([workspaceId, clientProfileId, programId, sessionId, bookedWeek, performedDate], map: "training_session_log_natural_key")
   // Composite coherence target for the raw set-log FK.
   @@unique([id, workspaceId, clientProfileId])
@@ -2242,16 +2242,16 @@ model TrainingSessionLog {
 model TrainingSetLog {
   id              String   @id @default(cuid())
   sessionLogId    String   @map("session_log_id")
-  // Denormalized tenant/client stamps — the raw composite FK pins every
+  // Denormalized tenant/client stamps: the raw composite FK pins every
   // set to the same (session, workspace, client) triple.
   workspaceId     String   @map("workspace_id")
   clientProfileId String   @map("client_profile_id")
   exerciseId      String   @map("exercise_id")
-  // "p:{prescribedSetId}" or "a:{client-added set id}" — the idempotency
+  // "p:{prescribedSetId}" or "a:{client-added set id}": the idempotency
   // key; saving the same set twice updates this row instead of doubling.
   setKey          String   @map("set_key")
   position        Int
-  // Validated SetLogEntry actuals — template-defined fields (P01).
+  // Validated SetLogEntry actuals: template-defined fields (P01).
   actuals         Json
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)

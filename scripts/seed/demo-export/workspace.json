@@ -172,7 +172,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -239,7 +239,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -417,7 +417,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -484,7 +484,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -669,7 +669,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -736,7 +736,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -906,7 +906,7 @@
             },
             {
               "id": "energy",
-              "unit": "1–10"
+              "unit": "1\u201310"
             },
             {
               "id": "steps",
@@ -973,7 +973,7 @@
               "label": "How was your training?",
               "type": "Rating",
               "required": true,
-              "options": "1–10"
+              "options": "1\u201310"
             },
             {
               "id": "q-note",
@@ -1019,7 +1019,7 @@
         },
         {
           "question": "How was your training?",
-          "answer": "8 / 10 — feeling stronger"
+          "answer": "8 / 10. Feeling stronger"
         },
         {
           "question": "Anything you would like me to know?",
@@ -1090,19 +1090,19 @@
       "answers": [
         {
           "question": "How did you feel this week?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your training?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Anything you would like me to know?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your energy this week?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Bodyweight average",
@@ -1122,7 +1122,7 @@
       "note": "Submitted from the client app.",
       "flags": [],
       "response": {
-        "text": "Great week, Amara — the step consistency is showing in the trend. Keep the same approach; we'll review photos at the next check-in.",
+        "text": "Great week, Amara. The step consistency is showing in the trend. Keep the same approach; we'll review photos at the next check-in.",
         "changes": [],
         "date": "day -7T18:30:00Z"
       },
@@ -1154,19 +1154,19 @@
       "answers": [
         {
           "question": "How did you feel this week?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your training?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Anything you would like me to know?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your energy this week?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Bodyweight average",
@@ -1213,19 +1213,19 @@
       "answers": [
         {
           "question": "How did you feel this week?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your training?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Anything you would like me to know?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your energy this week?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Bodyweight average",
@@ -1263,7 +1263,7 @@
       "note": "Submitted from the client app.",
       "flags": [],
       "response": {
-        "text": "Solid week — the step consistency is showing in the trend. Keep the same approach.",
+        "text": "Solid week. The step consistency is showing in the trend. Keep the same approach.",
         "changes": [],
         "date": "day -63T18:30:00Z"
       }
@@ -1277,19 +1277,19 @@
       "answers": [
         {
           "question": "How did you feel this week?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your training?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Anything you would like me to know?",
-          "answer": "Solid week overall — training felt strong and the evening routine stuck."
+          "answer": "Solid week overall. Training felt strong and the evening routine stuck."
         },
         {
           "question": "How was your energy this week?",
-          "answer": "8 / 10 — energy held up even on the busy days"
+          "answer": "8 / 10. Energy held up even on the busy days"
         },
         {
           "question": "Bodyweight average",
@@ -1327,7 +1327,7 @@
       "note": "Submitted from the client app.",
       "flags": [],
       "response": {
-        "text": "Solid week — the step consistency is showing in the trend. Keep the same approach.",
+        "text": "Solid week. The step consistency is showing in the trend. Keep the same approach.",
         "changes": [],
         "date": "day -35T18:30:00Z"
       }
@@ -1467,7 +1467,7 @@
     {
       "id": "seed-client-4",
       "clientId": "client-005",
-      "text": "A quick question before tomorrow’s session — could we check the rest times?",
+      "text": "A quick question before tomorrow’s session: could we check the rest times?",
       "from": "client",
       "date": "day -12T08:28:00Z",
       "read": false,
@@ -1621,7 +1621,7 @@
   "preferences": {
     "mode": "dark",
     "accent": "#EB91B8",
-    "availability": "Weekdays · 09:00–18:00",
+    "availability": "Weekdays · 09:00-18:00",
     "notifications": true,
     "priorityNotifications": true
   },

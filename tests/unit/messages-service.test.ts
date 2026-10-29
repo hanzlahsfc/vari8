@@ -2,7 +2,7 @@
  * Card 05a messages service: own-thread binding (deny without a linked
  * client profile), empty thread when no conversation exists, CLIENT send
  * creation, and clientRequestId idempotent retry returning the durable row.
- * Runs against an in-memory deps.db fake — same seam the tasks tests use.
+ * Runs against an in-memory deps.db fake: same seam the tasks tests use.
  */
 import { describe, expect, it } from "vitest";
 

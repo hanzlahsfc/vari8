@@ -256,7 +256,7 @@ export type DailyEntrySurfaceWire =
   | { state: "ineligible" }
   | { state: "consent_missing" };
 
-/** GET daily-entries?date= — the caller's own surface for `date` (or today). */
+/** GET daily-entries?date=: the caller's own surface for `date` (or today). */
 export function fetchDailyEntrySurface(
   workspaceId: string,
   date?: string,
@@ -267,7 +267,7 @@ export function fetchDailyEntrySurface(
   );
 }
 
-/** PUT daily-entries/:date — one save against the caller's own day entry. */
+/** PUT daily-entries/:date: one save against the caller's own day entry. */
 export function saveDailyEntryRemote(
   workspaceId: string,
   entryDate: string,
@@ -295,7 +295,7 @@ export type StaffDailyEntryHistoryWire =
     }
   | { state: "consent_missing" };
 
-/** GET clients/:clientProfileId/daily-entries/history — the staff page. */
+/** GET clients/:clientProfileId/daily-entries/history: the staff page. */
 export function fetchStaffDailyEntryHistory(
   workspaceId: string,
   clientProfileId: string,

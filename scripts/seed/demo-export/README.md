@@ -1,4 +1,4 @@
-# Demo export — deterministic seed snapshot
+# Demo export - deterministic seed snapshot
 
 This directory is generated. It is the fully populated demo coaching state
 (the same state a fresh browser session boots into) serialized to JSON so the
@@ -44,33 +44,33 @@ inherent metadata, not timeline content:
 Entire subtrees under these keys are never rewritten, even when the text
 mentions a date: `answer`, `note`, `text`, `name`, `label`, `title`,
 `description`, `instructions`, `reason`, `goal`, `message`, `subject`,
-`visuals`. (`goal` the habit text is verbatim; `goals` — the plural
-`plans.goals[]` list — is a structured list whose `date` fields do convert.)
+`visuals`. (`goal` the habit text is verbatim; `goals`, the plural
+`plans.goals[]` list, is a structured list whose `date` fields do convert.)
 
 Strings that merely _contain_ a date but are not pure date values stay
 verbatim under every key: `eventId` (`recurring:client-001:2026-10-12`),
 training-log ids (`demo-log-2026-10-13-Tuesday-amara-upper-a-0`), and short
 display timestamps without seconds (`2026-10-05T08:42` in `lastCheckIn`,
 embedded `messages[].date` from the legacy roster data). A seeder that
-re-anchors dates should treat ids as opaque identifiers — the embedded dates
+re-anchors dates should treat ids as opaque identifiers: the embedded dates
 are cosmetic.
 
 ### Photo / asset paths
 
 `src` values are stored relative (`demo/physique/front-relaxed-1.svg`). They
-map to `frontend/public/demo/…` — prepend `/` to use them as URLs in the app.
+map to `frontend/public/demo/…`: prepend `/` to use them as URLs in the app.
 
 ## Files
 
-- `index.json` — manifest: `generatedAt` (the anchor), `schema`, the
+- `index.json`, the manifest: `generatedAt` (the anchor), `schema`, the
   day-offset format description, the file list, and `{id, name, file}` per
   client. No wall-clock timestamps are stored; `generatedAt` is the anchor.
-- `workspace.json` — every `CoachState` field except `clients`: `version`,
+- `workspace.json`, every `CoachState` field except `clients`: `version`,
   `demoSeeds` (which demo enrichers ran), `templates`, `exerciseLibrary`,
   `extras` (additional check-in requests), `submissions`, `trainingLogs`,
   `messages`, `drafts`, `reviewDrafts`, `editorDrafts`, `preferences`,
   `coachNotes`/`coachTodos`/`timelineViews`/`timelineOrder` when present.
-- `clients/client-NNN.json` — the full `CoachClient` object plus a `related`
+- `clients/client-NNN.json`: the full `CoachClient` object plus a `related`
   object holding that client's slice of the state-level collections:
   `submissions`, `messages`, `extras`, `trainingLogs`, `coachTodos`,
   `reviewDrafts` (keyed by submission id), and `draft` (the conversation
@@ -78,7 +78,7 @@ map to `frontend/public/demo/…` — prepend `/` to use them as URLs in the app
   `workspace.json`; client files are self-contained bundles so a seeder can
   import one athlete without joining tables.
 
-## Field map — client files
+## Field map - client files
 
 Identity and roster fields come from `src/data/mock-data.json` via
 `createInitialClients()`; plan/tracking fields are populated by the demo
@@ -117,7 +117,7 @@ enrichers.
 | `related.coachTodos`                                                                                                                                                                                                                       | Coach to-dos linked to this client                                                                                                                                                                                               | Coach notes/todos surfaces                                               | core when present                                                             |
 | `related.reviewDrafts`, `related.draft`                                                                                                                                                                                                    | Unsent feedback/message drafts                                                                                                                                                                                                   | Browser-only composer state                                              | browser-only -- a backend may store or drop                                   |
 
-## Field map — workspace.json
+## Field map - workspace.json
 
 | Field                                               | What it is                                                                 | Read by                                  | Backend relevance                                   |
 | --------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------------------- |
@@ -135,7 +135,7 @@ enrichers.
 
 `seedState(ANCHOR)` pins every derived date. Generated ids use a counter
 (`00000000-0000-4000-8000-<seq>`) installed by the script for the duration of
-the seed — they are stable across runs and machines, and referential
+the seed. They are stable across runs and machines, and referential
 integrity is preserved (`activeVariantId`, `selectedVariantId`, temporary
 plan ids, etc.). Three demo ids are stable literals:
 `demo-variant-refeed`, `demo-timeline-deload`, `demo-timeline-dietbreak`.

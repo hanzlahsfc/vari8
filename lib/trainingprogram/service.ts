@@ -3503,12 +3503,12 @@ export async function readOwnTrainingBookingHistory(
 // was reserved for. One TrainingSessionLog per session occurrence (natural
 // key: workspace, client, program, session, booked week, performed date),
 // pinned at start to the prescription version governing the performed date
-// — a later publish never rewrites the pin, so the old prescription stays
+// and a later publish never rewrites the pin, so the old prescription stays
 // beside its actuals. Per-set actuals store as a validated SetLogEntry
-// JSONB (P01: whatever fields the coach's own template defines — no fixed
+// JSONB (P01: whatever fields the coach's own template defines, no fixed
 // column per field). Terminal states are explicit rows, not zeros.
 
-/** Resolve the caller's own client profile in the workspace — the subject
+/** Resolve the caller's own client profile in the workspace: the subject
  * every own-scope log path binds to. A caller with no linked profile can
  * never log. */
 async function ownClientProfile(
@@ -3527,7 +3527,7 @@ async function ownClientProfile(
 
 /** Own-write prelude: locked authorize must grant the CLIENT own write
  * cell; the subject profile is locked and must link back to the caller's
- * user — a client writes only their own log. */
+ * user: a client writes only their own log. */
 async function logOwnWritePrelude(
   tx: Prisma.TransactionClient,
   session: SessionLike,
@@ -3585,7 +3585,7 @@ export type SessionLogStatus =
 export type SessionSetRow = {
   id: string;
   exerciseId: string;
-  /** The set identity the client saved — prescribed or client-added. */
+  /** The set identity the client saved: prescribed or client-added. */
   setId: string;
   setKey: string;
   position: number;
@@ -3595,7 +3595,7 @@ export type SessionSetRow = {
 /**
  * Start (or resume-create) a session log. Idempotent on the natural key:
  * a replay or an already-started occurrence returns the existing row with
- * its original pin — never a second row, never a re-pin.
+ * its original pin: never a second row, never a re-pin.
  */
 export async function startTrainingSessionLog(
   session: SessionLike,
@@ -3680,7 +3680,7 @@ export async function startTrainingSessionLog(
           throw new TrainingError("invalid_input");
 
         // Find-or-create on the natural key. A hit (or a P2002 race) is a
-        // resume — the stored pin stands.
+        // resume: the stored pin stands.
         const performedAt = new Date(parseLocalDate(input.performedDate));
         const natural = {
           workspaceId: input.workspaceId,
@@ -3740,7 +3740,7 @@ function isP2002(error: unknown): boolean {
  * Manual save of one set. `setId` is mandatory: a set without identity
  * cannot save idempotently. The payload is checked against the M6
  * `setLogEntrySchema` before the store write; a `setId` that matches a
- * prescribed set row keys as `p:{id}`, anything else as `a:{id}` — the
+ * prescribed set row keys as `p:{id}`, anything else as `a:{id}`: the
  * (session_log, exercise, set_key) unique makes a second save of the same
  * set an update, never a duplicate.
  */
@@ -3903,9 +3903,9 @@ async function lockSessionLog(
 }
 
 /**
- * Terminal transition. `completed` finishes the session — COMPLETED when
+ * Terminal transition. `completed` finishes the session: COMPLETED when
  * every prescribed set row has a logged set, PARTIAL otherwise; `skipped`
- * records the deliberate skip. Terminal logs accept no further set saves —
+ * records the deliberate skip. Terminal logs accept no further set saves:
  * the stored states are the record, not zeros.
  */
 export async function finishTrainingSessionLog(
@@ -4028,7 +4028,7 @@ export type OwnSessionLog = {
   completedAt: string | null;
   pinnedVersionId: string;
   pinnedVersionSeq: number;
-  /** The PINNED version's client-projected session — the prescription that
+  /** The PINNED version's client-projected session: the prescription that
    * was live at start, regardless of later publishes. */
   session: MaterializedSession;
   sets: SessionSetRow[];
@@ -4142,7 +4142,7 @@ export async function readOwnSessionLog(
 }
 
 /** The client's own logbook week list: every log for the caller's own
- * program in the asked week — statuses for the scheduled sessions plus
+ * program in the asked week: statuses for the scheduled sessions plus
  * skipped/partial records. The pinned session names resolve through each
  * log's own pinned payload, so history stays historical. */
 export type OwnLogWeekItem = {
@@ -4269,7 +4269,7 @@ export async function readOwnTrainingLogWeek(
 }
 
 /** Staff read for the coach client detail: the client's bounded session
- * history — every log with its sets and the PINNED prescription beside
+ * history: every log with its sets and the PINNED prescription beside
  * them. Newest performed date first. */
 export type StaffSessionLogEntry = {
   sessionLogId: string;

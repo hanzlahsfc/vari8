@@ -1,7 +1,7 @@
 "use client";
 
 // Card 11/#176 coach surface: the client's logged training sessions on
-// client detail — each log with its PINNED prescription beside the
+// client detail: each log with its PINNED prescription beside the
 // actual sets, newest performed date first. Feeds the staff
 // `clients/:clientProfileId/training-logs` read; in the unsigned demo
 // (no workspaceId) the surface keeps the canvas fixture logbook data.

@@ -16,13 +16,13 @@ export type OwnTaskWire = {
 };
 
 export type OwnTaskListWire = {
-  /** The caller's own profile id — the PATCH path's clientProfileId. */
+  /** The caller's own profile id: the PATCH path's clientProfileId. */
   clientProfileId: string;
   tasks: OwnTaskWire[];
   hasMore: boolean;
 };
 
-/** GET tasks?option= — the caller's own task list. */
+/** GET tasks?option=: the caller's own task list. */
 export function fetchOwnTasks(
   workspaceId: string,
   option?: "open" | "completed" | "both",
@@ -33,7 +33,7 @@ export function fetchOwnTasks(
   );
 }
 
-/** PATCH clients/:clientProfileId/tasks/:taskId — the completion toggle. */
+/** PATCH clients/:clientProfileId/tasks/:taskId: the completion toggle. */
 export function setOwnTaskCompletion(
   workspaceId: string,
   clientProfileId: string,

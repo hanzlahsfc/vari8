@@ -1,4 +1,4 @@
-// Legacy sheet computations — the workbook's measured formula shapes reduced
+// Legacy sheet computations: the workbook's measured formula shapes reduced
 // to plain domain functions over stored state plus an injected `today`
 // (MECHANISMS.md rows mapped in the card evidence; CALC-SPEC 03-calc). No
 // formula evaluator, no script, no timer: everything below is a pure
@@ -52,7 +52,7 @@ export function parseSheetDate(text: string): IsoDate | null {
   return `${m[3]}-${m[2]}-${m[1]}`;
 }
 
-/** "Week of dd.mm.yyyy" — the tracker block header the sheet prints. */
+/** "Week of dd.mm.yyyy": the tracker block header the sheet prints. */
 export function weekLabelText(monday: IsoDate): string {
   return `Week of ${dateText(monday)}`;
 }
@@ -103,10 +103,10 @@ export function completionRatio(actual: number | null, target: number | null): s
 }
 
 /**
- * Macro-to-energy conversion — the sheet's own constants 4.1, 4.1 and 9.3
+ * Macro-to-energy conversion: the sheet's own constants 4.1, 4.1 and 9.3
  * kcal/g (owner ruling: the app derives at 4,4,9 outside the sheet; the sheet
  * keeps its measured constants and stores none of them). Blank when all
- * three inputs are empty or sum to zero — the R1C1 guard.
+ * three inputs are empty or sum to zero: the R1C1 guard.
  */
 export function kcalFromMacros(macros: MacroTriple): string {
   const p = macros.protein ?? 0;
@@ -186,7 +186,7 @@ export const TIMELINE_LAST_WEEK_ROW = 30;
 
 /**
  * The D:F week windows as the workbook computes them: row 10 reads the block
- * start (DASHBOARD!H13, a store field — the client's phase start here) and
+ * start (DASHBOARD!H13, a store field, the client's phase start here) and
  * every later row adds seven days; F is start plus six. Projected across the
  * rendered week rows only.
  */
@@ -204,10 +204,10 @@ export function projectWeekWindows(
 }
 
 /**
- * `applyWeekTargets(today)` — the app form of `updateTimelineTargets`. Finds
+ * `applyWeekTargets(today)`: the app form of `updateTimelineTargets`. Finds
  * the timeline week row whose D..F window contains `today` and returns the
  * stamp to write to its W:Y cells, or null when no week covers today (the
- * script's alert path — the app returns a result instead of an alert).
+ * script's alert path: the app returns a result instead of an alert).
  * Called from the "Update Timeline" button only; nothing runs on a timer.
  */
 export function applyWeekTargets(

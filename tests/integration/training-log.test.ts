@@ -1,4 +1,4 @@
-// PR-M10 (#176) — training session + set log on a disposable PostgreSQL
+// PR-M10 (#176): training session + set log on a disposable PostgreSQL
 // database (INTEGRATION_DATABASE_URL). Synthetic fixtures only.
 //
 // Contract under test: a client starts a session against the prescription
@@ -275,7 +275,7 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
     expect(resumed.sets).toEqual([]);
   });
 
-  it("start replay returns the same log — never a second row", async () => {
+  it("start replay returns the same log: never a second row", async () => {
     const s = await setup();
     const { programId } = await publishProgram(s);
     const input = {
@@ -834,7 +834,7 @@ describe.skipIf(!enabled)("PR-M10 training session log (real PG)", () => {
           sessionLogId,
           exerciseId: "e1",
           position: 0,
-          set: { actualReps: 8 }, // no setId — no idempotency identity
+          set: { actualReps: 8 }, // no setId: no idempotency identity
         },
         deps(NOW),
       ),

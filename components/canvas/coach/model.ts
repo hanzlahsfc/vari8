@@ -958,7 +958,7 @@ export function summaryPreview(
   const value = !values.length
     ? "Not recorded"
     : calculation === "Adherence" && structured
-      ? "—"
+      ? "-"
       : calculation === "Adherence"
         ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
         : calculation === "Trend"

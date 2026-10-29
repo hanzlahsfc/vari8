@@ -1,5 +1,5 @@
 /**
- * Card 12 — legacy sheet on the real store. Pure-layer tests: the domain
+ * Card 12: legacy sheet on the real store. Pure-layer tests: the domain
  * computations (mechanism table -> CALC-SPEC), the cell binding map (R2-N4),
  * and applyWeekTargets click semantics. The grid/dialog layer is covered by
  * the production-boot browser proof in the card evidence.
