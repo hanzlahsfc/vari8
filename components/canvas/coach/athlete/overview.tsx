@@ -191,6 +191,30 @@ function ClientSettingsDialog({
   const [schedPending, setSchedPending] = useState<{ weekday: number; add: boolean } | null>(null);
   const [schedRetry, setSchedRetry] = useState<string | null>(null);
   const [schedWeekdays, setSchedWeekdays] = useState<number[] | null>(null);
+  // Authoritative pressed-state on open — the canvas schedules reflect the
+  // board's last merge, not necessarily the backend. In product mode the
+  // dialog reloads rules so toggles start from the true ACTIVE set.
+  useEffect(() => {
+    let on = true;
+    (async () => {
+      if (!workspaceId) return;
+      const profileId = await clientProfileIdFor(client.name);
+      if (!profileId || !on) return;
+      try {
+        const res = await reloadRecurring(workspaceId, profileId);
+        if (on) {
+          setSchedWeekdays(res.weekdays);
+          update((cl) => ({ ...cl, schedules: res.schedules }));
+        }
+      } catch {
+        /* stale local projection stays — the save path still refuses */
+      }
+    })();
+    return () => {
+      on = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, client.id]);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
