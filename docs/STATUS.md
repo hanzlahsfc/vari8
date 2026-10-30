@@ -1,3 +1,15 @@
+## 2026-10-30 - Studio meal plan: saved meal Assign
+
+- Saved meal Assign in the studio meal plan page creates the client owned copy
+  through the saved meals API. The library row is upserted, then one assignment
+  POST creates the copy. Ambiguous client names are refused and the page shows
+  the failure message.
+- The workspace id now flows from `app/(canvas)/ethereal/page.tsx` into the
+  meal plan workspace. Test: `tests/unit/mealplan-assign.test.ts`.
+- Gates: typecheck, lint, format:check, index:check, build and the new test exit 0. Full `npm run test` fails only in `tests/unit/parity-https.test.ts` and
+  `tests/unit/visual-reference.test.ts` (missing `pngjs` package), and both fail
+  the same way on the base commit.
+
 ## 2026-10-29 - Merge: nutrition accuracy gate manifest mode
 
 - Manifest mode in `scripts/check-nutrition-source-accuracy.ts`, with probe
