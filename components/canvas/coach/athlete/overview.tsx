@@ -44,7 +44,7 @@ import { phaseRanges } from "../plans/phase-planning";
 import { optionDaysLabel } from "../plans/plan-cards-support";
 import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
-import { saveRecurringDays } from "../../data/checkins";
+import { loadSchedulableFormVersions, saveRecurringDays } from "../../data/checkins";
 import {
   addLocalDays,
   type CardioTarget,
@@ -180,6 +180,9 @@ function ClientSettingsDialog({
     useCoach();
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedError, setSchedError] = useState("");
+  const [schedForms, setSchedForms] = useState<{ formId: string; label: string }[]>([]);
+  const [schedFormId, setSchedFormId] = useState("");
+  const [schedAmbiguous, setSchedAmbiguous] = useState(false);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -263,11 +266,31 @@ function ClientSettingsDialog({
                       "Recurring schedule updated from tomorrow. Submitted history retained.",
                     );
                   } catch (err) {
-                    setSchedError(
-                      err instanceof Error
-                        ? err.message
-                        : "The recurring schedule could not be saved",
-                    );
+                    const msg = err instanceof Error ? err.message : "";
+                    if (msg === "SELECT_FORM_REQUIRED" || msg === "SELECT_FORM_AMBIGUOUS") {
+                      setSchedAmbiguous(msg === "SELECT_FORM_AMBIGUOUS");
+                      try {
+                        const v = await loadSchedulableFormVersions(
+                          workspaceId,
+                          profileId,
+                        );
+                        setSchedForms(
+                          v.options.map((o) => ({
+                            formId: o.formId,
+                            label: `${o.formName} — v${o.versionSeq}`,
+                          })),
+                        );
+                        setSchedError(
+                          schedAmbiguous
+                            ? "This athlete has more than one active check-in form — pick which one to edit"
+                            : "Pick the published check-in form for this athlete",
+                        );
+                      } catch {
+                        setSchedError("The published forms could not be loaded");
+                      }
+                    } else {
+                      setSchedError(msg || "The recurring schedule could not be saved");
+                    }
                   } finally {
                     setSchedSaving(false);
                   }
@@ -283,6 +306,49 @@ function ClientSettingsDialog({
             </button>
           ))}
         </div>
+        {schedForms.length > 0 && (
+          <div className="cd-setting-row">
+            <Select
+              label="Published check-in form"
+              value={schedFormId}
+              options={schedForms.map((f) => ({ value: f.formId, label: f.label }))}
+              onChange={setSchedFormId}
+            />
+            <Button
+              variant="secondary"
+              disabled={!schedFormId || schedSaving}
+              onClick={async () => {
+                setSchedSaving(true);
+                try {
+                  const profileId = await clientProfileIdFor(client.name);
+                  if (profileId && workspaceId) {
+                    const day = client.schedules.at(-1)?.weekdays ?? [];
+                    // apply the pending toggle intent with the chosen form
+                    const idx = [...document.querySelectorAll(".cd-weekdays button")].findIndex(
+                      (b) => (b as HTMLElement).getAttribute("aria-pressed") === "false",
+                    );
+                    await saveRecurringDays({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      weekday: Math.max(0, idx),
+                      add: true,
+                      formId: schedFormId,
+                    });
+                    setSchedForms([]);
+                    setSchedError("");
+                    toast("Recurring schedule updated.");
+                  }
+                } catch (e) {
+                  setSchedError(e instanceof Error ? e.message : "Save failed");
+                } finally {
+                  setSchedSaving(false);
+                }
+              }}
+            >
+              Apply
+            </Button>
+          </div>
+        )}
         {schedError && (
           <p role="alert" className="cd-error">
             {schedError}

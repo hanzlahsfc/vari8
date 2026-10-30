@@ -76,6 +76,8 @@ type ScheduleRuleItem = {
   startDate: string;
   endDate: string | null;
   status: "ACTIVE" | "PAUSED" | "ENDED";
+  localTimeMinutes?: number;
+  timezone?: string;
 };
 
 type InstanceItem = {
@@ -714,11 +716,32 @@ const WEEKDAY_NAMES = [
  * before any write. Each call writes one weekday's change then regenerates;
  * a failure surfaces after a reload rather than claiming success.
  */
+export type ScheduleFormVersionOption = {
+  position: number;
+  formName: string;
+  versionSeq: number;
+  formId: string;
+  formVersionId: string;
+};
+
+/** The schedulable published-form versions for the picker — the same
+ *  endpoint the established staff rule-create flow uses (Q10:
+ *  latest published version per form). */
+export async function loadSchedulableFormVersions(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<{ options: ScheduleFormVersionOption[] }> {
+  return apiFetch<{ options: ScheduleFormVersionOption[] }>(
+    `/workspaces/${workspaceId}/checkins/schedule-versions?clientProfileId=${encodeURIComponent(clientProfileId)}`,
+  );
+}
+
 export async function saveRecurringDays(input: {
   workspaceId: string;
   clientProfileId: string;
   weekday: number;
   add: boolean;
+  formId?: string;
 }): Promise<{ ruleId: string; status: string }> {
   if (input.weekday < 0 || input.weekday > 6)
     throw new Error("Weekday out of range");
@@ -726,36 +749,39 @@ export async function saveRecurringDays(input: {
   const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
     `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
   );
-  const formIds = new Set(rules.items.map((r) => r.formId));
-  if (formIds.size === 0)
-    throw new Error(
-      "No check-in schedule exists yet — the first recurring schedule is not available",
-    );
-  if (formIds.size > 1)
-    throw new Error(
-      "This client's recurring schedule uses more than one form; the regular form is ambiguous",
-    );
-  const formId = rules.items[0].formId;
+  // Identity comes from ACTIVE rules only — historical rules are not
+  // authoritative. When ACTIVE identity is absent or ambiguous the caller
+  // surfaces the established published-form picker and retries with an
+  // explicit formId; historical rules never supply identity on their own.
+  const activeIds = new Set(
+    rules.items.filter((r) => r.status === "ACTIVE").map((r) => r.formId),
+  );
+  let formId = input.formId;
+  if (!formId) {
+    if (activeIds.size === 0)
+      throw new Error("SELECT_FORM_REQUIRED");
+    if (activeIds.size > 1)
+      throw new Error("SELECT_FORM_AMBIGUOUS");
+    formId = [...activeIds][0];
+  }
   const name = WEEKDAY_NAMES[input.weekday];
-  // The newest rule of this weekday carries the schedule's time/zone for the
-  // replacement; fall back to the newest rule of any weekday.
-  // The newest rule of this weekday anchors the replacement; otherwise the
-  // newest rule of any weekday. The list DTO does not carry the schedule's
-  // local time, so the create reuses the workspace Vienna convention — the
-  // same zone the board asserts (filters row, wiring coach.md:441).
   const sorted = [...rules.items].sort((a, b) =>
     b.startDate.localeCompare(a.startDate),
   );
   const endedSameDay = sorted.find(
-    (r) => r.weekday === name && r.status !== "ACTIVE",
+    (r) => r.weekday === name && r.status !== "ACTIVE" && r.formId === formId,
   );
+  const basis =
+    sorted.find((r) => r.formId === formId && r.status === "ACTIVE") ??
+    sorted.find((r) => r.formId === formId);
   const activeForDay = sorted.find(
-    (r) => r.weekday === name && r.status === "ACTIVE",
+    (r) =>
+      r.weekday === name && r.status === "ACTIVE" && r.formId === formId,
   );
 
   if (!input.add) {
     if (!activeForDay)
-      throw new Error(`No active ${name} rule to remove`);
+      throw new Error(`No active ${name} rule for this form to remove`);
     const res = await apiFetch<{ status: string }>(
       `${base}/schedule-rules/${activeForDay.ruleId}/status`,
       {
@@ -774,8 +800,8 @@ export async function saveRecurringDays(input: {
         clientProfileId: input.clientProfileId,
         formId,
         weekday: name,
-        localTimeMinutes: 480,
-        timezone: "Europe/Vienna",
+        localTimeMinutes: basis?.localTimeMinutes ?? 480,
+        timezone: basis?.timezone ?? "Europe/Vienna",
         startDate: plusDays(viennaDate(new Date().toISOString()), 1),
         endDate: null,
         replacesRuleId: endedSameDay?.ruleId ?? null,
@@ -783,6 +809,7 @@ export async function saveRecurringDays(input: {
     },
   );
   const ruleId = created.ruleId ?? created.id ?? "";
+  // D30: rule creation never generates — materialize occurrences explicitly.
   await apiFetch(`${base}/schedule-rules/${ruleId}/generate`, {
     body: { clientProfileId: input.clientProfileId },
   });

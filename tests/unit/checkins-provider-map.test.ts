@@ -538,7 +538,7 @@ describe("saveRecurringDays — existing-schedule edits (P593)", () => {
     const { saveRecurringDays } =
       await import("../../components/canvas/data/checkins");
     await expect(saveRecurringDays(input)).rejects.toThrow(
-      /first recurring schedule/,
+      "SELECT_FORM_REQUIRED",
     );
     expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
   });
@@ -552,7 +552,105 @@ describe("saveRecurringDays — existing-schedule edits (P593)", () => {
     });
     const { saveRecurringDays } =
       await import("../../components/canvas/data/checkins");
-    await expect(saveRecurringDays(input)).rejects.toThrow(/ambiguous/);
+    await expect(saveRecurringDays(input)).rejects.toThrow("SELECT_FORM_AMBIGUOUS");
     expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("saveRecurringDays — form-picker contract (P595)", () => {
+  const base = {
+    workspaceId: "ws-1",
+    clientProfileId: "cp-1",
+    weekday: 1,
+    add: true,
+  };
+  const active = {
+    ruleId: "r-tue",
+    formId: "form-weekly",
+    weekday: "TUESDAY",
+    startDate: "2026-10-01",
+    endDate: null,
+    status: "ACTIVE",
+    localTimeMinutes: 540,
+    timezone: "Europe/Vienna",
+  };
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("first-create (no ACTIVE rules) requires an explicit formId", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ items: [] });
+    const { saveRecurringDays } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    await expect(saveRecurringDays(base)).rejects.toThrow(
+      "SELECT_FORM_REQUIRED",
+    );
+  });
+
+  it("an explicit formId resolves first-create and preserves the stored time", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({
+        items: [
+          {
+            ruleId: "r-paused",
+            formId: "form-weekly",
+            weekday: "MONDAY",
+            startDate: "2026-10-01",
+            endDate: null,
+            status: "PAUSED",
+            localTimeMinutes: 540,
+            timezone: "Europe/Vienna",
+          },
+        ],
+      })
+      .mockResolvedValueOnce({ ruleId: "r-new" })
+      .mockResolvedValueOnce({});
+    const { saveRecurringDays } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    await saveRecurringDays({ ...base, formId: "form-weekly" });
+    expect(vi.mocked(apiFetch).mock.calls[1][1]?.body).toMatchObject({
+      formId: "form-weekly",
+      localTimeMinutes: 540,
+      timezone: "Europe/Vienna",
+    });
+  });
+
+  it("one ACTIVE form is used for edits without a picker", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ items: [active] })
+      .mockResolvedValueOnce({ status: "ended" });
+    const { saveRecurringDays } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    await saveRecurringDays({ ...base, add: false });
+    expect(vi.mocked(apiFetch).mock.calls[1][0]).toContain("r-tue/status");
+  });
+
+  it("multiple ACTIVE forms refuse without an explicit choice", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      items: [active, { ...active, ruleId: "r-other", formId: "form-other" }],
+    });
+    const { saveRecurringDays } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    await expect(saveRecurringDays(base)).rejects.toThrow(
+      "SELECT_FORM_AMBIGUOUS",
+    );
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
+  });
+
+  it("a formId body carries no version pin — generation resolves latest", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce({ items: [active] })
+      .mockResolvedValueOnce({ ruleId: "r-new" })
+      .mockResolvedValueOnce({});
+    const { saveRecurringDays } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    await saveRecurringDays({ ...base, weekday: 2 });
+    const body = vi.mocked(apiFetch).mock.calls[1][1]?.body;
+    expect(body.formId).toBe("form-weekly");
+    expect(body).not.toHaveProperty("formVersionId");
+    expect(vi.mocked(apiFetch).mock.calls[2][0]).toContain("r-new/generate");
   });
 });
