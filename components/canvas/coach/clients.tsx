@@ -864,7 +864,7 @@ export function ExtraDateDialog({
   const [date, setDate] = useState(
     existing?.date ?? initialDate ?? addDays(TODAY, 1),
   );
-  const [type, setType] = useState(existing?.type ?? "Custom");
+  const [type, setType] = useState(existing?.type ?? "Full");
   const [note, setNote] = useState(existing?.note ?? "");
   const duplicate = state.extras.some(
     (e) => e.clientId === client && e.date === date && e.id !== existing?.id,
@@ -894,9 +894,13 @@ export function ExtraDateDialog({
         <Select
           label="Requested update"
           value={type}
-          options={["Custom", "Full"]}
+          options={["Full"]}
           onChange={(v) => setType(v as "Full" | "Custom")}
         />
+        <p className="app-lede cd-extra-type-note">
+          Custom check-ins are not available yet — an additional date uses the
+          client&apos;s regular weekly form.
+        </p>
         <TextArea
           label="Note to athlete"
           className="cd-dialog-note"

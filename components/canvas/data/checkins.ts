@@ -637,6 +637,34 @@ export async function createExtra(input: {
   note: string;
 }): Promise<{ instanceId: string }> {
   const base = `/workspaces/${input.workspaceId}/checkins`;
+  // Owner ruling: a Full additional date uses the client's regular weekly
+  // check-in form by EXACT identity — the formId on the client's ACTIVE
+  // schedule rule — never by name or inference. Custom (per-instance field
+  // selection) is a separate future slice and is refused here rather than
+  // provisionally mapped.
+  if (input.type !== "Full")
+    throw new Error(
+      "Custom check-ins are not available yet; only the regular Full update can be scheduled",
+    );
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const activeFormIds = [
+    ...new Set(
+      rules.items
+        .filter((rule) => rule.status === "ACTIVE")
+        .map((rule) => rule.formId),
+    ),
+  ];
+  if (activeFormIds.length === 0)
+    throw new Error(
+      "No active check-in schedule resolves the client's regular form",
+    );
+  if (activeFormIds.length > 1)
+    throw new Error(
+      "Multiple active check-in schedules; the regular form is ambiguous",
+    );
+  const formId = activeFormIds[0];
   const versions = await apiFetch<{
     options: {
       position: number;
@@ -648,28 +676,17 @@ export async function createExtra(input: {
   }>(
     `${base}/schedule-versions?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
   );
-  const wanted =
-    input.type === "Custom" ? /custom|update/i : /full|weekly/i;
-  const matched = versions.options.filter((option) =>
-    wanted.test(option.formName),
-  );
-  if (matched.length === 0)
+  const match = [...versions.options]
+    .filter((option) => option.formId === formId)
+    .sort((a, b) => b.versionSeq - a.versionSeq)[0];
+  if (!match)
     throw new Error(
-      `No schedulable form version matches "${input.type}" updates`,
+      "No published version exists for the client's regular check-in form",
     );
-  // The type mapping is provisional (owner decision pending): two DISTINCT
-  // published forms matching the requested type must never silently resolve
-  // to the first list entry — refuse the write until the mapping is ruled.
-  const formIds = new Set(matched.map((option) => option.formId));
-  if (formIds.size > 1)
-    throw new Error(
-      `"${input.type}" updates match ${formIds.size} published forms; the form mapping must be resolved before scheduling`,
-    );
-  const match = [...matched].sort((a, b) => b.versionSeq - a.versionSeq)[0];
   const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
     body: {
       clientProfileId: input.clientProfileId,
-      formId: match.formId,
+      formId,
       formVersionId: match.formVersionId,
       dueAt: viennaMidnight(input.date),
       dueTz: "Europe/Vienna",

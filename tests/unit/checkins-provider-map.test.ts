@@ -357,167 +357,118 @@ describe("check-in board read (PR-W6)", () => {
   });
 });
 
-describe("createExtra — additional-date write (P582)", () => {
+describe("createExtra — additional-date write (P588)", () => {
   const base = "/workspaces/ws-1/checkins";
   const input = {
     workspaceId: "ws-1",
     clientProfileId: "cp-1",
     date: "2026-11-04",
-    type: "Custom" as const,
+    type: "Full" as const,
     note: "knee check",
+  };
+  const rules = {
+    items: [{ formId: "form-weekly", status: "ACTIVE" }],
   };
   const versions = {
     options: [
       {
         position: 0,
-        formName: "Weekly check-in",
+        formName: "Renamed whatever",
         versionSeq: 2,
         formId: "form-weekly",
-        formVersionId: "fv-weekly-2",
+        formVersionId: "fv-wk-2",
       },
       {
         position: 1,
         formName: "Custom update",
-        versionSeq: 1,
+        versionSeq: 9,
         formId: "form-custom",
-        formVersionId: "fv-custom-1",
+        formVersionId: "fv-cu-9",
       },
     ],
   };
 
   beforeEach(() => vi.mocked(apiFetch).mockReset());
 
-  it("creates via schedule-versions + POST /instances with Vienna dueAt", async () => {
+  it("uses the ACTIVE rule's exact formId, not a name match", async () => {
     vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
       .mockResolvedValueOnce(versions)
       .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-1" });
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
     const out = await createExtra(input);
     expect(out).toEqual({ instanceId: "inst-1" });
-    expect(vi.mocked(apiFetch).mock.calls[0][0]).toBe(
-      `${base}/schedule-versions?clientProfileId=cp-1`,
-    );
-    const [url, opts] = vi.mocked(apiFetch).mock.calls[1];
+    const [url, opts] = vi.mocked(apiFetch).mock.calls[2];
     expect(url).toBe(`${base}/instances`);
     expect(opts?.body).toMatchObject({
       clientProfileId: "cp-1",
-      formId: "form-custom",
-      formVersionId: "fv-custom-1",
+      formId: "form-weekly",
+      formVersionId: "fv-wk-2",
       dueTz: "Europe/Vienna",
       coachNote: "knee check",
     });
   });
 
-  it("picks the Full (non-custom) form for a Full update", async () => {
-    vi.mocked(apiFetch)
-      .mockResolvedValueOnce(versions)
-      .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-2" });
+  it("refuses Custom — provisional mapping is gone, zero POSTs", async () => {
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
-    await createExtra({ ...input, type: "Full" });
-    expect(vi.mocked(apiFetch).mock.calls[1][1]?.body).toMatchObject({
-      formId: "form-weekly",
-      formVersionId: "fv-weekly-2",
-    });
+    await expect(createExtra({ ...input, type: "Custom" })).rejects.toThrow(
+      /Custom check-ins are not available/,
+    );
+    expect(vi.mocked(apiFetch)).not.toHaveBeenCalled();
   });
 
-  it("fails without creating when no form matches the type", async () => {
+  it("refuses with no ACTIVE schedule — zero POSTs", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ items: [] });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await expect(createExtra(input)).rejects.toThrow(
+      /No active check-in schedule/,
+    );
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
+  });
+
+  it("refuses when multiple ACTIVE forms are ambiguous — zero POSTs", async () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({
-      options: [
-        {
-          position: 0,
-          formName: "Weekly check-in",
-          versionSeq: 1,
-          formId: "form-weekly",
-          formVersionId: "fv-weekly-1",
-        },
+      items: [
+        { formId: "form-weekly", status: "ACTIVE" },
+        { formId: "form-other", status: "ACTIVE" },
       ],
     });
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
-    await expect(createExtra(input)).rejects.toThrow(
-      /No schedulable form version matches/,
-    );
-    // One call only — the write must never follow a failed version read.
-    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
-  });
-});
-
-describe("createExtra — ambiguity refusal (P586)", () => {
-  const input = {
-    workspaceId: "ws-1",
-    clientProfileId: "cp-1",
-    date: "2026-11-04",
-    type: "Custom" as const,
-    note: "",
-  };
-  const twoForms = {
-    options: [
-      {
-        position: 0,
-        formName: "Custom update",
-        versionSeq: 3,
-        formId: "form-a",
-        formVersionId: "fv-a-3",
-      },
-      {
-        position: 1,
-        formName: "Custom monthly",
-        versionSeq: 1,
-        formId: "form-b",
-        formVersionId: "fv-b-1",
-      },
-    ],
-  };
-
-  beforeEach(() => vi.mocked(apiFetch).mockReset());
-
-  it("refuses when two DISTINCT published forms match — zero POSTs", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(twoForms);
-    const { createExtra } =
-      await import("../../components/canvas/data/checkins");
-    await expect(createExtra(input)).rejects.toThrow(/match 2 published forms/);
+    await expect(createExtra(input)).rejects.toThrow(/ambiguous/);
     expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
   });
 
-  it("refuses regardless of list order", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce({
-      options: [...twoForms.options].reverse(),
-    });
-    const { createExtra } =
-      await import("../../components/canvas/data/checkins");
-    await expect(createExtra(input)).rejects.toThrow(/match 2 published forms/);
-    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
-  });
-
-  it("allows one form when only versions differ (latest version picked)", async () => {
+  it("picks the selected form's LATEST version only", async () => {
     vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
       .mockResolvedValueOnce({
         options: [
           {
             position: 0,
-            formName: "Custom update",
+            formName: "Weekly check-in",
             versionSeq: 1,
-            formId: "form-a",
-            formVersionId: "fv-a-1",
+            formId: "form-weekly",
+            formVersionId: "fv-wk-1",
           },
           {
             position: 1,
-            formName: "Custom update",
+            formName: "Weekly check-in",
             versionSeq: 4,
-            formId: "form-a",
-            formVersionId: "fv-a-4",
+            formId: "form-weekly",
+            formVersionId: "fv-wk-4",
           },
         ],
       })
-      .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-9" });
+      .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-2" });
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
-    const out = await createExtra(input);
-    expect(out).toEqual({ instanceId: "inst-9" });
-    expect(vi.mocked(apiFetch).mock.calls[1][1]?.body).toMatchObject({
-      formVersionId: "fv-a-4",
+    await createExtra(input);
+    expect(vi.mocked(apiFetch).mock.calls[2][1]?.body).toMatchObject({
+      formVersionId: "fv-wk-4",
     });
   });
 });
