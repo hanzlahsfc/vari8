@@ -650,13 +650,22 @@ export async function createExtra(input: {
   );
   const wanted =
     input.type === "Custom" ? /custom|update/i : /full|weekly/i;
-  const match = [...versions.options]
-    .sort((a, b) => b.versionSeq - a.versionSeq)
-    .find((option) => wanted.test(option.formName));
-  if (!match)
+  const matched = versions.options.filter((option) =>
+    wanted.test(option.formName),
+  );
+  if (matched.length === 0)
     throw new Error(
       `No schedulable form version matches "${input.type}" updates`,
     );
+  // The type mapping is provisional (owner decision pending): two DISTINCT
+  // published forms matching the requested type must never silently resolve
+  // to the first list entry — refuse the write until the mapping is ruled.
+  const formIds = new Set(matched.map((option) => option.formId));
+  if (formIds.size > 1)
+    throw new Error(
+      `"${input.type}" updates match ${formIds.size} published forms; the form mapping must be resolved before scheduling`,
+    );
+  const match = [...matched].sort((a, b) => b.versionSeq - a.versionSeq)[0];
   const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
     body: {
       clientProfileId: input.clientProfileId,
