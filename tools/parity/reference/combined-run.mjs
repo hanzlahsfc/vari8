@@ -7,6 +7,7 @@ import {
   CONTRACT,
   assertContract,
   fileHash,
+  scrollerNameTag,
   sha256,
   validateRun,
 } from "./reference.mjs";
@@ -77,9 +78,16 @@ export function validateCombinedRun({
     !provenance.source.appLock
   )
     throw new Error("incomplete environment/dependency/source provenance");
-  if (shots.length !== 35 || manifest.screens.length !== 70)
+  // expected set derives from the pinned contract — never a magic
+  // number the recipe list could silently drift past
+  const expectedRecipes =
+    CONTRACT.expectedScreens / Object.keys(CONTRACT.viewports).length;
+  if (
+    shots.length !== expectedRecipes ||
+    manifest.screens.length !== CONTRACT.expectedScreens
+  )
     throw new Error(
-      "incomplete capture set; expected 35 recipes and 70 screens",
+      `incomplete capture set; expected ${expectedRecipes} recipes and ${CONTRACT.expectedScreens} screens`,
     );
   const expected = new Set(
     shots.flatMap((s) =>
@@ -93,6 +101,16 @@ export function validateCombinedRun({
   for (const screen of manifest.screens) {
     if (!expected.has(screen.id) || seen.has(screen.id))
       throw new Error(`unexpected/duplicate capture ${screen.id}`);
+    // the ID must be exactly stem@viewport — a mismatched tuple that
+    // happens to share an expected id or a real viewport is a forgery,
+    // not a valid capture
+    if (
+      !CONTRACT.viewports[screen.vp] ||
+      screen.id !== `${screen.stem}@${screen.vp}`
+    )
+      throw new Error(
+        `id/stem/viewport mismatch: id ${JSON.stringify(screen.id)} vs stem ${JSON.stringify(screen.stem)} vp ${JSON.stringify(screen.vp)}`,
+      );
     seen.add(screen.id);
     const shot = shots.find(
       (s) => s.file.replace(/\.(png|webp)$/, "") === screen.stem,
@@ -103,6 +121,12 @@ export function validateCombinedRun({
       captureProblem(shot, screen.captureEvidence)
     )
       throw new Error(`invalid URL/content/selected state ${screen.id}`);
+    // the screen's PNG is its own identity — exactly vp/stem.png,
+    // never another screen's valid artifact
+    if (screen.png !== `${screen.vp}/${screen.stem}.png`)
+      throw new Error(
+        `artifact identity mismatch ${screen.id}: png ${JSON.stringify(screen.png)} != ${screen.vp}/${screen.stem}.png`,
+      );
     const image = artifact(directory, screen.png);
     const imageBuffer = fs.readFileSync(image);
     const png = PNG.sync.read(imageBuffer);
@@ -137,6 +161,62 @@ export function validateCombinedRun({
       .sort();
     if (JSON.stringify(expectedScrolls) !== JSON.stringify(actualScrolls))
       throw new Error(`incomplete scroll captures ${screen.id}`);
+    // scroll captures are tuple-bound: vp/stem.s<scrollerIdx>-<x>-<y>.png
+    // — the filename encodes the scroller's index in the recorded
+    // inventory AND the capture coordinates; a same-screen swap
+    // between coordinates or a wrong scroller is a forgery
+    for (const scroll of screen.scrolls) {
+      // coordinates are numbers from the writer's steps() — strings,
+      // nulls and non-finite values are malformed, never coerced
+      if (
+        typeof scroll.x !== "number" ||
+        typeof scroll.y !== "number" ||
+        !Number.isFinite(scroll.x) ||
+        !Number.isFinite(scroll.y)
+      )
+        throw new Error(
+          `malformed scroll coordinates ${screen.id}: ${JSON.stringify({ x: scroll.x, y: scroll.y })}`,
+        );
+      const matches = screen.captureEvidence.scrollers.filter(
+        (s) => s.name === scroll.scroller,
+      );
+      if (matches.length !== 1)
+        throw new Error(
+          `${matches.length ? "ambiguous" : "unknown"} scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
+        );
+      const scroller = matches[0];
+      // the writer emits exactly tag#idx — one separator, lowercase
+      // tag name, non-negative integer index agreeing with the idx
+      // field. Extra separators, junk affixes and non-integer indices
+      // cannot be emitted by the writer — they are forged identities
+      if (
+        typeof scroller.name !== "string" ||
+        !Number.isInteger(scroller.idx) ||
+        scroller.idx < 0 ||
+        // writer emits `${tagName.toLowerCase()}#${idx}` — tag is whatever
+        // the DOM produces (Unicode included), `#` splits exactly once,
+        // the integer suffix must equal idx verbatim (no leading zeros)
+        scroller.name !== scroller.name.toLowerCase() ||
+        // DOM qualified-name contract (createElement's validation):
+        // letters/underscores/colons start, NameChars (digits, dots,
+        // hyphens, middle dot, combining marks, joiners) continue —
+        // all writer-reachable. # is never a NameChar so the FINAL #
+        // is the recorded index separator, and its integer must equal
+        // the recorded idx field verbatim
+        !scrollerNameTag(scroller.name) ||
+        scrollerNameTag(scroller.name).idx !== scroller.idx
+      )
+        throw new Error(
+          `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,
+        );
+      // s.idx is the DOM element index — the capture writer's identity,
+      // not an array position; tag#idx in the name agrees with it
+      const expectedPng = `${screen.vp}/${screen.stem}.s${scroller.idx}-${scroll.x}-${scroll.y}.png`;
+      if (scroll.png !== expectedPng)
+        throw new Error(
+          `scroll artifact identity mismatch ${screen.id}: ${JSON.stringify(scroll.png)} != ${expectedPng}`,
+        );
+    }
     for (const f of [
       screen.png,
       `${screen.vp}/${screen.stem}.geom.json.gz`,
@@ -153,5 +233,13 @@ export function validateCombinedRun({
     }
   }
   if (seen.size !== expected.size) throw new Error("incomplete captures");
+  // unique ownership — one artifact path belongs to exactly one screen
+  const owners = new Map();
+  for (const a of artifacts) owners.set(a.path, (owners.get(a.path) ?? 0) + 1);
+  const shared = [...owners.entries()].filter(([, n]) => n > 1);
+  if (shared.length)
+    throw new Error(
+      `artifact shared across screens: ${shared.map(([p]) => p).join(", ")}`,
+    );
   return artifacts;
 }

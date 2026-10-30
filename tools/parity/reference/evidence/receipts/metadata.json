@@ -5,12 +5,12 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "6cfb315df8497eb8f06bb0e2bc1d28f4c050217776ade99a5bd936c038d42948"
+      "sha256": "55bd519555a64c0e4ab3b05b45b0f08d7ee35af82fea754547834410d5c32bad"
     },
     "components": {
       "reference": {
         "path": "tools/parity/reference/reference.mjs",
-        "sha256": "cce59ab54c3853fd0c2e43c765a9e3e7364e7434d5a88dcd6ecd7c596203f674"
+        "sha256": "4760bc29451e87479aa46769e89b93feabfde5c1fc11bab936299f8ace1c53b0"
       },
       "referenceCompare": {
         "path": "tools/parity/reference/compare.mjs",
@@ -38,7 +38,7 @@
       },
       "combinedRun": {
         "path": "tools/parity/reference/combined-run.mjs",
-        "sha256": "87ba673902f999b6372cc200eec7d39a84299d62dbdc30b317a86633e8d1b679"
+        "sha256": "321d3954f9f0e25a59b5266e21ab6aba0c4f4d73e53080cdc62c312ffbf942c9"
       },
       "combinedPins": {
         "path": "tools/parity/reference/combined-pins.mjs",
@@ -66,7 +66,7 @@
       },
       "verifyEvidence": {
         "path": "tools/parity/reference/evidence/verify-evidence.mjs",
-        "sha256": "0c0bd07179d7e9fc9dec8e9cbf8bca1f8392e0657b8e4baa8eb4ec7e12fd3e4d"
+        "sha256": "10efbb319f2984000f1cab3f3a2acf5115f4a7037cf17ff03d3e3cb29faef8cf"
       },
       "evidenceLib": {
         "path": "tools/parity/reference/evidence/evidence-lib.mjs",
@@ -115,7 +115,7 @@
     "candidateManifestSha256": "b79c1954152d83197d14e1009dff9780e0dc946d21ba82d2b17b16fdb3e8c7d9",
     "candidateProvenanceSha256": "6526a6938d4415b2a576250c75bc64ae9915c0d56061c9304391c8f3dc9d1cee",
     "artifactIndexSha256": "f79ac2f3c87cb3f8e20e1b54da6fa9484867fdaaff8933e3d8f3756ceb706c13",
-    "shotIndexSha256": "552ace26910b09461d65b23b2c46e0aef52588b964ef175f1fd9486f8d2dbe80"
+    "shotIndexSha256": "9aaa2ec4baa53743a65da454998a0f0f529922a99ec6e0c5a9b9a4121dc18d95"
   },
   "packageCounts": {
     "reference": 245,

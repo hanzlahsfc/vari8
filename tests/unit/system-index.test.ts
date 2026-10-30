@@ -37,12 +37,44 @@ function walkAll(dirAbs: string, out: string[] = []): string[] {
 describe("system index generator", () => {
   // buildSymbols runs the full TypeScript-program scan (~seconds each
   // call); the output is deterministic within a test file, so compute it
-  // once in beforeAll (10s hook budget) instead of inside each test
-  // (5s budget the parallel suite kept blowing past).
+  // once in beforeAll instead of inside each test (5s budget the
+  // parallel suite kept blowing past). F2's independent compiler count
+  // is a third program over the same file set — identical cost profile —
+  // so it shares this hook budget too; the hook gets an explicit budget
+  // sized for three compiler scans under worker contention.
   let symbols: string;
+  let f2Counts: string;
   beforeAll(() => {
     symbols = buildSymbols();
-  });
+    const files = ["lib", "frontend/src/lib"]
+      .flatMap((dir) =>
+        walkAll(path.join(ROOT, dir)).filter(
+          (f) => /\.(ts|tsx)$/.test(f) && !/\.d\.ts$/.test(f),
+        ),
+      )
+      .filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(f));
+    const program = ts.createProgram(files, {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      jsx: ts.JsxEmit.Preserve,
+      skipLibCheck: true,
+      noEmit: true,
+      allowJs: false,
+    });
+    const checker = program.getTypeChecker();
+    let modules = 0;
+    let names = 0;
+    for (const file of files) {
+      const sf = program.getSourceFile(file);
+      const symbol = sf ? checker.getSymbolAtLocation(sf) : undefined;
+      if (!symbol) continue;
+      const exported = checker.getExportsOfModule(symbol);
+      if (exported.length > 0) modules += 1;
+      names += exported.length;
+    }
+    f2Counts = `${modules} modules with exports, ${names} exported symbols.`;
+  }, 120_000);
 
   it("derives route paths the way the App Router does", () => {
     expect(
@@ -150,36 +182,7 @@ describe("system index generator", () => {
       '- `export type { WorkspaceRole } from "./rbac"`',
     );
 
-    const files = ["lib", "frontend/src/lib"]
-      .flatMap((dir) =>
-        walkAll(path.join(ROOT, dir)).filter(
-          (f) => /\.(ts|tsx)$/.test(f) && !/\.d\.ts$/.test(f),
-        ),
-      )
-      .filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(f));
-    const program = ts.createProgram(files, {
-      target: ts.ScriptTarget.ES2020,
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      jsx: ts.JsxEmit.Preserve,
-      skipLibCheck: true,
-      noEmit: true,
-      allowJs: false,
-    });
-    const checker = program.getTypeChecker();
-    let modules = 0;
-    let names = 0;
-    for (const file of files) {
-      const sf = program.getSourceFile(file);
-      const symbol = sf ? checker.getSymbolAtLocation(sf) : undefined;
-      if (!symbol) continue;
-      const exported = checker.getExportsOfModule(symbol);
-      if (exported.length > 0) modules += 1;
-      names += exported.length;
-    }
-    expect(symbols).toContain(
-      `Counts: ${modules} modules with exports, ${names} exported symbols.`,
-    );
+    expect(symbols).toContain(`Counts: ${f2Counts}`);
   });
 
   it("F3: resolves @/ in the canvas tree against frontend/src", () => {

@@ -56,6 +56,7 @@ type FixtureScreen = {
     state: string[];
     scrollers: {
       name: string;
+      idx: number;
       maxX: number;
       maxY: number;
       cw: number;
@@ -65,7 +66,13 @@ type FixtureScreen = {
   size: { width: number; height: number };
   sha256: string;
   elements: number;
-  scrolls: never[];
+  scrolls: {
+    scroller: string;
+    x: number;
+    y: number;
+    png: string;
+    box: [number, number, number, number];
+  }[];
 };
 const dirs: string[] = [];
 afterEach(() =>
@@ -334,9 +341,22 @@ it("validates complete real-format receipts and rejects corrupt images, state an
     await import("../../tools/parity/capture.mjs");
   const d = mkdtempSync(path.join(tmpdir(), "visual-reference-full-"));
   dirs.push(d);
-  const shots = JSON.parse(
+  // the contract pins the reference recipe set — the live index may
+  // grow new shots, but a run must cover exactly the pinned set
+  const indexShots = JSON.parse(
     fs.readFileSync("icm/04-briefing/shots/index.json", "utf8"),
   ).shots;
+  const receiptStems = new Set(
+    JSON.parse(
+      fs.readFileSync(
+        "tools/parity/reference/evidence/receipts/canonical.json",
+        "utf8",
+      ),
+    ).results.map((r: { id: string }) => r.id.split("@")[0]),
+  );
+  const shots = indexShots.filter((s: { file: string }) =>
+    receiptStems.has(s.file.replace(/\.(png|webp)$/, "")),
+  );
   const provenance = {
     role: "historical",
     source: {
@@ -403,6 +423,26 @@ it("validates complete real-format receipts and rejects corrupt images, state an
         elements: 1,
         scrolls: [],
       });
+      // one real scroll artifact on the first screen for coordinate binding
+      if (vp === "390" && stem === "s01-roster") {
+        const scrollPng = `390/${stem}.s0-0-0.png`;
+        const sp = new PNG({ width: 10, height: 10 });
+        sp.data.fill(255);
+        writeFileSync(path.join(d, scrollPng), PNG.sync.write(sp));
+        const last = screens[screens.length - 1];
+        last.captureEvidence.scrollers = [
+          { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+        ];
+        last.scrolls = [
+          {
+            scroller: "div#0",
+            x: 0,
+            y: 0,
+            png: scrollPng,
+            box: [0, 0, 10, 10],
+          },
+        ];
+      }
     }
   }
   const manifest = {
@@ -413,7 +453,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   };
   expect(
     validateRun({ directory: d, manifest, shots, provenance }),
-  ).toHaveLength(140);
+  ).toHaveLength(141); // 70 screens + 70 geoms + 1 scroll
   const saved = screens[0].sha256;
   screens[0].sha256 = "0".repeat(64);
   expect(() =>
@@ -421,18 +461,193 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   ).toThrow(/hash/);
   screens[0].sha256 = saved;
   screens[0].captureEvidence.scrollers = [
-    { name: "div#0", maxX: 1, maxY: 0, cw: 390, ch: 10 },
+    { name: "div#0", idx: 0, maxX: 1, maxY: 0, cw: 390, ch: 10 },
   ];
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/scroll/);
-  screens[0].captureEvidence.scrollers = [];
+  screens[0].captureEvidence.scrollers = [
+    { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+  ];
   const oldUrl = screens[0].finalUrl;
   screens[0].finalUrl = "https://127.0.0.1:55940/login";
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/state/);
   screens[0].finalUrl = oldUrl;
+  // wrong-viewport tuple: a @1440 screen claiming vp 390 must refuse
+  const vpScreen = screens.find((s) => s.vp === "1440")!;
+  const savedVp = vpScreen.vp;
+  vpScreen.vp = "390";
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/id\/stem\/viewport mismatch/);
+  vpScreen.vp = savedVp;
+  // an unknown viewport key with a valid expected id must refuse too
+  vpScreen.vp = "720" as unknown as typeof savedVp;
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/id\/stem\/viewport mismatch/);
+  vpScreen.vp = savedVp;
+  // artifact-identity: a screen referencing another screen's PNG refuses
+  const otherVp = screens.find((s) => s !== vpScreen && s.vp === "1440")!;
+  const savedPng = vpScreen.png;
+  vpScreen.png = otherVp.png;
+  expect(() =>
+    validateRun({ directory: d, manifest, shots, provenance }),
+  ).toThrow(/artifact identity mismatch/);
+  vpScreen.png = savedPng;
+  // swapped scroll artifact (same weakness class) refuses
+  const scrollScreen = screens.find((s) => s.scrolls?.length)!;
+  if (scrollScreen) {
+    const otherStem = screens.find(
+      (s) => s !== scrollScreen && s.vp === scrollScreen.vp,
+    )!.stem;
+    const savedScroll = scrollScreen.scrolls[0].png;
+    scrollScreen.scrolls[0].png = `${scrollScreen.vp}/${otherStem}.s0-0-0.png`;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll|identity/);
+    scrollScreen.scrolls[0].png = savedScroll;
+    // same-screen coordinate swap — the right stem, wrong coordinate
+    scrollScreen.scrolls[0].png = `${scrollScreen.vp}/${scrollScreen.stem}.s0-1-0.png`;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll artifact identity/);
+    scrollScreen.scrolls[0].png = savedScroll;
+    // a valid filename assigned to a coordinate it doesn't encode
+    scrollScreen.scrolls[0].x = 1;
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/scroll|incomplete/);
+    scrollScreen.scrolls[0].x = 0;
+    // an unrecorded scroller name refuses
+    scrollScreen.scrolls[0].scroller = "div#ghost";
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/unknown scroller|scroll/);
+    scrollScreen.scrolls[0].scroller = "div#0";
+    // forged name/idx pair — name says #0, idx field says 7
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 7, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/forged scroller identity/);
+    // ambiguous duplicate scroller names refuse
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    expect(() =>
+      validateRun({ directory: d, manifest, shots, provenance }),
+    ).toThrow(/ambiguous scroller|scroll/);
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    // malformed scroller names/indices refuse — full grammar, not suffix
+    for (const bad of [
+      { name: "div#bad#143", idx: 143 },
+      { name: "div#0x", idx: 0 },
+      { name: "#0", idx: 0 },
+      { name: "div#0#", idx: 0 },
+      { name: "div", idx: 0 },
+      { name: "Div#0", idx: 0 },
+      { name: "div#0", idx: -1 },
+      { name: "div#0", idx: 0.5 },
+      { name: "div#00", idx: 0 },
+      { name: "#0", idx: 0 },
+      { name: "#143", idx: 143 },
+      { name: " #0", idx: 0 },
+      { name: "di v#0", idx: 0 },
+      { name: "div	#0", idx: 0 },
+      { name: "div\u0000#0", idx: 0 },
+      { name: "div# ", idx: 0 },
+      { name: "div/name#143", idx: 143 },
+      { name: "div<name#143", idx: 143 },
+      { name: "1div#0", idx: 0 },
+      { name: "a/b#1", idx: 1 },
+      { name: "a#1#2", idx: 2 },
+    ]) {
+      scrollScreen.captureEvidence.scrollers = [
+        { name: bad.name, idx: bad.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      ];
+      expect(() =>
+        validateRun({ directory: d, manifest, shots, provenance }),
+      ).toThrow(/forged scroller identity|scroll/);
+    }
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    // legitimate writer output — ordinary + custom-element tag names
+    for (const good of [
+      { name: "div#0", idx: 0 },
+      { name: "section#143", idx: 143 },
+      { name: "my-scroll#143", idx: 143 },
+      { name: "my-app#1", idx: 1 },
+      { name: "math-α#143", idx: 143 },
+      { name: "café-x#7", idx: 7 },
+      { name: "tag·name#5", idx: 5 },
+      { name: "svg:rect#3", idx: 3 },
+      { name: "h1#22", idx: 22 },
+    ]) {
+      // the scroll png must encode this scroller's actual idx
+      const goodPng = `${scrollScreen.vp}/${scrollScreen.stem}.s${good.idx}-0-0.png`;
+      const sp = new PNG({ width: 10, height: 10 });
+      sp.data.fill(255);
+      writeFileSync(path.join(d, goodPng), PNG.sync.write(sp));
+      scrollScreen.captureEvidence.scrollers = [
+        { name: good.name, idx: good.idx, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+      ];
+      const savedP = scrollScreen.scrolls[0].png;
+      const savedName = scrollScreen.scrolls[0].scroller;
+      scrollScreen.scrolls[0].png = goodPng;
+      scrollScreen.scrolls[0].scroller = good.name;
+      expect(
+        validateRun({ directory: d, manifest, shots, provenance }).length,
+        good.name,
+      ).toBeGreaterThan(0);
+      scrollScreen.scrolls[0].png = savedP;
+      scrollScreen.scrolls[0].scroller = savedName;
+    }
+    scrollScreen.captureEvidence.scrollers = [
+      { name: "div#0", idx: 0, maxX: 0, maxY: 0, cw: 10, ch: 10 },
+    ];
+    // malformed coordinate types refuse — never coerced
+    for (const [x, y] of [
+      ["0" as unknown as number, 0],
+      [0, null as unknown as number],
+      [Number.NaN, 0],
+      [0, Number.POSITIVE_INFINITY],
+    ]) {
+      scrollScreen.scrolls[0].x = x;
+      scrollScreen.scrolls[0].y = y;
+      expect(() =>
+        validateRun({ directory: d, manifest, shots, provenance }),
+      ).toThrow(/malformed scroll coordinates|scroll/);
+    }
+    scrollScreen.scrolls[0].x = 0;
+    scrollScreen.scrolls[0].y = 0;
+  }
+  // positive path: validateCombinedRun must COMPLETE with valid scroll
+  // metadata — a missing-helper ReferenceError would surface here,
+  // not be hidden by an expected-throw
+  const { validateCombinedRun } =
+    await import("../../tools/parity/reference/combined-run.mjs");
+  const combinedProvenance = {
+    ...provenance,
+    role: "combined",
+    source: { ...provenance.source, tree: "1".repeat(40) },
+    inputs: { prep: { head: CONTRACT.referenceSource } },
+  };
+  expect(() =>
+    validateCombinedRun({
+      directory: d,
+      manifest,
+      shots,
+      provenance: combinedProvenance,
+    }),
+  ).not.toThrow();
   expect(() =>
     validateRun({
       directory: d,
@@ -445,7 +660,7 @@ it("validates complete real-format receipts and rejects corrupt images, state an
   expect(() =>
     validateRun({ directory: d, manifest, shots, provenance }),
   ).toThrow(/provenance/);
-}, 15000);
+}, 60000); // ~40 real validateRun calls through the scroll matrix — budget reflects parallel-suite load, not a hidden hang
 
 it("rejects current-app expected output even before reading capture artifacts", async () => {
   const { compareRuns } =

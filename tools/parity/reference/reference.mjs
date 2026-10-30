@@ -165,6 +165,34 @@ const steps = (max, size) => {
   a.push(max);
   return a;
 };
+export function scrollerNameTag(name) {
+  const i = name.lastIndexOf("#");
+  if (i <= 0) return null;
+  const tag = name.slice(0, i);
+  const suffix = name.slice(i + 1);
+  if (!/^\d+$/.test(suffix) || String(Number(suffix)) !== suffix) return null;
+  // WHATWG "valid element local name" verbatim (dom.spec.whatwg.org —
+  // createElement's own gate and the superset of everything the HTML
+  // parser can produce):
+  //   ASCII-letter start → refuse only ASCII whitespace, U+0000, '/'
+  //     and '>' — other C0 such as \x01, \x0b and \x1f are legitimate
+  //     writer output (the parser appends them to tag names), as are
+  //     '<', '#', '=', quotes, U+2028 and U+FEFF
+  //   ':', '_' or any code point ≥ U+0080 start → subsequent code
+  //     points are ASCII alpha/digit, '-', '.', ':', '_' or ≥ U+0080
+  //     — every non-ASCII is permitted; ':!', '_?' and 'é[' still
+  //     refuse
+  const first = tag.codePointAt(0);
+  const letterStart =
+    (first >= 0x61 && first <= 0x7a) || (first >= 0x41 && first <= 0x5a);
+  if (letterStart) {
+    if (/[/>\t\n\f\r \u0000]/u.test(tag)) return null;
+  } else if (
+    !/^(?:[:_]|[^\x00-\x7f])(?:[A-Za-z0-9.\-:_]|[^\x00-\x7f])*$/u.test(tag)
+  )
+    return null;
+  return { tag, idx: Number(suffix) };
+}
 function artifact(directory, relative) {
   const p = path.resolve(directory, relative);
   if (!p.startsWith(path.resolve(directory) + path.sep))
@@ -212,9 +240,16 @@ export function validateRun({ directory, manifest, shots, provenance }) {
     !provenance.source.appLock
   )
     throw new Error("incomplete environment/dependency/source provenance");
-  if (shots.length !== 35 || manifest.screens.length !== 70)
+  // expected set derives from the pinned contract — never a magic
+  // number the recipe list could silently drift past
+  const expectedRecipes =
+    CONTRACT.expectedScreens / Object.keys(CONTRACT.viewports).length;
+  if (
+    shots.length !== expectedRecipes ||
+    manifest.screens.length !== CONTRACT.expectedScreens
+  )
     throw new Error(
-      "incomplete capture set; expected 35 recipes and 70 screens",
+      `incomplete capture set; expected ${expectedRecipes} recipes and ${CONTRACT.expectedScreens} screens`,
     );
   const expected = new Set(
     shots.flatMap((s) =>
@@ -228,6 +263,16 @@ export function validateRun({ directory, manifest, shots, provenance }) {
   for (const screen of manifest.screens) {
     if (!expected.has(screen.id) || seen.has(screen.id))
       throw new Error(`unexpected/duplicate capture ${screen.id}`);
+    // the ID must be exactly stem@viewport — a mismatched tuple that
+    // happens to share an expected id or a real viewport is a forgery,
+    // not a valid capture
+    if (
+      !CONTRACT.viewports[screen.vp] ||
+      screen.id !== `${screen.stem}@${screen.vp}`
+    )
+      throw new Error(
+        `id/stem/viewport mismatch: id ${JSON.stringify(screen.id)} vs stem ${JSON.stringify(screen.stem)} vp ${JSON.stringify(screen.vp)}`,
+      );
     seen.add(screen.id);
     const shot = shots.find(
       (s) => s.file.replace(/\.(png|webp)$/, "") === screen.stem,
@@ -238,6 +283,12 @@ export function validateRun({ directory, manifest, shots, provenance }) {
       captureProblem(shot, screen.captureEvidence)
     )
       throw new Error(`invalid URL/content/selected state ${screen.id}`);
+    // the screen's PNG is its own identity — exactly vp/stem.png,
+    // never another screen's valid artifact
+    if (screen.png !== `${screen.vp}/${screen.stem}.png`)
+      throw new Error(
+        `artifact identity mismatch ${screen.id}: png ${JSON.stringify(screen.png)} != ${screen.vp}/${screen.stem}.png`,
+      );
     const image = artifact(directory, screen.png);
     const imageBuffer = fs.readFileSync(image);
     const png = PNG.sync.read(imageBuffer);
@@ -272,6 +323,62 @@ export function validateRun({ directory, manifest, shots, provenance }) {
       .sort();
     if (JSON.stringify(expectedScrolls) !== JSON.stringify(actualScrolls))
       throw new Error(`incomplete scroll captures ${screen.id}`);
+    // scroll captures are tuple-bound: vp/stem.s<scrollerIdx>-<x>-<y>.png
+    // — the filename encodes the scroller's index in the recorded
+    // inventory AND the capture coordinates; a same-screen swap
+    // between coordinates or a wrong scroller is a forgery
+    for (const scroll of screen.scrolls) {
+      // coordinates are numbers from the writer's steps() — strings,
+      // nulls and non-finite values are malformed, never coerced
+      if (
+        typeof scroll.x !== "number" ||
+        typeof scroll.y !== "number" ||
+        !Number.isFinite(scroll.x) ||
+        !Number.isFinite(scroll.y)
+      )
+        throw new Error(
+          `malformed scroll coordinates ${screen.id}: ${JSON.stringify({ x: scroll.x, y: scroll.y })}`,
+        );
+      const matches = screen.captureEvidence.scrollers.filter(
+        (s) => s.name === scroll.scroller,
+      );
+      if (matches.length !== 1)
+        throw new Error(
+          `${matches.length ? "ambiguous" : "unknown"} scroller ${JSON.stringify(scroll.scroller)} on ${screen.id}`,
+        );
+      const scroller = matches[0];
+      // the writer emits exactly tag#idx — one separator, lowercase
+      // tag name, non-negative integer index agreeing with the idx
+      // field. Extra separators, junk affixes and non-integer indices
+      // cannot be emitted by the writer — they are forged identities
+      if (
+        typeof scroller.name !== "string" ||
+        !Number.isInteger(scroller.idx) ||
+        scroller.idx < 0 ||
+        // writer emits `${tagName.toLowerCase()}#${idx}` — tag is whatever
+        // the DOM produces (Unicode included), `#` splits exactly once,
+        // the integer suffix must equal idx verbatim (no leading zeros)
+        scroller.name !== scroller.name.toLowerCase() ||
+        // DOM qualified-name contract (createElement's validation):
+        // letters/underscores/colons start, NameChars (digits, dots,
+        // hyphens, middle dot, combining marks, joiners) continue —
+        // all writer-reachable. # is never a NameChar so the FINAL #
+        // is the recorded index separator, and its integer must equal
+        // the recorded idx field verbatim
+        !scrollerNameTag(scroller.name) ||
+        scrollerNameTag(scroller.name).idx !== scroller.idx
+      )
+        throw new Error(
+          `forged scroller identity on ${screen.id}: name ${JSON.stringify(scroller.name)} vs idx ${JSON.stringify(scroller.idx)}`,
+        );
+      // s.idx is the DOM element index — the capture writer's identity,
+      // not an array position; tag#idx in the name agrees with it
+      const expectedPng = `${screen.vp}/${screen.stem}.s${scroller.idx}-${scroll.x}-${scroll.y}.png`;
+      if (scroll.png !== expectedPng)
+        throw new Error(
+          `scroll artifact identity mismatch ${screen.id}: ${JSON.stringify(scroll.png)} != ${expectedPng}`,
+        );
+    }
     for (const f of [
       screen.png,
       `${screen.vp}/${screen.stem}.geom.json.gz`,
@@ -288,24 +395,41 @@ export function validateRun({ directory, manifest, shots, provenance }) {
     }
   }
   if (seen.size !== expected.size) throw new Error("incomplete captures");
+  // unique ownership — one artifact path belongs to exactly one screen
+  const owners = new Map();
+  for (const a of artifacts) owners.set(a.path, (owners.get(a.path) ?? 0) + 1);
+  const shared = [...owners.entries()].filter(([, n]) => n > 1);
+  if (shared.length)
+    throw new Error(
+      `artifact shared across screens: ${shared.map(([p]) => p).join(", ")}`,
+    );
   return artifacts;
 }
 export function createAdapter({ harnessRoot, outputFile }) {
-  const pinned = execFileSync(
-    "git",
-    [
-      "-C",
-      harnessRoot,
-      "show",
-      `${CONTRACT.candidateSource}:tools/parity/capture.mjs`,
-    ],
-    { encoding: "utf8" },
+  // The adapter transforms the harness's capture.mjs only when the file
+  // is EXACTLY the reviewed component pinned in the comparer manifest —
+  // byte-identity binds every semantic surface (auth, recipe selection,
+  // viewports, output paths, screenshot settings); anchors below only
+  // validate transformation structure, they never approve a mutated
+  // source. CONTRACT.candidateSource stays provenance for the
+  // historical reference capture — unmodified.
+  const pinned = fs.readFileSync(
+    path.join(harnessRoot, "tools/parity/capture.mjs"),
+    "utf8",
   );
-  if (
-    pinned !==
-    fs.readFileSync(path.join(harnessRoot, "tools/parity/capture.mjs"), "utf8")
-  )
-    throw new Error("unmerged PR #203 harness dependency changed");
+  const manifest = JSON.parse(
+    fs.readFileSync(
+      new URL("./evidence/comparer.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const reviewedSha = manifest.components?.capture?.sha256;
+  if (!reviewedSha)
+    throw new Error("comparer manifest lacks capture component pin");
+  if (sha256(pinned) !== reviewedSha)
+    throw new Error(
+      "capture.mjs differs from the reviewed component pin — unapproved change; adapter refuses",
+    );
   const replace = (s, from, to) => {
     if (s.split(from).length !== 2)
       throw new Error(`adapter anchor changed: ${from}`);
