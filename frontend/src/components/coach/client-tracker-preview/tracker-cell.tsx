@@ -161,8 +161,18 @@ function placePanel(
   const safeLeft = Math.max(12, (container?.left ?? 0) + 12);
   const safeRight =
     Math.min(window.innerWidth, container?.right ?? window.innerWidth) - 12;
-  const panelWidth = Math.min(
+  const trackingWidth = anchor
+    .closest(".ct-tracking")
+    ?.getBoundingClientRect().width;
+  // The fieldset popover can render at its container-query cap when that is
+  // wider than the requested width; clamp `left` against the real bound so
+  // the right edge stays inside the boundary.
+  const estWidth = Math.max(
     width,
+    trackingWidth != null && trackingWidth <= 420 ? trackingWidth - 64 : 0,
+  );
+  const panelWidth = Math.min(
+    estWidth,
     window.innerWidth - 64,
     Math.max(0, safeRight - safeLeft - 24),
   );

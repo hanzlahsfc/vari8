@@ -1,3 +1,11 @@
+## 2026-10-30 — Prompt 565 — STATUS format fix + populated-tracker popover evidence (PR #235)
+
+- `docs/STATUS.md` reformatted via `prettier --write` (1 line); `npm run format:check` clean; `git diff --check` + `git diff --check origin/Vari8-Beta...HEAD` both 0.
+- Browser gap closed: signed in as seeded demo client **Emma Anders** (`emma.anders@canvas-demo.test`, linked by `50-demo-coverage.seed.ts` — not Amara, whose `/me` honestly shows "Tracking is not set up") on a fresh lane `app_p565` (`app-db-1`, migrate + `seed:dev`, `localhost:3300`). `/me` → Tracker mounts `.ct-tracking` with 5 editable `tc-value-trigger` fields — a genuinely populated standalone route.
+- Measured `tc-text-popover` on `/me` at 320/360/390/430px: parents `.ct-tracking`; computed `max-width` = `cqw-64` (224/264/294/334px); right edge inside viewport (−44/−44/−38/−12px). Typing works, Escape closes, outside-click dismisses, reopen works at all four widths. First pass caught a real 2px right-edge overflow at 430px (fieldset rendered at the `cqw-64` cap, wider than `placePanel`'s 320px estimate) — `placePanel` now clamps `left` against the real container-query bound (`estWidth` accounts for `trackW−64` when `trackW≤420`); re-verified 430px right edge 418 < 430.
+- Gates (Node v24.22.1): frontend `test` 322/322, `typecheck` 0, biome format applied; root `tsc --noEmit` 0, eslint 0 errors (9 file-local pre-existing warnings), prettier clean, `index`/`index:check` OK (unchanged), `git diff --check` 0. Parity suite state unchanged: 3 pre-existing environment failures (PR-203 pin, missing 35/70 capture set) — same three on head and base; not called green, not repaired here.
+- Reviewer-cited remaining honest limits: comment popover shares the identical portal/placePanel path (no coach-mode trigger is seeded on this lane); Aleks's remote build URL remains unavailable; colour picker unassessed.
+
 ## 2026-10-30 — Prompt 563 — Portalled tracker popover boundary (PR #235 finding)
 
 - Independent review found `tc-text-popover`/`tc-comment-popover`/`tc-time-popover` portal to `.cd-full-client-preview` (or `document.body` fallback), outside `.ct-tracking` — the new `@container`/`cqw` clamp never applied. Verified in Chromium: parent `cd-full-client-preview`, computed `max-width: 1256px` (inert `100vw` clamp), 320px popover overflowing the 390px frame by 155px.
@@ -22,6 +30,7 @@
 - Repair (8 files, `frontend/` only): `.ct-tracking` and `.mp-client-plan` are now `container-type: inline-size` and their max-width breakpoints became `@container` queries (760/640/700/420px; tracker-cell popover clamp now `cqw`), preserving the same layouts at standalone narrow widths while adapting embedded previews to actual available width. `smooth-trend` bottom padding 7→15 and dates caption margin 2→6 give ~23px plot/label separation; data, calculations and aggregation unchanged.
 - Browser-verified before/after at the reproduced 390px frame plus desktop-width preview and 320px standalone `/client`: labels and units readable, headers no longer overlap, chart labels separated, no overflow or hidden fields; inputs still editable.
 - Gates on Node v24.22.1: frontend `format` clean, `lint` 0 problems, `typecheck` 0, `test` 322/322, `build` pass; repo `index:check` OK, `tsc --noEmit` 0, `eslint` 0 errors/101 warnings (pre-existing), prettier clean on changed paths, `git diff --check` 0. Visual-parity gate N/A: harness covers the production app routes, not `frontend/` preview surfaces; no baseline refresh, tolerance or mask change. Colour picker defect: no screenshot/repro steps supplied — not fixed, listed in the PR. Draft PR to Vari8-Beta; stop for independent review.
+
 ## 2026-10-30 - Studio meal plan: saved meal Assign
 
 - Saved meal Assign in the studio meal plan page creates the client owned copy
