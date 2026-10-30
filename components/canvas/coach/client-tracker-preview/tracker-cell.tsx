@@ -155,11 +155,25 @@ function placePanel(
 ): PanelPoint {
   if (!anchor || typeof window === "undefined") return { left: 0, top: 0 };
   const rect = anchor.getBoundingClientRect();
-  const container = anchor.closest(".cd-dialog")?.getBoundingClientRect();
+  const container = anchor.closest(".cd-preview-frame, .cd-dialog")?.getBoundingClientRect();
   const safeLeft = Math.max(12, (container?.left ?? 0) + 12);
   const safeRight =
     Math.min(window.innerWidth, container?.right ?? window.innerWidth) - 12;
-  const panelWidth = Math.min(width, window.innerWidth - 64);
+  const trackingWidth = anchor
+    .closest(".ct-tracking")
+    ?.getBoundingClientRect().width;
+  // The fieldset popover can render at its container-query cap when that is
+  // wider than the requested width; clamp `left` against the real bound so
+  // the right edge stays inside the boundary.
+  const estWidth = Math.max(
+    width,
+    trackingWidth != null && trackingWidth <= 420 ? trackingWidth - 64 : 0,
+  );
+  const panelWidth = Math.min(
+    estWidth,
+    window.innerWidth - 64,
+    Math.max(0, safeRight - safeLeft - 24),
+  );
   const left = Math.min(
     Math.max(safeLeft, rect.left),
     Math.max(safeLeft, safeRight - panelWidth),
@@ -670,7 +684,7 @@ export function TrackerCell({
                 </div>
               </div>,
               anchorRef.current?.closest(
-                ".cd-full-client-preview, .ct-shared-tracker",
+                ".ct-tracking, .cd-full-client-preview, .ct-shared-tracker",
               ) ?? document.body,
             )}
         </>
@@ -885,7 +899,7 @@ export function TextTrackerCell({
     cancelledRef.current = false;
     portalTargetRef.current =
       anchorRef.current?.closest<HTMLElement>(
-        ".cd-full-client-preview, .ct-shared-tracker",
+        ".ct-tracking, .cd-full-client-preview, .ct-shared-tracker",
       ) ?? document.body;
     setError("");
     if (inputType === "location-rating") {

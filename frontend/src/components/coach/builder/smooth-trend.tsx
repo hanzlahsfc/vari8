@@ -98,7 +98,7 @@ export function SmoothTrend({
     : Math.min(58, Math.max(38, w * 0.2));
   const right = Math.min(10, w * 0.08);
   const top = reduced ? 4 : 8;
-  const bottom = reduced ? 4 : 7;
+  const bottom = reduced ? 4 : 15;
   const plotBottom = Math.max(top + 1, chartHeight - bottom);
   const values = finiteRows.map((row) => row.value as number);
   const targetValues =
