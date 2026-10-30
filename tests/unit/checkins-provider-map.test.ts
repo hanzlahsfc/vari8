@@ -741,3 +741,56 @@ describe("saveRecurringDays — partial failure + recovery (P597)", () => {
     expect(vi.mocked(apiFetch).mock.calls[1][0]).toContain("r-mon/status");
   });
 });
+
+describe("reloadRecurring — form-scoped pressed state (P598)", () => {
+  const mon = {
+    ruleId: "r-mon-a",
+    formId: "form-weekly",
+    weekday: "MONDAY",
+    startDate: "2026-10-01",
+    endDate: null,
+    status: "ACTIVE",
+  };
+  const wedOther = {
+    ruleId: "r-wed-b",
+    formId: "form-other",
+    weekday: "WEDNESDAY",
+    startDate: "2026-10-01",
+    endDate: null,
+    status: "ACTIVE",
+  };
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("scopes weekdays to the selected form — overlapping rules stay distinct", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      items: [mon, wedOther],
+    });
+    const { reloadRecurring } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    const res = await reloadRecurring("ws-1", "cp-1", {
+      formId: "form-weekly",
+    });
+    expect(res.weekdays).toEqual([0]); // MONDAY only — form-other's Wed excluded
+  });
+
+  it("the union remains when no form is selected", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      items: [mon, wedOther],
+    });
+    const { reloadRecurring } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    const res = await reloadRecurring("ws-1", "cp-1");
+    expect(res.weekdays.sort()).toEqual([0, 2]);
+  });
+
+  it("a single ACTIVE form is scoped without an explicit pick", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ items: [mon] });
+    const { reloadRecurring } = await import(
+      "../../components/canvas/data/checkins"
+    );
+    const res = await reloadRecurring("ws-1", "cp-1");
+    expect(res.weekdays).toEqual([0]);
+  });
+});

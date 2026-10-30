@@ -274,11 +274,19 @@ function ClientSettingsDialog({
                     const folded = await reloadRecurring(
                       workspaceId,
                       profileId,
+                      { formId: schedFormId || undefined },
                     );
                     setSchedWeekdays(folded.weekdays);
                     update((cl) => ({ ...cl, schedules: folded.schedules }));
                     if (res.status === "ungenerated") {
-                      setSchedRetry(res.ruleId);
+                      // an outstanding incomplete generation is never
+                      // silently replaced by a later failure — keep the
+                      // first recovery target and surface both rules
+                      setSchedRetry((prev) => prev ?? res.ruleId);
+                      if (schedRetry && schedRetry !== res.ruleId)
+                        setSchedError(
+                          `Generation incomplete for ${schedRetry} and now ${res.ruleId} — retry the first before continuing.`,
+                        );
                       setSchedError(
                         "The rule was scheduled but generation did not complete — retry to create the check-in dates.",
                       );
@@ -357,6 +365,16 @@ function ClientSettingsDialog({
                     setSchedForms([]);
                     setSchedPending(null);
                     setSchedError("");
+                    const scoped = await reloadRecurring(
+                      workspaceId,
+                      profileId,
+                      { formId: schedFormId },
+                    );
+                    setSchedWeekdays(scoped.weekdays);
+                    update((cl) => ({
+                      ...cl,
+                      schedules: scoped.schedules,
+                    }));
                     toast("Recurring schedule updated.");
                   }
                 } catch (e) {

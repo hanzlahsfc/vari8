@@ -723,6 +723,7 @@ const WEEKDAY_NAMES = [
 export async function reloadRecurring(
   workspaceId: string,
   clientProfileId: string,
+  input: { formId?: string } = {},
 ): Promise<{ schedules: Schedule[]; weekdays: number[] }> {
   const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
     `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(clientProfileId)}`,
@@ -730,10 +731,17 @@ export async function reloadRecurring(
   // The dialog's pressed-state is the UNION of ACTIVE rules' weekdays —
   // folded segments bucket by startDate, so the latest segment alone would
   // miss an older rule that is still ACTIVE.
+  // The pressed-state is scoped to the EDITED form's ACTIVE rules when a
+  // form was picked explicitly — the board's union across every form would
+  // mark another form's day as on and steer edits toward it. Without an
+  // explicit selection the union remains the default projection.
+  const scoped = rules.items.filter((r) => r.status === "ACTIVE");
+  const activeIds = new Set(scoped.map((r) => r.formId));
+  const target = input.formId ?? (activeIds.size === 1 ? [...activeIds][0] : undefined);
   const weekdays = [
     ...new Set(
-      rules.items
-        .filter((r) => r.status === "ACTIVE")
+      scoped
+        .filter((r) => (target ? r.formId === target : true))
         .map((r) => WEEKDAY_INDEX[r.weekday])
         .filter((d): d is number => d !== undefined),
     ),
