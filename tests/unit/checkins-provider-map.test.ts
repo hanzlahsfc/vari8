@@ -172,6 +172,8 @@ describe("check-in board read (PR-W6)", () => {
         startDate: "2026-10-01",
         endDate: null,
         status: "ACTIVE",
+        localTimeMinutes: 480,
+        timezone: "Europe/Vienna",
       },
     ],
   };
@@ -489,6 +491,8 @@ describe("saveRecurringDays — existing-schedule edits (P593)", () => {
         startDate: "2026-10-01",
         endDate: null,
         status: "ACTIVE",
+        localTimeMinutes: 480,
+        timezone: "Europe/Vienna",
       },
       {
         ruleId: "r-wed",
@@ -496,7 +500,7 @@ describe("saveRecurringDays — existing-schedule edits (P593)", () => {
         weekday: "WEDNESDAY",
         startDate: "2026-10-01",
         endDate: null,
-        status: "ENDED",
+        status: "PAUSED",
       },
     ],
   };
@@ -613,6 +617,17 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
       localTimeMinutes: 540,
       timezone: "Europe/Vienna",
     });
+  });
+
+  it("first-create refuses without an explicit local time and timezone", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ items: [] });
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
+    await expect(
+      saveRecurringDays({ ...base, formId: "form-weekly" }),
+    ).rejects.toThrow("SCHEDULE_TIME_REQUIRED");
+    // Rules were read, but a create POST must never use an invisible default.
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
   });
 
   it("one ACTIVE form is used for edits without a picker", async () => {

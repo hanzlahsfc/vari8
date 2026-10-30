@@ -78,6 +78,7 @@ type ScheduleRuleItem = {
   status: "ACTIVE" | "PAUSED" | "ENDED";
   localTimeMinutes?: number;
   timezone?: string;
+  generatedThrough?: string | null;
 };
 
 type InstanceItem = {
@@ -724,7 +725,7 @@ export async function reloadRecurring(
   workspaceId: string,
   clientProfileId: string,
   input: { formId?: string } = {},
-): Promise<{ schedules: Schedule[]; weekdays: number[] }> {
+): Promise<{ schedules: Schedule[]; weekdays: number[]; ungeneratedRuleIds: string[] }> {
   const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
     `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(clientProfileId)}`,
   );
@@ -746,7 +747,16 @@ export async function reloadRecurring(
         .filter((d): d is number => d !== undefined),
     ),
   ];
-  return { schedules: foldScheduleRules(rules.items), weekdays };
+  return {
+    schedules: foldScheduleRules(rules.items),
+    weekdays,
+    // A persisted ACTIVE rule without an occurrence is the durable recovery
+    // record. Generation is idempotent on the server, so re-offering this
+    // action after reload never invents a browser-local source of truth.
+    ungeneratedRuleIds: rules.items
+      .filter((r) => r.status === "ACTIVE" && r.generatedThrough === null)
+      .map((r) => r.ruleId),
+  };
 }
 
 export type ScheduleFormVersionOption = {
@@ -775,6 +785,9 @@ export async function saveRecurringDays(input: {
   weekday: number;
   add: boolean;
   formId?: string;
+  /** Required on the first rule for a form; later edits preserve the rule. */
+  localTimeMinutes?: number;
+  timezone?: string;
 }): Promise<{ ruleId: string; status: string }> {
   if (input.weekday < 0 || input.weekday > 6)
     throw new Error("Weekday out of range");
@@ -801,8 +814,11 @@ export async function saveRecurringDays(input: {
   const sorted = [...rules.items].sort((a, b) =>
     b.startDate.localeCompare(a.startDate),
   );
+  // Only a PAUSED rule is replaceable — the service rejects
+  // replacesRuleId on ENDED rows (not_available). An ENDED rule creates a
+  // fresh rule with no link.
   const endedSameDay = sorted.find(
-    (r) => r.weekday === name && r.status !== "ACTIVE" && r.formId === formId,
+    (r) => r.weekday === name && r.status === "PAUSED" && r.formId === formId,
   );
   const basis =
     sorted.find((r) => r.formId === formId && r.status === "ACTIVE") ??
@@ -826,6 +842,8 @@ export async function saveRecurringDays(input: {
 
   if (activeForDay)
     return { ruleId: activeForDay.ruleId, status: "unchanged" };
+  if (!basis && (input.localTimeMinutes === undefined || !input.timezone))
+    throw new Error("SCHEDULE_TIME_REQUIRED");
   const created = await apiFetch<{ ruleId?: string; id?: string; status?: string }>(
     `${base}/schedule-rules`,
     {
@@ -833,8 +851,8 @@ export async function saveRecurringDays(input: {
         clientProfileId: input.clientProfileId,
         formId,
         weekday: name,
-        localTimeMinutes: basis?.localTimeMinutes ?? 480,
-        timezone: basis?.timezone ?? "Europe/Vienna",
+        localTimeMinutes: basis?.localTimeMinutes ?? input.localTimeMinutes,
+        timezone: basis?.timezone ?? input.timezone,
         startDate: plusDays(viennaDate(new Date().toISOString()), 1),
         endDate: null,
         replacesRuleId: endedSameDay?.ruleId ?? null,
