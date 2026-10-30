@@ -521,6 +521,7 @@ type Store = {
   setState: Dispatch<SetStateAction<CoachState>>;
   hydrated: boolean;
   storageOk: boolean;
+  demo: boolean;
   route: Route;
   navigate: (route: Route) => void;
   guard: React.MutableRefObject<((route: Route) => boolean) | null>;
@@ -1125,6 +1126,7 @@ export function CoachProvider({
         setState,
         hydrated,
         storageOk,
+        demo,
         route,
         navigate,
         guard,

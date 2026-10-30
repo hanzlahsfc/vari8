@@ -9,7 +9,7 @@ import {
 } from "../../lib/trainingprogram/payload";
 
 /**
- * PR-M6 — canvas demo training domain for the `canvas-demo` workspace.
+ * PR-M6: canvas demo training domain for the `canvas-demo` workspace.
  *
  * Values are copied from the canvas demo state, verbatim:
  * - the starter exercise library (`frontend/src/components/coach/plans/
@@ -18,9 +18,9 @@ import {
  * - the sample program the client training tab draws
  *   (`frontend/src/components/ethereal/builder/model.ts`
  *   `workoutSchedule` + `prescriptions`, week 6): "Lower strength"
- *   (Deadlift 4×"4–5" note "Leave two reps in reserve", Split squat
+ *   (Deadlift 4×"4 to 5" note "Leave two reps in reserve", Split squat
  *   3×"8 / side") and "Upper strength" (Bench press 4×"6",
- *   Chest-supported row 3×"8–10"), eight week-based weeks anchored so
+ *   Chest-supported row 3×"8 to 10"), eight week-based weeks anchored so
  *   the 2026-10-19 demo date lands on week 6.
  *
  * Muscle allocations follow the canvas PRIMARY_MUSCLE table (ported in
@@ -28,7 +28,7 @@ import {
  * volume panel: chest 4, back 3, hamstrings 4, glutes 3, total 14.
  *
  * The program is written as a draft + published version 1 with raw
- * rows — the seed must not depend on a signed-in session. Every write
+ * rows: the seed must not depend on a signed-in session. Every write
  * is an idempotent find-or-create keyed on stable names.
  */
 
@@ -39,7 +39,7 @@ export const START_DATE = "2026-09-14"; // week 6 of 8 on 2026-10-19
 export const WEEK_COUNT = 8;
 const ANCHOR_TZ = "Europe/Vienna";
 
-// Canvas `defaultExerciseLibrary()` — copied verbatim, in order.
+// Canvas `defaultExerciseLibrary()`: copied verbatim, in order.
 const LIBRARY: {
   id: string;
   name: string;
@@ -205,14 +205,14 @@ export function demoProgramDraft(
     sessionNames: {},
     fieldCells: {
       "s-lower/e-deadlift/sets": { "1": 4 },
-      "s-lower/e-deadlift/reps": { "1": "4–5" },
+      "s-lower/e-deadlift/reps": { "1": "4\u20135" },
       "s-lower/e-deadlift/note": { "1": "Leave two reps in reserve" },
       "s-lower/e-split-squat/sets": { "1": 3 },
       "s-lower/e-split-squat/reps": { "1": "8 / side" },
       "s-upper/e-bench/sets": { "1": 4 },
       "s-upper/e-bench/reps": { "1": "6" },
       "s-upper/e-row/sets": { "1": 3 },
-      "s-upper/e-row/reps": { "1": "8–10" },
+      "s-upper/e-row/reps": { "1": "8\u201310" },
     },
     setRows: {
       "s-lower/e-deadlift": {

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 186 modules with exports, 1843 exported symbols.
+Counts: 185 modules with exports, 1841 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1908,11 +1908,6 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function consentGatesEnabled(env: ConsentGateEnv = process.env): boolean`
 - `export function devFlagEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
 - `export function isDevRuntime(env: RuntimeEnv = process.env): boolean`
-
-## `lib/sheet-viewer.ts`
-
-- `export function isSheetViewerEnabled(flag: string | undefined, env: RuntimeEnv = process.env): boolean`
-- `export function requireSheetViewer(flag: string | undefined, env: RuntimeEnv = process.env): void`
 
 ## `lib/spec-artifacts.ts`
 

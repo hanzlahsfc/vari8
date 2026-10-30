@@ -1,4 +1,4 @@
-// PR-M6 — ordered per-set prescriptions, exercise metadata, the O5
+// PR-M6: ordered per-set prescriptions, exercise metadata, the O5
 // set-logging model, and the shared muscle-volume math (D29, canvas
 // port). Guards what a browser cannot check by eye: literal working-set
 // counts per muscle group for the canvas demo program, draft round-trip
@@ -102,7 +102,7 @@ describe("the seeded demo program reproduces the canvas volume panel", () => {
   });
 });
 
-describe("weeklyMuscleVolume — canvas demo program literals", () => {
+describe("weeklyMuscleVolume: canvas demo program literals", () => {
   it("counts literal working sets per group for the demo week", () => {
     const v = weeklyMuscleVolume(DEMO_WEEK6, 6);
     expect(v.totalSets).toBe(14);
@@ -150,7 +150,7 @@ describe("weeklyMuscleVolume — canvas demo program literals", () => {
   });
 });
 
-describe("programMuscleVolume — materialized sessions", () => {
+describe("programMuscleVolume: materialized sessions", () => {
   it("maps muscle fields and drops warm-up set rows", () => {
     const v = programMuscleVolume(
       [
@@ -327,7 +327,7 @@ function draftWithSets(): TrainingDraft {
   };
 }
 
-describe("normalizeTrainingDraft — setRows and exercise metadata", () => {
+describe("normalizeTrainingDraft: setRows and exercise metadata", () => {
   it("round-trips ordered set rows and metadata unchanged", () => {
     const draft = draftWithSets();
     expect(normalizeTrainingDraft(draft)).toEqual(draft);
@@ -381,7 +381,7 @@ describe("normalizeTrainingDraft — setRows and exercise metadata", () => {
   });
 });
 
-describe("materializeWeeks — ordered sets per week", () => {
+describe("materializeWeeks: ordered sets per week", () => {
   it("emits ordered setRows, derives the set count, carries metadata", () => {
     const m = materializeWeeks(draftWithSets(), "2026-09-14", 3);
     const w1 = m.weeks[0].sessions[0].exercises[0];
@@ -399,7 +399,7 @@ describe("materializeWeeks — ordered sets per week", () => {
   });
 });
 
-describe("projectForClient — per-set field gating", () => {
+describe("projectForClient: per-set field gating", () => {
   function projected(cfg: Partial<typeof CFG_ALL_ON>) {
     const m = materializeWeeks(draftWithSets(), "2026-09-14", 1);
     const out = projectForClient(m, { ...CFG_ALL_ON, ...cfg });
@@ -434,7 +434,7 @@ describe("projectForClient — per-set field gating", () => {
   });
 });
 
-describe("validatePublishCompleteness — setRows satisfy sets and reps", () => {
+describe("validatePublishCompleteness: setRows satisfy sets and reps", () => {
   it("publishes a program whose prescriptions live in setRows only", () => {
     const m: MaterializedProgram = materializeWeeks(
       draftWithSets(),
@@ -445,7 +445,7 @@ describe("validatePublishCompleteness — setRows satisfy sets and reps", () => 
   });
 });
 
-describe("validators — O5 set-logging model", () => {
+describe("validators: O5 set-logging model", () => {
   it("accepts a full session log with per-set actuals, note and flags", () => {
     const log = sessionSetLogSchema.parse({
       programId: "prog1",
@@ -518,7 +518,7 @@ describe("validators — O5 set-logging model", () => {
   });
 });
 
-describe("validators — coach-editable exercise library", () => {
+describe("validators: coach-editable exercise library", () => {
   it("accepts the canvas ExerciseDefinition write shape", () => {
     const item = exerciseLibraryItemInputSchema.parse({
       name: "Back squat",

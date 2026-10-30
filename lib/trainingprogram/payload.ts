@@ -531,14 +531,14 @@ function isPresent(
 }
 
 /** A stored row is a full PrescribedSet; client projection may strip
- * per-toggle fields — the id always survives. */
+ * per-toggle fields, the id always survives. */
 export type SetRowView = { id: string } & Partial<Omit<PrescribedSet, "id">>;
 
 export type MaterializedExercise = {
   id: string;
   name: string;
   catalogItemId?: string;
-  /** PR-M6 canvas exercise metadata — always-on like `note`. */
+  /** PR-M6 canvas exercise metadata: always-on like `note`. */
   libraryItemId?: string;
   muscle?: string;
   secondaryMuscles?: string[];
@@ -702,7 +702,7 @@ export function projectForClient(
           const out: MaterializedExercise = { id: ex.id, name: ex.name };
           for (const [k, v] of Object.entries(ex)) {
             if (k === "id" || k === "name") continue;
-            // Exercise metadata is structural (like catalogItemId) — never
+            // Exercise metadata is structural (like catalogItemId): never
             // a toggled prescription field. setRows projects below.
             if (k === "setRows") continue;
             if (

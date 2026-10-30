@@ -5,6 +5,60 @@
 - Repair (8 files, `frontend/` only): `.ct-tracking` and `.mp-client-plan` are now `container-type: inline-size` and their max-width breakpoints became `@container` queries (760/640/700/420px; tracker-cell popover clamp now `cqw`), preserving the same layouts at standalone narrow widths while adapting embedded previews to actual available width. `smooth-trend` bottom padding 7→15 and dates caption margin 2→6 give ~23px plot/label separation; data, calculations and aggregation unchanged.
 - Browser-verified before/after at the reproduced 390px frame plus desktop-width preview and 320px standalone `/client`: labels and units readable, headers no longer overlap, chart labels separated, no overflow or hidden fields; inputs still editable.
 - Gates on Node v24.22.1: frontend `format` clean, `lint` 0 problems, `typecheck` 0, `test` 322/322, `build` pass; repo `index:check` OK, `tsc --noEmit` 0, `eslint` 0 errors/101 warnings (pre-existing), prettier clean on changed paths, `git diff --check` 0. Visual-parity gate N/A: harness covers the production app routes, not `frontend/` preview surfaces; no baseline refresh, tolerance or mask change. Colour picker defect: no screenshot/repro steps supplied — not fixed, listed in the PR. Draft PR to Vari8-Beta; stop for independent review.
+## 2026-10-30 - Studio meal plan: saved meal Assign
+
+- Saved meal Assign in the studio meal plan page creates the client owned copy
+  through the saved meals API. The library row is upserted, then one assignment
+  POST creates the copy. Ambiguous client names are refused and the page shows
+  the failure message.
+- The workspace id now flows from `app/(canvas)/ethereal/page.tsx` into the
+  meal plan workspace. Test: `tests/unit/mealplan-assign.test.ts`.
+- Gates: typecheck, lint, format:check, index:check, build and the new test exit 0. Full `npm run test` fails only in `tests/unit/parity-https.test.ts` and
+  `tests/unit/visual-reference.test.ts` (missing `pngjs` package), and both fail
+  the same way on the base commit.
+
+## 2026-10-29 - Merge: nutrition accuracy gate manifest mode
+
+- Manifest mode in `scripts/check-nutrition-source-accuracy.ts`, with probe
+  coverage in `tests/unit/nutrition-accuracy-gate-probes.test.ts`.
+- Comment punctuation tidied in the training, notes and refresh route files.
+
+## 2026-10-29 - Repair round 1: reset demo flag, default seed coverage, claim corrections
+
+- Reset fix: "Reset coach workspace" re-seeded with the demo default, so a real
+  workspace got fixture check-in submissions, extras and schedules back. The
+  store now exposes `demo` and the reset calls `seedState({ demo })`. Test:
+  `tests/unit/coach-reset-demo-gate.test.tsx` resets a workspace holding demo
+  state and asserts no submissions, extras, schedules or board events remain.
+  Reverting the one call site turned it red; restored, it passes.
+- Default seed coverage: `tests/integration/seed-credentials.test.ts` has a new
+  case that runs the seed with `VARI8_SEED_DEMO` unset and asserts the sign-in
+  client can sign in and owns only the Amara Lewis profile, and the no-profile
+  client can sign in and owns nothing. Removing the `linkClientProfile` call in
+  `scripts/seed/00-workspace.seed.ts` turned it red; restored, it passes.
+- Corrected claims. The default seed is not unchanged: it now binds Amara Lewis
+  (not James Reed) to the sign-in client, adds a no-profile client, and writes
+  credential accounts for the demo users in the check-ins seed. The demo gate
+  covers the canvas model and its read path only. The check-ins seed
+  (`33-checkins`) already wrote its database rows before this work and is not
+  gated.
+
+### Known limits
+
+- The `?demo=` URL switch mounts fixtures client side in every build. No server
+  data is involved.
+
+## 2026-10-29 - Merge: check-in fixtures, photo tiles, seed client link and credentials
+
+- Four verified tips merged as merge commits, never squashed: 3a47c445 (check-in
+  fixture canvas model and read path gated on the demo flag; check-ins seed DB rows not gated), 2fbbcf36 (release orphaned media
+  mints on gallery reload), 85db3644 and caa5c2e8 (seed client linked to the
+  Amara Lewis profile, every linked demo client holds a login). The last two
+  were resolved together once; the seed files keep the 85db3644 content.
+- Conflicts: `components/canvas/client-app/photos.tsx` stays deleted as on Beta
+  (no importers; the gallery behavior lives in the workspace photos panel);
+  seed files keep the Amara Lewis link plus the optional second coach fixture;
+  this file is the union of both entries. The frontend tree matches Beta.
 
 ## 2026-10-29 - Merge: wave 2 trunk tail (flexible schedule, tracker columns, temporary nutrition plan, stored calories)
 
@@ -1194,6 +1248,40 @@ generate` (stale client missed `clientPhase`/`clientWeekNote`);
 - Note: `/client` renders sections from the canvas-local client config
   (`?client=<canvas-id>`); the remote `own` binding only enables the
   Photos section. `/me` is a separate surface and does not mount it.
+
+## 2026-10-27 - SEED_CLIENT owns the Amara Lewis profile; every linked demo client signs in
+
+- `scripts/seed/00-workspace.seed.ts`: the seeded sign-in client now links
+  to the Amara Lewis canvas profile (previously it linked `clients[0]`,
+  Emma Anders, which `33-checkins.seed.ts` then re-pointed to a demo user,
+  leaving SEED_CLIENT with zero profiles and getClientViewer null; the
+  row had to be relinked by hand). All fifteen profiles are now
+  created in roster order before the link so 33's positional indexing is
+  preserved. New `no-profile@canvas-demo.test` (ACTIVE CLIENT, credential
+  from SEED_DEMO_CLIENT_PASSWORD with SEED_CLIENT_PASSWORD fallback, zero
+  client_profile rows) carries the own-scope denial coverage SEED_CLIENT
+  used to provide.
+- `scripts/seed/33-checkins.seed.ts`: `demoClientUser` now writes a Better
+  Auth credential account for every demo user it creates, not only Emma,
+  so lily.chen and oliver.stone sign in; comment block corrected.
+- `scripts/seed/50-demo-coverage.seed.ts`: the demo-export Amara Lewis row
+  resolves to the SEED_CLIENT user via SEED_CLIENT_EMAIL instead of a
+  fixture-email user, sets the user name to the profile name, and a
+  credential account is ensured for every linked user including pre-linked
+  ones the module reuses. No amara.lewis@example.com user is created on a
+  fresh seed; the fixture email is not referenced by any other seeded row.
+- `tests/integration/seed-credentials.test.ts`: asserts SEED_CLIENT owns
+  the Amara Lewis profile, all fifteen linked canvas-demo users verify
+  with the seeded password, the no-profile client holds zero profiles, and
+  a second seed duplicates nothing; runs with VARI8_SEED_DEMO=1.
+- Gates on a lane database: `prisma migrate deploy` 0,
+  `npm run seed:dev` 0 twice (reseed: identical link state and row counts),
+  sign-in at /login as SEED_CLIENT lands on /me rendering Amara Lewis
+  (getClientViewer non-null), `npx vitest run --config
+vitest.integration.config.ts tests/integration/seed-credentials.test.ts`
+  0 (5 tests), `npm run lint` 0 (91 warnings, 0 errors),
+  `npm run typecheck` 0, `npx prettier --check` 0 on changed files,
+  `npm run index` + `index:check` 0, dash gate on added diff lines 0.
 
 ## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
 

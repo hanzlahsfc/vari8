@@ -74,7 +74,13 @@ function toGroups(data: SettingsResponse): PreferenceGroupView[] {
   }));
 }
 
-export function SettingsForm({ workspaceId }: { workspaceId: string }) {
+export function SettingsForm({
+  workspaceId,
+  appVersion,
+}: {
+  workspaceId: string;
+  appVersion?: string;
+}) {
   const [settings, setSettings] = useState<SettingsResponse | null>(null);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState("");
@@ -139,6 +145,7 @@ export function SettingsForm({ workspaceId }: { workspaceId: string }) {
         role: ROLE_LABELS[settings.profile.role] ?? settings.profile.role,
       }}
       preferenceGroups={toGroups(settings)}
+      appVersion={appVersion}
       saving={saving}
       notice={notice}
       error={error}

@@ -15,8 +15,10 @@ import type { SeedContext } from "./index";
  * Creates the workspace the canvas shows (`canvas-demo`, "Liliana Mansfeld
  * Coaching"), the owner the canvas account block names (Liliana Mansfeld,
  * WORKSPACE_OWNER), one staff coach (Sofia Miller, the canvas brand coach
- * name), one sign-in client linked to the first canvas demo client profile,
- * and the fifteen canvas demo clients as ClientProfile rows whose synthetic
+ * name), one sign-in client linked to the Amara Lewis canvas demo client
+ * profile (the demo-export client-007 row resolves to this account), one
+ * profile-less sign-in client carrying own-scope denial coverage, and the
+ * fifteen canvas demo clients as ClientProfile rows whose synthetic
  * names come from the canvas roster data
  * (`lib/canvas/data/mock-data.json`, surfaced by
  * `components/canvas/coach/model.ts`). A second workspace
@@ -30,12 +32,14 @@ import type { SeedContext } from "./index";
  * removal) and the seed no longer writes it.
  *
  * Credentials come from environment variables only and are never committed:
- *   SEED_OWNER_EMAIL,  SEED_OWNER_PASSWORD  — owner of `canvas-demo`.
- *   SEED_COACH_EMAIL,  SEED_COACH_PASSWORD  — coach of `canvas-demo`.
- *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD — client of `canvas-demo`, linked
- *     to a canvas demo client profile the check-ins seed does not claim.
- *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD — coach of `seed-second-workspace`.
- *   SEED_COACH2_EMAIL, SEED_COACH2_PASSWORD - optional second COACH member of
+ *   SEED_OWNER_EMAIL,  SEED_OWNER_PASSWORD:  owner of `canvas-demo`.
+ *   SEED_COACH_EMAIL,  SEED_COACH_PASSWORD:  coach of `canvas-demo`.
+ *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD: client of `canvas-demo`, linked
+ *     to the Amara Lewis demo client profile.
+ *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD: coach of `seed-second-workspace`.
+ *   SEED_DEMO_CLIENT_PASSWORD (optional): password for the profile-less
+ *     denial client; falls back to SEED_CLIENT_PASSWORD.
+ *   SEED_COACH2_EMAIL, SEED_COACH2_PASSWORD: optional second COACH member of
  *     `canvas-demo` (w2-fe2 notes matrix fixture).
  * Passwords need >= 10 code points and one ASCII digit (owner-decided policy).
  * Every write is an idempotent upsert so `npm run seed:dev` is safe to re-run.
@@ -48,6 +52,9 @@ const COACH_NAME = "Sofia Miller";
 const SECOND_WORKSPACE_SLUG = "seed-second-workspace";
 const SECOND_WORKSPACE_NAME = "Seed Second Workspace";
 const STAFF2_NAME = "Second Workspace Coach";
+const SEED_CLIENT_PROFILE_NAME = "Amara Lewis";
+const NO_PROFILE_CLIENT_EMAIL = "no-profile@canvas-demo.test";
+const NO_PROFILE_CLIENT_NAME = "Seed No-Profile Client";
 
 type CanvasClient = { id: string; name: string };
 
@@ -108,17 +115,6 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     await upsertMember(prisma, workspace.id, coach2.id, "COACH");
   }
 
-  const names = canvasClientNames();
-  // The seeded client signs in against a roster row the canvas already
-  // shows. It binds names[1] (James Reed): the check-ins seed
-  // (33-checkins.seed.ts) claims the profiles at indices 0, 2 and 3 for its
-  // own submission-author users, so binding names[0] would be stolen later
-  // in the run.
-  const clientName = names[1]!;
-  const client = await upsertUser(prisma, clientEmail, clientName);
-  await upsertCredentialAccount(prisma, client.id, clientPassword);
-  await upsertMember(prisma, workspace.id, client.id, "CLIENT");
-
   const secondWorkspace = await prisma.workspace.upsert({
     where: { slug: SECOND_WORKSPACE_SLUG },
     update: {},
@@ -128,6 +124,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   await upsertCredentialAccount(prisma, staff2.id, staff2Password);
   await upsertMember(prisma, secondWorkspace.id, staff2.id, "COACH");
 
+  // Profiles are created in roster order first: `33-checkins.seed.ts`
+  // indexes `clientProfile.findMany(orderBy createdAt)` positionally, so an
+  // early single-row create would scramble every index link downstream.
+  const names = canvasClientNames();
   let created = 0;
   for (const name of names) {
     const existing = await prisma.clientProfile.findFirst({
@@ -140,14 +140,46 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     created += 1;
   }
+
+  // The seeded sign-in client owns the Amara Lewis canvas demo profile so
+  // sign-in as SEED_CLIENT_EMAIL lands on a client profile that exists
+  // (`getClientViewer` non-null). `50-demo-coverage.seed.ts` attributes the
+  // demo-export client-007 rows (messages, submissions) to this account.
+  const client = await upsertUser(
+    prisma,
+    clientEmail,
+    SEED_CLIENT_PROFILE_NAME,
+  );
+  await upsertCredentialAccount(prisma, client.id, clientPassword);
+  await upsertMember(prisma, workspace.id, client.id, "CLIENT");
+  await linkClientProfile(
+    prisma,
+    workspace.id,
+    client.id,
+    SEED_CLIENT_PROFILE_NAME,
+  );
+
+  // Dedicated profile-less client carries the own-scope denial coverage the
+  // sign-in client used to provide: credential account, ACTIVE CLIENT
+  // member, zero client_profile rows.
+  const noProfile = await upsertUser(
+    prisma,
+    NO_PROFILE_CLIENT_EMAIL,
+    NO_PROFILE_CLIENT_NAME,
+  );
+  await upsertCredentialAccount(
+    prisma,
+    noProfile.id,
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? clientPassword,
+  );
+  await upsertMember(prisma, workspace.id, noProfile.id, "CLIENT");
+  await prisma.clientProfile.updateMany({
+    where: { workspaceId: workspace.id, userId: noProfile.id },
+    data: { userId: null },
+  });
   const total = await prisma.clientProfile.count({
     where: { workspaceId: workspace.id },
   });
-  // Bound after the bulk create so the profile keeps its loop-created
-  // timestamp: 33-checkins.seed.ts reads the profiles createdAt-ordered and
-  // maps index i onto canvas client i. The link only writes `userId` on the
-  // one profile named above and leaves every other binding untouched.
-  await linkClientProfile(prisma, workspace.id, client.id, clientName);
   console.log(
     `[seed] workspace ${workspace.slug}: owner+coach+client ready, ` +
       `${created} client profile(s) created, ${total} total; ` +

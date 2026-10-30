@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: page/layout/route files under `app/` (backend) and `frontend/src/app/` (canvas).
-Counts: 60 backend pages, 94 API routes, 14 layouts, 5 canvas pages.
+Counts: 58 backend pages, 94 API routes, 14 layouts, 5 canvas pages.
 
 Columns: `server`/`client` comes from the `use client` directive; `Auth (detected)` lists the
 guard helpers called by the route file or one of its ancestor layouts. Detection is textual:
@@ -32,8 +32,6 @@ Route groups (do not add a path segment): `(auth)`, `(canvas)`, `(tracker)`.
 | `/me/reset-request` | `app/(canvas)/me/(auth)/reset-request/page.tsx` | server | none detected |
 | `/reset` | `app/reset/page.tsx` | server | none detected |
 | `/reset-request` | `app/reset-request/page.tsx` | server | none detected |
-| `/sheets` | `app/sheets/page.tsx` | server | requireSheetViewer |
-| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` | server | requireSheetViewer |
 | `/signup` | `app/signup/page.tsx` | server | none detected |
 | `/workspace` | `app/workspace/page.tsx` | server | requireSessionUser |
 | `/workspace/[workspaceId]` | `app/workspace/[workspaceId]/page.tsx` | server | requireSessionUser + requireWorkspaceAccess (some via layout) |
