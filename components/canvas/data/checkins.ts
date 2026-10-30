@@ -716,6 +716,31 @@ const WEEKDAY_NAMES = [
  * before any write. Each call writes one weekday's change then regenerates;
  * a failure surfaces after a reload rather than claiming success.
  */
+/** Authoritative reload of a client's recurring schedule — the folded
+ *  ACTIVE segments the board projects. The settings dialog calls this after
+ *  every product-mode save so pressed-states mirror the backend, not the
+ *  locally applied intent. */
+export async function reloadRecurring(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<{ schedules: Schedule[]; weekdays: number[] }> {
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(clientProfileId)}`,
+  );
+  // The dialog's pressed-state is the UNION of ACTIVE rules' weekdays —
+  // folded segments bucket by startDate, so the latest segment alone would
+  // miss an older rule that is still ACTIVE.
+  const weekdays = [
+    ...new Set(
+      rules.items
+        .filter((r) => r.status === "ACTIVE")
+        .map((r) => WEEKDAY_INDEX[r.weekday])
+        .filter((d): d is number => d !== undefined),
+    ),
+  ];
+  return { schedules: foldScheduleRules(rules.items), weekdays };
+}
+
 export type ScheduleFormVersionOption = {
   position: number;
   formName: string;
@@ -809,11 +834,32 @@ export async function saveRecurringDays(input: {
     },
   );
   const ruleId = created.ruleId ?? created.id ?? "";
-  // D30: rule creation never generates — materialize occurrences explicitly.
-  await apiFetch(`${base}/schedule-rules/${ruleId}/generate`, {
-    body: { clientProfileId: input.clientProfileId },
-  });
-  return { ruleId, status: created.status ?? "scheduled" };
+  // D30: rule creation never generates — materialize explicitly. A failed
+  // generate leaves the rule persisted but ungenerated; the caller offers
+  // retryGenerateRule for the same ruleId (generation is idempotent per
+  // (originRuleId, occurrenceDate) — a retry completes rather than
+  // duplicating, and the rule must NOT be recreated).
+  try {
+    await apiFetch(`${base}/schedule-rules/${ruleId}/generate`, {
+      body: { clientProfileId: input.clientProfileId },
+    });
+    return { ruleId, status: created.status ?? "scheduled" };
+  } catch {
+    return { ruleId, status: "ungenerated" };
+  }
+}
+
+/** Retry generation on a persisted rule — idempotent per the backend's
+ *  occurrence-identity dedupe; safe to repeat after a failed create+generate. */
+export async function retryGenerateRule(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  ruleId: string;
+}): Promise<void> {
+  await apiFetch(
+    `/workspaces/${input.workspaceId}/checkins/schedule-rules/${input.ruleId}/generate`,
+    { body: { clientProfileId: input.clientProfileId } },
+  );
 }
 
 /**

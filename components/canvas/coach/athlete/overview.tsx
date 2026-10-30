@@ -44,7 +44,12 @@ import { phaseRanges } from "../plans/phase-planning";
 import { optionDaysLabel } from "../plans/plan-cards-support";
 import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
-import { loadSchedulableFormVersions, saveRecurringDays } from "../../data/checkins";
+import {
+  loadSchedulableFormVersions,
+  reloadRecurring,
+  retryGenerateRule,
+  saveRecurringDays,
+} from "../../data/checkins";
 import {
   addLocalDays,
   type CardioTarget,
@@ -184,6 +189,8 @@ function ClientSettingsDialog({
   const [schedFormId, setSchedFormId] = useState("");
   const [schedAmbiguous, setSchedAmbiguous] = useState(false);
   const [schedPending, setSchedPending] = useState<{ weekday: number; add: boolean } | null>(null);
+  const [schedRetry, setSchedRetry] = useState<string | null>(null);
+  const [schedWeekdays, setSchedWeekdays] = useState<number[] | null>(null);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -225,7 +232,7 @@ function ClientSettingsDialog({
               type="button"
               key={day}
               aria-label={day}
-              aria-pressed={activeSchedule?.weekdays.includes(index) ?? false}
+              aria-pressed={(schedWeekdays ?? activeSchedule?.weekdays ?? []).includes(index)}
               disabled={schedSaving}
               onClick={async () => {
                 const oldDays = client.schedules.at(-1)?.weekdays ?? [];
@@ -256,16 +263,30 @@ function ClientSettingsDialog({
                 if (workspaceId && profileId) {
                   setSchedSaving(true);
                   try {
-                    await saveRecurringDays({
+                    const res = await saveRecurringDays({
                       workspaceId,
                       clientProfileId: profileId,
                       weekday: index,
                       add: adding,
                     });
-                    apply(weekdays);
-                    toast(
-                      "Recurring schedule updated from tomorrow. Submitted history retained.",
+                    // authoritative reload — the pressed-states must mirror
+                    // the backend rules, not the locally applied intent
+                    const folded = await reloadRecurring(
+                      workspaceId,
+                      profileId,
                     );
+                    setSchedWeekdays(folded.weekdays);
+                    update((cl) => ({ ...cl, schedules: folded.schedules }));
+                    if (res.status === "ungenerated") {
+                      setSchedRetry(res.ruleId);
+                      setSchedError(
+                        "The rule was scheduled but generation did not complete — retry to create the check-in dates.",
+                      );
+                    } else {
+                      toast(
+                        "Recurring schedule updated from tomorrow. Submitted history retained.",
+                      );
+                    }
                   } catch (err) {
                     const msg = err instanceof Error ? err.message : "";
                     if (msg === "SELECT_FORM_REQUIRED" || msg === "SELECT_FORM_AMBIGUOUS") {
@@ -357,6 +378,38 @@ function ClientSettingsDialog({
               }}
             >
               Cancel
+            </Button>
+          </div>
+        )}
+        {schedRetry && (
+          <div className="cd-setting-row">
+            <Button
+              variant="secondary"
+              disabled={schedSaving}
+              onClick={async () => {
+                setSchedSaving(true);
+                try {
+                  const profileId = await clientProfileIdFor(client.name);
+                  if (profileId && workspaceId) {
+                    await retryGenerateRule({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      ruleId: schedRetry,
+                    });
+                    setSchedRetry(null);
+                    setSchedError("");
+                    toast("Check-in dates generated.");
+                  }
+                } catch (e) {
+                  setSchedError(
+                    e instanceof Error ? e.message : "Generation failed",
+                  );
+                } finally {
+                  setSchedSaving(false);
+                }
+              }}
+            >
+              Retry generation
             </Button>
           </div>
         )}
