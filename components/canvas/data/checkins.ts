@@ -623,6 +623,80 @@ export async function cancelExtra(input: {
 }
 
 /**
+ * Create an additional (one-off) check-in date. The server needs a
+ * `formVersionId`; per Q10 the schedulable-version list is the source (latest
+ * published version, no picker), and the canvas "Requested update" type maps
+ * to the form by its published name — the same Custom/Full distinction the
+ * board's own projection documents (an extra date has no Full/Custom column).
+ */
+export async function createExtra(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  date: string;
+  type: "Full" | "Custom";
+  note: string;
+}): Promise<{ instanceId: string }> {
+  const base = `/workspaces/${input.workspaceId}/checkins`;
+  // Owner ruling: a Full additional date uses the client's regular weekly
+  // check-in form by EXACT identity — the formId on the client's ACTIVE
+  // schedule rule — never by name or inference. Custom (per-instance field
+  // selection) is a separate future slice and is refused here rather than
+  // provisionally mapped.
+  if (input.type !== "Full")
+    throw new Error(
+      "Custom check-ins are not available yet; only the regular Full update can be scheduled",
+    );
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const activeFormIds = [
+    ...new Set(
+      rules.items
+        .filter((rule) => rule.status === "ACTIVE")
+        .map((rule) => rule.formId),
+    ),
+  ];
+  if (activeFormIds.length === 0)
+    throw new Error(
+      "No active check-in schedule resolves the client's regular form",
+    );
+  if (activeFormIds.length > 1)
+    throw new Error(
+      "Multiple active check-in schedules; the regular form is ambiguous",
+    );
+  const formId = activeFormIds[0];
+  const versions = await apiFetch<{
+    options: {
+      position: number;
+      formName: string;
+      versionSeq: number;
+      formId: string;
+      formVersionId: string;
+    }[];
+  }>(
+    `${base}/schedule-versions?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const match = [...versions.options]
+    .filter((option) => option.formId === formId)
+    .sort((a, b) => b.versionSeq - a.versionSeq)[0];
+  if (!match)
+    throw new Error(
+      "No published version exists for the client's regular check-in form",
+    );
+  const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
+    body: {
+      clientProfileId: input.clientProfileId,
+      formId,
+      formVersionId: match.formVersionId,
+      dueAt: viennaMidnight(input.date),
+      dueTz: "Europe/Vienna",
+      coachNote: input.note,
+    },
+  });
+  return { instanceId: created.instanceId };
+}
+
+/**
  * Mark reviewed then send feedback as one user action: the send is refused
  * server-side until an acknowledgement exists (#96), so the review call runs
  * first. `clientRequestId` is the idempotency anchor for a retry of the same
