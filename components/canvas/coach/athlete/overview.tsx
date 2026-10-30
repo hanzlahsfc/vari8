@@ -44,6 +44,7 @@ import { phaseRanges } from "../plans/phase-planning";
 import { optionDaysLabel } from "../plans/plan-cards-support";
 import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
+import { saveRecurringDays } from "../../data/checkins";
 import {
   addLocalDays,
   type CardioTarget,
@@ -175,7 +176,10 @@ function ClientSettingsDialog({
   onAddDate: () => void;
   onClose: () => void;
 }) {
-  const { state, setState, navigate, toast } = useCoach();
+  const { state, setState, navigate, toast, workspaceId, clientProfileIdFor } =
+    useCoach();
+  const [schedSaving, setSchedSaving] = useState(false);
+  const [schedError, setSchedError] = useState("");
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -218,20 +222,58 @@ function ClientSettingsDialog({
               key={day}
               aria-label={day}
               aria-pressed={activeSchedule?.weekdays.includes(index) ?? false}
-              onClick={() => {
+              disabled={schedSaving}
+              onClick={async () => {
                 const oldDays = client.schedules.at(-1)?.weekdays ?? [];
-                const weekdays = oldDays.includes(index)
-                  ? oldDays.filter((d) => d !== index)
-                  : [...oldDays, index];
-                update((cl) => ({
-                  ...cl,
-                  schedules: [
-                    ...cl.schedules.filter(
-                      (s) => s.effective !== addDays(TODAY, 1),
-                    ),
-                    { effective: addDays(TODAY, 1), weekdays },
-                  ],
-                }));
+                const adding = !oldDays.includes(index);
+                const weekdays = adding
+                  ? [...oldDays, index]
+                  : oldDays.filter((d) => d !== index);
+                const apply = (x: typeof weekdays) =>
+                  update((cl) => ({
+                    ...cl,
+                    schedules: [
+                      ...cl.schedules.filter(
+                        (s) => s.effective !== addDays(TODAY, 1),
+                      ),
+                      { effective: addDays(TODAY, 1), weekdays: x },
+                    ],
+                  }));
+                setSchedError("");
+                const profileId = workspaceId
+                  ? await clientProfileIdFor(client.name)
+                  : null;
+                if (workspaceId && !profileId) {
+                  setSchedError(
+                    "This athlete could not be resolved on the server",
+                  );
+                  return;
+                }
+                if (workspaceId && profileId) {
+                  setSchedSaving(true);
+                  try {
+                    await saveRecurringDays({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      weekday: index,
+                      add: adding,
+                    });
+                    apply(weekdays);
+                    toast(
+                      "Recurring schedule updated from tomorrow. Submitted history retained.",
+                    );
+                  } catch (err) {
+                    setSchedError(
+                      err instanceof Error
+                        ? err.message
+                        : "The recurring schedule could not be saved",
+                    );
+                  } finally {
+                    setSchedSaving(false);
+                  }
+                  return;
+                }
+                apply(weekdays);
                 toast(
                   "Recurring schedule updated from tomorrow. Submitted history retained.",
                 );
@@ -241,6 +283,11 @@ function ClientSettingsDialog({
             </button>
           ))}
         </div>
+        {schedError && (
+          <p role="alert" className="cd-error">
+            {schedError}
+          </p>
+        )}
         {client.schedules.some((s) => s.effective > TODAY) && (
           <p className="ap-sub">
             From tomorrow:{" "}

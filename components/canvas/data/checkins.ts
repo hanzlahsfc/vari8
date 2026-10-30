@@ -696,6 +696,99 @@ export async function createExtra(input: {
   return { instanceId: created.instanceId };
 }
 
+const WEEKDAY_NAMES = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+
+/**
+ * Persist a weekday change on an EXISTING recurring schedule (P593 slice).
+ * Form identity comes from the client's existing rules only: exactly one
+ * distinct formId across every rule (any status) is required — zero rules is
+ * the unimplemented first-create case, and two is ambiguous; both refuse
+ * before any write. Each call writes one weekday's change then regenerates;
+ * a failure surfaces after a reload rather than claiming success.
+ */
+export async function saveRecurringDays(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  weekday: number;
+  add: boolean;
+}): Promise<{ ruleId: string; status: string }> {
+  if (input.weekday < 0 || input.weekday > 6)
+    throw new Error("Weekday out of range");
+  const base = `/workspaces/${input.workspaceId}/checkins`;
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const formIds = new Set(rules.items.map((r) => r.formId));
+  if (formIds.size === 0)
+    throw new Error(
+      "No check-in schedule exists yet — the first recurring schedule is not available",
+    );
+  if (formIds.size > 1)
+    throw new Error(
+      "This client's recurring schedule uses more than one form; the regular form is ambiguous",
+    );
+  const formId = rules.items[0].formId;
+  const name = WEEKDAY_NAMES[input.weekday];
+  // The newest rule of this weekday carries the schedule's time/zone for the
+  // replacement; fall back to the newest rule of any weekday.
+  // The newest rule of this weekday anchors the replacement; otherwise the
+  // newest rule of any weekday. The list DTO does not carry the schedule's
+  // local time, so the create reuses the workspace Vienna convention — the
+  // same zone the board asserts (filters row, wiring coach.md:441).
+  const sorted = [...rules.items].sort((a, b) =>
+    b.startDate.localeCompare(a.startDate),
+  );
+  const endedSameDay = sorted.find(
+    (r) => r.weekday === name && r.status !== "ACTIVE",
+  );
+  const activeForDay = sorted.find(
+    (r) => r.weekday === name && r.status === "ACTIVE",
+  );
+
+  if (!input.add) {
+    if (!activeForDay)
+      throw new Error(`No active ${name} rule to remove`);
+    const res = await apiFetch<{ status: string }>(
+      `${base}/schedule-rules/${activeForDay.ruleId}/status`,
+      {
+        body: { clientProfileId: input.clientProfileId, action: "end" },
+      },
+    );
+    return { ruleId: activeForDay.ruleId, status: res.status };
+  }
+
+  if (activeForDay)
+    return { ruleId: activeForDay.ruleId, status: "unchanged" };
+  const created = await apiFetch<{ ruleId?: string; id?: string; status?: string }>(
+    `${base}/schedule-rules`,
+    {
+      body: {
+        clientProfileId: input.clientProfileId,
+        formId,
+        weekday: name,
+        localTimeMinutes: 480,
+        timezone: "Europe/Vienna",
+        startDate: plusDays(viennaDate(new Date().toISOString()), 1),
+        endDate: null,
+        replacesRuleId: endedSameDay?.ruleId ?? null,
+      },
+    },
+  );
+  const ruleId = created.ruleId ?? created.id ?? "";
+  await apiFetch(`${base}/schedule-rules/${ruleId}/generate`, {
+    body: { clientProfileId: input.clientProfileId },
+  });
+  return { ruleId, status: created.status ?? "scheduled" };
+}
+
 /**
  * Mark reviewed then send feedback as one user action: the send is refused
  * server-side until an acknowledgement exists (#96), so the review call runs
