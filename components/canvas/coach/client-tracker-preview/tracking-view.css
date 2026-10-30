@@ -7,6 +7,7 @@
   font-display: swap;
 }
 .coach-root .ct-tracking {
+  container-type: inline-size;
   --ct-rule: color-mix(in srgb, var(--cd-text) 8%, transparent);
   --ct-edge: color-mix(in srgb, var(--cd-text) 12%, transparent);
   --ct-panel: var(--cd-surface);
@@ -314,7 +315,7 @@
   font-size: var(--v8-font-size-card-heading);
   margin: 0 0 8px;
 }
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .coach-root .ct-tracker-header {
     margin-bottom: 20px;
   }

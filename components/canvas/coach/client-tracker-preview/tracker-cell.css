@@ -586,10 +586,10 @@
 .tc-text-popover.tc-time-popover {
   overflow: visible;
 }
-@media (max-width: 420px) {
+@container (max-width: 420px) {
   .tc-text-popover,
   .tc-comment-popover,
   .tc-text-popover.tc-time-popover {
-    max-width: calc(100vw - 64px);
+    max-width: calc(100cqw - 64px);
   }
 }
