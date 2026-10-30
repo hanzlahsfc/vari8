@@ -648,7 +648,7 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
       "../../components/canvas/data/checkins"
     );
     await saveRecurringDays({ ...base, weekday: 2 });
-    const body = vi.mocked(apiFetch).mock.calls[1][1]?.body;
+    const body = vi.mocked(apiFetch).mock.calls[1][1]?.body as Record<string, unknown>;
     expect(body.formId).toBe("form-weekly");
     expect(body).not.toHaveProperty("formVersionId");
     expect(vi.mocked(apiFetch).mock.calls[2][0]).toContain("r-new/generate");

@@ -183,6 +183,7 @@ function ClientSettingsDialog({
   const [schedForms, setSchedForms] = useState<{ formId: string; label: string }[]>([]);
   const [schedFormId, setSchedFormId] = useState("");
   const [schedAmbiguous, setSchedAmbiguous] = useState(false);
+  const [schedPending, setSchedPending] = useState<{ weekday: number; add: boolean } | null>(null);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
@@ -269,6 +270,7 @@ function ClientSettingsDialog({
                     const msg = err instanceof Error ? err.message : "";
                     if (msg === "SELECT_FORM_REQUIRED" || msg === "SELECT_FORM_AMBIGUOUS") {
                       setSchedAmbiguous(msg === "SELECT_FORM_AMBIGUOUS");
+                      setSchedPending({ weekday: index, add: adding });
                       try {
                         const v = await loadSchedulableFormVersions(
                           workspaceId,
@@ -309,7 +311,7 @@ function ClientSettingsDialog({
         {schedForms.length > 0 && (
           <div className="cd-setting-row">
             <Select
-              label="Published check-in form"
+              label={`Published check-in form${schedPending ? ` — ${schedPending.add ? "adding" : "removing"} ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][schedPending.weekday]}` : ""}`}
               value={schedFormId}
               options={schedForms.map((f) => ({ value: f.formId, label: f.label }))}
               onChange={setSchedFormId}
@@ -322,19 +324,17 @@ function ClientSettingsDialog({
                 try {
                   const profileId = await clientProfileIdFor(client.name);
                   if (profileId && workspaceId) {
-                    const day = client.schedules.at(-1)?.weekdays ?? [];
-                    // apply the pending toggle intent with the chosen form
-                    const idx = [...document.querySelectorAll(".cd-weekdays button")].findIndex(
-                      (b) => (b as HTMLElement).getAttribute("aria-pressed") === "false",
-                    );
+                    if (!schedPending)
+                      throw new Error("No pending schedule change");
                     await saveRecurringDays({
                       workspaceId,
                       clientProfileId: profileId,
-                      weekday: Math.max(0, idx),
-                      add: true,
+                      weekday: schedPending.weekday,
+                      add: schedPending.add,
                       formId: schedFormId,
                     });
                     setSchedForms([]);
+                    setSchedPending(null);
                     setSchedError("");
                     toast("Recurring schedule updated.");
                   }
@@ -346,6 +346,17 @@ function ClientSettingsDialog({
               }}
             >
               Apply
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSchedForms([]);
+                setSchedPending(null);
+                setSchedFormId("");
+                setSchedError("");
+              }}
+            >
+              Cancel
             </Button>
           </div>
         )}
