@@ -17,6 +17,7 @@ import {
 import { TextArea } from "../vari8/inputs";
 import { FormGrid, Toolbar } from "../vari8/layouts";
 import { assignStaffClientTask, fetchStaffClientTasks } from "../data/clients";
+import { createExtra } from "../data/checkins";
 import {
   createCoachTask,
   deleteCoachTask,
@@ -853,7 +854,10 @@ export function ExtraDateDialog({
   existing?: import("./model").Extra;
   initialDate?: string;
 }) {
-  const { state, setState, toast } = useCoach();
+  const { state, setState, toast, workspaceId, clientProfileIdFor } =
+    useCoach();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [client, setClient] = useState(
     existing?.clientId ?? clientId ?? state.clients[0]?.id ?? "",
   );
@@ -907,34 +911,74 @@ export function ExtraDateDialog({
           This athlete already has an additional request on this date.
         </p>
       )}
+      {saveError && (
+        <p role="alert" className="cd-error">
+          {saveError}
+        </p>
+      )}
       <div className="cd-dialog-actions">
         <Button onClick={onClose}>Cancel</Button>
         <Button
           primary
-          disabled={!client || !date || date < TODAY || duplicate}
-          onClick={() => {
-            const x = {
-              id: existing?.id ?? uid("extra"),
-              clientId: client,
-              date,
-              type,
-              note,
-            };
-            setState((s) => ({
-              ...s,
-              extras: existing
-                ? s.extras.map((e) => (e.id === existing.id ? x : e))
-                : [...s.extras, x],
-            }));
-            toast(
-              existing
-                ? "Additional date updated"
-                : "Additional check-in scheduled",
-            );
-            onClose();
+          disabled={
+            saving || !client || !date || date < TODAY || duplicate
+          }
+          onClick={async () => {
+            setSaving(true);
+            setSaveError("");
+            try {
+              const x = {
+                id: existing?.id ?? uid("extra"),
+                clientId: client,
+                date,
+                type,
+                note,
+              };
+              const clientName = state.clients.find(
+                (c) => c.id === client,
+              )?.name;
+              const profileId =
+                workspaceId && clientName
+                  ? await clientProfileIdFor(clientName)
+                  : undefined;
+              if (workspaceId && profileId && !existing) {
+                const created = await createExtra({
+                  workspaceId,
+                  clientProfileId: profileId,
+                  date,
+                  type,
+                  note,
+                });
+                x.id = created.instanceId;
+              } else if (workspaceId && !profileId) {
+                throw new Error(
+                  "This athlete could not be resolved on the server",
+                );
+              }
+              setState((s) => ({
+                ...s,
+                extras: existing
+                  ? s.extras.map((e) => (e.id === existing.id ? x : e))
+                  : [...s.extras, x],
+              }));
+              toast(
+                existing
+                  ? "Additional date updated"
+                  : "Additional check-in scheduled",
+              );
+              onClose();
+            } catch (err) {
+              setSaveError(
+                err instanceof Error
+                  ? err.message
+                  : "The check-in could not be scheduled",
+              );
+            } finally {
+              setSaving(false);
+            }
           }}
         >
-          Save date
+          {saving ? "Saving…" : "Save date"}
         </Button>
       </div>
     </Dialog>

@@ -356,3 +356,90 @@ describe("check-in board read (PR-W6)", () => {
     ]);
   });
 });
+
+describe("createExtra — additional-date write (P582)", () => {
+  const base = "/workspaces/ws-1/checkins";
+  const input = {
+    workspaceId: "ws-1",
+    clientProfileId: "cp-1",
+    date: "2026-11-04",
+    type: "Custom" as const,
+    note: "knee check",
+  };
+  const versions = {
+    options: [
+      {
+        position: 0,
+        formName: "Weekly check-in",
+        versionSeq: 2,
+        formId: "form-weekly",
+        formVersionId: "fv-weekly-2",
+      },
+      {
+        position: 1,
+        formName: "Custom update",
+        versionSeq: 1,
+        formId: "form-custom",
+        formVersionId: "fv-custom-1",
+      },
+    ],
+  };
+
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("creates via schedule-versions + POST /instances with Vienna dueAt", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(versions)
+      .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-1" });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    const out = await createExtra(input);
+    expect(out).toEqual({ instanceId: "inst-1" });
+    expect(vi.mocked(apiFetch).mock.calls[0][0]).toBe(
+      `${base}/schedule-versions?clientProfileId=cp-1`,
+    );
+    const [url, opts] = vi.mocked(apiFetch).mock.calls[1];
+    expect(url).toBe(`${base}/instances`);
+    expect(opts?.body).toMatchObject({
+      clientProfileId: "cp-1",
+      formId: "form-custom",
+      formVersionId: "fv-custom-1",
+      dueTz: "Europe/Vienna",
+      coachNote: "knee check",
+    });
+  });
+
+  it("picks the Full (non-custom) form for a Full update", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(versions)
+      .mockResolvedValueOnce({ status: "scheduled", instanceId: "inst-2" });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await createExtra({ ...input, type: "Full" });
+    expect(vi.mocked(apiFetch).mock.calls[1][1]?.body).toMatchObject({
+      formId: "form-weekly",
+      formVersionId: "fv-weekly-2",
+    });
+  });
+
+  it("fails without creating when no form matches the type", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({
+      options: [
+        {
+          position: 0,
+          formName: "Weekly check-in",
+          versionSeq: 1,
+          formId: "form-weekly",
+          formVersionId: "fv-weekly-1",
+        },
+      ],
+    });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await expect(createExtra(input)).rejects.toThrow(
+      /No schedulable form version matches/,
+    );
+    // One call only — the write must never follow a failed version read.
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
+  });
+});

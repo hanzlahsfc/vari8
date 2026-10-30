@@ -623,6 +623,54 @@ export async function cancelExtra(input: {
 }
 
 /**
+ * Create an additional (one-off) check-in date. The server needs a
+ * `formVersionId`; per Q10 the schedulable-version list is the source (latest
+ * published version, no picker), and the canvas "Requested update" type maps
+ * to the form by its published name — the same Custom/Full distinction the
+ * board's own projection documents (an extra date has no Full/Custom column).
+ */
+export async function createExtra(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  date: string;
+  type: "Full" | "Custom";
+  note: string;
+}): Promise<{ instanceId: string }> {
+  const base = `/workspaces/${input.workspaceId}/checkins`;
+  const versions = await apiFetch<{
+    options: {
+      position: number;
+      formName: string;
+      versionSeq: number;
+      formId: string;
+      formVersionId: string;
+    }[];
+  }>(
+    `${base}/schedule-versions?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  const wanted =
+    input.type === "Custom" ? /custom|update/i : /full|weekly/i;
+  const match = [...versions.options]
+    .sort((a, b) => b.versionSeq - a.versionSeq)
+    .find((option) => wanted.test(option.formName));
+  if (!match)
+    throw new Error(
+      `No schedulable form version matches "${input.type}" updates`,
+    );
+  const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
+    body: {
+      clientProfileId: input.clientProfileId,
+      formId: match.formId,
+      formVersionId: match.formVersionId,
+      dueAt: viennaMidnight(input.date),
+      dueTz: "Europe/Vienna",
+      coachNote: input.note,
+    },
+  });
+  return { instanceId: created.instanceId };
+}
+
+/**
  * Mark reviewed then send feedback as one user action: the send is refused
  * server-side until an acknowledgement exists (#96), so the review call runs
  * first. `clientRequestId` is the idempotency anchor for a retry of the same
