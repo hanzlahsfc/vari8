@@ -1,3 +1,11 @@
+## 2026-10-30 — Prompt 563 — Portalled tracker popover boundary (PR #235 finding)
+
+- Independent review found `tc-text-popover`/`tc-comment-popover`/`tc-time-popover` portal to `.cd-full-client-preview` (or `document.body` fallback), outside `.ct-tracking` — the new `@container`/`cqw` clamp never applied. Verified in Chromium: parent `cd-full-client-preview`, computed `max-width: 1256px` (inert `100vw` clamp), 320px popover overflowing the 390px frame by 155px.
+- Repair (`tracker-cell.tsx`, frontend + canvas copies): popover portal target now `closest(".ct-tracking, .cd-full-client-preview, .ct-shared-tracker")` so `cqw` and the `@container (max-width: 420px)` clamp apply; `placePanel` bounds against the nearest `.cd-preview-frame`/`.cd-dialog` and its `panelWidth` respects the boundary width. `position: fixed` is unaffected by `container-type` (no paint containment), so placement, focus, Escape/outside-click dismissal and scroll behaviour are unchanged.
+- Browser-verified on the product app (`localhost:3300`, lane `app_p563`, coach Sofia Miller → templates → Client preview → 390px frame): popover parents `.ct-tracking`, computed `max-width: 292px`, right edge 40px inside the frame. Same result on the frontend preview (:3100). Standalone `/me` at 320–430px shows Amara's honest empty state (no tracker configured); no standalone route mounts `.ct-tracking` in this seed — noted honestly, not claimed.
+- Gates (Node v24.22.1): frontend `test` 322/322, `typecheck` 0, biome check clean; root `tsc --noEmit` 0, `index:check` OK, eslint 0 errors (9 file-local pre-existing warnings unchanged), prettier clean, `git diff --check` 0; `npm run test` full unfiltered suite loads completely — 1689/1692 pass; the 3 failures are pre-existing environment prerequisites (`tools/parity` PR-203 dependency pin + missing 35-recipe/70-screen capture set) in files untouched by this PR; the earlier 5s `system-index` timeouts pass at normal timeout and passed in this run.
+- `tools/parity/reference` nested deps installed (`pngjs`) — the prior 1637+2-load-failure result is superseded by the full-suite run above.
+
 ## 2026-10-30 — Prompt 561 — Canvas app-side repair for the same three defects (PR #235)
 
 - Merged `origin/Vari8-Beta` (`27c2aab4`) into `beta/p556-responsive-repair`; only `docs/STATUS.md` conflicted — kept both entries.
