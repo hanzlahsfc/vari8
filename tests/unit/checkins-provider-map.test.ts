@@ -552,7 +552,9 @@ describe("saveRecurringDays — existing-schedule edits (P593)", () => {
     });
     const { saveRecurringDays } =
       await import("../../components/canvas/data/checkins");
-    await expect(saveRecurringDays(input)).rejects.toThrow("SELECT_FORM_AMBIGUOUS");
+    await expect(saveRecurringDays(input)).rejects.toThrow(
+      "SELECT_FORM_AMBIGUOUS",
+    );
     expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(1);
   });
 });
@@ -578,9 +580,8 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
 
   it("first-create (no ACTIVE rules) requires an explicit formId", async () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({ items: [] });
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await expect(saveRecurringDays(base)).rejects.toThrow(
       "SELECT_FORM_REQUIRED",
     );
@@ -604,9 +605,8 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
       })
       .mockResolvedValueOnce({ ruleId: "r-new" })
       .mockResolvedValueOnce({});
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await saveRecurringDays({ ...base, formId: "form-weekly" });
     expect(vi.mocked(apiFetch).mock.calls[1][1]?.body).toMatchObject({
       formId: "form-weekly",
@@ -619,9 +619,8 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
     vi.mocked(apiFetch)
       .mockResolvedValueOnce({ items: [active] })
       .mockResolvedValueOnce({ status: "ended" });
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await saveRecurringDays({ ...base, add: false });
     expect(vi.mocked(apiFetch).mock.calls[1][0]).toContain("r-tue/status");
   });
@@ -630,9 +629,8 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({
       items: [active, { ...active, ruleId: "r-other", formId: "form-other" }],
     });
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await expect(saveRecurringDays(base)).rejects.toThrow(
       "SELECT_FORM_AMBIGUOUS",
     );
@@ -644,11 +642,13 @@ describe("saveRecurringDays — form-picker contract (P595)", () => {
       .mockResolvedValueOnce({ items: [active] })
       .mockResolvedValueOnce({ ruleId: "r-new" })
       .mockResolvedValueOnce({});
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await saveRecurringDays({ ...base, weekday: 2 });
-    const body = vi.mocked(apiFetch).mock.calls[1][1]?.body as Record<string, unknown>;
+    const body = vi.mocked(apiFetch).mock.calls[1][1]?.body as Record<
+      string,
+      unknown
+    >;
     expect(body.formId).toBe("form-weekly");
     expect(body).not.toHaveProperty("formVersionId");
     expect(vi.mocked(apiFetch).mock.calls[2][0]).toContain("r-new/generate");
@@ -674,25 +674,21 @@ describe("saveRecurringDays — partial failure + recovery (P597)", () => {
       .mockResolvedValueOnce({ items: [active] })
       .mockResolvedValueOnce({ ruleId: "r-new" })
       .mockRejectedValueOnce(new Error("boom"));
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     const res = await saveRecurringDays({ ...base, weekday: 2 });
     expect(res).toEqual({ ruleId: "r-new", status: "ungenerated" });
     // retry via the dedicated helper — only a generate POST, no new rule
     vi.mocked(apiFetch).mockResolvedValueOnce({});
-    const { retryGenerateRule } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { retryGenerateRule } =
+      await import("../../components/canvas/data/checkins");
     await retryGenerateRule({
       workspaceId: "ws-1",
       clientProfileId: "cp-1",
       ruleId: "r-new",
     });
     const [url, opts] = vi.mocked(apiFetch).mock.calls[3];
-    expect(url).toBe(
-      "/workspaces/ws-1/checkins/schedule-rules/r-new/generate",
-    );
+    expect(url).toBe("/workspaces/ws-1/checkins/schedule-rules/r-new/generate");
     expect(opts?.body).toEqual({ clientProfileId: "cp-1" });
   });
 
@@ -702,9 +698,8 @@ describe("saveRecurringDays — partial failure + recovery (P597)", () => {
       .mockResolvedValueOnce({ items: [active] })
       .mockResolvedValueOnce({ ruleId: "r-wed" })
       .mockResolvedValueOnce({});
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await saveRecurringDays({ ...base, weekday: 2 });
     expect(vi.mocked(apiFetch).mock.calls.length).toBe(3);
     // second toggle on a different weekday: its OWN calls, independent
@@ -713,9 +708,7 @@ describe("saveRecurringDays — partial failure + recovery (P597)", () => {
         items: [active, { ...active, ruleId: "r-wed", weekday: "WEDNESDAY" }],
       })
       .mockRejectedValueOnce(new Error("net"));
-    await expect(
-      saveRecurringDays({ ...base, weekday: 3 }),
-    ).rejects.toThrow();
+    await expect(saveRecurringDays({ ...base, weekday: 3 })).rejects.toThrow();
     // the failure was in ITS rules fetch — r-wed's work stays
     expect(vi.mocked(apiFetch).mock.calls.length).toBe(5);
   });
@@ -725,13 +718,17 @@ describe("saveRecurringDays — partial failure + recovery (P597)", () => {
       .mockResolvedValueOnce({
         items: [
           active,
-          { ...active, ruleId: "r-other", formId: "form-other", status: "ACTIVE" },
+          {
+            ...active,
+            ruleId: "r-other",
+            formId: "form-other",
+            status: "ACTIVE",
+          },
         ],
       })
       .mockResolvedValueOnce({ status: "ended" });
-    const { saveRecurringDays } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { saveRecurringDays } =
+      await import("../../components/canvas/data/checkins");
     await saveRecurringDays({
       ...base,
       weekday: 0,
@@ -765,9 +762,8 @@ describe("reloadRecurring — form-scoped pressed state (P598)", () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({
       items: [mon, wedOther],
     });
-    const { reloadRecurring } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { reloadRecurring } =
+      await import("../../components/canvas/data/checkins");
     const res = await reloadRecurring("ws-1", "cp-1", {
       formId: "form-weekly",
     });
@@ -778,18 +774,16 @@ describe("reloadRecurring — form-scoped pressed state (P598)", () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({
       items: [mon, wedOther],
     });
-    const { reloadRecurring } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { reloadRecurring } =
+      await import("../../components/canvas/data/checkins");
     const res = await reloadRecurring("ws-1", "cp-1");
     expect(res.weekdays.sort()).toEqual([0, 2]);
   });
 
   it("a single ACTIVE form is scoped without an explicit pick", async () => {
     vi.mocked(apiFetch).mockResolvedValueOnce({ items: [mon] });
-    const { reloadRecurring } = await import(
-      "../../components/canvas/data/checkins"
-    );
+    const { reloadRecurring } =
+      await import("../../components/canvas/data/checkins");
     const res = await reloadRecurring("ws-1", "cp-1");
     expect(res.weekdays).toEqual([0]);
   });
