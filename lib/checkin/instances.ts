@@ -2018,6 +2018,12 @@ export async function submitCheckInInstance(
 
 // ── Staff: published-version picker (scheduling form select) ────────────
 
+export type ScheduleFormFieldOption = {
+  fieldId: string;
+  label: string;
+  required: boolean;
+};
+
 export type ScheduleFormOption = {
   /** Positional token — the browser selects position N and the action
    * re-runs this list server-side to map index → (formId, versionId);
@@ -2028,6 +2034,8 @@ export type ScheduleFormOption = {
   /** Server-only — never rendered into browser values. */
   formId: string;
   formVersionId: string;
+  /** Custom checklist — the pinned version's selectable fields. */
+  fields: ScheduleFormFieldOption[];
 };
 
 export async function listSchedulableFormVersions(
@@ -2064,6 +2072,7 @@ export async function listSchedulableFormVersions(
       formId: true,
       form: { select: { name: true } },
       versionSeq: true,
+      definition: true,
     },
     orderBy: [{ formId: "asc" }, { versionSeq: "desc" }],
     take: 200,
@@ -2074,12 +2083,21 @@ export async function listSchedulableFormVersions(
   for (const v of versions) {
     if (seen.has(v.formId)) continue;
     seen.add(v.formId);
+    const def = v.definition as CheckInDefinition;
     options.push({
       position: options.length,
       formName: v.form.name,
       versionSeq: v.versionSeq,
       formId: v.formId,
       formVersionId: v.id,
+      fields:
+        isPlainObject(def) && Array.isArray(def.fields)
+          ? def.fields.map((f) => ({
+              fieldId: f.fieldId,
+              label: f.label ?? f.fieldId,
+              required: f.required === true,
+            }))
+          : [],
     });
   }
   return { options };
