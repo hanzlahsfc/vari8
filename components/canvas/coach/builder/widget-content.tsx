@@ -49,10 +49,11 @@ type DetailProps = {
   clientPreview: boolean;
   onRecordsChange: (records: SourceRecords) => void;
   workspaceId?: string;
+  clientProfileId?: string;
   /** Card 05a: the own-scope host's thread refresh — the chat detail's
-   *  composer and read marker resync through the same account-scoped
+   *  composer and read marker resync through the same session-scoped
    *  ordering the mount load uses. */
-  onMessagesRefresh?: (workspaceId: string) => Promise<void> | void;
+  onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
 };
 
 type Layout = "Compact" | "Regular" | "Wide" | "Tall" | "Expanded";
@@ -329,23 +330,54 @@ function DetailRows({
   );
 }
 
+/** Session-scoped lifecycle identity. Every identity transition — a
+ *  workspace switch, a same-workspace profile change, or a switch away
+ *  and back — produces a NEW session object. Async continuations compare
+ *  the captured session by object identity, so work issued under an old
+ *  session can never be re-admitted just because the identity string
+ *  matches again (A → B → A). */
+export function useIdentitySession(key: string | undefined) {
+  const session = useRef<{ key: string; id: number } | null>(null);
+  if (session.current?.key !== key)
+    session.current = key
+      ? { key, id: (session.current?.id ?? 0) + 1 }
+      : null;
+  return session;
+}
+
 /** Card 05a/P625: the one own-thread message path — every update is a
- *  sequenced reload scoped to one account: the mount load, the composer's
- *  post-send refresh and the read marker's resync all issue through
- *  `refresh`. A response can only land while its own ticket and workspace
- *  are still current, so a slower earlier read or a previous account's
- *  pending request can never overwrite newer state. */
-export function useOwnMessages(workspaceId: string | undefined) {
+ *  sequenced reload scoped to the full client identity (workspace plus
+ *  client profile): the mount load, the composer's post-send refresh and
+ *  the read marker's resync all issue through `refresh`. A response can
+ *  only land while its own session and ticket are still current, so a
+ *  slower earlier read or a previous session's pending request — even one
+ *  revisiting the same account — can never overwrite newer state. */
+export function useOwnMessages(
+  identity: { workspaceId: string; clientProfileId: string } | undefined,
+) {
+  const key = identity
+    ? `${identity.workspaceId}:${identity.clientProfileId}`
+    : undefined;
   const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
   const seq = useRef(0);
-  const account = useRef(workspaceId);
-  account.current = workspaceId;
-  const refresh = useCallback(async (ws: string | undefined) => {
-    if (!ws || ws !== account.current) return;
+  const session = useRef<{ key: string; ws: string; id: number } | null>(
+    null,
+  );
+  if (session.current?.key !== key)
+    session.current = key
+      ? {
+          key,
+          ws: identity!.workspaceId,
+          id: (session.current?.id ?? 0) + 1,
+        }
+      : null;
+  const refresh = useCallback(async (forKey: string | undefined) => {
+    const s = session.current;
+    if (!s || !forKey || forKey !== s.key) return;
     const ticket = ++seq.current;
     try {
-      const { messages } = await fetchOwnMessages(ws);
-      if (ticket === seq.current && ws === account.current)
+      const { messages } = await fetchOwnMessages(s.ws);
+      if (ticket === seq.current && session.current === s)
         setMessages(messages);
     } catch {
       // A failed refresh keeps the last known thread — sends stay
@@ -355,8 +387,8 @@ export function useOwnMessages(workspaceId: string | undefined) {
   useEffect(() => {
     seq.current += 1;
     setMessages(null);
-    void refresh(workspaceId);
-  }, [workspaceId, refresh]);
+    void refresh(key);
+  }, [key, refresh]);
   return { messages, refresh };
 }
 
@@ -367,45 +399,49 @@ export function useOwnMessages(workspaceId: string | undefined) {
  *  never writes the new account's draft, error or pending flag. */
 export function ChatComposer({
   workspaceId,
+  clientProfileId,
   onSent,
 }: {
   workspaceId: string;
-  /** The post-send thread reload — routed through the host's account-scoped
-   *  refresh, the same ordering authority the read marker uses. */
-  onSent: (workspaceId: string) => void;
+  clientProfileId: string;
+  /** The post-send thread reload — routed through the host's
+   *  session-scoped refresh, the same ordering authority the read marker
+   *  uses. */
+  onSent: (identityKey: string) => void;
 }) {
+  const key = `${workspaceId}:${clientProfileId}`;
+  const session = useIdentitySession(key);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef<string>("");
-  const account = useRef(workspaceId);
-  account.current = workspaceId;
   useEffect(() => {
-    // A switched account starts clean — the previous account's pending
-    // send can never rewrite this draft, error or pending flag.
+    // A switched identity starts a clean session — the previous
+    // session's pending send can never rewrite this draft, error or
+    // pending flag, even after a switch away and back.
     setDraft("");
     setError("");
     setSending(false);
     requestId.current = "";
-  }, [workspaceId]);
+  }, [key]);
   const send = async () => {
     const text = draft.trim();
-    const ws = workspaceId;
-    if (!text || sending) return;
+    const s = session.current;
+    if (!text || sending || !s) return;
     if (!requestId.current) requestId.current = crypto.randomUUID();
     setSending(true);
     setError("");
     try {
-      await sendOwnMessage(ws, text, undefined, requestId.current);
-      onSent(ws);
-      if (account.current !== ws) return;
+      await sendOwnMessage(workspaceId, text, undefined, requestId.current);
+      onSent(s.key);
+      if (session.current !== s) return;
       requestId.current = "";
       setDraft("");
     } catch {
-      if (account.current !== ws) return;
+      if (session.current !== s) return;
       setError("The message could not be sent — check your connection and try again");
     } finally {
-      if (account.current === ws) setSending(false);
+      if (session.current === s) setSending(false);
     }
   };
   return (
@@ -445,57 +481,80 @@ export function ChatComposer({
  *  sends never count as inbound unread. */
 export function RemoteConversation({
   workspaceId,
+  clientProfileId = "",
   clientName,
   messages: externalMessages,
   onMessagesRefresh,
   collapsible = false,
 }: {
   workspaceId: string;
+  /** The conversation's client identity — workspace and profile together
+   *  scope the thread's lifecycle, including pending reads and the open
+   *  state itself. */
+  clientProfileId?: string;
   clientName: string;
   /** A host-loaded thread renders instead of a second fetch; every sync
    *  still reaches the host through `onMessagesRefresh`. */
   messages?: OwnMessageWire[] | null;
-  onMessagesRefresh?: (workspaceId: string) => Promise<void> | void;
+  onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
   /** Collapsed until the client asks to view the loaded thread — that
    *  explicit view is what licenses mark-read. Open surfaces (the
    *  user-navigated Messages section, chat detail) are explicit views by
    *  activation. */
   collapsible?: boolean;
 }) {
+  const key = `${workspaceId}:${clientProfileId}`;
+  const session = useIdentitySession(key);
   const { messages: ownedMessages, refresh: refreshOwned } = useOwnMessages(
-    externalMessages === undefined ? workspaceId : undefined,
+    externalMessages === undefined
+      ? { workspaceId, clientProfileId }
+      : undefined,
   );
-  const wire = externalMessages ?? ownedMessages;
+  const wire =
+    externalMessages !== undefined ? externalMessages : ownedMessages;
   // One ordering authority for every post-mount thread update: the
   // composer's post-send reload and the read marker's resync both issue
-  // through the same account-scoped, ticketed refresh — a late pre-read
+  // through the same session-scoped, ticketed refresh — a late pre-read
   // snapshot can never land on top of a newer one.
   const sync = useCallback(
-    (ws: string) =>
-      Promise.all([refreshOwned(ws), onMessagesRefresh?.(ws)]).then(
-        () => undefined,
-      ),
+    (forKey: string) =>
+      Promise.all([
+        refreshOwned(forKey),
+        onMessagesRefresh?.(forKey),
+      ]).then(() => undefined),
     [refreshOwned, onMessagesRefresh],
   );
-  const [open, setOpen] = useState(!collapsible);
-  const marking = useRef(false);
+  // The open state belongs to this lifecycle: it is derived, not taken
+  // from useState's initial value, so an identity transition starts the
+  // new account collapsed and a deliberate Messages nav activation (which
+  // flips `collapsible` off) still opens the thread.
+  const [openView, setOpenView] = useState<{
+    key: string;
+    collapsible: boolean;
+  } | null>(null);
+  const open =
+    (openView?.key === key && openView.collapsible === collapsible) ||
+    !collapsible;
+  // Single-flight read marker scoped to this session: a pending read for
+  // a previous identity neither blocks nor clears the new session's mark.
+  const marking = useRef<{ key: string; id: number } | null>(null);
   const unreadInbound = (wire ?? []).filter(
     (message) => message.senderKind === "STAFF" && !message.read,
   ).length;
   useEffect(() => {
-    if (!open || !wire || unreadInbound === 0 || marking.current) return;
-    // Single-flight: one mark-read covers the POST plus its resync, so a
-    // wire change mid-flight can never queue a duplicate read POST.
-    marking.current = true;
+    const s = session.current;
+    if (!s || !open || !wire || unreadInbound === 0 || marking.current === s)
+      return;
+    marking.current = s;
     markOwnThreadRead(workspaceId)
-      .then(() => sync(workspaceId))
+      .then(() => sync(key))
       .catch(() => {
         /* stays unread; the next view or wire change retries */
       })
       .finally(() => {
-        marking.current = false;
+        if (marking.current === s) marking.current = null;
       });
-  }, [open, unreadInbound, workspaceId, wire, sync]);
+  }, [open, unreadInbound, key, workspaceId, wire, sync, session]);
   return (
     <section className="cb-dw-detail" style={{ marginTop: 16 }}>
       <h3>Coach conversation</h3>
@@ -505,7 +564,7 @@ export function RemoteConversation({
             type="button"
             className="cb-dw-action"
             aria-expanded="false"
-            onClick={() => setOpen(true)}
+            onClick={() => setOpenView({ key, collapsible })}
           >
             View conversation
             {unreadInbound > 0 ? ` · ${unreadInbound} unread` : ""}
@@ -533,7 +592,11 @@ export function RemoteConversation({
               </div>
             ))
           )}
-          <ChatComposer workspaceId={workspaceId} onSent={sync} />
+          <ChatComposer
+            workspaceId={workspaceId}
+            clientProfileId={clientProfileId}
+            onSent={sync}
+          />
         </>
       )}
     </section>
@@ -546,6 +609,7 @@ export function DetailContent({
   clientPreview,
   onRecordsChange,
   workspaceId,
+  clientProfileId,
   onMessagesRefresh,
 }: DetailProps) {
   const data = useMemo(() => {
@@ -921,6 +985,7 @@ export function DetailContent({
     return workspaceId ? (
       <RemoteConversation
         workspaceId={workspaceId}
+        clientProfileId={clientProfileId}
         clientName={records.client.name}
         onMessagesRefresh={onMessagesRefresh}
       />

@@ -10,6 +10,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -249,6 +250,47 @@ describe("client shell navigation", () => {
     await waitFor(() =>
       expect(remoteCalls.markOwnThreadRead).toHaveBeenCalledTimes(1),
     );
+    remoteCalls.markOwnThreadRead.mockClear();
+    remoteCalls.fetchOwnMessages.mockResolvedValueOnce({
+      messages: [
+        {
+          id: "m-2",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T11:00:00Z",
+          body: "second unread",
+          read: false,
+          clientRequestId: "",
+          attachments: [],
+        },
+      ],
+    } as never);
+    cleanup();
+    // A deliberate Messages nav selection IS the explicit activation —
+    // even when the section was already auto-selected — it opens the
+    // thread and marks it read.
+    const { container: again } = render(
+      <Shell
+        configuration={configuration([])}
+        own={{ workspaceId: "ws-1", clientProfileId: "cp-1" }}
+      />,
+    );
+    await waitFor(() =>
+      expect(
+        within(again).getAllByRole("button", { name: "Messages" }).length,
+      ).toBeGreaterThan(0),
+    );
+    const nav = within(again).getAllByRole("button", {
+      name: "Messages",
+    })[0];
+    await waitFor(() =>
+      expect(remoteCalls.fetchOwnMessages).toHaveBeenCalledWith("ws-1"),
+    );
+    expect(remoteCalls.markOwnThreadRead).not.toHaveBeenCalled();
+    fireEvent.click(nav);
+    await waitFor(() =>
+      expect(remoteCalls.markOwnThreadRead).toHaveBeenCalledTimes(1),
+    );
+    expect(again.querySelector(".cd-client-app-link")).toBeTruthy();
   });
 
   it("a preview mount never binds the own scope — no Messages, no calls", async () => {

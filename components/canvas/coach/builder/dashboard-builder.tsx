@@ -127,6 +127,7 @@ export function DashboardBuilder({
   previewOnly = false,
   onRecordsChange,
   workspaceId,
+  clientProfileId,
   onMessagesRefresh,
 }: {
   value: Draft;
@@ -140,10 +141,11 @@ export function DashboardBuilder({
   /** Card 05a client surface: the caller's own workspace — presence turns the
    *  dashboard chat detail into a real conversation with a composer. */
   workspaceId?: string;
+  clientProfileId?: string;
   /** Card 05a/P625: the own-scope host's thread refresh — the chat
    *  detail's composer and read marker resync through the same
-   *  account-scoped ordering the host's mount load uses. */
-  onMessagesRefresh?: (workspaceId: string) => Promise<void> | void;
+   *  session-scoped ordering the host's mount load uses. */
+  onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
 }) {
   const draft = value;
   const setDraft = onChange;
@@ -1448,6 +1450,7 @@ export function DashboardBuilder({
             records={records}
             clientPreview={clientPreview}
             onRecordsChange={changeRecords}
+            clientProfileId={clientProfileId}
             onMessagesRefresh={onMessagesRefresh}
           />
         </LocalDialog>

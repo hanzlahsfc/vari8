@@ -307,6 +307,148 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(screen.getByText("second account")).toBeTruthy();
   });
 
+  it("a pending send from an old session never clears the new session's draft (A → B → A)", async () => {
+    let resolveSend!: (v: { message: Record<string, unknown> }) => void;
+    mocked.sendOwn.mockImplementationOnce(
+      () =>
+        new Promise<{ message: Record<string, unknown> }>(
+          (resolve) => (resolveSend = resolve),
+        ) as never,
+    );
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    const { rerender } = render(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+      />,
+    );
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "old session send" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    // ws-1 → ws-2 → ws-1: the same identity is a NEW session.
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-2"
+        clientProfileId="cp-2"
+        clientName="Amara"
+      />,
+    );
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+      />,
+    );
+    const fresh = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(fresh, { target: { value: "new session draft" } });
+    await act(async () =>
+      resolveSend({
+        message: wire({ id: "n1", senderKind: "CLIENT" }),
+      }),
+    );
+    // The old session's success must not clear the new session's draft.
+    expect(fresh.value).toBe("new session draft");
+    expect(mocked.sendOwn).toHaveBeenCalledTimes(1);
+  });
+
+  it("a pending send failure from an old session never writes the new session's error", async () => {
+    let rejectSend!: (e: Error) => void;
+    mocked.sendOwn.mockImplementationOnce(
+      () =>
+        new Promise<{ message: Record<string, unknown> }>(
+          (_resolve, reject) => (rejectSend = reject),
+        ) as never,
+    );
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    const { rerender } = render(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+      />,
+    );
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "old session send" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-2"
+        clientProfileId="cp-2"
+        clientName="Amara"
+      />,
+    );
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+      />,
+    );
+    const fresh = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(fresh, { target: { value: "new session draft" } });
+    await act(async () => rejectSend(new Error("boom")));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(fresh.value).toBe("new session draft");
+  });
+
+  it("an open conversation never transfers to the next account", async () => {
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire({ read: true })] })
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" collapsible />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText("from coach"));
+    rerender(
+      <RemoteConversation workspaceId="ws-2" clientName="Amara" collapsible />,
+    );
+    // The new account arrives collapsed — the previous account's open
+    // state does not transfer, so ws-2 cannot be marked without a fresh
+    // activation.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(mocked.markRead).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-2"));
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("a pending read on the old account cannot block the new account's read", async () => {
+    let resolveMark!: (v: { marked: number }) => void;
+    mocked.markRead.mockImplementationOnce(
+      () =>
+        new Promise<{ marked: number }>(
+          (resolve) => (resolveMark = resolve),
+        ) as never,
+    );
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
+    );
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-1"));
+    // ws-1's read POST is still in flight when the identity changes; the
+    // new session must perform its own read after its own activation.
+    rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-2"));
+    expect(mocked.markRead).toHaveBeenCalledTimes(2);
+    await act(async () => resolveMark({ marked: 1 }));
+  });
+
   it("a pending send from the old workspace never touches the new account", async () => {
     let resolveSend!: (v: { message: Record<string, unknown> }) => void;
     mocked.sendOwn.mockImplementationOnce(
@@ -595,6 +737,25 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
       } as never),
     );
     expect(mocked.fetchOwn).toHaveBeenCalledTimes(1);
+  });
+
+  it("a same-workspace profile change starts a new lifecycle", async () => {
+    const { rerender } = mountTab();
+    await waitFor(() => expect(mocked.fetchTasks).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocked.fetchOwn).toHaveBeenCalledTimes(1));
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-1", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    // Same workspace, different client profile = a different account: the
+    // thread and tasks reload under the new session.
+    await waitFor(() => expect(mocked.fetchTasks).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(mocked.fetchOwn).toHaveBeenCalledTimes(2));
   });
 
   it("rapid same-task toggles serialize on the confirmed revision", async () => {

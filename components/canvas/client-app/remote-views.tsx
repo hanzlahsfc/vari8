@@ -21,6 +21,7 @@ import {
 import { DashboardBuilder } from "../coach/builder/dashboard-builder";
 import {
   RemoteConversation,
+  useIdentitySession,
   useOwnMessages,
 } from "../coach/builder/widget-content";
 import type {
@@ -91,11 +92,13 @@ export function RemoteDashboardTab({
   );
   const [tasks, setTasks] = useState<OwnTaskWire[] | null>(null);
   const { messages, refresh: refreshMessages } =
-    useOwnMessages(own.workspaceId);
-  // Per-task mutation ordering: writes serialize on the latest confirmed
-  // revision, so rapid toggles never conflict on a stale base and a
-  // failure rolls back to confirmed wire truth — never a closed-over
-  // snapshot or a newer queued intent.
+    useOwnMessages(own);
+  // Per-task mutation ordering scoped to the full client identity:
+  // writes serialize on the latest confirmed revision, so rapid toggles
+  // never conflict on a stale base and a failure rolls back to confirmed
+  // wire truth — never a closed-over snapshot or a newer queued intent.
+  const identityKey = `${own.workspaceId}:${own.clientProfileId}`;
+  const taskSession = useIdentitySession(identityKey);
   const taskQueues = useRef(new Map<string, Promise<void>>());
   const taskIntent = useRef(new Map<string, "COMPLETED" | "OPEN">());
   const taskConfirmed = useRef(
@@ -104,8 +107,6 @@ export function RemoteDashboardTab({
       { status: OwnTaskWire["status"]; revision: number }
     >(),
   );
-  const taskAccount = useRef(own.workspaceId);
-  taskAccount.current = own.workspaceId;
   useEffect(() => {
     taskQueues.current.clear();
     taskIntent.current.clear();
@@ -127,7 +128,7 @@ export function RemoteDashboardTab({
     return () => {
       cancelled = true;
     };
-  }, [own.workspaceId]);
+  }, [identityKey, own.workspaceId]);
   const records = useMemo<SourceRecords>(
     () => ({
       ...baseRecords,
@@ -152,6 +153,7 @@ export function RemoteDashboardTab({
         const desired = edited.completed ? "COMPLETED" : "OPEN";
         const ws = own.workspaceId;
         const profile = own.clientProfileId;
+        const s = taskSession.current;
         // Latest intent paints immediately; the write queues behind any
         // earlier write for the same task.
         taskIntent.current.set(wire.id, desired);
@@ -179,10 +181,11 @@ export function RemoteDashboardTab({
                 revision: result.revision,
               });
               // Settle the paint only when no newer intent is queued and
-              // the account is still current.
+              // this session is still current — a previous session's
+              // write can never land again, even after A → B → A.
               if (
                 taskIntent.current.get(wire.id) === desired &&
-                taskAccount.current === ws
+                taskSession.current === s
               )
                 setTasks((current) =>
                   (current ?? []).map((task) =>
@@ -198,7 +201,7 @@ export function RemoteDashboardTab({
             } catch {
               if (
                 taskIntent.current.get(wire.id) === desired &&
-                taskAccount.current === ws
+                taskSession.current === s
               ) {
                 const confirmed = taskConfirmed.current.get(wire.id) ?? {
                   status: wire.status,
@@ -232,10 +235,12 @@ export function RemoteDashboardTab({
         onRecordsChange={onRecordsChange}
         previewOnly
         workspaceId={own.workspaceId}
+        clientProfileId={own.clientProfileId}
         onMessagesRefresh={refreshMessages}
       />
       <RemoteConversation
         workspaceId={own.workspaceId}
+        clientProfileId={own.clientProfileId}
         clientName={client.name}
         messages={messages}
         onMessagesRefresh={refreshMessages}
@@ -262,6 +267,7 @@ export function RemoteConversationTab({
   return (
     <RemoteConversation
       workspaceId={own.workspaceId}
+      clientProfileId={own.clientProfileId}
       clientName={clientName}
       collapsible={collapsible}
     />
