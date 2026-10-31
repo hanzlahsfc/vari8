@@ -1054,7 +1054,10 @@ export async function scheduleCheckInInstance(
               dueAt,
               dueTz,
               coachNote,
-              fieldSelection: fieldSelection ?? null,
+              fieldSelection:
+                fieldSelection !== null
+                  ? (fieldSelection as Prisma.InputJsonValue)
+                  : Prisma.DbNull,
               scheduledByMemberId: member.id,
             },
             select: { id: true },
