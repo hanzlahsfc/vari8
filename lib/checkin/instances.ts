@@ -1540,6 +1540,9 @@ export type OwnCheckInInstanceDetail = {
   /** Pinned immutable definition — for the fill form AND submitted-state
    * rendering. Always present (it is definition metadata, not answers). */
   definition: CheckInDefinition;
+  /** Custom: the pinned field subset the coach asked for — NULL means
+   *  Full (every field of the pinned version renders). */
+  fieldSelection?: string[] | null;
   /** Submitted answers joined to the definition — present ONLY when a
    * submission exists AND consent currently holds. Otherwise null. */
   submittedAnswers: Array<{
