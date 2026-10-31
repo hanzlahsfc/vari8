@@ -32,6 +32,16 @@ const mocked = vi.hoisted(() => ({
       ({ messages: [] }) as { messages: Record<string, unknown>[] },
   ),
   markRead: vi.fn(async (_w?: string) => ({ marked: 0 })),
+  upload: vi.fn(
+    async (_i?: Record<string, unknown>) =>
+      ({
+        id: "mo-1",
+        name: "plan.pdf",
+        type: "application/pdf",
+        size: 2048,
+        mediaObjectId: "mo-1",
+      }) as Record<string, unknown>,
+  ),
   fetchTasks: vi.fn(
     async (_w?: string, _o?: string) =>
       ({
@@ -92,6 +102,22 @@ vi.mock("../../components/canvas/data/tasks", async (importOriginal) => {
     ) => mocked.setTask(w, c, t, i),
   };
 });
+vi.mock("../../components/canvas/coach/media-card", async (importOriginal) => {
+  const mod =
+    await importOriginal<
+      typeof import("../../components/canvas/coach/media-card")
+    >();
+  return {
+    ...mod,
+    uploadWorkspaceMedia: (i: Record<string, unknown>) => mocked.upload(i),
+    MediaCard: (p: { item: { id: string; name: string } }) => (
+      <a data-testid={`attachment-${p.item.id}`} href={`/media/${p.item.id}`}>
+        {p.item.name}
+      </a>
+    ),
+  };
+});
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   useSearchParams: () => new URLSearchParams(),
@@ -166,6 +192,14 @@ describe("served coach conversation (RemoteConversation)", () => {
     mocked.fetchOwn.mockResolvedValue({ messages: [] });
     mocked.markRead.mockClear();
     mocked.markRead.mockResolvedValue({ marked: 1 });
+    mocked.upload.mockClear();
+    mocked.upload.mockResolvedValue({
+      id: "mo-1",
+      name: "plan.pdf",
+      type: "application/pdf",
+      size: 2048,
+      mediaObjectId: "mo-1",
+    } as never);
   });
 
   it("collapsed mount never marks read; the explicit view marks inbound once", async () => {
@@ -632,6 +666,120 @@ describe("served coach conversation (RemoteConversation)", () => {
     fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
     await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-1"));
     expect(mocked.markRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("attach uploads, links media_object ids and clears after send", async () => {
+    const file = new File(["pdf-bytes"], "plan.pdf", {
+      type: "application/pdf",
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = await screen.findByLabelText("Message");
+    fireEvent.change(screen.getByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => screen.getByText("plan.pdf"));
+    await waitFor(() => expect(screen.queryByText(/uploading/)).toBeNull());
+    expect(mocked.upload).toHaveBeenCalledTimes(1);
+    fireEvent.change(input, { target: { value: "with file" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    expect(
+      (
+        mocked.sendOwn.mock.calls[0] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[2],
+    ).toEqual(["mo-1"]);
+    await waitFor(() => expect(screen.queryByText("plan.pdf")).toBeNull());
+  });
+
+  it("a failed upload blocks send until removed", async () => {
+    mocked.upload.mockRejectedValueOnce(new Error("too large"));
+    const file = new File(["x"], "big.zip", { type: "application/zip" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "text only" },
+    });
+    fireEvent.change(screen.getByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => screen.getByText(/upload failed/));
+    fireEvent.click(screen.getByLabelText("Send"));
+    await screen.findByRole("alert");
+    expect(mocked.sendOwn).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText("Remove big.zip"));
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    expect(
+      (
+        mocked.sendOwn.mock.calls[0] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[2],
+    ).toEqual([]);
+  });
+
+  it("an account switch during upload discards the staged media", async () => {
+    let resolveUpload!: (v: Record<string, unknown>) => void;
+    mocked.upload.mockImplementationOnce(
+      () =>
+        new Promise<Record<string, unknown>>(
+          (resolve) => (resolveUpload = resolve),
+        ),
+    );
+    const file = new File(["x"], "plan.pdf", { type: "application/pdf" });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
+    );
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => screen.getByText(/uploading/));
+    rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await act(async () =>
+      resolveUpload({
+        id: "mo-1",
+        name: "plan.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-1",
+      }),
+    );
+    // The old session's upload never lands on the new session's composer.
+    expect(screen.queryByText("plan.pdf")).toBeNull();
+  });
+
+  it("a received attachment renders its authorized download card", async () => {
+    mocked.fetchOwn.mockResolvedValueOnce({
+      messages: [
+        wire({
+          read: true,
+          attachments: [
+            {
+              mediaObjectId: "mo-9",
+              fileName: "report.pdf",
+              contentType: "application/pdf",
+              byteSize: 512,
+              position: 0,
+            },
+          ],
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() =>
+      expect(screen.getByTestId("attachment-mo-9")).toBeTruthy(),
+    );
+    expect(screen.getByText("report.pdf")).toBeTruthy();
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {

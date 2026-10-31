@@ -1,3 +1,10 @@
+## 2026-10-31 — Prompt 635 — client messaging attachments end to end
+
+- Client `ChatComposer` gains the attach path on the existing W2-T8 contract: file input stages each pick, `uploadWorkspaceMedia` (intent + presigned PUT) per file, staged chips show uploading/failed state and allow removal; pending blocks send, failed blocks with an alert until removed; `sendOwnMessage` links only uploaded `mediaObjectIds` (text may be empty). Draft/error/pending/staged are session-scoped like the rest of the composer — an upload resolving after an identity switch is discarded. `RemoteConversation` renders `WireAttachment[]` via the existing `MediaCard` authorized-download mint (`GET /api/v1/media/:ws/:id`). Coach composer/thread already had the flow; preview/demo surfaces unchanged (local-only).
+- Regressions (`client-composer.dom`, +4): upload→link→clear, failed upload blocks send until removed (text-only retry keeps draft/idempotency), account switch mid-upload discards staged media, received attachment renders its download card.
+- Gates (Node v24.22.1, npm ci): focused 35/35; full unfiltered `npm run test` 149 files / 1765 tests all pass; disposable-PG integration `api-v1-message-attachments`+`api-v1-staff-messages` 14/14 (integration_p635); `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: no live authenticated browser replay this round (the app_p615 lane was decommissioned at P634 cleanup); served-surface DOM probes cover the flow.
+
 ## 2026-10-31 — Prompt 632 — #248 session-owned activation + task-mutation guards (2 findings)
 
 - (1) Conversation activation is stored as the session object, not the identity string: `open = activated === session.current || (session.current?.id === 1 && !collapsible)`. Only the first session opens automatically on an explicitly-presented surface; every later session — including A → B → A and same-workspace profile switches, even while staying on Messages — starts collapsed and requires fresh activation before mark-read. Same-session nav usability and collapsed zero-view auto-selection preserved.

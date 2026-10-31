@@ -17,6 +17,8 @@ import {
   sendOwnMessage,
 } from "../../data/messages";
 import { CoachingWidgetContent } from "./coaching-content";
+import { MediaCard, uploadWorkspaceMedia } from "../media-card";
+import type { Media } from "../model";
 import {
   type ClientTask,
   dateLabel,
@@ -415,28 +417,88 @@ export function ChatComposer({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef<string>("");
+  // W2-T8: staged uploads — only successfully uploaded media_object ids
+  // are linked onto the message; pending blocks send, failed is removed
+  // or reattached. Entries are session-scoped like the draft.
+  type Staged = Media & { state: "pending" | "uploaded" | "failed" };
+  const [staged, setStaged] = useState<Staged[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
-    // session's pending send can never rewrite this draft, error or
-    // pending flag, even after a switch away and back.
+    // session's pending send/upload can never rewrite this draft, error,
+    // staged media or pending flag, even after a switch away and back.
     setDraft("");
     setError("");
     setSending(false);
+    setStaged([]);
     requestId.current = "";
   }, [key]);
+  const attach = async (files: FileList | null) => {
+    const s = session.current;
+    if (!files || !s) return;
+    for (const file of Array.from(files)) {
+      const id = crypto.randomUUID();
+      setStaged((current) => [
+        ...current,
+        {
+          id,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          state: "pending",
+        },
+      ]);
+      try {
+        const media = await uploadWorkspaceMedia({
+          workspaceId,
+          clientProfileId: clientProfileId || undefined,
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          blob: file,
+        });
+        if (session.current !== s) return;
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id
+              ? { ...media, state: "uploaded" as const }
+              : item,
+          ),
+        );
+      } catch {
+        if (session.current !== s) return;
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id ? { ...item, state: "failed" as const } : item,
+          ),
+        );
+      }
+    }
+  };
   const send = async () => {
     const text = draft.trim();
     const s = session.current;
-    if (!text || sending || !s) return;
+    const ready = staged.filter((item) => item.state === "uploaded");
+    if ((!text && ready.length === 0) || sending || !s) return;
+    if (staged.some((item) => item.state === "pending")) return;
+    if (staged.some((item) => item.state === "failed")) {
+      setError("An attachment failed to upload — remove it and reattach to send it.");
+      return;
+    }
     if (!requestId.current) requestId.current = crypto.randomUUID();
     setSending(true);
     setError("");
     try {
-      await sendOwnMessage(workspaceId, text, undefined, requestId.current);
+      await sendOwnMessage(
+        workspaceId,
+        text,
+        ready.map((item) => item.mediaObjectId ?? item.id),
+        requestId.current,
+      );
       onSent(s.key);
       if (session.current !== s) return;
       requestId.current = "";
       setDraft("");
+      setStaged([]);
     } catch {
       if (session.current !== s) return;
       setError("The message could not be sent — check your connection and try again");
@@ -446,6 +508,55 @@ export function ChatComposer({
   };
   return (
     <div className="cb-dw-chat-composer" style={{ marginTop: 12 }}>
+      {staged.length > 0 && (
+        <div className="cb-dw-detail-group" style={{ marginBottom: 8 }} aria-label="Attachments">
+          {staged.map((item) => (
+            <div key={item.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ flex: 1 }}>
+                {item.name}
+                {item.state === "pending"
+                  ? " — uploading…"
+                  : item.state === "failed"
+                    ? " — upload failed"
+                    : ""}
+              </span>
+              <button
+                type="button"
+                className="cb-dw-action"
+                aria-label={`Remove ${item.name}`}
+                disabled={item.state === "pending"}
+                onClick={() =>
+                  setStaged((current) =>
+                    current.filter((other) => other.id !== item.id),
+                  )
+                }
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <input
+        ref={fileInput}
+        type="file"
+        multiple
+        aria-label="Attach files"
+        style={{ display: "none" }}
+        onChange={(event) => {
+          void attach(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        className="cb-dw-action"
+        aria-label="Attach a file"
+        disabled={sending}
+        onClick={() => fileInput.current?.click()}
+      >
+        Attach
+      </button>
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -459,7 +570,11 @@ export function ChatComposer({
         className="cm-cbtn send"
         onClick={() => void send()}
         aria-label="Send"
-        disabled={sending || !draft.trim()}
+        disabled={
+          sending ||
+          staged.some((i) => i.state === "pending") ||
+          (!draft.trim() && !staged.some((i) => i.state === "uploaded"))
+        }
         aria-busy={sending}
       >
         Send
@@ -591,6 +706,19 @@ export function RemoteConversation({
                     : ""}
                 </h4>
                 <p>{message.body}</p>
+                {(message.attachments ?? []).map((attachment) => (
+                  <MediaCard
+                    key={attachment.mediaObjectId}
+                    workspaceId={workspaceId}
+                    item={{
+                      id: attachment.mediaObjectId,
+                      name: attachment.fileName,
+                      type: attachment.contentType,
+                      size: attachment.byteSize,
+                      mediaObjectId: attachment.mediaObjectId,
+                    }}
+                  />
+                ))}
               </div>
             ))
           )}
