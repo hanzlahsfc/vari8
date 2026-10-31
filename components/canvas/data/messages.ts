@@ -144,29 +144,29 @@ export function toCanvasMessage(
     date: view.sentAt,
     read: view.read,
     priority: view.priority,
-    attachments: (view.attachments ?? []).map((attachment) => ({
-      // Malformed wire metadata degrades to a safe card instead of
-      // crashing the thread — the established unavailable-file path.
-      id:
-        typeof attachment.mediaObjectId === "string" &&
-        attachment.mediaObjectId
-          ? attachment.mediaObjectId
-          : "unavailable",
-      name:
-        typeof attachment.fileName === "string" && attachment.fileName
-          ? attachment.fileName
-          : "attachment unavailable",
-      type:
-        typeof attachment.contentType === "string"
-          ? attachment.contentType
-          : "",
-      size:
-        typeof attachment.byteSize === "number" ? attachment.byteSize : 0,
-      mediaObjectId:
-        typeof attachment.mediaObjectId === "string"
-          ? attachment.mediaObjectId
-          : "",
-    })),
+    attachments: (Array.isArray(view.attachments)
+      ? view.attachments
+      : []
+    ).map((attachment) => {
+      // Collection AND entry boundary: a non-array field, null/primitive
+      // entries or malformed objects degrade to an inert unavailable
+      // card — never a crash, never a fabricated media id, never an
+      // active download for an invalid entry.
+      const a =
+        attachment && typeof attachment === "object" ? attachment : null;
+      const mediaObjectId =
+        a && typeof a.mediaObjectId === "string" ? a.mediaObjectId : "";
+      return {
+        id: mediaObjectId || "unavailable",
+        name:
+          a && typeof a.fileName === "string" && a.fileName
+            ? a.fileName
+            : "attachment unavailable",
+        type: a && typeof a.contentType === "string" ? a.contentType : "",
+        size: a && typeof a.byteSize === "number" ? a.byteSize : 0,
+        mediaObjectId,
+      };
+    }),
     link: (view.links as { link?: Message["link"] } | null)?.link,
   };
 }

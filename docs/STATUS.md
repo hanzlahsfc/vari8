@@ -1,3 +1,8 @@
+## 2026-10-31 — Prompt 644 — #249 toCanvasMessage collection/entry boundary
+
+- `toCanvasMessage` mirrors the client mapping: `Array.isArray` on the field plus a null/object guard per entry — absent/null/non-array/primitive `attachments` can't crash, null/primitive/malformed entries become inert "attachment unavailable" cards (no fabricated media id, no active download), and valid neighbors are never discarded.
+- Table-driven regression (8 cases) through the REAL mapper + the real coach MediaCard.
+- Gates (Node v24.22.1): focused 49/49; tsc 0; eslint 0; prettier/index/diff-check clean. Broad suite remains 1779/1779 from the predecessor run (not relabeled fresh).
 ## 2026-10-31 — Prompt 642 — #249 batch cancellation + coach rendering (2 findings)
 
 - (1) Batch cancellation: the sequential attach loop created each AbortController lazily — a queued chip had nothing to abort and later uploads never started after the active one was removed. Controllers are now created upfront at reservation; the abort path `continue`s the batch; a pre-aborted queued file is skipped without uploading. Remaining files always settle uploaded/failed/cancelled; slots and session-change cancellation preserved.
