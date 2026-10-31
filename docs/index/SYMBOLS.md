@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 185 modules with exports, 1842 exported symbols.
+Counts: 186 modules with exports, 1848 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1572,6 +1572,15 @@ Imported type names are shown without their `import("...")` prefix.
 - `export async function saveMealPlanDraft(session: SessionLike, input: { workspaceId: string; clientProfileId: string; expectedRevision: number; title?: string; draft: unknown; timezone?: string; }, ...`
 - `export async function setMealPlanTimezone(session: SessionLike, input: { workspaceId: string; clientProfileId: string; timezone: string }, deps: MealPlanDeps = {}): Promise<{ planId: string }>`
 
+## `lib/media-policy.ts`
+
+- `export const DEFAULT_PRESIGN_TTL_SECONDS = 300`
+- `export const MAX_MEDIA_BYTES = 20 * 1024 * 1024`
+- `export const MAX_PRESIGN_TTL_SECONDS = 3600`
+- `export const MEDIA_CONTENT_TYPES: Readonly<Record<string, MediaKindName>>`
+- `export type MediaKindName = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT"`
+- `export function mediaKindForContentType(contentType: unknown): MediaKindName | null`
+
 ## `lib/messages/service.ts`
 
 - `export type AttachmentView = { mediaObjectId: string; fileName: string; contentType: string; byteSize: number; position: number; }`
@@ -1924,10 +1933,10 @@ Imported type names are shown without their `import("...")` prefix.
 ## `lib/storage.ts`
 
 - `export const DEFAULT_PRESIGN_TTL_SECONDS = 300`
-- `export const MAX_MEDIA_BYTES = 20 * 1024 * 1024`
+- `export { MAX_MEDIA_BYTES }`
 - `export const MAX_PRESIGN_TTL_SECONDS = 3600`
-- `export const MEDIA_CONTENT_TYPES: Readonly<Record<string, MediaKindName>>`
-- `export type MediaKindName = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT"`
+- `export { MEDIA_CONTENT_TYPES }`
+- `export type { MediaKindName } from "./media-policy"`
 - `export type ObjectStorageBackend = { readonly name: string; presignGet(key: string, ttlSeconds: number): Promise<PresignedDownload>; presignPut( key: string, options: { contentType: string; byteSiz...`
 - `export type PresignedDownload = { readonly url: string; readonly expiresAt: string; }`
 - `export type PresignedUpload = { readonly url: string; readonly method: "PUT"; readonly headers: Record<string, string>; readonly expiresAt: string; }`
@@ -1939,7 +1948,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export function assertPresignGetTtl(ttlSeconds: number, maxTtlSeconds: number): void`
 - `export function clientObjectPrefix(workspaceId: string, clientProfileId: string): string`
 - `export async function getObjectStorage(): Promise<ObjectStorageBackend>`
-- `export function mediaKindForContentType(contentType: unknown): MediaKindName | null`
+- `export { mediaKindForContentType }`
 - `export const nullObjectStorage: ObjectStorageBackend`
 - `export function parseClientObjectKey(key: unknown): { workspaceId: string; clientProfileId: string; objectId: string; }`
 - `export function presignTtlSeconds(env: Record<string, string | undefined> = process.env): number`

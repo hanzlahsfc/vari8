@@ -1,3 +1,11 @@
+## 2026-10-31 — Prompt 640 — #249 consolidated repair (5 findings)
+
+- (1) Shared media policy moved to `lib/media-policy.ts` (dependency-free, browser-safe); `lib/storage.ts` re-exports it — one policy, both sides, server validation unchanged.
+- (2) 10-cap enforced atomically: `slots` ref reserves synchronously per selection before uploads start; overlapping picks (6+6) stage only 10.
+- (3) Keyed error lifecycle (`{kind,text}`): over-limit alert clears when count drops under cap; failed-attach alert clears with last failed chip; send errors unaffected.
+- (4) Malformed attachments validated at runtime (missing id/name, non-string contentType/byteSize) → "unavailable" note; `MediaCard` guards non-string `item.type`; tested against the real card.
+- (5) Multiline composer pattern: textarea, Enter sends, Shift+Enter newline, `isComposing` never sends.
+- Regressions +5 (45/45 file). Gates (Node v24.22.1): focused 45/45 + shell 5/5… wait recount: composer 40 + shell 5 = 45; full suite 1774/1775 with one unrelated flake (photos-panel passes isolated); eslint 0; prettier/index/diff clean; fresh-worktree build PENDING — earlier build-0 claim corrected: it had not been re-run since the storage import.
 ## 2026-10-31 — Prompt 638 — #249 attachment UI safeguards (5 items)
 
 - (1) 10-attachment cap enforced at pick time: `staged.length` + selection is counted; only the first `10 - staged.length` files stage, the rest are skipped with an explanatory alert — excess never uploads.

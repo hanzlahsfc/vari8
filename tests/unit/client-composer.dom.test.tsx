@@ -110,11 +110,6 @@ vi.mock("../../components/canvas/coach/media-card", async (importOriginal) => {
   return {
     ...mod,
     uploadWorkspaceMedia: (i: Record<string, unknown>) => mocked.upload(i),
-    MediaCard: (p: { item: { id: string; name: string } }) => (
-      <a data-testid={`attachment-${p.item.id}`} href={`/media/${p.item.id}`}>
-        {p.item.name}
-      </a>
-    ),
   };
 });
 
@@ -776,10 +771,7 @@ describe("served coach conversation (RemoteConversation)", () => {
       ],
     });
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
-    await waitFor(() =>
-      expect(screen.getByTestId("attachment-mo-9")).toBeTruthy(),
-    );
-    expect(screen.getByText("report.pdf")).toBeTruthy();
+    await waitFor(() => expect(screen.getByText("report.pdf")).toBeTruthy());
   });
 
   it("an unchanged retry reuses the request id; an edited payload mints a new one", async () => {
@@ -870,6 +862,71 @@ describe("served coach conversation (RemoteConversation)", () => {
     ).toEqual([]);
   });
 
+  it("two overlapping 6-file selections never exceed 10 staged", async () => {
+    mocked.upload.mockImplementation(
+      async (i) =>
+        ({
+          id: `mo-${(i as { fileName: string }).fileName}`,
+          name: (i as { fileName: string }).fileName,
+          type: "application/pdf",
+          size: 4,
+          mediaObjectId: `mo-${(i as { fileName: string }).fileName}`,
+        }) as Record<string, unknown>,
+    );
+    const six = (o: number) =>
+      Array.from(
+        { length: 6 },
+        (_, i) => new File(["x"], `f${o + i}.pdf`, { type: "application/pdf" }),
+      );
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const picker = await screen.findByLabelText("Attach files");
+    fireEvent.change(picker, { target: { files: six(0) } });
+    fireEvent.change(picker, { target: { files: six(6) } });
+    await waitFor(() => screen.getByText(/up to 10 attachments/));
+    await waitFor(() => screen.getByText("f9.pdf"));
+    expect(mocked.upload).toHaveBeenCalledTimes(10);
+    expect(screen.queryByText("f11.pdf")).toBeNull();
+  });
+
+  it("the over-limit alert clears once the staged count is back under the cap", async () => {
+    mocked.upload.mockImplementation(
+      async (i) =>
+        ({
+          id: `mo-${(i as { fileName: string }).fileName}`,
+          name: (i as { fileName: string }).fileName,
+          type: "application/pdf",
+          size: 4,
+          mediaObjectId: `mo-${(i as { fileName: string }).fileName}`,
+        }) as Record<string, unknown>,
+    );
+    const files = Array.from(
+      { length: 11 },
+      (_, i) => new File(["x"], `g${i}.pdf`, { type: "application/pdf" }),
+    );
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files },
+    });
+    await waitFor(() => screen.getByText(/up to 10 attachments/));
+    fireEvent.click(await screen.findByLabelText("Remove g0.pdf"));
+    expect(screen.queryByText(/up to 10 attachments/)).toBeNull();
+  });
+
+  it("Enter sends, Shift+Enter inserts a newline, IME Enter never sends", async () => {
+    mocked.sendOwn.mockClear();
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = (await screen.findByLabelText(
+      "Message",
+    )) as HTMLTextAreaElement;
+    fireEvent.change(input, { target: { value: "line1" } });
+    fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
+    expect(mocked.sendOwn).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(mocked.sendOwn).not.toHaveBeenCalled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+  });
+
   it("stages at most 10 attachments and explains the limit", async () => {
     mocked.upload.mockImplementation(
       async (i) =>
@@ -933,7 +990,16 @@ describe("served coach conversation (RemoteConversation)", () => {
       messages: [
         wire({
           read: true,
-          attachments: [{ fileName: "no-id.pdf" }, null],
+          attachments: [
+            { fileName: "no-id.pdf" },
+            null,
+            {
+              mediaObjectId: "mo-x",
+              fileName: "ok.pdf",
+              contentType: 123,
+              byteSize: "big",
+            },
+          ],
         }),
       ],
     });

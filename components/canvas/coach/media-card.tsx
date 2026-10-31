@@ -134,9 +134,10 @@ export function MediaCard({
     };
   }, [workspaceId, item.id]);
 
-  const image = item.type.startsWith("image/");
-  const audio = item.type.startsWith("audio/");
-  const video = item.type.startsWith("video/");
+  const itemType = typeof item.type === "string" ? item.type : "";
+  const image = itemType.startsWith("image/");
+  const audio = itemType.startsWith("audio/");
+  const video = itemType.startsWith("video/");
   return (
     <div className="cd-media-card">
       <div className="cd-media-heading">

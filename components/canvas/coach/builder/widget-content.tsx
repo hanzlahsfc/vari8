@@ -21,7 +21,7 @@ import {
   MAX_MEDIA_BYTES,
   MEDIA_CONTENT_TYPES,
   mediaKindForContentType,
-} from "@/lib/storage";
+} from "@/lib/media-policy";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
 import type { Media } from "../model";
 import {
@@ -420,13 +420,18 @@ export function ChatComposer({
   const session = useIdentitySession(key);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<{ kind: string; text: string } | null>(
+    null,
+  );
   // The request id belongs to the logical payload (trimmed text +
   // uploaded media ids) — an unchanged retry reuses it; any edit mints a
   // new payload key, so a response-lost success can never clear newer
   // content as if the old request had been acknowledged.
   const requestId = useRef<{ fp: string; id: string } | null>(null);
   const uploads = useRef(new Map<string, AbortController>());
+  // Slot reservation: synchronous occupancy counter so two overlapping
+  // selections can never both observe the pre-selection count.
+  const slots = useRef(0);
   // W2-T8: staged uploads — only successfully uploaded media_object ids
   // are linked onto the message; pending blocks send, failed is removed
   // or reattached. Entries are session-scoped like the draft.
@@ -438,26 +443,38 @@ export function ChatComposer({
     // session's pending send/upload can never rewrite this draft, error,
     // staged media or pending flag, even after a switch away and back.
     setDraft("");
-    setError("");
+    setError(null);
     setSending(false);
     setStaged([]);
+    setError(null);
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
     uploads.current.clear();
+    slots.current = 0;
   }, [key]);
   const MAX_ATTACHMENTS = 10;
-  const ATTACH_FAILED_MSG =
-    "An attachment failed to upload — remove it and reattach to send it.";
+  // Keep the reservation counter in step with settled state.
+  useEffect(() => {
+    slots.current = staged.length;
+  }, [staged]);
   const removeChip = (item: { id: string }) => {
     uploads.current.get(item.id)?.abort();
     uploads.current.delete(item.id);
+    slots.current = Math.max(0, slots.current - 1);
     setStaged((current) => {
       const remaining = current.filter((other) => other.id !== item.id);
-      // Clear the failed-attachment alert once the last failed chip is
-      // gone — a remaining failed file keeps it visible.
-      if (!remaining.some((other) => other.state === "failed"))
-        setError((err) => (err === ATTACH_FAILED_MSG ? "" : err));
+      // Error lifecycle is keyed, not string-coupled: the failed-attach
+      // alert clears with the last failed chip; the over-limit alert
+      // clears once the count is back under the cap.
+      setError((err) => {
+        if (!err) return err;
+        if (err.kind === "attach_failed" && !remaining.some((o) => o.state === "failed"))
+          return null;
+        if (err.kind === "attach_limit" && remaining.length < MAX_ATTACHMENTS)
+          return null;
+        return err;
+      });
       return remaining;
     });
   };
@@ -465,23 +482,31 @@ export function ChatComposer({
     const s = session.current;
     if (!files || !s) return;
     const picked = Array.from(files);
-    const room = Math.max(0, MAX_ATTACHMENTS - staged.length);
+    // Reserve slots synchronously — a second selection in the same tick
+    // sees the reservations the first one already made.
+    const room = Math.max(0, MAX_ATTACHMENTS - slots.current);
+    const accepted = picked.slice(0, room).map((file) => ({
+      id: crypto.randomUUID(),
+      file,
+    }));
+    slots.current += accepted.length;
     if (picked.length > room)
-      setError(
-        `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
-      );
-    for (const file of picked.slice(0, room)) {
-      const id = crypto.randomUUID();
+      setError({
+        kind: "attach_limit",
+        text: `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
+      });
+    if (accepted.length > 0)
       setStaged((current) => [
         ...current,
-        {
+        ...accepted.map(({ id, file }) => ({
           id,
           name: file.name,
           type: file.type || "application/octet-stream",
           size: file.size,
-          state: "pending",
-        },
+          state: "pending" as const,
+        })),
       ]);
+    for (const { id, file } of accepted) {
       const kind = mediaKindForContentType(
         file.type || "application/octet-stream",
       );
@@ -509,7 +534,12 @@ export function ChatComposer({
         setStaged((current) =>
           current.map((item) =>
             item.id === id
-              ? { ...media, state: "uploaded" as const }
+              ? {
+                  ...item,
+                  ...media,
+                  id: item.id,
+                  state: "uploaded" as const,
+                }
               : item,
           ),
         );
@@ -533,7 +563,10 @@ export function ChatComposer({
     if ((!text && ready.length === 0) || sending || !s) return;
     if (staged.some((item) => item.state === "pending")) return;
     if (staged.some((item) => item.state === "failed")) {
-      setError(ATTACH_FAILED_MSG);
+      setError({
+        kind: "attach_failed",
+        text: "An attachment failed to upload — remove it and reattach to send it.",
+      });
       return;
     }
     const fp = `${text}￨${ready
@@ -543,7 +576,7 @@ export function ChatComposer({
     if (!requestId.current || requestId.current.fp !== fp)
       requestId.current = { fp, id: crypto.randomUUID() };
     setSending(true);
-    setError("");
+    setError(null);
     try {
       await sendOwnMessage(
         workspaceId,
@@ -558,7 +591,10 @@ export function ChatComposer({
       setStaged([]);
     } catch {
       if (session.current !== s) return;
-      setError("The message could not be sent — check your connection and try again");
+      setError({
+        kind: "send",
+        text: "The message could not be sent — check your connection and try again",
+      });
     } finally {
       if (session.current === s) setSending(false);
     }
@@ -610,12 +646,20 @@ export function ChatComposer({
       >
         Attach
       </button>
-      <input
+      <textarea
+        rows={1}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) =>
-          e.key === "Enter" && !e.nativeEvent.isComposing && void send()
-        }
+        onKeyDown={(e) => {
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey &&
+            !e.nativeEvent.isComposing
+          ) {
+            e.preventDefault();
+            void send();
+          }
+        }}
         placeholder="Message…"
         aria-label="Message"
         disabled={sending}
@@ -636,7 +680,7 @@ export function ChatComposer({
       </button>
       {error ? (
         <p role="alert" style={{ color: "var(--cd-err, #b45309)", fontSize: 12, margin: "4px 0 0" }}>
-          {error}
+          {error.text}
         </p>
       ) : null}
     </div>
@@ -775,8 +819,14 @@ export function RemoteConversation({
                       item={{
                         id: attachment.mediaObjectId,
                         name: attachment.fileName,
-                        type: attachment.contentType ?? "application/octet-stream",
-                        size: attachment.byteSize ?? 0,
+                        type:
+                          typeof attachment.contentType === "string"
+                            ? attachment.contentType
+                            : "application/octet-stream",
+                        size:
+                          typeof attachment.byteSize === "number"
+                            ? attachment.byteSize
+                            : 0,
                         mediaObjectId: attachment.mediaObjectId,
                       }}
                     />
