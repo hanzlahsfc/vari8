@@ -1,4 +1,5 @@
 // Messages domain provider (PR-W0). Owns the own-thread remote calls the
+import { MAX_MEDIA_BYTES } from "@/lib/media-policy";
 // client messages screen reads and writes through.
 //
 // W2-A4: the coach-side messages and composer drafts also sync through the
@@ -154,6 +155,10 @@ export function toCanvasMessage(
       // download mint for an entry that fails the wire contract.
       const a =
         attachment && typeof attachment === "object" ? attachment : null;
+      // The numeric fields carry the real wire constraints, not merely
+      // finiteness: byteSize is a positive integer within the shared
+      // byte cap (assertMediaByteSize's rule), position a non-negative
+      // integer.
       const valid =
         a !== null &&
         typeof a.mediaObjectId === "string" &&
@@ -163,9 +168,12 @@ export function toCanvasMessage(
         typeof a.contentType === "string" &&
         a.contentType.length > 0 &&
         typeof a.byteSize === "number" &&
-        Number.isFinite(a.byteSize) &&
+        Number.isInteger(a.byteSize) &&
+        a.byteSize >= 1 &&
+        a.byteSize <= MAX_MEDIA_BYTES &&
         typeof a.position === "number" &&
-        Number.isFinite(a.position);
+        Number.isInteger(a.position) &&
+        a.position >= 0;
       if (!valid)
         return {
           id: "unavailable",

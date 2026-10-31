@@ -1235,6 +1235,55 @@ describe("served coach conversation (RemoteConversation)", () => {
         ],
         ids: ["", "", "", "mo-ok"],
       },
+      // The numeric fields carry the contract's own constraints —
+      // byteSize: integer in 1..MAX_MEDIA_BYTES; position: non-negative
+      // integer — not merely finiteness.
+      ...(
+        [-1, 0, 1.5, 20 * 1024 * 1024 + 1, "big", NaN, Infinity] as const
+      ).map((byteSize, i) => ({
+        name: `byteSize ${JSON.stringify(String(byteSize))}`,
+        attachments: [{ ...valid, byteSize }],
+        names: ["attachment unavailable"],
+        ids: [""],
+      })),
+      ...([1, 20 * 1024 * 1024] as const).map((byteSize) => ({
+        name: `byteSize valid ${byteSize}`,
+        attachments: [{ ...valid, byteSize }],
+        names: ["ok.pdf"],
+        ids: ["mo-ok"],
+      })),
+      ...([-1, 0.5, "0", NaN, Infinity] as const).map((position) => ({
+        name: `position ${JSON.stringify(String(position))}`,
+        attachments: [{ ...valid, position }],
+        names: ["attachment unavailable"],
+        ids: [""],
+      })),
+      ...([0, 3] as const).map((position) => ({
+        name: `position valid ${position}`,
+        attachments: [{ ...valid, position }],
+        names: ["ok.pdf"],
+        ids: ["mo-ok"],
+      })),
+      {
+        name: "boundary sizes mixed with valid",
+        attachments: [
+          { ...valid, byteSize: 0 },
+          { ...valid, byteSize: 1, mediaObjectId: "mo-min" },
+          {
+            ...valid,
+            byteSize: 20 * 1024 * 1024,
+            mediaObjectId: "mo-max",
+          },
+          { ...valid, byteSize: 20 * 1024 * 1024 + 1 },
+        ],
+        names: [
+          "attachment unavailable",
+          "ok.pdf",
+          "ok.pdf",
+          "attachment unavailable",
+        ],
+        ids: ["", "mo-min", "mo-max", ""],
+      },
     ];
     for (const c of cases) {
       const view = toCanvasMessage(

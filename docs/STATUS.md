@@ -1,3 +1,9 @@
+## 2026-10-31 — Prompt 648 — #249 contract-aligned numeric validation
+
+- `toCanvasMessage` numeric checks now enforce the wire contract, not mere finiteness: `byteSize` must be an integer in 1..MAX_MEDIA_BYTES (reusing the browser-safe `lib/media-policy` cap — same rule as `assertMediaByteSize`); `position` a non-negative integer. `Number.isFinite` replaced. Adjacent required-field checks re-inspected against the contract — string fields unchanged, no invented limits.
+- Committed regression extensions in `tests/unit/client-composer.dom.test.tsx`: byteSize −1/0/fractional/over-cap/wrong-type/NaN/Infinity rejected; 1 and MAX_MEDIA_BYTES accepted; position −1/fractional/string/NaN/Infinity rejected; 0 and positive integer accepted; boundary sizes mixed with valid neighbors (mo-min/mo-max download, invalid neighbors inert).
+- Gates (fresh, Node v24.22.1): focused 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+
 ## 2026-10-31 — Prompt 646 — #249 whole-entry validation + committed regressions
 
 - `toCanvasMessage` now requires the FULL wire contract per entry — `mediaObjectId`, `fileName`, `contentType` (non-empty strings), `byteSize` and `position` (finite numbers) — before producing a downloadable attachment. Any malformed field, null/primitive entry, or non-array collection degrades to an inert "attachment unavailable" card (`mediaObjectId: ""` — no mint fetch, no download action); valid neighbors still render and download.
