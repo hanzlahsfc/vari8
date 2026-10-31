@@ -113,6 +113,13 @@ export function RemoteDashboardTab({
   );
   const onRecordsChange = useCallback(
     (next: SourceRecords) => {
+      // A composer-backed message refresh resyncs wire truth — the
+      // records' message list carries the composer's own reload result.
+      if (next.messages !== records.messages) {
+        void fetchOwnMessages(own.workspaceId).then((response) =>
+          setMessages(response.messages),
+        );
+      }
       for (const wire of tasks ?? []) {
         const edited = next.tasks.find((task) => task.id === wire.id);
         if (!edited || edited.completed === (wire.status === "COMPLETED"))
@@ -155,18 +162,18 @@ export function RemoteDashboardTab({
       />
       <section className="cb-dw-detail" style={{ marginTop: 16 }}>
         <h3>Coach conversation</h3>
-        {(messages ?? []).map((wire) => (
-          <div className="cb-dw-detail-group" key={wire.id}>
+        {records.messages.map((message) => (
+          <div className="cb-dw-detail-group" key={message.id}>
             <h4>
-              {wire.senderKind === "CLIENT" ? "You" : "Coach"} ·{" "}
-              {new Date(wire.sentAt).toLocaleDateString(undefined, {
+              {message.sender} ·{" "}
+              {new Date(message.date).toLocaleDateString(undefined, {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
               })}
-              {!wire.read && wire.senderKind === "STAFF" ? " · Unread" : ""}
+              {message.unread ? " · Unread" : ""}
             </h4>
-            <p>{wire.body}</p>
+            <p>{message.excerpt}</p>
           </div>
         ))}
         <ChatComposer
