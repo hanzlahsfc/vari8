@@ -17,6 +17,11 @@ import {
   sendOwnMessage,
 } from "../../data/messages";
 import { CoachingWidgetContent } from "./coaching-content";
+import {
+  MAX_MEDIA_BYTES,
+  MEDIA_CONTENT_TYPES,
+  mediaKindForContentType,
+} from "@/lib/storage";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
 import type { Media } from "../model";
 import {
@@ -441,10 +446,31 @@ export function ChatComposer({
       controller.abort();
     uploads.current.clear();
   }, [key]);
+  const MAX_ATTACHMENTS = 10;
+  const ATTACH_FAILED_MSG =
+    "An attachment failed to upload — remove it and reattach to send it.";
+  const removeChip = (item: { id: string }) => {
+    uploads.current.get(item.id)?.abort();
+    uploads.current.delete(item.id);
+    setStaged((current) => {
+      const remaining = current.filter((other) => other.id !== item.id);
+      // Clear the failed-attachment alert once the last failed chip is
+      // gone — a remaining failed file keeps it visible.
+      if (!remaining.some((other) => other.state === "failed"))
+        setError((err) => (err === ATTACH_FAILED_MSG ? "" : err));
+      return remaining;
+    });
+  };
   const attach = async (files: FileList | null) => {
     const s = session.current;
     if (!files || !s) return;
-    for (const file of Array.from(files)) {
+    const picked = Array.from(files);
+    const room = Math.max(0, MAX_ATTACHMENTS - staged.length);
+    if (picked.length > room)
+      setError(
+        `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
+      );
+    for (const file of picked.slice(0, room)) {
       const id = crypto.randomUUID();
       setStaged((current) => [
         ...current,
@@ -456,6 +482,17 @@ export function ChatComposer({
           state: "pending",
         },
       ]);
+      const kind = mediaKindForContentType(
+        file.type || "application/octet-stream",
+      );
+      if (!kind || file.size <= 0 || file.size > MAX_MEDIA_BYTES) {
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id ? { ...item, state: "failed" as const } : item,
+          ),
+        );
+        continue;
+      }
       const controller = new AbortController();
       uploads.current.set(id, controller);
       try {
@@ -496,7 +533,7 @@ export function ChatComposer({
     if ((!text && ready.length === 0) || sending || !s) return;
     if (staged.some((item) => item.state === "pending")) return;
     if (staged.some((item) => item.state === "failed")) {
-      setError("An attachment failed to upload — remove it and reattach to send it.");
+      setError(ATTACH_FAILED_MSG);
       return;
     }
     const fp = `${text}￨${ready
@@ -544,13 +581,7 @@ export function ChatComposer({
                 type="button"
                 className="cb-dw-action"
                 aria-label={`Remove ${item.name}`}
-                onClick={() => {
-                  uploads.current.get(item.id)?.abort();
-                  uploads.current.delete(item.id);
-                  setStaged((current) =>
-                    current.filter((other) => other.id !== item.id),
-                  );
-                }}
+                onClick={() => removeChip(item)}
               >
                 Remove
               </button>
@@ -562,6 +593,7 @@ export function ChatComposer({
         ref={fileInput}
         type="file"
         multiple
+        accept={Object.keys(MEDIA_CONTENT_TYPES).join(",")}
         aria-label="Attach files"
         style={{ display: "none" }}
         onChange={(event) => {
@@ -581,7 +613,9 @@ export function ChatComposer({
       <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && void send()}
+        onKeyDown={(e) =>
+          e.key === "Enter" && !e.nativeEvent.isComposing && void send()
+        }
         placeholder="Message…"
         aria-label="Message"
         disabled={sending}
@@ -727,19 +761,31 @@ export function RemoteConversation({
                     : ""}
                 </h4>
                 <p>{message.body}</p>
-                {(message.attachments ?? []).map((attachment) => (
-                  <MediaCard
-                    key={attachment.mediaObjectId}
-                    workspaceId={workspaceId}
-                    item={{
-                      id: attachment.mediaObjectId,
-                      name: attachment.fileName,
-                      type: attachment.contentType,
-                      size: attachment.byteSize,
-                      mediaObjectId: attachment.mediaObjectId,
-                    }}
-                  />
-                ))}
+                {(Array.isArray(message.attachments)
+                  ? message.attachments
+                  : []
+                ).map((attachment) =>
+                  attachment &&
+                  typeof attachment.mediaObjectId === "string" &&
+                  attachment.mediaObjectId.length > 0 &&
+                  typeof attachment.fileName === "string" ? (
+                    <MediaCard
+                      key={attachment.mediaObjectId}
+                      workspaceId={workspaceId}
+                      item={{
+                        id: attachment.mediaObjectId,
+                        name: attachment.fileName,
+                        type: attachment.contentType ?? "application/octet-stream",
+                        size: attachment.byteSize ?? 0,
+                        mediaObjectId: attachment.mediaObjectId,
+                      }}
+                    />
+                  ) : (
+                    <p key="invalid" style={{ fontSize: 12, opacity: 0.7 }}>
+                      An attachment is unavailable.
+                    </p>
+                  ),
+                )}
               </div>
             ))
           )}

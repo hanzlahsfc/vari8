@@ -1,3 +1,14 @@
+## 2026-10-31 — Prompt 638 — #249 attachment UI safeguards (5 items)
+
+- (1) 10-attachment cap enforced at pick time: `staged.length` + selection is counted; only the first `10 - staged.length` files stage, the rest are skipped with an explanatory alert — excess never uploads.
+- (2) Client-side prechecks reuse the server's own rules (`MAX_MEDIA_BYTES` + `mediaKindForContentType` from `lib/storage`, a zero-import module): non-allowlisted or out-of-size files stage as failed chips without uploading; the file input gets `accept` built from `MEDIA_CONTENT_TYPES` keys. Server validation stays authoritative.
+- (3) The failed-attachment alert clears when the last failed chip is removed; while other failed chips remain it stays visible (send errors are unaffected — only the attach message is cleared).
+- (4) Malformed attachment metadata (missing mediaObjectId/fileName, null entries) renders an "attachment is unavailable" note instead of crashing the thread; the rest of the message still renders.
+- (5) Composer Enter is now IME-safe: `!e.nativeEvent.isComposing` guards send.
+- Regressions (+5): 10-cap, unsupported-type precheck, error-clear-on-remove, malformed metadata, plus the retained cancellation/identity/payload-key coverage (37/37 in the file). Mock isolation fixed (`mockReset` for the upload mock).
+- Gates (Node v24.22.1): focused 42/42; full unfiltered suite 149 files / 1772 tests; build/tsc/eslint(0 err)/prettier/index/diff-check clean.
+- Kept separate (not changed): S3 byte-size enforcement + orphaned-upload retention; no client delete authority added. Browser replay still unprovisioned (SEED_* credential set unavailable).
+
 ## 2026-10-31 — Prompt 637 — #249 attachment retry + cancellation repair (2 findings)
 
 - (1) Request id bound to the logical payload: `requestId` is now `{fp, id}` where `fp` = trimmed text + sorted uploaded media ids — an unchanged retry reuses the same key; editing text or changing the attachment set mints a new payload id, so a response-lost success can never clear newer content. Success clears the key.

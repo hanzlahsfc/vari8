@@ -192,7 +192,7 @@ describe("served coach conversation (RemoteConversation)", () => {
     mocked.fetchOwn.mockResolvedValue({ messages: [] });
     mocked.markRead.mockClear();
     mocked.markRead.mockResolvedValue({ marked: 1 });
-    mocked.upload.mockClear();
+    mocked.upload.mockReset();
     mocked.upload.mockResolvedValue({
       id: "mo-1",
       name: "plan.pdf",
@@ -868,6 +868,82 @@ describe("served coach conversation (RemoteConversation)", () => {
         mocked.sendOwn.mock.calls[0] as unknown as [string, string, string[]]
       )[2],
     ).toEqual([]);
+  });
+
+  it("stages at most 10 attachments and explains the limit", async () => {
+    mocked.upload.mockImplementation(
+      async (i) =>
+        ({
+          id: "mo-1",
+          name: (i as { fileName: string }).fileName,
+          type: "application/pdf",
+          size: 4,
+          mediaObjectId: "mo-1",
+        }) as Record<string, unknown>,
+    );
+    const files = Array.from(
+      { length: 12 },
+      (_, i) => new File(["x"], `f${i}.pdf`, { type: "application/pdf" }),
+    );
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files },
+    });
+    await waitFor(() => screen.getByText(/up to 10 attachments/));
+    await waitFor(() => screen.getByText("f9.pdf"));
+    expect(screen.queryByText("f10.pdf")).toBeNull();
+    expect(mocked.upload).toHaveBeenCalledTimes(10);
+  });
+
+  it("rejects an unsupported type before upload", async () => {
+    const file = new File(["x"], "app.exe", {
+      type: "application/x-msdownload",
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => screen.getByText(/upload failed/));
+    expect(mocked.upload).not.toHaveBeenCalled();
+  });
+
+  it("clearing the last failed chip clears the upload error", async () => {
+    mocked.upload.mockRejectedValue(new Error("x"));
+    const a = new File(["x"], "a.pdf", { type: "application/pdf" });
+    const b = new File(["x"], "b.pdf", { type: "application/pdf" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [a, b] },
+    });
+    await waitFor(() => screen.getByLabelText("Remove b.pdf"));
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "note" },
+    });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await screen.findByRole("alert");
+    // One failed chip removed — the error stays while the other remains.
+    fireEvent.click(screen.getByLabelText("Remove a.pdf"));
+    expect(screen.getByRole("alert")).toBeTruthy();
+    fireEvent.click(screen.getByLabelText("Remove b.pdf"));
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("malformed attachment metadata degrades without crashing the thread", async () => {
+    mocked.fetchOwn.mockResolvedValueOnce({
+      messages: [
+        wire({
+          read: true,
+          attachments: [{ fileName: "no-id.pdf" }, null],
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() =>
+      expect(screen.getAllByText("An attachment is unavailable.")).toHaveLength(
+        2,
+      ),
+    );
+    expect(screen.getByText("from coach")).toBeTruthy();
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
