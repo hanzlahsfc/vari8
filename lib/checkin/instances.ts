@@ -332,10 +332,7 @@ export function canonicalizeCheckInAnswers(
       throw new CheckInInstanceError("invalid_input");
     // Custom: answers outside the instance's field selection reject — the
     // wire must stay within what the coach asked.
-    if (
-      fieldSelection != null &&
-      !fieldSelection.includes(entry.fieldId)
-    )
+    if (fieldSelection != null && !fieldSelection.includes(entry.fieldId))
       throw new CheckInInstanceError("invalid_input");
   }
   const byId = new Map(raw.map((e) => [e.fieldId, e]));
@@ -965,10 +962,10 @@ export async function scheduleCheckInInstance(
                 formId: input.formId,
               },
               select: {
-              id: true,
-              definition: true,
-              form: { select: { status: true } },
-            },
+                id: true,
+                definition: true,
+                form: { select: { status: true } },
+              },
             }),
           ]);
           if (!profile || !formVersion || formVersion.form.status !== "ACTIVE")

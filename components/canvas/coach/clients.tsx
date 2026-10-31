@@ -868,6 +868,44 @@ export function ExtraDateDialog({
   const [fieldOpts, setFieldOpts] = useState<{ fieldId: string; label: string; required: boolean }[]>([]);
   const [fieldIds, setFieldIds] = useState<string[]>([]);
   const [note, setNote] = useState(existing?.note ?? "");
+  // Custom: load the regular form's published fields once the athlete and
+  // workspace are known — the schedule-versions options carry them.
+  useEffect(() => {
+    if (type !== "Custom" || !client || !workspaceId) return;
+    let on = true;
+    const clientName = state.clients.find((c) => c.id === client)?.name;
+    if (!clientName) return;
+    void clientProfileIdFor(clientName).then(async (profileId) => {
+      if (!profileId) return;
+      const { apiFetch } = await import("../data/http");
+      // The checklist must come from the same form createExtra pins — the
+      // client's ACTIVE schedule-rule formId, not the alphabetically first
+      // option (two published forms would otherwise swap the field set).
+      const rules = await apiFetch<{
+        items: { status: string; formId: string }[];
+      }>(
+        `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(profileId)}`,
+      );
+      const activeFormIds = [
+        ...new Set(
+          rules.items.filter((r) => r.status === "ACTIVE").map((r) => r.formId),
+        ),
+      ];
+      const v = await apiFetch<{
+        options: {
+          formId: string;
+          fields?: { fieldId: string; label: string; required: boolean }[];
+        }[];
+      }>(
+        `/workspaces/${workspaceId}/checkins/schedule-versions?clientProfileId=${encodeURIComponent(profileId)}`,
+      );
+      const scoped = v.options.find((o) => o.formId === activeFormIds[0]);
+      if (on && scoped?.fields) setFieldOpts(scoped.fields);
+    });
+    return () => {
+      on = false;
+    };
+  }, [type, client, workspaceId, state.clients, clientProfileIdFor]);
   const duplicate = state.extras.some(
     (e) => e.clientId === client && e.date === date && e.id !== existing?.id,
   );
