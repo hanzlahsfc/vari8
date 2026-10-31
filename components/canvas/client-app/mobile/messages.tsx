@@ -8,7 +8,11 @@ import {
   uid,
 } from "../../coach/model";
 import { useCoach } from "../../coach/store";
-import { fetchOwnMessages, sendOwnMessage } from "../../data/messages";
+import {
+  fetchOwnMessages,
+  markOwnThreadRead,
+  sendOwnMessage,
+} from "../../data/messages";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 
 export function MobileMessages({
@@ -29,24 +33,26 @@ export function MobileMessages({
     .filter((m: Message) => m.clientId === client.id)
     .sort((a: Message, b: Message) => a.date.localeCompare(b.date));
   // mark coach messages read on open
+  const hasUnreadCoach = state.messages.some(
+    (m) => m.clientId === client.id && m.from === "coach" && !m.read,
+  );
   useEffect(() => {
-    setState((s) => {
-      if (
-        !s.messages.some(
-          (m) => m.clientId === client.id && m.from === "coach" && !m.read,
-        )
-      )
-        return s;
-      return {
-        ...s,
-        messages: s.messages.map((m) =>
-          m.clientId === client.id && m.from === "coach"
-            ? { ...m, read: true }
-            : m,
-        ),
-      };
-    });
-  }, [client.id, setState]);
+    // The thread is rendered open: local paint + server mark-read only fire
+    // when unread coach rows are actually visible — mount alone never marks.
+    if (!hasUnreadCoach) return;
+    if (workspaceId)
+      markOwnThreadRead(workspaceId).catch(() => {
+        /* paint stays authoritative locally; the next open retries */
+      });
+    setState((s) => ({
+      ...s,
+      messages: s.messages.map((m) =>
+        m.clientId === client.id && m.from === "coach"
+          ? { ...m, read: true }
+          : m,
+      ),
+    }));
+  }, [client.id, hasUnreadCoach, workspaceId, setState]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   });

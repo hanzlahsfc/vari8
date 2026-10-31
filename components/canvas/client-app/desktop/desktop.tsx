@@ -36,7 +36,13 @@ const SLUGS: Record<Tab, string> = {
   "Check-ins": "check-ins",
 };
 
-export function ClientDesktop({ client }: { client: CoachClient }) {
+export function ClientDesktop({
+  client,
+  workspaceId,
+}: {
+  client: CoachClient;
+  workspaceId?: string;
+}) {
   const { state } = useCoach();
   const today = useLocalToday();
   const router = useRouter();
@@ -126,7 +132,7 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
         )}
         {tab === "Messages" && (
           <div className="cd-messages-wrap cm-app">
-            <MobileMessages client={client} />
+            <MobileMessages client={client} workspaceId={workspaceId} />
           </div>
         )}
         {tab === "Check-ins" && (

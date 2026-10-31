@@ -240,7 +240,7 @@ function ClientRouteInner({
               <MobileApp client={client} workspaceId={own?.workspaceId} />
             )
           ) : (
-            <ClientDesktop client={client} />
+            <ClientDesktop client={client} workspaceId={own?.workspaceId} />
           )}
         </>
       )}

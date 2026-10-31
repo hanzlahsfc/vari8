@@ -908,3 +908,30 @@ describe("createExtra — Custom version binding (P611)", () => {
     );
   });
 });
+
+describe("sendOwnMessage — client composer (P620)", () => {
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("carries the caller's clientRequestId — retries stay idempotent", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ message: { id: "m1" } });
+    const { sendOwnMessage } =
+      await import("../../components/canvas/data/messages");
+    await sendOwnMessage("ws-1", "hello", undefined, "req-abc");
+    const [url, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+    expect(url).toBe("/workspaces/ws-1/messages");
+    expect(
+      (opts as { body: { clientRequestId?: string } }).body.clientRequestId,
+    ).toBe("req-abc");
+  });
+
+  it("omits clientRequestId when not supplied — fresh sends get fresh ids", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ message: { id: "m2" } });
+    const { sendOwnMessage } =
+      await import("../../components/canvas/data/messages");
+    await sendOwnMessage("ws-1", "hi");
+    const [, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+    expect(
+      (opts as { body: { clientRequestId?: string } }).body.clientRequestId,
+    ).toBeUndefined();
+  });
+});
