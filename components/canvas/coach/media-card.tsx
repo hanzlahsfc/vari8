@@ -39,6 +39,9 @@ export async function uploadWorkspaceMedia(input: {
   fileName: string;
   contentType: string;
   blob: Blob;
+  /** Optional abort — cancellation removes the chip composer-side; the
+   *  media intent may still persist unlinked server-side. */
+  signal?: AbortSignal;
 }): Promise<Media> {
   const intent = await fetch(`/api/v1/media/${input.workspaceId}`, {
     method: "POST",
@@ -49,6 +52,7 @@ export async function uploadWorkspaceMedia(input: {
       byteSize: input.blob.size,
       clientProfileId: input.clientProfileId,
     }),
+    signal: input.signal,
   });
   if (!intent.ok) throw await apiError(intent);
   const body = (await intent.json()) as {
@@ -64,6 +68,7 @@ export async function uploadWorkspaceMedia(input: {
     method: "PUT",
     headers: body.upload.headers,
     body: input.blob,
+    signal: input.signal,
   });
   if (!put.ok) throw await apiError(put);
   return {

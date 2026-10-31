@@ -416,7 +416,12 @@ export function ChatComposer({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
-  const requestId = useRef<string>("");
+  // The request id belongs to the logical payload (trimmed text +
+  // uploaded media ids) — an unchanged retry reuses it; any edit mints a
+  // new payload key, so a response-lost success can never clear newer
+  // content as if the old request had been acknowledged.
+  const requestId = useRef<{ fp: string; id: string } | null>(null);
+  const uploads = useRef(new Map<string, AbortController>());
   // W2-T8: staged uploads — only successfully uploaded media_object ids
   // are linked onto the message; pending blocks send, failed is removed
   // or reattached. Entries are session-scoped like the draft.
@@ -431,7 +436,10 @@ export function ChatComposer({
     setError("");
     setSending(false);
     setStaged([]);
-    requestId.current = "";
+    requestId.current = null;
+    for (const controller of uploads.current.values())
+      controller.abort();
+    uploads.current.clear();
   }, [key]);
   const attach = async (files: FileList | null) => {
     const s = session.current;
@@ -448,6 +456,8 @@ export function ChatComposer({
           state: "pending",
         },
       ]);
+      const controller = new AbortController();
+      uploads.current.set(id, controller);
       try {
         const media = await uploadWorkspaceMedia({
           workspaceId,
@@ -455,7 +465,9 @@ export function ChatComposer({
           fileName: file.name,
           contentType: file.type || "application/octet-stream",
           blob: file,
+          signal: controller.signal,
         });
+        uploads.current.delete(id);
         if (session.current !== s) return;
         setStaged((current) =>
           current.map((item) =>
@@ -465,7 +477,10 @@ export function ChatComposer({
           ),
         );
       } catch {
-        if (session.current !== s) return;
+        uploads.current.delete(id);
+        // A cancelled upload was already removed — its late rejection
+        // must not restore the chip or mark it failed.
+        if (controller.signal.aborted || session.current !== s) return;
         setStaged((current) =>
           current.map((item) =>
             item.id === id ? { ...item, state: "failed" as const } : item,
@@ -484,7 +499,12 @@ export function ChatComposer({
       setError("An attachment failed to upload — remove it and reattach to send it.");
       return;
     }
-    if (!requestId.current) requestId.current = crypto.randomUUID();
+    const fp = `${text}￨${ready
+      .map((item) => item.mediaObjectId ?? item.id)
+      .sort()
+      .join(",")}`;
+    if (!requestId.current || requestId.current.fp !== fp)
+      requestId.current = { fp, id: crypto.randomUUID() };
     setSending(true);
     setError("");
     try {
@@ -492,11 +512,11 @@ export function ChatComposer({
         workspaceId,
         text,
         ready.map((item) => item.mediaObjectId ?? item.id),
-        requestId.current,
+        requestId.current.id,
       );
       onSent(s.key);
       if (session.current !== s) return;
-      requestId.current = "";
+      requestId.current = null;
       setDraft("");
       setStaged([]);
     } catch {
@@ -524,12 +544,13 @@ export function ChatComposer({
                 type="button"
                 className="cb-dw-action"
                 aria-label={`Remove ${item.name}`}
-                disabled={item.state === "pending"}
-                onClick={() =>
+                onClick={() => {
+                  uploads.current.get(item.id)?.abort();
+                  uploads.current.delete(item.id);
                   setStaged((current) =>
                     current.filter((other) => other.id !== item.id),
-                  )
-                }
+                  );
+                }}
               >
                 Remove
               </button>

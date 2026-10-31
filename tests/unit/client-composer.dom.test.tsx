@@ -782,6 +782,94 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(screen.getByText("report.pdf")).toBeTruthy();
   });
 
+  it("an unchanged retry reuses the request id; an edited payload mints a new one", async () => {
+    mocked.sendOwn.mockRejectedValueOnce(new Error("offline"));
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "first" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await screen.findByRole("alert");
+    const firstKey = (mocked.sendOwn.mock.calls[0] as unknown as string[])[3];
+    // Unchanged payload: retry is idempotent on the same key.
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
+    expect((mocked.sendOwn.mock.calls[1] as unknown as string[])[3]).toBe(
+      firstKey,
+    );
+    // Edited text is a new logical payload — a response-lost success of
+    // the first request can never clear this newer content.
+    fireEvent.change(input, { target: { value: "second" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(3));
+    expect((mocked.sendOwn.mock.calls[2] as unknown as string[])[3]).not.toBe(
+      firstKey,
+    );
+  });
+
+  it("adding an attachment mints a new payload key", async () => {
+    const file = new File(["x"], "plan.pdf", { type: "application/pdf" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "note" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    const firstKey = (mocked.sendOwn.mock.calls[0] as unknown as string[])[3];
+    fireEvent.change(screen.getByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => expect(screen.queryByText(/uploading/)).toBeNull());
+    fireEvent.change(input, { target: { value: "note" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
+    expect((mocked.sendOwn.mock.calls[1] as unknown as string[])[3]).not.toBe(
+      firstKey,
+    );
+    expect(
+      (
+        mocked.sendOwn.mock.calls[1] as unknown as [string, string, string[]]
+      )[2],
+    ).toEqual(["mo-1"]);
+  });
+
+  it("removing a chip during upload cancels it and frees the composer", async () => {
+    let resolveUpload!: (v: Record<string, unknown>) => void;
+    mocked.upload.mockImplementationOnce(
+      () =>
+        new Promise<Record<string, unknown>>(
+          (resolve) => (resolveUpload = resolve),
+        ),
+    );
+    const file = new File(["x"], "slow.pdf", { type: "application/pdf" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file] },
+    });
+    await waitFor(() => screen.getByText(/uploading/));
+    // Remove while pending — aborts the fetch and frees the composer.
+    fireEvent.click(screen.getByLabelText("Remove slow.pdf"));
+    expect(screen.queryByText(/uploading/)).toBeNull();
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "just text" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    // A late completion can never restore the chip or link its media.
+    await act(async () =>
+      resolveUpload({
+        id: "mo-x",
+        name: "slow.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-x",
+      }),
+    );
+    expect(screen.queryByText("slow.pdf")).toBeNull();
+    expect(
+      (
+        mocked.sendOwn.mock.calls[0] as unknown as [string, string, string[]]
+      )[2],
+    ).toEqual([]);
+  });
+
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);

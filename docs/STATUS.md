@@ -1,3 +1,12 @@
+## 2026-10-31 — Prompt 637 — #249 attachment retry + cancellation repair (2 findings)
+
+- (1) Request id bound to the logical payload: `requestId` is now `{fp, id}` where `fp` = trimmed text + sorted uploaded media ids — an unchanged retry reuses the same key; editing text or changing the attachment set mints a new payload id, so a response-lost success can never clear newer content. Success clears the key.
+- (2) Upload cancellation: every staged upload holds an AbortController (`uploadWorkspaceMedia` now takes `signal` through both the intent POST and the presigned PUT); Remove is enabled while pending and aborts + drops the chip, freeing the composer. A cancelled upload's late completion/rejection is ignored — the chip can't be restored and its media can't be linked. Identity change aborts all pending uploads.
+- Regressions (+3): unchanged retry reuses the key while edited text/new attachment mints fresh keys; remove-during-upload cancels and frees the composer with no restore/link.
+- Removed-media retention: media DELETE is staff `library.manage` — removing a chip leaves the uploaded media_object unlinked server-side; no client delete authority exists and none was added. Documented as a storage-retention gap, not repaired.
+- Gates (Node v24.22.1): focused 38/38; full unfiltered `npm run test` 149 files / 1768 tests all pass; `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: authenticated browser replay could not be provisioned this round (fresh lane seeding requires the full SEED_* credential set not available in-session); DOM regressions + disposable-PG integration cover the path.
+
 ## 2026-10-31 — Prompt 635 — client messaging attachments end to end
 
 - Client `ChatComposer` gains the attach path on the existing W2-T8 contract: file input stages each pick, `uploadWorkspaceMedia` (intent + presigned PUT) per file, staged chips show uploading/failed state and allow removal; pending blocks send, failed blocks with an alert until removed; `sendOwnMessage` links only uploaded `mediaObjectIds` (text may be empty). Draft/error/pending/staged are session-scoped like the rest of the composer — an upload resolving after an identity switch is discarded. `RemoteConversation` renders `WireAttachment[]` via the existing `MediaCard` authorized-download mint (`GET /api/v1/media/:ws/:id`). Coach composer/thread already had the flow; preview/demo surfaces unchanged (local-only).
