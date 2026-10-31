@@ -1151,7 +1151,6 @@ describe("served coach conversation (RemoteConversation)", () => {
     render(
       <CoachProvider>
         <CoachCard
-          workspaceId="ws-1"
           item={{
             id: "mo-x",
             name: "report.pdf",
@@ -1166,22 +1165,25 @@ describe("served coach conversation (RemoteConversation)", () => {
     // toCanvasMessage degrades malformed wire metadata safely.
     const { toCanvasMessage } =
       await import("../../components/canvas/data/messages");
-    const view = toCanvasMessage({
-      id: "m1",
-      body: "hi",
-      senderKind: "STAFF",
-      sentAt: "x",
-      read: true,
-      clientRequestId: "r1",
-      attachments: [
-        {
-          mediaObjectId: 1,
-          fileName: null,
-          contentType: 123,
-          byteSize: "big",
-        } as never,
-      ],
-    } as never);
+    const view = toCanvasMessage(
+      {
+        id: "m1",
+        body: "hi",
+        senderKind: "STAFF",
+        sentAt: "x",
+        read: true,
+        clientRequestId: "r1",
+        attachments: [
+          {
+            mediaObjectId: 1,
+            fileName: null,
+            contentType: 123,
+            byteSize: "big",
+          } as never,
+        ],
+      } as never,
+      "cp-1",
+    );
     expect(view.attachments[0].name).toBe("attachment unavailable");
     expect(view.attachments[0].type).toBe("");
   });
