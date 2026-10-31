@@ -1598,7 +1598,7 @@ export async function getOwnCheckInInstance(
         workspaceId: input.workspaceId,
         clientProfileId: profile.id,
       },
-      select: { formId: true },
+      select: { formId: true, fieldSelection: true },
     });
     if (!pre) throw new CheckInInstanceError("not_available");
 
@@ -1742,6 +1742,7 @@ export async function getOwnCheckInInstance(
       late: presentation.late,
       submittedAt: submissionRow?.submittedAt.toISOString() ?? null,
       definition: version.definition as CheckInDefinition,
+      fieldSelection: (pre.fieldSelection as string[] | null) ?? null,
       submittedAnswers:
         submittedAnswerRows?.map((a) => ({
           fieldId: a.fieldId,
