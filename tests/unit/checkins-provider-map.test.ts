@@ -412,13 +412,25 @@ describe("createExtra — additional-date write (P588)", () => {
     });
   });
 
-  it("refuses Custom — provisional mapping is gone, zero POSTs", async () => {
+  it("refuses Custom without a field selection — zero POSTs", async () => {
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
     await expect(createExtra({ ...input, type: "Custom" })).rejects.toThrow(
-      /Custom check-ins are not available/,
+      /require at least one selected field/,
     );
     expect(vi.mocked(apiFetch)).not.toHaveBeenCalled();
+  });
+
+  it("Custom carries fieldSelection on the create body", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce(versions)
+      .mockResolvedValueOnce({ instanceId: "inst-custom" });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await createExtra({ ...input, type: "Custom", fieldIds: ["f1", "f2"] });
+    const [, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+    expect((opts as { body: { fieldSelection?: string[] } }).body.fieldSelection).toEqual(["f1", "f2"]);
   });
 
   it("refuses with no ACTIVE schedule — zero POSTs", async () => {
