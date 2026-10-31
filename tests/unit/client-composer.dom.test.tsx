@@ -10,17 +10,19 @@ import {
 } from "@testing-library/react";
 
 const mocked = vi.hoisted(() => ({
-  sendOwn: vi.fn(async () => ({
-    message: {
-      id: "srv-1",
-      senderKind: "CLIENT",
-      sentAt: "2026-10-20T10:00:00Z",
-      body: "",
-      read: false,
-    },
-  })),
-  fetchOwn: vi.fn(async () => ({ messages: [] })),
-  markRead: vi.fn(async () => ({ marked: 0 })),
+  sendOwn: vi.fn(
+    async (_w?: string, _b?: string, _m?: string[], _r?: string) => ({
+      message: {
+        id: "srv-1",
+        senderKind: "CLIENT",
+        sentAt: "2026-10-20T10:00:00Z",
+        body: "",
+        read: false,
+      },
+    }),
+  ),
+  fetchOwn: vi.fn(async (_w?: string) => ({ messages: [] })),
+  markRead: vi.fn(async (_w?: string) => ({ marked: 0 })),
 }));
 vi.mock("../../components/canvas/data/messages", async (importOriginal) => {
   const mod =
@@ -29,9 +31,9 @@ vi.mock("../../components/canvas/data/messages", async (importOriginal) => {
     >();
   return {
     ...mod,
-    sendOwnMessage: (...a: unknown[]) => mocked.sendOwn(...a),
-    fetchOwnMessages: (...a: unknown[]) => mocked.fetchOwn(...a),
-    markOwnThreadRead: (...a: unknown[]) => mocked.markRead(...a),
+    sendOwnMessage: (w: string, b: string, m?: string[], r?: string) =>
+      mocked.sendOwn(w, b, m, r),
+    fetchOwnMessages: (w: string) => mocked.fetchOwn(w),
   };
 });
 vi.mock("next/navigation", () => ({
@@ -87,8 +89,26 @@ describe("client message composer (P620)", () => {
     });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
-    expect(mocked.sendOwn.mock.calls[0][0]).toBe("ws-1");
-    expect(mocked.sendOwn.mock.calls[0][1]).toBe("hello coach");
+    expect(
+      (
+        mocked.sendOwn.mock.calls[0] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[0],
+    ).toBe("ws-1");
+    expect(
+      (
+        mocked.sendOwn.mock.calls[0] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[1],
+    ).toBe("hello coach");
     // refresh reloads the thread
     await waitFor(() => expect(mocked.fetchOwn).toHaveBeenCalledWith("ws-1"));
   });
@@ -106,9 +126,12 @@ describe("client message composer (P620)", () => {
   });
 
   it("rapid Enter + click during pending sends only once", async () => {
-    let resolve!: (v: unknown) => void;
+    let resolve!: (v: Awaited<ReturnType<typeof mocked.sendOwn>>) => void;
     mocked.sendOwn.mockImplementationOnce(
-      () => new Promise((r) => (resolve = r)),
+      () =>
+        new Promise<Awaited<ReturnType<typeof mocked.sendOwn>>>(
+          (r) => (resolve = r),
+        ),
     );
     mount("ws-1");
     const input = screen.getByLabelText("Message") as HTMLInputElement;
@@ -135,7 +158,14 @@ describe("client message composer (P620)", () => {
     fireEvent.click(screen.getByLabelText("Send"));
     await screen.findByRole("alert");
     expect(input.value).toBe("retry me");
-    const firstKey = mocked.sendOwn.mock.calls[0][3];
+    const firstKey = (
+      mocked.sendOwn.mock.calls[0] as unknown as [
+        string,
+        string,
+        string[] | undefined,
+        string | undefined,
+      ]
+    )[3];
     mocked.sendOwn.mockResolvedValueOnce({
       message: {
         id: "m2",
@@ -147,7 +177,16 @@ describe("client message composer (P620)", () => {
     });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
-    expect(mocked.sendOwn.mock.calls[1][3]).toBe(firstKey);
+    expect(
+      (
+        mocked.sendOwn.mock.calls[1] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[3],
+    ).toBe(firstKey);
   });
 
   it("successful send clears the draft and the next send gets a new key", async () => {
@@ -157,11 +196,27 @@ describe("client message composer (P620)", () => {
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(input.value).toBe(""));
-    const firstKey = mocked.sendOwn.mock.calls[0][3];
+    const firstKey = (
+      mocked.sendOwn.mock.calls[0] as unknown as [
+        string,
+        string,
+        string[] | undefined,
+        string | undefined,
+      ]
+    )[3];
     fireEvent.change(input, { target: { value: "second" } });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
-    expect(mocked.sendOwn.mock.calls[1][3]).not.toBe(firstKey);
+    expect(
+      (
+        mocked.sendOwn.mock.calls[1] as unknown as [
+          string,
+          string,
+          string[] | undefined,
+          string | undefined,
+        ]
+      )[3],
+    ).not.toBe(firstKey);
   });
 
   it("send success + refresh failure clears the draft without resending", async () => {

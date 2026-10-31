@@ -10,6 +10,11 @@ import {
   useState,
 } from "react";
 import { AdditionalDetailContent } from "./additional-widget-content";
+import {
+  fetchOwnMessages,
+  markOwnThreadRead,
+  sendOwnMessage,
+} from "../../data/messages";
 import { CoachingWidgetContent } from "./coaching-content";
 import {
   type ClientTask,
@@ -42,6 +47,7 @@ type DetailProps = {
   records: SourceRecords;
   clientPreview: boolean;
   onRecordsChange: (records: SourceRecords) => void;
+  workspaceId?: string;
 };
 
 type Layout = "Compact" | "Regular" | "Wide" | "Tall" | "Expanded";
@@ -318,11 +324,90 @@ function DetailRows({
   );
 }
 
+/** The client-side coach conversation composer on the served dashboard chat
+ *  detail — send through the authorized own-messages API, not local state. */
+function ChatComposer({
+  workspaceId,
+  records,
+  onRecordsChange,
+}: {
+  workspaceId: string;
+  records: SourceRecords;
+  onRecordsChange: (records: SourceRecords) => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const requestId = useRef<string>("");
+  useEffect(() => {
+    markOwnThreadRead(workspaceId).catch(() => {});
+  }, [workspaceId]);
+  const send = async () => {
+    const text = draft.trim();
+    if (!text || sending) return;
+    if (!requestId.current) requestId.current = crypto.randomUUID();
+    setSending(true);
+    setError("");
+    try {
+      await sendOwnMessage(workspaceId, text, undefined, requestId.current);
+      try {
+        const { messages } = await fetchOwnMessages(workspaceId);
+        onRecordsChange({
+          ...records,
+          messages: messages.map((wire) => ({
+            id: wire.id,
+            sender: wire.senderKind === "CLIENT" ? "You" : "Coach",
+            date: wire.sentAt,
+            excerpt: wire.body,
+            unread: !wire.read,
+          })),
+        });
+      } catch {
+        /* send persisted; the next open refresh shows it — never resend */
+      }
+      requestId.current = "";
+      setDraft("");
+    } catch {
+      setError("The message could not be sent — check your connection and try again");
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <div className="cb-dw-chat-composer" style={{ marginTop: 12 }}>
+      <input
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && void send()}
+        placeholder="Message…"
+        aria-label="Message"
+        disabled={sending}
+      />
+      <button
+        type="button"
+        className="cm-cbtn send"
+        onClick={() => void send()}
+        aria-label="Send"
+        disabled={sending || !draft.trim()}
+        aria-busy={sending}
+      >
+        Send
+      </button>
+      {error ? (
+        <p role="alert" style={{ color: "var(--cd-err, #b45309)", fontSize: 12, margin: "4px 0 0" }}>
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function DetailContent({
   detail,
   records,
   clientPreview,
   onRecordsChange,
+  workspaceId,
 }: DetailProps) {
   const data = useMemo(() => {
     if (detail === "bodyweight")
@@ -687,6 +772,7 @@ export function DetailContent({
         records={records}
         clientPreview={clientPreview}
         onRecordsChange={onRecordsChange}
+        workspaceId={workspaceId}
       />
     );
   }
@@ -709,6 +795,13 @@ export function DetailContent({
             <p>{message.excerpt}</p>
           </div>
         ))}
+        {workspaceId ? (
+          <ChatComposer
+            workspaceId={workspaceId}
+            records={records}
+            onRecordsChange={onRecordsChange}
+          />
+        ) : null}
       </section>
     );
 
