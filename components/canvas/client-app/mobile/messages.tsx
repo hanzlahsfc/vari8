@@ -8,12 +8,22 @@ import {
   uid,
 } from "../../coach/model";
 import { useCoach } from "../../coach/store";
+import { fetchOwnMessages, sendOwnMessage } from "../../data/messages";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 
-export function MobileMessages({ client }: { client: CoachClient }) {
+export function MobileMessages({
+  client,
+  workspaceId,
+}: {
+  client: CoachClient;
+  workspaceId?: string;
+}) {
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState("");
+  const requestId = useRef<string>("");
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = state.messages
     .filter((m: Message) => m.clientId === client.id)
@@ -40,9 +50,51 @@ export function MobileMessages({ client }: { client: CoachClient }) {
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   });
-  const send = () => {
+  const send = async () => {
     const text = draft.trim();
-    if (!text) return;
+    if (!text || sending) return;
+    if (workspaceId) {
+      if (!requestId.current) requestId.current = crypto.randomUUID();
+      setSending(true);
+      setSendError("");
+      try {
+        await sendOwnMessage(
+          workspaceId,
+          text,
+          undefined,
+          requestId.current,
+        );
+        try {
+          const { messages } = await fetchOwnMessages(workspaceId);
+          setState((s) => ({
+            ...s,
+            messages: [
+              ...s.messages.filter((m) => m.clientId !== client.id),
+              ...messages.map((wire) => ({
+                id: wire.id,
+                clientId: client.id,
+                text: wire.body,
+                from: (wire.senderKind === "CLIENT" ? "client" : "coach") as
+                  "client" | "coach",
+                date: wire.sentAt,
+                read: wire.read,
+                priority: false,
+                attachments: [],
+              })),
+            ],
+          }));
+        } catch {
+          /* send persisted; the next open refresh shows it — don't resend */
+        }
+        requestId.current = "";
+        setDraft("");
+      } catch {
+        setSendError("The message could not be sent — check your connection and try again");
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
     setState((s) => ({
       ...s,
       messages: [
@@ -155,13 +207,15 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Message…"
           aria-label="Message"
+          disabled={sending}
         />
         <button
           type="button"
           className="cm-cbtn send"
           onClick={send}
           aria-label="Send"
-          disabled={!draft.trim()}
+          disabled={sending || !draft.trim()}
+          aria-busy={sending}
         >
           <svg
             aria-hidden="true"
@@ -177,6 +231,11 @@ export function MobileMessages({ client }: { client: CoachClient }) {
             <path d="M22 2 11 13" />
           </svg>
         </button>
+        {sendError ? (
+          <p role="alert" style={{ color: "var(--cd-err, #b45309)", fontSize: 12, margin: "4px 0 0" }}>
+            {sendError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

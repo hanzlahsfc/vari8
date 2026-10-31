@@ -83,7 +83,7 @@ const LABELS: Record<Tab, string> = {
   messages: "Messages",
 };
 
-export function MobileApp({ client }: { client: CoachClient }) {
+export function MobileApp({ client, workspaceId }: { client: CoachClient; workspaceId?: string }) {
   const { state, hydrated } = useCoach();
   const router = useRouter();
   const params = useSearchParams();
@@ -123,7 +123,7 @@ export function MobileApp({ client }: { client: CoachClient }) {
         {tab === "plans" && (
           <PlansStack client={client} initialVariant={plansVariant} />
         )}
-        {tab === "messages" && <MobileMessages client={client} />}
+        {tab === "messages" && <MobileMessages client={client} workspaceId={workspaceId} />}
       </div>
       <nav className="cm-tabs">
         {TABS.map((t) => (
