@@ -1632,6 +1632,9 @@ model CheckInInstance {
   // PR-M0: coach note on the instance + D24 additional-date removal undo
   // window (pairing/order CHECK is raw migration SQL).
   coachNote           String?   @map("coach_note")
+  // P607: the per-instance subset of the pinned form's fieldIds the athlete
+  // is asked to answer. NULL = Full (all fields of the pinned version).
+  fieldSelection      Json?     @map("field_selection")
   cancelRestoreUntil  DateTime? @map("cancel_restore_until") @db.Timestamptz(6)
   createdAt           DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
