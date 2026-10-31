@@ -73,10 +73,14 @@ export function sendOwnMessage(
   workspaceId: string,
   body: string,
   mediaObjectIds?: string[],
+  clientRequestId?: string,
 ): Promise<{ message: OwnMessageWire }> {
   return apiFetch<{ message: OwnMessageWire }>(
     `/workspaces/${workspaceId}/messages`,
-    { method: "POST", body: { body, mediaObjectIds } },
+    {
+      method: "POST",
+      body: { body, mediaObjectIds, clientRequestId },
+    },
   );
 }
 

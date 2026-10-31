@@ -126,6 +126,9 @@ export function DashboardBuilder({
   sourceRecords,
   previewOnly = false,
   onRecordsChange,
+  workspaceId,
+  clientProfileId,
+  onMessagesRefresh,
 }: {
   value: Draft;
   onChange: (value: Draft) => void;
@@ -135,6 +138,14 @@ export function DashboardBuilder({
    *  caller can persist them remotely. Optional; editing stays
    *  session-local for every host that does not pass it. */
   onRecordsChange?: (records: SourceRecords) => void;
+  /** Card 05a client surface: the caller's own workspace — presence turns the
+   *  dashboard chat detail into a real conversation with a composer. */
+  workspaceId?: string;
+  clientProfileId?: string;
+  /** Card 05a/P625: the own-scope host's thread refresh — the chat
+   *  detail's composer and read marker resync through the same
+   *  session-scoped ordering the host's mount load uses. */
+  onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
 }) {
   const draft = value;
   const setDraft = onChange;
@@ -1434,10 +1445,13 @@ export function DashboardBuilder({
           onClose={() => setDetail(null)}
         >
           <DetailContent
+            workspaceId={workspaceId}
             detail={detail}
             records={records}
             clientPreview={clientPreview}
             onRecordsChange={changeRecords}
+            clientProfileId={clientProfileId}
+            onMessagesRefresh={onMessagesRefresh}
           />
         </LocalDialog>
       )}

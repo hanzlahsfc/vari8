@@ -6,7 +6,8 @@ export type ClientAppSectionId =
   | "plans"
   | "tracker"
   | "training"
-  | "check-ins";
+  | "check-ins"
+  | "messages";
 export type ClientPlanPart =
   | "nutrition"
   | "supplements"
@@ -31,6 +32,7 @@ const SECTION_LABELS: Record<ClientAppSectionId, string> = {
   tracker: "Tracker",
   training: "Training",
   "check-ins": "Check-ins",
+  messages: "Messages",
 };
 
 const SECTION_ORDER: ClientAppSectionId[] = [
@@ -39,6 +41,7 @@ const SECTION_ORDER: ClientAppSectionId[] = [
   "tracker",
   "training",
   "check-ins",
+  "messages",
 ];
 
 const PLAN_PART_ORDER: ClientPlanPart[] = [
@@ -51,6 +54,12 @@ const PLAN_PART_ORDER: ClientPlanPart[] = [
 export function clientAppSections(
   configuration: Pick<Variant, "views" | "habits">,
   plans: Pick<ClientPlans, "supplements" | "activityTargets"> | undefined,
+  options?: {
+    /** Card 05a/P625: the coach conversation is a product surface, not a
+     *  template view — it binds only on the served own-scope route so a
+     *  template without Dashboard still reaches the client's thread. */
+    conversation?: boolean;
+  },
 ): ClientAppSection[] {
   const views = new Set(configuration.views);
   const planParts = PLAN_PART_ORDER.filter((part) => {
@@ -67,6 +76,7 @@ export function clientAppSections(
     tracker: views.has("Tracker") || configuration.habits === true,
     training: views.has("Training Program"),
     "check-ins": views.has("Check-In"),
+    messages: options?.conversation === true,
   };
   return SECTION_ORDER.filter((id) => enabled[id]).map((id) => ({
     id,
