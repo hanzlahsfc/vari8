@@ -49,10 +49,10 @@ type DetailProps = {
   clientPreview: boolean;
   onRecordsChange: (records: SourceRecords) => void;
   workspaceId?: string;
-  /** Card 05a: the own-scope host's thread mirror — the chat detail's
-   *  composer and read marker report their snapshots through it so the
-   *  caller's records stay aligned without a second fetch. */
-  onMessagesSync?: (messages: OwnMessageWire[]) => void;
+  /** Card 05a: the own-scope host's thread refresh — the chat detail's
+   *  composer and read marker resync through the same account-scoped
+   *  ordering the mount load uses. */
+  onMessagesRefresh?: (workspaceId: string) => Promise<void> | void;
 };
 
 type Layout = "Compact" | "Regular" | "Wide" | "Tall" | "Expanded";
@@ -329,73 +329,83 @@ function DetailRows({
   );
 }
 
-/** Card 05a/P625: the one own-thread message path — a sequenced load plus
- *  explicitly applied snapshots (composer refresh, read marker). A slower
- *  in-flight response can never overwrite a newer snapshot, and a workspace
- *  change drops the old account's pending read. */
+/** Card 05a/P625: the one own-thread message path — every update is a
+ *  sequenced reload scoped to one account: the mount load, the composer's
+ *  post-send refresh and the read marker's resync all issue through
+ *  `refresh`. A response can only land while its own ticket and workspace
+ *  are still current, so a slower earlier read or a previous account's
+ *  pending request can never overwrite newer state. */
 export function useOwnMessages(workspaceId: string | undefined) {
   const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
   const seq = useRef(0);
-  const apply = useCallback((wire: OwnMessageWire[] | null) => {
-    seq.current += 1;
-    setMessages(wire);
+  const account = useRef(workspaceId);
+  account.current = workspaceId;
+  const refresh = useCallback(async (ws: string | undefined) => {
+    if (!ws || ws !== account.current) return;
+    const ticket = ++seq.current;
+    try {
+      const { messages } = await fetchOwnMessages(ws);
+      if (ticket === seq.current && ws === account.current)
+        setMessages(messages);
+    } catch {
+      // A failed refresh keeps the last known thread — sends stay
+      // persisted and the next view retries.
+    }
   }, []);
   useEffect(() => {
-    if (!workspaceId) return;
-    const ticket = ++seq.current;
+    seq.current += 1;
     setMessages(null);
-    let cancelled = false;
-    fetchOwnMessages(workspaceId)
-      .then((response) => {
-        if (!cancelled && ticket === seq.current)
-          setMessages(response.messages);
-      })
-      .catch(() => {
-        if (!cancelled && ticket === seq.current)
-          setMessages((current) => current ?? []);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId]);
-  return { messages, apply };
+    void refresh(workspaceId);
+  }, [workspaceId, refresh]);
+  return { messages, refresh };
 }
 
 /** The client-side coach conversation composer on the served dashboard chat
  *  detail — send through the authorized own-messages API, not local state.
- *  The post-send reload reports the wire snapshot to the host's message
- *  state directly; there is no second resync behind it. */
+ *  The whole send lifecycle is account-scoped: after an account switch the
+ *  pending send can still report its refresh (the host discards it), but it
+ *  never writes the new account's draft, error or pending flag. */
 export function ChatComposer({
   workspaceId,
-  onSync,
+  onSent,
 }: {
   workspaceId: string;
-  onSync: (messages: OwnMessageWire[]) => void;
+  /** The post-send thread reload — routed through the host's account-scoped
+   *  refresh, the same ordering authority the read marker uses. */
+  onSent: (workspaceId: string) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef<string>("");
+  const account = useRef(workspaceId);
+  account.current = workspaceId;
+  useEffect(() => {
+    // A switched account starts clean — the previous account's pending
+    // send can never rewrite this draft, error or pending flag.
+    setDraft("");
+    setError("");
+    setSending(false);
+    requestId.current = "";
+  }, [workspaceId]);
   const send = async () => {
     const text = draft.trim();
+    const ws = workspaceId;
     if (!text || sending) return;
     if (!requestId.current) requestId.current = crypto.randomUUID();
     setSending(true);
     setError("");
     try {
-      await sendOwnMessage(workspaceId, text, undefined, requestId.current);
-      try {
-        const { messages } = await fetchOwnMessages(workspaceId);
-        onSync(messages);
-      } catch {
-        /* send persisted; the next open refresh shows it — never resend */
-      }
+      await sendOwnMessage(ws, text, undefined, requestId.current);
+      onSent(ws);
+      if (account.current !== ws) return;
       requestId.current = "";
       setDraft("");
     } catch {
+      if (account.current !== ws) return;
       setError("The message could not be sent — check your connection and try again");
     } finally {
-      setSending(false);
+      if (account.current === ws) setSending(false);
     }
   };
   return (
@@ -437,56 +447,54 @@ export function RemoteConversation({
   workspaceId,
   clientName,
   messages: externalMessages,
-  onSync,
+  onMessagesRefresh,
   collapsible = false,
 }: {
   workspaceId: string;
   clientName: string;
   /** A host-loaded thread renders instead of a second fetch; every sync
-   *  still reaches the host through `onSync`. */
+   *  still reaches the host through `onMessagesRefresh`. */
   messages?: OwnMessageWire[] | null;
-  onSync?: (messages: OwnMessageWire[]) => void;
+  onMessagesRefresh?: (workspaceId: string) => Promise<void> | void;
   /** Collapsed until the client asks to view the loaded thread — that
-   *  explicit view is what licenses mark-read. Open surfaces (Messages
-   *  section, chat detail) are explicit views by navigation. */
+   *  explicit view is what licenses mark-read. Open surfaces (the
+   *  user-navigated Messages section, chat detail) are explicit views by
+   *  activation. */
   collapsible?: boolean;
 }) {
-  const { messages: ownedMessages, apply: applyOwned } = useOwnMessages(
+  const { messages: ownedMessages, refresh: refreshOwned } = useOwnMessages(
     externalMessages === undefined ? workspaceId : undefined,
   );
   const wire = externalMessages ?? ownedMessages;
+  // One ordering authority for every post-mount thread update: the
+  // composer's post-send reload and the read marker's resync both issue
+  // through the same account-scoped, ticketed refresh — a late pre-read
+  // snapshot can never land on top of a newer one.
   const sync = useCallback(
-    (next: OwnMessageWire[]) => {
-      applyOwned(next);
-      onSync?.(next);
-    },
-    [applyOwned, onSync],
+    (ws: string) =>
+      Promise.all([refreshOwned(ws), onMessagesRefresh?.(ws)]).then(
+        () => undefined,
+      ),
+    [refreshOwned, onMessagesRefresh],
   );
   const [open, setOpen] = useState(!collapsible);
+  const marking = useRef(false);
   const unreadInbound = (wire ?? []).filter(
     (message) => message.senderKind === "STAFF" && !message.read,
   ).length;
   useEffect(() => {
-    if (!open || !wire || unreadInbound === 0) return;
-    const pending = wire;
-    let cancelled = false;
+    if (!open || !wire || unreadInbound === 0 || marking.current) return;
+    // Single-flight: one mark-read covers the POST plus its resync, so a
+    // wire change mid-flight can never queue a duplicate read POST.
+    marking.current = true;
     markOwnThreadRead(workspaceId)
-      .then(() => {
-        if (cancelled) return;
-        sync(
-          pending.map((message) =>
-            message.senderKind === "STAFF" && !message.read
-              ? { ...message, read: true }
-              : message,
-          ),
-        );
-      })
+      .then(() => sync(workspaceId))
       .catch(() => {
-        /* stays unread; the next explicit view or wire change retries */
+        /* stays unread; the next view or wire change retries */
+      })
+      .finally(() => {
+        marking.current = false;
       });
-    return () => {
-      cancelled = true;
-    };
   }, [open, unreadInbound, workspaceId, wire, sync]);
   return (
     <section className="cb-dw-detail" style={{ marginTop: 16 }}>
@@ -525,7 +533,7 @@ export function RemoteConversation({
               </div>
             ))
           )}
-          <ChatComposer workspaceId={workspaceId} onSync={sync} />
+          <ChatComposer workspaceId={workspaceId} onSent={sync} />
         </>
       )}
     </section>
@@ -538,7 +546,7 @@ export function DetailContent({
   clientPreview,
   onRecordsChange,
   workspaceId,
-  onMessagesSync,
+  onMessagesRefresh,
 }: DetailProps) {
   const data = useMemo(() => {
     if (detail === "bodyweight")
@@ -904,7 +912,7 @@ export function DetailContent({
         clientPreview={clientPreview}
         onRecordsChange={onRecordsChange}
         workspaceId={workspaceId}
-        onMessagesSync={onMessagesSync}
+        onMessagesRefresh={onMessagesRefresh}
       />
     );
   }
@@ -914,7 +922,7 @@ export function DetailContent({
       <RemoteConversation
         workspaceId={workspaceId}
         clientName={records.client.name}
-        onSync={onMessagesSync}
+        onMessagesRefresh={onMessagesRefresh}
       />
     ) : (
       <section className="cb-dw-detail">

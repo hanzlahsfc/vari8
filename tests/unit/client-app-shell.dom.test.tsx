@@ -4,7 +4,13 @@
 // view the coach disabled produces no nav item, and every registered+enabled
 // section produces one in both the desktop sidebar and the mobile bottom nav.
 
-import { cleanup, render, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -207,6 +213,20 @@ describe("client shell navigation", () => {
 
   it("reaches the conversation with no Dashboard — or any — template view", async () => {
     remoteCalls.fetchOwnMessages.mockClear();
+    remoteCalls.markOwnThreadRead.mockClear();
+    remoteCalls.fetchOwnMessages.mockResolvedValueOnce({
+      messages: [
+        {
+          id: "m-1",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T10:00:00Z",
+          body: "unread from coach",
+          read: false,
+          clientRequestId: "",
+          attachments: [],
+        },
+      ],
+    } as never);
     const { container } = render(
       <Shell
         configuration={configuration([])}
@@ -218,7 +238,17 @@ describe("client shell navigation", () => {
     await waitFor(() =>
       expect(remoteCalls.fetchOwnMessages).toHaveBeenCalledWith("ws-1"),
     );
+    // An auto-selected section is not an explicit view: the thread loads
+    // collapsed and no mark-read fires until the client activates it.
     expect(container.textContent).toContain("Coach conversation");
+    const view = await screen.findByRole("button", {
+      name: /View conversation/,
+    });
+    expect(remoteCalls.markOwnThreadRead).not.toHaveBeenCalled();
+    fireEvent.click(view);
+    await waitFor(() =>
+      expect(remoteCalls.markOwnThreadRead).toHaveBeenCalledTimes(1),
+    );
   });
 
   it("a preview mount never binds the own scope — no Messages, no calls", async () => {

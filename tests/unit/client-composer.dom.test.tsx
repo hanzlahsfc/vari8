@@ -60,7 +60,7 @@ const mocked = vi.hoisted(() => ({
         [key: string]: unknown;
       };
       onRecordsChange: (records: never) => void;
-      onMessagesSync?: (messages: Record<string, unknown>[]) => void;
+      onMessagesRefresh?: (workspaceId: string) => void;
     },
   },
 }));
@@ -169,7 +169,9 @@ describe("served coach conversation (RemoteConversation)", () => {
   });
 
   it("collapsed mount never marks read; the explicit view marks inbound once", async () => {
-    mocked.fetchOwn.mockResolvedValue({ messages: [wire()] });
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
     render(
       <RemoteConversation workspaceId="ws-1" clientName="Amara" collapsible />,
     );
@@ -180,6 +182,7 @@ describe("served coach conversation (RemoteConversation)", () => {
     fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
     await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
     expect(mocked.markRead).toHaveBeenCalledWith("ws-1");
+    await new Promise((r) => setTimeout(r, 300));
     await waitFor(() => expect(screen.queryByText(/Unread/)).toBeNull());
     expect(mocked.markRead).toHaveBeenCalledTimes(1);
   });
@@ -208,10 +211,13 @@ describe("served coach conversation (RemoteConversation)", () => {
   });
 
   it("an open view with inbound unread marks read once", async () => {
-    mocked.fetchOwn.mockResolvedValue({ messages: [wire()] });
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
     await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByText(/Unread/)).toBeNull());
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
   });
 
   it("a failed mark-read keeps the unread badge", async () => {
@@ -287,7 +293,7 @@ describe("served coach conversation (RemoteConversation)", () => {
           ),
       )
       .mockResolvedValueOnce({
-        messages: [wire({ id: "w2", body: "second account" })],
+        messages: [wire({ id: "w2", body: "second account", read: true })],
       });
     const { rerender } = render(
       <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
@@ -299,6 +305,102 @@ describe("served coach conversation (RemoteConversation)", () => {
     );
     expect(screen.queryByText("first account")).toBeNull();
     expect(screen.getByText("second account")).toBeTruthy();
+  });
+
+  it("a pending send from the old workspace never touches the new account", async () => {
+    let resolveSend!: (v: { message: Record<string, unknown> }) => void;
+    mocked.sendOwn.mockImplementationOnce(
+      () =>
+        new Promise<{ message: Record<string, unknown> }>(
+          (resolve) => (resolveSend = resolve),
+        ) as never,
+    );
+    mocked.fetchOwn.mockResolvedValueOnce({ messages: [] }).mockResolvedValue({
+      messages: [wire({ id: "w2", body: "ws-2 thread", read: true })],
+    });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
+    );
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "old account send" } });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    // The account switches while the old send is in flight.
+    rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    await waitFor(() => screen.getByText("ws-2 thread"));
+    // The old send resolves — its snapshot, draft, error and pending flag
+    // all belong to the old account and must not land here.
+    await act(async () =>
+      resolveSend({
+        message: {
+          id: "n1",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-21T10:00:00Z",
+          body: "old account send",
+          read: false,
+          clientRequestId: "",
+          attachments: [],
+        },
+      }),
+    );
+    expect(screen.queryByText("old account send")).toBeNull();
+    expect(screen.getByText("ws-2 thread")).toBeTruthy();
+    expect(input.value).toBe("");
+    // mount ws-1 + mount ws-2 — the discarded account issues no refresh.
+    expect(mocked.fetchOwn).toHaveBeenCalledTimes(2);
+    expect(
+      mocked.fetchOwn.mock.calls.filter((call) => call[0] === "ws-1"),
+    ).toHaveLength(1);
+  });
+
+  it("a stale post-send snapshot cannot resurrect unread or re-mark", async () => {
+    let resolveMark!: (v: { marked: number }) => void;
+    mocked.markRead.mockImplementationOnce(
+      () => new Promise<{ marked: number }>((r) => (resolveMark = r)),
+    );
+    const fetches: ((v: { messages: Record<string, unknown>[] }) => void)[] =
+      [];
+    mocked.fetchOwn.mockImplementation(
+      () =>
+        new Promise<{ messages: Record<string, unknown>[] }>((r) =>
+          fetches.push(r),
+        ),
+    );
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => expect(fetches.length).toBe(1));
+    await act(async () => fetches[0]({ messages: [wire()] }));
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
+    // A send lands while the read POST is in flight — its refresh queues
+    // behind the read marker's resync.
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "mid-flight" },
+    });
+    fireEvent.click(screen.getByLabelText("Send"));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(fetches.length).toBe(2));
+    await act(async () => resolveMark({ marked: 1 }));
+    await waitFor(() => expect(fetches.length).toBe(3));
+    // The earlier refresh lands last carrying the pre-read snapshot —
+    // the shared ticket must discard it.
+    await act(async () =>
+      fetches[1]({
+        messages: [
+          wire(),
+          wire({ id: "n1", senderKind: "CLIENT", body: "mid-flight" }),
+        ],
+      }),
+    );
+    await act(async () =>
+      fetches[2]({
+        messages: [
+          wire({ read: true }),
+          wire({ id: "n1", senderKind: "CLIENT", body: "mid-flight" }),
+        ],
+      }),
+    );
+    expect(screen.getByText("mid-flight")).toBeTruthy();
+    expect(screen.queryByText(/Unread/)).toBeNull();
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
@@ -369,12 +471,27 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
   const client = canvasSeed().clients[0] as CoachClient;
   const own = { workspaceId: "ws-1", clientProfileId: "cp-1" };
 
-  function mountTab() {
+  function mountTab(identity = own) {
     writeCoachState({ ...canvasSeed(), hydrated: true } as never);
     return render(
       <CoachProvider>
-        <RemoteDashboardTab configuration={variant} client={client} own={own} />
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={identity}
+        />
       </CoachProvider>,
+    );
+  }
+
+  function toggle(taskId = "t1", completed = true) {
+    act(() =>
+      builderProps().onRecordsChange({
+        ...builderProps().sourceRecords,
+        tasks: builderProps().sourceRecords.tasks.map((task) =>
+          task.id === taskId ? { ...task, completed } : task,
+        ),
+      } as never),
     );
   }
 
@@ -429,7 +546,7 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
     expect(mocked.setTask).toHaveBeenCalledTimes(1);
     // The composer's wire snapshot lands mid-write — the optimistic toggle
     // lives in the parent's wire state, so the rebuild cannot paint it back.
-    act(() => builderProps().onMessagesSync?.([wire({ id: "s9" })]));
+    await act(async () => builderProps().onMessagesRefresh?.("ws-1"));
     expect(screen.getByTestId("task-t1").textContent).toBe("done");
     await act(async () =>
       resolveWrite({ revision: 2, status: "COMPLETED", changed: true }),
@@ -478,5 +595,134 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
       } as never),
     );
     expect(mocked.fetchOwn).toHaveBeenCalledTimes(1);
+  });
+
+  it("rapid same-task toggles serialize on the confirmed revision", async () => {
+    let resolveFirst!: (v: Record<string, unknown>) => void;
+    let resolveSecond!: (v: Record<string, unknown>) => void;
+    mocked.setTask
+      .mockImplementationOnce(
+        () =>
+          new Promise<Record<string, unknown>>(
+            (resolve) => (resolveFirst = resolve),
+          ),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<Record<string, unknown>>(
+            (resolve) => (resolveSecond = resolve),
+          ),
+      );
+    mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    toggle("t1", false);
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    // The second intent queues behind the first write — no stale-revision
+    // PATCH is issued concurrently.
+    expect(mocked.setTask).toHaveBeenCalledTimes(1);
+    await act(async () =>
+      resolveFirst({ revision: 2, status: "COMPLETED", changed: true }),
+    );
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(2));
+    expect(
+      (mocked.setTask.mock.calls[1][3] as { expectedRevision: number })
+        .expectedRevision,
+    ).toBe(2);
+    await act(async () =>
+      resolveSecond({ revision: 3, status: "OPEN", changed: true }),
+    );
+    // The last intent wins and the revision chain stayed monotonic.
+    expect(screen.getByTestId("task-t1").textContent).toBe("open");
+  });
+
+  it("a failed queued write reverts to the latest confirmed wire", async () => {
+    mocked.setTask
+      .mockResolvedValueOnce({
+        revision: 2,
+        status: "COMPLETED",
+        changed: true,
+      })
+      .mockRejectedValueOnce(new Error("conflict"));
+    mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    toggle("t1", false);
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(2));
+    expect(
+      (mocked.setTask.mock.calls[1][3] as { expectedRevision: number })
+        .expectedRevision,
+    ).toBe(2);
+    // The queued write fails — the paint reverts to the confirmed
+    // revision-2 state, not the closed-over revision-1 snapshot.
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+  });
+
+  it("a pending write from the old account never touches the new account", async () => {
+    let resolveWrite!: (v: Record<string, unknown>) => void;
+    mocked.setTask.mockImplementationOnce(
+      () =>
+        new Promise<Record<string, unknown>>(
+          (resolve) => (resolveWrite = resolve),
+        ),
+    );
+    mocked.fetchTasks.mockImplementation(
+      (w?: string) =>
+        Promise.resolve(
+          w === "ws-1"
+            ? { clientProfileId: "cp-1", tasks: [taskWire()], hasMore: false }
+            : {
+                clientProfileId: "cp-2",
+                tasks: [taskWire({ id: "t2" })],
+                hasMore: false,
+              },
+        ) as never,
+    );
+    const { rerender } = mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-2", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t2").textContent).toBe("open"),
+    );
+    await act(async () =>
+      resolveWrite({ revision: 2, status: "COMPLETED", changed: true }),
+    );
+    expect(screen.queryByTestId("task-t1")).toBeNull();
+    expect(screen.getByTestId("task-t2").textContent).toBe("open");
   });
 });

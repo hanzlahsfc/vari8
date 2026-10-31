@@ -429,7 +429,15 @@ export function ClientApp({
               />
             )}
             {active === "messages" && ownScope && (
-              <RemoteConversationTab own={ownScope} clientName={client.name} />
+              // An auto-selected section (e.g. the only section of a
+              // no-view template) is not an explicit view — the thread
+              // stays collapsed until the client activates it. A direct
+              // nav selection is the explicit activation.
+              <RemoteConversationTab
+                own={ownScope}
+                clientName={client.name}
+                collapsible={section !== "messages"}
+              />
             )}
           </div>
         </div>
