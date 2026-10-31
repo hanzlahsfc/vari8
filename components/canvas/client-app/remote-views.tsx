@@ -176,32 +176,33 @@ export function RemoteDashboardTab({
                 desired,
                 expectedRevision: base.revision,
               });
-              taskConfirmed.current.set(wire.id, {
-                status: result.status,
-                revision: result.revision,
-              });
-              // Settle the paint only when no newer intent is queued and
-              // this session is still current — a previous session's
-              // write can never land again, even after A → B → A.
-              if (
-                taskIntent.current.get(wire.id) === desired &&
-                taskSession.current === s
-              )
-                setTasks((current) =>
-                  (current ?? []).map((task) =>
-                    task.id === wire.id
-                      ? {
-                          ...task,
-                          status: result.status,
-                          revision: result.revision,
-                        }
-                      : task,
-                  ),
-                );
+              // Every mutation is session-guarded — a stale success can
+              // never regress the new session's confirmed revision or
+              // paint, even after A → B → A.
+              if (taskSession.current === s) {
+                taskConfirmed.current.set(wire.id, {
+                  status: result.status,
+                  revision: result.revision,
+                });
+                if (taskIntent.current.get(wire.id) === desired)
+                  setTasks((current) =>
+                    (current ?? []).map((task) =>
+                      task.id === wire.id
+                        ? {
+                            ...task,
+                            status: result.status,
+                            revision: result.revision,
+                          }
+                        : task,
+                    ),
+                  );
+              }
             } catch {
+              // A stale failure can never roll back or clear the current
+              // session's paint.
               if (
-                taskIntent.current.get(wire.id) === desired &&
-                taskSession.current === s
+                taskSession.current === s &&
+                taskIntent.current.get(wire.id) === desired
               ) {
                 const confirmed = taskConfirmed.current.get(wire.id) ?? {
                   status: wire.status,

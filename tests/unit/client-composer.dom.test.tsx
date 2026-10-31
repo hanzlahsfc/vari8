@@ -299,6 +299,10 @@ describe("served coach conversation (RemoteConversation)", () => {
       <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
     );
     rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    // The ws-2 session starts collapsed — activate it to see the thread.
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
     await waitFor(() => screen.getByText("second account"));
     await act(async () =>
       resolveOld({ messages: [wire({ id: "w1", body: "first account" })] }),
@@ -341,6 +345,9 @@ describe("served coach conversation (RemoteConversation)", () => {
         clientProfileId="cp-1"
         clientName="Amara"
       />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
     );
     const fresh = (await screen.findByLabelText("Message")) as HTMLInputElement;
     fireEvent.change(fresh, { target: { value: "new session draft" } });
@@ -387,6 +394,9 @@ describe("served coach conversation (RemoteConversation)", () => {
         clientProfileId="cp-1"
         clientName="Amara"
       />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
     );
     const fresh = (await screen.findByLabelText("Message")) as HTMLInputElement;
     fireEvent.change(fresh, { target: { value: "new session draft" } });
@@ -444,6 +454,9 @@ describe("served coach conversation (RemoteConversation)", () => {
     // ws-1's read POST is still in flight when the identity changes; the
     // new session must perform its own read after its own activation.
     rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
     await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-2"));
     expect(mocked.markRead).toHaveBeenCalledTimes(2);
     await act(async () => resolveMark({ marked: 1 }));
@@ -469,6 +482,9 @@ describe("served coach conversation (RemoteConversation)", () => {
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
     // The account switches while the old send is in flight.
     rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
     await waitFor(() => screen.getByText("ws-2 thread"));
     // The old send resolves — its snapshot, draft, error and pending flag
     // all belong to the old account and must not land here.
@@ -487,7 +503,9 @@ describe("served coach conversation (RemoteConversation)", () => {
     );
     expect(screen.queryByText("old account send")).toBeNull();
     expect(screen.getByText("ws-2 thread")).toBeTruthy();
-    expect(input.value).toBe("");
+    expect((screen.getByLabelText("Message") as HTMLInputElement).value).toBe(
+      "",
+    );
     // mount ws-1 + mount ws-2 — the discarded account issues no refresh.
     expect(mocked.fetchOwn).toHaveBeenCalledTimes(2);
     expect(
@@ -542,6 +560,77 @@ describe("served coach conversation (RemoteConversation)", () => {
     );
     expect(screen.getByText("mid-flight")).toBeTruthy();
     expect(screen.queryByText(/Unread/)).toBeNull();
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("a profile switch on an open surface requires fresh activation", async () => {
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValueOnce({ messages: [wire({ read: true })] })
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
+    const { rerender } = render(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+      />,
+    );
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-2"
+        clientName="Amara"
+      />,
+    );
+    // Same workspace, new profile = a new session: the open thread renders
+    // collapsed until this session activates it — even on the same surface.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(2));
+  });
+
+  it("home activation never survives A → B → A", async () => {
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [wire({ read: true })] })
+      .mockResolvedValueOnce({ messages: [] })
+      .mockResolvedValueOnce({ messages: [wire()] })
+      .mockResolvedValue({ messages: [wire({ read: true })] });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" collapsible />,
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText("from coach"));
+    rerender(
+      <RemoteConversation workspaceId="ws-2" clientName="Amara" collapsible />,
+    );
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    rerender(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" collapsible />,
+    );
+    // Back on ws-1 is a NEW session — the earlier activation does not
+    // transfer, so ws-1's fresh unread cannot be marked without a fresh
+    // activation.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
+    expect(mocked.markRead).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledWith("ws-1"));
     expect(mocked.markRead).toHaveBeenCalledTimes(1);
   });
 
@@ -838,6 +927,145 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
     await waitFor(() =>
       expect(screen.getByTestId("task-t1").textContent).toBe("done"),
     );
+  });
+
+  it("a late old-session success cannot regress the confirmed revision", async () => {
+    let resolveOld!: (v: Record<string, unknown>) => void;
+    mocked.setTask
+      .mockImplementationOnce(
+        () =>
+          new Promise<Record<string, unknown>>(
+            (resolve) => (resolveOld = resolve),
+          ) as never,
+      )
+      .mockResolvedValue({ revision: 3, status: "COMPLETED", changed: true });
+    mocked.fetchTasks
+      .mockResolvedValueOnce({
+        clientProfileId: "cp-1",
+        tasks: [taskWire()],
+        hasMore: false,
+      } as never)
+      .mockResolvedValueOnce({
+        clientProfileId: "cp-2",
+        tasks: [taskWire({ id: "t2" })],
+        hasMore: false,
+      } as never)
+      .mockResolvedValue({
+        clientProfileId: "cp-1",
+        tasks: [taskWire({ revision: 2 })],
+        hasMore: false,
+      } as never);
+    const { rerender } = mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(1));
+    // ws-1 → ws-2 → ws-1: a new session reloads the task at revision 2.
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-2", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-1", clientProfileId: "cp-1" }}
+        />
+      </CoachProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(2));
+    expect(
+      (mocked.setTask.mock.calls[1][3] as { expectedRevision: number })
+        .expectedRevision,
+    ).toBe(2);
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    // The old session's write finally lands at the older revision 2 —
+    // it must not overwrite the new session's confirmed revision 3.
+    await act(async () =>
+      resolveOld({ revision: 2, status: "COMPLETED", changed: true }),
+    );
+    toggle("t1", false);
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(3));
+    expect(
+      (mocked.setTask.mock.calls[2][3] as { expectedRevision: number })
+        .expectedRevision,
+    ).toBe(3);
+  });
+
+  it("a stale failure cannot roll back the current session", async () => {
+    let rejectOld!: (e: Error) => void;
+    mocked.setTask
+      .mockImplementationOnce(
+        () =>
+          new Promise<Record<string, unknown>>(
+            (_resolve, reject) => (rejectOld = reject),
+          ) as never,
+      )
+      .mockResolvedValue({ revision: 3, status: "COMPLETED", changed: true });
+    mocked.fetchTasks
+      .mockResolvedValueOnce({
+        clientProfileId: "cp-1",
+        tasks: [taskWire()],
+        hasMore: false,
+      } as never)
+      .mockResolvedValueOnce({
+        clientProfileId: "cp-2",
+        tasks: [taskWire({ id: "t2" })],
+        hasMore: false,
+      } as never)
+      .mockResolvedValue({
+        clientProfileId: "cp-1",
+        tasks: [taskWire({ revision: 2 })],
+        hasMore: false,
+      } as never);
+    const { rerender } = mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() => expect(mocked.setTask).toHaveBeenCalledTimes(1));
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-2", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-1", clientProfileId: "cp-1" }}
+        />
+      </CoachProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    toggle();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    // The old session's write fails late — it cannot roll back or clear
+    // the new session's confirmed revision-3 state.
+    await act(async () => rejectOld(new Error("conflict")));
+    expect(screen.getByTestId("task-t1").textContent).toBe("done");
   });
 
   it("a pending write from the old account never touches the new account", async () => {

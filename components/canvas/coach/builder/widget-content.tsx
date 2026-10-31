@@ -524,17 +524,19 @@ export function RemoteConversation({
       ]).then(() => undefined),
     [refreshOwned, onMessagesRefresh],
   );
-  // The open state belongs to this lifecycle: it is derived, not taken
-  // from useState's initial value, so an identity transition starts the
-  // new account collapsed and a deliberate Messages nav activation (which
-  // flips `collapsible` off) still opens the thread.
-  const [openView, setOpenView] = useState<{
+  // Activation belongs to the session object itself, not the identity
+  // string: an A → B → A switch produces a new session, so a stored
+  // activation can never be re-admitted. Only the FIRST session opens
+  // automatically on an explicitly-presented surface (a deliberate
+  // Messages nav selection or the chat detail); every later session —
+  // even one staying on Messages — requires a fresh activation.
+  const [activated, setActivated] = useState<{
     key: string;
-    collapsible: boolean;
+    id: number;
   } | null>(null);
   const open =
-    (openView?.key === key && openView.collapsible === collapsible) ||
-    !collapsible;
+    activated === session.current ||
+    (session.current?.id === 1 && !collapsible);
   // Single-flight read marker scoped to this session: a pending read for
   // a previous identity neither blocks nor clears the new session's mark.
   const marking = useRef<{ key: string; id: number } | null>(null);
@@ -558,13 +560,13 @@ export function RemoteConversation({
   return (
     <section className="cb-dw-detail" style={{ marginTop: 16 }}>
       <h3>Coach conversation</h3>
-      {collapsible && !open ? (
+      {!open ? (
         <div className="cb-dw-detail-group">
           <button
             type="button"
             className="cb-dw-action"
             aria-expanded="false"
-            onClick={() => setOpenView({ key, collapsible })}
+            onClick={() => setActivated(session.current)}
           >
             View conversation
             {unreadInbound > 0 ? ` · ${unreadInbound} unread` : ""}
