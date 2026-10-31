@@ -18,6 +18,13 @@ import {
 } from "../../data/messages";
 import { CoachingWidgetContent } from "./coaching-content";
 import {
+  MAX_MEDIA_BYTES,
+  MEDIA_CONTENT_TYPES,
+  mediaKindForContentType,
+} from "@/lib/media-policy";
+import { MediaCard, uploadWorkspaceMedia } from "../media-card";
+import type { Media } from "../model";
+import {
   type ClientTask,
   dateLabel,
   type HabitRecord,
@@ -413,43 +420,255 @@ export function ChatComposer({
   const session = useIdentitySession(key);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
-  const [error, setError] = useState("");
-  const requestId = useRef<string>("");
+  const [error, setError] = useState<{ kind: string; text: string } | null>(
+    null,
+  );
+  // The request id belongs to the logical payload (trimmed text +
+  // uploaded media ids) — an unchanged retry reuses it; any edit mints a
+  // new payload key, so a response-lost success can never clear newer
+  // content as if the old request had been acknowledged.
+  const requestId = useRef<{ fp: string; id: string } | null>(null);
+  const uploads = useRef(new Map<string, AbortController>());
+  // Slot reservation: synchronous occupancy counter so two overlapping
+  // selections can never both observe the pre-selection count.
+  const slots = useRef(0);
+  // W2-T8: staged uploads — only successfully uploaded media_object ids
+  // are linked onto the message; pending blocks send, failed is removed
+  // or reattached. Entries are session-scoped like the draft.
+  type Staged = Media & { state: "pending" | "uploaded" | "failed" };
+  const [staged, setStaged] = useState<Staged[]>([]);
+  const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
-    // session's pending send can never rewrite this draft, error or
-    // pending flag, even after a switch away and back.
+    // session's pending send/upload can never rewrite this draft, error,
+    // staged media or pending flag, even after a switch away and back.
     setDraft("");
-    setError("");
+    setError(null);
     setSending(false);
-    requestId.current = "";
+    setStaged([]);
+    setError(null);
+    requestId.current = null;
+    for (const controller of uploads.current.values())
+      controller.abort();
+    uploads.current.clear();
+    slots.current = 0;
   }, [key]);
+  const MAX_ATTACHMENTS = 10;
+  // Keep the reservation counter in step with settled state.
+  useEffect(() => {
+    slots.current = staged.length;
+  }, [staged]);
+  const removeChip = (item: { id: string }) => {
+    uploads.current.get(item.id)?.abort();
+    uploads.current.delete(item.id);
+    slots.current = Math.max(0, slots.current - 1);
+    setStaged((current) => {
+      const remaining = current.filter((other) => other.id !== item.id);
+      // Error lifecycle is keyed, not string-coupled: the failed-attach
+      // alert clears with the last failed chip; the over-limit alert
+      // clears once the count is back under the cap.
+      setError((err) => {
+        if (!err) return err;
+        if (err.kind === "attach_failed" && !remaining.some((o) => o.state === "failed"))
+          return null;
+        if (err.kind === "attach_limit" && remaining.length < MAX_ATTACHMENTS)
+          return null;
+        return err;
+      });
+      return remaining;
+    });
+  };
+  const attach = async (files: FileList | null) => {
+    const s = session.current;
+    if (!files || !s) return;
+    const picked = Array.from(files);
+    // Reserve slots synchronously — a second selection in the same tick
+    // sees the reservations the first one already made.
+    const room = Math.max(0, MAX_ATTACHMENTS - slots.current);
+    // Controllers are created up front, not when the sequential loop
+    // reaches each file — a queued chip's removal must abort its future
+    // upload before it ever starts.
+    const accepted = picked.slice(0, room).map((file) => {
+      const id = crypto.randomUUID();
+      const controller = new AbortController();
+      uploads.current.set(id, controller);
+      return { id, file, controller };
+    });
+    slots.current += accepted.length;
+    if (picked.length > room)
+      setError({
+        kind: "attach_limit",
+        text: `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
+      });
+    if (accepted.length > 0)
+      setStaged((current) => [
+        ...current,
+        ...accepted.map(({ id, file }) => ({
+          id,
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          state: "pending" as const,
+        })),
+      ]);
+    for (const { id, file, controller } of accepted) {
+      const kind = mediaKindForContentType(
+        file.type || "application/octet-stream",
+      );
+      if (!kind || file.size <= 0 || file.size > MAX_MEDIA_BYTES) {
+        uploads.current.delete(id);
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id ? { ...item, state: "failed" as const } : item,
+          ),
+        );
+        continue;
+      }
+      try {
+        // A chip removed while queued reaches here pre-aborted — never
+        // start its upload.
+        if (controller.signal.aborted) continue;
+        const media = await uploadWorkspaceMedia({
+          workspaceId,
+          clientProfileId: clientProfileId || undefined,
+          fileName: file.name,
+          contentType: file.type || "application/octet-stream",
+          blob: file,
+          signal: controller.signal,
+        });
+        uploads.current.delete(id);
+        if (session.current !== s) return;
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  ...media,
+                  id: item.id,
+                  state: "uploaded" as const,
+                }
+              : item,
+          ),
+        );
+      } catch {
+        uploads.current.delete(id);
+        // A cancelled upload was already removed — its late rejection
+        // must not restore the chip or mark it failed — and the rest of
+        // this batch continues instead of stranding pending.
+        if (controller.signal.aborted) continue;
+        if (session.current !== s) return;
+        setStaged((current) =>
+          current.map((item) =>
+            item.id === id ? { ...item, state: "failed" as const } : item,
+          ),
+        );
+      }
+    }
+  };
   const send = async () => {
     const text = draft.trim();
     const s = session.current;
-    if (!text || sending || !s) return;
-    if (!requestId.current) requestId.current = crypto.randomUUID();
+    const ready = staged.filter((item) => item.state === "uploaded");
+    if ((!text && ready.length === 0) || sending || !s) return;
+    if (staged.some((item) => item.state === "pending")) return;
+    if (staged.some((item) => item.state === "failed")) {
+      setError({
+        kind: "attach_failed",
+        text: "An attachment failed to upload — remove it and reattach to send it.",
+      });
+      return;
+    }
+    const fp = `${text}￨${ready
+      .map((item) => item.mediaObjectId ?? item.id)
+      .sort()
+      .join(",")}`;
+    if (!requestId.current || requestId.current.fp !== fp)
+      requestId.current = { fp, id: crypto.randomUUID() };
     setSending(true);
-    setError("");
+    setError(null);
     try {
-      await sendOwnMessage(workspaceId, text, undefined, requestId.current);
+      await sendOwnMessage(
+        workspaceId,
+        text,
+        ready.map((item) => item.mediaObjectId ?? item.id),
+        requestId.current.id,
+      );
       onSent(s.key);
       if (session.current !== s) return;
-      requestId.current = "";
+      requestId.current = null;
       setDraft("");
+      setStaged([]);
     } catch {
       if (session.current !== s) return;
-      setError("The message could not be sent — check your connection and try again");
+      setError({
+        kind: "send",
+        text: "The message could not be sent — check your connection and try again",
+      });
     } finally {
       if (session.current === s) setSending(false);
     }
   };
   return (
     <div className="cb-dw-chat-composer" style={{ marginTop: 12 }}>
+      {staged.length > 0 && (
+        <div className="cb-dw-detail-group" style={{ marginBottom: 8 }} aria-label="Attachments">
+          {staged.map((item) => (
+            <div key={item.id} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ flex: 1 }}>
+                {item.name}
+                {item.state === "pending"
+                  ? " — uploading…"
+                  : item.state === "failed"
+                    ? " — upload failed"
+                    : ""}
+              </span>
+              <button
+                type="button"
+                className="cb-dw-action"
+                aria-label={`Remove ${item.name}`}
+                onClick={() => removeChip(item)}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
       <input
+        ref={fileInput}
+        type="file"
+        multiple
+        accept={Object.keys(MEDIA_CONTENT_TYPES).join(",")}
+        aria-label="Attach files"
+        style={{ display: "none" }}
+        onChange={(event) => {
+          void attach(event.target.files);
+          event.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        className="cb-dw-action"
+        aria-label="Attach a file"
+        disabled={sending}
+        onClick={() => fileInput.current?.click()}
+      >
+        Attach
+      </button>
+      <textarea
+        rows={1}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && void send()}
+        onKeyDown={(e) => {
+          if (
+            e.key === "Enter" &&
+            !e.shiftKey &&
+            !e.nativeEvent.isComposing
+          ) {
+            e.preventDefault();
+            void send();
+          }
+        }}
         placeholder="Message…"
         aria-label="Message"
         disabled={sending}
@@ -459,14 +678,18 @@ export function ChatComposer({
         className="cm-cbtn send"
         onClick={() => void send()}
         aria-label="Send"
-        disabled={sending || !draft.trim()}
+        disabled={
+          sending ||
+          staged.some((i) => i.state === "pending") ||
+          (!draft.trim() && !staged.some((i) => i.state === "uploaded"))
+        }
         aria-busy={sending}
       >
         Send
       </button>
       {error ? (
         <p role="alert" style={{ color: "var(--cd-err, #b45309)", fontSize: 12, margin: "4px 0 0" }}>
-          {error}
+          {error.text}
         </p>
       ) : null}
     </div>
@@ -591,6 +814,37 @@ export function RemoteConversation({
                     : ""}
                 </h4>
                 <p>{message.body}</p>
+                {(Array.isArray(message.attachments)
+                  ? message.attachments
+                  : []
+                ).map((attachment) =>
+                  attachment &&
+                  typeof attachment.mediaObjectId === "string" &&
+                  attachment.mediaObjectId.length > 0 &&
+                  typeof attachment.fileName === "string" ? (
+                    <MediaCard
+                      key={attachment.mediaObjectId}
+                      workspaceId={workspaceId}
+                      item={{
+                        id: attachment.mediaObjectId,
+                        name: attachment.fileName,
+                        type:
+                          typeof attachment.contentType === "string"
+                            ? attachment.contentType
+                            : "application/octet-stream",
+                        size:
+                          typeof attachment.byteSize === "number"
+                            ? attachment.byteSize
+                            : 0,
+                        mediaObjectId: attachment.mediaObjectId,
+                      }}
+                    />
+                  ) : (
+                    <p key="invalid" style={{ fontSize: 12, opacity: 0.7 }}>
+                      An attachment is unavailable.
+                    </p>
+                  ),
+                )}
               </div>
             ))
           )}

@@ -1,3 +1,64 @@
+## 2026-10-31 — Prompt 648 — #249 contract-aligned numeric validation
+
+- `toCanvasMessage` numeric checks now enforce the wire contract, not mere finiteness: `byteSize` must be an integer in 1..MAX_MEDIA_BYTES (reusing the browser-safe `lib/media-policy` cap — same rule as `assertMediaByteSize`); `position` a non-negative integer. `Number.isFinite` replaced. Adjacent required-field checks re-inspected against the contract — string fields unchanged, no invented limits.
+- Committed regression extensions in `tests/unit/client-composer.dom.test.tsx`: byteSize −1/0/fractional/over-cap/wrong-type/NaN/Infinity rejected; 1 and MAX_MEDIA_BYTES accepted; position −1/fractional/string/NaN/Infinity rejected; 0 and positive integer accepted; boundary sizes mixed with valid neighbors (mo-min/mo-max download, invalid neighbors inert).
+- Gates (fresh, Node v24.22.1): focused 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+
+## 2026-10-31 — Prompt 646 — #249 whole-entry validation + committed regressions
+
+- `toCanvasMessage` now requires the FULL wire contract per entry — `mediaObjectId`, `fileName`, `contentType` (non-empty strings), `byteSize` and `position` (finite numbers) — before producing a downloadable attachment. Any malformed field, null/primitive entry, or non-array collection degrades to an inert "attachment unavailable" card (`mediaObjectId: ""` — no mint fetch, no download action); valid neighbors still render and download.
+- Correction on the record: the eight-case table I reported for P644 was NOT in the committed diff — the edit anchor missed and the test file shipped without it. This commit adds the real regressions in `tests/unit/client-composer.dom.test.tsx`: the eight-case boundary table (absent/null/non-array/primitive collections; null/primitive/malformed entries incl. the reviewer's exact `{mediaObjectId:"mo-real", fileName:null, contentType:123, byteSize:"big"}` case; mixed valid+invalid), plus a real-coach-`MediaCard` test with a mocked download mint asserting the malformed entry exposes no download while the valid neighbor does.
+- Gates (fresh, Node v24.22.1): focused `client-composer.dom` + `client-app-shell.dom` 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0. Predecessor broad-suite/build results remain valid only for that source.
+
+## 2026-10-31 — Prompt 644 — #249 toCanvasMessage collection/entry boundary
+
+- `toCanvasMessage` mirrors the client mapping: `Array.isArray` on the field plus a null/object guard per entry — absent/null/non-array/primitive `attachments` can't crash, null/primitive/malformed entries become inert "attachment unavailable" cards (no fabricated media id, no active download), and valid neighbors are never discarded.
+- Table-driven regression (8 cases) through the REAL mapper + the real coach MediaCard.
+- Gates (Node v24.22.1): focused 49/49; tsc 0; eslint 0; prettier/index/diff-check clean. Broad suite remains 1779/1779 from the predecessor run (not relabeled fresh).
+
+## 2026-10-31 — Prompt 642 — #249 batch cancellation + coach rendering (2 findings)
+
+- (1) Batch cancellation: the sequential attach loop created each AbortController lazily — a queued chip had nothing to abort and later uploads never started after the active one was removed. Controllers are now created upfront at reservation; the abort path `continue`s the batch; a pre-aborted queued file is skipped without uploading. Remaining files always settle uploaded/failed/cancelled; slots and session-change cancellation preserved.
+- (2) Coach rendering: `toCanvasMessage` validates wire metadata (non-string contentType/fileName, non-number byteSize, missing id → "attachment unavailable"); the real coach `media.tsx` MediaCard guards non-string `item.type`. Tested against the real card and the real mapping — no mocks hiding the boundary.
+- Regressions +4 (remove active first of 3 → rest complete; remove queued → skipped before upload; identity change cancels batch safely; real coach card + mapping on malformed metadata).
+- Gates (Node v24.22.1): focused 49/49; full unfiltered suite 149 files / 1779; eslint 0; prettier clean; index:check OK; diff-check 0; fresh-worktree build clean.
+
+## 2026-10-31 — Prompt 640 — #249 consolidated repair (5 findings)
+
+- (1) Shared media policy moved to `lib/media-policy.ts` (dependency-free, browser-safe); `lib/storage.ts` re-exports it — one policy, both sides, server validation unchanged.
+- (2) 10-cap enforced atomically: `slots` ref reserves synchronously per selection before uploads start; overlapping picks (6+6) stage only 10.
+- (3) Keyed error lifecycle (`{kind,text}`): over-limit alert clears when count drops under cap; failed-attach alert clears with last failed chip; send errors unaffected.
+- (4) Malformed attachments validated at runtime (missing id/name, non-string contentType/byteSize) → "unavailable" note; `MediaCard` guards non-string `item.type`; tested against the real card.
+- (5) Multiline composer pattern: textarea, Enter sends, Shift+Enter newline, `isComposing` never sends.
+- Regressions +5 (45/45 file). Gates (Node v24.22.1): focused 45/45 + shell 5/5… wait recount: composer 40 + shell 5 = 45; full suite 1774/1775 with one unrelated flake (photos-panel passes isolated); eslint 0; prettier/index/diff clean; fresh-worktree build PENDING — earlier build-0 claim corrected: it had not been re-run since the storage import.
+
+## 2026-10-31 — Prompt 638 — #249 attachment UI safeguards (5 items)
+
+- (1) 10-attachment cap enforced at pick time: `staged.length` + selection is counted; only the first `10 - staged.length` files stage, the rest are skipped with an explanatory alert — excess never uploads.
+- (2) Client-side prechecks reuse the server's own rules (`MAX_MEDIA_BYTES` + `mediaKindForContentType` from `lib/storage`, a zero-import module): non-allowlisted or out-of-size files stage as failed chips without uploading; the file input gets `accept` built from `MEDIA_CONTENT_TYPES` keys. Server validation stays authoritative.
+- (3) The failed-attachment alert clears when the last failed chip is removed; while other failed chips remain it stays visible (send errors are unaffected — only the attach message is cleared).
+- (4) Malformed attachment metadata (missing mediaObjectId/fileName, null entries) renders an "attachment is unavailable" note instead of crashing the thread; the rest of the message still renders.
+- (5) Composer Enter is now IME-safe: `!e.nativeEvent.isComposing` guards send.
+- Regressions (+5): 10-cap, unsupported-type precheck, error-clear-on-remove, malformed metadata, plus the retained cancellation/identity/payload-key coverage (37/37 in the file). Mock isolation fixed (`mockReset` for the upload mock).
+- Gates (Node v24.22.1): focused 42/42; full unfiltered suite 149 files / 1772 tests; build/tsc/eslint(0 err)/prettier/index/diff-check clean.
+- Kept separate (not changed): S3 byte-size enforcement + orphaned-upload retention; no client delete authority added. Browser replay still unprovisioned (SEED_* credential set unavailable).
+
+## 2026-10-31 — Prompt 637 — #249 attachment retry + cancellation repair (2 findings)
+
+- (1) Request id bound to the logical payload: `requestId` is now `{fp, id}` where `fp` = trimmed text + sorted uploaded media ids — an unchanged retry reuses the same key; editing text or changing the attachment set mints a new payload id, so a response-lost success can never clear newer content. Success clears the key.
+- (2) Upload cancellation: every staged upload holds an AbortController (`uploadWorkspaceMedia` now takes `signal` through both the intent POST and the presigned PUT); Remove is enabled while pending and aborts + drops the chip, freeing the composer. A cancelled upload's late completion/rejection is ignored — the chip can't be restored and its media can't be linked. Identity change aborts all pending uploads.
+- Regressions (+3): unchanged retry reuses the key while edited text/new attachment mints fresh keys; remove-during-upload cancels and frees the composer with no restore/link.
+- Removed-media retention: media DELETE is staff `library.manage` — removing a chip leaves the uploaded media_object unlinked server-side; no client delete authority exists and none was added. Documented as a storage-retention gap, not repaired.
+- Gates (Node v24.22.1): focused 38/38; full unfiltered `npm run test` 149 files / 1768 tests all pass; `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: authenticated browser replay could not be provisioned this round (fresh lane seeding requires the full SEED_* credential set not available in-session); DOM regressions + disposable-PG integration cover the path.
+
+## 2026-10-31 — Prompt 635 — client messaging attachments end to end
+
+- Client `ChatComposer` gains the attach path on the existing W2-T8 contract: file input stages each pick, `uploadWorkspaceMedia` (intent + presigned PUT) per file, staged chips show uploading/failed state and allow removal; pending blocks send, failed blocks with an alert until removed; `sendOwnMessage` links only uploaded `mediaObjectIds` (text may be empty). Draft/error/pending/staged are session-scoped like the rest of the composer — an upload resolving after an identity switch is discarded. `RemoteConversation` renders `WireAttachment[]` via the existing `MediaCard` authorized-download mint (`GET /api/v1/media/:ws/:id`). Coach composer/thread already had the flow; preview/demo surfaces unchanged (local-only).
+- Regressions (`client-composer.dom`, +4): upload→link→clear, failed upload blocks send until removed (text-only retry keeps draft/idempotency), account switch mid-upload discards staged media, received attachment renders its download card.
+- Gates (Node v24.22.1, npm ci): focused 35/35; full unfiltered `npm run test` 149 files / 1765 tests all pass; disposable-PG integration `api-v1-message-attachments`+`api-v1-staff-messages` 14/14 (integration_p635); `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: no live authenticated browser replay this round (the app_p615 lane was decommissioned at P634 cleanup); served-surface DOM probes cover the flow.
+
 ## 2026-10-31 — Prompt 632 — #248 session-owned activation + task-mutation guards (2 findings)
 
 - (1) Conversation activation is stored as the session object, not the identity string: `open = activated === session.current || (session.current?.id === 1 && !collapsible)`. Only the first session opens automatically on an explicitly-presented surface; every later session — including A → B → A and same-workspace profile switches, even while staying on Messages — starts collapsed and requires fresh activation before mark-read. Same-session nav usability and collapsed zero-view auto-selection preserved.

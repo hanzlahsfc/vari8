@@ -1,4 +1,5 @@
 // Messages domain provider (PR-W0). Owns the own-thread remote calls the
+import { MAX_MEDIA_BYTES } from "@/lib/media-policy";
 // client messages screen reads and writes through.
 //
 // W2-A4: the coach-side messages and composer drafts also sync through the
@@ -144,13 +145,51 @@ export function toCanvasMessage(
     date: view.sentAt,
     read: view.read,
     priority: view.priority,
-    attachments: (view.attachments ?? []).map((attachment) => ({
-      id: attachment.mediaObjectId,
-      name: attachment.fileName,
-      type: attachment.contentType,
-      size: attachment.byteSize,
-      mediaObjectId: attachment.mediaObjectId,
-    })),
+    attachments: (Array.isArray(view.attachments)
+      ? view.attachments
+      : []
+    ).map((attachment) => {
+      // Whole-entry boundary: a non-array field, null/primitive entries
+      // or ANY malformed required field degrades to an inert unavailable
+      // card — never a crash, never a fabricated id, and never an active
+      // download mint for an entry that fails the wire contract.
+      const a =
+        attachment && typeof attachment === "object" ? attachment : null;
+      // The numeric fields carry the real wire constraints, not merely
+      // finiteness: byteSize is a positive integer within the shared
+      // byte cap (assertMediaByteSize's rule), position a non-negative
+      // integer.
+      const valid =
+        a !== null &&
+        typeof a.mediaObjectId === "string" &&
+        a.mediaObjectId.length > 0 &&
+        typeof a.fileName === "string" &&
+        a.fileName.length > 0 &&
+        typeof a.contentType === "string" &&
+        a.contentType.length > 0 &&
+        typeof a.byteSize === "number" &&
+        Number.isInteger(a.byteSize) &&
+        a.byteSize >= 1 &&
+        a.byteSize <= MAX_MEDIA_BYTES &&
+        typeof a.position === "number" &&
+        Number.isInteger(a.position) &&
+        a.position >= 0;
+      if (!valid)
+        return {
+          id: "unavailable",
+          name: "attachment unavailable",
+          type: "",
+          size: 0,
+          mediaObjectId: "",
+        };
+      return {
+        id: a.mediaObjectId as string,
+        name: a.fileName as string,
+        type: a.contentType as string,
+        size: a.byteSize as number,
+        mediaObjectId: a.mediaObjectId as string,
+      };
+    }),
     link: (view.links as { link?: Message["link"] } | null)?.link,
   };
 }
