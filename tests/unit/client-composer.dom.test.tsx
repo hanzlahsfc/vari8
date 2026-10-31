@@ -1012,6 +1012,180 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(screen.getByText("from coach")).toBeTruthy();
   });
 
+  it("removing the first of three uploads lets the rest of the batch complete", async () => {
+    const resolvers = new Map<string, (v: Record<string, unknown>) => void>();
+    mocked.upload.mockImplementation(
+      (i) =>
+        new Promise<Record<string, unknown>>((resolve) => {
+          resolvers.set((i as { fileName: string }).fileName, resolve);
+        }),
+    );
+    const file = (n: string) => new File(["x"], n, { type: "application/pdf" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file("a.pdf"), file("b.pdf"), file("c.pdf")] },
+    });
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(1));
+    // Remove the active upload — its siblings must still proceed.
+    fireEvent.click(screen.getByLabelText("Remove a.pdf"));
+    await act(async () =>
+      resolvers.get("a.pdf")!({
+        id: "mo-a",
+        name: "a.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-a",
+      }),
+    );
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(2));
+    await act(async () =>
+      resolvers.get("b.pdf")!({
+        id: "mo-b",
+        name: "b.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-b",
+      }),
+    );
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(3));
+    await act(async () =>
+      resolvers.get("c.pdf")!({
+        id: "mo-c",
+        name: "c.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-c",
+      }),
+    );
+    // No chip remains stranded in pending.
+    await waitFor(() => expect(screen.queryByText(/uploading/)).toBeNull());
+    expect(screen.getByText("b.pdf")).toBeTruthy();
+    expect(screen.getByText("c.pdf")).toBeTruthy();
+    expect(screen.queryByText("a.pdf")).toBeNull();
+  });
+
+  it("removing a queued file keeps the batch progressing", async () => {
+    const resolvers = new Map<string, (v: Record<string, unknown>) => void>();
+    mocked.upload.mockImplementation(
+      (i) =>
+        new Promise<Record<string, unknown>>((resolve) => {
+          resolvers.set((i as { fileName: string }).fileName, resolve);
+        }),
+    );
+    const file = (n: string) => new File(["x"], n, { type: "application/pdf" });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file("a.pdf"), file("b.pdf"), file("c.pdf")] },
+    });
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(1));
+    // Remove a still-queued file before it ever starts.
+    fireEvent.click(screen.getByLabelText("Remove c.pdf"));
+    await act(async () =>
+      resolvers.get("a.pdf")!({
+        id: "mo-a",
+        name: "a.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-a",
+      }),
+    );
+    await waitFor(() => expect(mocked.upload).toHaveBeenCalledTimes(2));
+    await act(async () =>
+      resolvers.get("b.pdf")!({
+        id: "mo-b",
+        name: "b.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-b",
+      }),
+    );
+    // c was cancelled before upload — the batch still settles clean.
+    expect(mocked.upload).toHaveBeenCalledTimes(2);
+    await waitFor(() => expect(screen.queryByText(/uploading/)).toBeNull());
+    expect(screen.queryByText("c.pdf")).toBeNull();
+  });
+
+  it("an identity change cancels the whole pending batch safely", async () => {
+    let resolveUpload!: (v: Record<string, unknown>) => void;
+    mocked.upload.mockImplementationOnce(
+      () =>
+        new Promise<Record<string, unknown>>(
+          (resolve) => (resolveUpload = resolve),
+        ),
+    );
+    const file = (n: string) => new File(["x"], n, { type: "application/pdf" });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
+    );
+    fireEvent.change(await screen.findByLabelText("Attach files"), {
+      target: { files: [file("a.pdf"), file("b.pdf")] },
+    });
+    await waitFor(() =>
+      expect(screen.queryAllByText(/uploading/).length).toBeGreaterThan(0),
+    );
+    rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    // The old session's batch resolves late — nothing lands, no chips
+    // restore, no unhandled rejection.
+    await act(async () =>
+      resolveUpload({
+        id: "mo-a",
+        name: "a.pdf",
+        type: "application/pdf",
+        size: 4,
+        mediaObjectId: "mo-a",
+      }),
+    );
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 30));
+    });
+    expect(screen.queryByText("a.pdf")).toBeNull();
+    expect(screen.queryByText("b.pdf")).toBeNull();
+  });
+
+  it("the real coach MediaCard survives malformed metadata", async () => {
+    const { MediaCard: CoachCard } =
+      await import("../../components/canvas/coach/media");
+    render(
+      <CoachProvider>
+        <CoachCard
+          workspaceId="ws-1"
+          item={{
+            id: "mo-x",
+            name: "report.pdf",
+            type: 123 as unknown as string,
+            size: 4,
+            mediaObjectId: "mo-x",
+          }}
+        />
+      </CoachProvider>,
+    );
+    expect(screen.getByText("report.pdf")).toBeTruthy();
+    // toCanvasMessage degrades malformed wire metadata safely.
+    const { toCanvasMessage } =
+      await import("../../components/canvas/data/messages");
+    const view = toCanvasMessage({
+      id: "m1",
+      body: "hi",
+      senderKind: "STAFF",
+      sentAt: "x",
+      read: true,
+      clientRequestId: "r1",
+      attachments: [
+        {
+          mediaObjectId: 1,
+          fileName: null,
+          contentType: 123,
+          byteSize: "big",
+        } as never,
+      ],
+    } as never);
+    expect(view.attachments[0].name).toBe("attachment unavailable");
+    expect(view.attachments[0].type).toBe("");
+  });
+
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);

@@ -485,10 +485,15 @@ export function ChatComposer({
     // Reserve slots synchronously — a second selection in the same tick
     // sees the reservations the first one already made.
     const room = Math.max(0, MAX_ATTACHMENTS - slots.current);
-    const accepted = picked.slice(0, room).map((file) => ({
-      id: crypto.randomUUID(),
-      file,
-    }));
+    // Controllers are created up front, not when the sequential loop
+    // reaches each file — a queued chip's removal must abort its future
+    // upload before it ever starts.
+    const accepted = picked.slice(0, room).map((file) => {
+      const id = crypto.randomUUID();
+      const controller = new AbortController();
+      uploads.current.set(id, controller);
+      return { id, file, controller };
+    });
     slots.current += accepted.length;
     if (picked.length > room)
       setError({
@@ -506,11 +511,12 @@ export function ChatComposer({
           state: "pending" as const,
         })),
       ]);
-    for (const { id, file } of accepted) {
+    for (const { id, file, controller } of accepted) {
       const kind = mediaKindForContentType(
         file.type || "application/octet-stream",
       );
       if (!kind || file.size <= 0 || file.size > MAX_MEDIA_BYTES) {
+        uploads.current.delete(id);
         setStaged((current) =>
           current.map((item) =>
             item.id === id ? { ...item, state: "failed" as const } : item,
@@ -518,9 +524,10 @@ export function ChatComposer({
         );
         continue;
       }
-      const controller = new AbortController();
-      uploads.current.set(id, controller);
       try {
+        // A chip removed while queued reaches here pre-aborted — never
+        // start its upload.
+        if (controller.signal.aborted) continue;
         const media = await uploadWorkspaceMedia({
           workspaceId,
           clientProfileId: clientProfileId || undefined,
@@ -546,8 +553,10 @@ export function ChatComposer({
       } catch {
         uploads.current.delete(id);
         // A cancelled upload was already removed — its late rejection
-        // must not restore the chip or mark it failed.
-        if (controller.signal.aborted || session.current !== s) return;
+        // must not restore the chip or mark it failed — and the rest of
+        // this batch continues instead of stranding pending.
+        if (controller.signal.aborted) continue;
+        if (session.current !== s) return;
         setStaged((current) =>
           current.map((item) =>
             item.id === id ? { ...item, state: "failed" as const } : item,

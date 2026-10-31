@@ -1,3 +1,9 @@
+## 2026-10-31 — Prompt 642 — #249 batch cancellation + coach rendering (2 findings)
+
+- (1) Batch cancellation: the sequential attach loop created each AbortController lazily — a queued chip had nothing to abort and later uploads never started after the active one was removed. Controllers are now created upfront at reservation; the abort path `continue`s the batch; a pre-aborted queued file is skipped without uploading. Remaining files always settle uploaded/failed/cancelled; slots and session-change cancellation preserved.
+- (2) Coach rendering: `toCanvasMessage` validates wire metadata (non-string contentType/fileName, non-number byteSize, missing id → "attachment unavailable"); the real coach `media.tsx` MediaCard guards non-string `item.type`. Tested against the real card and the real mapping — no mocks hiding the boundary.
+- Regressions +4 (remove active first of 3 → rest complete; remove queued → skipped before upload; identity change cancels batch safely; real coach card + mapping on malformed metadata).
+- Gates (Node v24.22.1): focused 49/49; full unfiltered suite 149 files / 1779; eslint 0; prettier clean; index:check OK; diff-check 0; fresh-worktree build clean.
 ## 2026-10-31 — Prompt 640 — #249 consolidated repair (5 findings)
 
 - (1) Shared media policy moved to `lib/media-policy.ts` (dependency-free, browser-safe); `lib/storage.ts` re-exports it — one policy, both sides, server validation unchanged.
@@ -6,6 +12,7 @@
 - (4) Malformed attachments validated at runtime (missing id/name, non-string contentType/byteSize) → "unavailable" note; `MediaCard` guards non-string `item.type`; tested against the real card.
 - (5) Multiline composer pattern: textarea, Enter sends, Shift+Enter newline, `isComposing` never sends.
 - Regressions +5 (45/45 file). Gates (Node v24.22.1): focused 45/45 + shell 5/5… wait recount: composer 40 + shell 5 = 45; full suite 1774/1775 with one unrelated flake (photos-panel passes isolated); eslint 0; prettier/index/diff clean; fresh-worktree build PENDING — earlier build-0 claim corrected: it had not been re-run since the storage import.
+
 ## 2026-10-31 — Prompt 638 — #249 attachment UI safeguards (5 items)
 
 - (1) 10-attachment cap enforced at pick time: `staged.length` + selection is counted; only the first `10 - staged.length` files stage, the rest are skipped with an explanatory alert — excess never uploads.

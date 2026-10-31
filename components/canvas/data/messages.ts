@@ -145,11 +145,27 @@ export function toCanvasMessage(
     read: view.read,
     priority: view.priority,
     attachments: (view.attachments ?? []).map((attachment) => ({
-      id: attachment.mediaObjectId,
-      name: attachment.fileName,
-      type: attachment.contentType,
-      size: attachment.byteSize,
-      mediaObjectId: attachment.mediaObjectId,
+      // Malformed wire metadata degrades to a safe card instead of
+      // crashing the thread — the established unavailable-file path.
+      id:
+        typeof attachment.mediaObjectId === "string" &&
+        attachment.mediaObjectId
+          ? attachment.mediaObjectId
+          : "unavailable",
+      name:
+        typeof attachment.fileName === "string" && attachment.fileName
+          ? attachment.fileName
+          : "attachment unavailable",
+      type:
+        typeof attachment.contentType === "string"
+          ? attachment.contentType
+          : "",
+      size:
+        typeof attachment.byteSize === "number" ? attachment.byteSize : 0,
+      mediaObjectId:
+        typeof attachment.mediaObjectId === "string"
+          ? attachment.mediaObjectId
+          : "",
     })),
     link: (view.links as { link?: Message["link"] } | null)?.link,
   };
