@@ -76,6 +76,9 @@ type ScheduleRuleItem = {
   startDate: string;
   endDate: string | null;
   status: "ACTIVE" | "PAUSED" | "ENDED";
+  localTimeMinutes?: number;
+  timezone?: string;
+  generatedThrough?: string | null;
 };
 
 type InstanceItem = {
@@ -694,6 +697,195 @@ export async function createExtra(input: {
     },
   });
   return { instanceId: created.instanceId };
+}
+
+const WEEKDAY_NAMES = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+] as const;
+
+/**
+ * Persist a weekday change on an EXISTING recurring schedule (P593 slice).
+ * Form identity comes from the client's existing rules only: exactly one
+ * distinct formId across every rule (any status) is required — zero rules is
+ * the unimplemented first-create case, and two is ambiguous; both refuse
+ * before any write. Each call writes one weekday's change then regenerates;
+ * a failure surfaces after a reload rather than claiming success.
+ */
+/** Authoritative reload of a client's recurring schedule — the folded
+ *  ACTIVE segments the board projects. The settings dialog calls this after
+ *  every product-mode save so pressed-states mirror the backend, not the
+ *  locally applied intent. */
+export async function reloadRecurring(
+  workspaceId: string,
+  clientProfileId: string,
+  input: { formId?: string } = {},
+): Promise<{ schedules: Schedule[]; weekdays: number[]; ungeneratedRuleIds: string[] }> {
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(clientProfileId)}`,
+  );
+  // The dialog's pressed-state is the UNION of ACTIVE rules' weekdays —
+  // folded segments bucket by startDate, so the latest segment alone would
+  // miss an older rule that is still ACTIVE.
+  // The pressed-state is scoped to the EDITED form's ACTIVE rules when a
+  // form was picked explicitly — the board's union across every form would
+  // mark another form's day as on and steer edits toward it. Without an
+  // explicit selection the union remains the default projection.
+  const scoped = rules.items.filter((r) => r.status === "ACTIVE");
+  const activeIds = new Set(scoped.map((r) => r.formId));
+  const target = input.formId ?? (activeIds.size === 1 ? [...activeIds][0] : undefined);
+  const weekdays = [
+    ...new Set(
+      scoped
+        .filter((r) => (target ? r.formId === target : true))
+        .map((r) => WEEKDAY_INDEX[r.weekday])
+        .filter((d): d is number => d !== undefined),
+    ),
+  ];
+  return {
+    schedules: foldScheduleRules(rules.items),
+    weekdays,
+    // A persisted ACTIVE rule without an occurrence is the durable recovery
+    // record. Generation is idempotent on the server, so re-offering this
+    // action after reload never invents a browser-local source of truth.
+    ungeneratedRuleIds: rules.items
+      .filter((r) => r.status === "ACTIVE" && r.generatedThrough === null)
+      .map((r) => r.ruleId),
+  };
+}
+
+export type ScheduleFormVersionOption = {
+  position: number;
+  formName: string;
+  versionSeq: number;
+  formId: string;
+  formVersionId: string;
+};
+
+/** The schedulable published-form versions for the picker — the same
+ *  endpoint the established staff rule-create flow uses (Q10:
+ *  latest published version per form). */
+export async function loadSchedulableFormVersions(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<{ options: ScheduleFormVersionOption[] }> {
+  return apiFetch<{ options: ScheduleFormVersionOption[] }>(
+    `/workspaces/${workspaceId}/checkins/schedule-versions?clientProfileId=${encodeURIComponent(clientProfileId)}`,
+  );
+}
+
+export async function saveRecurringDays(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  weekday: number;
+  add: boolean;
+  formId?: string;
+  /** Required on the first rule for a form; later edits preserve the rule. */
+  localTimeMinutes?: number;
+  timezone?: string;
+}): Promise<{ ruleId: string; status: string }> {
+  if (input.weekday < 0 || input.weekday > 6)
+    throw new Error("Weekday out of range");
+  const base = `/workspaces/${input.workspaceId}/checkins`;
+  const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
+    `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
+  );
+  // Identity comes from ACTIVE rules only — historical rules are not
+  // authoritative. When ACTIVE identity is absent or ambiguous the caller
+  // surfaces the established published-form picker and retries with an
+  // explicit formId; historical rules never supply identity on their own.
+  const activeIds = new Set(
+    rules.items.filter((r) => r.status === "ACTIVE").map((r) => r.formId),
+  );
+  let formId = input.formId;
+  if (!formId) {
+    if (activeIds.size === 0)
+      throw new Error("SELECT_FORM_REQUIRED");
+    if (activeIds.size > 1)
+      throw new Error("SELECT_FORM_AMBIGUOUS");
+    formId = [...activeIds][0];
+  }
+  const name = WEEKDAY_NAMES[input.weekday];
+  const sorted = [...rules.items].sort((a, b) =>
+    b.startDate.localeCompare(a.startDate),
+  );
+  // Only a PAUSED rule is replaceable — the service rejects
+  // replacesRuleId on ENDED rows (not_available). An ENDED rule creates a
+  // fresh rule with no link.
+  const endedSameDay = sorted.find(
+    (r) => r.weekday === name && r.status === "PAUSED" && r.formId === formId,
+  );
+  const basis =
+    sorted.find((r) => r.formId === formId && r.status === "ACTIVE") ??
+    sorted.find((r) => r.formId === formId);
+  const activeForDay = sorted.find(
+    (r) =>
+      r.weekday === name && r.status === "ACTIVE" && r.formId === formId,
+  );
+
+  if (!input.add) {
+    if (!activeForDay)
+      throw new Error(`No active ${name} rule for this form to remove`);
+    const res = await apiFetch<{ status: string }>(
+      `${base}/schedule-rules/${activeForDay.ruleId}/status`,
+      {
+        body: { clientProfileId: input.clientProfileId, action: "end" },
+      },
+    );
+    return { ruleId: activeForDay.ruleId, status: res.status };
+  }
+
+  if (activeForDay)
+    return { ruleId: activeForDay.ruleId, status: "unchanged" };
+  if (!basis && (input.localTimeMinutes === undefined || !input.timezone))
+    throw new Error("SCHEDULE_TIME_REQUIRED");
+  const created = await apiFetch<{ ruleId?: string; id?: string; status?: string }>(
+    `${base}/schedule-rules`,
+    {
+      body: {
+        clientProfileId: input.clientProfileId,
+        formId,
+        weekday: name,
+        localTimeMinutes: basis?.localTimeMinutes ?? input.localTimeMinutes,
+        timezone: basis?.timezone ?? input.timezone,
+        startDate: plusDays(viennaDate(new Date().toISOString()), 1),
+        endDate: null,
+        replacesRuleId: endedSameDay?.ruleId ?? null,
+      },
+    },
+  );
+  const ruleId = created.ruleId ?? created.id ?? "";
+  // D30: rule creation never generates — materialize explicitly. A failed
+  // generate leaves the rule persisted but ungenerated; the caller offers
+  // retryGenerateRule for the same ruleId (generation is idempotent per
+  // (originRuleId, occurrenceDate) — a retry completes rather than
+  // duplicating, and the rule must NOT be recreated).
+  try {
+    await apiFetch(`${base}/schedule-rules/${ruleId}/generate`, {
+      body: { clientProfileId: input.clientProfileId },
+    });
+    return { ruleId, status: created.status ?? "scheduled" };
+  } catch {
+    return { ruleId, status: "ungenerated" };
+  }
+}
+
+/** Retry generation on a persisted rule — idempotent per the backend's
+ *  occurrence-identity dedupe; safe to repeat after a failed create+generate. */
+export async function retryGenerateRule(input: {
+  workspaceId: string;
+  clientProfileId: string;
+  ruleId: string;
+}): Promise<void> {
+  await apiFetch(
+    `/workspaces/${input.workspaceId}/checkins/schedule-rules/${input.ruleId}/generate`,
+    { body: { clientProfileId: input.clientProfileId } },
+  );
 }
 
 /**

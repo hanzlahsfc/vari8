@@ -45,6 +45,12 @@ import { optionDaysLabel } from "../plans/plan-cards-support";
 import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
 import {
+  loadSchedulableFormVersions,
+  reloadRecurring,
+  retryGenerateRule,
+  saveRecurringDays,
+} from "../../data/checkins";
+import {
   addLocalDays,
   type CardioTarget,
   formatActivityTarget,
@@ -175,13 +181,50 @@ function ClientSettingsDialog({
   onAddDate: () => void;
   onClose: () => void;
 }) {
-  const { state, setState, navigate, toast } = useCoach();
+  const { state, setState, navigate, toast, workspaceId, clientProfileIdFor } =
+    useCoach();
+  const [schedSaving, setSchedSaving] = useState(false);
+  const [schedError, setSchedError] = useState("");
+  const [schedForms, setSchedForms] = useState<{ formId: string; label: string }[]>([]);
+  const [schedFormId, setSchedFormId] = useState("");
+  const [schedPending, setSchedPending] = useState<{ weekday: number; add: boolean } | null>(null);
+  const [schedRetries, setSchedRetries] = useState<string[]>([]);
+  const [schedTime, setSchedTime] = useState("");
+  const [schedTimezone, setSchedTimezone] = useState("Europe/Vienna");
+  const [schedWeekdays, setSchedWeekdays] = useState<number[] | null>(null);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
       ...s,
       clients: s.clients.map((cl) => (cl.id === client.id ? fn(cl) : cl)),
     }));
+
+  // Authoritative pressed-state on open — the canvas schedules reflect the
+  // board's last merge, not necessarily the backend. In product mode the
+  // dialog reloads rules so toggles start from the true ACTIVE set.
+  useEffect(() => {
+    let on = true;
+    (async () => {
+      if (!workspaceId) return;
+      const profileId = await clientProfileIdFor(client.name);
+      if (!profileId || !on) return;
+      try {
+        const res = await reloadRecurring(workspaceId, profileId);
+        if (on) {
+          setSchedWeekdays(res.weekdays);
+          setSchedRetries(res.ungeneratedRuleIds);
+          update((cl) => ({ ...cl, schedules: res.schedules }));
+        }
+      } catch {
+        /* stale local projection stays — the save path still refuses */
+      }
+    })();
+    return () => {
+      on = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, client.id]);
   const activeSchedule = client.schedules.at(-1);
+  const currentDays = schedWeekdays ?? activeSchedule?.weekdays ?? [];
   return (
     <Dialog title="Client settings" onClose={onClose} wide>
       <section className="ap-settings-section">
@@ -217,21 +260,101 @@ function ClientSettingsDialog({
               type="button"
               key={day}
               aria-label={day}
-              aria-pressed={activeSchedule?.weekdays.includes(index) ?? false}
-              onClick={() => {
-                const oldDays = client.schedules.at(-1)?.weekdays ?? [];
-                const weekdays = oldDays.includes(index)
-                  ? oldDays.filter((d) => d !== index)
-                  : [...oldDays, index];
-                update((cl) => ({
-                  ...cl,
-                  schedules: [
-                    ...cl.schedules.filter(
-                      (s) => s.effective !== addDays(TODAY, 1),
-                    ),
-                    { effective: addDays(TODAY, 1), weekdays },
-                  ],
-                }));
+              aria-pressed={currentDays.includes(index)}
+              disabled={schedSaving || !!schedPending}
+              onClick={async () => {
+                // Pressed state and requested operation must share the same
+                // authoritative active-rule snapshot.
+                const oldDays = currentDays;
+                const adding = !oldDays.includes(index);
+                const weekdays = adding
+                  ? [...oldDays, index]
+                  : oldDays.filter((d) => d !== index);
+                const apply = (x: typeof weekdays) =>
+                  update((cl) => ({
+                    ...cl,
+                    schedules: [
+                      ...cl.schedules.filter(
+                        (s) => s.effective !== addDays(TODAY, 1),
+                      ),
+                      { effective: addDays(TODAY, 1), weekdays: x },
+                    ],
+                  }));
+                setSchedError("");
+                const profileId = workspaceId
+                  ? await clientProfileIdFor(client.name)
+                  : null;
+                if (workspaceId && !profileId) {
+                  setSchedError(
+                    "This athlete could not be resolved on the server",
+                  );
+                  return;
+                }
+                if (workspaceId && profileId) {
+                  setSchedSaving(true);
+                  try {
+                    const res = await saveRecurringDays({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      weekday: index,
+                      add: adding,
+                    });
+                    // authoritative reload — the pressed-states must mirror
+                    // the backend rules, not the locally applied intent
+                    const folded = await reloadRecurring(
+                      workspaceId,
+                      profileId,
+                      { formId: schedFormId || undefined },
+                    );
+                    setSchedWeekdays(folded.weekdays);
+                    update((cl) => ({ ...cl, schedules: folded.schedules }));
+                    if (res.status === "ungenerated") {
+                      // an outstanding incomplete generation is never
+                      // silently replaced by a later failure — keep the
+                      // first recovery target and surface both rules
+                      setSchedRetries((prev) =>
+                        prev.includes(res.ruleId) ? prev : [...prev, res.ruleId],
+                      );
+                      setSchedError(
+                        "The rule was scheduled but generation did not complete — retry to create the check-in dates.",
+                      );
+                    } else {
+                      toast(
+                        "Recurring schedule updated from tomorrow. Submitted history retained.",
+                      );
+                    }
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : "";
+                    if (msg === "SELECT_FORM_REQUIRED" || msg === "SELECT_FORM_AMBIGUOUS") {
+                      setSchedPending({ weekday: index, add: adding });
+                      try {
+                        const v = await loadSchedulableFormVersions(
+                          workspaceId,
+                          profileId,
+                        );
+                        setSchedForms(
+                          v.options.map((o) => ({
+                            formId: o.formId,
+                            label: `${o.formName} — v${o.versionSeq}`,
+                          })),
+                        );
+                        setSchedError(
+                          msg === "SELECT_FORM_AMBIGUOUS"
+                            ? "This athlete has more than one active check-in form — pick which one to edit"
+                            : "Pick the published check-in form for this athlete",
+                        );
+                      } catch {
+                        setSchedError("The published forms could not be loaded");
+                      }
+                    } else {
+                      setSchedError(msg || "The recurring schedule could not be saved");
+                    }
+                  } finally {
+                    setSchedSaving(false);
+                  }
+                  return;
+                }
+                apply(weekdays);
                 toast(
                   "Recurring schedule updated from tomorrow. Submitted history retained.",
                 );
@@ -241,13 +364,127 @@ function ClientSettingsDialog({
             </button>
           ))}
         </div>
-        {client.schedules.some((s) => s.effective > TODAY) && (
+        {schedForms.length > 0 && (
+          <div className="cd-setting-row">
+            <Select
+              label={`Published check-in form${schedPending ? ` — ${schedPending.add ? "adding" : "removing"} ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][schedPending.weekday]}` : ""}`}
+              value={schedFormId}
+              options={schedForms.map((f) => ({ value: f.formId, label: f.label }))}
+              onChange={setSchedFormId}
+            />
+            <label className="daily-field">
+              First schedule time
+              <input type="time" value={schedTime} onChange={(e) => setSchedTime(e.target.value)} />
+            </label>
+            <label className="daily-field">
+              Client timezone
+              <input value={schedTimezone} onChange={(e) => setSchedTimezone(e.target.value)} />
+            </label>
+            <Button
+              variant="secondary"
+              disabled={!schedFormId || schedSaving || !schedPending}
+              onClick={async () => {
+                setSchedSaving(true);
+                try {
+                  const profileId = await clientProfileIdFor(client.name);
+                  if (profileId && workspaceId) {
+                    if (!schedPending)
+                      throw new Error("No pending schedule change");
+                    const res = await saveRecurringDays({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      weekday: schedPending.weekday,
+                      add: schedPending.add,
+                      formId: schedFormId,
+                      ...(schedTime
+                        ? { localTimeMinutes: Number(schedTime.slice(0, 2)) * 60 + Number(schedTime.slice(3, 5)) }
+                        : {}),
+                      ...(schedTimezone ? { timezone: schedTimezone } : {}),
+                    });
+                    setSchedForms([]);
+                    setSchedPending(null);
+                    setSchedError("");
+                    const scoped = await reloadRecurring(
+                      workspaceId,
+                      profileId,
+                      { formId: schedFormId },
+                    );
+                    setSchedWeekdays(scoped.weekdays);
+                    setSchedRetries(scoped.ungeneratedRuleIds);
+                    update((cl) => ({
+                      ...cl,
+                      schedules: scoped.schedules,
+                    }));
+                    if (res.status === "ungenerated") {
+                      setSchedRetries((prev) =>
+                        prev.includes(res.ruleId) ? prev : [...prev, res.ruleId],
+                      );
+                      setSchedError("The rule was scheduled but generation did not complete — retry to create the check-in dates.");
+                    } else toast("Recurring schedule updated.");
+                  }
+                } catch (e) {
+                  setSchedError(e instanceof Error ? e.message : "Save failed");
+                } finally {
+                  setSchedSaving(false);
+                }
+              }}
+            >
+              Apply
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setSchedForms([]);
+                setSchedPending(null);
+                setSchedFormId("");
+                setSchedError("");
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
+        {schedRetries.map((ruleId) => (
+          <div className="cd-setting-row" key={ruleId}>
+            <Button
+              variant="secondary"
+              disabled={schedSaving}
+              onClick={async () => {
+                setSchedSaving(true);
+                try {
+                  const profileId = await clientProfileIdFor(client.name);
+                  if (profileId && workspaceId) {
+                    await retryGenerateRule({
+                      workspaceId,
+                      clientProfileId: profileId,
+                      ruleId,
+                    });
+                    setSchedRetries((prev) => prev.filter((id) => id !== ruleId));
+                    setSchedError("");
+                    toast("Check-in dates generated.");
+                  }
+                } catch (e) {
+                  setSchedError(
+                    e instanceof Error ? e.message : "Generation failed",
+                  );
+                } finally {
+                  setSchedSaving(false);
+                }
+              }}
+            >
+              Retry generation
+            </Button>
+          </div>
+        ))}
+        {schedError && (
+          <p role="alert" className="cd-error">
+            {schedError}
+          </p>
+        )}
+        {currentDays.length > 0 && (
           <p className="ap-sub">
             From tomorrow:{" "}
-            {client.schedules
-              .at(-1)
-              ?.weekdays.map((d) => DAYS[d])
-              .join(", ") || "No recurring days"}
+            {currentDays.map((d) => DAYS[d]).join(", ") || "No recurring days"}
           </p>
         )}
         <h4>Additional dates</h4>
