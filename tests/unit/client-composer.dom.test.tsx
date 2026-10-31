@@ -1162,7 +1162,104 @@ describe("served coach conversation (RemoteConversation)", () => {
       </CoachProvider>,
     );
     expect(screen.getByText("report.pdf")).toBeTruthy();
-    // toCanvasMessage degrades malformed wire metadata safely.
+    // toCanvasMessage guards the whole boundary — collection shape,
+    // entry shape and every required field — through the real mapper.
+    const { toCanvasMessage } =
+      await import("../../components/canvas/data/messages");
+    const base = {
+      id: "m1",
+      body: "hi",
+      senderKind: "STAFF",
+      sentAt: "x",
+      read: true,
+      clientRequestId: "r1",
+    };
+    const valid = {
+      mediaObjectId: "mo-ok",
+      fileName: "ok.pdf",
+      contentType: "application/pdf",
+      byteSize: 10,
+      position: 0,
+    };
+    const cases: {
+      name: string;
+      attachments: unknown;
+      names: string[];
+      ids: string[];
+    }[] = [
+      { name: "absent", attachments: undefined, names: [], ids: [] },
+      { name: "null", attachments: null, names: [], ids: [] },
+      {
+        name: "non-array object",
+        attachments: { not: "an array" },
+        names: [],
+        ids: [],
+      },
+      { name: "primitive", attachments: 42, names: [], ids: [] },
+      {
+        name: "null entry",
+        attachments: [null],
+        names: ["attachment unavailable"],
+        ids: [""],
+      },
+      {
+        name: "primitive entry",
+        attachments: ["pdf-file", 7],
+        names: ["attachment unavailable", "attachment unavailable"],
+        ids: ["", ""],
+      },
+      {
+        // The reviewer's exact case: a valid-looking mediaObjectId must
+        // not rescue an entry whose other fields are malformed.
+        name: "partial object",
+        attachments: [
+          {
+            mediaObjectId: "mo-real",
+            fileName: null,
+            contentType: 123,
+            byteSize: "big",
+            position: 0,
+          },
+        ],
+        names: ["attachment unavailable"],
+        ids: [""],
+      },
+      {
+        name: "mixed",
+        attachments: [null, "str", { fileName: "bad.pdf" }, valid],
+        names: [
+          "attachment unavailable",
+          "attachment unavailable",
+          "attachment unavailable",
+          "ok.pdf",
+        ],
+        ids: ["", "", "", "mo-ok"],
+      },
+    ];
+    for (const c of cases) {
+      const view = toCanvasMessage(
+        { ...base, attachments: c.attachments } as never,
+        "cp-1",
+      );
+      expect(
+        view.attachments.map((a) => a.name),
+        `case ${c.name}`,
+      ).toEqual(c.names);
+      expect(
+        view.attachments.map((a) => a.mediaObjectId),
+        `case ${c.name} ids`,
+      ).toEqual(c.ids);
+    }
+  });
+
+  it("an invalid attachment exposes no download while its valid neighbor does", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ download: { url: "/media/mo-ok" } }), {
+        status: 200,
+      }),
+    );
+    const { MediaCard: CoachCard } =
+      await import("../../components/canvas/coach/media");
     const { toCanvasMessage } =
       await import("../../components/canvas/data/messages");
     const view = toCanvasMessage(
@@ -1175,17 +1272,51 @@ describe("served coach conversation (RemoteConversation)", () => {
         clientRequestId: "r1",
         attachments: [
           {
-            mediaObjectId: 1,
+            mediaObjectId: "mo-real",
             fileName: null,
             contentType: 123,
             byteSize: "big",
-          } as never,
+            position: 0,
+          },
+          {
+            mediaObjectId: "mo-ok",
+            fileName: "ok.pdf",
+            contentType: "application/pdf",
+            byteSize: 10,
+            position: 0,
+          },
         ],
       } as never,
       "cp-1",
     );
-    expect(view.attachments[0].name).toBe("attachment unavailable");
-    expect(view.attachments[0].type).toBe("");
+    render(
+      <CoachProvider workspaceId="ws-1">
+        <div>
+          {view.attachments.map((a) => (
+            <CoachCard key={a.id} item={a} />
+          ))}
+        </div>
+      </CoachProvider>,
+    );
+    // The malformed entry degrades to the inert unavailable card — no
+    // mint is fetched and no download link renders.
+    expect(screen.getByText("attachment unavailable")).toBeTruthy();
+    expect(
+      fetchSpy.mock.calls.every((call) => !String(call[0]).includes("mo-real")),
+    ).toBe(true);
+    // The valid neighbor mints and exposes its download action.
+    await waitFor(() =>
+      expect(
+        fetchSpy.mock.calls.some((call) => String(call[0]).includes("mo-ok")),
+      ).toBe(true),
+    );
+    await waitFor(() => {
+      const link = screen.getByRole("link", {
+        name: /Download attachment/,
+      }) as HTMLAnchorElement;
+      expect(link.href).toContain("mo-ok");
+    });
+    fetchSpy.mockRestore();
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {

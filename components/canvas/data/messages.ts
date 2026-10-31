@@ -148,23 +148,38 @@ export function toCanvasMessage(
       ? view.attachments
       : []
     ).map((attachment) => {
-      // Collection AND entry boundary: a non-array field, null/primitive
-      // entries or malformed objects degrade to an inert unavailable
-      // card — never a crash, never a fabricated media id, never an
-      // active download for an invalid entry.
+      // Whole-entry boundary: a non-array field, null/primitive entries
+      // or ANY malformed required field degrades to an inert unavailable
+      // card — never a crash, never a fabricated id, and never an active
+      // download mint for an entry that fails the wire contract.
       const a =
         attachment && typeof attachment === "object" ? attachment : null;
-      const mediaObjectId =
-        a && typeof a.mediaObjectId === "string" ? a.mediaObjectId : "";
+      const valid =
+        a !== null &&
+        typeof a.mediaObjectId === "string" &&
+        a.mediaObjectId.length > 0 &&
+        typeof a.fileName === "string" &&
+        a.fileName.length > 0 &&
+        typeof a.contentType === "string" &&
+        a.contentType.length > 0 &&
+        typeof a.byteSize === "number" &&
+        Number.isFinite(a.byteSize) &&
+        typeof a.position === "number" &&
+        Number.isFinite(a.position);
+      if (!valid)
+        return {
+          id: "unavailable",
+          name: "attachment unavailable",
+          type: "",
+          size: 0,
+          mediaObjectId: "",
+        };
       return {
-        id: mediaObjectId || "unavailable",
-        name:
-          a && typeof a.fileName === "string" && a.fileName
-            ? a.fileName
-            : "attachment unavailable",
-        type: a && typeof a.contentType === "string" ? a.contentType : "",
-        size: a && typeof a.byteSize === "number" ? a.byteSize : 0,
-        mediaObjectId,
+        id: a.mediaObjectId as string,
+        name: a.fileName as string,
+        type: a.contentType as string,
+        size: a.byteSize as number,
+        mediaObjectId: a.mediaObjectId as string,
       };
     }),
     link: (view.links as { link?: Message["link"] } | null)?.link,

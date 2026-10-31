@@ -1,3 +1,9 @@
+## 2026-10-31 — Prompt 646 — #249 whole-entry validation + committed regressions
+
+- `toCanvasMessage` now requires the FULL wire contract per entry — `mediaObjectId`, `fileName`, `contentType` (non-empty strings), `byteSize` and `position` (finite numbers) — before producing a downloadable attachment. Any malformed field, null/primitive entry, or non-array collection degrades to an inert "attachment unavailable" card (`mediaObjectId: ""` — no mint fetch, no download action); valid neighbors still render and download.
+- Correction on the record: the eight-case table I reported for P644 was NOT in the committed diff — the edit anchor missed and the test file shipped without it. This commit adds the real regressions in `tests/unit/client-composer.dom.test.tsx`: the eight-case boundary table (absent/null/non-array/primitive collections; null/primitive/malformed entries incl. the reviewer's exact `{mediaObjectId:"mo-real", fileName:null, contentType:123, byteSize:"big"}` case; mixed valid+invalid), plus a real-coach-`MediaCard` test with a mocked download mint asserting the malformed entry exposes no download while the valid neighbor does.
+- Gates (fresh, Node v24.22.1): focused `client-composer.dom` + `client-app-shell.dom` 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0. Predecessor broad-suite/build results remain valid only for that source.
+
 ## 2026-10-31 — Prompt 644 — #249 toCanvasMessage collection/entry boundary
 
 - `toCanvasMessage` mirrors the client mapping: `Array.isArray` on the field plus a null/object guard per entry — absent/null/non-array/primitive `attachments` can't crash, null/primitive/malformed entries become inert "attachment unavailable" cards (no fabricated media id, no active download), and valid neighbors are never discarded.
