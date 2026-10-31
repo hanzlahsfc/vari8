@@ -430,7 +430,9 @@ describe("createExtra — additional-date write (P588)", () => {
       await import("../../components/canvas/data/checkins");
     await createExtra({ ...input, type: "Custom", fieldIds: ["f1", "f2"] });
     const [, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
-    expect((opts as { body: { fieldSelection?: string[] } }).body.fieldSelection).toEqual(["f1", "f2"]);
+    expect(
+      (opts as { body: { fieldSelection?: string[] } }).body.fieldSelection,
+    ).toEqual(["f1", "f2"]);
   });
 
   it("refuses with no ACTIVE schedule — zero POSTs", async () => {

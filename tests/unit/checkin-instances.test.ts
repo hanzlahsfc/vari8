@@ -281,19 +281,17 @@ describe("P607 — Custom field selection", () => {
 
   it("a subset requires only selected required fields", async () => {
     // DEF's required fields — pick f_short only; other required not needed
-    const rows = await canonSel([{ fieldId: "f_short", value: "x" }], [
-      "f_short",
-    ]);
+    const rows = await canonSel(
+      [{ fieldId: "f_short", value: "x" }],
+      ["f_short"],
+    );
     expect(rows.map((r) => r.fieldId)).toEqual(["f_short"]);
   });
 
   it("a selected-but-unanswered required field still fails", async () => {
     // selecting a required field without answering it keeps the required rule
     await expect(
-      canonSel([{ fieldId: "f_short", value: "x" }], [
-        "f_short",
-        "f_single",
-      ]),
+      canonSel([{ fieldId: "f_short", value: "x" }], ["f_short", "f_single"]),
     ).rejects.toThrow("invalid_input");
   });
 
@@ -332,17 +330,14 @@ describe("P607 — parseCheckInFieldSelection (create-time shape)", () => {
     // the parser is internal — exercise through a call that fails input
     // validation BEFORE any DB: an empty selection must never reach create
     await expect(
-      scheduleCheckInInstance(
-        { sub: "u", roles: [] } as never,
-        {
-          workspaceId: "w",
-          clientProfileId: "c",
-          formId: "f",
-          formVersionId: "v",
-          dueAt: "2099-01-01",
-          fieldSelection: [],
-        },
-      ),
+      scheduleCheckInInstance({ sub: "u", roles: [] } as never, {
+        workspaceId: "w",
+        clientProfileId: "c",
+        formId: "f",
+        formVersionId: "v",
+        dueAt: "2099-01-01",
+        fieldSelection: [],
+      }),
     ).rejects.toThrow();
   });
 });
