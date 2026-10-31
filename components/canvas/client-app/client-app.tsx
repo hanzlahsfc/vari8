@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Dumbbell,
   House,
+  MessageCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { HabitsTab } from "../coach/habits-tab";
@@ -32,7 +33,11 @@ import {
 } from "./sections";
 import { TrainingLogbook } from "./training-log/training-logbook";
 import { RemoteTrainingLogbook } from "./training-log/remote-training-logbook";
-import { RemoteDashboardTab, RemoteTrackerTab } from "./remote-views";
+import {
+  RemoteConversationTab,
+  RemoteDashboardTab,
+  RemoteTrackerTab,
+} from "./remote-views";
 import {
   CheckInTab,
   DashboardTab,
@@ -52,6 +57,7 @@ const SECTION_ICONS: Partial<Record<ClientAppSectionId, typeof House>> = {
   tracker: Activity,
   training: Dumbbell,
   "check-ins": CalendarCheck,
+  messages: MessageCircle,
 };
 
 function ActivityTargetsPart({ client }: { client: CoachClient }) {
@@ -189,9 +195,17 @@ export function ClientApp({
   /** Workspace name shown beside the nav mark in the desktop sidebar. */
   brand?: string;
 }) {
+  // Product mode is an explicit route context, never inferred from a
+  // workspaceId alone: only the served standalone surface binds the caller's
+  // own scope — a preview mount keeps local behaviour even if an own pair
+  // is threaded in by mistake.
+  const ownScope = context === "standalone" ? own : undefined;
   const sections = useMemo(
-    () => clientAppSections(configuration, client.plans),
-    [configuration, client.plans],
+    () =>
+      clientAppSections(configuration, client.plans, {
+        conversation: ownScope !== undefined,
+      }),
+    [configuration, client.plans, ownScope],
   );
   const plans = sections.find((section) => section.id === "plans");
   const [section, setSection] = useState<ClientAppSectionId | undefined>(
@@ -269,11 +283,11 @@ export function ClientApp({
               </Empty>
             )}
             {active === "home" &&
-              (own ? (
+              (ownScope ? (
                 <RemoteDashboardTab
                   configuration={configuration}
                   client={client}
-                  own={own}
+                  own={ownScope}
                 />
               ) : (
                 <DashboardTab configuration={configuration} client={client} />
@@ -282,10 +296,10 @@ export function ClientApp({
               {showTracker && (
                 <>
                   {configuration.views.includes("Tracker") &&
-                    (own ? (
+                    (ownScope ? (
                       <RemoteTrackerTab
                         key={`${client.id}:${configuration.id}`}
-                        own={own}
+                        own={ownScope}
                         clientName={client.name}
                       />
                     ) : (
@@ -318,14 +332,14 @@ export function ClientApp({
                     configuration={configuration}
                     client={client}
                     illustrative={illustrative}
-                    own={own}
+                    own={ownScope}
                   />
                 )}
                 {activePlanPart === "supplements" &&
-                  (own ? (
+                  (ownScope ? (
                     <RemoteSupplementsPart
-                      workspaceId={own.workspaceId}
-                      clientProfileId={own.clientProfileId}
+                      workspaceId={ownScope.workspaceId}
+                      clientProfileId={ownScope.clientProfileId}
                       clientName={client.name}
                     />
                   ) : (
@@ -341,10 +355,10 @@ export function ClientApp({
                     </section>
                   ))}
                 {activePlanPart === "activity-targets" &&
-                  (own ? (
+                  (ownScope ? (
                     <RemoteActivityTargetsPart
-                      workspaceId={own.workspaceId}
-                      clientProfileId={own.clientProfileId}
+                      workspaceId={ownScope.workspaceId}
+                      clientProfileId={ownScope.clientProfileId}
                     />
                   ) : (
                     <ActivityTargetsPart client={client} />
@@ -385,11 +399,11 @@ export function ClientApp({
                   // Card 11/#176: a signed-in client logs against the
                   // server's pinned prescription; the local path stays
                   // for the unsigned demo.
-                  own ? (
+                  ownScope ? (
                     <RemoteTrainingLogbook
                       client={client}
                       configuration={configuration}
-                      own={own}
+                      own={ownScope}
                     />
                   ) : (
                     <TrainingLogbook
@@ -410,9 +424,12 @@ export function ClientApp({
               <CheckInTab
                 configuration={configuration}
                 client={client}
-                workspaceId={own?.workspaceId}
-                clientProfileId={own?.clientProfileId}
+                workspaceId={ownScope?.workspaceId}
+                clientProfileId={ownScope?.clientProfileId}
               />
+            )}
+            {active === "messages" && ownScope && (
+              <RemoteConversationTab own={ownScope} clientName={client.name} />
             )}
           </div>
         </div>

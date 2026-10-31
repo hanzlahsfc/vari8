@@ -28,6 +28,7 @@ import {
   Input as SharedInput,
   Select as SharedSelect,
 } from "@/components/canvas/vari8/components";
+import type { OwnMessageWire } from "../../data/messages";
 import { BuilderGallery } from "./gallery";
 import {
   addToLayout,
@@ -127,6 +128,7 @@ export function DashboardBuilder({
   previewOnly = false,
   onRecordsChange,
   workspaceId,
+  onMessagesSync,
 }: {
   value: Draft;
   onChange: (value: Draft) => void;
@@ -139,6 +141,9 @@ export function DashboardBuilder({
   /** Card 05a client surface: the caller's own workspace — presence turns the
    *  dashboard chat detail into a real conversation with a composer. */
   workspaceId?: string;
+  /** Card 05a/P625: the own-scope host's thread mirror — the chat detail's
+   *  composer and read marker report wire snapshots through it. */
+  onMessagesSync?: (messages: OwnMessageWire[]) => void;
 }) {
   const draft = value;
   const setDraft = onChange;
@@ -1443,6 +1448,7 @@ export function DashboardBuilder({
             records={records}
             clientPreview={clientPreview}
             onRecordsChange={changeRecords}
+            onMessagesSync={onMessagesSync}
           />
         </LocalDialog>
       )}

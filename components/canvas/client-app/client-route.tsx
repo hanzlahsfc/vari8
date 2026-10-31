@@ -233,14 +233,14 @@ function ClientRouteInner({
                 }}
               >
                 <div className="cm-frame">
-                  <MobileApp client={client} workspaceId={own?.workspaceId} />
+                  <MobileApp client={client} />
                 </div>
               </div>
             ) : (
-              <MobileApp client={client} workspaceId={own?.workspaceId} />
+              <MobileApp client={client} />
             )
           ) : (
-            <ClientDesktop client={client} workspaceId={own?.workspaceId} />
+            <ClientDesktop client={client} />
           )}
         </>
       )}

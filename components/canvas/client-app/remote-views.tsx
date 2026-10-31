@@ -13,7 +13,10 @@ import {
   recordsForCoach,
 } from "../coach/builder/coach-dashboard";
 import { DashboardBuilder } from "../coach/builder/dashboard-builder";
-import { ChatComposer } from "../coach/builder/widget-content";
+import {
+  RemoteConversation,
+  useOwnMessages,
+} from "../coach/builder/widget-content";
 import type {
   ClientMessage,
   ClientTask,
@@ -23,7 +26,7 @@ import { createDashboardDraft } from "../coach/builder/schema";
 import type { CoachClient, Variant } from "../coach/model";
 import { useCoach } from "../coach/store";
 import { useLocalToday } from "../coach/targets/use-local-today";
-import { fetchOwnMessages, type OwnMessageWire } from "../data/messages";
+import type { OwnMessageWire } from "../data/messages";
 import {
   fetchOwnTasks,
   type OwnTaskWire,
@@ -51,7 +54,10 @@ function toClientMessage(
     date: wire.sentAt.slice(0, 10),
     sender: wire.senderKind === "STAFF" ? "Coach" : clientName,
     excerpt: wire.body,
-    unread: false,
+    // Unread is inbound-only: the wire `read` flag on a CLIENT row is the
+    // coach's read marker, never the caller's own — the client's sends
+    // never show as inbound unread.
+    unread: wire.senderKind === "STAFF" && !wire.read,
   };
 }
 
@@ -78,7 +84,7 @@ export function RemoteDashboardTab({
     [configuration],
   );
   const [tasks, setTasks] = useState<OwnTaskWire[] | null>(null);
-  const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
+  const { messages, apply: applyMessages } = useOwnMessages(own.workspaceId);
   useEffect(() => {
     let cancelled = false;
     fetchOwnTasks(own.workspaceId, "both")
@@ -87,13 +93,6 @@ export function RemoteDashboardTab({
       })
       .catch(() => {
         if (!cancelled) setTasks([]);
-      });
-    fetchOwnMessages(own.workspaceId)
-      .then((response) => {
-        if (!cancelled) setMessages(response.messages);
-      })
-      .catch(() => {
-        if (!cancelled) setMessages([]);
       });
     return () => {
       cancelled = true;
@@ -113,19 +112,24 @@ export function RemoteDashboardTab({
   );
   const onRecordsChange = useCallback(
     (next: SourceRecords) => {
-      // A composer-backed message refresh resyncs wire truth — the
-      // records' message list carries the composer's own reload result.
-      if (next.messages !== records.messages) {
-        void fetchOwnMessages(own.workspaceId).then((response) =>
-          setMessages(response.messages),
-        );
-      }
+      // Message updates never travel this channel — the composer and read
+      // marker report wire snapshots through onMessagesSync directly. Only
+      // task completion toggles persist here.
       for (const wire of tasks ?? []) {
         const edited = next.tasks.find((task) => task.id === wire.id);
         if (!edited || edited.completed === (wire.status === "COMPLETED"))
           continue;
+        const desired = edited.completed ? "COMPLETED" : "OPEN";
+        // Optimistic wire state: the records rebuild reads this same state,
+        // so a message resync landing mid-write can never paint the old
+        // toggle value back over the pending edit.
+        setTasks((current) =>
+          (current ?? []).map((task) =>
+            task.id === wire.id ? { ...task, status: desired } : task,
+          ),
+        );
         setOwnTaskCompletion(own.workspaceId, own.clientProfileId, wire.id, {
-          desired: edited.completed ? "COMPLETED" : "OPEN",
+          desired,
           expectedRevision: wire.revision,
         })
           .then((result) =>
@@ -142,9 +146,12 @@ export function RemoteDashboardTab({
             ),
           )
           .catch(() =>
-            // Failed writes must not linger as local state: rebuilding the
-            // array resyncs the widget to wire truth on the next render.
-            setTasks((current) => [...(current ?? [])]),
+            // A failed write drops back to the last wire truth.
+            setTasks((current) =>
+              (current ?? []).map((task) =>
+                task.id === wire.id ? wire : task,
+              ),
+            ),
           );
       }
     },
@@ -159,30 +166,31 @@ export function RemoteDashboardTab({
         onRecordsChange={onRecordsChange}
         previewOnly
         workspaceId={own.workspaceId}
+        onMessagesSync={applyMessages}
       />
-      <section className="cb-dw-detail" style={{ marginTop: 16 }}>
-        <h3>Coach conversation</h3>
-        {records.messages.map((message) => (
-          <div className="cb-dw-detail-group" key={message.id}>
-            <h4>
-              {message.sender} ·{" "}
-              {new Date(message.date).toLocaleDateString(undefined, {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-              {message.unread ? " · Unread" : ""}
-            </h4>
-            <p>{message.excerpt}</p>
-          </div>
-        ))}
-        <ChatComposer
-          workspaceId={own.workspaceId}
-          records={records}
-          onRecordsChange={onRecordsChange}
-        />
-      </section>
+      <RemoteConversation
+        workspaceId={own.workspaceId}
+        clientName={client.name}
+        messages={messages}
+        onSync={applyMessages}
+        collapsible
+      />
     </>
+  );
+}
+
+/** Card 05a/P625: the coach conversation as its own nav section — the
+ *  client's thread stays reachable even when the template assigns no
+ *  Dashboard view. */
+export function RemoteConversationTab({
+  own,
+  clientName,
+}: {
+  own: OwnIdentity;
+  clientName: string;
+}) {
+  return (
+    <RemoteConversation workspaceId={own.workspaceId} clientName={clientName} />
   );
 }
 

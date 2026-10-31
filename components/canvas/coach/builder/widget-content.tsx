@@ -13,6 +13,7 @@ import { AdditionalDetailContent } from "./additional-widget-content";
 import {
   fetchOwnMessages,
   markOwnThreadRead,
+  type OwnMessageWire,
   sendOwnMessage,
 } from "../../data/messages";
 import { CoachingWidgetContent } from "./coaching-content";
@@ -48,6 +49,10 @@ type DetailProps = {
   clientPreview: boolean;
   onRecordsChange: (records: SourceRecords) => void;
   workspaceId?: string;
+  /** Card 05a: the own-scope host's thread mirror — the chat detail's
+   *  composer and read marker report their snapshots through it so the
+   *  caller's records stay aligned without a second fetch. */
+  onMessagesSync?: (messages: OwnMessageWire[]) => void;
 };
 
 type Layout = "Compact" | "Regular" | "Wide" | "Tall" | "Expanded";
@@ -324,24 +329,53 @@ function DetailRows({
   );
 }
 
+/** Card 05a/P625: the one own-thread message path — a sequenced load plus
+ *  explicitly applied snapshots (composer refresh, read marker). A slower
+ *  in-flight response can never overwrite a newer snapshot, and a workspace
+ *  change drops the old account's pending read. */
+export function useOwnMessages(workspaceId: string | undefined) {
+  const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
+  const seq = useRef(0);
+  const apply = useCallback((wire: OwnMessageWire[] | null) => {
+    seq.current += 1;
+    setMessages(wire);
+  }, []);
+  useEffect(() => {
+    if (!workspaceId) return;
+    const ticket = ++seq.current;
+    setMessages(null);
+    let cancelled = false;
+    fetchOwnMessages(workspaceId)
+      .then((response) => {
+        if (!cancelled && ticket === seq.current)
+          setMessages(response.messages);
+      })
+      .catch(() => {
+        if (!cancelled && ticket === seq.current)
+          setMessages((current) => current ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+  return { messages, apply };
+}
+
 /** The client-side coach conversation composer on the served dashboard chat
- *  detail — send through the authorized own-messages API, not local state. */
+ *  detail — send through the authorized own-messages API, not local state.
+ *  The post-send reload reports the wire snapshot to the host's message
+ *  state directly; there is no second resync behind it. */
 export function ChatComposer({
   workspaceId,
-  records,
-  onRecordsChange,
+  onSync,
 }: {
   workspaceId: string;
-  records: SourceRecords;
-  onRecordsChange: (records: SourceRecords) => void;
+  onSync: (messages: OwnMessageWire[]) => void;
 }) {
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const requestId = useRef<string>("");
-  useEffect(() => {
-    markOwnThreadRead(workspaceId).catch(() => {});
-  }, [workspaceId]);
   const send = async () => {
     const text = draft.trim();
     if (!text || sending) return;
@@ -352,16 +386,7 @@ export function ChatComposer({
       await sendOwnMessage(workspaceId, text, undefined, requestId.current);
       try {
         const { messages } = await fetchOwnMessages(workspaceId);
-        onRecordsChange({
-          ...records,
-          messages: messages.map((wire) => ({
-            id: wire.id,
-            sender: wire.senderKind === "CLIENT" ? "You" : "Coach",
-            date: wire.sentAt,
-            excerpt: wire.body,
-            unread: !wire.read,
-          })),
-        });
+        onSync(messages);
       } catch {
         /* send persisted; the next open refresh shows it — never resend */
       }
@@ -402,12 +427,118 @@ export function ChatComposer({
   );
 }
 
+/** Card 05a/P625: the served coach conversation on the client's own scope.
+ *  On the home surface the thread stays collapsed until the client
+ *  explicitly opens it; mark-read fires only on that explicit view while
+ *  the server still reports unread inbound (staff-sent) rows — mount or
+ *  offscreen rendering never marks, and the client's own unread-to-coach
+ *  sends never count as inbound unread. */
+export function RemoteConversation({
+  workspaceId,
+  clientName,
+  messages: externalMessages,
+  onSync,
+  collapsible = false,
+}: {
+  workspaceId: string;
+  clientName: string;
+  /** A host-loaded thread renders instead of a second fetch; every sync
+   *  still reaches the host through `onSync`. */
+  messages?: OwnMessageWire[] | null;
+  onSync?: (messages: OwnMessageWire[]) => void;
+  /** Collapsed until the client asks to view the loaded thread — that
+   *  explicit view is what licenses mark-read. Open surfaces (Messages
+   *  section, chat detail) are explicit views by navigation. */
+  collapsible?: boolean;
+}) {
+  const { messages: ownedMessages, apply: applyOwned } = useOwnMessages(
+    externalMessages === undefined ? workspaceId : undefined,
+  );
+  const wire = externalMessages ?? ownedMessages;
+  const sync = useCallback(
+    (next: OwnMessageWire[]) => {
+      applyOwned(next);
+      onSync?.(next);
+    },
+    [applyOwned, onSync],
+  );
+  const [open, setOpen] = useState(!collapsible);
+  const unreadInbound = (wire ?? []).filter(
+    (message) => message.senderKind === "STAFF" && !message.read,
+  ).length;
+  useEffect(() => {
+    if (!open || !wire || unreadInbound === 0) return;
+    const pending = wire;
+    let cancelled = false;
+    markOwnThreadRead(workspaceId)
+      .then(() => {
+        if (cancelled) return;
+        sync(
+          pending.map((message) =>
+            message.senderKind === "STAFF" && !message.read
+              ? { ...message, read: true }
+              : message,
+          ),
+        );
+      })
+      .catch(() => {
+        /* stays unread; the next explicit view or wire change retries */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, unreadInbound, workspaceId, wire, sync]);
+  return (
+    <section className="cb-dw-detail" style={{ marginTop: 16 }}>
+      <h3>Coach conversation</h3>
+      {collapsible && !open ? (
+        <div className="cb-dw-detail-group">
+          <button
+            type="button"
+            className="cb-dw-action"
+            aria-expanded="false"
+            onClick={() => setOpen(true)}
+          >
+            View conversation
+            {unreadInbound > 0 ? ` · ${unreadInbound} unread` : ""}
+          </button>
+        </div>
+      ) : (
+        <>
+          {wire === null ? (
+            <Empty>Loading the conversation…</Empty>
+          ) : (
+            wire.map((message) => (
+              <div className="cb-dw-detail-group" key={message.id}>
+                <h4>
+                  {message.senderKind === "STAFF" ? "Coach" : clientName} ·{" "}
+                  {dateLabel(message.sentAt.slice(0, 10), {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  {message.senderKind === "STAFF" && !message.read
+                    ? " · Unread"
+                    : ""}
+                </h4>
+                <p>{message.body}</p>
+              </div>
+            ))
+          )}
+          <ChatComposer workspaceId={workspaceId} onSync={sync} />
+        </>
+      )}
+    </section>
+  );
+}
+
 export function DetailContent({
   detail,
   records,
   clientPreview,
   onRecordsChange,
   workspaceId,
+  onMessagesSync,
 }: DetailProps) {
   const data = useMemo(() => {
     if (detail === "bodyweight")
@@ -773,12 +904,19 @@ export function DetailContent({
         clientPreview={clientPreview}
         onRecordsChange={onRecordsChange}
         workspaceId={workspaceId}
+        onMessagesSync={onMessagesSync}
       />
     );
   }
 
   if (detail === "chat")
-    return (
+    return workspaceId ? (
+      <RemoteConversation
+        workspaceId={workspaceId}
+        clientName={records.client.name}
+        onSync={onMessagesSync}
+      />
+    ) : (
       <section className="cb-dw-detail">
         <h3>Coach conversation</h3>
         {records.messages.map((message) => (
@@ -795,13 +933,6 @@ export function DetailContent({
             <p>{message.excerpt}</p>
           </div>
         ))}
-        {workspaceId ? (
-          <ChatComposer
-            workspaceId={workspaceId}
-            records={records}
-            onRecordsChange={onRecordsChange}
-          />
-        ) : null}
       </section>
     );
 

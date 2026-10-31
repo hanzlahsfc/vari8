@@ -8,99 +8,41 @@ import {
   uid,
 } from "../../coach/model";
 import { useCoach } from "../../coach/store";
-import {
-  fetchOwnMessages,
-  markOwnThreadRead,
-  sendOwnMessage,
-} from "../../data/messages";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 
-export function MobileMessages({
-  client,
-  workspaceId,
-}: {
-  client: CoachClient;
-  workspaceId?: string;
-}) {
+export function MobileMessages({ client }: { client: CoachClient }) {
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
-  const [sendError, setSendError] = useState("");
-  const requestId = useRef<string>("");
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = state.messages
     .filter((m: Message) => m.clientId === client.id)
     .sort((a: Message, b: Message) => a.date.localeCompare(b.date));
   // mark coach messages read on open
-  const hasUnreadCoach = state.messages.some(
-    (m) => m.clientId === client.id && m.from === "coach" && !m.read,
-  );
   useEffect(() => {
-    // The thread is rendered open: local paint + server mark-read only fire
-    // when unread coach rows are actually visible — mount alone never marks.
-    if (!hasUnreadCoach) return;
-    if (workspaceId)
-      markOwnThreadRead(workspaceId).catch(() => {
-        /* paint stays authoritative locally; the next open retries */
-      });
-    setState((s) => ({
-      ...s,
-      messages: s.messages.map((m) =>
-        m.clientId === client.id && m.from === "coach"
-          ? { ...m, read: true }
-          : m,
-      ),
-    }));
-  }, [client.id, hasUnreadCoach, workspaceId, setState]);
+    setState((s) => {
+      if (
+        !s.messages.some(
+          (m) => m.clientId === client.id && m.from === "coach" && !m.read,
+        )
+      )
+        return s;
+      return {
+        ...s,
+        messages: s.messages.map((m) =>
+          m.clientId === client.id && m.from === "coach"
+            ? { ...m, read: true }
+            : m,
+        ),
+      };
+    });
+  }, [client.id, setState]);
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   });
-  const send = async () => {
+  const send = () => {
     const text = draft.trim();
-    if (!text || sending) return;
-    if (workspaceId) {
-      if (!requestId.current) requestId.current = crypto.randomUUID();
-      setSending(true);
-      setSendError("");
-      try {
-        await sendOwnMessage(
-          workspaceId,
-          text,
-          undefined,
-          requestId.current,
-        );
-        try {
-          const { messages } = await fetchOwnMessages(workspaceId);
-          setState((s) => ({
-            ...s,
-            messages: [
-              ...s.messages.filter((m) => m.clientId !== client.id),
-              ...messages.map((wire) => ({
-                id: wire.id,
-                clientId: client.id,
-                text: wire.body,
-                from: (wire.senderKind === "CLIENT" ? "client" : "coach") as
-                  "client" | "coach",
-                date: wire.sentAt,
-                read: wire.read,
-                priority: false,
-                attachments: [],
-              })),
-            ],
-          }));
-        } catch {
-          /* send persisted; the next open refresh shows it — don't resend */
-        }
-        requestId.current = "";
-        setDraft("");
-      } catch {
-        setSendError("The message could not be sent — check your connection and try again");
-      } finally {
-        setSending(false);
-      }
-      return;
-    }
+    if (!text) return;
     setState((s) => ({
       ...s,
       messages: [
@@ -213,15 +155,13 @@ export function MobileMessages({
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Message…"
           aria-label="Message"
-          disabled={sending}
         />
         <button
           type="button"
           className="cm-cbtn send"
           onClick={send}
           aria-label="Send"
-          disabled={sending || !draft.trim()}
-          aria-busy={sending}
+          disabled={!draft.trim()}
         >
           <svg
             aria-hidden="true"
@@ -237,11 +177,6 @@ export function MobileMessages({
             <path d="M22 2 11 13" />
           </svg>
         </button>
-        {sendError ? (
-          <p role="alert" style={{ color: "var(--cd-err, #b45309)", fontSize: 12, margin: "4px 0 0" }}>
-            {sendError}
-          </p>
-        ) : null}
       </div>
     </div>
   );

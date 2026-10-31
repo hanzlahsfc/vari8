@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
-// The client-side message composer (MobileMessages) wired to sendOwnMessage.
+// The served own-scope coach conversation (RemoteConversation + ChatComposer
+// on RemoteDashboardTab) — the components /me actually mounts. Asserts the
+// explicit-view read gate, direction-aware unread, the single sync path and
+// send/refresh ordering against stale snapshots and account changes.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -18,12 +22,49 @@ const mocked = vi.hoisted(() => ({
         sentAt: "2026-10-20T10:00:00Z",
         body: "",
         read: false,
+        clientRequestId: "",
+        attachments: [],
       },
     }),
   ),
-  fetchOwn: vi.fn(async (_w?: string) => ({ messages: [] })),
+  fetchOwn: vi.fn(
+    async (_w?: string) =>
+      ({ messages: [] }) as { messages: Record<string, unknown>[] },
+  ),
   markRead: vi.fn(async (_w?: string) => ({ marked: 0 })),
+  fetchTasks: vi.fn(
+    async (_w?: string, _o?: string) =>
+      ({
+        clientProfileId: "cp-1",
+        tasks: [],
+        hasMore: false,
+      }) as { tasks: Record<string, unknown>[] },
+  ),
+  setTask: vi.fn(
+    async (
+      _w?: string,
+      _c?: string,
+      _t?: string,
+      _i?: Record<string, unknown>,
+    ) =>
+      ({ revision: 2, status: "COMPLETED", changed: true }) as Record<
+        string,
+        unknown
+      >,
+  ),
+  builder: {
+    current: null as null | {
+      sourceRecords: {
+        tasks: { id: string; completed: boolean }[];
+        messages: unknown[];
+        [key: string]: unknown;
+      };
+      onRecordsChange: (records: never) => void;
+      onMessagesSync?: (messages: Record<string, unknown>[]) => void;
+    },
+  },
 }));
+
 vi.mock("../../components/canvas/data/messages", async (importOriginal) => {
   const mod =
     await importOriginal<
@@ -34,126 +75,236 @@ vi.mock("../../components/canvas/data/messages", async (importOriginal) => {
     sendOwnMessage: (w: string, b: string, m?: string[], r?: string) =>
       mocked.sendOwn(w, b, m, r),
     fetchOwnMessages: (w: string) => mocked.fetchOwn(w),
+    markOwnThreadRead: (w: string) => mocked.markRead(w),
+  };
+});
+vi.mock("../../components/canvas/data/tasks", async (importOriginal) => {
+  const mod =
+    await importOriginal<typeof import("../../components/canvas/data/tasks")>();
+  return {
+    ...mod,
+    fetchOwnTasks: (w: string, o?: string) => mocked.fetchTasks(w, o),
+    setOwnTaskCompletion: (
+      w: string,
+      c: string,
+      t: string,
+      i: Record<string, unknown>,
+    ) => mocked.setTask(w, c, t, i),
   };
 });
 vi.mock("next/navigation", () => ({
-  useSearchParams: () => new URLSearchParams(""),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  useSearchParams: () => new URLSearchParams(),
+}));
+// The grid itself is out of scope here — the assertions target the served
+// tab's record wiring, so a prop-rendering double stands in for the canvas.
+vi.mock("../../components/canvas/coach/builder/dashboard-builder", () => ({
+  DashboardBuilder: (props: (typeof mocked.builder)["current"]) => {
+    mocked.builder.current = props;
+    return (
+      <div data-testid="fake-builder">
+        {props?.sourceRecords.tasks.map((task) => (
+          <span key={task.id} data-testid={`task-${task.id}`}>
+            {task.completed ? "done" : "open"}
+          </span>
+        ))}
+      </div>
+    );
+  },
 }));
 
-import { MobileMessages } from "../../components/canvas/client-app/mobile/messages";
-import { CoachProvider, useCoach } from "../../components/canvas/coach/store";
+import { RemoteConversation } from "../../components/canvas/coach/builder/widget-content";
+import { RemoteDashboardTab } from "../../components/canvas/client-app/remote-views";
+import { CoachProvider } from "../../components/canvas/coach/store";
 import { writeCoachState } from "../../components/canvas/data";
 import { seedState as canvasSeed } from "../../components/canvas/coach/model";
-import type { CoachClient } from "../../components/canvas/coach/model";
+import type { CoachClient, Variant } from "../../components/canvas/coach/model";
 
-function seedClient(): CoachClient {
-  const s = canvasSeed();
-  return s.clients[0];
-}
-const client = seedClient();
-
-function Probe() {
-  const { state } = useCoach();
-  return (
-    <output data-testid="msgs">
-      {state.messages.filter((m) => m.clientId === client.id).length}
-    </output>
-  );
+function wire(over: Record<string, unknown> = {}) {
+  return {
+    id: "m-1",
+    senderKind: "STAFF",
+    sentAt: "2026-10-20T10:00:00Z",
+    body: "from coach",
+    read: false,
+    clientRequestId: "",
+    attachments: [],
+    ...over,
+  };
 }
 
-function mount(workspaceId?: string) {
-  writeCoachState({ ...canvasSeed(), hydrated: true } as never);
-  return render(
-    <CoachProvider>
-      <MobileMessages client={client} workspaceId={workspaceId} />
-      <Probe />
-    </CoachProvider>,
-  );
+function taskWire(over: Record<string, unknown> = {}) {
+  return {
+    id: "t1",
+    title: "Drink water",
+    dueDate: "2026-10-20",
+    status: "OPEN",
+    dueState: "due-today",
+    completedAt: null,
+    assignedByMemberId: "m1",
+    revision: 1,
+    ...over,
+  };
 }
 
-describe("client message composer (P620)", () => {
+describe("served coach conversation (RemoteConversation)", () => {
   beforeEach(() => {
-    localStorage.clear();
-    Element.prototype.scrollIntoView = vi.fn();
-    mocked.sendOwn.mockClear();
-    mocked.fetchOwn.mockClear();
-    mocked.markRead.mockClear();
     cleanup();
+    mocked.sendOwn.mockClear();
+    mocked.sendOwn.mockResolvedValue({
+      message: {
+        id: "srv-1",
+        senderKind: "CLIENT",
+        sentAt: "2026-10-20T10:00:00Z",
+        body: "",
+        read: false,
+        clientRequestId: "",
+        attachments: [],
+      },
+    });
+    mocked.fetchOwn.mockReset();
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    mocked.markRead.mockClear();
+    mocked.markRead.mockResolvedValue({ marked: 1 });
   });
 
-  it("product scope: send posts through sendOwnMessage and refreshes", async () => {
-    mount("ws-1");
+  it("collapsed mount never marks read; the explicit view marks inbound once", async () => {
+    mocked.fetchOwn.mockResolvedValue({ messages: [wire()] });
+    render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" collapsible />,
+    );
+    // The unread hint lands with the loaded thread — mounted and still
+    // collapsed, no mark-read may fire.
+    await waitFor(() => screen.getByText(/1 unread/));
+    expect(mocked.markRead).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
+    expect(mocked.markRead).toHaveBeenCalledWith("ws-1");
+    await waitFor(() => expect(screen.queryByText(/Unread/)).toBeNull());
+    expect(mocked.markRead).toHaveBeenCalledTimes(1);
+  });
+
+  it("the client's own unread-to-coach send is never inbound unread", async () => {
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "c1",
+          senderKind: "CLIENT",
+          body: "client says hi",
+          read: false,
+        }),
+        wire({
+          id: "s1",
+          senderKind: "STAFF",
+          body: "coach reply",
+          read: true,
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText("client says hi"));
+    expect(mocked.markRead).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Unread/)).toBeNull();
+  });
+
+  it("an open view with inbound unread marks read once", async () => {
+    mocked.fetchOwn.mockResolvedValue({ messages: [wire()] });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(screen.queryByText(/Unread/)).toBeNull());
+  });
+
+  it("a failed mark-read keeps the unread badge", async () => {
+    mocked.markRead.mockRejectedValueOnce(new Error("offline"));
+    mocked.fetchOwn.mockResolvedValue({ messages: [wire()] });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
+    expect(screen.getByText(/Unread/)).toBeTruthy();
+  });
+
+  it("send posts through sendOwnMessage and the reply renders with one refresh", async () => {
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [] })
+      .mockResolvedValueOnce({
+        messages: [
+          wire({ id: "n1", senderKind: "CLIENT", body: "hello coach" }),
+        ],
+      });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByLabelText("Message"));
     fireEvent.change(screen.getByLabelText("Message"), {
       target: { value: "hello coach" },
     });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
-    expect(
-      (
-        mocked.sendOwn.mock.calls[0] as unknown as [
-          string,
-          string,
-          string[] | undefined,
-          string | undefined,
-        ]
-      )[0],
-    ).toBe("ws-1");
-    expect(
-      (
-        mocked.sendOwn.mock.calls[0] as unknown as [
-          string,
-          string,
-          string[] | undefined,
-          string | undefined,
-        ]
-      )[1],
-    ).toBe("hello coach");
-    // refresh reloads the thread
-    await waitFor(() => expect(mocked.fetchOwn).toHaveBeenCalledWith("ws-1"));
+    const call = mocked.sendOwn.mock.calls[0] as unknown as [
+      string,
+      string,
+      string[] | undefined,
+      string | undefined,
+    ];
+    expect(call[0]).toBe("ws-1");
+    expect(call[1]).toBe("hello coach");
+    expect(typeof call[3]).toBe("string");
+    await waitFor(() => screen.getByText("hello coach"));
+    // Mount read + the composer's post-send snapshot — no second resync
+    // trails the composer refresh.
+    expect(mocked.fetchOwn).toHaveBeenCalledTimes(2);
   });
 
-  it("demo scope: no workspaceId — sends locally, never calls the API", async () => {
-    mount(undefined);
-    fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "demo note" },
-    });
+  it("a stale earlier fetch cannot overwrite the send snapshot", async () => {
+    let resolveMount!: (v: { messages: Record<string, unknown>[] }) => void;
+    mocked.fetchOwn
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ messages: Record<string, unknown>[] }>(
+            (resolve) => (resolveMount = resolve),
+          ),
+      )
+      .mockResolvedValueOnce({
+        messages: [
+          wire({ id: "n1", senderKind: "CLIENT", body: "fresh send" }),
+        ],
+      });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = await screen.findByLabelText("Message");
+    fireEvent.change(input, { target: { value: "fresh send" } });
     fireEvent.click(screen.getByLabelText("Send"));
-    expect(mocked.sendOwn).not.toHaveBeenCalled();
-    await waitFor(() =>
-      expect(screen.getByTestId("msgs").textContent).not.toBe("0"),
-    );
+    await waitFor(() => screen.getByText("fresh send"));
+    // The mount-time read resolves late without the new message — the
+    // already-applied send snapshot must win.
+    await act(async () => resolveMount({ messages: [] }));
+    expect(screen.getByText("fresh send")).toBeTruthy();
   });
 
-  it("rapid Enter + click during pending sends only once", async () => {
-    let resolve!: (v: Awaited<ReturnType<typeof mocked.sendOwn>>) => void;
-    mocked.sendOwn.mockImplementationOnce(
-      () =>
-        new Promise<Awaited<ReturnType<typeof mocked.sendOwn>>>(
-          (r) => (resolve = r),
-        ),
+  it("a workspace change drops the previous account's pending read", async () => {
+    let resolveOld!: (v: { messages: Record<string, unknown>[] }) => void;
+    mocked.fetchOwn
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ messages: Record<string, unknown>[] }>(
+            (resolve) => (resolveOld = resolve),
+          ),
+      )
+      .mockResolvedValueOnce({
+        messages: [wire({ id: "w2", body: "second account" })],
+      });
+    const { rerender } = render(
+      <RemoteConversation workspaceId="ws-1" clientName="Amara" />,
     );
-    mount("ws-1");
-    const input = screen.getByLabelText("Message") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "slow send" } });
-    fireEvent.keyDown(input, { key: "Enter" });
-    fireEvent.click(screen.getByLabelText("Send"));
-    expect(mocked.sendOwn).toHaveBeenCalledTimes(1);
-    resolve({
-      message: {
-        id: "m9",
-        senderKind: "CLIENT",
-        sentAt: "2026-10-20T10:00:00Z",
-        body: "slow send",
-        read: false,
-      },
-    });
+    rerender(<RemoteConversation workspaceId="ws-2" clientName="Amara" />);
+    await waitFor(() => screen.getByText("second account"));
+    await act(async () =>
+      resolveOld({ messages: [wire({ id: "w1", body: "first account" })] }),
+    );
+    expect(screen.queryByText("first account")).toBeNull();
+    expect(screen.getByText("second account")).toBeTruthy();
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
-    mount("ws-1");
-    const input = screen.getByLabelText("Message") as HTMLInputElement;
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "retry me" } });
     fireEvent.click(screen.getByLabelText("Send"));
     await screen.findByRole("alert");
@@ -166,15 +317,6 @@ describe("client message composer (P620)", () => {
         string | undefined,
       ]
     )[3];
-    mocked.sendOwn.mockResolvedValueOnce({
-      message: {
-        id: "m2",
-        senderKind: "CLIENT",
-        sentAt: "2026-10-20T10:00:00Z",
-        body: "retry me",
-        read: false,
-      },
-    });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
     expect(
@@ -189,44 +331,152 @@ describe("client message composer (P620)", () => {
     ).toBe(firstKey);
   });
 
-  it("successful send clears the draft and the next send gets a new key", async () => {
-    mount("ws-1");
-    const input = screen.getByLabelText("Message") as HTMLInputElement;
-    fireEvent.change(input, { target: { value: "first" } });
-    fireEvent.click(screen.getByLabelText("Send"));
-    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(input.value).toBe(""));
-    const firstKey = (
-      mocked.sendOwn.mock.calls[0] as unknown as [
-        string,
-        string,
-        string[] | undefined,
-        string | undefined,
-      ]
-    )[3];
-    fireEvent.change(input, { target: { value: "second" } });
-    fireEvent.click(screen.getByLabelText("Send"));
-    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalledTimes(2));
-    expect(
-      (
-        mocked.sendOwn.mock.calls[1] as unknown as [
-          string,
-          string,
-          string[] | undefined,
-          string | undefined,
-        ]
-      )[3],
-    ).not.toBe(firstKey);
-  });
-
   it("send success + refresh failure clears the draft without resending", async () => {
-    mocked.fetchOwn.mockRejectedValueOnce(new Error("offline"));
-    mount("ws-1");
-    const input = screen.getByLabelText("Message") as HTMLInputElement;
+    mocked.fetchOwn
+      .mockResolvedValueOnce({ messages: [] })
+      .mockRejectedValueOnce(new Error("offline"));
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    const input = (await screen.findByLabelText("Message")) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "sent but no refresh" } });
     fireEvent.click(screen.getByLabelText("Send"));
     await waitFor(() => expect(input.value).toBe(""));
     expect(mocked.sendOwn).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("served dashboard tab (RemoteDashboardTab)", () => {
+  const variant = {
+    id: "variant-test",
+    name: "Test variant",
+    nutrition: "Meal plan",
+    views: [
+      "Dashboard",
+      "Tracker",
+      "Nutrition",
+      "Timeline / Roadmap",
+      "Training Program",
+      "Check-In",
+    ],
+    habits: false,
+    widgets: [],
+    fields: [],
+    roadmap: [],
+    training: { fields: [], volume: true, breakdown: "", presentation: "" },
+    questions: [],
+    summaries: [],
+  } as unknown as Variant;
+  const client = canvasSeed().clients[0] as CoachClient;
+  const own = { workspaceId: "ws-1", clientProfileId: "cp-1" };
+
+  function mountTab() {
+    writeCoachState({ ...canvasSeed(), hydrated: true } as never);
+    return render(
+      <CoachProvider>
+        <RemoteDashboardTab configuration={variant} client={client} own={own} />
+      </CoachProvider>,
+    );
+  }
+
+  beforeEach(() => {
+    cleanup();
+    mocked.fetchTasks.mockReset();
+    mocked.fetchTasks.mockResolvedValue({
+      clientProfileId: "cp-1",
+      tasks: [taskWire()],
+      hasMore: false,
+    } as never);
+    mocked.setTask.mockReset();
+    mocked.setTask.mockResolvedValue({
+      revision: 2,
+      status: "COMPLETED",
+      changed: true,
+    });
+    mocked.fetchOwn.mockReset();
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    mocked.markRead.mockClear();
+    mocked.builder.current = null;
+  });
+
+  function builderProps() {
+    return mocked.builder.current!;
+  }
+
+  it("a message sync cannot revert an in-flight task toggle", async () => {
+    let resolveWrite!: (v: Record<string, unknown>) => void;
+    mocked.setTask.mockImplementationOnce(
+      () =>
+        new Promise<Record<string, unknown>>(
+          (resolve) => (resolveWrite = resolve),
+        ),
+    );
+    mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    act(() =>
+      builderProps().onRecordsChange({
+        ...builderProps().sourceRecords,
+        tasks: builderProps().sourceRecords.tasks.map((task) => ({
+          ...task,
+          completed: true,
+        })),
+      } as never),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    expect(mocked.setTask).toHaveBeenCalledTimes(1);
+    // The composer's wire snapshot lands mid-write — the optimistic toggle
+    // lives in the parent's wire state, so the rebuild cannot paint it back.
+    act(() => builderProps().onMessagesSync?.([wire({ id: "s9" })]));
+    expect(screen.getByTestId("task-t1").textContent).toBe("done");
+    await act(async () =>
+      resolveWrite({ revision: 2, status: "COMPLETED", changed: true }),
+    );
+    expect(screen.getByTestId("task-t1").textContent).toBe("done");
+  });
+
+  it("a failed toggle write drops back to wire truth", async () => {
+    mocked.setTask.mockRejectedValueOnce(new Error("offline"));
+    mountTab();
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+    act(() =>
+      builderProps().onRecordsChange({
+        ...builderProps().sourceRecords,
+        tasks: builderProps().sourceRecords.tasks.map((task) => ({
+          ...task,
+          completed: true,
+        })),
+      } as never),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("done"),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("task-t1").textContent).toBe("open"),
+    );
+  });
+
+  it("message edits on the records channel trigger no second resync", async () => {
+    mountTab();
+    await waitFor(() => expect(mocked.fetchOwn).toHaveBeenCalledTimes(1));
+    act(() =>
+      builderProps().onRecordsChange({
+        ...builderProps().sourceRecords,
+        messages: [
+          {
+            id: "x",
+            date: "2026-10-20",
+            sender: "Coach",
+            excerpt: "edited locally",
+            unread: true,
+          },
+        ],
+      } as never),
+    );
+    expect(mocked.fetchOwn).toHaveBeenCalledTimes(1);
   });
 });
