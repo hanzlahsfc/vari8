@@ -616,9 +616,10 @@ export function RemoteCheckInForm({
   const setAnswer = (fieldId: string, value: unknown) =>
     setAnswers((current) => ({ ...current, [fieldId]: value }));
 
-  const fields = [...(detail?.definition.fields ?? [])].sort(
-    (first, second) => first.order - second.order,
-  );
+  const selection = detail?.fieldSelection;
+  const fields = [...(detail?.definition.fields ?? [])]
+    .filter((f) => !selection || selection.includes(f.fieldId))
+    .sort((first, second) => first.order - second.order);
 
   const visualValid = (field: (typeof fields)[number]) => {
     if (!field.required) return true;
