@@ -638,17 +638,21 @@ export async function createExtra(input: {
   date: string;
   type: "Full" | "Custom";
   note: string;
+  /** Custom: the subset of the regular form's fieldIds the athlete fills. */
+  fieldIds?: string[];
+  /** Custom: the exact published version the checklist rendered from —
+   *  required so a later publish can't silently rebind the selection. */
+  formVersionId?: string;
 }): Promise<{ instanceId: string }> {
   const base = `/workspaces/${input.workspaceId}/checkins`;
-  // Owner ruling: a Full additional date uses the client's regular weekly
+  // Owner ruling: Full and Custom both use the client's regular weekly
   // check-in form by EXACT identity — the formId on the client's ACTIVE
-  // schedule rule — never by name or inference. Custom (per-instance field
-  // selection) is a separate future slice and is refused here rather than
-  // provisionally mapped.
-  if (input.type !== "Full")
-    throw new Error(
-      "Custom check-ins are not available yet; only the regular Full update can be scheduled",
-    );
+  // schedule rule — never by name or inference. Custom additionally
+  // carries a non-empty subset of the pinned version's fieldIds.
+  if (input.type === "Custom" && (!input.fieldIds || input.fieldIds.length === 0))
+    throw new Error("Custom check-ins require at least one selected field");
+  if (input.type !== "Full" && input.type !== "Custom")
+    throw new Error("Unsupported check-in type");
   const rules = await apiFetch<{ items: ScheduleRuleItem[] }>(
     `${base}/schedule-rules?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
   );
@@ -675,16 +679,26 @@ export async function createExtra(input: {
       versionSeq: number;
       formId: string;
       formVersionId: string;
+      fields?: { fieldId: string; label: string; required: boolean }[];
     }[];
   }>(
     `${base}/schedule-versions?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
   );
-  const match = [...versions.options]
-    .filter((option) => option.formId === formId)
-    .sort((a, b) => b.versionSeq - a.versionSeq)[0];
+  if (input.type === "Custom" && !input.formVersionId)
+    throw new Error("Custom check-ins pin the checklist's published version");
+  const match =
+    input.type === "Custom"
+      ? versions.options.find(
+          (o) => o.formId === formId && o.formVersionId === input.formVersionId,
+        )
+      : [...versions.options]
+          .filter((option) => option.formId === formId)
+          .sort((a, b) => b.versionSeq - a.versionSeq)[0];
   if (!match)
     throw new Error(
-      "No published version exists for the client's regular check-in form",
+      input.type === "Custom"
+        ? "The check-in form version you chose is no longer available — reload and pick again"
+        : "No published version exists for the client's regular check-in form",
     );
   const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
     body: {
@@ -694,6 +708,7 @@ export async function createExtra(input: {
       dueAt: viennaMidnight(input.date),
       dueTz: "Europe/Vienna",
       coachNote: input.note,
+      ...(input.type === "Custom" ? { fieldSelection: input.fieldIds } : {}),
     },
   });
   return { instanceId: created.instanceId };
@@ -966,6 +981,8 @@ export type OwnCheckInInstanceDetailWire = {
   late: boolean;
   submittedAt: string | null;
   definition: { title: string; fields: OwnCheckInFieldWire[] };
+  /** Custom: the field subset the coach asked for — NULL = Full. */
+  fieldSelection?: string[] | null;
   submittedAnswers: OwnCheckInSubmittedAnswerWire[] | null;
   feedback:
     | { id: string; sentAt: string; byName: string; body: string }[]

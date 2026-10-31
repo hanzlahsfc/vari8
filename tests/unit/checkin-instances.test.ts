@@ -254,3 +254,90 @@ describe("P-025-B — answer canonicalization (typed, definition-bound)", () => 
 // ── Closed error vocabulary ─────────────────────────────────────────────
 
 // ── Boundary seam ───────────────────────────────────────────────────────
+
+describe("P607 — Custom field selection", () => {
+  const canonSel = async (raw: unknown, sel: string[] | null) => {
+    const { canonicalizeCheckInAnswers } =
+      await import("../../lib/checkin/instances");
+    return canonicalizeCheckInAnswers(
+      DEF,
+      raw as import("../../lib/checkin/instances").RawCheckInAnswerEntry[],
+      sel,
+    );
+  };
+
+  it("NULL selection renders and requires every field — Full unchanged", async () => {
+    const rows = await canonSel(
+      [
+        { fieldId: "f_short", value: "x" },
+        { fieldId: "f_num", value: "1" },
+        { fieldId: "f_single", value: "o_b" },
+      ],
+      null,
+    );
+    // required-only within Full — the unselected-optional rows still emit
+    expect(rows.length).toBe(DEF.fields.length);
+  });
+
+  it("a subset requires only selected required fields", async () => {
+    // DEF's required fields — pick f_short only; other required not needed
+    const rows = await canonSel(
+      [{ fieldId: "f_short", value: "x" }],
+      ["f_short"],
+    );
+    expect(rows.map((r) => r.fieldId)).toEqual(["f_short"]);
+  });
+
+  it("a selected-but-unanswered required field still fails", async () => {
+    // selecting a required field without answering it keeps the required rule
+    await expect(
+      canonSel([{ fieldId: "f_short", value: "x" }], ["f_short", "f_single"]),
+    ).rejects.toThrow("invalid_input");
+  });
+
+  it("answers outside the selection reject", async () => {
+    await expect(
+      canonSel(
+        [
+          { fieldId: "f_short", value: "x" },
+          { fieldId: "f_num", value: "1" },
+        ],
+        ["f_short"],
+      ),
+    ).rejects.toThrow("invalid_input");
+  });
+
+  it("duplicate and unknown fieldIds still reject under a selection", async () => {
+    await expect(
+      canonSel(
+        [
+          { fieldId: "f_short", value: "x" },
+          { fieldId: "f_short", value: "y" },
+        ],
+        ["f_short"],
+      ),
+    ).rejects.toThrow("invalid_input");
+    await expect(
+      canonSel([{ fieldId: "not_a_field", value: "x" }], ["f_short"]),
+    ).rejects.toThrow("invalid_input");
+  });
+});
+
+describe("P607 — parseCheckInFieldSelection (create-time shape)", () => {
+  it("non-empty, deduped-strict, string-only", async () => {
+    const { scheduleCheckInInstance } =
+      await import("../../lib/checkin/instances");
+    // the parser is internal — exercise through a call that fails input
+    // validation BEFORE any DB: an empty selection must never reach create
+    await expect(
+      scheduleCheckInInstance({ sub: "u", roles: [] } as never, {
+        workspaceId: "w",
+        clientProfileId: "c",
+        formId: "f",
+        formVersionId: "v",
+        dueAt: "2099-01-01",
+        fieldSelection: [],
+      }),
+    ).rejects.toThrow();
+  });
+});

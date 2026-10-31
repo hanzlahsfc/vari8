@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 185 modules with exports, 1841 exported symbols.
+Counts: 185 modules with exports, 1842 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -447,9 +447,10 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type RawCheckInAnswerEntry = { fieldId: string; value: unknown }`
 - `export type ResolveCheckInFeedbackSendInput = { workspaceId: string; clientProfileId: string; submissionId: string; clientRequestId: string; }`
 - `export type ResolveCheckInFeedbackSendResult = | { status: "sent"; feedbackId: string; sentAt: string; byName: string; body: string; } | { status: "not_sent" }`
-- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; dueAt: string; dueTz?: string | null; coachNote?: string | null; }`
+- `export type ScheduleCheckInInstanceInput = { workspaceId: string; clientProfileId: string; formId: string; formVersionId: string; fieldSelection?: string[] | null; dueAt: string; dueTz?: string | n...`
 - `export type ScheduleCheckInInstanceResult = | { status: "scheduled"; instanceId: string } | { status: "already_scheduled"; instanceId: string }`
-- `export type ScheduleFormOption = { position: number; formName: string; versionSeq: number; formId: string; formVersionId: string; }`
+- `export type ScheduleFormFieldOption = { fieldId: string; label: string; required: boolean; }`
+- `export type ScheduleFormOption = { position: number; formName: string; versionSeq: number; formId: string; formVersionId: string; fields: ScheduleFormFieldOption[]; }`
 - `export type SendCheckInFeedbackInput = { workspaceId: string; clientProfileId: string; submissionId: string; body: string; clientRequestId: string; }`
 - `export type SendCheckInFeedbackResult = { status: "sent" | "already_sent"; feedbackId: string; sentAt: string; byName: string; body: string; }`
 - `export type StaffCheckInInstanceItem = { instanceId: string; formId: string; formName: string; versionSeq: number; dueAt: string; dueTz: string | null; coachNote: string | null; state: CheckInInsta...`
@@ -461,7 +462,7 @@ Imported type names are shown without their `import("...")` prefix.
 - `export type SubmitCheckInInstanceResult = | { status: "submitted"; submissionId: string } | { status: "already_submitted"; submissionId: string }`
 - `export function buildCheckInReviewQueueWhere(scope: "workspace" | "assigned", ctx: { workspaceId: string; workspaceMemberId: string }, cursor: { submittedAt: Date; id: string } | undefined): Prisma...`
 - `export async function cancelCheckInInstance(session: SessionLike, input: CancelCheckInInstanceInput, deps: CheckInInstanceDeps = {}): Promise<CancelCheckInInstanceResult>`
-- `export function canonicalizeCheckInAnswers(definition: CheckInDefinition, raw: readonly RawCheckInAnswerEntry[]): CanonicalCheckInAnswer[]`
+- `export function canonicalizeCheckInAnswers(definition: CheckInDefinition, raw: readonly RawCheckInAnswerEntry[], fieldSelection?: string[] | null): CanonicalCheckInAnswer[]`
 - `export async function checkConsentIntersection(tx: Prisma.TransactionClient, clientProfileId: string, pairs: Array<{ resource: "checkinsCoachReviews" | "dailyTracking"; registry: ConsentPolicyRegis...`
 - `export function deriveCheckInQueueCanReview(role: string, rowHasActiveAssignment: boolean): boolean`
 - `export function displayCheckInAnswer(field: CheckInField, answer: | { kind: string; valueText: string | null; valueNumeric: Prisma.Decimal | null; valueDate: Date | null; valueOptionIds: Prisma.Jso...`

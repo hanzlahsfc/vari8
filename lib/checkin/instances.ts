@@ -310,6 +310,7 @@ function hasAnswerValue(v: unknown): boolean {
 export function canonicalizeCheckInAnswers(
   definition: CheckInDefinition,
   raw: readonly RawCheckInAnswerEntry[],
+  fieldSelection?: string[] | null,
 ): CanonicalCheckInAnswer[] {
   if (!isPlainObject(definition) || !Array.isArray(definition.fields))
     throw new CheckInInstanceError("not_available");
@@ -329,10 +330,18 @@ export function canonicalizeCheckInAnswers(
     seen.add(entry.fieldId);
     if (!definition.fields.some((f) => f.fieldId === entry.fieldId))
       throw new CheckInInstanceError("invalid_input");
+    // Custom: answers outside the instance's field selection reject — the
+    // wire must stay within what the coach asked.
+    if (fieldSelection != null && !fieldSelection.includes(entry.fieldId))
+      throw new CheckInInstanceError("invalid_input");
   }
   const byId = new Map(raw.map((e) => [e.fieldId, e]));
+  const fields =
+    fieldSelection != null
+      ? definition.fields.filter((f) => fieldSelection.includes(f.fieldId))
+      : definition.fields;
 
-  return definition.fields.map((field) => {
+  return fields.map((field) => {
     const wire = byId.get(field.fieldId);
     const present = wire !== undefined && hasAnswerValue(wire.value);
     if (field.required && !present)
@@ -654,6 +663,7 @@ type LockedInstanceRow = {
   clientProfileId: string;
   formId: string;
   formVersionId: string;
+  fieldSelection: unknown;
   dueAt: Date;
   cancelledAt: Date | null;
   cancelledByMemberId: string | null;
@@ -670,6 +680,7 @@ async function lockInstance(
             form_id AS "formId",
             form_version_id AS "formVersionId",
             due_at AS "dueAt",
+            field_selection AS "fieldSelection",
             cancelled_at AS "cancelledAt",
             cancelled_by_member_id AS "cancelledByMemberId"
      FROM "checkin_instance"
@@ -811,6 +822,10 @@ export type ScheduleCheckInInstanceInput = {
   clientProfileId: string;
   formId: string;
   formVersionId: string;
+  /** Custom: the per-instance subset of the pinned form's fieldIds.
+   *  undefined/null = Full (all fields); a present value must be a
+   *  non-empty deduped array of fieldIds from the pinned definition. */
+  fieldSelection?: string[] | null;
   dueAt: string;
   dueTz?: string | null;
   /** PR-M8: optional staff note on the instance (canvas `Extra.note`). */
@@ -887,6 +902,25 @@ export type ScheduleCheckInInstanceResult =
  * Coach: assigned scope, coherent ACTIVE assignment re-resolved + locked.
  * Assistant/client/SUPPORT/PLATFORM_ADMIN denied by the matrix.
  */
+
+/** Custom field selection — non-empty, deduped, string ids only. The
+ *  caller validates them against the pinned definition; this enforces the
+ *  shape before any DB work. */
+function parseCheckInFieldSelection(
+  v: string[] | null | undefined,
+): string[] | null {
+  if (v == null) return null;
+  if (!Array.isArray(v) || v.length === 0)
+    throw new CheckInInstanceError("invalid_input");
+  const seen = new Set<string>();
+  for (const id of v) {
+    if (typeof id !== "string" || id.length === 0 || seen.has(id))
+      throw new CheckInInstanceError("invalid_input");
+    seen.add(id);
+  }
+  return [...seen];
+}
+
 export async function scheduleCheckInInstance(
   session: SessionLike,
   input: ScheduleCheckInInstanceInput,
@@ -904,6 +938,7 @@ export async function scheduleCheckInInstance(
   if (!dueAt) throw new CheckInInstanceError("invalid_input");
   const dueTz = parseCheckInDueTz(input.dueTz);
   const coachNote = parseCheckInCoachNote(input.coachNote);
+  const fieldSelection = parseCheckInFieldSelection(input.fieldSelection);
 
   const attempt = (): Promise<ScheduleCheckInInstanceResult> =>
     withSerializedRetry(() =>
@@ -926,11 +961,25 @@ export async function scheduleCheckInInstance(
                 workspaceId: input.workspaceId,
                 formId: input.formId,
               },
-              select: { id: true, form: { select: { status: true } } },
+              select: {
+                id: true,
+                definition: true,
+                form: { select: { status: true } },
+              },
             }),
           ]);
           if (!profile || !formVersion || formVersion.form.status !== "ACTIVE")
             throw new CheckInInstanceError("not_available");
+          // Custom: every selected fieldId must exist in the PINNED published
+          // version — a later publish never reshapes this instance's set.
+          if (fieldSelection !== null) {
+            const def = formVersion.definition as CheckInDefinition;
+            if (!isPlainObject(def) || !Array.isArray(def.fields))
+              throw new CheckInInstanceError("not_available");
+            const ids = new Set(def.fields.map((f) => f.fieldId));
+            if (fieldSelection.some((id) => !ids.has(id)))
+              throw new CheckInInstanceError("invalid_input");
+          }
 
           // 2–5. Advisories → member lock → in-transaction authorize.
           const { ctx, member } = await lockedAuthorize(
@@ -1002,6 +1051,10 @@ export async function scheduleCheckInInstance(
               dueAt,
               dueTz,
               coachNote,
+              fieldSelection:
+                fieldSelection !== null
+                  ? (fieldSelection as Prisma.InputJsonValue)
+                  : Prisma.DbNull,
               scheduledByMemberId: member.id,
             },
             select: { id: true },
@@ -1487,6 +1540,9 @@ export type OwnCheckInInstanceDetail = {
   /** Pinned immutable definition — for the fill form AND submitted-state
    * rendering. Always present (it is definition metadata, not answers). */
   definition: CheckInDefinition;
+  /** Custom: the pinned field subset the coach asked for — NULL means
+   *  Full (every field of the pinned version renders). */
+  fieldSelection?: string[] | null;
   /** Submitted answers joined to the definition — present ONLY when a
    * submission exists AND consent currently holds. Otherwise null. */
   submittedAnswers: Array<{
@@ -1542,7 +1598,7 @@ export async function getOwnCheckInInstance(
         workspaceId: input.workspaceId,
         clientProfileId: profile.id,
       },
-      select: { formId: true },
+      select: { formId: true, fieldSelection: true },
     });
     if (!pre) throw new CheckInInstanceError("not_available");
 
@@ -1686,6 +1742,7 @@ export async function getOwnCheckInInstance(
       late: presentation.late,
       submittedAt: submissionRow?.submittedAt.toISOString() ?? null,
       definition: version.definition as CheckInDefinition,
+      fieldSelection: (pre.fieldSelection as string[] | null) ?? null,
       submittedAnswers:
         submittedAnswerRows?.map((a) => ({
           fieldId: a.fieldId,
@@ -1838,6 +1895,7 @@ export async function submitCheckInInstance(
           const answers = canonicalizeCheckInAnswers(
             version.definition as CheckInDefinition,
             rawAnswers,
+            instance.fieldSelection as string[] | null,
           );
 
           // 10b. VISUAL answers: every referenced media object must
@@ -1960,6 +2018,12 @@ export async function submitCheckInInstance(
 
 // ── Staff: published-version picker (scheduling form select) ────────────
 
+export type ScheduleFormFieldOption = {
+  fieldId: string;
+  label: string;
+  required: boolean;
+};
+
 export type ScheduleFormOption = {
   /** Positional token — the browser selects position N and the action
    * re-runs this list server-side to map index → (formId, versionId);
@@ -1970,6 +2034,8 @@ export type ScheduleFormOption = {
   /** Server-only — never rendered into browser values. */
   formId: string;
   formVersionId: string;
+  /** Custom checklist — the pinned version's selectable fields. */
+  fields: ScheduleFormFieldOption[];
 };
 
 export async function listSchedulableFormVersions(
@@ -2006,6 +2072,7 @@ export async function listSchedulableFormVersions(
       formId: true,
       form: { select: { name: true } },
       versionSeq: true,
+      definition: true,
     },
     orderBy: [{ formId: "asc" }, { versionSeq: "desc" }],
     take: 200,
@@ -2016,12 +2083,21 @@ export async function listSchedulableFormVersions(
   for (const v of versions) {
     if (seen.has(v.formId)) continue;
     seen.add(v.formId);
+    const def = v.definition as CheckInDefinition;
     options.push({
       position: options.length,
       formName: v.form.name,
       versionSeq: v.versionSeq,
       formId: v.formId,
       formVersionId: v.id,
+      fields:
+        isPlainObject(def) && Array.isArray(def.fields)
+          ? def.fields.map((f) => ({
+              fieldId: f.fieldId,
+              label: f.label ?? f.fieldId,
+              required: f.required === true,
+            }))
+          : [],
     });
   }
   return { options };

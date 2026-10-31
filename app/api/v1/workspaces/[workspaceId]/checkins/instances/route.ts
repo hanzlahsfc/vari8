@@ -34,6 +34,10 @@ const bodySchema = z.object({
   dueAt: z.string().min(10).max(40),
   dueTz: z.string().min(1).max(64).nullish(),
   coachNote: z.string().max(2000).nullish(),
+  /** Custom: the per-instance subset of the pinned form's fieldIds —
+   *  undefined/null = Full. The service validates non-empty, deduped and
+   *  membership in the pinned definition. */
+  fieldSelection: z.array(z.string().min(1).max(64)).max(200).nullish(),
 });
 
 export const GET = defineApiV1Route({
@@ -65,6 +69,7 @@ export const POST = defineApiV1Route({
         dueAt: body.dueAt,
         dueTz: body.dueTz ?? null,
         coachNote: body.coachNote ?? null,
+        fieldSelection: body.fieldSelection ?? null,
       }),
     );
   },

@@ -865,7 +865,52 @@ export function ExtraDateDialog({
     existing?.date ?? initialDate ?? addDays(TODAY, 1),
   );
   const [type, setType] = useState(existing?.type ?? "Full");
+  const [fieldOpts, setFieldOpts] = useState<{ fieldId: string; label: string; required: boolean }[]>([]);
+  const [fieldVersionId, setFieldVersionId] = useState("");
+  const [fieldIds, setFieldIds] = useState<string[]>([]);
   const [note, setNote] = useState(existing?.note ?? "");
+  // Custom: load the regular form's published fields once the athlete and
+  // workspace are known — the schedule-versions options carry them.
+  useEffect(() => {
+    if (type !== "Custom" || !client || !workspaceId) return;
+    let on = true;
+    const clientName = state.clients.find((c) => c.id === client)?.name;
+    if (!clientName) return;
+    void clientProfileIdFor(clientName).then(async (profileId) => {
+      if (!profileId) return;
+      const { apiFetch } = await import("../data/http");
+      // The checklist must come from the same form createExtra pins — the
+      // client's ACTIVE schedule-rule formId, not the alphabetically first
+      // option (two published forms would otherwise swap the field set).
+      const rules = await apiFetch<{
+        items: { status: string; formId: string }[];
+      }>(
+        `/workspaces/${workspaceId}/checkins/schedule-rules?clientProfileId=${encodeURIComponent(profileId)}`,
+      );
+      const activeFormIds = [
+        ...new Set(
+          rules.items.filter((r) => r.status === "ACTIVE").map((r) => r.formId),
+        ),
+      ];
+      const v = await apiFetch<{
+        options: {
+          formId: string;
+          formVersionId: string;
+          fields?: { fieldId: string; label: string; required: boolean }[];
+        }[];
+      }>(
+        `/workspaces/${workspaceId}/checkins/schedule-versions?clientProfileId=${encodeURIComponent(profileId)}`,
+      );
+      const scoped = v.options.find((o) => o.formId === activeFormIds[0]);
+      if (on && scoped?.fields) {
+        setFieldOpts(scoped.fields);
+        setFieldVersionId(scoped.formVersionId);
+      }
+    });
+    return () => {
+      on = false;
+    };
+  }, [type, client, workspaceId, state.clients, clientProfileIdFor]);
   const duplicate = state.extras.some(
     (e) => e.clientId === client && e.date === date && e.id !== existing?.id,
   );
@@ -894,12 +939,41 @@ export function ExtraDateDialog({
         <Select
           label="Requested update"
           value={type}
-          options={["Full"]}
+          options={["Full", "Custom"]}
           onChange={(v) => setType(v as "Full" | "Custom")}
         />
+        {type === "Custom" ? (
+          <fieldset className="cd-extra-fields">
+            <legend>Fields the athlete fills</legend>
+            {fieldOpts.length === 0 ? (
+              <p className="app-lede cd-extra-type-note">
+                Loading the regular form&apos;s fields…
+              </p>
+            ) : (
+              fieldOpts.map((f) => (
+                <label key={f.fieldId} className="cd-field-check">
+                  <input
+                    type="checkbox"
+                    checked={fieldIds.includes(f.fieldId)}
+                    onChange={(e) =>
+                      setFieldIds((prev) =>
+                        e.target.checked
+                          ? [...prev, f.fieldId]
+                          : prev.filter((id) => id !== f.fieldId),
+                      )
+                    }
+                  />
+                  {f.label}
+                  {f.required ? <span className="cd-req">*</span> : null}
+                </label>
+              ))
+            )}
+          </fieldset>
+        ) : null}
         <p className="app-lede cd-extra-type-note">
-          Custom check-ins are not available yet — an additional date uses the
-          client&apos;s regular weekly form.
+          {type === "Custom"
+            ? "The athlete answers only the selected fields of the regular weekly form."
+            : "An additional date uses the client's regular weekly form."}
         </p>
         <TextArea
           label="Note to athlete"
@@ -925,7 +999,7 @@ export function ExtraDateDialog({
         <Button
           primary
           disabled={
-            saving || !client || !date || date < TODAY || duplicate
+            saving || !client || !date || date < TODAY || duplicate || (type === "Custom" && fieldIds.length === 0)
           }
           onClick={async () => {
             setSaving(true);
@@ -952,6 +1026,8 @@ export function ExtraDateDialog({
                   date,
                   type,
                   note,
+                  fieldIds: type === "Custom" ? fieldIds : undefined,
+                  formVersionId: type === "Custom" ? fieldVersionId : undefined,
                 });
                 x.id = created.instanceId;
               } else if (workspaceId && !profileId) {

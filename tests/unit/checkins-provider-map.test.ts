@@ -412,13 +412,32 @@ describe("createExtra — additional-date write (P588)", () => {
     });
   });
 
-  it("refuses Custom — provisional mapping is gone, zero POSTs", async () => {
+  it("refuses Custom without a field selection — zero POSTs", async () => {
     const { createExtra } =
       await import("../../components/canvas/data/checkins");
     await expect(createExtra({ ...input, type: "Custom" })).rejects.toThrow(
-      /Custom check-ins are not available/,
+      /require at least one selected field/,
     );
     expect(vi.mocked(apiFetch)).not.toHaveBeenCalled();
+  });
+
+  it("Custom carries fieldSelection on the create body", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce(versions)
+      .mockResolvedValueOnce({ instanceId: "inst-custom" });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await createExtra({
+      ...input,
+      type: "Custom",
+      fieldIds: ["f1", "f2"],
+      formVersionId: "fv-wk-2",
+    });
+    const [, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+    expect(
+      (opts as { body: { fieldSelection?: string[] } }).body.fieldSelection,
+    ).toEqual(["f1", "f2"]);
   });
 
   it("refuses with no ACTIVE schedule — zero POSTs", async () => {
@@ -801,5 +820,91 @@ describe("reloadRecurring — form-scoped pressed state (P598)", () => {
       await import("../../components/canvas/data/checkins");
     const res = await reloadRecurring("ws-1", "cp-1");
     expect(res.weekdays).toEqual([0]);
+  });
+});
+
+describe("createExtra — Custom version binding (P611)", () => {
+  const input = {
+    workspaceId: "ws-1",
+    clientProfileId: "cp-1",
+    date: "2026-10-20",
+    type: "Custom" as const,
+    note: "subset",
+  };
+  const rules = {
+    items: [{ status: "ACTIVE", formId: "form-weekly" }],
+  };
+  const weeklyV1 = {
+    formId: "form-weekly",
+    formVersionId: "fv-wk-1",
+    versionSeq: 1,
+  };
+  const weeklyV2 = {
+    formId: "form-weekly",
+    formVersionId: "fv-wk-2",
+    versionSeq: 2,
+  };
+  beforeEach(() => vi.mocked(apiFetch).mockReset());
+
+  it("pins the loaded version — a later publish does NOT silently rebind", async () => {
+    // checklist loaded v1; a v2 publish arrives before Save — v1 is still
+    // eligible (present in options) → the create carries fv-wk-1, never v2.
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce({ options: [weeklyV1, weeklyV2] })
+      .mockResolvedValueOnce({ instanceId: "inst-pinned" });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await createExtra({
+      ...input,
+      fieldIds: ["f1"],
+      formVersionId: "fv-wk-1",
+    });
+    const [, opts] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+    expect(
+      (opts as { body: { formVersionId?: string } }).body.formVersionId,
+    ).toBe("fv-wk-1");
+  });
+
+  it("refuses a version that is no longer a published option — never substitutes latest", async () => {
+    // the checklist's version vanished from options (unpublished/replaced) →
+    // refuse visibly rather than silently re-pin the latest.
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce({ options: [weeklyV2] });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await expect(
+      createExtra({ ...input, fieldIds: ["f1"], formVersionId: "fv-wk-gone" }),
+    ).rejects.toThrow(/no longer available/);
+    // rules + options fetched, no create POST
+    expect(vi.mocked(apiFetch)).toHaveBeenCalledTimes(2);
+  });
+
+  it("a version from another form refuses — the option must belong to the resolved form", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce({
+        options: [
+          weeklyV1,
+          { formId: "form-custom", formVersionId: "fv-other" },
+        ],
+      });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await expect(
+      createExtra({ ...input, fieldIds: ["f1"], formVersionId: "fv-other" }),
+    ).rejects.toThrow(/no longer available/);
+  });
+
+  it("Custom without a pinned version refuses before create", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(rules)
+      .mockResolvedValueOnce({ options: [weeklyV1] });
+    const { createExtra } =
+      await import("../../components/canvas/data/checkins");
+    await expect(createExtra({ ...input, fieldIds: ["f1"] })).rejects.toThrow(
+      /pin|version/,
+    );
   });
 });
