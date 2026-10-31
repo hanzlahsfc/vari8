@@ -866,6 +866,7 @@ export function ExtraDateDialog({
   );
   const [type, setType] = useState(existing?.type ?? "Full");
   const [fieldOpts, setFieldOpts] = useState<{ fieldId: string; label: string; required: boolean }[]>([]);
+  const [fieldVersionId, setFieldVersionId] = useState("");
   const [fieldIds, setFieldIds] = useState<string[]>([]);
   const [note, setNote] = useState(existing?.note ?? "");
   // Custom: load the regular form's published fields once the athlete and
@@ -894,13 +895,17 @@ export function ExtraDateDialog({
       const v = await apiFetch<{
         options: {
           formId: string;
+          formVersionId: string;
           fields?: { fieldId: string; label: string; required: boolean }[];
         }[];
       }>(
         `/workspaces/${workspaceId}/checkins/schedule-versions?clientProfileId=${encodeURIComponent(profileId)}`,
       );
       const scoped = v.options.find((o) => o.formId === activeFormIds[0]);
-      if (on && scoped?.fields) setFieldOpts(scoped.fields);
+      if (on && scoped?.fields) {
+        setFieldOpts(scoped.fields);
+        setFieldVersionId(scoped.formVersionId);
+      }
     });
     return () => {
       on = false;
@@ -1022,6 +1027,7 @@ export function ExtraDateDialog({
                   type,
                   note,
                   fieldIds: type === "Custom" ? fieldIds : undefined,
+                  formVersionId: type === "Custom" ? fieldVersionId : undefined,
                 });
                 x.id = created.instanceId;
               } else if (workspaceId && !profileId) {

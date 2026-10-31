@@ -640,6 +640,9 @@ export async function createExtra(input: {
   note: string;
   /** Custom: the subset of the regular form's fieldIds the athlete fills. */
   fieldIds?: string[];
+  /** Custom: the exact published version the checklist rendered from —
+   *  required so a later publish can't silently rebind the selection. */
+  formVersionId?: string;
 }): Promise<{ instanceId: string }> {
   const base = `/workspaces/${input.workspaceId}/checkins`;
   // Owner ruling: Full and Custom both use the client's regular weekly
@@ -681,12 +684,21 @@ export async function createExtra(input: {
   }>(
     `${base}/schedule-versions?clientProfileId=${encodeURIComponent(input.clientProfileId)}`,
   );
-  const match = [...versions.options]
-    .filter((option) => option.formId === formId)
-    .sort((a, b) => b.versionSeq - a.versionSeq)[0];
+  if (input.type === "Custom" && !input.formVersionId)
+    throw new Error("Custom check-ins pin the checklist's published version");
+  const match =
+    input.type === "Custom"
+      ? versions.options.find(
+          (o) => o.formId === formId && o.formVersionId === input.formVersionId,
+        )
+      : [...versions.options]
+          .filter((option) => option.formId === formId)
+          .sort((a, b) => b.versionSeq - a.versionSeq)[0];
   if (!match)
     throw new Error(
-      "No published version exists for the client's regular check-in form",
+      input.type === "Custom"
+        ? "The check-in form version you chose is no longer available — reload and pick again"
+        : "No published version exists for the client's regular check-in form",
     );
   const created = await apiFetch<{ instanceId: string }>(`${base}/instances`, {
     body: {
