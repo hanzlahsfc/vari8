@@ -13,6 +13,7 @@ import {
   recordsForCoach,
 } from "../coach/builder/coach-dashboard";
 import { DashboardBuilder } from "../coach/builder/dashboard-builder";
+import { ChatComposer } from "../coach/builder/widget-content";
 import type {
   ClientMessage,
   ClientTask,
@@ -143,13 +144,38 @@ export function RemoteDashboardTab({
     [own, tasks],
   );
   return (
-    <DashboardBuilder
-      value={dashboard}
-      onChange={() => undefined}
-      sourceRecords={records}
-      onRecordsChange={onRecordsChange}
-      previewOnly
-    />
+    <>
+      <DashboardBuilder
+        value={dashboard}
+        onChange={() => undefined}
+        sourceRecords={records}
+        onRecordsChange={onRecordsChange}
+        previewOnly
+        workspaceId={own.workspaceId}
+      />
+      <section className="cb-dw-detail" style={{ marginTop: 16 }}>
+        <h3>Coach conversation</h3>
+        {(messages ?? []).map((wire) => (
+          <div className="cb-dw-detail-group" key={wire.id}>
+            <h4>
+              {wire.senderKind === "CLIENT" ? "You" : "Coach"} ·{" "}
+              {new Date(wire.sentAt).toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
+              {!wire.read && wire.senderKind === "STAFF" ? " · Unread" : ""}
+            </h4>
+            <p>{wire.body}</p>
+          </div>
+        ))}
+        <ChatComposer
+          workspaceId={own.workspaceId}
+          records={records}
+          onRecordsChange={onRecordsChange}
+        />
+      </section>
+    </>
   );
 }
 

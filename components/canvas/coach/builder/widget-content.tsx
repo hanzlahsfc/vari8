@@ -326,7 +326,7 @@ function DetailRows({
 
 /** The client-side coach conversation composer on the served dashboard chat
  *  detail — send through the authorized own-messages API, not local state. */
-function ChatComposer({
+export function ChatComposer({
   workspaceId,
   records,
   onRecordsChange,
