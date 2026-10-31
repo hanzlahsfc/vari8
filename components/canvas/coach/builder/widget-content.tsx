@@ -800,53 +800,97 @@ export function RemoteConversation({
           {wire === null ? (
             <Empty>Loading the conversation…</Empty>
           ) : (
-            wire.map((message) => (
-              <div className="cb-dw-detail-group" key={message.id}>
-                <h4>
-                  {message.senderKind === "STAFF" ? "Coach" : clientName} ·{" "}
-                  {dateLabel(message.sentAt.slice(0, 10), {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                  {message.senderKind === "STAFF" && !message.read
-                    ? " · Unread"
-                    : ""}
-                </h4>
-                <p>{message.body}</p>
-                {(Array.isArray(message.attachments)
-                  ? message.attachments
-                  : []
-                ).map((attachment) =>
-                  attachment &&
-                  typeof attachment.mediaObjectId === "string" &&
-                  attachment.mediaObjectId.length > 0 &&
-                  typeof attachment.fileName === "string" ? (
-                    <MediaCard
-                      key={attachment.mediaObjectId}
-                      workspaceId={workspaceId}
-                      item={{
-                        id: attachment.mediaObjectId,
-                        name: attachment.fileName,
-                        type:
-                          typeof attachment.contentType === "string"
-                            ? attachment.contentType
-                            : "application/octet-stream",
-                        size:
-                          typeof attachment.byteSize === "number"
-                            ? attachment.byteSize
-                            : 0,
-                        mediaObjectId: attachment.mediaObjectId,
-                      }}
-                    />
-                  ) : (
-                    <p key="invalid" style={{ fontSize: 12, opacity: 0.7 }}>
-                      An attachment is unavailable.
-                    </p>
-                  ),
-                )}
-              </div>
-            ))
+            <div className="cb-chat" role="log" aria-live="polite">
+              {wire.map((message, index, all) => {
+                const outbound = message.senderKind === "CLIENT";
+                const newDay =
+                  index === 0 ||
+                  all[index - 1].sentAt.slice(0, 10) !==
+                    message.sentAt.slice(0, 10);
+                return (
+                  <div key={message.id}>
+                    {newDay && (
+                      <div className="cb-date-divider" aria-hidden="true">
+                        <span>
+                          {dateLabel(message.sentAt.slice(0, 10), {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`cb-msg ${outbound ? "cb-msg-out" : "cb-msg-in"}`}
+                      data-sender={outbound ? "client" : "staff"}
+                    >
+                      <div className="cb-bubble">
+                        <div className="cb-bubble-sender">
+                          {outbound ? clientName : "Coach"}
+                        </div>
+                        {message.body ? <p>{message.body}</p> : null}
+                        {(Array.isArray(message.attachments)
+                          ? message.attachments
+                          : []
+                        ).map((attachment) =>
+                          attachment &&
+                          typeof attachment.mediaObjectId === "string" &&
+                          attachment.mediaObjectId.length > 0 &&
+                          typeof attachment.fileName === "string" ? (
+                            <MediaCard
+                              key={attachment.mediaObjectId}
+                              workspaceId={workspaceId}
+                              item={{
+                                id: attachment.mediaObjectId,
+                                name: attachment.fileName,
+                                type:
+                                  typeof attachment.contentType === "string"
+                                    ? attachment.contentType
+                                    : "application/octet-stream",
+                                size:
+                                  typeof attachment.byteSize === "number"
+                                    ? attachment.byteSize
+                                    : 0,
+                                mediaObjectId: attachment.mediaObjectId,
+                              }}
+                            />
+                          ) : (
+                            <p
+                              key="invalid"
+                              className="cb-bubble-unavailable"
+                            >
+                              An attachment is unavailable.
+                            </p>
+                          ),
+                        )}
+                        <div className="cb-bubble-meta">
+                          {!outbound && !message.read && (
+                            <span className="cb-unread">Unread</span>
+                          )}
+                          <time dateTime={message.sentAt}>
+                            {new Date(message.sentAt).toLocaleTimeString(
+                              [],
+                              { hour: "numeric", minute: "2-digit" },
+                            )}
+                          </time>
+                          {outbound && (
+                            <span
+                              className="cb-tick"
+                              data-state={message.read ? "read" : "sent"}
+                              aria-label={
+                                message.read ? "Read by coach" : "Sent"
+                              }
+                            >
+                              {message.read ? "✓✓" : "✓"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
           <ChatComposer
             workspaceId={workspaceId}

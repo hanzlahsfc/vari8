@@ -272,3 +272,27 @@
 .coach-root .cb-dw-content :where(small) {
   font-size: 12px;
 }
+
+/* Chat bubbles — client conversation, mirrors the coach message layout. */
+.cb-chat { display: flex; flex-direction: column; gap: 4px; padding: 4px 0; }
+.cb-msg { display: flex; }
+.cb-msg-out { justify-content: flex-end; }
+.cb-msg-in { justify-content: flex-start; }
+.cb-bubble {
+  max-width: 78%; padding: 8px 10px; border-radius: 14px;
+  background: var(--cb-bubble-in, #f1f0ee);
+}
+.cb-msg-out .cb-bubble {
+  background: var(--cb-bubble-out, #e3f2e8);
+  border-bottom-right-radius: 4px;
+}
+.cb-msg-in .cb-bubble { border-bottom-left-radius: 4px; }
+.cb-bubble-sender { font-size: 11px; font-weight: 600; opacity: 0.7; margin-bottom: 2px; }
+.cb-bubble p { margin: 0 0 4px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
+.cb-bubble-meta { display: flex; justify-content: flex-end; align-items: center; gap: 4px; font-size: 11px; opacity: 0.65; }
+.cb-bubble-unavailable { font-size: 12px; opacity: 0.7; }
+.cb-date-divider { text-align: center; margin: 8px 0 4px; }
+.cb-date-divider span {
+  display: inline-block; padding: 2px 10px; border-radius: 999px;
+  background: var(--cb-bubble-in, #f1f0ee); font-size: 11px; opacity: 0.75;
+}

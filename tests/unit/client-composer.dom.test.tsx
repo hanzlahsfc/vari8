@@ -1368,6 +1368,50 @@ describe("served coach conversation (RemoteConversation)", () => {
     fetchSpy.mockRestore();
   });
 
+  it("renders messages as bubbles with honest read state and day separators", async () => {
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s1",
+          body: "from coach",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T10:00:00Z",
+          read: true,
+        }),
+        wire({
+          id: "c1",
+          body: "from client",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-20T10:05:00Z",
+          read: false,
+        }),
+        wire({
+          id: "c2",
+          body: "again",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-21T09:00:00Z",
+          read: true,
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText("from coach"));
+    // Outbound bubbles carry the server-derived tick only.
+    const sent = screen.getByLabelText("Sent");
+    const read = screen.getByLabelText("Read by coach");
+    expect(sent).toBeTruthy();
+    expect(read).toBeTruthy();
+    // Inbound/outbound alignment classes differ.
+    const lines = document.querySelectorAll(".cb-msg-in, .cb-msg-out");
+    expect(lines.length).toBe(3);
+    expect(document.querySelectorAll(".cb-msg-in").length).toBe(1);
+    expect(document.querySelectorAll(".cb-msg-out").length).toBe(2);
+    // One day separator per day, not per message.
+    expect(document.querySelectorAll(".cb-date-divider").length).toBe(2);
+    // Every bubble carries a real timestamp.
+    expect(document.querySelectorAll(".cb-bubble-meta time").length).toBe(3);
+  });
+
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);

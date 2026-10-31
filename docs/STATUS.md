@@ -1,3 +1,11 @@
+## 2026-10-31 — Prompt 651 — served messaging polish
+
+- Client `RemoteConversation` now renders the WhatsApp-style thread: inbound/outbound bubbles (`.cb-msg-in`/`.cb-msg-out` with sender labels), per-day separators, per-bubble `<time>` timestamps, inbound `Unread` marker, outbound ticks (`✓` sent / `✓✓` read) derived only from server `wire.read` — nothing invented. Attachments render inside bubbles via the existing MediaCard; unavailable entries degrade to the established note.
+- The coach thread already carried the `cd-bubble`/`cd-message` layout — no change needed there.
+- Presentation regression: bubble alignment counts, ticks from wire.read, one separator per day, timestamps on every bubble (51/51 focused total).
+- Gates (Node v24.22.1): focused 51/51; full unfiltered suite 149 files / 1781; clean `rm -rf .next` build compiled + typecheck; `eslint` 0; `prettier`/`index`/`diff-check` clean.
+- Served replay (app_p651 :3300): client login → bubbles render → reply sends; desktop 1280 + mobile 390 screenshots taken.
+
 ## 2026-10-31 — Prompt 648 — #249 contract-aligned numeric validation
 
 - `toCanvasMessage` numeric checks now enforce the wire contract, not mere finiteness: `byteSize` must be an integer in 1..MAX_MEDIA_BYTES (reusing the browser-safe `lib/media-policy` cap — same rule as `assertMediaByteSize`); `position` a non-negative integer. `Number.isFinite` replaced. Adjacent required-field checks re-inspected against the contract — string fields unchanged, no invented limits.
