@@ -3,12 +3,14 @@
 - `toCanvasMessage` mirrors the client mapping: `Array.isArray` on the field plus a null/object guard per entry — absent/null/non-array/primitive `attachments` can't crash, null/primitive/malformed entries become inert "attachment unavailable" cards (no fabricated media id, no active download), and valid neighbors are never discarded.
 - Table-driven regression (8 cases) through the REAL mapper + the real coach MediaCard.
 - Gates (Node v24.22.1): focused 49/49; tsc 0; eslint 0; prettier/index/diff-check clean. Broad suite remains 1779/1779 from the predecessor run (not relabeled fresh).
+
 ## 2026-10-31 — Prompt 642 — #249 batch cancellation + coach rendering (2 findings)
 
 - (1) Batch cancellation: the sequential attach loop created each AbortController lazily — a queued chip had nothing to abort and later uploads never started after the active one was removed. Controllers are now created upfront at reservation; the abort path `continue`s the batch; a pre-aborted queued file is skipped without uploading. Remaining files always settle uploaded/failed/cancelled; slots and session-change cancellation preserved.
 - (2) Coach rendering: `toCanvasMessage` validates wire metadata (non-string contentType/fileName, non-number byteSize, missing id → "attachment unavailable"); the real coach `media.tsx` MediaCard guards non-string `item.type`. Tested against the real card and the real mapping — no mocks hiding the boundary.
 - Regressions +4 (remove active first of 3 → rest complete; remove queued → skipped before upload; identity change cancels batch safely; real coach card + mapping on malformed metadata).
 - Gates (Node v24.22.1): focused 49/49; full unfiltered suite 149 files / 1779; eslint 0; prettier clean; index:check OK; diff-check 0; fresh-worktree build clean.
+
 ## 2026-10-31 — Prompt 640 — #249 consolidated repair (5 findings)
 
 - (1) Shared media policy moved to `lib/media-policy.ts` (dependency-free, browser-safe); `lib/storage.ts` re-exports it — one policy, both sides, server validation unchanged.
