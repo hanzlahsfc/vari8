@@ -8104,3 +8104,11 @@ repairs; flagged one new failure mode — unretried P2034 from the
 RepeatableRead reads' member-row FOR UPDATE surfacing as
 `not_available`. Reads now use `withSerializedRetry`; `mapError` maps
 raw P2034 → `serialization_conflict`. Integration 28/28 re-green.)
+
+## 2026-11-01 — P671 client voice-recording entry (draft)
+
+Served `ChatComposer` gains an accessible "Record a voice note" entry → real `DemoRecorder` dialog (`kind="voice"`, own `workspaceId`/`clientProfileId`) → `onAttach` stages the uploaded audio as a normal attachment (cap-guarded, session-scoped). The recorder owns permission/recording/preview/discard/track-release — no second recording engine. No transcript, voice-send policy or schema decisions implied.
+
+**Tests:** `client-composer.dom` "opens an accessible voice-recording dialog" — 58/58 focused; tsc/format/lint/index/diff clean.
+**Browser:** `app_p671` lane on :3300 — real `/me` conversation → mic entry → "Voice note" dialog rendered (screenshot verified).
+**Head:** pending commit; **state:** draft PR, pending owner decisions (transcript storage/hosting/duration/failure policy).

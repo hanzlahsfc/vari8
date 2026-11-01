@@ -135,6 +135,18 @@ vi.mock("../../components/canvas/coach/builder/dashboard-builder", () => ({
 }));
 
 import { RemoteConversation } from "../../components/canvas/coach/builder/widget-content";
+// jsdom lacks <dialog> showModal/close — same polyfill as the other dom tests.
+Object.defineProperty(HTMLDialogElement.prototype, "open", {
+  get() {
+    return this.hasAttribute("open");
+  },
+});
+HTMLDialogElement.prototype.showModal = function () {
+  this.setAttribute("open", "");
+};
+HTMLDialogElement.prototype.close = function () {
+  this.removeAttribute("open");
+};
 import { RemoteDashboardTab } from "../../components/canvas/client-app/remote-views";
 import { CoachProvider } from "../../components/canvas/coach/store";
 import { writeCoachState } from "../../components/canvas/data";
@@ -255,6 +267,22 @@ describe("served coach conversation (RemoteConversation)", () => {
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
     await waitFor(() => expect(mocked.markRead).toHaveBeenCalledTimes(1));
     expect(screen.getByText(/Unread/)).toBeTruthy();
+  });
+
+  it("opens an accessible voice-recording dialog from the composer", async () => {
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByLabelText("Message"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Record a voice note" }),
+    );
+    await waitFor(() =>
+      screen.getByText(/Use your microphone to record a voice note/),
+    );
+    // The recorder owns the rest (record/stop/preview/discard tracks, per
+    // the real MediaRecorder path); the dialog + entry are the wiring's
+    // contract.
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 
   it("send posts through sendOwnMessage and the reply renders with one refresh", async () => {

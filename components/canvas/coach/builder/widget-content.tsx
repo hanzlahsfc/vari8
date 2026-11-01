@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Mic } from "lucide-react";
 import { AdditionalDetailContent } from "./additional-widget-content";
 import {
   fetchOwnMessages,
@@ -22,8 +23,10 @@ import {
   MEDIA_CONTENT_TYPES,
   mediaKindForContentType,
 } from "@/lib/media-policy";
+import { DemoRecorder } from "../demo-recorder";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
 import type { Media } from "../model";
+import { Dialog } from "../ui";
 import {
   type ClientTask,
   dateLabel,
@@ -444,6 +447,7 @@ export function ChatComposer({
   // or reattached. Entries are session-scoped like the draft.
   type Staged = Media & { state: "pending" | "uploaded" | "failed" };
   const [staged, setStaged] = useState<Staged[]>([]);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
@@ -453,6 +457,7 @@ export function ChatComposer({
     setError(null);
     setSending(false);
     setStaged([]);
+    setVoiceOpen(false);
     setError(null);
     requestId.current = null;
     for (const controller of uploads.current.values())
@@ -662,6 +667,15 @@ export function ChatComposer({
       >
         Attach
       </button>
+      <button
+        type="button"
+        className="cb-dw-action"
+        aria-label="Record a voice note"
+        disabled={sending}
+        onClick={() => setVoiceOpen(true)}
+      >
+        <Mic size={14} aria-hidden="true" />
+      </button>
       <textarea
         rows={1}
         value={draft}
@@ -699,6 +713,37 @@ export function ChatComposer({
           {error.text}
         </p>
       ) : null}
+      {voiceOpen && (
+        <Dialog
+          title="Voice note"
+          onClose={() => setVoiceOpen(false)}
+        >
+          <p className="cd-muted">
+            Use your microphone to record a voice note.
+          </p>
+          <DemoRecorder
+            kind="voice"
+            workspaceId={workspaceId}
+            clientProfileId={clientProfileId || undefined}
+            onAttach={(item) => {
+              if (slots.current >= MAX_ATTACHMENTS) {
+                setError({
+                  kind: "attach_limit",
+                  text: `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
+                });
+                setVoiceOpen(false);
+                return;
+              }
+              slots.current += 1;
+              setStaged((current) => [
+                ...current,
+                { ...item, state: "uploaded" },
+              ]);
+              setVoiceOpen(false);
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }
