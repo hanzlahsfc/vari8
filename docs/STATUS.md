@@ -8112,3 +8112,11 @@ Served `ChatComposer` gains an accessible "Record a voice note" entry → real `
 **Tests:** `client-composer.dom` "opens an accessible voice-recording dialog" — 58/58 focused; tsc/format/lint/index/diff clean.
 **Browser:** `app_p671` lane on :3300 — real `/me` conversation → mic entry → "Voice note" dialog rendered (screenshot verified).
 **Head:** pending commit; **state:** draft PR, pending owner decisions (transcript storage/hosting/duration/failure policy).
+
+## 2026-11-01 — P675 voice-entry capacity + held preservation
+
+- One capacity model: `voiceReserved` flag so the staged-sync effect recomputes rather than clobbers the dialog reservation; pending upload → open dialog → complete → close → pick can never over-accept or double-release.
+- Held preservation: `send()` clears only the acknowledged payload; held voice chips persist so a text send never implies they went out.
+- Evidence corrected: earlier "1732/1732" hid 2 unloadable suites (exit 1, missing `tools/parity` deps); nested parity deps installed → real full suite **149 files / 1791, exit 0**.
+
+**Tests:** 61/61 focused; build exit 0; format/lint/index/diff clean. Policy hold unchanged (held notes can't send).

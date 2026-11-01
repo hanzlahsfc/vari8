@@ -453,6 +453,10 @@ export function ChatComposer({
   };
   const [staged, setStaged] = useState<Staged[]>([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  // One capacity model: slots.current tracks reservations (accepted picks
+  // + the open voice dialog); voiceReserved marks the dialog's hold so the
+  // staged-sync effect recomputes rather than clobbers it.
+  const voiceReserved = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
@@ -464,6 +468,7 @@ export function ChatComposer({
     setStaged([]);
     setVoiceOpen(false);
     setError(null);
+    voiceReserved.current = false;
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -471,9 +476,10 @@ export function ChatComposer({
     slots.current = 0;
   }, [key]);
   const MAX_ATTACHMENTS = 10;
-  // Keep the reservation counter in step with settled state.
+  // Keep the reservation counter in step with settled state — a live voice
+  // reservation survives a pending upload's completion.
   useEffect(() => {
-    slots.current = staged.length;
+    slots.current = staged.length + (voiceReserved.current ? 1 : 0);
   }, [staged]);
   const removeChip = (item: { id: string }) => {
     uploads.current.get(item.id)?.abort();
@@ -614,7 +620,11 @@ export function ChatComposer({
       if (session.current !== s) return;
       requestId.current = null;
       setDraft("");
-      setStaged([]);
+      // Only the acknowledged payload clears — held voice notes stay staged
+      // so a text send never implies they went out.
+      setStaged((current) =>
+        current.filter((item) => item.state === "held"),
+      );
     } catch {
       if (session.current !== s) return;
       setError({
@@ -681,8 +691,9 @@ export function ChatComposer({
         disabled={sending || slots.current >= MAX_ATTACHMENTS}
         onClick={() => {
           // Slot reservation: recording/uploading holds the last attachment
-          // slot so a concurrent file pick cannot consume it; released on
+          // slot so a concurrent pick cannot consume it; released on
           // close-without-attach.
+          voiceReserved.current = true;
           slots.current += 1;
           setVoiceOpen(true);
         }}
@@ -732,7 +743,10 @@ export function ChatComposer({
           onClose={() => {
             // Release the reservation held while the dialog was open — the
             // attach path already consumed it if a note landed.
-            slots.current = Math.max(0, slots.current - 1);
+            if (voiceReserved.current) {
+              voiceReserved.current = false;
+              slots.current = Math.max(0, slots.current - 1);
+            }
             setVoiceOpen(false);
           }}
         >
@@ -745,8 +759,9 @@ export function ChatComposer({
             workspaceId={workspaceId}
             clientProfileId={clientProfileId || undefined}
             onAttach={(item) => {
-              // The reservation from the open stays held — the chip takes
-              // the slot permanently.
+              // The reservation from the open becomes the chip's permanent
+              // slot — consume it without double-counting.
+              voiceReserved.current = false;
               setStaged((current) => [
                 ...current,
                 { ...item, state: "held" },
