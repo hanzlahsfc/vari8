@@ -2002,4 +2002,45 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
     expect(screen.queryByTestId("task-t1")).toBeNull();
     expect(screen.getByTestId("task-t2").textContent).toBe("open");
   });
+  it("an initial fetch failure shows error + retry through the parent hook", async () => {
+    mocked.fetchOwn
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        messages: [
+          wire({
+            id: "s1",
+            body: "recovered",
+            senderKind: "STAFF",
+            sentAt: "2026-10-20T10:00:00Z",
+            read: true,
+          }),
+        ],
+      });
+    mountTab();
+    // Collapsed Home shows the explicit activation first.
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    await waitFor(() => screen.getByText("recovered"));
+    expect(mocked.fetchOwn.mock.calls.length).toBe(2);
+  });
+
+  it("a profile switch does not inherit the previous session's error", async () => {
+    mocked.fetchOwn.mockRejectedValueOnce(new Error("offline"));
+    const first = mountTab();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    // New identity → new lifecycle session → collapsed View, no stale error.
+    first.unmount();
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    mountTab({ workspaceId: "ws-1", clientProfileId: "cp-2" });
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    expect(screen.queryByText(/could not be loaded/)).toBeNull();
+  });
 });

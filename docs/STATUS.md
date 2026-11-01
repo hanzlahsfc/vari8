@@ -1,3 +1,10 @@
+## 2026-10-31 — Prompt 657 — #250 parent regression + real visuals
+
+- Committed the parent-level regressions through real `RemoteDashboardTab` + `useOwnMessages` (not callback-only): initial fetch fails → open conversation → error → Retry → recovered messages render; profile switch mounts a new lifecycle with no stale error.
+- Evidence corrected: the client surface resolves a dark token set under both `prefers-color-scheme` values — light-theme served visuals are unavailable on that surface; the independent computed contrast for #BE7595 stands at 6.17:1. Collapsed Home shows View conversation; error/Retry appears after explicit activation (accepted behavior, unchanged).
+- Captures on app_p657 (:3300): `p657-desktop-dark.png`, `p657-mobile-dark.png` (inbound+outbound bubbles, "Sun 1 Nov" separator, 08:23 timestamps, attachment card, wrapped long URL), `p657-retry-error.png` (error + Retry before recovery) — computed colors logged (in rgb(31,31,34) / out rgb(235,145,184)).
+- Test/docs-only change; focused 57/57. Final candidate gates remain due at integration.
+
 ## 2026-10-31 — Prompt 655 — #250 contrast, Home retry, coach dates
 
 - F1: outbound small text (sender, meta, unavailable) now at full opacity on the resolved `--cd-action-bg` pink — computed `rgb(235,145,184)` bg with `rgb(0,0,0)` text ≈ 9.4:1, well over 4.5:1; inbound keeps `--cd-raised` + `--cd-text`. No global token changes.
