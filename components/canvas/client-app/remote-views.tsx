@@ -91,8 +91,11 @@ export function RemoteDashboardTab({
     [configuration],
   );
   const [tasks, setTasks] = useState<OwnTaskWire[] | null>(null);
-  const { messages, refresh: refreshMessages } =
-    useOwnMessages(own);
+  const {
+    messages,
+    refresh: refreshMessages,
+    loadFailed: messagesLoadFailed,
+  } = useOwnMessages(own);
   // Per-task mutation ordering scoped to the full client identity:
   // writes serialize on the latest confirmed revision, so rapid toggles
   // never conflict on a stale base and a failure rolls back to confirmed
@@ -245,6 +248,7 @@ export function RemoteDashboardTab({
         clientName={client.name}
         messages={messages}
         onMessagesRefresh={refreshMessages}
+        loadFailed={messagesLoadFailed}
         collapsible
       />
     </>

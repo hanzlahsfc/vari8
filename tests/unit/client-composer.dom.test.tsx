@@ -1368,6 +1368,160 @@ describe("served coach conversation (RemoteConversation)", () => {
     fetchSpy.mockRestore();
   });
 
+  it("renders messages as bubbles with honest read state and day separators", async () => {
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s1",
+          body: "from coach",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T10:00:00Z",
+          read: true,
+        }),
+        wire({
+          id: "c1",
+          body: "from client",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-20T10:05:00Z",
+          read: false,
+        }),
+        wire({
+          id: "c2",
+          body: "again",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-21T09:00:00Z",
+          read: true,
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText("from coach"));
+    // Outbound bubbles expose server-derived status text (ticks are
+    // decorative and hidden from assistive tech).
+    expect(screen.getByText("Sent")).toBeTruthy();
+    expect(screen.getByText("Read by coach")).toBeTruthy();
+    // Inbound/outbound alignment classes differ.
+    const lines = document.querySelectorAll(".cb-msg-in, .cb-msg-out");
+    expect(lines.length).toBe(3);
+    expect(document.querySelectorAll(".cb-msg-in").length).toBe(1);
+    expect(document.querySelectorAll(".cb-msg-out").length).toBe(2);
+    // One day separator per day, not per message.
+    expect(document.querySelectorAll(".cb-date-divider").length).toBe(2);
+    // Every bubble carries a real timestamp.
+    expect(document.querySelectorAll(".cb-bubble-meta time").length).toBe(3);
+  });
+
+  it("groups days by the messaging timezone, not UTC", async () => {
+    // 23:30 UTC Oct 20 and 00:30 UTC Oct 21 are both Oct 21 in Vienna —
+    // one separator, not two.
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s1",
+          body: "late evening",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T23:30:00Z",
+          read: true,
+        }),
+        wire({
+          id: "c1",
+          body: "after midnight",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-21T00:30:00Z",
+          read: true,
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText("after midnight"));
+    expect(document.querySelectorAll(".cb-date-divider").length).toBe(1);
+    // Both bubbles carry the Vienna local time, not UTC.
+    const times = Array.from(
+      document.querySelectorAll(".cb-bubble-meta time"),
+    ).map((t) => t.textContent);
+    expect(times).toEqual(["01:30", "02:30"]);
+    // Full date/time is exposed accessibly.
+    const t0 = document.querySelector(".cb-bubble-meta time") as HTMLElement;
+    expect(t0.getAttribute("aria-label")).toContain("October");
+    // Ticks are decorative; status is real text for assistive tech.
+    const tick = document.querySelector(".cb-tick") as HTMLElement;
+    expect(tick.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Read by coach")).toBeTruthy();
+  });
+
+  it("a failed initial load exposes an error and a working retry", async () => {
+    mocked.fetchOwn
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        messages: [
+          wire({
+            id: "s1",
+            body: "recovered",
+            senderKind: "STAFF",
+            sentAt: "2026-10-20T10:00:00Z",
+            read: true,
+          }),
+        ],
+      });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    await waitFor(() => screen.getByText("recovered"));
+    expect(mocked.fetchOwn.mock.calls.length).toBe(2);
+  });
+
+  it("the coach day key holds the Vienna boundary at midnight and DST", async () => {
+    const { viennaDayKey } =
+      await import("../../components/canvas/coach/messages");
+    // Same Vienna day across UTC midnight (Oct = CEST, +2).
+    expect(viennaDayKey("2026-10-20T23:30:00Z")).toBe(
+      viennaDayKey("2026-10-21T00:30:00Z"),
+    );
+    // DST-switch weekend (last Sunday of March 2026): both times land
+    // in the same Vienna day either side of the 02:00→03:00 jump.
+    expect(viennaDayKey("2026-03-28T23:30:00Z")).toBe(
+      viennaDayKey("2026-03-29T00:30:00Z"),
+    );
+    // And a genuine Vienna day change still splits.
+    expect(viennaDayKey("2026-10-20T20:30:00Z")).not.toBe(
+      viennaDayKey("2026-10-21T00:30:00Z"),
+    );
+  });
+
+  it("the external (Home) path surfaces its own load error + retry", async () => {
+    const onRefresh = vi.fn();
+    const { rerender } = render(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+        messages={null}
+        loadFailed
+        onMessagesRefresh={onRefresh}
+      />,
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    expect(onRefresh).toHaveBeenCalledWith("ws-1:cp-1");
+    // A stale external error must not leak into a new identity — the
+    // flag follows the prop, not internal state.
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-2"
+        clientName="Rene"
+        messages={null}
+        onMessagesRefresh={onRefresh}
+      />,
+    );
+    // The new identity collapses until explicit View (accepted
+    // activation); the stale error must not paint.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    expect(screen.queryByText(/could not be loaded/)).toBeNull();
+  });
+
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
@@ -1847,5 +2001,68 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
     );
     expect(screen.queryByTestId("task-t1")).toBeNull();
     expect(screen.getByTestId("task-t2").textContent).toBe("open");
+  });
+  it("an initial fetch failure shows error + retry through the parent hook", async () => {
+    mocked.fetchOwn
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        messages: [
+          wire({
+            id: "s1",
+            body: "recovered",
+            senderKind: "STAFF",
+            sentAt: "2026-10-20T10:00:00Z",
+            read: true,
+          }),
+        ],
+      });
+    mountTab();
+    // Collapsed Home shows the explicit activation first.
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    await waitFor(() => screen.getByText("recovered"));
+    expect(mocked.fetchOwn.mock.calls.length).toBe(2);
+  });
+
+  it("a profile switch does not inherit the previous session's error", async () => {
+    mocked.fetchOwn.mockRejectedValueOnce(new Error("offline"));
+    const { rerender } = mountTab();
+    fireEvent.click(
+      await screen.findByRole("button", { name: /View conversation/ }),
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    // Same component, same key — only the identity prop changes. The new
+    // lifecycle session must not paint the previous session's error.
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s2",
+          body: "cp2 thread",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T10:00:00Z",
+          read: true,
+        }),
+      ],
+    });
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-1", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    // The new session collapses until explicit View (accepted
+    // activation); the stale error is nowhere.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    expect(screen.queryByText(/could not be loaded/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => screen.getByText("cp2 thread"));
   });
 });

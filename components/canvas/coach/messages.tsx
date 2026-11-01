@@ -22,6 +22,20 @@ import {
   fetchStaffConversations,
   fetchStaffThread,
   markStaffThreadRead,
+} from "../data/messages";
+
+// The thread's day grouping follows the messaging timezone contract
+// (Europe/Vienna) — the same contract the client surface uses — not
+// the wire's UTC date slice.
+export const viennaDayKey = (iso: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Vienna",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+
+import {
   saveStaffDraft,
   sendStaffMessage,
   toCanvasMessage,
@@ -555,8 +569,8 @@ export function MessagesWorkspace() {
                   .map((m, i, all) => (
                     <Fragment key={m.id}>
                       {(i === 0 ||
-                        all[i - 1].date.slice(0, 10) !==
-                          m.date.slice(0, 10)) && (
+                        viennaDayKey(all[i - 1].date) !==
+                          viennaDayKey(m.date)) && (
                         <div className="cd-date-divider">
                           <span>
                             {formatDate(m.date, {

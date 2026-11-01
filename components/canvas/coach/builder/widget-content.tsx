@@ -366,6 +366,7 @@ export function useOwnMessages(
     ? `${identity.workspaceId}:${identity.clientProfileId}`
     : undefined;
   const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const seq = useRef(0);
   const session = useRef<{ key: string; ws: string; id: number } | null>(
     null,
@@ -384,19 +385,25 @@ export function useOwnMessages(
     const ticket = ++seq.current;
     try {
       const { messages } = await fetchOwnMessages(s.ws);
-      if (ticket === seq.current && session.current === s)
+      if (ticket === seq.current && session.current === s) {
         setMessages(messages);
+        setLoadFailed(false);
+      }
     } catch {
       // A failed refresh keeps the last known thread — sends stay
-      // persisted and the next view retries.
+      // persisted and the next view retries. The flag lets the initial
+      // load failure surface as an accessible error + retry.
+      if (ticket === seq.current && session.current === s)
+        setLoadFailed(true);
     }
   }, []);
   useEffect(() => {
     seq.current += 1;
     setMessages(null);
+    setLoadFailed(false);
     void refresh(key);
   }, [key, refresh]);
-  return { messages, refresh };
+  return { messages, refresh, loadFailed };
 }
 
 /** The client-side coach conversation composer on the served dashboard chat
@@ -708,6 +715,7 @@ export function RemoteConversation({
   clientName,
   messages: externalMessages,
   onMessagesRefresh,
+  loadFailed: externalLoadFailed,
   collapsible = false,
 }: {
   workspaceId: string;
@@ -720,6 +728,9 @@ export function RemoteConversation({
    *  still reaches the host through `onMessagesRefresh`. */
   messages?: OwnMessageWire[] | null;
   onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
+  /** The host-owned load failure for the external-messages path (Home);
+   *  the internal path reports its own hook's flag instead. */
+  loadFailed?: boolean;
   /** Collapsed until the client asks to view the loaded thread — that
    *  explicit view is what licenses mark-read. Open surfaces (the
    *  user-navigated Messages section, chat detail) are explicit views by
@@ -728,13 +739,27 @@ export function RemoteConversation({
 }) {
   const key = `${workspaceId}:${clientProfileId}`;
   const session = useIdentitySession(key);
-  const { messages: ownedMessages, refresh: refreshOwned } = useOwnMessages(
+  const {
+    messages: ownedMessages,
+    refresh: refreshOwned,
+    loadFailed: ownedLoadFailed,
+  } = useOwnMessages(
     externalMessages === undefined
       ? { workspaceId, clientProfileId }
       : undefined,
   );
   const wire =
     externalMessages !== undefined ? externalMessages : ownedMessages;
+  // Home (external) vs Messages-section (internal) path: the parent's
+  // hook owns Home's fetch state, so its failure flag arrives as a prop;
+  // the internal path uses this hook's own flag. Retry routes the same
+  // way — no second competing fetch.
+  const loadFailed =
+    externalMessages !== undefined ? (externalLoadFailed ?? false) : ownedLoadFailed;
+  const retry = (k: string) =>
+    externalMessages !== undefined
+      ? onMessagesRefresh?.(k)
+      : void refreshOwned(k);
   // One ordering authority for every post-mount thread update: the
   // composer's post-send reload and the read marker's resync both issue
   // through the same session-scoped, ticketed refresh — a late pre-read
@@ -780,6 +805,41 @@ export function RemoteConversation({
         if (marking.current === s) marking.current = null;
       });
   }, [open, unreadInbound, key, workspaceId, wire, sync, session]);
+  // One timezone contract (the messaging surface uses Europe/Vienna)
+  // for day grouping, separator labels and bubble times — no mixing of
+  // UTC slicing and browser-local rendering.
+  const dayKey = (iso: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Vienna",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+  const dayLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(iso));
+  const timeLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(iso));
+  const fullLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(iso));
   return (
     <section className="cb-dw-detail" style={{ marginTop: 16 }}>
       <h3>Coach conversation</h3>
@@ -798,55 +858,112 @@ export function RemoteConversation({
       ) : (
         <>
           {wire === null ? (
-            <Empty>Loading the conversation…</Empty>
+            loadFailed ? (
+              <Empty>
+                The conversation could not be loaded — check your
+                connection and try again.
+                <button
+                  type="button"
+                  className="cb-dw-action"
+                  onClick={() => retry(key)}
+                >
+                  Retry
+                </button>
+              </Empty>
+            ) : (
+              <Empty>Loading the conversation…</Empty>
+            )
           ) : (
-            wire.map((message) => (
-              <div className="cb-dw-detail-group" key={message.id}>
-                <h4>
-                  {message.senderKind === "STAFF" ? "Coach" : clientName} ·{" "}
-                  {dateLabel(message.sentAt.slice(0, 10), {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                  {message.senderKind === "STAFF" && !message.read
-                    ? " · Unread"
-                    : ""}
-                </h4>
-                <p>{message.body}</p>
-                {(Array.isArray(message.attachments)
-                  ? message.attachments
-                  : []
-                ).map((attachment) =>
-                  attachment &&
-                  typeof attachment.mediaObjectId === "string" &&
-                  attachment.mediaObjectId.length > 0 &&
-                  typeof attachment.fileName === "string" ? (
-                    <MediaCard
-                      key={attachment.mediaObjectId}
-                      workspaceId={workspaceId}
-                      item={{
-                        id: attachment.mediaObjectId,
-                        name: attachment.fileName,
-                        type:
-                          typeof attachment.contentType === "string"
-                            ? attachment.contentType
-                            : "application/octet-stream",
-                        size:
-                          typeof attachment.byteSize === "number"
-                            ? attachment.byteSize
-                            : 0,
-                        mediaObjectId: attachment.mediaObjectId,
-                      }}
-                    />
-                  ) : (
-                    <p key="invalid" style={{ fontSize: 12, opacity: 0.7 }}>
-                      An attachment is unavailable.
-                    </p>
-                  ),
-                )}
-              </div>
-            ))
+            <div className="cb-chat" role="log" aria-live="polite">
+              {wire.map((message, index, all) => {
+                const outbound = message.senderKind === "CLIENT";
+                const newDay =
+                  index === 0 ||
+                  dayKey(all[index - 1].sentAt) !== dayKey(message.sentAt);
+                return (
+                  <div key={message.id}>
+                    {newDay && (
+                      <div className="cb-date-divider" aria-hidden="true">
+                        <span>
+                          {dayLabel(message.sentAt)}
+                        </span>
+                      </div>
+                    )}
+                    <div
+                      className={`cb-msg ${outbound ? "cb-msg-out" : "cb-msg-in"}`}
+                      data-sender={outbound ? "client" : "staff"}
+                    >
+                      <div className="cb-bubble">
+                        <div className="cb-bubble-sender">
+                          {outbound ? clientName : "Coach"}
+                        </div>
+                        {message.body ? <p>{message.body}</p> : null}
+                        {(Array.isArray(message.attachments)
+                          ? message.attachments
+                          : []
+                        ).map((attachment) =>
+                          attachment &&
+                          typeof attachment.mediaObjectId === "string" &&
+                          attachment.mediaObjectId.length > 0 &&
+                          typeof attachment.fileName === "string" ? (
+                            <MediaCard
+                              key={attachment.mediaObjectId}
+                              workspaceId={workspaceId}
+                              item={{
+                                id: attachment.mediaObjectId,
+                                name: attachment.fileName,
+                                type:
+                                  typeof attachment.contentType === "string"
+                                    ? attachment.contentType
+                                    : "application/octet-stream",
+                                size:
+                                  typeof attachment.byteSize === "number"
+                                    ? attachment.byteSize
+                                    : 0,
+                                mediaObjectId: attachment.mediaObjectId,
+                              }}
+                            />
+                          ) : (
+                            <p
+                              key="invalid"
+                              className="cb-bubble-unavailable"
+                            >
+                              An attachment is unavailable.
+                            </p>
+                          ),
+                        )}
+                        <div className="cb-bubble-meta">
+                          {!outbound && !message.read && (
+                            <span className="cb-unread">Unread</span>
+                          )}
+                          <time
+                            dateTime={message.sentAt}
+                            title={fullLabel(message.sentAt)}
+                            aria-label={fullLabel(message.sentAt)}
+                          >
+                            {timeLabel(message.sentAt)}
+                          </time>
+                          {outbound && (
+                            <>
+                              <span
+                                className="cb-tick"
+                                data-state={message.read ? "read" : "sent"}
+                                aria-hidden="true"
+                              >
+                                {message.read ? "✓✓" : "✓"}
+                              </span>
+                              <span className="sr-only">
+                                {message.read ? "Read by coach" : "Sent"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
           <ChatComposer
             workspaceId={workspaceId}
