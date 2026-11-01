@@ -121,11 +121,14 @@ async function check() {
   const lockMetadata = await read("package-lock.json")
     .then((content) => JSON.parse(content))
     .catch(() => null);
-  const expectedNodeEngine = /^\d+$/.test(nodeRecommendation)
-    ? `>=${nodeRecommendation}.0.0`
+  const nodeVersion = /^\d+(?:\.\d+){0,2}$/.test(nodeRecommendation)
+    ? nodeRecommendation.split(".")
+    : undefined;
+  const expectedNodeEngine = nodeVersion
+    ? `>=${[nodeVersion[0], nodeVersion[1] ?? "0", nodeVersion[2] ?? "0"].join(".")}`
     : undefined;
   if (!expectedNodeEngine)
-    errors.push(".nvmrc must contain a Node major version");
+    errors.push(".nvmrc must contain a Node version");
   if (packageMetadata && packageMetadata.engines?.node !== expectedNodeEngine)
     errors.push("package.json Node engine must match .nvmrc");
   if (
