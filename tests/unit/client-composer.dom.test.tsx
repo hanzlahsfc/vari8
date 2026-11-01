@@ -2029,18 +2029,40 @@ describe("served dashboard tab (RemoteDashboardTab)", () => {
 
   it("a profile switch does not inherit the previous session's error", async () => {
     mocked.fetchOwn.mockRejectedValueOnce(new Error("offline"));
-    const first = mountTab();
+    const { rerender } = mountTab();
     fireEvent.click(
       await screen.findByRole("button", { name: /View conversation/ }),
     );
     await waitFor(() => screen.getByText(/could not be loaded/));
-    // New identity → new lifecycle session → collapsed View, no stale error.
-    first.unmount();
-    mocked.fetchOwn.mockResolvedValue({ messages: [] });
-    mountTab({ workspaceId: "ws-1", clientProfileId: "cp-2" });
+    // Same component, same key — only the identity prop changes. The new
+    // lifecycle session must not paint the previous session's error.
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s2",
+          body: "cp2 thread",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T10:00:00Z",
+          read: true,
+        }),
+      ],
+    });
+    rerender(
+      <CoachProvider>
+        <RemoteDashboardTab
+          configuration={variant}
+          client={client}
+          own={{ workspaceId: "ws-1", clientProfileId: "cp-2" }}
+        />
+      </CoachProvider>,
+    );
+    // The new session collapses until explicit View (accepted
+    // activation); the stale error is nowhere.
     await waitFor(() =>
       screen.getByRole("button", { name: /View conversation/ }),
     );
     expect(screen.queryByText(/could not be loaded/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /View conversation/ }));
+    await waitFor(() => screen.getByText("cp2 thread"));
   });
 });
