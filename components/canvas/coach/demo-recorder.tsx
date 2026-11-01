@@ -31,6 +31,11 @@ function recordMime(kind: "voice" | "video"): string {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
 
+// Owner-approved cap (P680): voice notes stop automatically at five
+// minutes. Elapsed time comes from a start timestamp, not tick count —
+// a backgrounded tab's throttled interval can never overrun the limit.
+const VOICE_MAX_SECONDS = 300;
+
 function extensionFor(contentType: string): string {
   if (contentType.includes("webm")) return "webm";
   if (contentType.includes("mp4")) return "mp4";
@@ -63,6 +68,7 @@ export function DemoRecorder({
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const live = useRef<HTMLVideoElement>(null);
+  const startedAt = useRef(0);
   const active = useRef(true);
   // Abortable upload + preview-URL cleanup on every exit: a close/unmount
   // mid-upload aborts the request and a late completion can never land an
@@ -87,9 +93,32 @@ export function DemoRecorder({
   }, []);
   useEffect(() => {
     if (phase !== "recording") return;
-    const timer = window.setInterval(() => setSeconds((n) => n + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [phase]);
+    const elapsed = () =>
+      Math.floor((Date.now() - startedAt.current) / 1000);
+    const check = () => {
+      const e = elapsed();
+      setSeconds(e);
+      if (kind === "voice" && e >= VOICE_MAX_SECONDS) {
+        // Auto-stop at the approved cap — stops the recorder, which
+        // releases tracks and lands in the preview phase.
+        if (recorder.current?.state === "recording")
+          recorder.current.stop();
+      }
+    };
+    const timer = window.setInterval(check, 250);
+    // A backgrounded tab's interval may not fire until focus returns —
+    // checking elapsed on visibility/ focus closes the overrun window.
+    const onVisible = () => {
+      if (!document.hidden) check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [phase, kind]);
 
   const stopStream = () => {
     stream.current?.getTracks().forEach((track) => {
@@ -125,6 +154,7 @@ export function DemoRecorder({
         live.current.srcObject = media;
         await live.current.play().catch(() => {});
       }
+      startedAt.current = Date.now();
       const chunks: BlobPart[] = [];
       const r = new MediaRecorder(media, { mimeType: mime });
       r.ondataavailable = (e) => {
@@ -226,7 +256,10 @@ export function DemoRecorder({
       )}
       {phase === "recording" && (
         <div className="cd-recorder-active">
-          <span role="status">Recording · {seconds}s</span>
+          <span role="status">
+            Recording · {seconds}
+            {kind === "voice" ? ` / ${VOICE_MAX_SECONDS}` : ""}s
+          </span>
           <Button onClick={stop}>
             <Square size={14} />
             Stop & preview

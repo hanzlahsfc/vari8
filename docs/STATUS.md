@@ -8120,3 +8120,10 @@ Served `ChatComposer` gains an accessible "Record a voice note" entry → real `
 - Evidence corrected: earlier "1732/1732" hid 2 unloadable suites (exit 1, missing `tools/parity` deps); nested parity deps installed → real full suite **149 files / 1791, exit 0**.
 
 **Tests:** 61/61 focused; build exit 0; format/lint/index/diff clean. Policy hold unchanged (held notes can't send).
+
+## 2026-11-01 — P680 five-minute voice-recording cap
+
+Owner-approved 300s cap on the existing recorder, voice-only: elapsed/limit display ("… / 300s"), auto-stop at 300s into the preview phase, elapsed-time (not tick-count) checks so a backgrounded tab can't overrun — plus visibilitychange/focus recheck. Video recording uncapped. Recorder cleanup, capacity model and held-note preservation unchanged; notes remain held pending voice policy.
+
+**Server boundary:** no server-side duration enforcement exists — the client cap is UX policy only; remaining gap reported for owner coordination (no migration/dep added).
+**Tests:** 6 new deterministic recorder tests (elapsed display, manual/auto/throttled stop, discard/re-record, close-near-limit) — 67/67 focused, full suite 150 files/1797 exit 0, build exit 0.
