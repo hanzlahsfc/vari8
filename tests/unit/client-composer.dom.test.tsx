@@ -147,6 +147,9 @@ HTMLDialogElement.prototype.showModal = function () {
 HTMLDialogElement.prototype.close = function () {
   this.removeAttribute("open");
 };
+// jsdom lacks object URLs — the recorder's preview path needs them.
+URL.createObjectURL = () => "blob:mock";
+URL.revokeObjectURL = () => {};
 import { RemoteDashboardTab } from "../../components/canvas/client-app/remote-views";
 import { CoachProvider } from "../../components/canvas/coach/store";
 import { writeCoachState } from "../../components/canvas/data";
@@ -283,6 +286,147 @@ describe("served coach conversation (RemoteConversation)", () => {
     // the real MediaRecorder path); the dialog + entry are the wiring's
     // contract.
     expect(screen.getByRole("dialog")).toBeTruthy();
+  });
+
+  // jsdom lacks MediaRecorder + getUserMedia — a minimal mock lets the real
+  // recorder component run record → stop → attach.
+  class MockRecorder {
+    state = "inactive";
+    ondataavailable: ((e: { data: Blob }) => void) | null = null;
+    onstop: (() => void) | null = null;
+    start() {
+      this.state = "recording";
+    }
+    stop() {
+      this.state = "inactive";
+      this.ondataavailable?.({
+        data: new Blob(["audio"], { type: "audio/webm" }),
+      });
+      this.onstop?.();
+    }
+    static isTypeSupported() {
+      return true;
+    }
+  }
+  (globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder =
+    MockRecorder;
+  Object.defineProperty(navigator, "mediaDevices", {
+    value: {
+      getUserMedia: () => Promise.resolve({ getTracks: () => [{ stop() {} }] }),
+    },
+    configurable: true,
+  });
+
+  const recordVoiceNote = async () => {
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByLabelText("Message"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Record a voice note" }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Record voice note/ }),
+    );
+    fireEvent.click(
+      await screen.findByRole("button", { name: /Stop & preview/ }),
+    );
+    await waitFor(() =>
+      screen.getByRole("button", { name: /Attach voice note/ }),
+    );
+  };
+
+  it("an attached voice note lands as a held chip and cannot send alone", async () => {
+    mocked.upload.mockResolvedValue({
+      mediaObjectId: "mo-v1",
+      name: "voice-note.webm",
+      type: "audio/webm",
+      size: 5,
+    });
+    await recordVoiceNote();
+    fireEvent.click(screen.getByRole("button", { name: /Attach voice note/ }));
+    await waitFor(() =>
+      screen.getByText(/voice note \(sending held pending voice policy\)/),
+    );
+    expect(screen.getByRole("button", { name: "Send" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    // Ordinary text must not carry the held voice note out either.
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "hi" },
+    });
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Send" })).toHaveProperty(
+        "disabled",
+        false,
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalled());
+    expect(mocked.sendOwn.mock.calls[0][2]).toEqual([]);
+  });
+
+  it("a closing mid-upload never lands a chip", async () => {
+    let resolveUpload: ((v: Record<string, unknown>) => void) | null = null;
+    mocked.upload.mockImplementation(
+      () =>
+        new Promise<Record<string, unknown>>((res) => {
+          resolveUpload = res;
+        }),
+    );
+    await recordVoiceNote();
+    fireEvent.click(screen.getByRole("button", { name: /Attach voice note/ }));
+    await waitFor(() => screen.getByRole("button", { name: "Uploading…" }));
+    // Close the dialog mid-upload — the late completion must not land.
+    fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+    resolveUpload!({
+      mediaObjectId: "mo-v2",
+      name: "voice-note.webm",
+      type: "audio/webm",
+      size: 5,
+    });
+    await waitFor(() => expect(screen.queryByText(/voice-note/)).toBeNull());
+  });
+
+  it("the mic entry honours the attachment cap and reservation", async () => {
+    mocked.upload.mockResolvedValue({
+      mediaObjectId: "mo-f",
+      name: "f.png",
+      type: "image/png",
+      size: 3,
+    });
+    mocked.fetchOwn.mockResolvedValue({ messages: [] });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByLabelText("Attach files"));
+    const pick = async (n: number) => {
+      const input = screen.getByLabelText("Attach files") as HTMLInputElement;
+      fireEvent.change(input, {
+        target: {
+          files: Array.from(
+            { length: n },
+            (_, i) => new File(["x"], `f${i}.png`, { type: "image/png" }),
+          ),
+        },
+      });
+      await waitFor(() =>
+        expect(
+          screen.getAllByRole("button", { name: /Remove f\d+\.png/ }).length,
+        ).toBeGreaterThanOrEqual(n),
+      );
+    };
+    await pick(9);
+    const mic = () =>
+      screen.getByRole("button", { name: "Record a voice note" });
+    expect(mic()).toHaveProperty("disabled", false);
+    fireEvent.click(mic());
+    await waitFor(() => screen.getByRole("dialog"));
+    // The open reservation consumes the last slot — the entry stays
+    // disabled inside the dialog's context but the reservation blocks a
+    // concurrent pick; closing releases it.
+    fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+    await pick(1);
+    // At 10 chips the entry is disabled — no recording-to-reject path.
+    expect(mic()).toHaveProperty("disabled", true);
   });
 
   it("send posts through sendOwnMessage and the reply renders with one refresh", async () => {

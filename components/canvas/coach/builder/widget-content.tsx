@@ -445,7 +445,12 @@ export function ChatComposer({
   // W2-T8: staged uploads — only successfully uploaded media_object ids
   // are linked onto the message; pending blocks send, failed is removed
   // or reattached. Entries are session-scoped like the draft.
-  type Staged = Media & { state: "pending" | "uploaded" | "failed" };
+  // "held" marks recorder-produced audio: real uploaded media, visible as a
+  // chip, but explicitly held from send() until the owner's voice/transcript
+  // policy lands. Ordinary file attachments stay "uploaded" and unaffected.
+  type Staged = Media & {
+    state: "pending" | "uploaded" | "failed" | "held";
+  };
   const [staged, setStaged] = useState<Staged[]>([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -632,7 +637,9 @@ export function ChatComposer({
                   ? " — uploading…"
                   : item.state === "failed"
                     ? " — upload failed"
-                    : ""}
+                    : item.state === "held"
+                      ? " — voice note (sending held pending voice policy)"
+                      : ""}
               </span>
               <button
                 type="button"
@@ -671,8 +678,14 @@ export function ChatComposer({
         type="button"
         className="cb-dw-action"
         aria-label="Record a voice note"
-        disabled={sending}
-        onClick={() => setVoiceOpen(true)}
+        disabled={sending || slots.current >= MAX_ATTACHMENTS}
+        onClick={() => {
+          // Slot reservation: recording/uploading holds the last attachment
+          // slot so a concurrent file pick cannot consume it; released on
+          // close-without-attach.
+          slots.current += 1;
+          setVoiceOpen(true);
+        }}
       >
         <Mic size={14} aria-hidden="true" />
       </button>
@@ -716,28 +729,27 @@ export function ChatComposer({
       {voiceOpen && (
         <Dialog
           title="Voice note"
-          onClose={() => setVoiceOpen(false)}
+          onClose={() => {
+            // Release the reservation held while the dialog was open — the
+            // attach path already consumed it if a note landed.
+            slots.current = Math.max(0, slots.current - 1);
+            setVoiceOpen(false);
+          }}
         >
           <p className="cd-muted">
-            Use your microphone to record a voice note.
+            Use your microphone to record a voice note. Sending is held
+            pending the voice/transcript policy.
           </p>
           <DemoRecorder
             kind="voice"
             workspaceId={workspaceId}
             clientProfileId={clientProfileId || undefined}
             onAttach={(item) => {
-              if (slots.current >= MAX_ATTACHMENTS) {
-                setError({
-                  kind: "attach_limit",
-                  text: `A message can carry up to ${MAX_ATTACHMENTS} attachments — remove some files and try again.`,
-                });
-                setVoiceOpen(false);
-                return;
-              }
-              slots.current += 1;
+              // The reservation from the open stays held — the chip takes
+              // the slot permanently.
               setStaged((current) => [
                 ...current,
-                { ...item, state: "uploaded" },
+                { ...item, state: "held" },
               ]);
               setVoiceOpen(false);
             }}

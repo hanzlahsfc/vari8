@@ -64,11 +64,21 @@ export function DemoRecorder({
   const stream = useRef<MediaStream | null>(null);
   const live = useRef<HTMLVideoElement>(null);
   const active = useRef(true);
+  // Abortable upload + preview-URL cleanup on every exit: a close/unmount
+  // mid-upload aborts the request and a late completion can never land an
+  // attach; the preview object URL is revoked on unmount, not only on
+  // explicit discard.
+  const uploadAbort = useRef<AbortController | null>(null);
+  const previewUrl = useRef<string | null>(null);
 
   useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
+      uploadAbort.current?.abort();
+      uploadAbort.current = null;
+      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+      previewUrl.current = null;
       if (recorder.current?.state === "recording") recorder.current.stop();
       stream.current?.getTracks().forEach((track) => {
         track.stop();
@@ -90,7 +100,9 @@ export function DemoRecorder({
 
   const complete = (blob: Blob) => {
     if (!active.current) return;
-    setPreview({ url: URL.createObjectURL(blob), blob });
+    const url = URL.createObjectURL(blob);
+    previewUrl.current = url;
+    setPreview({ url, blob });
     setPhase("preview");
   };
 
@@ -140,6 +152,7 @@ export function DemoRecorder({
 
   const discard = () => {
     if (preview) URL.revokeObjectURL(preview.url);
+    previewUrl.current = null;
     setPreview(null);
     setPhase("idle");
   };
@@ -161,6 +174,8 @@ export function DemoRecorder({
     }
     setPhase("uploading");
     setError("");
+    const controller = new AbortController();
+    uploadAbort.current = controller;
     try {
       const contentType = preview.blob.type.split(";")[0];
       const fileName = `${
@@ -172,10 +187,16 @@ export function DemoRecorder({
         fileName,
         contentType,
         blob: preview.blob,
+        signal: controller.signal,
       });
+      uploadAbort.current = null;
+      // A close/unmount mid-upload made this completion late — never land it.
+      if (!active.current) return;
       discard();
       onAttach(item);
     } catch {
+      uploadAbort.current = null;
+      if (controller.signal.aborted || !active.current) return;
       setPhase("preview");
       setError("Upload failed. Preview is kept — try again or discard it.");
     }
