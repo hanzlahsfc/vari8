@@ -310,6 +310,17 @@ describe("served coach conversation (RemoteConversation)", () => {
   }
   (globalThis as unknown as { MediaRecorder: unknown }).MediaRecorder =
     MockRecorder;
+  // P682: the recorder verifies the finished take's real duration via
+  // decodeAudioData before it may attach — jsdom has no WebAudio, so the
+  // mock reports a short take well under the five-minute cap.
+  class MockOfflineAudioContext {
+    decodeAudioData() {
+      return Promise.resolve({ duration: 3 });
+    }
+  }
+  (
+    globalThis as unknown as { OfflineAudioContext: unknown }
+  ).OfflineAudioContext = MockOfflineAudioContext;
   Object.defineProperty(navigator, "mediaDevices", {
     value: {
       getUserMedia: () => Promise.resolve({ getTracks: () => [{ stop() {} }] }),

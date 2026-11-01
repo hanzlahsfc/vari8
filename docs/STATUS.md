@@ -8123,7 +8123,16 @@ Served `ChatComposer` gains an accessible "Record a voice note" entry → real `
 
 ## 2026-11-01 — P680 five-minute voice-recording cap
 
-Owner-approved 300s cap on the existing recorder, voice-only: elapsed/limit display ("… / 300s"), auto-stop at 300s into the preview phase, elapsed-time (not tick-count) checks so a backgrounded tab can't overrun — plus visibilitychange/focus recheck. Video recording uncapped. Recorder cleanup, capacity model and held-note preservation unchanged; notes remain held pending voice policy.
+Owner-approved 300s cap on the existing recorder, voice-only: elapsed/limit display ("… / 300s"), auto-stop into the preview phase, elapsed-time (not tick-count) checks plus visibilitychange/focus recheck — these let a backgrounded tab's delayed callback *detect* an overrun on resume; they do not guarantee the encoded recording stops at 300s (corrected by P682, which verifies the take's real duration before attach). Video recording uncapped. Recorder cleanup, capacity model and held-note preservation unchanged; notes remain held pending voice policy.
 
 **Server boundary:** no server-side duration enforcement exists — the client cap is UX policy only; remaining gap reported for owner coordination (no migration/dep added).
 **Tests:** 6 new deterministic recorder tests (elapsed display, manual/auto/throttled stop, discard/re-record, close-near-limit) — 67/67 focused, full suite 150 files/1797 exit 0, build exit 0.
+
+## 2026-11-02 — P682 over-limit voice takes cannot attach
+
+- **P680 overclaim corrected:** the elapsed/visibility checks *detect* an overrun on resume; they never guaranteed the encoded recording stops at 300s — a delayed interval callback lets `MediaRecorder` keep encoding. The P680 entry above and the P680 PR comment are corrected accordingly.
+- **Real-duration guard (voice only):** on `onstop` the finished blob's actual duration is decoded (`OfflineAudioContext.decodeAudioData` — the encoded audio, not the displayed elapsed value and not container metadata, which recorded WebM lacks). `>300s` → the take is rejected to idle ("exceeded the five-minute limit … Record it again") — no preview, no upload, no attach, no trimming. Duration undeterminable for the recorded format → surfaced the same way ("length could not be verified"), never assumed within the limit. Video path untouched.
+- **UX auto-stop kept:** it now targets one displayed second early (≈299s) so an on-time stop encodes strictly under the cap; only a genuinely delayed callback can still land over — and is rejected.
+- **Tests:** genuinely delayed callback (clock advances 305s while the interval is suspended, then one resume check) → ~305s take rejected, no upload/attach; 300.0s boundary attaches; 300.5s rejected; unverifiable duration surfaced; microphone `track.stop` asserted on close near the limit; discard/re-record and cancellation preserved.
+- **Server boundary unchanged:** no server-side duration enforcement exists — the client guard is UX policy only; voice notes remain held pending owner voice policy. No merge/schema/hosting/transcription work.
+**Tests (Node v24.22.1):** focused 65/65 (`demo-recorder.dom` 9 + `client-composer.dom` 56); full suite 150 files / 1800 exit 0; `tsc --noEmit` 0; `eslint` 0 errors (pre-existing warnings unchanged); `format:check` clean; `index:check` OK; fresh `rm -rf .next && npm run build` exit 0.

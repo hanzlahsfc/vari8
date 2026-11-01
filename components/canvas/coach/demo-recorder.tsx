@@ -31,10 +31,17 @@ function recordMime(kind: "voice" | "video"): string {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
 
-// Owner-approved cap (P680): voice notes stop automatically at five
-// minutes. Elapsed time comes from a start timestamp, not tick count —
-// a backgrounded tab's throttled interval can never overrun the limit.
+// Owner-approved cap (P680, hardened P682): voice notes auto-stop just
+// under five minutes and the finished take's real encoded duration is
+// verified before it may attach. The elapsed checks below come from a
+// start timestamp, so a backgrounded tab's delayed interval detects an
+// overrun on resume — it does not prevent one; the duration guard in
+// `complete` rejects those takes.
 const VOICE_MAX_SECONDS = 300;
+// The UX auto-stop aims one displayed second early so an on-time stop
+// encodes strictly under the cap. Anything that still lands over — only
+// possible via a delayed callback — is rejected, never trimmed.
+const VOICE_STOP_EARLY_SECONDS = 1;
 
 function extensionFor(contentType: string): string {
   if (contentType.includes("webm")) return "webm";
@@ -43,6 +50,34 @@ function extensionFor(contentType: string): string {
   if (contentType.includes("wav")) return "wav";
   if (contentType.includes("quicktime")) return "mov";
   return "bin";
+}
+
+/**
+ * P682: the only trustworthy "did we stay under the cap" signal is the
+ * encoded take itself. `decodeAudioData` measures the real audio length;
+ * `<audio>.duration` would read container metadata that recorded WebM
+ * files typically lack (it reports Infinity). `null` means the duration
+ * could not be determined for this take — the caller must refuse to
+ * attach rather than assume it is within the limit.
+ */
+async function voiceDurationSeconds(blob: Blob): Promise<number | null> {
+  const Decode =
+    globalThis.OfflineAudioContext ??
+    (
+      globalThis as {
+        webkitOfflineAudioContext?: typeof OfflineAudioContext;
+      }
+    ).webkitOfflineAudioContext;
+  if (!Decode) return null;
+  try {
+    const context = new Decode(1, 1, 44_100);
+    const { duration } = await context.decodeAudioData(
+      await blob.arrayBuffer(),
+    );
+    return Number.isFinite(duration) && duration >= 0 ? duration : null;
+  } catch {
+    return null;
+  }
 }
 
 export function DemoRecorder({
@@ -98,9 +133,10 @@ export function DemoRecorder({
     const check = () => {
       const e = elapsed();
       setSeconds(e);
-      if (kind === "voice" && e >= VOICE_MAX_SECONDS) {
-        // Auto-stop at the approved cap — stops the recorder, which
-        // releases tracks and lands in the preview phase.
+      if (kind === "voice" && e >= VOICE_MAX_SECONDS - VOICE_STOP_EARLY_SECONDS) {
+        // Auto-stop just under the approved cap — stops the recorder,
+        // which releases tracks and (once the duration guard passes)
+        // lands in the preview phase.
         if (recorder.current?.state === "recording")
           recorder.current.stop();
       }
@@ -127,8 +163,31 @@ export function DemoRecorder({
     stream.current = null;
   };
 
-  const complete = (blob: Blob) => {
+  const complete = async (blob: Blob) => {
     if (!active.current) return;
+    // P682 (voice only): the UX auto-stop can arrive late — a delayed
+    // interval/visibility check still stops the recorder, but audio
+    // already encoded past the cap is inside this blob. Verify the
+    // take's real duration before it becomes attachable; never trim,
+    // never assume an unverifiable take is within the limit.
+    if (kind === "voice") {
+      const duration = await voiceDurationSeconds(blob);
+      if (!active.current) return;
+      if (duration === null) {
+        setPhase("idle");
+        setError(
+          "This recording's length could not be verified, so it can't be attached. Record it again.",
+        );
+        return;
+      }
+      if (duration > VOICE_MAX_SECONDS) {
+        setPhase("idle");
+        setError(
+          "This recording exceeded the five-minute limit, so it can't be attached. Record it again.",
+        );
+        return;
+      }
+    }
     const url = URL.createObjectURL(blob);
     previewUrl.current = url;
     setPreview({ url, blob });
