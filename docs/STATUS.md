@@ -1,3 +1,11 @@
+## 2026-10-31 — Prompt 655 — #250 contrast, Home retry, coach dates
+
+- F1: outbound small text (sender, meta, unavailable) now at full opacity on the resolved `--cd-action-bg` pink — computed `rgb(235,145,184)` bg with `rgb(0,0,0)` text ≈ 9.4:1, well over 4.5:1; inbound keeps `--cd-raised` + `--cd-text`. No global token changes.
+- F2: `useOwnMessages`'s `loadFailed` now also surfaces through the external/Home path — the parent's hook flag arrives as the `loadFailed` prop on `RemoteConversation`, and Retry routes through `onMessagesRefresh` (no second competing fetch). Regressions: failure → error → Retry calls the host refresh; a stale external error does not paint on an identity change (new session collapses to View — accepted activation).
+- F3: coach day grouping uses the same Vienna `viennaDayKey` contract (exported from `messages.tsx`); midnight + DST (last-Sunday March) boundaries tested.
+- F4: evidence corrected — real computed colors recorded per capture; the client surface resolves a dark token set under both `prefers-color-scheme` values in this lane (no light variant on that surface), which is reported, not implied by filenames.
+- Gates (Node v24.22.1): focused 55/55; full suite 149 files / 1785; clean build + typecheck; eslint 0; format/index/diff clean.
+
 ## 2026-10-31 — Prompt 653 — #250 consolidated presentation repair
 
 - F1: one timezone contract (Europe/Vienna) for day grouping (`dayKey` en-CA Vienna), separator labels and bubble times — no more UTC slicing vs Vienna vs browser-local mixing. Midnight-boundary regression asserts 1 separator for 23:30Z/00:30Z and Vienna times 01:30/02:30.

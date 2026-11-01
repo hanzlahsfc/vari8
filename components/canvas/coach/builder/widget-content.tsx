@@ -715,6 +715,7 @@ export function RemoteConversation({
   clientName,
   messages: externalMessages,
   onMessagesRefresh,
+  loadFailed: externalLoadFailed,
   collapsible = false,
 }: {
   workspaceId: string;
@@ -727,6 +728,9 @@ export function RemoteConversation({
    *  still reaches the host through `onMessagesRefresh`. */
   messages?: OwnMessageWire[] | null;
   onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
+  /** The host-owned load failure for the external-messages path (Home);
+   *  the internal path reports its own hook's flag instead. */
+  loadFailed?: boolean;
   /** Collapsed until the client asks to view the loaded thread — that
    *  explicit view is what licenses mark-read. Open surfaces (the
    *  user-navigated Messages section, chat detail) are explicit views by
@@ -738,7 +742,7 @@ export function RemoteConversation({
   const {
     messages: ownedMessages,
     refresh: refreshOwned,
-    loadFailed,
+    loadFailed: ownedLoadFailed,
   } = useOwnMessages(
     externalMessages === undefined
       ? { workspaceId, clientProfileId }
@@ -746,6 +750,16 @@ export function RemoteConversation({
   );
   const wire =
     externalMessages !== undefined ? externalMessages : ownedMessages;
+  // Home (external) vs Messages-section (internal) path: the parent's
+  // hook owns Home's fetch state, so its failure flag arrives as a prop;
+  // the internal path uses this hook's own flag. Retry routes the same
+  // way — no second competing fetch.
+  const loadFailed =
+    externalMessages !== undefined ? (externalLoadFailed ?? false) : ownedLoadFailed;
+  const retry = (k: string) =>
+    externalMessages !== undefined
+      ? onMessagesRefresh?.(k)
+      : void refreshOwned(k);
   // One ordering authority for every post-mount thread update: the
   // composer's post-send reload and the read marker's resync both issue
   // through the same session-scoped, ticketed refresh — a late pre-read
@@ -851,7 +865,7 @@ export function RemoteConversation({
                 <button
                   type="button"
                   className="cb-dw-action"
-                  onClick={() => void refreshOwned(key)}
+                  onClick={() => retry(key)}
                 >
                   Retry
                 </button>

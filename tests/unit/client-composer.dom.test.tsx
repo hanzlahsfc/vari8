@@ -1470,6 +1470,58 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(mocked.fetchOwn.mock.calls.length).toBe(2);
   });
 
+  it("the coach day key holds the Vienna boundary at midnight and DST", async () => {
+    const { viennaDayKey } =
+      await import("../../components/canvas/coach/messages");
+    // Same Vienna day across UTC midnight (Oct = CEST, +2).
+    expect(viennaDayKey("2026-10-20T23:30:00Z")).toBe(
+      viennaDayKey("2026-10-21T00:30:00Z"),
+    );
+    // DST-switch weekend (last Sunday of March 2026): both times land
+    // in the same Vienna day either side of the 02:00→03:00 jump.
+    expect(viennaDayKey("2026-03-28T23:30:00Z")).toBe(
+      viennaDayKey("2026-03-29T00:30:00Z"),
+    );
+    // And a genuine Vienna day change still splits.
+    expect(viennaDayKey("2026-10-20T20:30:00Z")).not.toBe(
+      viennaDayKey("2026-10-21T00:30:00Z"),
+    );
+  });
+
+  it("the external (Home) path surfaces its own load error + retry", async () => {
+    const onRefresh = vi.fn();
+    const { rerender } = render(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-1"
+        clientName="Amara"
+        messages={null}
+        loadFailed
+        onMessagesRefresh={onRefresh}
+      />,
+    );
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    expect(onRefresh).toHaveBeenCalledWith("ws-1:cp-1");
+    // A stale external error must not leak into a new identity — the
+    // flag follows the prop, not internal state.
+    rerender(
+      <RemoteConversation
+        workspaceId="ws-1"
+        clientProfileId="cp-2"
+        clientName="Rene"
+        messages={null}
+        onMessagesRefresh={onRefresh}
+      />,
+    );
+    // The new identity collapses until explicit View (accepted
+    // activation); the stale error must not paint.
+    await waitFor(() =>
+      screen.getByRole("button", { name: /View conversation/ }),
+    );
+    expect(screen.queryByText(/could not be loaded/)).toBeNull();
+  });
+
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {
     mocked.sendOwn.mockRejectedValueOnce(new Error("boom"));
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
