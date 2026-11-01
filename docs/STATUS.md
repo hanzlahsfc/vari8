@@ -1,3 +1,13 @@
+## 2026-10-31 — Prompt 653 — #250 consolidated presentation repair
+
+- F1: one timezone contract (Europe/Vienna) for day grouping (`dayKey` en-CA Vienna), separator labels and bubble times — no more UTC slicing vs Vienna vs browser-local mixing. Midnight-boundary regression asserts 1 separator for 23:30Z/00:30Z and Vienna times 01:30/02:30.
+- F2: bubbles/dividers/text now use the established `--cd-*` theme tokens (`--cd-raised`, `--cd-action-bg`/`--cd-action-text`, `--cd-text`) — both themes resolve real tokens.
+- F3: `overflow-wrap: anywhere` + `word-break: break-word` with `white-space: pre-wrap` — long unbroken URLs wrap without horizontal overflow; multiline preserved.
+- F4: `<time>` carries `dateTime` + full `aria-label` datetime; ticks are `aria-hidden` decorative with real `.sr-only` status text ("Sent"/"Read by coach").
+- F5: `useOwnMessages` exposes `loadFailed` (session-guarded); initial failure renders an accessible error + working Retry through the session-scoped refresh.
+- Gates (Node v24.22.1): focused 53/53 (midnight/DST + a11y + retry regressions); full suite 149 files / 1783; clean build; tsc 0; eslint 0; format/index/diff clean.
+- Served evidence (app_p653 :3300): open conversation screenshots desktop+mobile with bubbles, separators, timestamps, wrapped long text and attachment cards.
+
 ## 2026-10-31 — Prompt 651 — served messaging polish
 
 - Client `RemoteConversation` now renders the WhatsApp-style thread: inbound/outbound bubbles (`.cb-msg-in`/`.cb-msg-out` with sender labels), per-day separators, per-bubble `<time>` timestamps, inbound `Unread` marker, outbound ticks (`✓` sent / `✓✓` read) derived only from server `wire.read` — nothing invented. Attachments render inside bubbles via the existing MediaCard; unavailable entries degrade to the established note.

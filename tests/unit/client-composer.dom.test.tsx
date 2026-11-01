@@ -1396,11 +1396,10 @@ describe("served coach conversation (RemoteConversation)", () => {
     });
     render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
     await waitFor(() => screen.getByText("from coach"));
-    // Outbound bubbles carry the server-derived tick only.
-    const sent = screen.getByLabelText("Sent");
-    const read = screen.getByLabelText("Read by coach");
-    expect(sent).toBeTruthy();
-    expect(read).toBeTruthy();
+    // Outbound bubbles expose server-derived status text (ticks are
+    // decorative and hidden from assistive tech).
+    expect(screen.getByText("Sent")).toBeTruthy();
+    expect(screen.getByText("Read by coach")).toBeTruthy();
     // Inbound/outbound alignment classes differ.
     const lines = document.querySelectorAll(".cb-msg-in, .cb-msg-out");
     expect(lines.length).toBe(3);
@@ -1410,6 +1409,65 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(document.querySelectorAll(".cb-date-divider").length).toBe(2);
     // Every bubble carries a real timestamp.
     expect(document.querySelectorAll(".cb-bubble-meta time").length).toBe(3);
+  });
+
+  it("groups days by the messaging timezone, not UTC", async () => {
+    // 23:30 UTC Oct 20 and 00:30 UTC Oct 21 are both Oct 21 in Vienna —
+    // one separator, not two.
+    mocked.fetchOwn.mockResolvedValue({
+      messages: [
+        wire({
+          id: "s1",
+          body: "late evening",
+          senderKind: "STAFF",
+          sentAt: "2026-10-20T23:30:00Z",
+          read: true,
+        }),
+        wire({
+          id: "c1",
+          body: "after midnight",
+          senderKind: "CLIENT",
+          sentAt: "2026-10-21T00:30:00Z",
+          read: true,
+        }),
+      ],
+    });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText("after midnight"));
+    expect(document.querySelectorAll(".cb-date-divider").length).toBe(1);
+    // Both bubbles carry the Vienna local time, not UTC.
+    const times = Array.from(
+      document.querySelectorAll(".cb-bubble-meta time"),
+    ).map((t) => t.textContent);
+    expect(times).toEqual(["01:30", "02:30"]);
+    // Full date/time is exposed accessibly.
+    const t0 = document.querySelector(".cb-bubble-meta time") as HTMLElement;
+    expect(t0.getAttribute("aria-label")).toContain("October");
+    // Ticks are decorative; status is real text for assistive tech.
+    const tick = document.querySelector(".cb-tick") as HTMLElement;
+    expect(tick.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByText("Read by coach")).toBeTruthy();
+  });
+
+  it("a failed initial load exposes an error and a working retry", async () => {
+    mocked.fetchOwn
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        messages: [
+          wire({
+            id: "s1",
+            body: "recovered",
+            senderKind: "STAFF",
+            sentAt: "2026-10-20T10:00:00Z",
+            read: true,
+          }),
+        ],
+      });
+    render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+    await waitFor(() => screen.getByText(/could not be loaded/));
+    fireEvent.click(screen.getByText("Retry"));
+    await waitFor(() => screen.getByText("recovered"));
+    expect(mocked.fetchOwn.mock.calls.length).toBe(2);
   });
 
   it("failed send keeps the draft and shows an accessible error; retry reuses the key", async () => {

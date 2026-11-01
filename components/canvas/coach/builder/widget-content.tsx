@@ -366,6 +366,7 @@ export function useOwnMessages(
     ? `${identity.workspaceId}:${identity.clientProfileId}`
     : undefined;
   const [messages, setMessages] = useState<OwnMessageWire[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const seq = useRef(0);
   const session = useRef<{ key: string; ws: string; id: number } | null>(
     null,
@@ -384,19 +385,25 @@ export function useOwnMessages(
     const ticket = ++seq.current;
     try {
       const { messages } = await fetchOwnMessages(s.ws);
-      if (ticket === seq.current && session.current === s)
+      if (ticket === seq.current && session.current === s) {
         setMessages(messages);
+        setLoadFailed(false);
+      }
     } catch {
       // A failed refresh keeps the last known thread — sends stay
-      // persisted and the next view retries.
+      // persisted and the next view retries. The flag lets the initial
+      // load failure surface as an accessible error + retry.
+      if (ticket === seq.current && session.current === s)
+        setLoadFailed(true);
     }
   }, []);
   useEffect(() => {
     seq.current += 1;
     setMessages(null);
+    setLoadFailed(false);
     void refresh(key);
   }, [key, refresh]);
-  return { messages, refresh };
+  return { messages, refresh, loadFailed };
 }
 
 /** The client-side coach conversation composer on the served dashboard chat
@@ -728,7 +735,11 @@ export function RemoteConversation({
 }) {
   const key = `${workspaceId}:${clientProfileId}`;
   const session = useIdentitySession(key);
-  const { messages: ownedMessages, refresh: refreshOwned } = useOwnMessages(
+  const {
+    messages: ownedMessages,
+    refresh: refreshOwned,
+    loadFailed,
+  } = useOwnMessages(
     externalMessages === undefined
       ? { workspaceId, clientProfileId }
       : undefined,
@@ -780,6 +791,41 @@ export function RemoteConversation({
         if (marking.current === s) marking.current = null;
       });
   }, [open, unreadInbound, key, workspaceId, wire, sync, session]);
+  // One timezone contract (the messaging surface uses Europe/Vienna)
+  // for day grouping, separator labels and bubble times — no mixing of
+  // UTC slicing and browser-local rendering.
+  const dayKey = (iso: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Europe/Vienna",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(iso));
+  const dayLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(iso));
+  const timeLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(iso));
+  const fullLabel = (iso: string) =>
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/Vienna",
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(new Date(iso));
   return (
     <section className="cb-dw-detail" style={{ marginTop: 16 }}>
       <h3>Coach conversation</h3>
@@ -798,25 +844,34 @@ export function RemoteConversation({
       ) : (
         <>
           {wire === null ? (
-            <Empty>Loading the conversation…</Empty>
+            loadFailed ? (
+              <Empty>
+                The conversation could not be loaded — check your
+                connection and try again.
+                <button
+                  type="button"
+                  className="cb-dw-action"
+                  onClick={() => void refreshOwned(key)}
+                >
+                  Retry
+                </button>
+              </Empty>
+            ) : (
+              <Empty>Loading the conversation…</Empty>
+            )
           ) : (
             <div className="cb-chat" role="log" aria-live="polite">
               {wire.map((message, index, all) => {
                 const outbound = message.senderKind === "CLIENT";
                 const newDay =
                   index === 0 ||
-                  all[index - 1].sentAt.slice(0, 10) !==
-                    message.sentAt.slice(0, 10);
+                  dayKey(all[index - 1].sentAt) !== dayKey(message.sentAt);
                 return (
                   <div key={message.id}>
                     {newDay && (
                       <div className="cb-date-divider" aria-hidden="true">
                         <span>
-                          {dateLabel(message.sentAt.slice(0, 10), {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {dayLabel(message.sentAt)}
                         </span>
                       </div>
                     )}
@@ -867,22 +922,26 @@ export function RemoteConversation({
                           {!outbound && !message.read && (
                             <span className="cb-unread">Unread</span>
                           )}
-                          <time dateTime={message.sentAt}>
-                            {new Date(message.sentAt).toLocaleTimeString(
-                              [],
-                              { hour: "numeric", minute: "2-digit" },
-                            )}
+                          <time
+                            dateTime={message.sentAt}
+                            title={fullLabel(message.sentAt)}
+                            aria-label={fullLabel(message.sentAt)}
+                          >
+                            {timeLabel(message.sentAt)}
                           </time>
                           {outbound && (
-                            <span
-                              className="cb-tick"
-                              data-state={message.read ? "read" : "sent"}
-                              aria-label={
-                                message.read ? "Read by coach" : "Sent"
-                              }
-                            >
-                              {message.read ? "✓✓" : "✓"}
-                            </span>
+                            <>
+                              <span
+                                className="cb-tick"
+                                data-state={message.read ? "read" : "sent"}
+                                aria-hidden="true"
+                              >
+                                {message.read ? "✓✓" : "✓"}
+                              </span>
+                              <span className="sr-only">
+                                {message.read ? "Read by coach" : "Sent"}
+                              </span>
+                            </>
                           )}
                         </div>
                       </div>
