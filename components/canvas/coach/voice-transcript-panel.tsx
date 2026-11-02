@@ -100,7 +100,10 @@ export function VoiceTranscript({
       setText(transcript);
       setState("ready");
     } catch (error) {
-      if (!mounted.current) return;
+      // Stale run: an abort/error from a previous actor or superseded
+      // take must not clear a newer transcript, set its error, or
+      // disturb its pending state.
+      if (!mounted.current || scopeRef.current !== runScope) return;
       if ((error as DOMException)?.name === "AbortError") {
         setState("idle");
         setNote("");

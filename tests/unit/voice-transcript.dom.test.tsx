@@ -195,9 +195,7 @@ describe("VoiceTranscript — actor transitions (P698)", () => {
         actor={actorOf("ws:uA")}
       />,
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "View transcript" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "View transcript" }));
     // Identity changes while inference is in flight.
     rerender(
       <VoiceTranscript
@@ -223,5 +221,46 @@ describe("VoiceTranscript — actor transitions (P698)", () => {
       ),
     );
     expect(sessionStorage.getItem("vt1:w1:ws:uB:mo-1")).toBeNull();
+  });
+});
+
+describe("VoiceTranscript — async run ownership (P700)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    blobFetch();
+    mockSupported.mockReturnValue(true);
+    mockTranscribe.mockReset();
+  });
+  afterEach(() => cleanup());
+
+  it("A pending → B current → A rejects: B's cached text is untouched", async () => {
+    sessionStorage.setItem("vt1:w1:ws:uB:mo-1", "actor B cached text");
+    let rejectRun: ((e: Error) => void) | null = null;
+    mockTranscribe.mockImplementation(
+      () => new Promise<string>((_res, rej) => (rejectRun = rej)),
+    );
+    const { rerender } = render(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View transcript" }));
+    await waitFor(() => expect(rejectRun).toBeTruthy());
+    // Identity switches to B while A's run is in flight — B reads cache.
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uB")}
+      />,
+    );
+    await waitFor(() => screen.getByText("actor B cached text"));
+    // A's stale rejection must not clear B's text or mark an error.
+    rejectRun!(new Error("stale inference failure"));
+    await waitFor(() => screen.getByText("actor B cached text"));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText(/unavailable/)).toBeNull();
   });
 });

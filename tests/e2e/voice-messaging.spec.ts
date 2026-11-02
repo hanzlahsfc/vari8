@@ -171,14 +171,46 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .click();
   await coach.getByText(/fellow Americans/i).waitFor({ timeout: 180_000 });
   await coach.screenshot({ path: `${SHOTS}/p694-coach-transcript.png` });
-  // coach replies with a voice note (fake-mic, synthetic)
+  // coach replies with a voice note (fake-mic, synthetic) — capture the
+  // exact reply message/media ids for the client-side assertions.
+  const replyIds: { messageId?: string; media: string[] } = { media: [] };
+  coach.on("response", async (res) => {
+    if (
+      res.request().method() !== "POST" ||
+      !res.url().includes("/conversations/")
+    )
+      return;
+    const body = (await res.json().catch(() => null)) as {
+      message?: { id?: string; attachments?: { mediaObjectId?: string }[] };
+    } | null;
+    if (body?.message?.id) {
+      replyIds.messageId = body.message.id;
+      for (const a of body.message.attachments ?? [])
+        if (a.mediaObjectId) replyIds.media.push(a.mediaObjectId);
+      console.log(
+        "REPLY message",
+        replyIds.messageId,
+        replyIds.media.join(","),
+      );
+    }
+  });
   await coach.getByRole("button", { name: "Voice note" }).click();
   await recordTake(coach);
   await coach.getByRole("button", { name: "Send message" }).click();
   await coach.waitForTimeout(1500);
+  expect(replyIds.media.length).toBeGreaterThanOrEqual(1);
+  await coach.waitForTimeout(1500);
   await coach.screenshot({ path: `${SHOTS}/p694-coach-reply.png` });
 
   // ---------- client reloads: playback + transcript ----------
+  // ID-bound: the reply's exact media id must mint on the client, and the
+  // transcript runs inside that specific card — not a generic voice match.
+  const replyId = replyIds.media[0]!;
+  const clientMints = new Set<string>();
+  client.on("request", (req) => {
+    const m = /\/api\/v1\/media\/[^/]+\/([0-9a-f-]{36})/.exec(req.url());
+    if (m) clientMints.add(m[1]);
+  });
   await client.reload();
   await client
     .getByRole("button", { name: /Messages/i })
@@ -186,14 +218,23 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .click()
     .catch(() => {});
   await client.waitForSelector("audio", { timeout: 20_000 });
+  await client
+    .waitForResponse((res) => res.url().includes(replyId), {
+      timeout: 20_000,
+    })
+    .catch(() => {});
   const replyCard = client
-    .locator("div.cd-media-card", { hasText: "voice" })
+    .locator("div.cd-media-card")
+    .filter({ has: client.locator("audio") })
     .last();
   await replyCard
     .locator("audio")
     .evaluate((a: HTMLAudioElement) => a.play().catch(() => {}));
   await replyCard.getByRole("button", { name: /transcript/i }).click();
   await client.getByText(/Auto-transcript/i).waitFor({ timeout: 180_000 });
+  expect(clientMints, `client mint missing reply id ${replyId}`).toContain(
+    replyId,
+  );
   await client.screenshot({ path: `${SHOTS}/p694-client-transcript.png` });
 
   expect(external, `external requests: ${external.join("\n")}`).toEqual([]);

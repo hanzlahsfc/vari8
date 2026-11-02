@@ -8182,11 +8182,11 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 ## 2026-11-02 — P696 lifecycle and replay repair
 
 - **Fail-closed actor scope:** `useActorScope` now returns loading/error/ready(+retry); panel neither reads/writes cache nor starts inference until a real `user.id` resolves — `:pending` placeholder scopes removed from both cards.
-- **Cleanup ownership:** composer's `releaseVoiceTranscriber` fires only on a real identity *change* (`prevIdentityKey` ref), never on routine mount. `SignOutButton` and the coach `/logout` form both clear `vt1:*`.
+- **Cleanup ownership:** composer's `releaseVoiceTranscriber` fires only on a real identity _change_ (`prevIdentityKey` ref), never on routine mount. `SignOutButton` and the coach `/logout` form both clear `vt1:*`.
 - **Worker termination:** `releaseWorker` settles the in-flight run (`activeReject` → AbortError), resets concurrency, next call rebuilds; stale completions can't land.
 - **Reservation lifecycle:** raced-second-take check + slot release moved out of `setStaged` (no updater side effects, exactly-once release).
 - **Reproducible replay:** `tests/e2e/fixtures/jfk.wav` committed + provenance/README; spec captures POST `/messages` ids and asserts those exact attachments on the coach side. Self-contained: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` — exit 0 in 56s.
-**Tests (Node v24.22.1):** focused 79/79; full 152 files / **1814 exit 0**; `tsc`/`eslint`/`format`/`index` clean; fresh build exit 0; served replay exit 0.
+  **Tests (Node v24.22.1):** focused 79/79; full 152 files / **1814 exit 0**; `tsc`/`eslint`/`format`/`index` clean; fresh build exit 0; served replay exit 0.
 
 ## 2026-11-02 — P698 actor isolation and reproducible evidence
 
@@ -8194,4 +8194,12 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - Composer no longer runs a global transcript teardown on identity change; actor-scoped keys are unreadable cross-identity and the shared worker belongs to its caller. Logout still clears (SignOutButton + coach `/logout`); `releaseWorker` settles in-flight runs.
 - Recording regressions committed: pending audio pick guards mic, removal permits replacement take carrying its own id (`client-composer.dom`).
 - Replay is deterministic: file-backed fake mic (`--use-file-for-fake-audio-capture` on the committed `jfk.wav`), fixture SHA-256 asserted in `beforeAll`, and assertions bind the exact `POST /messages` media ids — coach mint GETs must hit `/api/v1/media/<ws>/<id>` for each captured id.
-**Tests (Node v24.22.1):** focused 79/79; full **152 files / 1815+ exit 0** (2 load-flake timeouts pass standalone); build/`tsc`/`eslint`/`format`/`index` clean; self-contained replay **exit 0** (1.7m).
+  **Tests (Node v24.22.1):** focused 79/79; full **152 files / 1815+ exit 0** (2 load-flake timeouts pass standalone); build/`tsc`/`eslint`/`format`/`index` clean; self-contained replay **exit 0** (1.7m).
+
+## 2026-11-02 — P700 stale-completion ownership and committed evidence
+
+- Panel async ownership: catch/idle paths now check `scopeRef.current === runScope` — a stale abort/error can't clear a newer actor's transcript or mark its error. Regression: `voice-transcript.dom` "A pending → B current → A rejects".
+- Replay is deterministic: `--use-fake-device-for-media-stream` + `--use-fake-ui-for-media-stream` + `--use-file-for-fake-audio-capture=<committed jfk.wav>` (all three required); fixture SHA-256 asserted in `beforeAll`.
+- Client direction is exact-ID bound: coach reply message/media ids captured; client mint for that exact id asserted before playback/transcript in its card.
+- Recording regressions committed: `client-composer.dom` — "one recording per draft: mic guard, removal re-allows, raced take drops without a slot leak"; "a pending audio file also guards the mic; removing a voice chip permits a replacement take".
+  **Tests (Node v24.22.1):** focused 79/79; replay **exit 0** (2.1m); full suite + build on this head pending.
