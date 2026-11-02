@@ -1,3 +1,23 @@
+## 2026-11-02 — P714 appearance-test fixture isolation (#252)
+
+Review finding: `me-auth-look.spec.ts` mutated the shared
+`s1h-e2e-workspace` `appearanceMode` — safe only under `workers: 1`.
+
+Repair: the appearance cases now own dedicated fixtures following the
+e2e conventions — `me-look@s1h-e2e.test` client, `me-look-owner` user,
+`s1h-e2e-me-look` workspace, CLIENT/OWNER memberships and a spec-owned
+ClientProfile, all upserted in `beforeAll` and deleted in `afterAll`
+(guarded deletes: invitations, profile, members, audit events,
+workspace, accounts, users — safe after partial setup failure). The
+shared workspace's `appearanceMode` is never written. The reset-mail
+case now targets the spec client (the `/me/reset` branch requires its
+profile). No product or assertion changes.
+
+Verified, Node v24.22.1: spec 5/5; both auth specs `--workers=2` 7/7;
+repeat run 5/5 (no state leakage). Node v22.21.1: spec 5/5 (one timing
+flake on `.auth-success` under load — mail itself correct, passed on
+re-run); `format:check`/`tsc`/`eslint` 0 errors.
+
 ## 2026-11-02 — P712 Beta gate repairs (five diagnosed failures)
 
 Branch `beta/p712-gate-repairs` off `origin/Vari8-Beta` `ae409f38`.

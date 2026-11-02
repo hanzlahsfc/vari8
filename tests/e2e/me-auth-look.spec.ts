@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
+import { hashPassword } from "../../lib/password";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
 /**
@@ -39,12 +40,23 @@ const MAILBOX =
 
 const PROPS = ["background-color", "color", "font-family"] as const;
 
-let clientProfileId: string | undefined;
+// Spec-owned fixtures (tests/e2e fixture conventions: reserved
+// `@s1h-e2e.test` emails / `s1h-e2e-*` slugs, upserted, deleted in
+// afterAll). The shared s1h-e2e-workspace's authoritative appearanceMode
+// is never touched, so these cases are safe under parallel lanes.
+const LOOK = {
+  clientEmail: "me-look@s1h-e2e.test",
+  ownerEmail: "me-look-owner@s1h-e2e.test",
+  workspaceSlug: "s1h-e2e-me-look",
+  workspaceName: "S1H E2E Me Look",
+} as const;
+
+let specWorkspaceId: string | undefined;
+let specClientProfileId: string | undefined;
+const specUserIds: string[] = [];
 let clientInviteHref = "";
 let staffInviteHref = "";
 let inviteTokenIds: string[] = [];
-let workspaceId: string | undefined;
-let originalAppearanceMode: "DARK" | "LIGHT" = "DARK";
 
 type Look = Record<(typeof PROPS)[number], string>;
 
@@ -75,7 +87,7 @@ async function fontLoaded(page: Page): Promise<boolean> {
 
 async function signInAsClient(page: Page) {
   await page.goto("/me/login");
-  await page.locator('input[name="email"]').fill(E2E.client);
+  await page.locator('input[name="email"]').fill(LOOK.clientEmail);
   await page.locator('input[name="password"]').fill(E2E.password);
   await page.locator(".auth-button").click();
   await page.waitForURL(/\/me$/, { timeout: 30_000 });
@@ -96,19 +108,60 @@ function seedMode(page: Page, mode: "light" | "dark") {
 }
 
 test.beforeAll(async () => {
-  const [client, owner, ws] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { email: E2E.client } }),
-    prisma.user.findUniqueOrThrow({ where: { email: E2E.owner } }),
-    prisma.workspace.findUniqueOrThrow({ where: { slug: E2E.workspaceSlug } }),
+  const passwordHash = await hashPassword(E2E.password);
+  const upsertUser = async (email: string) => {
+    const user = await prisma.user.upsert({
+      where: { email },
+      update: { passwordHash, status: "ACTIVE", name: email },
+      create: { email, passwordHash, status: "ACTIVE", name: email },
+    });
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: {
+          providerId: "credential",
+          accountId: user.id,
+        },
+      },
+      update: { password: passwordHash },
+      create: {
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: passwordHash,
+      },
+    });
+    specUserIds.push(user.id);
+    return user;
+  };
+
+  const [client, owner] = await Promise.all([
+    upsertUser(LOOK.clientEmail),
+    upsertUser(LOOK.ownerEmail),
   ]);
-  workspaceId = ws.id;
-  originalAppearanceMode = ws.appearanceMode;
+  const ws = await prisma.workspace.upsert({
+    where: { slug: LOOK.workspaceSlug },
+    update: { name: LOOK.workspaceName, status: "ACTIVE" },
+    create: {
+      slug: LOOK.workspaceSlug,
+      name: LOOK.workspaceName,
+      status: "ACTIVE",
+    },
+  });
+  specWorkspaceId = ws.id;
+  const upsertMember = (userId: string, role: "WORKSPACE_OWNER" | "CLIENT") =>
+    prisma.workspaceMember.upsert({
+      where: { workspaceId_userId: { workspaceId: ws.id, userId } },
+      update: { role, status: "ACTIVE" },
+      create: { workspaceId: ws.id, userId, role, status: "ACTIVE" },
+    });
+  await upsertMember(owner.id, "WORKSPACE_OWNER");
+  await upsertMember(client.id, "CLIENT");
 
   const existing = await prisma.clientProfile.findFirst({
     where: { userId: client.id, workspaceId: ws.id },
   });
   if (existing) {
-    clientProfileId = existing.id;
+    specClientProfileId = existing.id;
     if (existing.archivedAt) {
       await prisma.clientProfile.update({
         where: { id: existing.id },
@@ -119,14 +172,14 @@ test.beforeAll(async () => {
     const created = await prisma.clientProfile.create({
       data: { userId: client.id, workspaceId: ws.id, name: "O17 Client" },
     });
-    clientProfileId = created.id;
+    specClientProfileId = created.id;
   }
 
   const clientInvite = await createWorkspaceInvitation(
     { user: { id: owner.id } },
     {
       workspaceId: ws.id,
-      targetEmail: "o17-client-invite@s1h-e2e.test",
+      targetEmail: "me-look-client-invite@s1h-e2e.test",
       intendedRole: "CLIENT",
     },
     prisma,
@@ -135,7 +188,7 @@ test.beforeAll(async () => {
     { user: { id: owner.id } },
     {
       workspaceId: ws.id,
-      targetEmail: "o17-staff-invite@s1h-e2e.test",
+      targetEmail: "me-look-staff-invite@s1h-e2e.test",
       intendedRole: "COACH",
     },
     prisma,
@@ -146,22 +199,32 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
+  // Only rows this spec created; each delete is guarded so a setup
+  // failure part-way through cannot turn cleanup into a second failure.
   if (inviteTokenIds.length > 0) {
     await prisma.accessToken.deleteMany({
       where: { id: { in: inviteTokenIds } },
     });
   }
-  if (clientProfileId) {
-    await prisma.clientProfile.update({
-      where: { id: clientProfileId },
-      data: { archivedAt: new Date() },
+  if (specClientProfileId) {
+    await prisma.clientProfile.deleteMany({
+      where: { id: specClientProfileId },
     });
   }
-  if (workspaceId) {
-    await prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { appearanceMode: originalAppearanceMode },
+  if (specWorkspaceId) {
+    await prisma.workspaceMember.deleteMany({
+      where: { workspaceId: specWorkspaceId },
     });
+    await prisma.auditEvent.deleteMany({
+      where: { workspaceId: specWorkspaceId },
+    });
+    await prisma.workspace.deleteMany({ where: { id: specWorkspaceId } });
+  }
+  if (specUserIds.length > 0) {
+    await prisma.account.deleteMany({
+      where: { userId: { in: specUserIds } },
+    });
+    await prisma.user.deleteMany({ where: { id: { in: specUserIds } } });
   }
   await prisma.$disconnect();
 });
@@ -171,11 +234,12 @@ for (const mode of ["dark", "light"] as const) {
     page,
   }) => {
     await seedMode(page, mode);
-    // The workspace's authoritative appearance overrides the stored seed
-    // (mergeWorkspaceAppearance); the seeded preference alone cannot flip
-    // the shell while the workspace policy says otherwise.
+    // The spec-owned workspace's authoritative appearance overrides the
+    // stored seed (mergeWorkspaceAppearance); the seeded preference alone
+    // cannot flip the shell while the workspace policy says otherwise.
+    // Only this spec's workspace is mutated — parallel lanes are isolated.
     await prisma.workspace.update({
-      where: { id: workspaceId },
+      where: { id: specWorkspaceId },
       data: { appearanceMode: mode === "light" ? "LIGHT" : "DARK" },
     });
 
@@ -268,7 +332,7 @@ test("a coach signing in at /me/login still lands on /coach", async ({
 test("the client reset mail links to /me/reset", async ({ page }) => {
   test.skip(!DELIVERY_UP, "mail delivery adapter not configured");
   await page.goto("/me/reset-request");
-  await page.locator('input[name="email"]').fill(E2E.client);
+  await page.locator('input[name="email"]').fill(LOOK.clientEmail);
   await page.locator(".reset-form__submit").click();
   await expect(page.locator(".auth-success")).toBeVisible({ timeout: 30_000 });
 
@@ -276,6 +340,8 @@ test("the client reset mail links to /me/reset", async ({ page }) => {
   const messages = lines.map(
     (line) => JSON.parse(line) as { to: string; text: string },
   );
-  const mine = messages.filter((message) => message.to === E2E.client).at(-1);
+  const mine = messages
+    .filter((message) => message.to === LOOK.clientEmail)
+    .at(-1);
   expect(mine?.text).toContain("/me/reset?token=");
 });
