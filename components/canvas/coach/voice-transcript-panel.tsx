@@ -44,16 +44,25 @@ export function VoiceTranscript({
     "idle" | "busy" | "ready" | "error"
   >("idle");
   const [text, setText] = useState<string>("");
-  // Cache reads happen only after actor resolution — and only for a
-  // card whose authorized mint already resolved (callers mount us then).
+  // The scope a running transcription belongs to — results bind to the
+  // actor that produced them, never to whoever signs in next.
+  const scopeRef = useRef<string | null>(scope);
+  scopeRef.current = scope;
   useEffect(() => {
-    if (!scope || state !== "idle") return;
+    // Any actor transition (loading, error, or a different resolved
+    // scope) resets the panel: a prior identity's transcript can never
+    // survive into the new session. Cache reads happen only after actor
+    // resolution — and only for a card whose authorized mint resolved.
+    abort.current?.abort();
+    setState("idle");
+    setText("");
+    if (!scope) return;
     const cached = readCachedTranscript(scope, cacheKey);
     if (cached) {
       setText(cached);
       setState("ready");
     }
-  }, [scope, cacheKey, state]);
+  }, [scope, cacheKey, actor.status]);
   const [note, setNote] = useState("");
   const abort = useRef<AbortController | null>(null);
   const mounted = useRef(true);
@@ -61,7 +70,6 @@ export function VoiceTranscript({
     mounted.current = true;
     return () => {
       mounted.current = false;
-      abort.current?.abort();
     };
   }, []);
 
@@ -69,6 +77,7 @@ export function VoiceTranscript({
 
   const start = async () => {
     if (!scope) return; // fail closed — never infer without an actor
+    const runScope = scope;
     const controller = new AbortController();
     abort.current = controller;
     setState("busy");
@@ -83,8 +92,11 @@ export function VoiceTranscript({
           if (mounted.current) setNote(event.label);
         },
       });
-      writeCachedTranscript(scope ?? "", cacheKey, transcript);
-      if (!mounted.current) return;
+      // Always key the write to the producing actor; only display when
+      // that actor is still current — a stale completion can't surface
+      // under a different identity.
+      writeCachedTranscript(runScope, cacheKey, transcript);
+      if (!mounted.current || scopeRef.current !== runScope) return;
       setText(transcript);
       setState("ready");
     } catch (error) {

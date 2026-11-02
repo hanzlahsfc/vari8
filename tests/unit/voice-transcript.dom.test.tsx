@@ -37,12 +37,17 @@ const blobFetch = () => {
   ) as unknown as typeof fetch;
 };
 
+const actorOf = (scope: string) => ({
+  status: "ready" as const,
+  scope,
+  retry: () => {},
+});
 const mount = () =>
   render(
     <VoiceTranscript
       audioUrl="blob:audio"
       cacheKey="mo-1"
-      actor={{ status: "ready", scope: "ws-1:cp-1", retry: () => {} }}
+      actor={actorOf("ws-1:cp-1")}
     />,
   );
 
@@ -115,5 +120,108 @@ describe("VoiceTranscript — on-device, on demand (P688)", () => {
     mockSupported.mockReturnValue(false);
     mount();
     expect(screen.queryByRole("button", { name: /transcript/i })).toBeNull();
+  });
+});
+
+describe("VoiceTranscript — actor transitions (P698)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    blobFetch();
+    mockSupported.mockReturnValue(true);
+    mockTranscribe.mockReset();
+  });
+  afterEach(() => cleanup());
+
+  it("ready A → loading → error: text clears at every transition", async () => {
+    sessionStorage.setItem("vt1:w1:ws:uA:mo-1", "actor A text");
+    const { rerender } = render(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    await waitFor(() => screen.getByText("actor A text"));
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={{ status: "loading", retry: () => {} }}
+      />,
+    );
+    expect(screen.queryByText("actor A text")).toBeNull();
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={{ status: "error", retry: () => {} }}
+      />,
+    );
+    expect(screen.queryByText("actor A text")).toBeNull();
+    screen.getByRole("button", { name: "Retry" });
+  });
+
+  it("ready A → B shows only B's cache", async () => {
+    sessionStorage.setItem("vt1:w1:ws:uA:mo-1", "actor A text");
+    sessionStorage.setItem("vt1:w1:ws:uB:mo-1", "actor B text");
+    const { rerender } = render(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    await waitFor(() => screen.getByText("actor A text"));
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uB")}
+      />,
+    );
+    await waitFor(() => screen.getByText("actor B text"));
+    expect(screen.queryByText("actor A text")).toBeNull();
+  });
+
+  it("A→B→A late completion never surfaces under B", async () => {
+    let resolveRun: ((t: string) => void) | null = null;
+    mockTranscribe.mockImplementation(
+      () => new Promise<string>((res) => (resolveRun = res)),
+    );
+    const { rerender } = render(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    fireEvent.click(
+      screen.getByRole("button", { name: "View transcript" }),
+    );
+    // Identity changes while inference is in flight.
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uB")}
+      />,
+    );
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:audio"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    // The run must actually be in flight before resolving it.
+    await waitFor(() => expect(resolveRun).toBeTruthy());
+    resolveRun!("late take text");
+    // Written under the producing actor A only — never displayed mid-B.
+    await waitFor(() =>
+      expect(sessionStorage.getItem("vt1:w1:ws:uA:mo-1")).toBe(
+        "late take text",
+      ),
+    );
+    expect(sessionStorage.getItem("vt1:w1:ws:uB:mo-1")).toBeNull();
   });
 });

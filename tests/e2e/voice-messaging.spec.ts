@@ -52,26 +52,10 @@ async function login(page: Page, base: string, email: string) {
 }
 
 async function recordTake(page: Page) {
-  // Synthetic fake-mic capture occasionally yields a blob the completed-
-  // file validation can't decode — retry the take, bounded.
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await page.getByRole("button", { name: "Record voice note" }).click();
-    await page.waitForTimeout(2500);
-    await page.getByRole("button", { name: "Stop & preview" }).click();
-    const attach = page.getByRole("button", { name: /Attach voice note/ });
-    try {
-      await attach.waitFor({ timeout: 10_000 });
-      await attach.click();
-      return;
-    } catch {
-      // "length could not be verified" → back to idle; discard & retry.
-      await page
-        .getByRole("button", { name: "Discard" })
-        .click()
-        .catch(() => {});
-    }
-  }
-  throw new Error("fake-mic take failed validation 3 times");
+  await page.getByRole("button", { name: "Record voice note" }).click();
+  await page.waitForTimeout(2500); // synthetic file-backed capture
+  await page.getByRole("button", { name: "Stop & preview" }).click();
+  await page.getByRole("button", { name: /Attach voice note/ }).click();
 }
 
 test.beforeAll(async () => {
@@ -147,6 +131,11 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
   const coachCtx = await browser.newContext();
   const coach = await coachCtx.newPage();
   watch(coach);
+  const coachMints = new Set<string>();
+  coach.on("request", (req) => {
+    const m = /\/api\/v1\/media\/[^/]+\/([0-9a-f-]{36})/.exec(req.url());
+    if (m) coachMints.add(m[1]);
+  });
   await login(coach, "", E2E.coach);
   await coach.goto("/coach");
   await coach
@@ -156,11 +145,18 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .catch(() => {});
   await coach.getByText("E2E Client").first().click();
   await coach.waitForSelector("audio", { timeout: 20_000 });
-  // Assert the exact attachments the send returned (API/DB linkage).
+  // ID-bound: the coach card must mint the EXACT media_object ids the
+  // send returned — not merely a same-named file.
   expect(sentIds.messageId).toBeTruthy();
   expect(sentIds.media.length).toBeGreaterThanOrEqual(2);
-  for (const name of ["jfk.wav", "voice-note"])
-    await coach.getByText(new RegExp(name, "i")).first().waitFor();
+  // Mint URLs fire during thread render — assert the exact ids were
+  // requested, not merely same-named attachments.
+  for (const id of sentIds.media) {
+    await coach
+      .waitForResponse((res) => res.url().includes(id), { timeout: 20_000 })
+      .catch(() => {});
+    expect(coachMints, `missing mint for ${id}`).toContain(id);
+  }
   // play the sent audio
   await coach
     .locator("audio")

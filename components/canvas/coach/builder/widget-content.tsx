@@ -25,7 +25,6 @@ import {
 } from "@/lib/media-policy";
 import { DemoRecorder } from "../demo-recorder";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
-import { releaseVoiceTranscriber } from "../voice-transcript";
 import type { Media } from "../model";
 import { Dialog } from "../ui";
 import {
@@ -456,7 +455,6 @@ export function ChatComposer({
   // staged-sync effect recomputes rather than clobbers it.
   const voiceReserved = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
-  const prevIdentityKey = useRef<string | undefined>(undefined);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
     // session's pending send/upload can never rewrite this draft, error,
@@ -468,12 +466,10 @@ export function ChatComposer({
     setVoiceOpen(false);
     setError(null);
     voiceReserved.current = false;
-    // Release only on a real identity *change*, never on mount — a
-    // routine remount must not clear another consumer's cache or kill
-    // its in-flight transcription.
-    if (prevIdentityKey.current !== undefined)
-      releaseVoiceTranscriber();
-    prevIdentityKey.current = key;
+    // No global transcript teardown here: caches are actor-scoped so a
+    // different identity can never read them, and a shared worker run
+    // belongs to its caller — terminating it would kill another
+    // consumer's job. Logout paths clear explicitly.
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();

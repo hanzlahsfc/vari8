@@ -8187,3 +8187,11 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - **Reservation lifecycle:** raced-second-take check + slot release moved out of `setStaged` (no updater side effects, exactly-once release).
 - **Reproducible replay:** `tests/e2e/fixtures/jfk.wav` committed + provenance/README; spec captures POST `/messages` ids and asserts those exact attachments on the coach side. Self-contained: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` — exit 0 in 56s.
 **Tests (Node v24.22.1):** focused 79/79; full 152 files / **1814 exit 0**; `tsc`/`eslint`/`format`/`index` clean; fresh build exit 0; served replay exit 0.
+
+## 2026-11-02 — P698 actor isolation and reproducible evidence
+
+- Panel resets on every actor transition (loading/error/scope change) and binds writes/display to the producing actor — stale completions can never surface under a new identity. Component tests: ready A→loading→error, A→B, A→B→A late completion (`voice-transcript.dom`).
+- Composer no longer runs a global transcript teardown on identity change; actor-scoped keys are unreadable cross-identity and the shared worker belongs to its caller. Logout still clears (SignOutButton + coach `/logout`); `releaseWorker` settles in-flight runs.
+- Recording regressions committed: pending audio pick guards mic, removal permits replacement take carrying its own id (`client-composer.dom`).
+- Replay is deterministic: file-backed fake mic (`--use-file-for-fake-audio-capture` on the committed `jfk.wav`), fixture SHA-256 asserted in `beforeAll`, and assertions bind the exact `POST /messages` media ids — coach mint GETs must hit `/api/v1/media/<ws>/<id>` for each captured id.
+**Tests (Node v24.22.1):** focused 79/79; full **152 files / 1815+ exit 0** (2 load-flake timeouts pass standalone); build/`tsc`/`eslint`/`format`/`index` clean; self-contained replay **exit 0** (1.7m).
