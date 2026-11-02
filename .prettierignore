@@ -66,3 +66,7 @@ tools/parity/reference/combined/
 # Byte-verbatim copy of frontend/src/data/demo-export at a pinned commit (w2-s13);
 # reformatting would break the diff -r copy proof.
 scripts/seed/demo-export/
+
+# Vendored whisper-tiny/ORT model assets pinned by SHA-256 (docs/voice-transcription.md);
+# reformatting would break the recorded hashes.
+public/models/
