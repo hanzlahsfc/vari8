@@ -9,10 +9,10 @@ No admin reset tool, no new npm dependency.
 | File                                      | Change                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lib/mail/index.ts`                       | new `emaillabs` adapter in the existing registry: `POST` form-encoded to the vendor's transactional endpoint with HTTP Basic `app_key:secret_key`, plain text plus simple HTML generated from the text, 10 s timeout, provider status only on failure. New `assertMailDeliveryConfigured()` boot gate. Env name constants exported. |
-| `lib/mail/invitation.ts` (new)            | `sendInvitationMail` and `invitationLink`. Role-aware copy for `CLIENT` versus coach roles, link to `/invite?workspace=...&token=...`.                                                                                                                                                                                              |
+| `lib/mail/invitation.ts`                  | **Removed in the P707 Beta reconciliation.** Current Beta already delivers invitations inline through `createInvitationFromApi` (`/invite?workspace=...&token=...` link, 502 `delivery_failed`, rate limits, authorization); the helper was a dead duplicate caller.                                                                |
 | `instrumentation.ts`                      | boots the mail gate next to the auth-secret gate, same production-only refusal and the same `process.exit(1)` path.                                                                                                                                                                                                                 |
 | `.env.example`                            | names only for `MAIL_DELIVERY_ADAPTER=emaillabs`, `EMAILLABS_APP_KEY`, `EMAILLABS_SECRET_KEY`, `EMAILLABS_SMTP_ACCOUNT`, `MAIL_FROM`, `EMAILLABS_API_URL`. No values.                                                                                                                                                               |
-| `tests/unit/mail-emaillabs.test.ts` (new) | six tests, three bites (see below).                                                                                                                                                                                                                                                                                                 |
+| `tests/unit/mail-emaillabs.test.ts` (new) | ten tests: provider form payload/basic auth/no tracking, no secrets in logs, boot refuse + boot allow, provider timeout propagation, non-2xx status-only rejection, current invitation boundary (`/invite` link + `delivery_failed` mapping), reset mail construction (`/reset` and `/me/reset`).                                   |
 
 `dev-file` is untouched and stays the default outside production. `sendMail`'s signature and the
 `MailAdapter` port are unchanged, so the one existing call site (the reset flow at
@@ -103,3 +103,14 @@ npm run test
 INTEGRATION_DATABASE_URL=postgresql://mail_lane:<lanepw>@127.0.0.1:5433/app_mail_it?schema=public \
   npm run test:integration
 ```
+
+## P707 fix-forward (merge of Vari8-Beta, builder)
+
+- `instrumentation.ts`: the mail gate now boots beside the current auth
+  secret + media storage checks, refusing through the redacted
+  `logError("boot_refused")` + `process.exit(1)` path (the PR's older
+  `console.error` version and the dropped media check were superseded).
+- Invitation routing, authorization, normalized delivery and the
+  `delivery_failed` mapping are current Beta's — no second caller added.
+- Deferred (proposed, not approved): production `dev-file` rejection and
+  a mandatory canonical mail-link origin stay separate policy work.
