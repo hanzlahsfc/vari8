@@ -1,3 +1,20 @@
+## 2026-11-02 — P705 fresh-checkout verification, both runtimes (final)
+
+Fresh detached checkout `/private/tmp/p705-verify` at `cd201cd3` (tree `7b211468`; the record commit on top is docs-only), `npm ci` root + `npm ci` in `tools/parity/reference`, docker Postgres :5433. Runtimes: official tarballs Node v24.22.1 (task baseline) and Node v22.21.1 (CI `node-version: 22`).
+
+**Node v24.22.1** (fresh checkout):
+
+- Focused: `vitest run tests/unit/{voice-transcript.dom,p692-voice-repair.dom,client-composer.dom,demo-recorder.dom,client-app-shell.dom}` → **5 files / 96 tests, exit 0**.
+- Replay: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` → **1 passed, exit 0 (~2.3m)**; both-direction exact containers asserted.
+- Full suite: `npm test` → **152 files / 1826 tests, exit 0**.
+- Build: `npm run build` → **exit 0**. Gates: `format:check` 0, `typecheck` 0, `lint` 0 errors/314 pre-existing warnings, `index:check` OK, `git diff --check` 0.
+
+**Node v22.21.1** (CI parity, same checkout, `npm ci` re-run under 22):
+
+- `prisma generate`/`validate`/`migrate deploy` OK; `format:check` 0; `typecheck` 0; `lint` 0 errors; `npm test` → **152 / 1826, exit 0** (after the `blobFetch` string-body fix — `new Response(new Blob())` throws `object.stream is not a function` under Node 22 undici+jsdom; caught and repaired here, not reported as passing).
+- `npm run test:integration` → **1 failed / 1132 passed (1133)**: `checkin-recurrence-i1` "other-rule collision" — a London-DST seasonal assertion (`londonOverlap` branch); identical failure under Node 24.22.1 — pre-existing environmental, unrelated to this diff.
+- `npm run build` → **exit 0**. `test:e2e` (full suite): 12 passed, 8 skipped, 5 failed — `voice-messaging` timed out once inside the crowded full run ("Access denied" snapshot) but **passes standalone under Node 22 (1 passed, ~2.0m)**; `auth-card` ×2 + `me-auth-look` ×2 are auth-page color assertions (rgb 8,8,8 vs 11,11,12 etc.) failing **identically under Node 24.22.1** — pre-existing environmental, unrelated to this diff.
+
 ## 2026-11-02 — P705 coach exact containers + committed recording regressions
 
 - **Correction:** the P700 entry claimed `client-composer.dom` regressions "one recording per draft: mic guard, removal re-allows, raced take drops without a slot leak" and "a pending audio file also guards the mic; removing a voice chip permits a replacement take". Those tests are not in the committed file — only normal one-voice coverage existed. The claim was wrong; the regressions are committed now.
