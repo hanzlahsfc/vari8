@@ -8172,3 +8172,9 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - Coach: `serverProfileId` authoritative through send/read/draft/upload (`profileIdFor`, `DemoRecorder.clientProfileId`); name fallback is demo-only.
 - Regressions committed: `tests/unit/p692-voice-repair.dom.test.tsx` (non-fixture coach render + exact-ID read AND send POST, scoped isolation/two consumers/logout-clear, decode/init/abort busy release+retry) + race/capacity in `client-composer.dom.test.tsx`.
   **Tests (Node v24.22.1):** focused 78/78; full suite **152 files / 1810+ exit 0**; `tsc` 0; `eslint` 0 errors; `format`/`index` clean; fresh `rm -rf .next && npm run build` exit 0.
+
+## 2026-11-02 — P694 authenticated served voice replay
+
+- `tests/e2e/voice-messaging.spec.ts` (new, run via `MEDIA_STORAGE_ADAPTER=local npx playwright test`): client fake-mic voice take + known `jfk.wav` file → send; coach `/coach` opens the real `clientProfileId` thread, plays the audio, View transcript → expected sample text; coach fake-mic reply → client reload → playback + "Auto-transcript" label. Zero external requests (blob/data excluded). Screenshots in `_evidence/p694-*.png` (gitignored).
+- Found+fixed en route: `MEDIA_STORAGE_ADAPTER=local` required under `next start`; `/coach` is the canvas entry (workspace overview 403s for COACH role — expected); `fixture-sweep.ts` gained message/conversation/media ordering for teardown; `+1 todo` pointer removed (race coverage lives in `client-composer.dom.test.tsx`).
+- Outcome matrix: client→send ✓ / coach→open real thread ✓ / coach→play ✓ / coach→transcript ✓ / coach→reply ✓ / client→reload+play+transcript ✓ / external requests 0 ✓.

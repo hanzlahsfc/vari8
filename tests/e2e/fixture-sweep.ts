@@ -107,6 +107,32 @@ export async function sweepFixtureWorkspaces(
   await prisma.clientDashboardLayout.deleteMany({
     where: { workspaceId: { in: workspaceIds } },
   });
+  // P694: voice/messaging fixtures create conversation graphs — sweep the
+  // message/draft/read/attachment rows before the profile they key on.
+  await prisma.messageDraftAttachment.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.messageDraft.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.messageRead.deleteMany({
+    where: { message: { workspaceId: { in: workspaceIds } } },
+  });
+  await prisma.messageAttachment.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.message.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.conversation.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.mediaAssignment.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
+  await prisma.mediaObject.deleteMany({
+    where: { workspaceId: { in: workspaceIds } },
+  });
   await prisma.clientProfile.deleteMany({
     where: { workspaceId: { in: workspaceIds } },
   });

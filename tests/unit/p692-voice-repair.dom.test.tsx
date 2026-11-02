@@ -308,9 +308,3 @@ describe("P692 — bounded worker lifecycle", () => {
     await expect(transcribeAudio(blob)).rejects.toThrow("unsupported");
   });
 });
-
-// -- raced recordings ---------------------------------------------------------
-
-describe("P692 — one voice recording per draft (race/capacity)", () => {
-  it.todo("composer race covered in client-composer.dom.test.tsx");
-});
