@@ -1,3 +1,13 @@
+## 2026-11-02 — P703 fresh-checkout verification (final)
+
+Fresh detached checkout `/private/tmp/p703-verify` at commit `64315dbf` (tree `d93e6c29`), `npm ci` root + `npm ci` in `tools/parity/reference` (nested package — required for `pngjs`; without it the two parity suites fail on missing package, an environment step not a defect), Node v26.8.1, docker Postgres on :5433:
+
+- Focused: `npx vitest run tests/unit/voice-transcript.dom.test.tsx tests/unit/p692-voice-repair.dom.test.tsx tests/unit/client-composer.dom.test.tsx` → **3 files / 77 tests, exit 0** (includes the 3 new same-session run-token regressions).
+- Self-contained browser replay: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` → **1 passed, exit 0 (~1.9m)**; renders real mint `…key=…%2F<mediaId>…`, asserts exact `data-message-id` container + `data-media-id` card + engaged playback + in-card transcript; zero external requests. (First attempt timed out on the cold 180s webServer build window under load; rerun passed — `.next` warm.)
+- Full unfiltered suite: `npm test` → **152 files / 1821 tests, exit 0** after the nested-parity install (1762 first run + 59 recovered).
+- Production build: `npm run build` → **exit 0** (Next 16.3.8 webpack).
+- Static gates: `npm run typecheck` 0; `npx eslint .` 0 errors / 314 pre-existing warnings; `npx prettier --check .` 0; `npm run index:check` OK; `git diff --check` 0.
+
 ## 2026-11-02 — P703 run-token ownership + exact reply boundary
 
 - **Async ownership proven:** `runToken` (P703 commit) bumps on every actor transition — a distinct session token per identity change, so an A→B→A revisit can never re-admit a stale settlement even though the scope string repeats — and again inside `start()` for a distinct per-run token. Both settlement paths (success and catch, incl. the AbortError branch) require `scopeRef.current === runScope && runToken.current === runId`; no `finally` exists. Committed regressions now cover every stale settlement kind under BOTH boundaries: cross-actor stale success ("A→B→A late completion", P698), stale failure ("A pending → B current → A rejects", P700), cancel abort (P688) — plus three new same-session tests: a take swap (cacheKey change, same actor) supersedes an in-flight run whose uncancellable promise still settles; its late success cannot clobber the live run's busy state, its late failure cannot mark it errored, its late abort cannot idle it (cache write stays keyed to the producing media id). Proven: stripping `runToken.current !== runId` fails exactly those 3 tests (12→9), restoring passes 12/12.
