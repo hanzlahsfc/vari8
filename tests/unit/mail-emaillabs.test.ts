@@ -158,8 +158,7 @@ describe("emaillabs adapter", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(
-        async () =>
-          new Response(`bad recipient for ${TOKEN}`, { status: 422 }),
+        async () => new Response(`bad recipient for ${TOKEN}`, { status: 422 }),
       ),
     );
     await expect(
@@ -180,7 +179,9 @@ describe("invitation delivery (current boundary)", () => {
   // inline — the deleted lib/mail/invitation.ts was a dead duplicate.
   // doMock (not hoisted vi.mock): the adapter tests above keep the real
   // sendMail; only these dynamic imports see the doubles.
-  const sendMail = vi.fn(async () => {});
+  const sendMail = vi.fn(
+    async (_message: { to: string; subject: string; text: string }) => {},
+  );
   const createWorkspaceInvitation = vi.fn();
 
   const load = async () => {
@@ -207,8 +208,14 @@ describe("invitation delivery (current boundary)", () => {
     return import("../../lib/workspace/invitation-api");
   };
 
-  const viewer = { userId: "staff-1" };
-  const workspace = { workspaceId: "ws_123" };
+  const viewer = {
+    userId: "staff-1",
+    email: "coach@vari8.test",
+    name: "Coach",
+  };
+  // Only workspaceId is read; the rest of the boundary context is the
+  // route's job — cast the double instead of re-deriving Role/scope.
+  const workspace = { workspaceId: "ws_123" } as never;
 
   beforeEach(() => {
     sendMail.mockReset();
@@ -238,11 +245,7 @@ describe("invitation delivery (current boundary)", () => {
     });
     expect(created.delivered).toBe(true);
     expect(sendMail).toHaveBeenCalledTimes(1);
-    const message = sendMail.mock.calls[0][0] as {
-      to: string;
-      subject: string;
-      text: string;
-    };
+    const message = sendMail.mock.calls[0][0];
     expect(message.to).toBe("athlete@example.test");
     expect(message.text).toContain(
       `https://app.vari8.test/invite?workspace=ws_123&token=${TOKEN}`,
@@ -266,7 +269,9 @@ describe("password reset mail construction", () => {
   // The served path: auth.options.emailAndPassword.sendResetPassword in
   // lib/auth/server.ts — exercised through the exported auth object so
   // the test drives the real closure, not a copy.
-  const sendMail = vi.fn(async () => {});
+  const sendMail = vi.fn(
+    async (_message: { to: string; subject: string; text: string }) => {},
+  );
   const deleteMany = vi.fn(async () => ({}));
   const findFirst = vi.fn(async () => null);
 
@@ -317,11 +322,7 @@ describe("password reset mail construction", () => {
     setEnv("BETTER_AUTH_URL", "https://app.vari8.test/");
     findFirst.mockResolvedValue(null);
     await callReset();
-    const message = sendMail.mock.calls[0][0] as {
-      to: string;
-      subject: string;
-      text: string;
-    };
+    const message = sendMail.mock.calls[0][0];
     expect(message.to).toBe("athlete@example.test");
     expect(message.subject).toBe("Reset your password");
     expect(message.text).toBe(
@@ -335,9 +336,7 @@ describe("password reset mail construction", () => {
     setEnv("BETTER_AUTH_URL", "https://app.vari8.test");
     findFirst.mockResolvedValue({ id: "cp-1" } as never);
     await callReset();
-    const message = sendMail.mock.calls[0][0] as {
-      text: string;
-    };
+    const message = sendMail.mock.calls[0][0];
     expect(message.text).toContain("/me/reset?token=");
   });
 });
