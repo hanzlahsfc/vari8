@@ -5,6 +5,12 @@ import path from "node:path";
 
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
 import { hashPassword } from "../../lib/password";
+import {
+  cleanupMeLookFixtures,
+  newMeLookOwned,
+  setupMeLookFixtures,
+  type MeLookFixture,
+} from "./me-look-fixture";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
 /**
@@ -40,23 +46,20 @@ const MAILBOX =
 
 const PROPS = ["background-color", "color", "font-family"] as const;
 
-// Spec-owned fixtures (tests/e2e fixture conventions: reserved
-// `@s1h-e2e.test` emails / `s1h-e2e-*` slugs, upserted, deleted in
-// afterAll). The shared s1h-e2e-workspace's authoritative appearanceMode
-// is never touched, so these cases are safe under parallel lanes.
-const LOOK = {
-  clientEmail: "me-look@s1h-e2e.test",
-  ownerEmail: "me-look-owner@s1h-e2e.test",
-  workspaceSlug: "s1h-e2e-me-look",
-  workspaceName: "S1H E2E Me Look",
-} as const;
-
-let specWorkspaceId: string | undefined;
-let specClientProfileId: string | undefined;
-const specUserIds: string[] = [];
+// Spec-owned fixtures via ./me-look-fixture: per-invocation identities,
+// resources recorded the moment each create returns, and cleanup that
+// deletes only owned rows, in restrict-safe order, reporting failures
+// instead of masking the original error. The shared s1h-e2e-workspace's
+// authoritative appearanceMode is never touched.
+const owned = newMeLookOwned();
+let fixture: MeLookFixture | undefined;
 let clientInviteHref = "";
 let staffInviteHref = "";
-let inviteTokenIds: string[] = [];
+
+function fx(): MeLookFixture {
+  if (!fixture) throw new Error("me-look fixtures were not set up");
+  return fixture;
+}
 
 type Look = Record<(typeof PROPS)[number], string>;
 
@@ -87,7 +90,7 @@ async function fontLoaded(page: Page): Promise<boolean> {
 
 async function signInAsClient(page: Page) {
   await page.goto("/me/login");
-  await page.locator('input[name="email"]').fill(LOOK.clientEmail);
+  await page.locator('input[name="email"]').fill(fx().clientEmail);
   await page.locator('input[name="password"]').fill(E2E.password);
   await page.locator(".auth-button").click();
   await page.waitForURL(/\/me$/, { timeout: 30_000 });
@@ -108,125 +111,32 @@ function seedMode(page: Page, mode: "light" | "dark") {
 }
 
 test.beforeAll(async () => {
-  const passwordHash = await hashPassword(E2E.password);
-  const upsertUser = async (email: string) => {
-    const user = await prisma.user.upsert({
-      where: { email },
-      update: { passwordHash, status: "ACTIVE", name: email },
-      create: { email, passwordHash, status: "ACTIVE", name: email },
-    });
-    await prisma.account.upsert({
-      where: {
-        providerId_accountId: {
-          providerId: "credential",
-          accountId: user.id,
-        },
-      },
-      update: { password: passwordHash },
-      create: {
-        userId: user.id,
-        accountId: user.id,
-        providerId: "credential",
-        password: passwordHash,
-      },
-    });
-    specUserIds.push(user.id);
-    return user;
-  };
-
-  const [client, owner] = await Promise.all([
-    upsertUser(LOOK.clientEmail),
-    upsertUser(LOOK.ownerEmail),
-  ]);
-  const ws = await prisma.workspace.upsert({
-    where: { slug: LOOK.workspaceSlug },
-    update: { name: LOOK.workspaceName, status: "ACTIVE" },
-    create: {
-      slug: LOOK.workspaceSlug,
-      name: LOOK.workspaceName,
-      status: "ACTIVE",
-    },
-  });
-  specWorkspaceId = ws.id;
-  const upsertMember = (userId: string, role: "WORKSPACE_OWNER" | "CLIENT") =>
-    prisma.workspaceMember.upsert({
-      where: { workspaceId_userId: { workspaceId: ws.id, userId } },
-      update: { role, status: "ACTIVE" },
-      create: { workspaceId: ws.id, userId, role, status: "ACTIVE" },
-    });
-  await upsertMember(owner.id, "WORKSPACE_OWNER");
-  await upsertMember(client.id, "CLIENT");
-
-  const existing = await prisma.clientProfile.findFirst({
-    where: { userId: client.id, workspaceId: ws.id },
-  });
-  if (existing) {
-    specClientProfileId = existing.id;
-    if (existing.archivedAt) {
-      await prisma.clientProfile.update({
-        where: { id: existing.id },
-        data: { archivedAt: null },
-      });
-    }
-  } else {
-    const created = await prisma.clientProfile.create({
-      data: { userId: client.id, workspaceId: ws.id, name: "O17 Client" },
-    });
-    specClientProfileId = created.id;
-  }
-
-  const clientInvite = await createWorkspaceInvitation(
-    { user: { id: owner.id } },
-    {
-      workspaceId: ws.id,
-      targetEmail: "me-look-client-invite@s1h-e2e.test",
-      intendedRole: "CLIENT",
-    },
+  fixture = await setupMeLookFixtures(
     prisma,
-  );
-  const staffInvite = await createWorkspaceInvitation(
-    { user: { id: owner.id } },
     {
-      workspaceId: ws.id,
-      targetEmail: "me-look-staff-invite@s1h-e2e.test",
-      intendedRole: "COACH",
+      hashPassword,
+      createInvitation: (owner, input) =>
+        createWorkspaceInvitation(owner, input, prisma),
     },
-    prisma,
+    owned,
   );
-  inviteTokenIds = [clientInvite.invitationId, staffInvite.invitationId];
-  clientInviteHref = `/invite?workspace=${ws.id}&token=${clientInvite.delivery.rawToken}`;
-  staffInviteHref = `/invite?workspace=${ws.id}&token=${staffInvite.delivery.rawToken}`;
+  clientInviteHref = fixture.clientInviteHref;
+  staffInviteHref = fixture.staffInviteHref;
 });
 
 test.afterAll(async () => {
-  // Only rows this spec created; each delete is guarded so a setup
-  // failure part-way through cannot turn cleanup into a second failure.
-  if (inviteTokenIds.length > 0) {
-    await prisma.accessToken.deleteMany({
-      where: { id: { in: inviteTokenIds } },
-    });
-  }
-  if (specClientProfileId) {
-    await prisma.clientProfile.deleteMany({
-      where: { id: specClientProfileId },
-    });
-  }
-  if (specWorkspaceId) {
-    await prisma.workspaceMember.deleteMany({
-      where: { workspaceId: specWorkspaceId },
-    });
-    await prisma.auditEvent.deleteMany({
-      where: { workspaceId: specWorkspaceId },
-    });
-    await prisma.workspace.deleteMany({ where: { id: specWorkspaceId } });
-  }
-  if (specUserIds.length > 0) {
-    await prisma.account.deleteMany({
-      where: { userId: { in: specUserIds } },
-    });
-    await prisma.user.deleteMany({ where: { id: { in: specUserIds } } });
-  }
+  // Deletes only rows this run created; a mid-setup throw still leaves
+  // `owned` complete enough to clean. Failures are reported after every
+  // safe attempt, never masking the original setup/test error.
+  const errors = await cleanupMeLookFixtures(prisma, owned);
   await prisma.$disconnect();
+  if (errors.length > 0) {
+    throw new Error(
+      `me-look fixture cleanup failed: ${errors
+        .map((e) => e.message)
+        .join("; ")}`,
+    );
+  }
 });
 
 for (const mode of ["dark", "light"] as const) {
@@ -239,7 +149,7 @@ for (const mode of ["dark", "light"] as const) {
     // cannot flip the shell while the workspace policy says otherwise.
     // Only this spec's workspace is mutated — parallel lanes are isolated.
     await prisma.workspace.update({
-      where: { id: specWorkspaceId },
+      where: { id: fx().workspaceId },
       data: { appearanceMode: mode === "light" ? "LIGHT" : "DARK" },
     });
 
@@ -332,7 +242,7 @@ test("a coach signing in at /me/login still lands on /coach", async ({
 test("the client reset mail links to /me/reset", async ({ page }) => {
   test.skip(!DELIVERY_UP, "mail delivery adapter not configured");
   await page.goto("/me/reset-request");
-  await page.locator('input[name="email"]').fill(LOOK.clientEmail);
+  await page.locator('input[name="email"]').fill(fx().clientEmail);
   await page.locator(".reset-form__submit").click();
   await expect(page.locator(".auth-success")).toBeVisible({ timeout: 30_000 });
 
@@ -341,7 +251,7 @@ test("the client reset mail links to /me/reset", async ({ page }) => {
     (line) => JSON.parse(line) as { to: string; text: string },
   );
   const mine = messages
-    .filter((message) => message.to === LOOK.clientEmail)
+    .filter((message) => message.to === fx().clientEmail)
     .at(-1);
   expect(mine?.text).toContain("/me/reset?token=");
 });

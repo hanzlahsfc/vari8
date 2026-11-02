@@ -1,3 +1,28 @@
+## 2026-11-02 — P716 partial-setup cleanup hardening (#252)
+
+Review finding: the guarded deletes were not safe after a mid-setup
+throw — untracked first invitation, untracked user on account failure,
+and one failing delete skipped the rest.
+
+Repair: fixture lifecycle extracted to `tests/e2e/me-look-fixture.ts`.
+Identities carry a per-invocation `runId` suffix
+(`me-look-<run>@s1h-e2e.test`, `s1h-e2e-me-look-<run>`) so two lanes can
+never share rows and deletes are owned by construction. Every resource
+is recorded the moment its create returns — user before account.upsert,
+each invitation independently. Cleanup attempts every safe delete in
+restrict-safe order (tokens → profile/members/audit → workspace →
+accounts → users), collects failures and reports them after
+`$disconnect` — never masking the original error.
+
+Proof: `tests/unit/me-look-fixture.test.ts` (4 tests) — second-invitation
+failure leaves the first token owned+cleaned; account failure leaves the
+user tracked+deleted; a failing delete neither blocks later steps nor
+hides its error; an empty ownership record deletes nothing.
+
+Verified — Node v24.22.1: unit 4/4; spec 5/5. Node v22.21.1: spec 5/5;
+`tsc`/`eslint`/`prettier` 0 errors. Accepted London/CSS/assertion repairs
+untouched.
+
 ## 2026-11-02 — P714 appearance-test fixture isolation (#252)
 
 Review finding: `me-auth-look.spec.ts` mutated the shared
