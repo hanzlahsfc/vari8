@@ -445,11 +445,8 @@ export function ChatComposer({
   // W2-T8: staged uploads — only successfully uploaded media_object ids
   // are linked onto the message; pending blocks send, failed is removed
   // or reattached. Entries are session-scoped like the draft.
-  // "held" marks recorder-produced audio: real uploaded media, visible as a
-  // chip, but explicitly held from send() until the owner's voice/transcript
-  // policy lands. Ordinary file attachments stay "uploaded" and unaffected.
   type Staged = Media & {
-    state: "pending" | "uploaded" | "failed" | "held";
+    state: "pending" | "uploaded" | "failed";
   };
   const [staged, setStaged] = useState<Staged[]>([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -620,10 +617,10 @@ export function ChatComposer({
       if (session.current !== s) return;
       requestId.current = null;
       setDraft("");
-      // Only the acknowledged payload clears — held voice notes stay staged
-      // so a text send never implies they went out.
+      // Only the acknowledged payload clears — a failed chip stays staged
+      // so a text send never implies it went out.
       setStaged((current) =>
-        current.filter((item) => item.state === "held"),
+        current.filter((item) => item.state !== "uploaded"),
       );
     } catch {
       if (session.current !== s) return;
@@ -647,9 +644,7 @@ export function ChatComposer({
                   ? " — uploading…"
                   : item.state === "failed"
                     ? " — upload failed"
-                    : item.state === "held"
-                      ? " — voice note (sending held pending voice policy)"
-                      : ""}
+                    : ""}
               </span>
               <button
                 type="button"
@@ -751,8 +746,8 @@ export function ChatComposer({
           }}
         >
           <p className="cd-muted">
-            Use your microphone to record a voice note. Sending is held
-            pending the voice/transcript policy.
+            Use your microphone to record a voice note of up to five
+            minutes.
           </p>
           <DemoRecorder
             kind="voice"
@@ -764,7 +759,7 @@ export function ChatComposer({
               voiceReserved.current = false;
               setStaged((current) => [
                 ...current,
-                { ...item, state: "held" },
+                { ...item, state: "uploaded" },
               ]);
               setVoiceOpen(false);
             }}

@@ -13,6 +13,7 @@ import {
 import { ApiClientError } from "../data/http";
 import { DemoRecorder as RealRecorder } from "./demo-recorder";
 import type { CoachClient, Media } from "./model";
+import { VoiceTranscript } from "./voice-transcript-panel";
 import { useCoach } from "./store";
 import { Button, Empty } from "./ui";
 
@@ -119,12 +120,18 @@ export function MediaCard({
             />
           </a>
         ) : audio ? (
-          <audio src={src} controls aria-label={item.name}>
-            <track
-              kind="captions"
-              src="data:text/vtt,WEBVTT%0A%0A00%3A00.000%20--%3E%2000%3A03.000%0ALocal%20demo%20audio%20tones.%0A"
+          <>
+            <audio src={src} controls aria-label={item.name}>
+              <track
+                kind="captions"
+                src="data:text/vtt,WEBVTT%0A%0A00%3A00.000%20--%3E%2000%3A03.000%0ALocal%20demo%20audio%20tones.%0A"
+              />
+            </audio>
+            <VoiceTranscript
+              audioUrl={src}
+              cacheKey={item.mediaObjectId ?? item.id}
             />
-          </audio>
+          </>
         ) : video ? (
           <video src={src} controls playsInline aria-label={item.name}>
             <track kind="captions" />

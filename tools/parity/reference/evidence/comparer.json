@@ -87,7 +87,7 @@
   "locks": {
     "root": {
       "path": "package-lock.json",
-      "sha256": "b014fb81ddd3c10b14b3119eb7f7add4e9e3751c5c1d538861c0cf300c4f780c"
+      "sha256": "636caa666f752bce7f58fafad378201b67670d60176148880dd1c54940670df9"
     },
     "reference": {
       "path": "tools/parity/reference/package-lock.json",

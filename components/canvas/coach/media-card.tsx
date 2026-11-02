@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import type { Media } from "./model";
 import { Button } from "./ui";
+import { VoiceTranscript } from "./voice-transcript-panel";
 
 /**
  * PR-MEDIA real MediaCard (D20, S02-24): the canvas `MediaCard` from
@@ -170,9 +171,15 @@ export function MediaCard({
             />
           </a>
         ) : audio ? (
-          <audio src={url} controls aria-label={item.name}>
-            <track kind="captions" />
-          </audio>
+          <>
+            <audio src={url} controls aria-label={item.name}>
+              <track kind="captions" />
+            </audio>
+            <VoiceTranscript
+              audioUrl={url}
+              cacheKey={item.mediaObjectId ?? item.id}
+            />
+          </>
         ) : video ? (
           <video src={url} controls playsInline aria-label={item.name}>
             <track kind="captions" />

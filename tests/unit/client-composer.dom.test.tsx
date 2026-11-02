@@ -346,7 +346,7 @@ describe("served coach conversation (RemoteConversation)", () => {
     );
   };
 
-  it("an attached voice note lands as a held chip and cannot send alone", async () => {
+  it("an attached voice note sends as a normal attachment (P688)", async () => {
     mocked.upload.mockResolvedValue({
       mediaObjectId: "mo-v1",
       name: "voice-note.webm",
@@ -355,17 +355,8 @@ describe("served coach conversation (RemoteConversation)", () => {
     });
     await recordVoiceNote();
     fireEvent.click(screen.getByRole("button", { name: /Attach voice note/ }));
-    await waitFor(() =>
-      screen.getByText(/voice note \(sending held pending voice policy\)/),
-    );
-    expect(screen.getByRole("button", { name: "Send" })).toHaveProperty(
-      "disabled",
-      true,
-    );
-    // Ordinary text must not carry the held voice note out either.
-    fireEvent.change(screen.getByLabelText("Message"), {
-      target: { value: "hi" },
-    });
+    // One recording per voice message: the chip enables Send on its own —
+    // no text needed, nothing stays held.
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Send" })).toHaveProperty(
         "disabled",
@@ -374,7 +365,9 @@ describe("served coach conversation (RemoteConversation)", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     await waitFor(() => expect(mocked.sendOwn).toHaveBeenCalled());
-    expect(mocked.sendOwn.mock.calls[0][2]).toEqual([]);
+    expect(mocked.sendOwn.mock.calls[0][2]).toEqual(["mo-v1"]);
+    // The acknowledged chip clears like any uploaded attachment.
+    await waitFor(() => expect(screen.queryByText(/voice-note/)).toBeNull());
   });
 
   it("a closing mid-upload never lands a chip", async () => {
