@@ -27,11 +27,15 @@ vi.mock(
 const mockSupported = vi.mocked(engine.transcriptionSupported);
 const mockTranscribe = vi.mocked(engine.transcribeAudio);
 
+// A string body — not `new Response(new Blob(...))`: jsdom's Blob has no
+// `.stream()` and Node 22's undici Response rejects it. `res.blob()`
+// still yields a Blob for the component.
 const blobFetch = () => {
   globalThis.fetch = vi.fn(() =>
     Promise.resolve(
-      new Response(new Blob(["audio"], { type: "audio/webm" }), {
+      new Response("audio", {
         status: 200,
+        headers: { "content-type": "audio/webm" },
       }),
     ),
   ) as unknown as typeof fetch;
