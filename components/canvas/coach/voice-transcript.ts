@@ -69,16 +69,16 @@ export async function transcribeAudio(
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
   if (busy) throw new Error("transcribe_busy");
   busy = true;
-  onProgress?.({ stage: "audio", label: "Preparing audio…" });
-  const pcm = await blobToMono16k(blob);
-  if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
-
-  // Bounded lifecycle: one worker per tab session, one run at a time —
-  // a second request waits its turn rather than stacking 85 MB models.
-  const w = (worker ??= new Worker(
-    new URL("./voice-transcript-worker.ts", import.meta.url),
-  ));
   try {
+    onProgress?.({ stage: "audio", label: "Preparing audio…" });
+    const pcm = await blobToMono16k(blob);
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+
+    // Bounded lifecycle: one worker per tab session, one run at a time —
+    // a second request waits its turn rather than stacking 85 MB models.
+    const w = (worker ??= new Worker(
+      new URL("./voice-transcript-worker.ts", import.meta.url),
+    ));
     return await new Promise<string>((resolve, reject) => {
       const finish = (fn: (v: never) => void, v: unknown) => {
         signal?.removeEventListener("abort", onAbort);

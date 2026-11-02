@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import type { Media } from "./model";
 import { Button } from "./ui";
+import { useActorScope } from "./voice-transcript-actor";
 import { VoiceTranscript } from "./voice-transcript-panel";
 
 /**
@@ -121,6 +122,7 @@ export function MediaCard({
   item: Media;
   onRemove?: () => void;
 }) {
+  const actorScope = useActorScope(workspaceId);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -181,7 +183,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={url}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={scope ?? workspaceId}
+              scope={scope ?? actorScope ?? `${workspaceId}:pending`}
             />
           </>
         ) : video ? (

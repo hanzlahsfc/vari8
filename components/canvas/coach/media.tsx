@@ -14,6 +14,7 @@ import { ApiClientError } from "../data/http";
 import { DemoRecorder as RealRecorder } from "./demo-recorder";
 import type { CoachClient, Media } from "./model";
 import { VoiceTranscript } from "./voice-transcript-panel";
+import { useActorScope } from "./voice-transcript-actor";
 import { useCoach } from "./store";
 import { Button, Empty } from "./ui";
 
@@ -60,6 +61,7 @@ export function MediaCard({
   onRemove?: () => void;
 }) {
   const { media, attach, workspaceId } = useCoach();
+  const actorScope = useActorScope(workspaceId ?? "");
   const url = media[item.id];
   // PR-MEDIA: stored media (uploaded via /api/v1/media) resolves a fresh
   // presigned URL instead of a local blob — same card, real bytes.
@@ -130,7 +132,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={src}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={`${workspaceId}:staff`}
+              scope={actorScope ?? `${workspaceId}:pending`}
             />
           </>
         ) : video ? (

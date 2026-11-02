@@ -8163,3 +8163,12 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - Cache: real actor scope threaded (`${workspaceId}:${clientProfileId}` client / `:staff` coach); `releaseVoiceTranscriber(scope)` clears only that scope; cache display still mint-gated; version `w1`.
 - Worker: `busy` wraps decode+run in one try/finally; failed worker terminated for clean retry; abort rejects and releases; stale finishes discarded.
 - Raced second take releases its slot reservation — no capacity leak.
+
+## 2026-11-02 — P693 identity propagation + committed regressions
+
+- Transcript scope is the real authenticated actor: `useActorScope` resolves `GET /workspaces/:ws/session` → `${workspaceId}:${user.id}` for client and coach cards; `${workspaceId}:${clientProfileId}` fallback removed. `signOut` clears all `vt1:*` at the logout boundary; scoped clear keeps panels isolated.
+- Worker: `busy` wraps decode+run in one try/finally (decode-fail/abort releases); failed worker terminates for clean retry; abort rejects + releases.
+- Race: dropped second take releases its slot reservation.
+- Coach: `serverProfileId` authoritative through send/read/draft/upload (`profileIdFor`, `DemoRecorder.clientProfileId`); name fallback is demo-only.
+- Regressions committed: `tests/unit/p692-voice-repair.dom.test.tsx` (non-fixture coach render + exact-ID fetch, scoped isolation/two consumers, decode/abort busy release) + race/capacity in `client-composer.dom.test.tsx`.
+  **Tests (Node v24.22.1):** focused 76/76; full suite + build pending.

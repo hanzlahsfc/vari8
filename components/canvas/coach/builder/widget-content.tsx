@@ -467,7 +467,7 @@ export function ChatComposer({
     setVoiceOpen(false);
     setError(null);
     voiceReserved.current = false;
-    releaseVoiceTranscriber(`${workspaceId}:${clientProfileId}`);
+    releaseVoiceTranscriber();
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -1002,7 +1002,7 @@ export function RemoteConversation({
                                     : 0,
                                 mediaObjectId: attachment.mediaObjectId,
                               }}
-                              scope={`${workspaceId}:${clientProfileId}`}
+
                             />
                           ) : (
                             <p

@@ -1478,11 +1478,15 @@ describe("served coach conversation (RemoteConversation)", () => {
   });
 
   it("an invalid attachment exposes no download while its valid neighbor does", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ download: { url: "/media/mo-ok" } }), {
-        status: 200,
-      }),
-    );
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockImplementation(() =>
+        Promise.resolve(
+          new Response(JSON.stringify({ download: { url: "/media/mo-ok" } }), {
+            status: 200,
+          }),
+        ),
+      );
     const { MediaCard: CoachCard } =
       await import("../../components/canvas/coach/media");
     const { toCanvasMessage } =
