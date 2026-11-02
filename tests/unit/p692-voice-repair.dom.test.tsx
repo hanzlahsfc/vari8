@@ -238,8 +238,16 @@ describe("P692 — scoped temporary transcript cache", () => {
     writeCachedTranscript("ws:u2", "mo-b", "panel two");
     render(
       <>
-        <VoiceTranscript audioUrl="x" cacheKey="mo-a" scope="ws:u1" />
-        <VoiceTranscript audioUrl="x" cacheKey="mo-b" scope="ws:u2" />
+        <VoiceTranscript
+          audioUrl="x"
+          cacheKey="mo-a"
+          actor={{ status: "ready", scope: "ws:u1", retry: () => {} }}
+        />
+        <VoiceTranscript
+          audioUrl="x"
+          cacheKey="mo-b"
+          actor={{ status: "ready", scope: "ws:u2", retry: () => {} }}
+        />
       </>,
     );
     screen.getByText("panel one");
@@ -255,6 +263,16 @@ describe("P692 — bounded worker lifecycle", () => {
   beforeEach(() => {
     // jsdom: no OfflineAudioContext, no Worker — exercises the real
     // engine's decode/init failure boundaries.
+  });
+  it("release during an in-flight run settles it and permits the next run", async () => {
+    const { releaseVoiceTranscriber } =
+      await import("../../components/canvas/coach/voice-transcript");
+    const blob = new Blob(["x"], { type: "audio/webm" });
+    const run = transcribeAudio(blob);
+    // Another consumer's teardown must settle, not wedge, the run.
+    releaseVoiceTranscriber();
+    await expect(run).rejects.toThrow();
+    await expect(transcribeAudio(blob)).rejects.toThrow("unsupported");
   });
   it("decode failure releases busy so retry is possible", async () => {
     const blob = new Blob(["x"], { type: "audio/webm" });

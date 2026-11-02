@@ -61,7 +61,7 @@ export function MediaCard({
   onRemove?: () => void;
 }) {
   const { media, attach, workspaceId } = useCoach();
-  const actorScope = useActorScope(workspaceId ?? "");
+  const actor = useActorScope(workspaceId ?? "");
   const url = media[item.id];
   // PR-MEDIA: stored media (uploaded via /api/v1/media) resolves a fresh
   // presigned URL instead of a local blob — same card, real bytes.
@@ -132,7 +132,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={src}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={actorScope ?? `${workspaceId}:pending`}
+              actor={actor}
             />
           </>
         ) : video ? (

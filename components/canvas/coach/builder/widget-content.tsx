@@ -456,6 +456,7 @@ export function ChatComposer({
   // staged-sync effect recomputes rather than clobbers it.
   const voiceReserved = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const prevIdentityKey = useRef<string | undefined>(undefined);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
     // session's pending send/upload can never rewrite this draft, error,
@@ -467,7 +468,12 @@ export function ChatComposer({
     setVoiceOpen(false);
     setError(null);
     voiceReserved.current = false;
-    releaseVoiceTranscriber();
+    // Release only on a real identity *change*, never on mount — a
+    // routine remount must not clear another consumer's cache or kill
+    // its in-flight transcription.
+    if (prevIdentityKey.current !== undefined)
+      releaseVoiceTranscriber();
+    prevIdentityKey.current = key;
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -765,15 +771,17 @@ export function ChatComposer({
               voiceReserved.current = false;
               // One recording per voice message (approved): an existing
               // audio chip blocks another take; removing it re-allows.
-              setStaged((current) => {
-                if (current.some((i) => i.type.startsWith("audio/"))) {
-                  // Second take rejected — release its slot reservation
-                  // so it can never leak capacity.
-                  slots.current = Math.max(0, slots.current - 1);
-                  return current;
-                }
-                return [...current, { ...item, state: "uploaded" }];
-              });
+              // Belt guard: a raced second take never stages — and its
+              // slot reservation is released exactly once, outside any
+              // React state updater.
+              if (staged.some((i) => i.type.startsWith("audio/"))) {
+                slots.current = Math.max(0, slots.current - 1);
+                return;
+              }
+              setStaged((current) => [
+                ...current,
+                { ...item, state: "uploaded" },
+              ]);
               setVoiceOpen(false);
             }}
           />

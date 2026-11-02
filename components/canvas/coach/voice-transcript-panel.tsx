@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import type { ActorScope } from "./voice-transcript-actor";
 import { Button } from "./ui";
 import {
   readCachedTranscript,
@@ -24,26 +25,35 @@ import {
 export function VoiceTranscript({
   audioUrl,
   cacheKey,
-  scope,
+  actor,
 }: {
   /** The card's minted download URL; fetched only on user request. */
   audioUrl: string;
   /** Exact audio identity — the media_object id (or staged chip id). */
   cacheKey: string;
   /**
-   * Authenticated scope for the temporary cache (workspace + identity).
-   * The panel only mounts once the card's authorized download mint has
-   * resolved — cache reads therefore always follow a current-access
-   * check on this exact audio, never precede one.
+   * The authenticated actor (workspace + user) for the temporary cache.
+   * Fail closed: until the session resolves to a real user id the panel
+   * neither reads/writes cache nor starts inference — loading, error and
+   * retry are explicit states, never a shared placeholder scope.
    */
-  scope: string;
+  actor: ActorScope;
 }) {
+  const scope = actor.status === "ready" ? actor.scope : null;
   const [state, setState] = useState<
     "idle" | "busy" | "ready" | "error"
-  >(() => (readCachedTranscript(scope, cacheKey) ? "ready" : "idle"));
-  const [text, setText] = useState<string>(
-    () => readCachedTranscript(scope, cacheKey) ?? "",
-  );
+  >("idle");
+  const [text, setText] = useState<string>("");
+  // Cache reads happen only after actor resolution — and only for a
+  // card whose authorized mint already resolved (callers mount us then).
+  useEffect(() => {
+    if (!scope || state !== "idle") return;
+    const cached = readCachedTranscript(scope, cacheKey);
+    if (cached) {
+      setText(cached);
+      setState("ready");
+    }
+  }, [scope, cacheKey, state]);
   const [note, setNote] = useState("");
   const abort = useRef<AbortController | null>(null);
   const mounted = useRef(true);
@@ -58,6 +68,7 @@ export function VoiceTranscript({
   if (!transcriptionSupported()) return null;
 
   const start = async () => {
+    if (!scope) return; // fail closed — never infer without an actor
     const controller = new AbortController();
     abort.current = controller;
     setState("busy");
@@ -72,7 +83,7 @@ export function VoiceTranscript({
           if (mounted.current) setNote(event.label);
         },
       });
-      writeCachedTranscript(scope, cacheKey, transcript);
+      writeCachedTranscript(scope ?? "", cacheKey, transcript);
       if (!mounted.current) return;
       setText(transcript);
       setState("ready");
@@ -104,6 +115,22 @@ export function VoiceTranscript({
           {note}
         </p>
         <Button onClick={() => abort.current?.abort()}>Cancel</Button>
+      </div>
+    );
+  if (actor.status === "loading")
+    return (
+      <p className="cd-muted" role="status">
+        Resolving sign-in…
+      </p>
+    );
+  if (actor.status === "error")
+    return (
+      <div className="cd-transcript">
+        <p role="alert" className="cd-muted">
+          Couldn’t verify sign-in — transcripts are unavailable. Playback
+          and sending are unaffected.
+        </p>
+        <Button onClick={actor.retry}>Retry</Button>
       </div>
     );
   return (

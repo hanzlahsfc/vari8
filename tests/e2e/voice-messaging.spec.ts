@@ -10,7 +10,7 @@ import { PrismaClient } from "@prisma/client";
 import { e2eDatabaseUrl, E2E } from "./global-setup";
 import path from "node:path";
 
-const WAV = path.join(__dirname, "..", "..", "_evidence", "jfk.wav");
+const WAV = path.join(__dirname, "fixtures", "jfk.wav");
 const SHOTS = path.join(__dirname, "..", "..", "_evidence");
 const external: string[] = [];
 
@@ -52,10 +52,26 @@ async function login(page: Page, base: string, email: string) {
 }
 
 async function recordTake(page: Page) {
-  await page.getByRole("button", { name: "Record voice note" }).click();
-  await page.waitForTimeout(2500); // synthetic fake-mic capture
-  await page.getByRole("button", { name: "Stop & preview" }).click();
-  await page.getByRole("button", { name: /Attach voice note/ }).click();
+  // Synthetic fake-mic capture occasionally yields a blob the completed-
+  // file validation can't decode — retry the take, bounded.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await page.getByRole("button", { name: "Record voice note" }).click();
+    await page.waitForTimeout(2500);
+    await page.getByRole("button", { name: "Stop & preview" }).click();
+    const attach = page.getByRole("button", { name: /Attach voice note/ });
+    try {
+      await attach.waitFor({ timeout: 10_000 });
+      await attach.click();
+      return;
+    } catch {
+      // "length could not be verified" → back to idle; discard & retry.
+      await page
+        .getByRole("button", { name: "Discard" })
+        .click()
+        .catch(() => {});
+    }
+  }
+  throw new Error("fake-mic take failed validation 3 times");
 }
 
 test.beforeAll(async () => {
@@ -97,6 +113,20 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .first()
     .click()
     .catch(() => {});
+  const sentIds: { messageId?: string; media: string[] } = { media: [] };
+  client.on("response", async (res) => {
+    if (res.request().method() !== "POST" || !res.url().includes("/messages"))
+      return;
+    const body = (await res.json().catch(() => null)) as {
+      message?: { id?: string; attachments?: { mediaObjectId?: string }[] };
+    } | null;
+    if (body?.message?.id) {
+      sentIds.messageId = body.message.id;
+      for (const a of body.message.attachments ?? [])
+        if (a.mediaObjectId) sentIds.media.push(a.mediaObjectId);
+      console.log("SENT message", sentIds.messageId, sentIds.media.join(","));
+    }
+  });
   const micBtn = client.getByRole("button", { name: "Record a voice note" });
   await micBtn.waitFor({ timeout: 20_000 });
   await micBtn.click();
@@ -126,6 +156,11 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .catch(() => {});
   await coach.getByText("E2E Client").first().click();
   await coach.waitForSelector("audio", { timeout: 20_000 });
+  // Assert the exact attachments the send returned (API/DB linkage).
+  expect(sentIds.messageId).toBeTruthy();
+  expect(sentIds.media.length).toBeGreaterThanOrEqual(2);
+  for (const name of ["jfk.wav", "voice-note"])
+    await coach.getByText(new RegExp(name, "i")).first().waitFor();
   // play the sent audio
   await coach
     .locator("audio")

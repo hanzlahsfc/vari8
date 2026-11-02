@@ -8178,3 +8178,12 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - `tests/e2e/voice-messaging.spec.ts` (new, run via `MEDIA_STORAGE_ADAPTER=local npx playwright test`): client fake-mic voice take + known `jfk.wav` file → send; coach `/coach` opens the real `clientProfileId` thread, plays the audio, View transcript → expected sample text; coach fake-mic reply → client reload → playback + "Auto-transcript" label. Zero external requests (blob/data excluded). Screenshots in `_evidence/p694-*.png` (gitignored).
 - Found+fixed en route: `MEDIA_STORAGE_ADAPTER=local` required under `next start`; `/coach` is the canvas entry (workspace overview 403s for COACH role — expected); `fixture-sweep.ts` gained message/conversation/media ordering for teardown; `+1 todo` pointer removed (race coverage lives in `client-composer.dom.test.tsx`).
 - Outcome matrix: client→send ✓ / coach→open real thread ✓ / coach→play ✓ / coach→transcript ✓ / coach→reply ✓ / client→reload+play+transcript ✓ / external requests 0 ✓.
+
+## 2026-11-02 — P696 lifecycle and replay repair
+
+- **Fail-closed actor scope:** `useActorScope` now returns loading/error/ready(+retry); panel neither reads/writes cache nor starts inference until a real `user.id` resolves — `:pending` placeholder scopes removed from both cards.
+- **Cleanup ownership:** composer's `releaseVoiceTranscriber` fires only on a real identity *change* (`prevIdentityKey` ref), never on routine mount. `SignOutButton` and the coach `/logout` form both clear `vt1:*`.
+- **Worker termination:** `releaseWorker` settles the in-flight run (`activeReject` → AbortError), resets concurrency, next call rebuilds; stale completions can't land.
+- **Reservation lifecycle:** raced-second-take check + slot release moved out of `setStaged` (no updater side effects, exactly-once release).
+- **Reproducible replay:** `tests/e2e/fixtures/jfk.wav` committed + provenance/README; spec captures POST `/messages` ids and asserts those exact attachments on the coach side. Self-contained: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` — exit 0 in 56s.
+**Tests (Node v24.22.1):** focused 79/79; full 152 files / **1814 exit 0**; `tsc`/`eslint`/`format`/`index` clean; fresh build exit 0; served replay exit 0.

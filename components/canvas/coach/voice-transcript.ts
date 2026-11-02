@@ -81,6 +81,7 @@ export async function transcribeAudio(
     ));
     return await new Promise<string>((resolve, reject) => {
       const finish = (fn: (v: never) => void, v: unknown) => {
+        activeReject = null;
         signal?.removeEventListener("abort", onAbort);
         fn(v as never);
       };
@@ -92,6 +93,12 @@ export async function transcribeAudio(
         reject(new DOMException("Aborted", "AbortError"));
       };
       signal?.addEventListener("abort", onAbort, { once: true });
+      // External release (identity switch, releaseVoiceTranscriber) must
+      // settle this run — register the reject before the run starts.
+      activeReject = (e) => {
+        signal?.removeEventListener("abort", onAbort);
+        reject(e);
+      };
       w.onmessage = (
         event: MessageEvent<{
           id: number;
@@ -129,10 +136,20 @@ export async function transcribeAudio(
 // work — no overlapping inference is ever scheduled.
 let worker: Worker | null = null;
 let busy = false;
+let activeReject: ((e: DOMException) => void) | null = null;
 
+/**
+ * Terminate the worker AND settle its in-flight request. A released
+ * promise rejects `AbortError`; the next call rebuilds cleanly. A stale
+ * completion can never fire — the worker is dead and the promise already
+ * settled.
+ */
 function releaseWorker(): void {
   const w = worker;
   worker = null;
+  const reject = activeReject;
+  activeReject = null;
+  reject?.(new DOMException("Aborted", "AbortError"));
   w?.terminate();
 }
 

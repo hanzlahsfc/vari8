@@ -122,7 +122,7 @@ export function MediaCard({
   item: Media;
   onRemove?: () => void;
 }) {
-  const actorScope = useActorScope(workspaceId);
+  const actor = useActorScope(workspaceId);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -183,7 +183,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={url}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={scope ?? actorScope ?? `${workspaceId}:pending`}
+              actor={scope ? { status: "ready" as const, scope, retry: () => {} } : actor}
             />
           </>
         ) : video ? (

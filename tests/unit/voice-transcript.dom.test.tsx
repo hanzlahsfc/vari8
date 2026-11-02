@@ -39,7 +39,11 @@ const blobFetch = () => {
 
 const mount = () =>
   render(
-    <VoiceTranscript audioUrl="blob:audio" cacheKey="mo-1" scope="ws-1:cp-1" />,
+    <VoiceTranscript
+      audioUrl="blob:audio"
+      cacheKey="mo-1"
+      actor={{ status: "ready", scope: "ws-1:cp-1", retry: () => {} }}
+    />,
   );
 
 describe("VoiceTranscript — on-device, on demand (P688)", () => {
