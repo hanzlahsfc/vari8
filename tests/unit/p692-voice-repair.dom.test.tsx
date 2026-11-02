@@ -62,51 +62,67 @@ const json = (body: unknown) =>
   });
 
 function wireFetch() {
-  globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    mocked.lastUrl = url;
-    if (url.endsWith("/conversations"))
-      return json({
-        conversations: [
-          {
-            clientProfileId: "cp-real",
-            clientName: "E2E Client",
-            lastMessageAt: null,
-            lastMessagePreview: null,
-            unreadCount: 0,
-            hasPriority: false,
-          },
-        ],
-      });
-    if (url.includes("/conversations/cp-real"))
-      return json({
-        clientProfileId: "cp-real",
-        messages: [
-          {
-            id: "m1",
-            body: "voice below",
-            senderKind: "CLIENT",
-            sentAt: "2026-11-02T10:00:00Z",
-            clientRequestId: "r1",
+  globalThis.fetch = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      mocked.lastUrl = url;
+      if (init?.method === "POST" && url.includes("/conversations/cp-real"))
+        return json({
+          message: {
+            id: "srv-m2",
+            body: "hi coach reply",
+            senderKind: "STAFF",
+            sentAt: "2026-11-02T10:01:00Z",
+            clientRequestId: "r2",
             read: true,
             priority: false,
             links: null,
-            attachments: [
-              {
-                mediaObjectId: "mo-a1",
-                fileName: "voice.webm",
-                contentType: "audio/webm",
-                byteSize: 100,
-              },
-            ],
+            attachments: [],
           },
-        ],
-        draft: null,
-      });
-    if (url.includes("/media/")) return json({ download: { url: "blob:x" } });
-    if (url.endsWith("/session")) return json({ user: { id: "user-1" } });
-    return json({ items: [] });
-  }) as unknown as typeof fetch;
+        });
+      if (url.endsWith("/conversations"))
+        return json({
+          conversations: [
+            {
+              clientProfileId: "cp-real",
+              clientName: "E2E Client",
+              lastMessageAt: null,
+              lastMessagePreview: null,
+              unreadCount: 0,
+              hasPriority: false,
+            },
+          ],
+        });
+      if (url.includes("/conversations/cp-real"))
+        return json({
+          clientProfileId: "cp-real",
+          messages: [
+            {
+              id: "m1",
+              body: "voice below",
+              senderKind: "CLIENT",
+              sentAt: "2026-11-02T10:00:00Z",
+              clientRequestId: "r1",
+              read: true,
+              priority: false,
+              links: null,
+              attachments: [
+                {
+                  mediaObjectId: "mo-a1",
+                  fileName: "voice.webm",
+                  contentType: "audio/webm",
+                  byteSize: 100,
+                },
+              ],
+            },
+          ],
+          draft: null,
+        });
+      if (url.includes("/media/")) return json({ download: { url: "blob:x" } });
+      if (url.endsWith("/session")) return json({ user: { id: "user-1" } });
+      return json({ items: [] });
+    },
+  ) as unknown as typeof fetch;
 }
 
 function StateProbe() {
@@ -163,6 +179,33 @@ describe("P692 — real coach conversation identity", () => {
       ).toBe(true),
     );
   });
+
+  it("a staff send on the synthesized thread POSTs to the exact clientProfileId", async () => {
+    render(
+      <CanvasProvider workspaceId="ws-test">
+        <CanvasMessages />
+        <StateProbe />
+      </CanvasProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("probe").dataset.profile).toBe("cp-real"),
+    );
+    const area =
+      await screen.findByPlaceholderText<HTMLTextAreaElement>(
+        /Write a message/,
+      );
+    fireEvent.change(area, { target: { value: "hi coach reply" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
+    await waitFor(() =>
+      expect(
+        (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.some(
+          (call) =>
+            String(call[0]).endsWith("/conversations/cp-real") &&
+            (call[1] as RequestInit | undefined)?.method === "POST",
+        ),
+      ).toBe(true),
+    );
+  });
 });
 
 // -- actor-scoped temporary transcripts -------------------------------------
@@ -180,6 +223,14 @@ describe("P692 — scoped temporary transcript cache", () => {
     expect(readCachedTranscript("ws:u1", "mo-1")).toBeNull();
     // Same media id, different actor: untouched.
     expect(readCachedTranscript("ws:u2", "mo-1")).toBe("u2 transcript");
+  });
+
+  it("logout boundary: unscoped clear drops every actor's entries", () => {
+    writeCachedTranscript("ws:u1", "mo-1", "u1 transcript");
+    writeCachedTranscript("ws:u2", "mo-1", "u2 transcript");
+    clearVoiceTranscriptCache();
+    expect(readCachedTranscript("ws:u1", "mo-1")).toBeNull();
+    expect(readCachedTranscript("ws:u2", "mo-1")).toBeNull();
   });
 
   it("two mounted consumers with different scopes cannot disrupt each other", () => {
@@ -211,6 +262,40 @@ describe("P692 — bounded worker lifecycle", () => {
     // The wedge from the review: a second call must fail the same way,
     // never with transcribe_busy.
     await expect(transcribeAudio(blob)).rejects.toThrow("unsupported");
+  });
+
+  it("worker construction failure releases busy and permits retry", async () => {
+    // Decode succeeds (mocked OfflineAudioContext), `new Worker` then
+    // throws (jsdom has none) — init failure must not wedge `busy`.
+    const MockDecode = class {
+      async decodeAudioData() {
+        return { duration: 1 } as AudioBuffer;
+      }
+      createBufferSource() {
+        return {
+          connect: vi.fn(),
+          start: vi.fn(),
+        } as unknown as AudioBufferSourceNode;
+      }
+      get destination() {
+        return {} as AudioDestinationNode;
+      }
+      async startRendering() {
+        return {
+          getChannelData: () => new Float32Array(16),
+        } as unknown as AudioBuffer;
+      }
+    };
+    const prev = globalThis.OfflineAudioContext;
+    globalThis.OfflineAudioContext =
+      MockDecode as unknown as typeof OfflineAudioContext;
+    try {
+      const blob = new Blob(["x"], { type: "audio/webm" });
+      await expect(transcribeAudio(blob)).rejects.toThrow();
+      await expect(transcribeAudio(blob)).rejects.toThrow();
+    } finally {
+      globalThis.OfflineAudioContext = prev;
+    }
   });
 
   it("pre-abort releases busy and a later run still reaches decode", async () => {

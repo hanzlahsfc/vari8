@@ -8170,5 +8170,5 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - Worker: `busy` wraps decode+run in one try/finally (decode-fail/abort releases); failed worker terminates for clean retry; abort rejects + releases.
 - Race: dropped second take releases its slot reservation.
 - Coach: `serverProfileId` authoritative through send/read/draft/upload (`profileIdFor`, `DemoRecorder.clientProfileId`); name fallback is demo-only.
-- Regressions committed: `tests/unit/p692-voice-repair.dom.test.tsx` (non-fixture coach render + exact-ID fetch, scoped isolation/two consumers, decode/abort busy release) + race/capacity in `client-composer.dom.test.tsx`.
-  **Tests (Node v24.22.1):** focused 76/76; full suite **152 files / 1810+ exit 0**; `tsc` 0; `eslint` 0 errors; `format`/`index` clean; fresh `rm -rf .next && npm run build` exit 0.
+- Regressions committed: `tests/unit/p692-voice-repair.dom.test.tsx` (non-fixture coach render + exact-ID read AND send POST, scoped isolation/two consumers/logout-clear, decode/init/abort busy release+retry) + race/capacity in `client-composer.dom.test.tsx`.
+  **Tests (Node v24.22.1):** focused 78/78; full suite **152 files / 1810+ exit 0**; `tsc` 0; `eslint` 0 errors; `format`/`index` clean; fresh `rm -rf .next && npm run build` exit 0.
