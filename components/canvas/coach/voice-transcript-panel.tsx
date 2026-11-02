@@ -48,12 +48,16 @@ export function VoiceTranscript({
   // actor that produced them, never to whoever signs in next.
   const scopeRef = useRef<string | null>(scope);
   scopeRef.current = scope;
+  // A distinct token per started run — overlapping same-scope runs and
+  // an A→B→A revisit can never let an old settlement clobber the new one.
+  const runToken = useRef(0);
   useEffect(() => {
     // Any actor transition (loading, error, or a different resolved
     // scope) resets the panel: a prior identity's transcript can never
     // survive into the new session. Cache reads happen only after actor
     // resolution — and only for a card whose authorized mint resolved.
     abort.current?.abort();
+    runToken.current += 1;
     setState("idle");
     setText("");
     if (!scope) return;
@@ -78,6 +82,7 @@ export function VoiceTranscript({
   const start = async () => {
     if (!scope) return; // fail closed — never infer without an actor
     const runScope = scope;
+    const runId = ++runToken.current;
     const controller = new AbortController();
     abort.current = controller;
     setState("busy");
@@ -96,14 +101,24 @@ export function VoiceTranscript({
       // that actor is still current — a stale completion can't surface
       // under a different identity.
       writeCachedTranscript(runScope, cacheKey, transcript);
-      if (!mounted.current || scopeRef.current !== runScope) return;
+      if (
+        !mounted.current ||
+        scopeRef.current !== runScope ||
+        runToken.current !== runId
+      )
+        return;
       setText(transcript);
       setState("ready");
     } catch (error) {
       // Stale run: an abort/error from a previous actor or superseded
       // take must not clear a newer transcript, set its error, or
       // disturb its pending state.
-      if (!mounted.current || scopeRef.current !== runScope) return;
+      if (
+        !mounted.current ||
+        scopeRef.current !== runScope ||
+        runToken.current !== runId
+      )
+        return;
       if ((error as DOMException)?.name === "AbortError") {
         setState("idle");
         setNote("");
