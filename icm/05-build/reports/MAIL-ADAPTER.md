@@ -119,15 +119,22 @@ Builder results, fresh `npm ci` in an isolated worktree, Node **v24.22.1**:
 | build     | `npm run build`                                                                                                                                      | **exit 0**                                            |
 | static    | `npm run typecheck` / `npm run lint` / `npm run format:check` / `npm run index:check` / `git diff --check`                                           | 0 / 0 errors (136 pre-existing warnings) / 0 / OK / 0 |
 
-Builder results, Node **v22.21.1** (repo CI `node-version: 22` — the checks
-actually run; no full-suite or build was performed under 22):
+Builder results, Node **v22.21.1** (repo CI `node-version: 22`, isolated
+exact-head checkout `a0817977`, `npm ci` + nested `tools/parity/reference`,
+postgres :5433 with task-owned `DATABASE_URL`/`INTEGRATION_DATABASE_URL`,
+mocked mail transport — no provider calls):
 
-| Gate      | Command                                | Result                 |
-| --------- | -------------------------------------- | ---------------------- |
-| format    | `npm run format:check`                 | 0                      |
-| typecheck | `npm run typecheck`                    | 0                      |
-| lint      | `npm run lint`                         | 0 errors, 138 warnings |
-| focused   | mail-focused vitest set (same 4 files) | **47 tests, exit 0**   |
+| Gate        | Command                                               | Result                                                                                                                                                      |
+| ----------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| prisma      | `npx prisma generate` / `validate` / `migrate deploy` | 0 / 0 / 0                                                                                                                                                   |
+| format      | `npm run format:check`                                | 0                                                                                                                                                           |
+| typecheck   | `npm run typecheck`                                   | 0                                                                                                                                                           |
+| lint        | `npm run lint`                                        | 0 errors, 138 warnings                                                                                                                                      |
+| full unit   | `npm test`                                            | **150 files / 1797 tests, exit 0**                                                                                                                          |
+| integration | `npm run test:integration`                            | 1 failed / 1132 passed — `checkin-recurrence-i1` London-DST seasonal assertion; identical under Node 24.22.1 — pre-existing environmental, not this diff    |
+| build       | `npm run build`                                       | **exit 0**                                                                                                                                                  |
+| playwright  | `npx playwright install chromium`                     | 0                                                                                                                                                           |
+| e2e         | `npm run test:e2e`                                    | 12 passed / 8 skipped / **4 failed** — `auth-card` + `me-auth-look` color/`data-mode` assertions, identical under Node 24.22.1 — pre-existing environmental |
 
 Independent review results (opencode / deepseek-v4.1-flash, comment
 `6586332599`), fresh under Node **v24.22.1**:
@@ -140,7 +147,9 @@ Independent review results (opencode / deepseek-v4.1-flash, comment
 | `tsc --noEmit` / `prettier --check .`                           | 0 / 0                              |
 
 The reviewer's independent Node-22 run was not performed; the builder
-checks above are the only Node-22 evidence on record.
+checks above are the only Node-22 evidence on record. The same four visual
+specs and the seasonal integration test also fail on the merged Beta alone
+— the mail-adapter diff is not implicated.
 
 ## Request vs provider tracking
 
