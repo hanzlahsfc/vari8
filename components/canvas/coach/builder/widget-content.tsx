@@ -467,7 +467,7 @@ export function ChatComposer({
     setVoiceOpen(false);
     setError(null);
     voiceReserved.current = false;
-    releaseVoiceTranscriber();
+    releaseVoiceTranscriber(`${workspaceId}:${clientProfileId}`);
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -765,11 +765,15 @@ export function ChatComposer({
               voiceReserved.current = false;
               // One recording per voice message (approved): an existing
               // audio chip blocks another take; removing it re-allows.
-              setStaged((current) =>
-                current.some((i) => i.type.startsWith("audio/"))
-                  ? current
-                  : [...current, { ...item, state: "uploaded" }],
-              );
+              setStaged((current) => {
+                if (current.some((i) => i.type.startsWith("audio/"))) {
+                  // Second take rejected — release its slot reservation
+                  // so it can never leak capacity.
+                  slots.current = Math.max(0, slots.current - 1);
+                  return current;
+                }
+                return [...current, { ...item, state: "uploaded" }];
+              });
               setVoiceOpen(false);
             }}
           />
@@ -998,6 +1002,7 @@ export function RemoteConversation({
                                     : 0,
                                 mediaObjectId: attachment.mediaObjectId,
                               }}
+                              scope={`${workspaceId}:${clientProfileId}`}
                             />
                           ) : (
                             <p

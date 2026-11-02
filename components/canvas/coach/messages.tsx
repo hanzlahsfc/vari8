@@ -161,6 +161,15 @@ export function MessagesWorkspace() {
               id: `srv-${conversation.clientProfileId}`,
               name: conversation.clientName,
               archived: false,
+              // Authoritative server identity — sends/uploads/reads use
+              // this, never the display name.
+              serverProfileId: conversation.clientProfileId,
+              // Full safe fields: no fabricated membership, but every
+              // collection the coach shell maps over exists and is empty.
+              coachTasks: [],
+              schedules: [],
+              entries: [],
+              habits: [],
             } as unknown as CoachClient);
         });
         conversations.forEach((conversation, index) => {
@@ -193,13 +202,18 @@ export function MessagesWorkspace() {
       }
     })();
   }, [hydrated, workspaceId, setState, state.clients]);
+  // Authoritative identity: a server-thread client carries its profile
+  // id; only fixture clients fall back to the name roster.
+  const profileIdFor = async (c?: CoachClient) =>
+    (c as { serverProfileId?: string } | undefined)?.serverProfileId ??
+    (c ? clientProfileIdFor(c.name) : null);
   // W2-A4: opening a thread marks it read on the server (idempotent); the
   // local paint below clears the badge in the same frame.
   const selectedName = client?.name;
   useEffect(() => {
     if (!hydrated || !workspaceId || !selectedName) return;
     void (async () => {
-      const clientProfileId = await clientProfileIdFor(selectedName);
+      const clientProfileId = await profileIdFor(client);
       if (clientProfileId)
         await markStaffThreadRead(workspaceId, clientProfileId);
     })().catch(() => {});
@@ -215,7 +229,7 @@ export function MessagesWorkspace() {
     const timer = setTimeout(() => {
       serverDrafts.current[canvasId] = draftText;
       void (async () => {
-        const clientProfileId = await clientProfileIdFor(name);
+        const clientProfileId = await profileIdFor(client);
         if (clientProfileId)
           await saveStaffDraft(workspaceId, clientProfileId, draftText);
       })().catch(() => {});
@@ -348,7 +362,7 @@ export function MessagesWorkspace() {
     }
     void (async () => {
       try {
-        const clientProfileId = await clientProfileIdFor(client.name);
+        const clientProfileId = await profileIdFor(client);
         if (!clientProfileId) {
           appendLocal();
           return;
@@ -924,7 +938,7 @@ export function MessagesWorkspace() {
                         let uploaded = false;
                         try {
                           const profileId = client
-                            ? await clientProfileIdFor(client.name)
+                            ? await profileIdFor(client)
                             : null;
                           uploaded = await uploadCanvasMedia(item, f, {
                             workspaceId,
@@ -985,6 +999,9 @@ export function MessagesWorkspace() {
           <DemoRecorder
             kind="voice"
             clientName={client.name}
+            clientProfileId={
+              (client as { serverProfileId?: string }).serverProfileId
+            }
             onAttach={(item) => {
               setDraft({ attachments: [...draft.attachments, item] });
               setVoice(false);

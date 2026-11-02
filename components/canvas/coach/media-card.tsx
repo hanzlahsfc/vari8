@@ -112,8 +112,11 @@ export function MediaCard({
   workspaceId,
   item,
   onRemove,
+  scope,
 }: {
   workspaceId: string;
+  /** Authenticated actor scope for the temporary transcript cache. */
+  scope?: string;
   /** Canvas Media shape; `item.id` is the media_object id. */
   item: Media;
   onRemove?: () => void;
@@ -178,7 +181,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={url}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={workspaceId}
+              scope={scope ?? workspaceId}
             />
           </>
         ) : video ? (

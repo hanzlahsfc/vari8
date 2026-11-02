@@ -130,7 +130,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={src}
               cacheKey={item.mediaObjectId ?? item.id}
-              scope={`${workspaceId ?? "local"}:staff`}
+              scope={`${workspaceId}:staff`}
             />
           </>
         ) : video ? (
@@ -174,24 +174,28 @@ export function DemoRecorder({
   kind,
   onAttach,
   clientName,
+  clientProfileId,
 }: {
   kind: "voice" | "video";
   onAttach: (item: Media) => void;
   /** Canvas client name, used to resolve the upload's profile anchor. */
   clientName?: string;
+  /** Authoritative server profile id — skips name resolution entirely. */
+  clientProfileId?: string;
 }) {
   const { workspaceId, clientProfileIdFor } = useCoach();
   const [profileId, setProfileId] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
-    if (clientName)
+    if (clientProfileId) setProfileId(clientProfileId);
+    else if (clientName)
       clientProfileIdFor(clientName).then((id) => {
         if (live) setProfileId(id);
       });
     return () => {
       live = false;
     };
-  }, [clientName, clientProfileIdFor]);
+  }, [clientName, clientProfileId, clientProfileIdFor]);
   return (
     <RealRecorder
       kind={kind}

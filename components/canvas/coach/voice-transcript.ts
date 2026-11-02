@@ -80,6 +80,10 @@ export async function transcribeAudio(
   ));
   try {
     return await new Promise<string>((resolve, reject) => {
+      const finish = (fn: (v: never) => void, v: unknown) => {
+        signal?.removeEventListener("abort", onAbort);
+        fn(v as never);
+      };
       // Cancel = terminate: real, but the model must reload next time.
       // Decode/inference themselves are NOT cancellable mid-flight —
       // a terminated result is simply discarded, never applied.
@@ -100,12 +104,18 @@ export async function transcribeAudio(
         const data = event.data;
         if (data.type === "progress" && data.label)
           onProgress?.({ stage: "model", label: data.label });
-        else if (data.type === "done") resolve(data.text ?? "");
-        else if (data.type === "error")
-          reject(new Error(data.message || "transcribe_failed"));
+        else if (data.type === "done") finish(resolve, data.text ?? "");
+        else if (data.type === "error") {
+          // A failed worker (model load/inference) is poisoned for
+          // retry — terminate so the next attempt rebuilds cleanly.
+          releaseWorker();
+          finish(reject, new Error(data.message || "transcribe_failed"));
+        }
       };
-      w.onerror = () =>
-        reject(new Error("transcribe_failed"));
+      w.onerror = () => {
+        releaseWorker();
+        finish(reject, new Error("transcribe_failed"));
+      };
       onProgress?.({ stage: "inference", label: "Transcribing…" });
       w.postMessage({ id: 1, pcm }, [pcm.buffer]);
     });
@@ -121,8 +131,9 @@ let worker: Worker | null = null;
 let busy = false;
 
 function releaseWorker(): void {
-  worker?.terminate();
+  const w = worker;
   worker = null;
+  w?.terminate();
 }
 
 /**
@@ -167,12 +178,16 @@ export function writeCachedTranscript(
   }
 }
 
-/** Drop every temporary transcript entry (logout/identity switch). */
-export function clearVoiceTranscriptCache(): void {
+/**
+ * Drop temporary transcript entries. With `scope`, only that actor's
+ * keys are removed — one consumer can never wipe another panel's cache.
+ */
+export function clearVoiceTranscriptCache(scope?: string): void {
   try {
+    const prefix = scope ? `${CACHE_PREFIX}${CACHE_VERSION}:${scope}:` : CACHE_PREFIX;
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const key = sessionStorage.key(i);
-      if (key?.startsWith(CACHE_PREFIX)) sessionStorage.removeItem(key);
+      if (key?.startsWith(prefix)) sessionStorage.removeItem(key);
     }
   } catch {
     // best-effort
@@ -180,10 +195,11 @@ export function clearVoiceTranscriptCache(): void {
 }
 
 /**
- * Identity/session teardown: clears the temporary transcript cache and
- * terminates the reusable worker so nothing survives an account switch.
+ * Identity/session teardown for ONE actor scope: clears only that
+ * scope's cached transcripts and terminates the shared worker (a real
+ * account switch must not keep a model loaded for another identity).
  */
-export function releaseVoiceTranscriber(): void {
+export function releaseVoiceTranscriber(scope?: string): void {
   releaseWorker();
-  clearVoiceTranscriptCache();
+  clearVoiceTranscriptCache(scope);
 }

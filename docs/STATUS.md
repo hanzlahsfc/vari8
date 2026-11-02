@@ -8156,3 +8156,10 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - Coach threads: server conversations synthesize reachable clients by `clientProfileId` instead of dropping non-fixture names.
 - Worker lifecycle: session-reused worker (model loads once), `busy` bound, abort = terminate + discard (decode itself not abortable — documented); cancel forces reload.
 - Vendored provenance: `public/models/MANIFEST.json` (revisions, paths, sizes, sha256) + LICENSE files (Apache-2.0 transformers, MIT ort, MIT whisper).
+
+## 2026-11-02 — P692 coach identity, cache and worker repair
+
+- Coach: synthesized server-thread clients carry `serverProfileId` + full safe fields (crash at `coachTasks.map` fixed); reads/sends/uploads/mark-read resolve the authoritative profile id, never the display name.
+- Cache: real actor scope threaded (`${workspaceId}:${clientProfileId}` client / `:staff` coach); `releaseVoiceTranscriber(scope)` clears only that scope; cache display still mint-gated; version `w1`.
+- Worker: `busy` wraps decode+run in one try/finally; failed worker terminated for clean retry; abort rejects and releases; stale finishes discarded.
+- Raced second take releases its slot reservation — no capacity leak.
