@@ -67,21 +67,28 @@ export async function transcribeAudio(
 ): Promise<string> {
   const { signal, onProgress } = options;
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+  if (busy) throw new Error("transcribe_busy");
+  busy = true;
   onProgress?.({ stage: "audio", label: "Preparing audio…" });
   const pcm = await blobToMono16k(blob);
   if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
 
-  const worker = new Worker(
+  // Bounded lifecycle: one worker per tab session, one run at a time —
+  // a second request waits its turn rather than stacking 85 MB models.
+  const w = (worker ??= new Worker(
     new URL("./voice-transcript-worker.ts", import.meta.url),
-  );
+  ));
   try {
     return await new Promise<string>((resolve, reject) => {
+      // Cancel = terminate: real, but the model must reload next time.
+      // Decode/inference themselves are NOT cancellable mid-flight —
+      // a terminated result is simply discarded, never applied.
       const onAbort = () => {
-        worker.terminate();
+        releaseWorker();
         reject(new DOMException("Aborted", "AbortError"));
       };
       signal?.addEventListener("abort", onAbort, { once: true });
-      worker.onmessage = (
+      w.onmessage = (
         event: MessageEvent<{
           id: number;
           type: string;
@@ -97,14 +104,25 @@ export async function transcribeAudio(
         else if (data.type === "error")
           reject(new Error(data.message || "transcribe_failed"));
       };
-      worker.onerror = () =>
+      w.onerror = () =>
         reject(new Error("transcribe_failed"));
       onProgress?.({ stage: "inference", label: "Transcribing…" });
-      worker.postMessage({ id: 1, pcm }, [pcm.buffer]);
+      w.postMessage({ id: 1, pcm }, [pcm.buffer]);
     });
   } finally {
-    worker.terminate();
+    busy = false;
   }
+}
+
+// The worker holds the loaded model; keep it for the session so a second
+// take reuses it instead of re-fetching ~85 MB. `busy` bounds concurrent
+// work — no overlapping inference is ever scheduled.
+let worker: Worker | null = null;
+let busy = false;
+
+function releaseWorker(): void {
+  worker?.terminate();
+  worker = null;
 }
 
 /**
@@ -119,20 +137,53 @@ export async function transcribeAudio(
  * the tab — no invalidation API is needed beyond per-write replace.
  */
 const CACHE_PREFIX = "vt1:";
+/** Bump when the model/revision changes — stale versions never read. */
+const CACHE_VERSION = "w1";
 
-export function readCachedTranscript(key: string): string | null {
+const cacheKey = (scope: string, id: string) =>
+  `${CACHE_PREFIX}${CACHE_VERSION}:${scope}:${id}`;
+
+export function readCachedTranscript(
+  scope: string,
+  id: string,
+): string | null {
   try {
-    return sessionStorage.getItem(CACHE_PREFIX + key);
+    return sessionStorage.getItem(cacheKey(scope, id));
   } catch {
     return null;
   }
 }
 
-export function writeCachedTranscript(key: string, text: string): void {
+export function writeCachedTranscript(
+  scope: string,
+  id: string,
+  text: string,
+): void {
   try {
-    sessionStorage.setItem(CACHE_PREFIX + key, text);
+    sessionStorage.setItem(cacheKey(scope, id), text);
   } catch {
     // Storage can be unavailable (private mode) — caching is best-effort;
     // the transcript still renders for this viewing.
   }
+}
+
+/** Drop every temporary transcript entry (logout/identity switch). */
+export function clearVoiceTranscriptCache(): void {
+  try {
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key?.startsWith(CACHE_PREFIX)) sessionStorage.removeItem(key);
+    }
+  } catch {
+    // best-effort
+  }
+}
+
+/**
+ * Identity/session teardown: clears the temporary transcript cache and
+ * terminates the reusable worker so nothing survives an account switch.
+ */
+export function releaseVoiceTranscriber(): void {
+  releaseWorker();
+  clearVoiceTranscriptCache();
 }

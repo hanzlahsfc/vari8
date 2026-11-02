@@ -178,6 +178,7 @@ export function MediaCard({
             <VoiceTranscript
               audioUrl={url}
               cacheKey={item.mediaObjectId ?? item.id}
+              scope={workspaceId}
             />
           </>
         ) : video ? (

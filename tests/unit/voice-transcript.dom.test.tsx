@@ -38,7 +38,9 @@ const blobFetch = () => {
 };
 
 const mount = () =>
-  render(<VoiceTranscript audioUrl="blob:audio" cacheKey="mo-1" />);
+  render(
+    <VoiceTranscript audioUrl="blob:audio" cacheKey="mo-1" scope="ws-1:cp-1" />,
+  );
 
 describe("VoiceTranscript — on-device, on demand (P688)", () => {
   beforeEach(() => {
@@ -59,7 +61,9 @@ describe("VoiceTranscript — on-device, on demand (P688)", () => {
     ).toBeTruthy();
     expect(mockTranscribe).toHaveBeenCalledTimes(1);
     // Temporary cache, exact media identity — never a message field.
-    expect(sessionStorage.getItem("vt1:mo-1")).toBe("hello from the recording");
+    expect(sessionStorage.getItem("vt1:w1:ws-1:cp-1:mo-1")).toBe(
+      "hello from the recording",
+    );
   });
 
   it("a failed run surfaces a retry and keeps the control recoverable", async () => {
@@ -90,11 +94,13 @@ describe("VoiceTranscript — on-device, on demand (P688)", () => {
     await waitFor(() =>
       screen.getByRole("button", { name: "View transcript" }),
     );
-    expect(sessionStorage.getItem("vt1:mo-1")).toBeNull();
+    expect(sessionStorage.getItem("vt1:w1:ws-1:cp-1:mo-1")).toBeNull();
   });
 
   it("serves a cached transcript without re-running the pipeline", async () => {
-    sessionStorage.setItem("vt1:mo-1", "cached take");
+    sessionStorage.setItem("vt1:w1:ws-1:cp-1:mo-1", "cached take");
+    // A differently-scoped stale entry must not leak in.
+    sessionStorage.setItem("vt1:w1:other:mo-1", "foreign take");
     mount();
     await waitFor(() => screen.getByText("cached take"));
     expect(mockTranscribe).not.toHaveBeenCalled();

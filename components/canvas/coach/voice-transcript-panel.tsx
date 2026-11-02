@@ -24,17 +24,25 @@ import {
 export function VoiceTranscript({
   audioUrl,
   cacheKey,
+  scope,
 }: {
   /** The card's minted download URL; fetched only on user request. */
   audioUrl: string;
   /** Exact audio identity — the media_object id (or staged chip id). */
   cacheKey: string;
+  /**
+   * Authenticated scope for the temporary cache (workspace + identity).
+   * The panel only mounts once the card's authorized download mint has
+   * resolved — cache reads therefore always follow a current-access
+   * check on this exact audio, never precede one.
+   */
+  scope: string;
 }) {
   const [state, setState] = useState<
     "idle" | "busy" | "ready" | "error"
-  >(() => (readCachedTranscript(cacheKey) ? "ready" : "idle"));
+  >(() => (readCachedTranscript(scope, cacheKey) ? "ready" : "idle"));
   const [text, setText] = useState<string>(
-    () => readCachedTranscript(cacheKey) ?? "",
+    () => readCachedTranscript(scope, cacheKey) ?? "",
   );
   const [note, setNote] = useState("");
   const abort = useRef<AbortController | null>(null);
@@ -64,7 +72,7 @@ export function VoiceTranscript({
           if (mounted.current) setNote(event.label);
         },
       });
-      writeCachedTranscript(cacheKey, transcript);
+      writeCachedTranscript(scope, cacheKey, transcript);
       if (!mounted.current) return;
       setText(transcript);
       setState("ready");

@@ -151,9 +151,22 @@ export function MessagesWorkspace() {
         const canvasIds = new Map(state.clients.map((c) => [c.name, c.id]));
         const rows: Message[] = [];
         const bodies: Record<string, string> = {};
+        // P690: server conversations are authoritative — a real client
+        // whose name matches no canvas fixture still gets a reachable
+        // thread keyed by the server clientProfileId, never dropped.
+        const serverClients: CoachClient[] = [];
+        conversations.forEach((conversation) => {
+          if (!canvasIds.has(conversation.clientName))
+            serverClients.push({
+              id: `srv-${conversation.clientProfileId}`,
+              name: conversation.clientName,
+              archived: false,
+            } as unknown as CoachClient);
+        });
         conversations.forEach((conversation, index) => {
-          const canvasId = canvasIds.get(conversation.clientName);
-          if (!canvasId) return;
+          const canvasId =
+            canvasIds.get(conversation.clientName) ??
+            `srv-${conversation.clientProfileId}`;
           for (const row of threads[index].messages)
             rows.push(toCanvasMessage(row, canvasId));
           bodies[canvasId] = threads[index].draft?.body ?? "";
@@ -166,7 +179,12 @@ export function MessagesWorkspace() {
               text: body,
               attachments: s.drafts[id]?.attachments ?? [],
             };
-          return { ...s, messages: rows, drafts };
+          return {
+            ...s,
+            clients: [...s.clients, ...serverClients],
+            messages: rows,
+            drafts,
+          };
         });
       } catch {
         threadsLoaded.current = false;

@@ -25,6 +25,7 @@ import {
 } from "@/lib/media-policy";
 import { DemoRecorder } from "../demo-recorder";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
+import { releaseVoiceTranscriber } from "../voice-transcript";
 import type { Media } from "../model";
 import { Dialog } from "../ui";
 import {
@@ -466,6 +467,7 @@ export function ChatComposer({
     setVoiceOpen(false);
     setError(null);
     voiceReserved.current = false;
+    releaseVoiceTranscriber();
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -683,7 +685,11 @@ export function ChatComposer({
         type="button"
         className="cb-dw-action"
         aria-label="Record a voice note"
-        disabled={sending || slots.current >= MAX_ATTACHMENTS}
+        disabled={
+          sending ||
+          slots.current >= MAX_ATTACHMENTS ||
+          staged.some((i) => i.type.startsWith("audio/"))
+        }
         onClick={() => {
           // Slot reservation: recording/uploading holds the last attachment
           // slot so a concurrent pick cannot consume it; released on
@@ -757,10 +763,13 @@ export function ChatComposer({
               // The reservation from the open becomes the chip's permanent
               // slot — consume it without double-counting.
               voiceReserved.current = false;
-              setStaged((current) => [
-                ...current,
-                { ...item, state: "uploaded" },
-              ]);
+              // One recording per voice message (approved): an existing
+              // audio chip blocks another take; removing it re-allows.
+              setStaged((current) =>
+                current.some((i) => i.type.startsWith("audio/"))
+                  ? current
+                  : [...current, { ...item, state: "uploaded" }],
+              );
               setVoiceOpen(false);
             }}
           />

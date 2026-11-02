@@ -8148,3 +8148,11 @@ Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`
 - **Temporary transcripts:** sessionStorage `vt1:<mediaObjectId>` — no schema/message-body change (see `docs/voice-transcription.md` for hashes, licenses, cache rules, limits).
 - **Offline proof:** `allowRemoteModels=false` pipeline on vendored assets transcribed known jfk.wav correctly (Node, same assets the worker serves).
   **Tests (Node v24.22.1):** focused 70/70; full suite **151 files / 1805 exit 0**; `tsc` 0; `eslint` 0 errors; `format:check`/`index:check` clean; fresh `rm -rf .next && npm run build` exit 0. Evidence limit: served browser flow covered by DOM tests + Node offline pipeline proof; headed-browser pass pending.
+
+## 2026-11-02 — P690 consolidated voice repair
+
+- One voice recording per draft enforced (mic disabled while an audio chip is staged; remove-to-replace; belt guard in onAttach); rapid/pending covered.
+- Temporary transcripts scoped `vt1:w1:<scope>:<id>` (model version + workspace/actor scope); panel reads only after the authorized mint resolves; `releaseVoiceTranscriber()` clears cache + worker on identity switch. No schema.
+- Coach threads: server conversations synthesize reachable clients by `clientProfileId` instead of dropping non-fixture names.
+- Worker lifecycle: session-reused worker (model loads once), `busy` bound, abort = terminate + discard (decode itself not abortable — documented); cancel forces reload.
+- Vendored provenance: `public/models/MANIFEST.json` (revisions, paths, sizes, sha256) + LICENSE files (Apache-2.0 transformers, MIT ort, MIT whisper).
