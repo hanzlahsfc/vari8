@@ -11,6 +11,8 @@ import { e2eDatabaseUrl, E2E } from "./global-setup";
 import path from "node:path";
 
 const WAV = path.join(__dirname, "fixtures", "jfk.wav");
+const FIXTURE_SHA256 =
+  "59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e";
 const SHOTS = path.join(__dirname, "..", "..", "_evidence");
 const external: string[] = [];
 
@@ -34,8 +36,11 @@ test.use({
   permissions: ["microphone"],
   launchOptions: {
     args: [
+      // Deterministic SYNTHETIC capture: the fake device reads the
+      // committed wav as its input — all three flags required together.
       "--use-fake-device-for-media-stream",
       "--use-fake-ui-for-media-stream",
+      `--use-file-for-fake-audio-capture=${WAV}`,
     ],
   },
 });
@@ -59,6 +64,11 @@ async function recordTake(page: Page) {
 }
 
 test.beforeAll(async () => {
+  const { createHash } = await import("node:crypto");
+  const { readFileSync } = await import("node:fs");
+  expect(createHash("sha256").update(readFileSync(WAV)).digest("hex")).toBe(
+    FIXTURE_SHA256,
+  );
   const prisma = new PrismaClient({
     datasources: { db: { url: e2eDatabaseUrl() } },
   });
@@ -223,10 +233,12 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
       timeout: 20_000,
     })
     .catch(() => {});
-  const replyCard = client
-    .locator("div.cd-media-card")
-    .filter({ has: client.locator("audio") })
-    .last();
+  // Exact binding: the object URL embeds the media id, so the reply
+  // card is the one whose audio src carries replyId — never positional.
+  const replyCard = client.locator(
+    `div.cd-media-card:has(audio[src*="${replyId}"])`,
+  );
+  await replyCard.waitFor({ timeout: 20_000 });
   await replyCard
     .locator("audio")
     .evaluate((a: HTMLAudioElement) => a.play().catch(() => {}));
