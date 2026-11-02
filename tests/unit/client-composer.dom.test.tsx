@@ -433,6 +433,180 @@ describe("served coach conversation (RemoteConversation)", () => {
     expect(mic()).toHaveProperty("disabled", true);
   });
 
+  describe("voice recording capacity — async regressions (P705)", () => {
+    const mountThread = async () => {
+      mocked.fetchOwn.mockResolvedValue({ messages: [] });
+      render(<RemoteConversation workspaceId="ws-1" clientName="Amara" />);
+      await waitFor(() => screen.getByLabelText("Message"));
+    };
+    const pickFiles = (files: File[]) => {
+      const input = screen.getByLabelText("Attach files") as HTMLInputElement;
+      fireEvent.change(input, { target: { files } });
+    };
+    const pngs = (n: number, prefix = "f") =>
+      Array.from(
+        { length: n },
+        (_, i) => new File(["x"], `${prefix}${i}.png`, { type: "image/png" }),
+      );
+    const chips = () =>
+      screen.queryAllByRole("button", { name: /^Remove / }).length;
+    const mic = () =>
+      screen.getByRole("button", { name: "Record a voice note" });
+    const recordAndAttach = async () => {
+      fireEvent.click(
+        await screen.findByRole("button", { name: /Record voice note/ }),
+      );
+      fireEvent.click(
+        await screen.findByRole("button", { name: /Stop & preview/ }),
+      );
+      fireEvent.click(
+        await screen.findByRole("button", {
+          name: /Attach voice note/,
+        }),
+      );
+    };
+    const voiceUpload = (input?: Record<string, unknown>) =>
+      Promise.resolve({
+        mediaObjectId: `mo-${String(input?.fileName)}`,
+        name: String(input?.fileName),
+        type: String(input?.contentType),
+        size: 1,
+      } as never);
+
+    it("a pending upload's settle cannot consume the recorder's reservation", async () => {
+      // 8 settled + 1 in-flight upload while the dialog holds the last
+      // slot: the staged-sync recompute on settle must keep the voice
+      // reservation — a pick can never take it.
+      let resolvePending: ((v: Record<string, unknown>) => void) | null = null;
+      mocked.upload.mockImplementation((input) =>
+        input?.fileName === "pending.png"
+          ? new Promise<Record<string, unknown>>((res) => {
+              resolvePending = res;
+            })
+          : voiceUpload(input),
+      );
+      await mountThread();
+      pickFiles(pngs(8));
+      await waitFor(() => expect(chips()).toBe(8));
+      pickFiles([new File(["x"], "pending.png", { type: "image/png" })]);
+      await waitFor(() => expect(chips()).toBe(9));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      // Settle the pending upload while the recorder is still open.
+      resolvePending!({
+        mediaObjectId: "mo-p",
+        name: "pending.png",
+        type: "image/png",
+        size: 1,
+      });
+      await waitFor(() => expect(screen.queryByText(/uploading/)).toBeNull());
+      // The reservation survived the settle — a pick cannot take it.
+      pickFiles(pngs(1, "late"));
+      await waitFor(() => screen.getByText(/up to 10 attachments/));
+      expect(chips()).toBe(9);
+      // Closing releases the reservation — the same pick now lands.
+      fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+      pickFiles(pngs(1, "late"));
+      await waitFor(() => expect(chips()).toBe(10));
+    });
+
+    it("a raced second take never stages and frees its reservation exactly once", async () => {
+      // An audio file chip lands while the recorder is open; the take
+      // that attaches after it is a raced second recording — dropped by
+      // the belt guard with its reservation released exactly once.
+      mocked.upload.mockImplementation(voiceUpload);
+      await mountThread();
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      pickFiles([new File(["x"], "clip.webm", { type: "audio/webm" })]);
+      await waitFor(() => expect(chips()).toBe(1));
+      await recordAndAttach();
+      // The take never staged — the file chip stands alone; the
+      // recorder returned to idle after its (discarded) attach.
+      await waitFor(() =>
+        screen.getByRole("button", { name: /Record voice note/ }),
+      );
+      expect(chips()).toBe(1);
+      expect(screen.queryByText(/voice-note/)).toBeNull();
+      // Released exactly once: with one staged chip exactly nine picks
+      // fit to ten — a leak accepts eight, a double release eleven.
+      fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+      pickFiles(pngs(10));
+      await waitFor(() => expect(chips()).toBe(10));
+      expect(screen.getByText(/up to 10 attachments/)).toBeTruthy();
+      expect(mic()).toHaveProperty("disabled", true);
+    });
+
+    it("open-close cycles release the reservation exactly once each", async () => {
+      mocked.upload.mockImplementation(voiceUpload);
+      await mountThread();
+      pickFiles(pngs(9));
+      await waitFor(() => expect(chips()).toBe(9));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+      // Nine chips + two clean open/close cycles → exactly one pick
+      // fits; a double release would accept the second.
+      pickFiles(pngs(2, "post"));
+      await waitFor(() => expect(chips()).toBe(10));
+      expect(screen.getByText(/up to 10 attachments/)).toBeTruthy();
+    });
+
+    it("a rejected attach keeps the reservation for retry and releases it on close", async () => {
+      mocked.upload.mockImplementation((input) =>
+        input?.fileName === "voice-note.webm"
+          ? Promise.reject(new Error("upload_failed"))
+          : voiceUpload(input),
+      );
+      await mountThread();
+      pickFiles(pngs(9));
+      await waitFor(() => expect(chips()).toBe(9));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      await recordAndAttach();
+      // Rejection keeps the preview and the dialog — the reservation is
+      // still held, so the last slot stays untouchable.
+      await waitFor(() => screen.getByText(/Upload failed/));
+      pickFiles(pngs(1, "post"));
+      await waitFor(() => screen.getByText(/up to 10 attachments/));
+      expect(chips()).toBe(9);
+      // Closing releases it exactly once — one pick lands, not two.
+      fireEvent.click(screen.getByRole("button", { name: "Close dialog" }));
+      pickFiles(pngs(2, "post"));
+      await waitFor(() => expect(chips()).toBe(10));
+      expect(screen.getByText(/up to 10 attachments/)).toBeTruthy();
+    });
+
+    it("removing a staged take permits a replacement inside the cap", async () => {
+      mocked.upload.mockImplementation(voiceUpload);
+      await mountThread();
+      pickFiles(pngs(9));
+      await waitFor(() => expect(chips()).toBe(9));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      await recordAndAttach();
+      // The take is chip 10 — one voice per message, mic disabled.
+      await waitFor(() => expect(chips()).toBe(10));
+      expect(mic()).toHaveProperty("disabled", true);
+      // Removing it re-allows recording; the replacement lands at ten,
+      // never eleven.
+      fireEvent.click(
+        screen.getByRole("button", { name: /Remove voice-note/ }),
+      );
+      await waitFor(() => expect(mic()).toHaveProperty("disabled", false));
+      fireEvent.click(mic());
+      await waitFor(() => screen.getByRole("dialog"));
+      await recordAndAttach();
+      await waitFor(() => expect(chips()).toBe(10));
+      expect(chips()).toBe(10);
+      expect(mic()).toHaveProperty("disabled", true);
+      expect(screen.queryByText(/up to 10 attachments/)).toBeNull();
+    });
+  });
+
   it("send posts through sendOwnMessage and the reply renders with one refresh", async () => {
     mocked.fetchOwn
       .mockResolvedValueOnce({ messages: [] })

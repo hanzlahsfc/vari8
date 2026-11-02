@@ -107,17 +107,29 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .first()
     .click()
     .catch(() => {});
-  const sentIds: { messageId?: string; media: string[] } = { media: [] };
+  const sentIds: {
+    messageId?: string;
+    media: string[];
+    voiceId?: string;
+    jfkId?: string;
+  } = { media: [] };
   client.on("response", async (res) => {
     if (res.request().method() !== "POST" || !res.url().includes("/messages"))
       return;
     const body = (await res.json().catch(() => null)) as {
-      message?: { id?: string; attachments?: { mediaObjectId?: string }[] };
+      message?: {
+        id?: string;
+        attachments?: { mediaObjectId?: string; fileName?: string }[];
+      };
     } | null;
     if (body?.message?.id) {
       sentIds.messageId = body.message.id;
-      for (const a of body.message.attachments ?? [])
-        if (a.mediaObjectId) sentIds.media.push(a.mediaObjectId);
+      for (const a of body.message.attachments ?? []) {
+        if (!a.mediaObjectId) continue;
+        sentIds.media.push(a.mediaObjectId);
+        if (a.fileName === "jfk.wav") sentIds.jfkId = a.mediaObjectId;
+        else sentIds.voiceId = a.mediaObjectId;
+      }
       console.log("SENT message", sentIds.messageId, sentIds.media.join(","));
     }
   });
@@ -155,31 +167,49 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
     .catch(() => {});
   await coach.getByText("E2E Client").first().click();
   await coach.waitForSelector("audio", { timeout: 20_000 });
-  // ID-bound: the coach card must mint the EXACT media_object ids the
-  // send returned — not merely a same-named file.
+  // ID-bound: the coach thread must render the client's exact message
+  // container (data-message-id, cd-message-client line) holding the
+  // exact media cards — mint requests remain supporting evidence only.
   expect(sentIds.messageId).toBeTruthy();
   expect(sentIds.media.length).toBeGreaterThanOrEqual(2);
-  // Mint URLs fire during thread render — assert the exact ids were
-  // requested, not merely same-named attachments.
+  expect(sentIds.voiceId).toBeTruthy();
+  expect(sentIds.jfkId).toBeTruthy();
   for (const id of sentIds.media) {
     await coach
       .waitForResponse((res) => res.url().includes(id), { timeout: 20_000 })
       .catch(() => {});
     expect(coachMints, `missing mint for ${id}`).toContain(id);
   }
-  // play the sent audio
-  await coach
-    .locator("audio")
-    .first()
-    .evaluate((a: HTMLAudioElement) => a.play().catch(() => {}));
+  const sentMsg = coach.locator(
+    `div.cd-message-line.cd-message-client[data-message-id="${sentIds.messageId}"]`,
+  );
+  await sentMsg.waitFor({ timeout: 20_000 });
+  for (const id of sentIds.media)
+    await sentMsg
+      .locator(`div.cd-media-card[data-media-id="${id}"]`)
+      .waitFor({ timeout: 20_000 });
+  // Playback on the voice take's exact card — never the first audio.
+  const coachPlayed = await sentMsg
+    .locator(`div.cd-media-card[data-media-id="${sentIds.voiceId}"] audio`)
+    .evaluate(async (a: HTMLAudioElement) => {
+      a.muted = true;
+      try {
+        await a.play();
+      } catch {
+        return false;
+      }
+      return !a.paused;
+    });
+  expect(coachPlayed, "coach playback did not engage").toBe(true);
   await coach.screenshot({ path: `${SHOTS}/p694-coach-thread.png` });
-  // View transcript on the known speech file
-  const cards = coach.locator("div.cd-media-card", { hasText: "jfk" });
-  await cards
-    .getByRole("button", { name: /transcript/i })
-    .first()
-    .click();
-  await coach.getByText(/fellow Americans/i).waitFor({ timeout: 180_000 });
+  // Transcript inside the exact jfk.wav card — the button and the
+  // rendered text both live in that card, not a page-scoped match.
+  const jfkCard = sentMsg.locator(
+    `div.cd-media-card[data-media-id="${sentIds.jfkId}"]`,
+  );
+  await jfkCard.getByRole("button", { name: /transcript/i }).click();
+  await jfkCard.getByText(/Auto-transcript/i).waitFor({ timeout: 180_000 });
+  await jfkCard.getByText(/fellow Americans/i).waitFor({ timeout: 30_000 });
   await coach.screenshot({ path: `${SHOTS}/p694-coach-transcript.png` });
   // coach replies with a voice note (fake-mic, synthetic) — capture the
   // exact reply message/media ids for the client-side assertions.
@@ -208,8 +238,17 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
   await recordTake(coach);
   await coach.getByRole("button", { name: "Send message" }).click();
   await coach.waitForTimeout(1500);
+  expect(replyIds.messageId).toBeTruthy();
   expect(replyIds.media.length).toBeGreaterThanOrEqual(1);
-  await coach.waitForTimeout(1500);
+  // The reply lands in the coach's own thread inside its exact
+  // outbound container, holding the exact reply media card.
+  const coachReplyMsg = coach.locator(
+    `div.cd-message-line.cd-message-coach[data-message-id="${replyIds.messageId}"]`,
+  );
+  await coachReplyMsg.waitFor({ timeout: 20_000 });
+  await coachReplyMsg
+    .locator(`div.cd-media-card[data-media-id="${replyIds.media[0]}"]`)
+    .waitFor({ timeout: 20_000 });
   await coach.screenshot({ path: `${SHOTS}/p694-coach-reply.png` });
 
   // ---------- client reloads: playback + transcript ----------

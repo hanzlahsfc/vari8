@@ -612,7 +612,10 @@ export function MessagesWorkspace() {
                           </span>
                         </div>
                       )}
-                      <div className={`cd-message-line cd-message-${m.from}`}>
+                      <div
+                        className={`cd-message-line cd-message-${m.from}`}
+                        data-message-id={m.id}
+                      >
                         <div
                           className={`cd-bubble ${m.priority ? "cd-bubble-priority" : ""}`}
                         >
