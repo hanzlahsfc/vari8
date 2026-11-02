@@ -25,6 +25,10 @@ export const TRAINING_LIMITS = {
   progressionNotesMax: 1000,
   /** Always-on per-exercise note. */
   noteMax: 500,
+  /** PR-M6: canvas `generalNotes` on a plan exercise. */
+  generalNotesMax: 2000,
+  /** PR-M6: logged-set / library bound shared with the O5 log shape. */
+  maxSecondaryMuscles: 10,
   /** Normalized draft/version payload cap. */
   payloadMaxBytes: 96 * 1024,
   /** Two-level history: programs page and per-program versions page. */

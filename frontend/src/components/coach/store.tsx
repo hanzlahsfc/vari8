@@ -11,6 +11,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { adoptAthleteDataDemo } from "./athlete-data-demo";
+import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
+import { adoptClientAppDemo } from "./client-app-demo";
 import {
   type CoachState,
   isCoachState,
@@ -20,7 +23,10 @@ import {
   seedState,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
+import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
+import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
+import { adoptTrainingLogDemo } from "./training-log-demo";
 
 type Store = {
   state: CoachState;
@@ -44,7 +50,14 @@ export function useCoach() {
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
-  for (const key of ["client", "editor", "review", "plan", "tab"] as const)
+  for (const key of [
+    "client",
+    "editor",
+    "review",
+    "plan",
+    "module",
+    "tab",
+  ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
 }
@@ -74,6 +87,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     editor: params.get("editor") ?? undefined,
     review: params.get("review") ?? undefined,
     plan: params.get("plan") ?? undefined,
+    module: params.get("module") ?? undefined,
     tab: params.get("tab") ?? undefined,
   };
   useEffect(() => {
@@ -81,7 +95,24 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed: unknown = migrateCoachState(JSON.parse(raw));
-        if (isCoachState(parsed)) setState(normalizeTemplateSetups(parsed));
+        if (isCoachState(parsed))
+          setState(
+            normalizeTemplateSetups(
+              adoptAthleteDataDemo(
+                adoptAthleteProfileDemo(
+                  adoptTrainingLogDemo(
+                    adoptClientAppDemo(
+                      adoptAmaraTrainingExample(parsed),
+                      localToday(),
+                    ),
+                    localToday(),
+                  ),
+                  localToday(),
+                ),
+                localToday(),
+              ),
+            ),
+          );
         else {
           preserveRaw.current = true;
           setStorageOk(false);

@@ -29,5 +29,12 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "frontend", "icm/**/evidence/**"]
+  "exclude": [
+    "node_modules",
+    "frontend",
+    "icm/**/evidence/**",
+    // Cross-app DOM test: it imports the frontend app's own sources, which
+    // belong to frontend/tsconfig.json, not this program.
+    "tests/unit/coach-messages-restored-draft.dom.test.tsx"
+  ]
 }

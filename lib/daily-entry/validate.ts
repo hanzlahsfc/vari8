@@ -13,12 +13,17 @@ export type SnapshotParam = {
   required: boolean;
   unit: string | null;
   ratingScheme: string | null;
+  decimals: number | null;
+  summary: string | null;
   options: Array<{ optionId: string; label: string }>;
   validation: { min: number | null; max: number | null } | null;
   dataClassification: string | null;
   snapshotRevision: number;
   sectionId: string;
   itemId: string;
+  /** Declared section-item order (resolved `(order ?? 0)`); the w2-t14
+   * tracker-columns read model re-emits it verbatim. */
+  itemOrder?: number;
 };
 
 export const DAILY_ENTRY_TEXT_MAX = 5000;

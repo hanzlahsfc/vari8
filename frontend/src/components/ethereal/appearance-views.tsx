@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Moon, RotateCcw, Sun, X } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type CSSProperties, useEffect, useState } from "react";
 import {
   Avatar,
@@ -9,12 +9,12 @@ import {
   StatusLabel,
   TextInput,
 } from "@/components/ethereal/ui";
+import { Button } from "@/components/vari8/components";
 import {
   defaultAppearance,
   fontOptions,
   useAppearance,
 } from "@/lib/ethereal-appearance";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import { FoundationComponents } from "./foundation-components";
 import { BodyweightTrend, NutritionTargets } from "./tracker-components";
 
@@ -80,9 +80,11 @@ export function AppearanceScreen() {
             A few small choices shape the feel of every session.
           </p>
         </div>
-        <button
+        <Button
           className="eg-ap-reset"
           type="button"
+          variant="secondary"
+          size="sm"
           onClick={() => {
             resetAppearance();
             setDraft(defaultAppearance.accent);
@@ -90,7 +92,7 @@ export function AppearanceScreen() {
         >
           <RotateCcw size={15} strokeWidth={1.6} aria-hidden="true" />
           <span>Reset</span>
-        </button>
+        </Button>
       </header>
 
       <div className="eg-ap-layout">
@@ -130,7 +132,10 @@ export function AppearanceScreen() {
               <span className="eg-ap-index">02</span>
               <div>
                 <h2 id="eg-ap-accent-title">Accent</h2>
-                <p>Choose the color that marks what matters.</p>
+                <p>
+                  Choose the color that marks what matters. Shades adapt to keep
+                  controls readable.
+                </p>
               </div>
             </div>
             <div className="eg-ap-accent-tools">

@@ -61,6 +61,9 @@ const TOP_LEVEL_SKIP = new Set([
   // worktree. Runtime output, never a source tree: indexing it made `index:check`
   // demand an `_evidence/AGENTS.md` and `format:check` rewrite PNG-adjacent files.
   "_evidence",
+  // LEAD/PROOF evidence bundles mirrored inside a worktree by card contract.
+  // Same class as `_evidence`: untracked runtime output, never a source tree.
+  "LEAD",
   "out",
   "build",
   "sources",

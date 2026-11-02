@@ -9,7 +9,6 @@ import {
   MAIL_FROM_ENV,
   sendMail,
 } from "../../lib/mail";
-import { invitationLink, sendInvitationMail } from "../../lib/mail/invitation";
 
 /**
  * O22 transactional mail. Each test guards a rule that removing the rule
@@ -142,41 +141,203 @@ describe("emaillabs adapter", () => {
     applyEnv({ [MAIL_DELIVERY_ADAPTER_ENV]: undefined });
     expect(() => assertMailDeliveryConfigured()).not.toThrow();
   });
-});
 
-describe("invitation mail", () => {
-  it("links to the invite route with workspace and token, whatever the role", () => {
-    setEnv("BETTER_AUTH_URL", "https://app.vari8.test/");
-    const link = invitationLink({
-      workspaceId: "ws_123",
-      rawToken: TOKEN,
-    });
-    expect(link).toBe(
-      `https://app.vari8.test/invite?workspace=ws_123&token=${TOKEN}`,
+  it("propagates a provider timeout — no silent swallow, no retry storm", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      }),
     );
+    await expect(
+      sendMail({ to: "u@example.test", subject: "s", text: "t" }),
+    ).rejects.toMatchObject({ name: "TimeoutError" });
   });
 
-  it("sends role-aware copy through the adapter, with the link in both parts", async () => {
-    setEnv("BETTER_AUTH_URL", "https://app.vari8.test");
-    const fetchMock = vi.fn(async () => new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
+  it("a non-2xx provider status rejects with the status only", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(`bad recipient for ${TOKEN}`, { status: 422 }),
+      ),
+    );
+    await expect(
+      sendMail({
+        to: "athlete@example.test",
+        subject: "Reset your password",
+        text: `Reset your password: https://app.test/reset?token=${TOKEN}`,
+      }),
+    ).rejects.toThrow("mail delivery failed with status 422");
+    await expect(
+      sendMail({ to: "a@b.test", subject: "s", text: "t" }),
+    ).rejects.not.toThrow(TOKEN);
+  });
+});
 
-    await sendInvitationMail({
-      to: "athlete@example.test",
-      workspaceId: "ws_123",
-      rawToken: TOKEN,
+describe("invitation delivery (current boundary)", () => {
+  // The served path: createInvitationFromApi builds and sends the link
+  // inline — the deleted lib/mail/invitation.ts was a dead duplicate.
+  // doMock (not hoisted vi.mock): the adapter tests above keep the real
+  // sendMail; only these dynamic imports see the doubles.
+  const sendMail = vi.fn(async () => {});
+  const createWorkspaceInvitation = vi.fn();
+
+  const load = async () => {
+    vi.resetModules();
+    vi.doMock("../../lib/mail", async (importOriginal) => {
+      const mod = await importOriginal<typeof import("../../lib/mail")>();
+      return { ...mod, sendMail };
+    });
+    vi.doMock("../../lib/auth/rate-limit", () => ({
+      consumeRateLimit: vi.fn(async () => ({ allowed: true })),
+      userLimitKey: (a: string, b: string) => `${a}:${b}`,
+    }));
+    vi.doMock("../../lib/workspace/invitations", async (importOriginal) => {
+      const mod =
+        await importOriginal<
+          typeof import("../../lib/workspace/invitations")
+        >();
+      return {
+        ...mod,
+        assertInvitationOrchestrationExternallyExposable: vi.fn(),
+        createWorkspaceInvitation,
+      };
+    });
+    return import("../../lib/workspace/invitation-api");
+  };
+
+  const viewer = { userId: "staff-1" };
+  const workspace = { workspaceId: "ws_123" };
+
+  beforeEach(() => {
+    sendMail.mockReset();
+    createWorkspaceInvitation.mockReset();
+    createWorkspaceInvitation.mockResolvedValue({
+      invitationId: "inv-1",
+      expiresAt: new Date("2026-11-03T12:00:00Z"),
+      delivery: {
+        to: "athlete@example.test",
+        workspaceId: "ws_123",
+        rawToken: TOKEN,
+      },
+    });
+  });
+  afterEach(() => {
+    vi.doUnmock("../../lib/mail");
+    vi.doUnmock("../../lib/auth/rate-limit");
+    vi.doUnmock("../../lib/workspace/invitations");
+  });
+
+  it("mails the normalized recipient an /invite link carrying the raw token", async () => {
+    setEnv("BETTER_AUTH_URL", "https://app.vari8.test/");
+    const { createInvitationFromApi } = await load();
+    const created = await createInvitationFromApi(viewer, workspace, {
+      targetEmail: "athlete@example.test",
       intendedRole: "CLIENT",
     });
-
-    const body = (
-      fetchMock.mock.calls[0] as unknown as [string, RequestInit]
-    )[1].body as URLSearchParams;
-    expect(body.get("subject")).toMatch(/your coaching space/i);
-    expect(body.get("text")).toContain(
+    expect(created.delivered).toBe(true);
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const message = sendMail.mock.calls[0][0] as {
+      to: string;
+      subject: string;
+      text: string;
+    };
+    expect(message.to).toBe("athlete@example.test");
+    expect(message.text).toContain(
       `https://app.vari8.test/invite?workspace=ws_123&token=${TOKEN}`,
     );
-    expect(body.get("html")).toContain(
-      `https://app.vari8.test/invite?workspace=ws_123&amp;token=${TOKEN}`,
+    expect(message.text).toContain("2026-11-03T12:00:00.000Z");
+  });
+
+  it("a delivery failure reports 502 delivery_failed — the row stays committed", async () => {
+    sendMail.mockRejectedValueOnce(new Error("smtp down"));
+    const { createInvitationFromApi } = await load();
+    await expect(
+      createInvitationFromApi(viewer, workspace, {
+        targetEmail: "athlete@example.test",
+        intendedRole: "CLIENT",
+      }),
+    ).rejects.toThrow(/delivery_failed/);
+  });
+});
+
+describe("password reset mail construction", () => {
+  // The served path: auth.options.emailAndPassword.sendResetPassword in
+  // lib/auth/server.ts — exercised through the exported auth object so
+  // the test drives the real closure, not a copy.
+  const sendMail = vi.fn(async () => {});
+  const deleteMany = vi.fn(async () => ({}));
+  const findFirst = vi.fn(async () => null);
+
+  const callReset = async () => {
+    vi.resetModules();
+    vi.doMock("../../lib/mail", async (importOriginal) => {
+      const mod = await importOriginal<typeof import("../../lib/mail")>();
+      return {
+        ...mod,
+        sendMail,
+        mailDeliveryConfigured: () => true,
+      };
+    });
+    vi.doMock("../../lib/db", () => ({
+      prisma: {
+        verification: { deleteMany },
+        clientProfile: { findFirst },
+      },
+    }));
+    const { auth } = await import("../../lib/auth/server");
+    const send = (
+      auth.options as unknown as {
+        emailAndPassword: {
+          sendResetPassword: (input: {
+            user: { id: string; email: string };
+            token: string;
+          }) => Promise<void>;
+        };
+      }
+    ).emailAndPassword.sendResetPassword;
+    await send({
+      user: { id: "u-1", email: "athlete@example.test" },
+      token: TOKEN,
+    });
+  };
+
+  beforeEach(() => {
+    sendMail.mockReset();
+    deleteMany.mockReset();
+    findFirst.mockReset();
+  });
+  afterEach(() => {
+    vi.doUnmock("../../lib/mail");
+    vi.doUnmock("../../lib/db");
+  });
+
+  it("staff reset links to /reset with the raw token", async () => {
+    setEnv("BETTER_AUTH_URL", "https://app.vari8.test/");
+    findFirst.mockResolvedValue(null);
+    await callReset();
+    const message = sendMail.mock.calls[0][0] as {
+      to: string;
+      subject: string;
+      text: string;
+    };
+    expect(message.to).toBe("athlete@example.test");
+    expect(message.subject).toBe("Reset your password");
+    expect(message.text).toBe(
+      `Reset your password: https://app.vari8.test/reset?token=${TOKEN}`,
     );
+    // Sibling-token cleanup ran before the send.
+    expect(deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("a client-profile reset links to /me/reset — O17", async () => {
+    setEnv("BETTER_AUTH_URL", "https://app.vari8.test");
+    findFirst.mockResolvedValue({ id: "cp-1" } as never);
+    await callReset();
+    const message = sendMail.mock.calls[0][0] as {
+      text: string;
+    };
+    expect(message.text).toContain("/me/reset?token=");
   });
 });

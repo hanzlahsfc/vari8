@@ -1,18 +1,41 @@
+import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
   createInitialClients,
   type WorkspaceClient,
 } from "../ethereal/clients/model";
 import {
+  type AthleteOverviewSetting,
+  isAthleteOverviewSetting,
+} from "./athlete/overview-widgets";
+import { isTimelineEvent, type TimelineEvent } from "./athlete/timeline";
+import { adoptAthleteDataDemo } from "./athlete-data-demo";
+import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
+import {
   createDashboardDraft,
   type DashboardDraft,
   isValidDashboardDraft,
 } from "./builder/schema";
+import { adoptClientAppDemo } from "./client-app-demo";
 import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
+import { type ClientPhase, isClientPhase } from "./plans/phase-planning";
+import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import type {
   TrainingOptionKey,
   TrainingOptions,
 } from "./plans/training-options";
-import type { ClientPlans, ExerciseDefinition } from "./plans/types";
+import type {
+  ClientPlans,
+  ExerciseDefinition,
+  LogField,
+  TrainingSessionLog,
+} from "./plans/types";
+import {
+  type ActivityMetric,
+  formatActivityTarget,
+  localToday,
+  resolveActivityTarget,
+} from "./targets/model";
+import { adoptTrainingLogDemo } from "./training-log-demo";
 
 export const STORAGE_KEY = "coach-desktop-mockup-v1";
 export const TODAY = "2026-10-13";
@@ -45,6 +68,7 @@ export type Route = {
   editor?: string;
   review?: string;
   plan?: string;
+  module?: string;
   tab?: string;
 };
 export type Parameter = {
@@ -118,6 +142,16 @@ export const PARAMETERS: Parameter[] = [
     "Adherence",
   ]),
   parameter("protein", "Protein intake", "Nutrition", ["g"], 140, [
+    "Weekly average",
+    "Target vs actual",
+    "Adherence",
+  ]),
+  parameter("carbs", "Carbohydrate intake", "Nutrition", ["g"], 220, [
+    "Weekly average",
+    "Target vs actual",
+    "Adherence",
+  ]),
+  parameter("fat", "Fat intake", "Nutrition", ["g"], 60, [
     "Weekly average",
     "Target vs actual",
     "Adherence",
@@ -562,7 +596,13 @@ export const TRAINING_FIELDS = [
   "Detailed instructions",
   "Progression notes",
 ];
-export type FieldConfig = { id: string; unit: string; options?: string[] };
+export type FieldConfig = {
+  id: string;
+  unit: string;
+  options?: string[];
+  decimals?: 0 | 1 | 2;
+  summary?: "avg" | "sum" | "count" | "none";
+};
 export type Widget = {
   id: string;
   name: string;
@@ -595,14 +635,20 @@ export type Variant = {
   habits: boolean;
   widgets: Widget[];
   dashboard?: DashboardDraft;
+  /** Athlete profile overview layout (widget order + visibility). */
+  athleteOverview?: AthleteOverviewSetting;
   fields: FieldConfig[];
   roadmap: { source: string; calculation: string; comparison: boolean }[];
   roadmapPhases?: boolean;
   phaseOptions?: string[];
+  /** Coach-selected activity planning columns for the weekly timeline. */
+  roadmapActivityTargets?: ActivityMetric[];
   training: {
     options?: TrainingOptions;
     defaults?: Record<TrainingOptionKey, string>;
     fields: string[];
+    logFields?: LogField[];
+    loadUnit?: "kg" | "lb";
     volume: boolean;
     breakdown: string;
     presentation: string;
@@ -643,6 +689,13 @@ export type Plan = {
 };
 export type CoachClient = WorkspaceClient & {
   assignment?: Assignment;
+  phases?: ClientPhase[];
+  contestDate?: string;
+  timelineEvents?: TimelineEvent[];
+  /** Persisted client tracker log; falls back to `entries` when absent. */
+  tracking?: { entries: TrackerEntry[]; text: Record<string, string> };
+  /** Coach notes per timeline week, keyed by the week's Monday ISO date. */
+  weekNotes?: Record<string, string>;
   schedules: Schedule[];
   plan: Plan;
   plans?: ClientPlans;
@@ -657,12 +710,18 @@ export type CoachClient = WorkspaceClient & {
   habits: {
     id: string;
     name: string;
-    frequency: string;
+    frequency: string | HabitFrequency;
     goal: string;
     reason: string;
     completed: number;
   }[];
+  habitLog?: Record<string, string[]>;
 };
+export type HabitFrequency =
+  | { kind: "daily" }
+  | { kind: "per-week"; count: number }
+  | { kind: "every-n-days"; n: number }
+  | { kind: "weekdays"; days: number[] };
 export type Media = {
   id: string;
   name: string;
@@ -692,6 +751,7 @@ export type Submission = {
   answers: { question: string; answer: string }[];
   metrics: string[];
   visuals: string[];
+  photos?: { pose: string; src: string }[];
   note: string;
   flags: { exercise: string; set: number; date: string; text: string }[];
   response?: { text: string; video?: Media; changes: string[]; date: string };
@@ -713,13 +773,41 @@ export type ReviewDraft = {
 };
 export type CoachState = {
   version: 1;
+  demoSeeds?: {
+    amaraTraining?: 1;
+    clientAppDemo?: 1;
+    trainingLogDemo?: 1;
+    athleteProfileDemo?: 1;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+  };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
-  coachTodos?: { id: string; title: string; complete: boolean }[];
+  coachTodos?: {
+    id: string;
+    title: string;
+    complete: boolean;
+    deadline?: string;
+    reminderAt?: string;
+    notes?: string;
+    priority?: "low" | "normal" | "high";
+    clientId?: string;
+  }[];
   templates: Template[];
   clients: CoachClient[];
   extras: Extra[];
   submissions: Submission[];
+  trainingLogs?: TrainingSessionLog[];
+  /** Coach-wide timeline-tab views (column lists); built-ins are
+   *  reorderable but not deletable. */
+  timelineViews?: {
+    id: string;
+    name: string;
+    columns: string[];
+    builtIn?: boolean;
+    compare?: boolean;
+  }[];
+  /** Coach-wide week ordering on the timeline tab. */
+  timelineOrder?: "newest" | "oldest";
   messages: Message[];
   drafts: Record<
     string,
@@ -788,10 +876,16 @@ export function sampleValue(field: FieldConfig, client?: CoachClient) {
   if (field.unit === "12-hour") return "7:15 am";
   return `${v}${["1–10", "1–5"].includes(field.unit) ? ` / ${field.unit.slice(2)}` : ` ${field.unit === "24-hour" ? "" : field.unit}`}`;
 }
+const ACTIVITY_SUMMARY_METRICS: Record<string, ActivityMetric> = {
+  steps: "steps",
+  "cardio-duration": "cardio",
+  "cardio-sessions": "cardio",
+};
 export function summaryPreview(
   field: FieldConfig,
   calculation: string,
   client?: CoachClient,
+  options?: { asOf?: string },
 ) {
   const parameter = getParameter(field.id);
   if (parameter?.inputType || typeof parameter?.sample !== "number") {
@@ -822,20 +916,30 @@ export function summaryPreview(
           );
   const mean = values.reduce((a, b) => a + b, 0) / (values.length || 1);
   const nutrition = client ? planTargets(client, TODAY) : undefined;
-  const target = client
-    ? field.id === "calories" || field.id === "protein"
-      ? nutrition?.[field.id]
-      : client.plans?.goals.filter((goal) => goal.fieldId === field.id).at(-1)
-          ?.value
-    : (
-        {
-          weight: 64,
-          steps: 8000,
-          calories: 2200,
-          protein: 140,
-          sleep: 8,
-        } as Record<string, number>
-      )[field.id];
+  const activityMetric = ACTIVITY_SUMMARY_METRICS[field.id];
+  const activityVersions =
+    client && activityMetric
+      ? (client.plans?.activityTargets ?? []).filter(
+          (version) => version.metric === activityMetric,
+        )
+      : [];
+  const structured = activityVersions.length > 0;
+  const target = structured
+    ? undefined
+    : client
+      ? field.id === "calories" || field.id === "protein"
+        ? nutrition?.[field.id]
+        : client.plans?.goals.filter((goal) => goal.fieldId === field.id).at(-1)
+            ?.value
+      : (
+          {
+            weight: 64,
+            steps: 8000,
+            calories: 2200,
+            protein: 140,
+            sleep: 8,
+          } as Record<string, number>
+        )[field.id];
   const convert = (value: number) =>
     field.unit === "lb"
       ? value * 2.20462
@@ -852,14 +956,27 @@ export function summaryPreview(
     `${Number(convert(value).toFixed(["steps", "calories", "protein"].includes(field.id) ? 0 : 1))} ${field.unit}`;
   const value = !values.length
     ? "Not recorded"
-    : calculation === "Adherence"
-      ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
-      : calculation === "Trend"
-        ? format((values.at(-1) ?? 0) - (values[0] ?? 0))
-        : format(mean);
+    : calculation === "Adherence" && structured
+      ? "—"
+      : calculation === "Adherence"
+        ? `${Math.round((values.filter((v) => target !== undefined && v >= target).length / (values.length || 1)) * 100)}%`
+        : calculation === "Trend"
+          ? format((values.at(-1) ?? 0) - (values[0] ?? 0))
+          : format(mean);
   return {
     value,
-    target: target === undefined ? "No target defined" : format(target),
+    target:
+      structured && client && activityMetric
+        ? formatActivityTarget(
+            resolveActivityTarget({
+              versions: client.plans?.activityTargets ?? [],
+              metric: activityMetric,
+              date: options?.asOf ?? localToday(),
+            }),
+          )
+        : target === undefined
+          ? "No target defined"
+          : format(target),
     count: values.length,
   };
 }
@@ -1173,7 +1290,7 @@ export function submitFeedback(
 export function trainingSets(week: number) {
   return week < 4 ? 3 : 4;
 }
-export function seedState(): CoachState {
+export function seedState(today: string = localToday()): CoachState {
   const strength = newTemplate("strength");
   strength.name = "Strength & balance";
   strength.description =
@@ -1366,7 +1483,7 @@ export function seedState(): CoachState {
       attachments: [],
     },
   ]);
-  return {
+  const seeded: CoachState = {
     version: 1,
     templates: [strength, performance, simple],
     clients,
@@ -1384,12 +1501,23 @@ export function seedState(): CoachState {
       priorityNotifications: true,
     },
   };
+  return adoptAthleteDataDemo(
+    adoptAthleteProfileDemo(
+      adoptTrainingLogDemo(
+        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), today),
+        today,
+      ),
+      today,
+    ),
+    today,
+  );
 }
 
 // Validate the complete nested envelope before any UI uses persisted content.
 type Guard = (v: unknown) => boolean;
 const str: Guard = (v) => typeof v === "string";
 const num: Guard = (v) => typeof v === "number" && Number.isFinite(v);
+const nulNum: Guard = (v) => v === null || num(v);
 const bool: Guard = (v) => typeof v === "boolean";
 const arr =
   (g: Guard): Guard =>
@@ -1419,6 +1547,11 @@ const dict =
     typeof v === "object" &&
     !Array.isArray(v) &&
     Object.values(v).every(g);
+const isHabitFrequency: Guard = (v) =>
+  obj({ kind: one(["daily"]) })(v) ||
+  obj({ kind: one(["per-week"]), count: num })(v) ||
+  obj({ kind: one(["every-n-days"]), n: num })(v) ||
+  obj({ kind: one(["weekdays"]), days: arr(num) })(v);
 const date: Guard = (v) =>
   typeof v === "string" &&
   /^\d{4}-\d{2}-\d{2}$/.test(v) &&
@@ -1446,6 +1579,7 @@ const variantGuard = obj({
   views: arr(one(CORE_VIEWS)),
   habits: bool,
   dashboard: opt(isValidDashboardDraft),
+  athleteOverview: opt(isAthleteOverviewSetting),
   widgets: arr(
     obj({
       id: str,
@@ -1461,6 +1595,8 @@ const variantGuard = obj({
       id: one(ALL_PARAMETERS.map((p) => p.id)),
       unit: str,
       options: opt(arr(str)),
+      decimals: opt(one([0, 1, 2])),
+      summary: opt(one(["avg", "sum", "count", "none"])),
     }),
   ),
   roadmap: arr(
@@ -1472,6 +1608,7 @@ const variantGuard = obj({
   ),
   roadmapPhases: opt(bool),
   phaseOptions: opt(arr(str)),
+  roadmapActivityTargets: opt(arr(one(["steps", "cardio"]))),
   training: obj({
     options: opt(
       obj({
@@ -1485,6 +1622,8 @@ const variantGuard = obj({
       obj({ setType: str, progression: str, tempo: str, rest: str }),
     ),
     fields: arr(one(TRAINING_FIELDS)),
+    logFields: opt(arr(one(["weight", "reps", "rpe", "rir", "note"]))),
+    loadUnit: opt(one(["kg", "lb"])),
     volume: bool,
     breakdown: str,
     presentation: str,
@@ -1567,9 +1706,19 @@ const clientGuard = obj({
   coachingSince: str,
   priorityMessages: bool,
   archived: bool,
-  internalNotes: arr(obj({ id: str, text: str })),
+  internalNotes: arr(obj({ id: str, text: str, pinned: opt(bool) })),
   generalNotes: arr(obj({ id: str, text: str })),
-  coachTasks: arr(obj({ id: str, title: str, complete: bool })),
+  coachTasks: arr(
+    obj({
+      id: str,
+      title: str,
+      complete: bool,
+      deadline: opt(str),
+      reminderAt: opt(str),
+      notes: opt(str),
+      priority: opt(one(["low", "normal", "high"])),
+    }),
+  ),
   clientTasks: arr(
     obj({
       id: str,
@@ -1584,7 +1733,7 @@ const clientGuard = obj({
       obj({
         id: str,
         name: str,
-        frequency: str,
+        frequency: (v) => str(v) || isHabitFrequency(v),
         goal: str,
         reason: str,
         completed: num,
@@ -1608,16 +1757,47 @@ const clientGuard = obj({
     obj({ date, weight: num, sleep: num, steps: num, calories: num }),
   ),
   habits: arr(
-    obj({ name: str, frequency: str, goal: str, reason: str, completed: num }),
+    obj({
+      name: str,
+      frequency: (v) => str(v) || isHabitFrequency(v),
+      goal: str,
+      reason: str,
+      completed: num,
+    }),
   ),
+  habitLog: opt(dict(arr(str))),
   assignment: opt(
     obj({ templateId: str, variantId: str, snapshot: templateGuard }),
   ),
+  phases: opt(arr(isClientPhase)),
+  contestDate: opt(date),
+  timelineEvents: opt(arr(isTimelineEvent)),
+  tracking: opt(
+    obj({
+      entries: arr(
+        obj({
+          date,
+          values: dict((v) => v === null || num(v)),
+        }),
+      ),
+      text: dict(str),
+    }),
+  ),
+  weekNotes: opt(dict(str)),
 });
 export function isCoachState(v: unknown): v is CoachState {
   return (
     obj({
       version: one([1]),
+      demoSeeds: opt(
+        obj({
+          amaraTraining: opt(one([1])),
+          clientAppDemo: opt(one([1])),
+          trainingLogDemo: opt(one([1])),
+          athleteProfileDemo: opt(one([1])),
+          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])),
+        }),
+      ),
       exerciseLibrary: opt(
         arr(
           obj({
@@ -1630,7 +1810,32 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
       ),
       coachNotes: opt(arr(obj({ id: str, text: str }))),
-      coachTodos: opt(arr(obj({ id: str, title: str, complete: bool }))),
+      timelineViews: opt(
+        arr(
+          obj({
+            id: str,
+            name: str,
+            columns: arr(str),
+            builtIn: opt(bool),
+            compare: opt(bool),
+          }),
+        ),
+      ),
+      timelineOrder: opt(one(["newest", "oldest"])),
+      coachTodos: opt(
+        arr(
+          obj({
+            id: str,
+            title: str,
+            complete: bool,
+            deadline: opt(str),
+            reminderAt: opt(str),
+            notes: opt(str),
+            priority: opt(one(["low", "normal", "high"])),
+            clientId: opt(str),
+          }),
+        ),
+      ),
       templates: arr(templateGuard),
       clients: arr(clientGuard),
       extras: arr(
@@ -1642,6 +1847,64 @@ export function isCoachState(v: unknown): v is CoachState {
           note: str,
         }),
       ),
+      trainingLogs: opt(
+        arr(
+          obj({
+            id: str,
+            clientId: str,
+            planId: str,
+            week: num,
+            occurrenceKey: str,
+            sessionId: str,
+            sessionName: str,
+            scheduledDate: date,
+            logFields: arr(one(["weight", "reps", "rpe", "rir", "note"])),
+            loadUnit: one(["kg", "lb"]),
+            exercises: arr(
+              obj({
+                exerciseId: str,
+                exerciseKey: str,
+                prescription: obj({
+                  libraryId: opt(str),
+                  secondaryMuscles: opt(arr(str)),
+                  generalNotes: opt(str),
+                  id: str,
+                  name: str,
+                  muscle: opt(str),
+                  instructions: str,
+                  progression: str,
+                  sets: arr(
+                    obj({
+                      id: str,
+                      reps: num,
+                      repsMax: opt(num),
+                      tempo: str,
+                      type: str,
+                      rest: str,
+                      instructions: str,
+                    }),
+                  ),
+                }),
+                sets: arr(
+                  obj({
+                    setId: str,
+                    done: bool,
+                    weight: nulNum,
+                    reps: nulNum,
+                    rpe: nulNum,
+                    rir: nulNum,
+                    note: str,
+                    flagged: bool,
+                  }),
+                ),
+              }),
+            ),
+            status: one(["in-progress", "finished"]),
+            startedAt: str,
+            finishedAt: opt(str),
+          }),
+        ),
+      ),
       submissions: arr(
         obj({
           id: str,
@@ -1652,6 +1915,7 @@ export function isCoachState(v: unknown): v is CoachState {
           answers: arr(obj({ question: str, answer: str })),
           metrics: arr(str),
           visuals: arr(str),
+          photos: opt(arr(obj({ pose: str, src: str }))),
           note: str,
           flags: arr(obj({ exercise: str, set: num, date, text: str })),
           response: opt(

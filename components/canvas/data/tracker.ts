@@ -3,16 +3,22 @@
 // draft key (configuration, entries and coach comments). PR-W4 wires this
 // domain to the server; it edits this file only.
 
-import type { CoachClient, CoachState } from "../coach/model";
+import type { CoachClient } from "../coach/model";
+import type {
+  TrackerConfig as PreviewTrackerConfig,
+  TrackerParameter,
+} from "../coach/client-tracker-preview/preview-model";
 import {
   emptyClientPlans,
   type ClientGoal,
+  type ClientPlans,
 } from "../coach/plans/types";
 import {
   parameters,
   type TrackerConfig,
   type TrackerEntry,
 } from "../ethereal/client-tracker/model";
+import { apiFetch } from "./http";
 import { type CoachSlice, readStorage, writeJson } from "./provider";
 
 export const TRACKER_KEY = "coach-data-tracker-v1";
@@ -22,6 +28,8 @@ type TrackerData = {
   entries: Record<string, CoachClient["entries"]>;
   /** Client goals per client id (G10: goals belong to the tracker wiring). */
   goals: Record<string, ClientGoal[]>;
+  /** Date-less metric targets per client id; same family as goals. */
+  otherTargets?: Record<string, ClientPlans["otherTargets"]>;
 };
 
 export const trackerSlice: CoachSlice = {
@@ -33,6 +41,11 @@ export const trackerSlice: CoachSlice = {
     goals: Object.fromEntries(
       state.clients.flatMap((client) =>
         client.plans ? [[client.id, client.plans.goals]] : [],
+      ),
+    ),
+    otherTargets: Object.fromEntries(
+      state.clients.flatMap((client) =>
+        client.plans ? [[client.id, client.plans.otherTargets]] : [],
       ),
     ),
   }),
@@ -49,6 +62,12 @@ export const trackerSlice: CoachSlice = {
         const goals = data.goals[client.id];
         if (goals !== undefined)
           (client.plans ??= emptyClientPlans()).goals = goals;
+      }
+    if (data.otherTargets && typeof data.otherTargets === "object")
+      for (const client of state.clients) {
+        const targets = data.otherTargets[client.id];
+        if (targets !== undefined)
+          (client.plans ??= emptyClientPlans()).otherTargets = targets;
       }
   },
 };
@@ -179,4 +198,568 @@ export function writeClientTrackerDraft(
     entries: draft.entries,
     comments: draft.comments,
   });
+}
+
+/* -------------------------------------------------------------------------
+ * Card 05a remote surface: the own daily-entry routes the real client
+ * tracker reads and writes through. Wire shapes mirror
+ * `lib/daily-entry/service.ts`; duplicated here so the canvas never imports
+ * server modules.
+ * ---------------------------------------------------------------------- */
+
+export type DailyEntrySurfaceItemWire = {
+  ordinal: number;
+  parameterKey: string;
+  label: string;
+  helpText: string | null;
+  unit: string | null;
+  kind: string;
+  required: boolean;
+  ratingScheme: string | null;
+  options: { ordinal: number; label: string }[];
+  validation: { min: number | null; max: number | null } | null;
+  current: string;
+};
+
+export type DailyEntrySurfaceSectionWire = {
+  sectionKey: string;
+  label: string;
+  items: DailyEntrySurfaceItemWire[];
+};
+
+export type DailyEntryHistoryRowWire = {
+  parameterKey: string;
+  label: string;
+  unit: string | null;
+  display: string;
+};
+
+export type DailyEntryHistoryEntryWire = {
+  entryDate: string;
+  declaredAt: string;
+  revisionCount: number;
+  values: DailyEntryHistoryRowWire[];
+};
+
+export type DailyEntrySurfaceReadyWire = {
+  state: "ready";
+  formToken: string;
+  entryDate: string;
+  sections: DailyEntrySurfaceSectionWire[];
+  history: DailyEntryHistoryEntryWire[];
+};
+
+export type DailyEntrySurfaceWire =
+  | DailyEntrySurfaceReadyWire
+  | { state: "not_applicable" }
+  | { state: "unavailable" }
+  | { state: "ineligible" }
+  | { state: "consent_missing" };
+
+/** GET daily-entries?date= - the caller's own surface for `date` (or today). */
+export function fetchDailyEntrySurface(
+  workspaceId: string,
+  date?: string,
+): Promise<DailyEntrySurfaceWire> {
+  const suffix = date ? `?date=${encodeURIComponent(date)}` : "";
+  return apiFetch<DailyEntrySurfaceWire>(
+    `/workspaces/${workspaceId}/daily-entries${suffix}`,
+  );
+}
+
+/** PUT daily-entries/:date - one save against the caller's own day entry. */
+export function saveDailyEntryRemote(
+  workspaceId: string,
+  entryDate: string,
+  input: {
+    formToken: string;
+    values: { ordinal: number; raw: string }[];
+  },
+): Promise<{ status: "saved"; revisionSeq: number } | { status: "no_op" }> {
+  return apiFetch(`/workspaces/${workspaceId}/daily-entries/${entryDate}`, {
+    method: "PUT",
+    body: input,
+  });
+}
+
+export type StaffDailyEntryHistoryWire =
+  | {
+      state: "ready";
+      clientName: string;
+      items: {
+        entryDate: string;
+        revisionCount: number;
+        currentRevisionSeq: number | null;
+      }[];
+      nextCursor: string | null;
+    }
+  | { state: "consent_missing" };
+
+/** GET clients/:clientProfileId/daily-entries/history - the staff page. */
+export function fetchStaffDailyEntryHistory(
+  workspaceId: string,
+  clientProfileId: string,
+  cursor?: string,
+): Promise<StaffDailyEntryHistoryWire> {
+  const suffix = cursor ? `?cursor=${encodeURIComponent(cursor)}` : "";
+  return apiFetch<StaffDailyEntryHistoryWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/history${suffix}`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Card 05a: daily-entry surface -> TrackingView adapter (pure functions, the
+// mapping unit tests exercise). Server values stay untouched by the preview
+// model's per-field unit conversion because remote parameter ids carry the
+// `srv-` prefix, which matches none of its special-cased ids.
+// ---------------------------------------------------------------------------
+
+const REMOTE_PARAMETER_PREFIX = "srv-";
+
+export const remoteParameterId = (key: string) =>
+  `${REMOTE_PARAMETER_PREFIX}${key}`;
+
+export type RemoteParameterMeta = {
+  /** `srv-`-prefixed id used inside the tracker model. */
+  id: string;
+  /** Server parameterKey the entry and history payloads carry. */
+  key: string;
+  /** Positional ordinal the save payload addresses. */
+  ordinal: number;
+  kind: DailyEntrySurfaceItemWire["kind"];
+  ratingScheme: DailyEntrySurfaceItemWire["ratingScheme"];
+  optionLabels: string[];
+};
+
+export type RemoteTrackerViewModel = {
+  config: PreviewTrackerConfig;
+  parameterGroups: Record<string, string>;
+  metas: RemoteParameterMeta[];
+};
+
+const REMOTE_NUMBER_MIN = -1e12;
+const REMOTE_NUMBER_MAX = 1e12;
+
+function remoteParameter(item: DailyEntrySurfaceItemWire): TrackerParameter {
+  const id = remoteParameterId(item.parameterKey);
+  const base = {
+    id,
+    label: item.label || item.parameterKey,
+    categoryId: "",
+    decimals: 0,
+  };
+  if (item.kind === "OPTION") {
+    return {
+      ...base,
+      unit: "",
+      kind: "number",
+      summary: "latest",
+      min: 0,
+      max: 0,
+      inputType: "choice",
+      options: item.options.map((option) => option.label),
+    };
+  }
+  if (item.kind === "TEXT") {
+    return {
+      ...base,
+      unit: "",
+      kind: "number",
+      summary: "latest",
+      min: 0,
+      max: 0,
+      inputType: "text",
+    };
+  }
+  if (item.kind === "RATING") {
+    return {
+      ...base,
+      unit: "rating",
+      kind: "rating",
+      summary: "distribution",
+      min: 1,
+      max: 10,
+    };
+  }
+  return {
+    ...base,
+    unit: item.unit ?? "",
+    kind: "number",
+    summary: "average",
+    decimals: 2,
+    min: item.validation?.min ?? REMOTE_NUMBER_MIN,
+    max: item.validation?.max ?? REMOTE_NUMBER_MAX,
+  };
+}
+
+/**
+ * Map a ready surface into the shared tracker's config: one TrackerParameter
+ * per surface item (surface order preserved), one category label per section.
+ */
+export function dailyEntrySurfaceToTrackerView(
+  surface: DailyEntrySurfaceReadyWire,
+): RemoteTrackerViewModel {
+  const metas: RemoteParameterMeta[] = [];
+  const definitions: TrackerParameter[] = [];
+  const parameterGroups: Record<string, string> = {};
+  const ratingScales: Record<string, "1-10" | "1-5"> = {};
+  const fieldOptions: Record<string, string[]> = {};
+  for (const section of surface.sections) {
+    for (const item of section.items) {
+      const parameter = remoteParameter(item);
+      definitions.push(parameter);
+      parameterGroups[parameter.id] = section.label || "Tracking";
+      metas.push({
+        id: parameter.id,
+        key: item.parameterKey,
+        ordinal: item.ordinal,
+        kind: item.kind,
+        ratingScheme: item.ratingScheme,
+        optionLabels: item.options.map((option) => option.label),
+      });
+      if (item.kind === "RATING" && item.ratingScheme === "SCALE_1_5") {
+        ratingScales[parameter.id] = "1-5";
+      }
+      if (item.kind === "OPTION") {
+        fieldOptions[parameter.id] = item.options.map(
+          (option) => option.label,
+        );
+      }
+    }
+  }
+  return {
+    config: {
+      parameterIds: definitions.map((parameter) => parameter.id),
+      parameterDefinitions: definitions,
+      weightUnit: "kg",
+      lengthUnit: "cm",
+      waterUnit: "L",
+      ratingScale: "1-10",
+      ratingScales,
+      fieldOptions,
+    },
+    parameterGroups,
+    metas,
+  };
+}
+
+export type RemoteDayData = {
+  /** Numeric values the shared model stores (canonical; ratings 1-10 space). */
+  values: Record<string, number>;
+  /** Display strings for OPTION (option label) and TEXT items. */
+  texts: Record<string, string>;
+};
+
+/**
+ * Translate one wire `raw` into the shared model's display form. OPTION raws
+ * are positional indexes into the snapshot option list, so display carries the
+ * label; SCALE_1_5 ratings expand into the cell's canonical 1-10 space.
+ */
+export function remoteDisplayFromRaw(
+  meta: RemoteParameterMeta,
+  raw: string,
+): { value?: number; text?: string } {
+  if (raw === "") return {};
+  if (meta.kind === "OPTION") {
+    return { text: meta.optionLabels[Number(raw)] ?? "" };
+  }
+  if (meta.kind === "TEXT") return { text: raw };
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return {};
+  if (meta.kind === "RATING" && meta.ratingScheme === "SCALE_1_5") {
+    return { value: 1 + ((parsed - 1) * 9) / 4 };
+  }
+  return { value: parsed };
+}
+
+export function remoteDayDataFromRaws(
+  raws: Record<string, string>,
+  metas: RemoteParameterMeta[],
+): RemoteDayData {
+  const values: Record<string, number> = {};
+  const texts: Record<string, string> = {};
+  for (const meta of metas) {
+    const display = remoteDisplayFromRaw(meta, raws[meta.key] ?? "");
+    if (display.value !== undefined) values[meta.id] = display.value;
+    if (display.text !== undefined && display.text !== "")
+      texts[meta.id] = display.text;
+  }
+  return { values, texts };
+}
+
+/** Seed the wire raws for one date from the surface's prefilled `current`. */
+export function remoteRawsFromSurface(
+  surface: DailyEntrySurfaceReadyWire,
+): Record<string, string> {
+  const raws: Record<string, string> = {};
+  for (const section of surface.sections) {
+    for (const item of section.items) {
+      raws[item.parameterKey] = item.current;
+    }
+  }
+  return raws;
+}
+
+/**
+ * Display rows for one history entry. Keys missing from the current surface
+ * (parameters later removed from the template) fall back to a numeric parse
+ * so past numbers still trend; anything else lands in the text bucket where
+ * it never renders because its id is not configured.
+ */
+export function remoteDayDataFromHistory(
+  values: DailyEntryHistoryEntryWire["values"],
+  metas: RemoteParameterMeta[],
+): RemoteDayData {
+  const metaByKey = new Map(metas.map((meta) => [meta.key, meta]));
+  const result: RemoteDayData = { values: {}, texts: {} };
+  for (const row of values) {
+    const meta = metaByKey.get(row.parameterKey);
+    const id = remoteParameterId(row.parameterKey);
+    if (meta) {
+      const display = remoteDisplayFromRaw(meta, row.display);
+      if (meta.kind === "OPTION" || meta.kind === "TEXT") {
+        // History display already carries the rendered label/text, not a raw.
+        if (row.display !== "") result.texts[id] = row.display;
+      } else if (display.value !== undefined) {
+        result.values[id] = display.value;
+      }
+      continue;
+    }
+    const parsed = Number(row.display);
+    if (row.display !== "" && Number.isFinite(parsed)) {
+      result.values[id] = parsed;
+    } else if (row.display !== "") {
+      result.texts[id] = row.display;
+    }
+  }
+  return result;
+}
+
+/** Rebuild the complete ordered save payload from the current raws. */
+export function remoteOrdinalValues(
+  metas: RemoteParameterMeta[],
+  raws: Record<string, string>,
+): { ordinal: number; raw: string }[] {
+  return metas.map((meta) => ({
+    ordinal: meta.ordinal,
+    raw: raws[meta.key] ?? "",
+  }));
+}
+
+/** Wire raw for a numeric edit; `null` clears the value. */
+export function remoteRawFromNumber(
+  meta: RemoteParameterMeta,
+  value: number | null,
+): string {
+  if (value === null) return "";
+  if (meta.kind === "RATING" && meta.ratingScheme === "SCALE_1_5") {
+    return String(
+      Math.max(1, Math.min(5, Math.round(((value - 1) * 4) / 9) + 1)),
+    );
+  }
+  if (meta.kind === "RATING") return String(Math.round(value));
+  return String(value);
+}
+
+/**
+ * Wire raw for a text/choice edit. Choice edits carry the option label back,
+ * so the raw is the label's positional index; an unknown or empty label
+ * clears the value.
+ */
+export function remoteRawFromText(
+  meta: RemoteParameterMeta,
+  value: string,
+): string {
+  if (meta.kind === "OPTION") {
+    const index = meta.optionLabels.indexOf(value);
+    return index < 0 ? "" : String(index);
+  }
+  return value;
+}
+
+// ---------------------------------------------------------------------------
+// W2-FE2: staff tracker span + coach notes over /api/v1. The signed-in coach
+// path (no ?demo) hydrates client.tracking from the values route and persists
+// the tab's note keys through the tracker-notes route; the local draft slice
+// above stays the demo-mode source.
+// ---------------------------------------------------------------------------
+
+export type StaffTrackerValueRowWire = {
+  parameterKey: string;
+  kind: string;
+  display: string;
+};
+
+export type StaffTrackerValuesWire =
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      clientName: string;
+      entries: { entryDate: string; values: StaffTrackerValueRowWire[] }[];
+      cellNotes: { entryDate: string; parameterKey: string; body: string }[];
+      dayNotes: { entryDate: string; body: string }[];
+      parameters: { key: string; kind: string }[];
+    };
+
+export function fetchStaffTrackerValues(
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<StaffTrackerValuesWire> {
+  return apiFetch<StaffTrackerValuesWire>(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/daily-entries/values`,
+  );
+}
+
+export function putStaffTrackerNote(
+  workspaceId: string,
+  clientProfileId: string,
+  note: { entryDate: string; parameterKey?: string; body: string },
+): Promise<{ state: string }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tracker-notes`,
+    { method: "PUT", body: note },
+  );
+}
+
+export function deleteStaffTrackerNote(
+  workspaceId: string,
+  clientProfileId: string,
+  note: { entryDate: string; parameterKey?: string },
+): Promise<{ state: string }> {
+  return apiFetch(
+    `/workspaces/${workspaceId}/clients/${clientProfileId}/tracker-notes`,
+    { method: "DELETE", body: note },
+  );
+}
+
+/**
+ * Seeded server parameter keys carry the `p_demo_`/`p_seed_` fixture prefix;
+ * the canvas field key the tab renders is the remainder. The authoritative
+ * field-key mapping arrives with the w2-a5 template read; until then this
+ * prefix strip is the contract between the seed and the tab.
+ */
+export const staffFieldKey = (parameterKey: string): string =>
+  parameterKey.replace(/^p_(?:demo|seed)_/, "");
+
+const NUMERIC_WIRE_KINDS = new Set([
+  "MEASUREMENT",
+  "RATING",
+  "LOCATION_RATING",
+  "DURATION",
+]);
+
+export type StaffTrackingHydration = {
+  tracking: { entries: TrackerEntry[]; text: Record<string, string> };
+  /** fieldKey -> server parameterKey learned from the payload. */
+  parameterKeys: Record<string, string>;
+  /** `${date}:note:${fieldKey}` / `${date}:coach-note` -> body, post-sync baseline. */
+  noteText: Record<string, string>;
+};
+
+/**
+ * Map the wire span into the `client.tracking` shape the tab reads. Numeric
+ * kinds land in entry values; TEXT/OPTION-family displays land in the
+ * `${date}:${fieldKey}` text slots; staff notes land in the `note:` and
+ * `coach-note` slots the popover reads.
+ */
+export function staffTrackerToTracking(
+  wire: StaffTrackerValuesWire,
+): StaffTrackingHydration | null {
+  if (wire.state !== "ready") return null;
+  const entries: TrackerEntry[] = [];
+  const text: Record<string, string> = {};
+  const parameterKeys: Record<string, string> = {};
+  const noteText: Record<string, string> = {};
+  for (const parameter of wire.parameters)
+    parameterKeys[staffFieldKey(parameter.key)] = parameter.key;
+  for (const entry of wire.entries) {
+    const values: Record<string, number | null> = {};
+    for (const row of entry.values) {
+      const fieldKey = staffFieldKey(row.parameterKey);
+      parameterKeys[fieldKey] = row.parameterKey;
+      if (NUMERIC_WIRE_KINDS.has(row.kind)) {
+        const parsed = Number(row.display);
+        if (row.display !== "" && Number.isFinite(parsed))
+          values[fieldKey] = parsed;
+      } else if (row.display !== "") {
+        text[`${entry.entryDate}:${fieldKey}`] = row.display;
+      }
+    }
+    entries.push({ date: entry.entryDate, values });
+  }
+  for (const note of wire.cellNotes) {
+    const fieldKey = staffFieldKey(note.parameterKey);
+    parameterKeys[fieldKey] = note.parameterKey;
+    const key = `${note.entryDate}:note:${fieldKey}`;
+    text[key] = note.body;
+    noteText[key] = note.body;
+  }
+  for (const note of wire.dayNotes) {
+    const key = `${note.entryDate}:coach-note`;
+    text[key] = note.body;
+    noteText[key] = note.body;
+  }
+  return { tracking: { entries, text }, parameterKeys, noteText };
+}
+
+/** The subset of tracking.text keys the note writer owns (not value texts). */
+export function staffNoteText(
+  text: Record<string, string>,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [key, body] of Object.entries(text)) {
+    const sep = key.indexOf(":");
+    if (sep < 0) continue;
+    const rest = key.slice(sep + 1);
+    if (rest === "coach-note" || rest.startsWith("note:")) out[key] = body;
+  }
+  return out;
+}
+
+/**
+ * Merge a staff hydration over the client's local tracking: server entries
+ * and text win outright, except note keys that resolve to no server
+ * parameter - those belong to derived columns and stay local-only.
+ * Mapped note keys the server no longer returns are dropped, so a note
+ * deleted by another coach cannot resurrect through the sync diff.
+ */
+export function mergeStaffTracking(
+  local: { entries?: TrackerEntry[]; text?: Record<string, string> } | null | undefined,
+  hydration: StaffTrackingHydration,
+): { entries: TrackerEntry[]; text: Record<string, string> } {
+  const keep: Record<string, string> = {};
+  for (const [key, body] of Object.entries(local?.text ?? {})) {
+    const sep = key.indexOf(":");
+    if (sep < 0) continue;
+    const rest = key.slice(sep + 1);
+    if (rest !== "coach-note" && !rest.startsWith("note:")) continue;
+    if (staffNoteKeyToWire(key, hydration.parameterKeys) === null)
+      keep[key] = body;
+  }
+  return {
+    entries: hydration.tracking.entries,
+    text: { ...keep, ...hydration.tracking.text },
+  };
+}
+
+/**
+ * Split a stored note key into the wire write shape. Returns null when the
+ * column's field key resolves to no server parameter - derived cells (Day,
+ * Session, Weigh-in, ...) keep their note in local tracking.text only,
+ * exactly as they did before this route existed.
+ */
+export function staffNoteKeyToWire(
+  key: string,
+  parameterKeys: Record<string, string>,
+): { entryDate: string; parameterKey?: string } | null {
+  const sep = key.indexOf(":");
+  const entryDate = key.slice(0, sep);
+  const rest = key.slice(sep + 1);
+  if (rest === "coach-note") return { entryDate };
+  const fieldKey = rest.slice("note:".length);
+  const parameterKey = Object.hasOwn(parameterKeys, fieldKey)
+    ? parameterKeys[fieldKey]
+    : undefined;
+  if (!parameterKey) return null;
+  return { entryDate, parameterKey };
 }

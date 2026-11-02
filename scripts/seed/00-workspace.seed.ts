@@ -15,8 +15,10 @@ import type { SeedContext } from "./index";
  * Creates the workspace the canvas shows (`canvas-demo`, "Liliana Mansfeld
  * Coaching"), the owner the canvas account block names (Liliana Mansfeld,
  * WORKSPACE_OWNER), one staff coach (Sofia Miller, the canvas brand coach
- * name), one sign-in client linked to the first canvas demo client profile,
- * and the fifteen canvas demo clients as ClientProfile rows whose synthetic
+ * name), one sign-in client linked to the Amara Lewis canvas demo client
+ * profile (the demo-export client-007 row resolves to this account), one
+ * profile-less sign-in client carrying own-scope denial coverage, and the
+ * fifteen canvas demo clients as ClientProfile rows whose synthetic
  * names come from the canvas roster data
  * (`lib/canvas/data/mock-data.json`, surfaced by
  * `components/canvas/coach/model.ts`). A second workspace
@@ -30,11 +32,15 @@ import type { SeedContext } from "./index";
  * removal) and the seed no longer writes it.
  *
  * Credentials come from environment variables only and are never committed:
- *   SEED_OWNER_EMAIL,  SEED_OWNER_PASSWORD  — owner of `canvas-demo`.
- *   SEED_COACH_EMAIL,  SEED_COACH_PASSWORD  — coach of `canvas-demo`.
- *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD — client of `canvas-demo`, linked
- *     to the first canvas demo client profile.
- *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD — coach of `seed-second-workspace`.
+ *   SEED_OWNER_EMAIL,  SEED_OWNER_PASSWORD:  owner of `canvas-demo`.
+ *   SEED_COACH_EMAIL,  SEED_COACH_PASSWORD:  coach of `canvas-demo`.
+ *   SEED_CLIENT_EMAIL, SEED_CLIENT_PASSWORD: client of `canvas-demo`, linked
+ *     to the Amara Lewis demo client profile.
+ *   SEED_STAFF2_EMAIL, SEED_STAFF2_PASSWORD: coach of `seed-second-workspace`.
+ *   SEED_DEMO_CLIENT_PASSWORD (optional): password for the profile-less
+ *     denial client; falls back to SEED_CLIENT_PASSWORD.
+ *   SEED_COACH2_EMAIL, SEED_COACH2_PASSWORD: optional second COACH member of
+ *     `canvas-demo` (w2-fe2 notes matrix fixture).
  * Passwords need >= 10 code points and one ASCII digit (owner-decided policy).
  * Every write is an idempotent upsert so `npm run seed:dev` is safe to re-run.
  */
@@ -46,6 +52,9 @@ const COACH_NAME = "Sofia Miller";
 const SECOND_WORKSPACE_SLUG = "seed-second-workspace";
 const SECOND_WORKSPACE_NAME = "Seed Second Workspace";
 const STAFF2_NAME = "Second Workspace Coach";
+const SEED_CLIENT_PROFILE_NAME = "Amara Lewis";
+const NO_PROFILE_CLIENT_EMAIL = "no-profile@canvas-demo.test";
+const NO_PROFILE_CLIENT_NAME = "Seed No-Profile Client";
 
 type CanvasClient = { id: string; name: string };
 
@@ -95,14 +104,16 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   await upsertCredentialAccount(prisma, coach.id, coachPassword);
   await upsertMember(prisma, workspace.id, coach.id, "COACH");
 
-  const names = canvasClientNames();
-  // The seeded client signs in as the first canvas demo client so a lane can
-  // exercise the client role against a roster row the canvas already shows.
-  const clientName = names[0];
-  const client = await upsertUser(prisma, clientEmail, clientName);
-  await upsertCredentialAccount(prisma, client.id, clientPassword);
-  await upsertMember(prisma, workspace.id, client.id, "CLIENT");
-  await linkClientProfile(prisma, workspace.id, client.id, clientName);
+  // W2-FE2: optional second same-workspace coach (SEED_COACH2_EMAIL /
+  // SEED_COACH2_PASSWORD) so the staff notes matrix has a second authorized
+  // COACH member. Skipped when the envs are unset; idempotent like the rest.
+  const coach2Email = process.env.SEED_COACH2_EMAIL;
+  const coach2Password = process.env.SEED_COACH2_PASSWORD;
+  if (coach2Email && coach2Password) {
+    const coach2 = await upsertUser(prisma, coach2Email, "Rhea Tanaka");
+    await upsertCredentialAccount(prisma, coach2.id, coach2Password);
+    await upsertMember(prisma, workspace.id, coach2.id, "COACH");
+  }
 
   const secondWorkspace = await prisma.workspace.upsert({
     where: { slug: SECOND_WORKSPACE_SLUG },
@@ -113,6 +124,10 @@ export default async function seed(ctx: SeedContext): Promise<void> {
   await upsertCredentialAccount(prisma, staff2.id, staff2Password);
   await upsertMember(prisma, secondWorkspace.id, staff2.id, "COACH");
 
+  // Profiles are created in roster order first: `33-checkins.seed.ts`
+  // indexes `clientProfile.findMany(orderBy createdAt)` positionally, so an
+  // early single-row create would scramble every index link downstream.
+  const names = canvasClientNames();
   let created = 0;
   for (const name of names) {
     const existing = await prisma.clientProfile.findFirst({
@@ -125,6 +140,43 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     });
     created += 1;
   }
+
+  // The seeded sign-in client owns the Amara Lewis canvas demo profile so
+  // sign-in as SEED_CLIENT_EMAIL lands on a client profile that exists
+  // (`getClientViewer` non-null). `50-demo-coverage.seed.ts` attributes the
+  // demo-export client-007 rows (messages, submissions) to this account.
+  const client = await upsertUser(
+    prisma,
+    clientEmail,
+    SEED_CLIENT_PROFILE_NAME,
+  );
+  await upsertCredentialAccount(prisma, client.id, clientPassword);
+  await upsertMember(prisma, workspace.id, client.id, "CLIENT");
+  await linkClientProfile(
+    prisma,
+    workspace.id,
+    client.id,
+    SEED_CLIENT_PROFILE_NAME,
+  );
+
+  // Dedicated profile-less client carries the own-scope denial coverage the
+  // sign-in client used to provide: credential account, ACTIVE CLIENT
+  // member, zero client_profile rows.
+  const noProfile = await upsertUser(
+    prisma,
+    NO_PROFILE_CLIENT_EMAIL,
+    NO_PROFILE_CLIENT_NAME,
+  );
+  await upsertCredentialAccount(
+    prisma,
+    noProfile.id,
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? clientPassword,
+  );
+  await upsertMember(prisma, workspace.id, noProfile.id, "CLIENT");
+  await prisma.clientProfile.updateMany({
+    where: { workspaceId: workspace.id, userId: noProfile.id },
+    data: { userId: null },
+  });
   const total = await prisma.clientProfile.count({
     where: { workspaceId: workspace.id },
   });

@@ -166,11 +166,51 @@ export const AUDIT_RESOURCE_TYPES = [
   // date, pinned version seq, booked week) — never prescription text,
   // session content, or timezone strings.
   "training_session_booking",
+  // PR-M3 (D26, O7, O13): coach note, coach task and tracker comment
+  // lifecycle (CREATE/UPDATE/DELETE on mutation, UPDATE on restore —
+  // `changed` marker and declared comment date only). IDs and structural
+  // markers only — never note, task or comment body text.
+  "coach_note",
+  "coach_task",
+  "tracker_comment",
   // PR-M1 (D27): client-profile lifecycle — archive and restore as UPDATE
   // with an ARCHIVED/ACTIVE status marker, retention-gated delete as DELETE
   // with a REMOVED marker. IDs + structural markers only — never names,
   // labels, archive reasons, or profile values.
   "client_profile",
+  // PR-SUPP: saved supplement-plan lifecycle (CREATE on first save,
+  // UPDATE on each whole-plan re-save, READ on detail views). IDs +
+  // structural markers only (versionSeq = revision, count = item count)
+  // — never plan names, product names, brands, timing, notes, statuses,
+  // or URLs.
+  "supplement_plan",
+  // Issue #169 (Stage 5 card 07): activity-target version lifecycle
+  // (CREATE on a new dated version, UPDATE on a same-day confirmed
+  // replace - `changed` marker only). IDs and structural markers only -
+  // never metric, kind, bounds, sessions or minutes values.
+  "activity_target",
+  // Card 09 (#173): nutrition-log lifecycle (CREATE on first save, UPDATE
+  // on re-save, DELETE on clear; staff list reads carry no event). IDs +
+  // structural markers only - never macro values or dates.
+  "nutrition_log",
+  // Card 10 (#175): IIFYM macro-target container lifecycle (CREATE on
+  // first draft save, UPDATE on draft saves + timezone changes -
+  // `changed` marker only) and published-version events (CREATE +
+  // staff/client detail READ). IDs and structural markers only (version,
+  // effective date, status, option count) - never target values, labels,
+  // or timezone strings.
+  "iifym_plan",
+  "iifym_plan_version",
+  // PR-M10 (#176): client training session-log lifecycle (CREATE on start,
+  // UPDATE on terminal transition + set saves, READ on the resume read).
+  // IDs and structural markers only (performed date, pinned version seq,
+  // booked week, terminal outcome) - never set actuals, notes, or
+  // prescription text.
+  "training_session_log",
+  "training_set_log",
+  // W2-N9: temporary nutrition plan lifecycle (CREATE/READ/DELETE on the
+  // dated overlay rows) - ids and structural markers only.
+  "temporary_nutrition_plan",
 ] as const;
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];
 
@@ -202,6 +242,9 @@ export type AuditMeta = {
   versionSeq?: number;
   /** TRAINING-I1B-2: pinned prescription week on booking create. */
   bookedWeek?: number;
+  /** PR-M10 (#176): terminal outcome recorded on a training session log
+   * (the row's stored state - skipped and partial are states, not zeros). */
+  sessionOutcome?: "COMPLETED" | "PARTIAL" | "SKIPPED";
 };
 
 /** S1-F2D: metadata allowed on ACCOUNT-scoped audit events only. Deliberately
@@ -285,6 +328,10 @@ const META_VALIDATORS = new Map<keyof AuditMeta, (v: unknown) => boolean>([
   [
     "bookedWeek",
     (v) => typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 1_000,
+  ],
+  [
+    "sessionOutcome",
+    (v) => v === "COMPLETED" || v === "PARTIAL" || v === "SKIPPED",
   ],
 ]);
 

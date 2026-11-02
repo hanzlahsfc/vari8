@@ -1,5 +1,5 @@
 {
-  "baseUrl": "http://127.0.0.1:42645",
+  "baseUrl": "http://127.0.0.1:64649",
   "fixedNow": "2026-10-19T10:00:00+02:00",
   "timezone": "Europe/Vienna",
   "screens": [
@@ -22,48 +22,48 @@
       "png": "390/s01-roster.png",
       "scrolls": [
         {
-          "scroller": "div#143",
+          "scroller": "div#135",
           "x": 0,
           "y": 0,
-          "png": "390/s01-roster.s143-0-0.png",
+          "png": "390/s01-roster.s135-0-0.png",
           "box": [
-            39,
-            342,
-            312,
-            1377
+            37,
+            424,
+            316,
+            1367
           ]
         },
         {
-          "scroller": "div#143",
-          "x": 312,
+          "scroller": "div#135",
+          "x": 316,
           "y": 0,
-          "png": "390/s01-roster.s143-312-0.png",
+          "png": "390/s01-roster.s135-316-0.png",
           "box": [
-            39,
-            342,
-            312,
-            1377
+            37,
+            424,
+            316,
+            1367
           ]
         },
         {
-          "scroller": "div#143",
-          "x": 468,
+          "scroller": "div#135",
+          "x": 464,
           "y": 0,
-          "png": "390/s01-roster.s143-468-0.png",
+          "png": "390/s01-roster.s135-464-0.png",
           "box": [
-            39,
-            342,
-            312,
-            1377
+            37,
+            424,
+            316,
+            1367
           ]
         }
       ],
-      "sha256": "ee8ce6f6ba77f6f81693c491031bdb08d8d06055d7d66afccdb9b99c366d893b",
+      "sha256": "52ce3471ea4c5a13407853e3b4b8368b5a2880a075f02ac589c0fd28910afb68",
       "size": {
-        "width": 762,
-        "height": 1842
+        "width": 390,
+        "height": 1912
       },
-      "elements": 417,
+      "elements": 423,
       "pageErrors": []
     },
     {
@@ -93,36 +93,36 @@
       "png": "390/s01-profile-overview.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-overview.s129-0-0.png",
+          "png": "390/s01-profile-overview.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#123",
+          "x": 197,
           "y": 0,
-          "png": "390/s01-profile-overview.s129-47-0.png",
+          "png": "390/s01-profile-overview.s123-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         }
       ],
-      "sha256": "1c86954bed650fa87d204b1d5d20cbcf996ea9087190690d9c5c4d2707871cc7",
+      "sha256": "31ec065d545cd3fa0144202f1fbf582b2e7ee166ebc1dc31ee2d93960b29f58d",
       "size": {
         "width": 390,
-        "height": 1859
+        "height": 2299
       },
-      "elements": 155,
+      "elements": 276,
       "pageErrors": []
     },
     {
@@ -160,36 +160,36 @@
       "png": "390/s01-profile-plans.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-plans.s129-0-0.png",
+          "png": "390/s01-profile-plans.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#123",
+          "x": 196,
           "y": 0,
-          "png": "390/s01-profile-plans.s129-47-0.png",
+          "png": "390/s01-profile-plans.s123-196-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         }
       ],
-      "sha256": "111527a4b63891e079f9fab086f280722d7abf4cd445ba541a347b9c4817205d",
+      "sha256": "ba9463d98e939eb935a66900bf27aa19fa874a42d12d7264a11cd1541b148e67",
       "size": {
-        "width": 390,
-        "height": 1386
+        "width": 548,
+        "height": 1009
       },
-      "elements": 131,
+      "elements": 145,
       "pageErrors": []
     },
     {
@@ -227,36 +227,36 @@
       "png": "390/s01-profile-checkins.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-checkins.s129-0-0.png",
+          "png": "390/s01-profile-checkins.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#123",
+          "x": 197,
           "y": 0,
-          "png": "390/s01-profile-checkins.s129-47-0.png",
+          "png": "390/s01-profile-checkins.s123-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         }
       ],
-      "sha256": "1285eb43a25227dd34571669115d5a306ac2226642cb4cd88e877fcde9875b30",
+      "sha256": "b6cdbcba4745db24dd83cc2403487c679597ee0639ed007840cace509e5f4688",
       "size": {
         "width": 390,
-        "height": 982
+        "height": 844
       },
-      "elements": 89,
+      "elements": 93,
       "pageErrors": []
     },
     {
@@ -294,36 +294,36 @@
       "png": "390/s01-profile-notes.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-notes.s129-0-0.png",
+          "png": "390/s01-profile-notes.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#123",
+          "x": 198,
           "y": 0,
-          "png": "390/s01-profile-notes.s129-47-0.png",
+          "png": "390/s01-profile-notes.s123-198-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         }
       ],
-      "sha256": "e8caff61acdf4576149e393d332968257401d0e4b36d4867788f39c20f00c3a7",
+      "sha256": "8d1334b3385175bce02e89148a3eac2234fe1e035d3cde98ceb9e872b1222353",
       "size": {
         "width": 390,
-        "height": 1515
+        "height": 1676
       },
-      "elements": 113,
+      "elements": 147,
       "pageErrors": []
     },
     {
@@ -350,47 +350,71 @@
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Onboarding",
+          "label": "Client settings",
           "matches": 1,
           "tag": "button",
-          "seen": "onboarding",
+          "seen": "",
           "scoped": false,
-          "recipe": "Onboarding"
+          "recipe": "Client settings"
         }
       ],
       "png": "390/s01-profile-onboarding.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#128",
           "x": 0,
           "y": 0,
-          "png": "390/s01-profile-onboarding.s129-0-0.png",
+          "png": "390/s01-profile-onboarding.s128-0-0.png",
           "box": [
-            16,
-            418,
-            358,
-            52
+            17,
+            129,
+            356,
+            664
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#128",
+          "x": 0,
+          "y": 121,
+          "png": "390/s01-profile-onboarding.s128-0-121.png",
+          "box": [
+            17,
+            129,
+            356,
+            664
+          ]
+        },
+        {
+          "scroller": "div#170",
+          "x": 0,
           "y": 0,
-          "png": "390/s01-profile-onboarding.s129-47-0.png",
+          "png": "390/s01-profile-onboarding.s170-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
+          ]
+        },
+        {
+          "scroller": "div#170",
+          "x": 197,
+          "y": 0,
+          "png": "390/s01-profile-onboarding.s170-197-0.png",
+          "box": [
+            16,
+            252,
+            358,
+            54
           ]
         }
       ],
-      "sha256": "f0ff22269f4b85a603a51e92b890f8eba54aa6fc5851368fec8c8aad89eb18a7",
+      "sha256": "2e67ab63567a1d33ed6a8ddf855cdcfb5ac9db2436b94e9b2be4447a6c62ea23",
       "size": {
         "width": 390,
-        "height": 896
+        "height": 2299
       },
-      "elements": 89,
+      "elements": 320,
       "pageErrors": []
     },
     {
@@ -412,48 +436,48 @@
       "png": "390/s02-messages.png",
       "scrolls": [
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s02-messages.s115-0-0.png",
+          "png": "390/s02-messages.s123-0-0.png",
           "box": [
             0,
-            317,
+            311,
             390,
-            454
+            461
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 454,
-          "png": "390/s02-messages.s115-0-454.png",
+          "y": 461,
+          "png": "390/s02-messages.s123-0-461.png",
           "box": [
             0,
-            317,
+            311,
             390,
-            454
+            461
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 844,
-          "png": "390/s02-messages.s115-0-844.png",
+          "y": 837,
+          "png": "390/s02-messages.s123-0-837.png",
           "box": [
             0,
-            317,
+            311,
             390,
-            454
+            461
           ]
         }
       ],
-      "sha256": "6b9c2988868370444b0534a69d4df13fb6b8167e9cac155d55c42c8c862c1352",
+      "sha256": "c1b7300a854d7bc82f41b17dc2e2d9d069fefd7ee1f9c9a630c29a0bfdcdbb3a",
       "size": {
         "width": 390,
         "height": 844
       },
-      "elements": 191,
+      "elements": 196,
       "pageErrors": []
     },
     {
@@ -483,19 +507,19 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         }
       ],
       "png": "390/s02-thread.png",
       "scrolls": [],
-      "sha256": "cf2603d12eef1dc29428bcadf7f85f7e7870748e6480938d37f449b724e4d4d6",
+      "sha256": "2a4b9f1f29544d310d098e8b4cd20eb3238a56854e81f472016bbcfc3d6d606b",
       "size": {
         "width": 390,
         "height": 844
       },
-      "elements": 103,
+      "elements": 105,
       "pageErrors": []
     },
     {
@@ -525,7 +549,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         },
@@ -540,12 +564,12 @@
       ],
       "png": "390/s02-thread-attachments.png",
       "scrolls": [],
-      "sha256": "a6afddd1f3a9c21400acbce6836ca0e9bcd80cbb666160931ce4ae3d8a7378e0",
+      "sha256": "dd0d71794d04890fa5608e156b2f4a478c263fed3c659d9db7301effefe438b1",
       "size": {
         "width": 390,
         "height": 844
       },
-      "elements": 115,
+      "elements": 117,
       "pageErrors": []
     },
     {
@@ -566,12 +590,12 @@
       ],
       "png": "390/s02-notes-todos.png",
       "scrolls": [],
-      "sha256": "291d54a9021d754ec544a82f544ca4f84be32ce5da0f0a8283f5061204b4916b",
+      "sha256": "9a6ca8d445a3d5503b5c3237e9e361c4bd3b409e6dbe55a29ca084b2f87bdd28",
       "size": {
         "width": 390,
-        "height": 3853
+        "height": 1831
       },
-      "elements": 489,
+      "elements": 258,
       "pageErrors": []
     },
     {
@@ -592,12 +616,12 @@
       ],
       "png": "390/s03-checkins-board.png",
       "scrolls": [],
-      "sha256": "8c8a50c98f9379c59d247580e0a118a7529b0e6aa385a6d0278e3cbfc953bc6a",
+      "sha256": "93e546cdf5350f139830d424a0beeb54377d15ef57af5e90a4c90544ad953f65",
       "size": {
         "width": 390,
-        "height": 2446
+        "height": 2415
       },
-      "elements": 229,
+      "elements": 244,
       "pageErrors": []
     },
     {
@@ -626,12 +650,12 @@
       ],
       "png": "390/s03-add-extra.png",
       "scrolls": [],
-      "sha256": "d2a0bd9a01dc32d75a0b264dfe78f2f32c12a53d0503b3ab32d7b57f3c0032c6",
+      "sha256": "447391e6de465e97cd192bc39b6b53cb278dc0a3221815e446499a44384fa0a9",
       "size": {
         "width": 390,
-        "height": 2446
+        "height": 2415
       },
-      "elements": 256,
+      "elements": 281,
       "pageErrors": []
     },
     {
@@ -668,12 +692,12 @@
       ],
       "png": "390/s03-checkin-review.png",
       "scrolls": [],
-      "sha256": "8b5594ec0ddbd7dd041c9641a4fa3258ef0f80cd7ee1349b5097daac6b90261a",
+      "sha256": "a74ff5b5179f169ab64332be46a9d2741fc887e0afa3e228a31f2d8fcb9ac347",
       "size": {
         "width": 390,
-        "height": 3103
+        "height": 2994
       },
-      "elements": 205,
+      "elements": 203,
       "pageErrors": []
     },
     {
@@ -708,22 +732,30 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Habits",
+          "matches": 1,
+          "tag": "div",
+          "seen": "habits",
+          "scoped": true,
+          "recipe": "Habits"
+        },
+        {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
           "seen": "edit habits",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Edit habits"
         }
       ],
       "png": "390/s04-habit-editor.png",
       "scrolls": [],
-      "sha256": "4a84a8b50e087ca979bf59e478efaa5f9cc3f6fc1019d0ce6510102410c9d8bc",
+      "sha256": "f02c30d87c85952804d70caf76f81c03eb89083356162571bf6659140edba090",
       "size": {
-        "width": 430,
-        "height": 1051
+        "width": 443,
+        "height": 1082
       },
-      "elements": 90,
+      "elements": 102,
       "pageErrors": []
     },
     {
@@ -801,36 +833,36 @@
       "png": "390/s04-template-habits.png",
       "scrolls": [
         {
-          "scroller": "nav#120",
+          "scroller": "nav#124",
           "x": 0,
           "y": 0,
-          "png": "390/s04-template-habits.s120-0-0.png",
+          "png": "390/s04-template-habits.s124-0-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         },
         {
-          "scroller": "nav#120",
-          "x": 325,
+          "scroller": "nav#124",
+          "x": 228,
           "y": 0,
-          "png": "390/s04-template-habits.s120-325-0.png",
+          "png": "390/s04-template-habits.s124-228-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "c01d88ac99632b2a2300fb0a00e0898242de0aeecf0ab9eef08d7794ee9b8d78",
+      "sha256": "5ee2cd2efbe8f82555ebc463f7a59d3b4294fdebca46b55845ae4763fc15a7fc",
       "size": {
         "width": 390,
-        "height": 1121
+        "height": 1242
       },
-      "elements": 123,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -842,12 +874,12 @@
       "clicks": [],
       "png": "390/s05-templates.png",
       "scrolls": [],
-      "sha256": "565a96ce6f335b829902e8c89ae7ae46b6c467fb73a892ac2bdab38ff5e54bda",
+      "sha256": "ce266ae73660d05f6668177ba6311f232bcdb2352afc3860500666834eb42c19",
       "size": {
         "width": 390,
-        "height": 1454
+        "height": 1386
       },
-      "elements": 188,
+      "elements": 191,
       "pageErrors": []
     },
     {
@@ -869,36 +901,36 @@
       "png": "390/s05-template-editor.png",
       "scrolls": [
         {
-          "scroller": "nav#120",
+          "scroller": "nav#124",
           "x": 0,
           "y": 0,
-          "png": "390/s05-template-editor.s120-0-0.png",
+          "png": "390/s05-template-editor.s124-0-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         },
         {
-          "scroller": "nav#120",
-          "x": 325,
+          "scroller": "nav#124",
+          "x": 228,
           "y": 0,
-          "png": "390/s05-template-editor.s120-325-0.png",
+          "png": "390/s05-template-editor.s124-228-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "d8c45b7500ebfb77bbc616dda4aef3f20468db4a6b1ddf3ffef1f5d06cda34ba",
+      "sha256": "e73902c976fe1419c1b1319b898b7131ccc909b2075f168db0771242f377a1dd",
       "size": {
         "width": 390,
-        "height": 1121
+        "height": 1242
       },
-      "elements": 123,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -917,63 +949,63 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
+          "label": "Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "dashboard",
+          "seen": "tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
+          "recipe": "01 Tabs"
         },
         {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
           "seen": "tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "02 Tracker"
+        },
+        {
+          "label": "Move down",
+          "matches": 1,
+          "tag": "button",
+          "seen": "",
+          "scoped": true,
+          "recipe": "Move down"
         }
       ],
       "png": "390/s05-tracker-setup.png",
       "scrolls": [
         {
-          "scroller": "nav#120",
+          "scroller": "nav#124",
           "x": 0,
           "y": 0,
-          "png": "390/s05-tracker-setup.s120-0-0.png",
+          "png": "390/s05-tracker-setup.s124-0-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         },
         {
-          "scroller": "nav#120",
-          "x": 325,
+          "scroller": "nav#124",
+          "x": 228,
           "y": 0,
-          "png": "390/s05-tracker-setup.s120-325-0.png",
+          "png": "390/s05-tracker-setup.s124-228-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "6865032a51dc91abe620e56a22fa5bde664ea098591b076efea6aa336c785883",
+      "sha256": "60c840ca2b4274b94633dfaf273f8f111626e7b8f7f6299b0c77a7267ce7f6cd",
       "size": {
         "width": 390,
-        "height": 1971
+        "height": 2218
       },
-      "elements": 315,
+      "elements": 324,
       "pageErrors": []
     },
     {
@@ -1000,47 +1032,87 @@
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
-          "label": "Assign template",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "assign template",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Assign template"
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Open client setup",
+          "matches": 1,
+          "tag": "button",
+          "seen": "open client setup",
+          "scoped": false,
+          "recipe": "Open client setup"
+        },
+        {
+          "label": "Choose a saved template",
+          "matches": 1,
+          "tag": "button",
+          "seen": "choose a saved template",
+          "scoped": false,
+          "recipe": "Choose a saved template"
         }
       ],
       "png": "390/s05-client-setup.png",
       "scrolls": [
         {
-          "scroller": "div#129",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "390/s05-client-setup.s129-0-0.png",
+          "png": "390/s05-client-setup.s123-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#129",
-          "x": 47,
+          "scroller": "div#123",
+          "x": 196,
           "y": 0,
-          "png": "390/s05-client-setup.s129-47-0.png",
+          "png": "390/s05-client-setup.s123-196-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
+          ]
+        },
+        {
+          "scroller": "div#154",
+          "x": 0,
+          "y": 0,
+          "png": "390/s05-client-setup.s154-0-0.png",
+          "box": [
+            17,
+            129,
+            356,
+            664
+          ]
+        },
+        {
+          "scroller": "div#154",
+          "x": 0,
+          "y": 26,
+          "png": "390/s05-client-setup.s154-0-26.png",
+          "box": [
+            17,
+            129,
+            356,
+            664
           ]
         }
       ],
-      "sha256": "e93236a6472ebb451cbf7c256c2fa5ee6029b9290eec72c6734d47d5407204c9",
+      "sha256": "778a7b4ec513dab55bad4543b1b3dc317c19e2b190e44c348af79a3af245ff7b",
       "size": {
         "width": 390,
-        "height": 1513
+        "height": 869
       },
-      "elements": 163,
+      "elements": 130,
       "pageErrors": []
     },
     {
@@ -1075,22 +1147,30 @@
           "recipe": "Plans"
         },
         {
-          "label": "Create",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Edit plan",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Edit plan"
         }
       ],
       "png": "390/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "d53dfd8d825ffbc96234f06a2eb2a72457e8cb5d85baba7d34bf9c4cb85c1e45",
+      "sha256": "8059775e74fba7db359939eb476a57e5409ba974c45d5f3111156b53a32e6b5a",
       "size": {
         "width": 390,
-        "height": 2017
+        "height": 1529
       },
-      "elements": 239,
+      "elements": 153,
       "pageErrors": []
     },
     {
@@ -1109,28 +1189,12 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
-          "matches": 1,
-          "tag": "button",
-          "seen": "dashboard",
-          "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
           "label": "Tracker",
           "matches": 1,
           "tag": "button",
           "seen": "tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "02 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
@@ -1145,51 +1209,51 @@
           "matches": 1,
           "tag": "button",
           "seen": "timeline / roadmap",
-          "scoped": false,
-          "recipe": "04 Timeline / Roadmap"
+          "scoped": true,
+          "recipe": "03 Timeline / Roadmap"
         },
         {
           "label": "Nutrition",
           "matches": 1,
           "tag": "button",
           "seen": "nutrition",
-          "scoped": false,
-          "recipe": "05 Nutrition"
+          "scoped": true,
+          "recipe": "04 Nutrition"
         }
       ],
       "png": "390/s06-template-nutrition.png",
       "scrolls": [
         {
-          "scroller": "nav#120",
+          "scroller": "nav#124",
           "x": 0,
           "y": 0,
-          "png": "390/s06-template-nutrition.s120-0-0.png",
+          "png": "390/s06-template-nutrition.s124-0-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         },
         {
-          "scroller": "nav#120",
-          "x": 325,
+          "scroller": "nav#124",
+          "x": 228,
           "y": 0,
-          "png": "390/s06-template-nutrition.s120-325-0.png",
+          "png": "390/s06-template-nutrition.s124-228-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "48e58a4f8fc04e7f365e99dceec3c4af96278eb6162531cf1c3f733dc911b092",
+      "sha256": "28df67a97f55cbb017fbb68ddcd2aa11d25be5ec56f4e0117a471743c9b4345a",
       "size": {
         "width": 390,
-        "height": 844
+        "height": 963
       },
-      "elements": 96,
+      "elements": 105,
       "pageErrors": []
     },
     {
@@ -1216,12 +1280,12 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Open chat (1 unread)",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "1",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Open chat (1 unread)"
         },
         {
           "label": "Training program",
@@ -1234,12 +1298,12 @@
       ],
       "png": "390/s07-training-editor.png",
       "scrolls": [],
-      "sha256": "bb054ed740a435644634c5a6569e8faf1daaddb22af10d83f21bdadc03ba8235",
+      "sha256": "239580c61c46e84cfa853dfb1e09dcb445c915db3468ebcf2661adf032ff5a43",
       "size": {
         "width": 390,
-        "height": 1460
+        "height": 2356
       },
-      "elements": 140,
+      "elements": 228,
       "pageErrors": []
     },
     {
@@ -1258,28 +1322,52 @@
           "recipe": "Clients"
         },
         {
-          "label": "EA Emma Anders Lifestyle",
+          "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
-          "seen": "ea emma anders lifestyle",
+          "seen": "cp chloe park lifestyle",
           "scoped": false,
-          "recipe": "EA Emma Anders Lifestyle"
+          "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Edit plans"
         },
         {
-          "label": "Training program",
+          "label": "Training",
+          "matches": 1,
+          "tag": "div",
+          "seen": "training",
+          "scoped": true,
+          "recipe": "Training"
+        },
+        {
+          "label": "Set up plan",
           "matches": 1,
           "tag": "button",
-          "seen": "training program",
+          "seen": "set up plan",
+          "scoped": true,
+          "recipe": "Set up plan"
+        },
+        {
+          "label": "Add session",
+          "matches": 1,
+          "tag": "button",
+          "seen": "add session",
           "scoped": false,
-          "recipe": "Training program"
+          "recipe": "Add session"
+        },
+        {
+          "label": "Add exercise",
+          "matches": 1,
+          "tag": "button",
+          "seen": "add exercise",
+          "scoped": false,
+          "recipe": "Add exercise"
         },
         {
           "label": "Manage library",
@@ -1293,48 +1381,144 @@
       "png": "390/s07-exercise-library.png",
       "scrolls": [
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
           "y": 0,
-          "png": "390/s07-exercise-library.s178-0-0.png",
+          "png": "390/s07-exercise-library.s335-0-0.png",
           "box": [
-            30,
-            1082,
-            330,
-            86
+            33,
+            346,
+            324,
+            354
           ]
         },
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
-          "y": 84,
-          "png": "390/s07-exercise-library.s178-0-84.png",
+          "y": 354,
+          "png": "390/s07-exercise-library.s335-0-354.png",
           "box": [
-            30,
-            1082,
-            330,
-            86
+            33,
+            346,
+            324,
+            354
           ]
         },
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
-          "y": 102,
-          "png": "390/s07-exercise-library.s178-0-102.png",
+          "y": 708,
+          "png": "390/s07-exercise-library.s335-0-708.png",
           "box": [
-            30,
-            1082,
-            330,
-            86
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 1062,
+          "png": "390/s07-exercise-library.s335-0-1062.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 1416,
+          "png": "390/s07-exercise-library.s335-0-1416.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 1770,
+          "png": "390/s07-exercise-library.s335-0-1770.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 2124,
+          "png": "390/s07-exercise-library.s335-0-2124.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 2478,
+          "png": "390/s07-exercise-library.s335-0-2478.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 2832,
+          "png": "390/s07-exercise-library.s335-0-2832.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 3186,
+          "png": "390/s07-exercise-library.s335-0-3186.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 3217,
+          "png": "390/s07-exercise-library.s335-0-3217.png",
+          "box": [
+            33,
+            346,
+            324,
+            354
           ]
         }
       ],
-      "sha256": "4117e255a871fa2f788a989cd2a205a38a5abdf38e5a07e109ff30401ce429da",
+      "sha256": "100ee3fb13339475564b936631da961fbb7d653efef2f3483fde3b360775826b",
       "size": {
         "width": 390,
-        "height": 2688
+        "height": 2481
       },
-      "elements": 269,
+      "elements": 433,
       "pageErrors": []
     },
     {
@@ -1355,28 +1539,28 @@
             27,
             68,
             336,
-            48
+            52
           ]
         },
         {
           "scroller": "nav#12",
-          "x": 11,
+          "x": 5,
           "y": 0,
-          "png": "390/s08-builder.s12-11-0.png",
+          "png": "390/s08-builder.s12-5-0.png",
           "box": [
             27,
             68,
             336,
-            48
+            52
           ]
         }
       ],
-      "sha256": "97d602f1c705deeef68816fc181e2efb6ecf15ae3921ace945d3e821ef95d0f6",
+      "sha256": "371a665f2f95c58699b84fcc390d42adfd6c9d8ca12ef31e7b8b66e46a175c8e",
       "size": {
         "width": 390,
-        "height": 1196
+        "height": 1246
       },
-      "elements": 77,
+      "elements": 78,
       "pageErrors": []
     },
     {
@@ -1406,160 +1590,172 @@
             27,
             68,
             336,
-            48
+            52
           ]
         },
         {
           "scroller": "nav#12",
-          "x": 11,
+          "x": 5,
           "y": 0,
-          "png": "390/s08-widget-gallery.s12-11-0.png",
+          "png": "390/s08-widget-gallery.s12-5-0.png",
           "box": [
             27,
             68,
             336,
-            48
+            52
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 0,
-          "png": "390/s08-widget-gallery.s92-0-0.png",
+          "png": "390/s08-widget-gallery.s93-0-0.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 650,
-          "png": "390/s08-widget-gallery.s92-0-650.png",
+          "y": 616,
+          "png": "390/s08-widget-gallery.s93-0-616.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 1300,
-          "png": "390/s08-widget-gallery.s92-0-1300.png",
+          "y": 1232,
+          "png": "390/s08-widget-gallery.s93-0-1232.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 1950,
-          "png": "390/s08-widget-gallery.s92-0-1950.png",
+          "y": 1848,
+          "png": "390/s08-widget-gallery.s93-0-1848.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 2600,
-          "png": "390/s08-widget-gallery.s92-0-2600.png",
+          "y": 2464,
+          "png": "390/s08-widget-gallery.s93-0-2464.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 3250,
-          "png": "390/s08-widget-gallery.s92-0-3250.png",
+          "y": 3080,
+          "png": "390/s08-widget-gallery.s93-0-3080.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 3900,
-          "png": "390/s08-widget-gallery.s92-0-3900.png",
+          "y": 3696,
+          "png": "390/s08-widget-gallery.s93-0-3696.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 4550,
-          "png": "390/s08-widget-gallery.s92-0-4550.png",
+          "y": 4312,
+          "png": "390/s08-widget-gallery.s93-0-4312.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 5200,
-          "png": "390/s08-widget-gallery.s92-0-5200.png",
+          "y": 4928,
+          "png": "390/s08-widget-gallery.s93-0-4928.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 5850,
-          "png": "390/s08-widget-gallery.s92-0-5850.png",
+          "y": 5544,
+          "png": "390/s08-widget-gallery.s93-0-5544.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 6271,
-          "png": "390/s08-widget-gallery.s92-0-6271.png",
+          "y": 6160,
+          "png": "390/s08-widget-gallery.s93-0-6160.png",
           "box": [
-            0,
-            100,
-            390,
-            650
+            17,
+            117,
+            356,
+            616
+          ]
+        },
+        {
+          "scroller": "section#93",
+          "x": 0,
+          "y": 6488,
+          "png": "390/s08-widget-gallery.s93-0-6488.png",
+          "box": [
+            17,
+            117,
+            356,
+            616
           ]
         }
       ],
-      "sha256": "b850287cf6ee373a06bcca15128f81dec99dbba6c601e6ddac34b49e9fd3a748",
+      "sha256": "8b6d116c2f2c84bfefa5237fd6a5beb729250d5c973374075ca0d770e77c1fc1",
       "size": {
         "width": 390,
-        "height": 1196
+        "height": 1246
       },
-      "elements": 175,
+      "elements": 187,
       "pageErrors": []
     },
     {
@@ -1578,47 +1774,47 @@
           "recipe": "Add template"
         },
         {
-          "label": "Dashboard",
+          "label": "Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "dashboard",
+          "seen": "tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         }
       ],
       "png": "390/s08-template-dashboard.png",
       "scrolls": [
         {
-          "scroller": "nav#120",
+          "scroller": "nav#124",
           "x": 0,
           "y": 0,
-          "png": "390/s08-template-dashboard.s120-0-0.png",
+          "png": "390/s08-template-dashboard.s124-0-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         },
         {
-          "scroller": "nav#120",
-          "x": 325,
+          "scroller": "nav#124",
+          "x": 228,
           "y": 0,
-          "png": "390/s08-template-dashboard.s120-325-0.png",
+          "png": "390/s08-template-dashboard.s124-228-0.png",
           "box": [
             16,
-            282,
+            438,
             358,
             50
           ]
         }
       ],
-      "sha256": "6a0dd2c0e599de0a86e14aea5d6e238a18b827606088def5b0530c3306a55195",
+      "sha256": "e73902c976fe1419c1b1319b898b7131ccc909b2075f168db0771242f377a1dd",
       "size": {
         "width": 390,
-        "height": 1990
+        "height": 1242
       },
-      "elements": 415,
+      "elements": 138,
       "pageErrors": []
     },
     {
@@ -1647,7 +1843,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -1656,60 +1852,84 @@
       "png": "390/s09-tracker-today.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-today.s236-0-0.png",
+          "png": "390/s09-tracker-today.s245-0-0.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
-          "y": 619,
-          "png": "390/s09-tracker-today.s236-0-619.png",
+          "y": 22,
+          "png": "390/s09-tracker-today.s245-0-22.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "nav#251",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-today.s251-0-0.png",
+          "png": "390/s09-tracker-today.s300-0-0.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            256,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#251",
-          "x": 299,
-          "y": 0,
-          "png": "390/s09-tracker-today.s251-299-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-today.s300-0-554.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            256,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1108,
+          "png": "390/s09-tracker-today.s300-0-1108.png",
+          "box": [
+            34,
+            256,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1419,
+          "png": "390/s09-tracker-today.s300-0-1419.png",
+          "box": [
+            34,
+            256,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "9e098667605e901de58b4f58e962e4682a3bdd9b185fb10356f742d201a455f0",
+      "sha256": "70176f853537ae11da3df2361a1da08d55d74d9ccbd78cdc54f1e7a14a8893b6",
       "size": {
         "width": 390,
-        "height": 1454
+        "height": 1386
       },
-      "elements": 373,
+      "elements": 471,
       "pageErrors": []
     },
     {
@@ -1738,7 +1958,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -1755,72 +1975,108 @@
       "png": "390/s09-tracker-week.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-week.s236-0-0.png",
+          "png": "390/s09-tracker-week.s245-0-0.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
-          "y": 810,
-          "png": "390/s09-tracker-week.s236-0-810.png",
+          "y": 22,
+          "png": "390/s09-tracker-week.s245-0-22.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "dialog#236",
-          "x": 0,
-          "y": 1471,
-          "png": "390/s09-tracker-week.s236-0-1471.png",
-          "box": [
-            16,
-            16,
-            358,
-            812
-          ]
-        },
-        {
-          "scroller": "nav#251",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-week.s251-0-0.png",
+          "png": "390/s09-tracker-week.s300-0-0.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#251",
-          "x": 299,
-          "y": 0,
-          "png": "390/s09-tracker-week.s251-299-0.png",
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-week.s300-0-554.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1108,
+          "png": "390/s09-tracker-week.s300-0-1108.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1662,
+          "png": "390/s09-tracker-week.s300-0-1662.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2216,
+          "png": "390/s09-tracker-week.s300-0-2216.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2349,
+          "png": "390/s09-tracker-week.s300-0-2349.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "c653a3f5fd501cc34617cd19e4204447166900f2538d1e893cfc5983cf902a23",
+      "sha256": "777e43723c454c1a0729bbc98e175120ce6ad3fe5f3aa22376070539bd27bd34",
       "size": {
         "width": 390,
-        "height": 1454
+        "height": 1386
       },
-      "elements": 436,
+      "elements": 539,
       "pageErrors": []
     },
     {
@@ -1849,7 +2105,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -1866,60 +2122,108 @@
       "png": "390/s09-tracker-trends.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-trends.s236-0-0.png",
+          "png": "390/s09-tracker-trends.s245-0-0.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
-          "y": 232,
-          "png": "390/s09-tracker-trends.s236-0-232.png",
+          "y": 22,
+          "png": "390/s09-tracker-trends.s245-0-22.png",
           "box": [
-            16,
-            16,
-            358,
-            812
+            17,
+            94,
+            356,
+            733
           ]
         },
         {
-          "scroller": "nav#251",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "390/s09-tracker-trends.s251-0-0.png",
+          "png": "390/s09-tracker-trends.s300-0-0.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            278,
+            322,
+            554
           ]
         },
         {
-          "scroller": "nav#251",
-          "x": 299,
+          "scroller": "div#300",
+          "x": 2,
           "y": 0,
-          "png": "390/s09-tracker-trends.s251-299-0.png",
+          "png": "390/s09-tracker-trends.s300-2-0.png",
           "box": [
-            36,
-            185,
-            318,
-            52
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 554,
+          "png": "390/s09-tracker-trends.s300-0-554.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 2,
+          "y": 554,
+          "png": "390/s09-tracker-trends.s300-2-554.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 887,
+          "png": "390/s09-tracker-trends.s300-0-887.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 2,
+          "y": 887,
+          "png": "390/s09-tracker-trends.s300-2-887.png",
+          "box": [
+            34,
+            278,
+            322,
+            554
           ]
         }
       ],
-      "sha256": "a98dd094255c7f5d151393c55add0d1cd8dcabfa5399adeff8ea6ba4d6d3ae71",
+      "sha256": "40da2d07d71d8ab6595bf4b6a2d52298c6c6fbbd28235803391b6166fb5a091f",
       "size": {
         "width": 390,
-        "height": 1454
+        "height": 1386
       },
-      "elements": 324,
+      "elements": 406,
       "pageErrors": []
     },
     {
@@ -1939,38 +2243,13 @@
         }
       ],
       "png": "390/s09-tracker-config.png",
-      "scrolls": [
-        {
-          "scroller": "nav#12",
-          "x": 0,
-          "y": 0,
-          "png": "390/s09-tracker-config.s12-0-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        },
-        {
-          "scroller": "nav#12",
-          "x": 13,
-          "y": 0,
-          "png": "390/s09-tracker-config.s12-13-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        }
-      ],
-      "sha256": "10065a99740486fc30ce6b3f4897ee34b444337aee69e9063b181aef55a0a893",
+      "scrolls": [],
+      "sha256": "41f28b7478e72fb0d3f799a43cc6e28ed528833e1acf79a8a2bce100a197eaa5",
       "size": {
         "width": 390,
-        "height": 1997
+        "height": 2374
       },
-      "elements": 254,
+      "elements": 285,
       "pageErrors": []
     },
     {
@@ -1990,38 +2269,13 @@
         }
       ],
       "png": "390/s10-appearance.png",
-      "scrolls": [
-        {
-          "scroller": "nav#12",
-          "x": 0,
-          "y": 0,
-          "png": "390/s10-appearance.s12-0-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        },
-        {
-          "scroller": "nav#12",
-          "x": 13,
-          "y": 0,
-          "png": "390/s10-appearance.s12-13-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        }
-      ],
-      "sha256": "d750bbd05d989eacb1a9fd6741940207d99191b0b82c1d19d00df9e90a318172",
+      "scrolls": [],
+      "sha256": "289f4e9a8899556803862a97e5a93d04498a74daf3ccef2143d1fcaefeb8de59",
       "size": {
         "width": 390,
-        "height": 4440
+        "height": 4880
       },
-      "elements": 369,
+      "elements": 377,
       "pageErrors": []
     },
     {
@@ -2032,38 +2286,13 @@
       "screen": "Clients studio",
       "clicks": [],
       "png": "390/s10-clients-studio.png",
-      "scrolls": [
-        {
-          "scroller": "nav#12",
-          "x": 0,
-          "y": 0,
-          "png": "390/s10-clients-studio.s12-0-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        },
-        {
-          "scroller": "nav#12",
-          "x": 13,
-          "y": 0,
-          "png": "390/s10-clients-studio.s12-13-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        }
-      ],
-      "sha256": "bef0c16c884ff963d9a8aa83238d0a996d35140f9de11573c2424d9feb1f378f",
+      "scrolls": [],
+      "sha256": "c2eb080116067c6c39ce23d5300a041d6025fe1456614d2f01b4bb5cb7dfac28",
       "size": {
         "width": 390,
-        "height": 5880
+        "height": 5987
       },
-      "elements": 565,
+      "elements": 566,
       "pageErrors": []
     },
     {
@@ -2074,38 +2303,13 @@
       "screen": "Meal plans studio",
       "clicks": [],
       "png": "390/s10-mealplan-studio.png",
-      "scrolls": [
-        {
-          "scroller": "nav#12",
-          "x": 0,
-          "y": 0,
-          "png": "390/s10-mealplan-studio.s12-0-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        },
-        {
-          "scroller": "nav#12",
-          "x": 13,
-          "y": 0,
-          "png": "390/s10-mealplan-studio.s12-13-0.png",
-          "box": [
-            24,
-            65,
-            345,
-            48
-          ]
-        }
-      ],
-      "sha256": "7c5df9918fd83f8b2a4622e9563d3e9df0b3864a261e2f8d40399a46d705ef6a",
+      "scrolls": [],
+      "sha256": "eddfd4e1277a6a1e34b3b50cc33f335cc2aa1fcc0b61d5c6fe5fcebf0c4cf869",
       "size": {
         "width": 390,
-        "height": 2861
+        "height": 3593
       },
-      "elements": 341,
+      "elements": 369,
       "pageErrors": []
     },
     {
@@ -2127,36 +2331,36 @@
       "png": "390/s11-preferences.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
           "y": 0,
-          "png": "390/s11-preferences.s236-0-0.png",
+          "png": "390/s11-preferences.s245-0-0.png",
           "box": [
-            18,
-            15,
-            354,
-            814
+            17,
+            129,
+            356,
+            664
           ]
         },
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
-          "y": 315,
-          "png": "390/s11-preferences.s236-0-315.png",
+          "y": 345,
+          "png": "390/s11-preferences.s245-0-345.png",
           "box": [
-            18,
-            15,
-            354,
-            814
+            17,
+            129,
+            356,
+            664
           ]
         }
       ],
-      "sha256": "ab3d5f55aac53094d35b4be8dcd9aaac24d520088a3bb0ff981575a2030876c0",
+      "sha256": "b5297cece3a77c3a45f0b6505ed0bd11824f4994656c16b04bff3dbf85b46a00",
       "size": {
         "width": 390,
-        "height": 1454
+        "height": 1386
       },
-      "elements": 253,
+      "elements": 261,
       "pageErrors": []
     },
     {
@@ -2183,95 +2387,163 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Preview assigned tool",
+          "label": "Open client app",
           "matches": 1,
           "tag": "button",
-          "seen": "preview assigned tool",
+          "seen": "open client app",
           "scoped": false,
-          "recipe": "Preview assigned tool"
+          "recipe": "Open client app"
         }
       ],
       "png": "390/s11-client-preview.png",
       "scrolls": [
         {
-          "scroller": "div#130",
+          "scroller": "div#124",
           "x": 0,
           "y": 0,
-          "png": "390/s11-client-preview.s130-0-0.png",
+          "png": "390/s11-client-preview.s124-0-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
+            54
           ]
         },
         {
-          "scroller": "div#130",
-          "x": 47,
+          "scroller": "div#124",
+          "x": 197,
           "y": 0,
-          "png": "390/s11-client-preview.s130-47-0.png",
+          "png": "390/s11-client-preview.s124-197-0.png",
           "box": [
             16,
-            418,
+            252,
             358,
-            52
-          ]
-        },
-        {
-          "scroller": "dialog#218",
-          "x": 0,
-          "y": 0,
-          "png": "390/s11-client-preview.s218-0-0.png",
-          "box": [
-            16,
-            16,
-            358,
-            812
-          ]
-        },
-        {
-          "scroller": "dialog#218",
-          "x": 0,
-          "y": 567,
-          "png": "390/s11-client-preview.s218-0-567.png",
-          "box": [
-            16,
-            16,
-            358,
-            812
-          ]
-        },
-        {
-          "scroller": "nav#233",
-          "x": 0,
-          "y": 0,
-          "png": "390/s11-client-preview.s233-0-0.png",
-          "box": [
-            36,
-            185,
-            318,
-            52
-          ]
-        },
-        {
-          "scroller": "nav#233",
-          "x": 299,
-          "y": 0,
-          "png": "390/s11-client-preview.s233-299-0.png",
-          "box": [
-            36,
-            185,
-            318,
-            52
+            54
           ]
         }
       ],
-      "sha256": "c1f46ec9acd3737f88abfe138a5c31845386169ef003967d6704721904eadf64",
+      "sha256": "5285469bea4fd445067a4d723a11f03361cc04d42aad5f2d6047a21c690108f0",
       "size": {
         "width": 390,
-        "height": 1926
+        "height": 2299
       },
-      "elements": 306,
+      "elements": 277,
+      "pageErrors": []
+    },
+    {
+      "id": "s13-supplements@390",
+      "vp": "390",
+      "stem": "s13-supplements",
+      "route": "/coach",
+      "screen": "Supplement plan editor",
+      "clicks": [
+        {
+          "label": "Clients",
+          "matches": 1,
+          "tag": "span",
+          "seen": "clients",
+          "scoped": false,
+          "recipe": "Clients"
+        },
+        {
+          "label": "EA Emma Anders Lifestyle",
+          "matches": 1,
+          "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
+          "recipe": "EA Emma Anders Lifestyle"
+        },
+        {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Supplements",
+          "matches": 1,
+          "tag": "div",
+          "seen": "supplements",
+          "scoped": true,
+          "recipe": "Supplements"
+        },
+        {
+          "label": "Set up plan",
+          "matches": 1,
+          "tag": "button",
+          "seen": "set up plan",
+          "scoped": true,
+          "recipe": "Set up plan"
+        }
+      ],
+      "png": "390/s13-supplements.png",
+      "scrolls": [],
+      "sha256": "facfd657330b1a5420ca4895599611b43b85aa4fbcd785b9fc0af1ee27170ceb",
+      "size": {
+        "width": 390,
+        "height": 844
+      },
+      "elements": 82,
+      "pageErrors": []
+    },
+    {
+      "id": "s12-activity-targets@390",
+      "vp": "390",
+      "stem": "s12-activity-targets",
+      "route": "/coach",
+      "screen": "Activity targets editor",
+      "clicks": [
+        {
+          "label": "Clients",
+          "matches": 1,
+          "tag": "span",
+          "seen": "clients",
+          "scoped": false,
+          "recipe": "Clients"
+        },
+        {
+          "label": "EA Emma Anders Lifestyle",
+          "matches": 1,
+          "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
+          "recipe": "EA Emma Anders Lifestyle"
+        },
+        {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Activity targets",
+          "matches": 1,
+          "tag": "div",
+          "seen": "activity targets",
+          "scoped": true,
+          "recipe": "Activity targets"
+        },
+        {
+          "label": "Set targets",
+          "matches": 1,
+          "tag": "button",
+          "seen": "set targets",
+          "scoped": true,
+          "recipe": "Set targets"
+        }
+      ],
+      "png": "390/s12-activity-targets.png",
+      "scrolls": [],
+      "sha256": "e89fedd69863adc5ec4af56a42f6a94e23ff7ddba8f6b3f22fdd9c854f4059f4",
+      "size": {
+        "width": 390,
+        "height": 1345
+      },
+      "elements": 106,
       "pageErrors": []
     },
     {
@@ -2292,12 +2564,12 @@
       ],
       "png": "1440/s01-roster.png",
       "scrolls": [],
-      "sha256": "deacd2d542a056802ffd090a4c2058066a020e8c578a01a0255eeb103227eff2",
+      "sha256": "dfd7d9767d2bc503ef0b4933c756d395a2bd218d6062749b58ebe5abb647a308",
       "size": {
         "width": 1440,
-        "height": 1635
+        "height": 1569
       },
-      "elements": 440,
+      "elements": 446,
       "pageErrors": []
     },
     {
@@ -2326,12 +2598,12 @@
       ],
       "png": "1440/s01-profile-overview.png",
       "scrolls": [],
-      "sha256": "c5118de9fb323b36a0dbd19d65d75343f4a2515fbfe428a9d9dcc9896c1564b4",
+      "sha256": "e31acb4eee345e25725ec84f376752355b3510fe52095d660820e708ec0d54ab",
       "size": {
         "width": 1440,
-        "height": 1073
+        "height": 1260
       },
-      "elements": 178,
+      "elements": 299,
       "pageErrors": []
     },
     {
@@ -2368,12 +2640,12 @@
       ],
       "png": "1440/s01-profile-plans.png",
       "scrolls": [],
-      "sha256": "e9bf3af492aa7291b3283d30e3cb10e6d21ab0a6bcfd9bb95f342a827a802b70",
+      "sha256": "4e7eb0b5126ff22775dc33a368a3fe392988553b7e5d7f6e9e79792cfb11d90b",
       "size": {
         "width": 1440,
-        "height": 971
+        "height": 900
       },
-      "elements": 154,
+      "elements": 169,
       "pageErrors": []
     },
     {
@@ -2410,12 +2682,12 @@
       ],
       "png": "1440/s01-profile-checkins.png",
       "scrolls": [],
-      "sha256": "197f11e5954701aeb6cf1fcf1a85860d64b577d6abe7c2819cf8d7eb9b8c4b7d",
+      "sha256": "eaef33480a1bb962b70bfe56a5eb4c01b60bc588b376eab46231d4bfa2ce2ec4",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 112,
+      "elements": 116,
       "pageErrors": []
     },
     {
@@ -2452,12 +2724,12 @@
       ],
       "png": "1440/s01-profile-notes.png",
       "scrolls": [],
-      "sha256": "55728a17e3a6fc3fc6aa2f920f44e8bdfd0d37af588330a405e748728afd457c",
+      "sha256": "31f3dae9f967209c84b7aefa311cf065e6147f0573756f512702207067bf04bd",
       "size": {
         "width": 1440,
-        "height": 1126
+        "height": 900
       },
-      "elements": 136,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -2484,22 +2756,47 @@
           "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Onboarding",
+          "label": "Client settings",
           "matches": 1,
           "tag": "button",
-          "seen": "onboarding",
+          "seen": "",
           "scoped": false,
-          "recipe": "Onboarding"
+          "recipe": "Client settings"
         }
       ],
       "png": "1440/s01-profile-onboarding.png",
-      "scrolls": [],
-      "sha256": "3ae09f7433c460e1aa4b2d79c7bbea9200d9f8944766f813837651fc96f8e2ab",
+      "scrolls": [
+        {
+          "scroller": "div#128",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s01-profile-onboarding.s128-0-0.png",
+          "box": [
+            241,
+            148,
+            958,
+            685
+          ]
+        },
+        {
+          "scroller": "div#128",
+          "x": 0,
+          "y": 84,
+          "png": "1440/s01-profile-onboarding.s128-0-84.png",
+          "box": [
+            241,
+            148,
+            958,
+            685
+          ]
+        }
+      ],
+      "sha256": "3e814ba414a5dd3b7682cb2b0bc70ff65a87cfd4b3eb57742fd7c0bf234a3d2c",
       "size": {
         "width": 1440,
-        "height": 900
+        "height": 1260
       },
-      "elements": 112,
+      "elements": 343,
       "pageErrors": []
     },
     {
@@ -2521,48 +2818,48 @@
       "png": "1440/s02-messages.png",
       "scrolls": [
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "1440/s02-messages.s115-0-0.png",
+          "png": "1440/s02-messages.s123-0-0.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 552,
-          "png": "1440/s02-messages.s115-0-552.png",
+          "y": 579,
+          "png": "1440/s02-messages.s123-0-579.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 746,
-          "png": "1440/s02-messages.s115-0-746.png",
+          "y": 719,
+          "png": "1440/s02-messages.s123-0-719.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         }
       ],
-      "sha256": "07962141f5190455e6ab4f7680f87019f4de0da9b5e86592892899dd86e5b1de",
+      "sha256": "797273d24983f1bbf22630f4a61d2d3dd4f5170d8008da5766fb2908141a3115",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 225,
+      "elements": 230,
       "pageErrors": []
     },
     {
@@ -2592,7 +2889,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         }
@@ -2600,48 +2897,48 @@
       "png": "1440/s02-thread.png",
       "scrolls": [
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "1440/s02-thread.s115-0-0.png",
+          "png": "1440/s02-thread.s123-0-0.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 552,
-          "png": "1440/s02-thread.s115-0-552.png",
+          "y": 579,
+          "png": "1440/s02-thread.s123-0-579.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 746,
-          "png": "1440/s02-thread.s115-0-746.png",
+          "y": 719,
+          "png": "1440/s02-thread.s123-0-719.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         }
       ],
-      "sha256": "c1afa0e0e2f3a3275970a941bd3676a62d10a425b052835f83c5121681b81042",
+      "sha256": "cc2243053eb9e46b52af7eff4673f3b9df7f87db999d6f7123ed55229f95acfc",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 261,
+      "elements": 268,
       "pageErrors": []
     },
     {
@@ -2671,7 +2968,7 @@
           "label": "Open chat",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat",
+          "seen": "",
           "scoped": false,
           "recipe": "Open chat"
         },
@@ -2687,48 +2984,48 @@
       "png": "1440/s02-thread-attachments.png",
       "scrolls": [
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
           "y": 0,
-          "png": "1440/s02-thread-attachments.s115-0-0.png",
+          "png": "1440/s02-thread-attachments.s123-0-0.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 552,
-          "png": "1440/s02-thread-attachments.s115-0-552.png",
+          "y": 579,
+          "png": "1440/s02-thread-attachments.s123-0-579.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         },
         {
-          "scroller": "div#115",
+          "scroller": "div#123",
           "x": 0,
-          "y": 746,
-          "png": "1440/s02-thread-attachments.s115-0-746.png",
+          "y": 719,
+          "png": "1440/s02-thread-attachments.s123-0-719.png",
           "box": [
             216,
-            348,
+            322,
             304,
-            552
+            578
           ]
         }
       ],
-      "sha256": "d45081e74676797a11147a6a781ec2322ced22f36315f8968fb5627b2da6de23",
+      "sha256": "34cccb768f13f232d3fdd2fd6b8375108408174b4d938dba66183ef15b7483fc",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 273,
+      "elements": 280,
       "pageErrors": []
     },
     {
@@ -2749,12 +3046,12 @@
       ],
       "png": "1440/s02-notes-todos.png",
       "scrolls": [],
-      "sha256": "2906bea8b00132b916c0260a57b1fe68d554a1bda2288fdc8936bd785f52af0c",
+      "sha256": "52aa0f468ca7bf5208b4b47575e9e8de06ba7897e8b20acdda98d5ec49891b47",
       "size": {
         "width": 1440,
-        "height": 2351
+        "height": 1588
       },
-      "elements": 512,
+      "elements": 281,
       "pageErrors": []
     },
     {
@@ -2775,12 +3072,12 @@
       ],
       "png": "1440/s03-checkins-board.png",
       "scrolls": [],
-      "sha256": "8ab38cdfaffd7b9c4247097549b5b44070106cefd5d32e5f13c10a95ea232aa3",
+      "sha256": "c8f6f4e6ac9bb4c7c5f3583e26163e59795a91941963d0ac7f114be56c62442f",
       "size": {
         "width": 1440,
-        "height": 967
+        "height": 1055
       },
-      "elements": 266,
+      "elements": 281,
       "pageErrors": []
     },
     {
@@ -2809,12 +3106,12 @@
       ],
       "png": "1440/s03-add-extra.png",
       "scrolls": [],
-      "sha256": "13f981840f5cb96f939a129828b42863b31d6cfbcc64f6d50b4a6682cabd7daa",
+      "sha256": "c6a487d9ab9990302f2055a82a3ee8a86b04e940119849f4bec11cdbcecb7e3f",
       "size": {
         "width": 1440,
-        "height": 967
+        "height": 1055
       },
-      "elements": 293,
+      "elements": 318,
       "pageErrors": []
     },
     {
@@ -2851,12 +3148,12 @@
       ],
       "png": "1440/s03-checkin-review.png",
       "scrolls": [],
-      "sha256": "608f7f5cd301022a0b400c63948d98c4aee983d359d575e4007d403beafea1eb",
+      "sha256": "6115cca26b121bae0246949b994a14518f80ba6c2d193c1af813c6c981b6f47e",
       "size": {
         "width": 1440,
-        "height": 2159
+        "height": 2022
       },
-      "elements": 228,
+      "elements": 226,
       "pageErrors": []
     },
     {
@@ -2891,22 +3188,30 @@
           "recipe": "Edit plans"
         },
         {
+          "label": "Habits",
+          "matches": 1,
+          "tag": "div",
+          "seen": "habits",
+          "scoped": true,
+          "recipe": "Habits"
+        },
+        {
           "label": "Edit habits",
           "matches": 1,
           "tag": "button",
           "seen": "edit habits",
-          "scoped": false,
+          "scoped": true,
           "recipe": "Edit habits"
         }
       ],
       "png": "1440/s04-habit-editor.png",
       "scrolls": [],
-      "sha256": "87d51f8bcef84095b247f4aeec1f0491460483e82f66a90043713d156c0ca9c2",
+      "sha256": "cb7242012e279a942a2fa236cf4d0041600a8e161b0f772c5b005c9982cb857c",
       "size": {
         "width": 1440,
-        "height": 973
+        "height": 919
       },
-      "elements": 114,
+      "elements": 126,
       "pageErrors": []
     },
     {
@@ -2983,12 +3288,12 @@
       ],
       "png": "1440/s04-template-habits.png",
       "scrolls": [],
-      "sha256": "a0be0721c0bcff6844f0efe418fd4ab6bfe0c9ed5e91032f3280d05be60a9f7f",
+      "sha256": "d909a2333cb910bb93dab91351423b400bb8a7466da27cc7ec664cc800f4e6b8",
       "size": {
         "width": 1440,
-        "height": 935
+        "height": 980
       },
-      "elements": 156,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3000,12 +3305,12 @@
       "clicks": [],
       "png": "1440/s05-templates.png",
       "scrolls": [],
-      "sha256": "dd8a50a568638c7e9b33cd33af63691ec4f7c140c686db6177751b9868f8e676",
+      "sha256": "caedeb63963cd45acbdf1b9bbd0755edb1d9ab97f212898528049409b42205da",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 211,
+      "elements": 214,
       "pageErrors": []
     },
     {
@@ -3026,12 +3331,12 @@
       ],
       "png": "1440/s05-template-editor.png",
       "scrolls": [],
-      "sha256": "825998fc68354bfc35efc21aa5f8602b5e84b2db96fc7b7550856ef9089d8ef3",
+      "sha256": "0ad63c0e8b71208fe81228d2415cbfd6e58d649f7e468ad99d751cf02efec1a0",
       "size": {
         "width": 1440,
-        "height": 935
+        "height": 980
       },
-      "elements": 156,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3050,38 +3355,38 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "01 Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "01 tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         },
         {
-          "label": "Move Bodyweight trend",
+          "label": "02 Tracker",
+          "matches": 1,
+          "tag": "button",
+          "seen": "02 tracker",
+          "scoped": true,
+          "recipe": "02 Tracker"
+        },
+        {
+          "label": "Move down",
           "matches": 1,
           "tag": "button",
           "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
-          "label": "03 Tracker",
-          "matches": 1,
-          "tag": "button",
-          "seen": "03 tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "scoped": true,
+          "recipe": "Move down"
         }
       ],
       "png": "1440/s05-tracker-setup.png",
       "scrolls": [],
-      "sha256": "6c3ce11e4eeb3008baa3b3558dd03d4efe78ad80982ee88c3a45b5ab2bd65c67",
+      "sha256": "841a897ed1812f8ca2ec732d8d22d1b460b097843fdf71531b50a176464c2372",
       "size": {
         "width": 1440,
-        "height": 1389
+        "height": 1440
       },
-      "elements": 348,
+      "elements": 356,
       "pageErrors": []
     },
     {
@@ -3108,22 +3413,38 @@
           "recipe": "EF Eva Fischer Lifestyle"
         },
         {
-          "label": "Assign template",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "assign template",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Assign template"
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Open client setup",
+          "matches": 1,
+          "tag": "button",
+          "seen": "open client setup",
+          "scoped": false,
+          "recipe": "Open client setup"
+        },
+        {
+          "label": "Choose a saved template",
+          "matches": 1,
+          "tag": "button",
+          "seen": "choose a saved template",
+          "scoped": false,
+          "recipe": "Choose a saved template"
         }
       ],
       "png": "1440/s05-client-setup.png",
       "scrolls": [],
-      "sha256": "0864d117dbbe1d2a6d763a5eee713e3ac76e7ea8ca2352b7ae1eb03637201d69",
+      "sha256": "17c20edd74f98fb61c4c88e747e8a8d9d6c011c00804c8e190eb0a05ef53b649",
       "size": {
         "width": 1440,
-        "height": 956
+        "height": 900
       },
-      "elements": 186,
+      "elements": 153,
       "pageErrors": []
     },
     {
@@ -3158,22 +3479,30 @@
           "recipe": "Plans"
         },
         {
-          "label": "Create",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "create",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Edit plan",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plan",
           "scoped": true,
-          "recipe": "Create"
+          "recipe": "Edit plan"
         }
       ],
       "png": "1440/s06-mealplan-editor.png",
       "scrolls": [],
-      "sha256": "2cd7dcdddfa30190e9abe577357c82af4d6fdb3653ba975ae8c9b1d02012ec84",
+      "sha256": "5943785a15c10b9ac71563f86dfc7e04c8c6a0f70eda2668829a320fb54c4bc4",
       "size": {
         "width": 1440,
-        "height": 1392
+        "height": 1165
       },
-      "elements": 268,
+      "elements": 179,
       "pageErrors": []
     },
     {
@@ -3192,28 +3521,12 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "02 Tracker",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "02 tracker",
           "scoped": true,
-          "recipe": "02 Dashboard"
-        },
-        {
-          "label": "Move Bodyweight trend",
-          "matches": 1,
-          "tag": "button",
-          "seen": "",
-          "scoped": false,
-          "recipe": "Move Bodyweight trend"
-        },
-        {
-          "label": "03 Tracker",
-          "matches": 1,
-          "tag": "button",
-          "seen": "03 tracker",
-          "scoped": false,
-          "recipe": "03 Tracker"
+          "recipe": "02 Tracker"
         },
         {
           "label": "Settings for Bodyweight",
@@ -3224,30 +3537,30 @@
           "recipe": "Settings for Bodyweight"
         },
         {
-          "label": "04 Timeline / Roadmap",
+          "label": "03 Timeline / Roadmap",
           "matches": 1,
           "tag": "button",
-          "seen": "04 timeline / roadmap",
-          "scoped": false,
-          "recipe": "04 Timeline / Roadmap"
+          "seen": "03 timeline / roadmap",
+          "scoped": true,
+          "recipe": "03 Timeline / Roadmap"
         },
         {
-          "label": "05 Nutrition",
+          "label": "04 Nutrition",
           "matches": 1,
           "tag": "button",
-          "seen": "05 nutrition",
-          "scoped": false,
-          "recipe": "05 Nutrition"
+          "seen": "04 nutrition",
+          "scoped": true,
+          "recipe": "04 Nutrition"
         }
       ],
       "png": "1440/s06-template-nutrition.png",
       "scrolls": [],
-      "sha256": "e9375a35cf1bd797d9fae86b85cb32482f1bbc6b6b9789fa3df09479287dfd18",
+      "sha256": "6e5aa3e45eac807a8cc932d26cbe00687d1db0c95ef34c6859a7ccd6726aa8a5",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 129,
+      "elements": 137,
       "pageErrors": []
     },
     {
@@ -3274,12 +3587,12 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Open chat (1 unread)",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "1",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Open chat (1 unread)"
         },
         {
           "label": "Training program",
@@ -3292,12 +3605,12 @@
       ],
       "png": "1440/s07-training-editor.png",
       "scrolls": [],
-      "sha256": "df2bf4469a6d32970bb2af614a25825907d1b763652ade1a0c9f544b78180c66",
+      "sha256": "8d4a5bb6c565800f47c70faf9becd2bec1ad3185c665a88097c723fd2ece0e14",
       "size": {
         "width": 1440,
-        "height": 1018
+        "height": 1285
       },
-      "elements": 165,
+      "elements": 249,
       "pageErrors": []
     },
     {
@@ -3316,28 +3629,52 @@
           "recipe": "Clients"
         },
         {
-          "label": "EA Emma Anders Lifestyle",
+          "label": "CP Chloe Park Lifestyle",
           "matches": 1,
           "tag": "button",
-          "seen": "ea emma anders lifestyle",
+          "seen": "cp chloe park lifestyle",
           "scoped": false,
-          "recipe": "EA Emma Anders Lifestyle"
+          "recipe": "CP Chloe Park Lifestyle"
         },
         {
-          "label": "Open chat 1",
+          "label": "Edit plans",
           "matches": 1,
           "tag": "button",
-          "seen": "open chat 1",
+          "seen": "edit plans",
           "scoped": false,
-          "recipe": "Open chat 1"
+          "recipe": "Edit plans"
         },
         {
-          "label": "Training program",
+          "label": "Training",
+          "matches": 1,
+          "tag": "div",
+          "seen": "training",
+          "scoped": true,
+          "recipe": "Training"
+        },
+        {
+          "label": "Set up plan",
           "matches": 1,
           "tag": "button",
-          "seen": "training program",
+          "seen": "set up plan",
+          "scoped": true,
+          "recipe": "Set up plan"
+        },
+        {
+          "label": "Add session",
+          "matches": 1,
+          "tag": "button",
+          "seen": "add session",
           "scoped": false,
-          "recipe": "Training program"
+          "recipe": "Add session"
+        },
+        {
+          "label": "Add exercise",
+          "matches": 1,
+          "tag": "button",
+          "seen": "add exercise",
+          "scoped": false,
+          "recipe": "Add exercise"
         },
         {
           "label": "Manage library",
@@ -3351,48 +3688,72 @@
       "png": "1440/s07-exercise-library.png",
       "scrolls": [
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
           "y": 0,
-          "png": "1440/s07-exercise-library.s178-0-0.png",
+          "png": "1440/s07-exercise-library.s335-0-0.png",
           "box": [
-            492,
-            713,
-            216,
-            86
+            261,
+            293,
+            918,
+            468
           ]
         },
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
-          "y": 84,
-          "png": "1440/s07-exercise-library.s178-0-84.png",
+          "y": 468,
+          "png": "1440/s07-exercise-library.s335-0-468.png",
           "box": [
-            492,
-            713,
-            216,
-            86
+            261,
+            293,
+            918,
+            468
           ]
         },
         {
-          "scroller": "select#178",
+          "scroller": "div#335",
           "x": 0,
-          "y": 102,
-          "png": "1440/s07-exercise-library.s178-0-102.png",
+          "y": 936,
+          "png": "1440/s07-exercise-library.s335-0-936.png",
           "box": [
-            492,
-            713,
-            216,
-            86
+            261,
+            293,
+            918,
+            468
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 1404,
+          "png": "1440/s07-exercise-library.s335-0-1404.png",
+          "box": [
+            261,
+            293,
+            918,
+            468
+          ]
+        },
+        {
+          "scroller": "div#335",
+          "x": 0,
+          "y": 1730,
+          "png": "1440/s07-exercise-library.s335-0-1730.png",
+          "box": [
+            261,
+            293,
+            918,
+            468
           ]
         }
       ],
-      "sha256": "036e576c662a5a82db1c404d6d9f054eb0c16bddc83109d845c6d231d403ea3f",
+      "sha256": "acc86c9dc9148b60bd53f9902fa38a52b3e562915e9d7b27b7624c6d0dbfd4e1",
       "size": {
         "width": 1440,
-        "height": 1695
+        "height": 1450
       },
-      "elements": 294,
+      "elements": 461,
       "pageErrors": []
     },
     {
@@ -3404,12 +3765,12 @@
       "clicks": [],
       "png": "1440/s08-builder.png",
       "scrolls": [],
-      "sha256": "aa93f4c1ab02a79a9cfef5a6a255c02698c9e99322227eebb2fa0e2e1fda7390",
+      "sha256": "bd5ce93cccf3dc14c6ae75d81dd38c998631fc286807f075efac8d0dd8ad84d3",
       "size": {
         "width": 1440,
-        "height": 1022
+        "height": 1044
       },
-      "elements": 77,
+      "elements": 78,
       "pageErrors": []
     },
     {
@@ -3431,10 +3792,10 @@
       "png": "1440/s08-widget-gallery.png",
       "scrolls": [
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 0,
-          "png": "1440/s08-widget-gallery.s92-0-0.png",
+          "png": "1440/s08-widget-gallery.s93-0-0.png",
           "box": [
             25,
             132,
@@ -3443,10 +3804,10 @@
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 661,
-          "png": "1440/s08-widget-gallery.s92-0-661.png",
+          "png": "1440/s08-widget-gallery.s93-0-661.png",
           "box": [
             25,
             132,
@@ -3455,10 +3816,10 @@
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 1322,
-          "png": "1440/s08-widget-gallery.s92-0-1322.png",
+          "png": "1440/s08-widget-gallery.s93-0-1322.png",
           "box": [
             25,
             132,
@@ -3467,10 +3828,10 @@
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 1983,
-          "png": "1440/s08-widget-gallery.s92-0-1983.png",
+          "png": "1440/s08-widget-gallery.s93-0-1983.png",
           "box": [
             25,
             132,
@@ -3479,10 +3840,10 @@
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
           "y": 2644,
-          "png": "1440/s08-widget-gallery.s92-0-2644.png",
+          "png": "1440/s08-widget-gallery.s93-0-2644.png",
           "box": [
             25,
             132,
@@ -3491,10 +3852,10 @@
           ]
         },
         {
-          "scroller": "section#92",
+          "scroller": "section#93",
           "x": 0,
-          "y": 3137,
-          "png": "1440/s08-widget-gallery.s92-0-3137.png",
+          "y": 3125,
+          "png": "1440/s08-widget-gallery.s93-0-3125.png",
           "box": [
             25,
             132,
@@ -3503,12 +3864,12 @@
           ]
         }
       ],
-      "sha256": "632660ed0a93a7592e3919c85d1d1358eb51ac1e81040bc73cf0601d4a892e9d",
+      "sha256": "861e99e125fa8c35403d55fe60fac8d1c740a9109594659377ebff58967975a1",
       "size": {
         "width": 1440,
-        "height": 1022
+        "height": 1044
       },
-      "elements": 175,
+      "elements": 187,
       "pageErrors": []
     },
     {
@@ -3527,22 +3888,22 @@
           "recipe": "Add template"
         },
         {
-          "label": "02 Dashboard",
+          "label": "01 Tabs",
           "matches": 1,
           "tag": "button",
-          "seen": "02 dashboard",
+          "seen": "01 tabs",
           "scoped": true,
-          "recipe": "02 Dashboard"
+          "recipe": "01 Tabs"
         }
       ],
       "png": "1440/s08-template-dashboard.png",
       "scrolls": [],
-      "sha256": "408038dd43cf5e9e4f8d84f09206746953a60d77e29acee1dea420909426894e",
+      "sha256": "51b938f187c19613cd19feb109f0faedbc8ff2f44ccecc8ac5212ce396ff4c54",
       "size": {
         "width": 1440,
-        "height": 1184
+        "height": 980
       },
-      "elements": 440,
+      "elements": 170,
       "pageErrors": []
     },
     {
@@ -3571,7 +3932,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3580,36 +3941,156 @@
       "png": "1440/s09-tracker-today.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "1440/s09-tracker-today.s236-0-0.png",
+          "png": "1440/s09-tracker-today.s300-0-0.png",
           "box": [
-            16,
-            16,
-            1408,
-            868
+            526,
+            247,
+            388,
+            610
           ]
         },
         {
-          "scroller": "dialog#236",
-          "x": 0,
-          "y": 330,
-          "png": "1440/s09-tracker-today.s236-0-330.png",
+          "scroller": "div#300",
+          "x": 82,
+          "y": 0,
+          "png": "1440/s09-tracker-today.s300-82-0.png",
           "box": [
-            16,
-            16,
-            1408,
-            868
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-today.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 610,
+          "png": "1440/s09-tracker-today.s300-82-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1220,
+          "png": "1440/s09-tracker-today.s300-0-1220.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 1220,
+          "png": "1440/s09-tracker-today.s300-82-1220.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 1830,
+          "png": "1440/s09-tracker-today.s300-0-1830.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 1830,
+          "png": "1440/s09-tracker-today.s300-82-1830.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2440,
+          "png": "1440/s09-tracker-today.s300-0-2440.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 2440,
+          "png": "1440/s09-tracker-today.s300-82-2440.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 2627,
+          "png": "1440/s09-tracker-today.s300-0-2627.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 2627,
+          "png": "1440/s09-tracker-today.s300-82-2627.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
           ]
         }
       ],
-      "sha256": "e3db24b573d4d0409027bfcae34f9ac06e0e6a91a5815a4caf8104efa32f4eaa",
+      "sha256": "01bd643526a0a318aab9b8416f8367170edc3e47a2df3d9c834da51fb9cef988",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 419,
+      "elements": 511,
       "pageErrors": []
     },
     {
@@ -3638,7 +4119,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3655,36 +4136,120 @@
       "png": "1440/s09-tracker-week.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#300",
           "x": 0,
           "y": 0,
-          "png": "1440/s09-tracker-week.s236-0-0.png",
+          "png": "1440/s09-tracker-week.s300-0-0.png",
           "box": [
-            16,
-            16,
-            1408,
-            868
+            526,
+            247,
+            388,
+            610
           ]
         },
         {
-          "scroller": "dialog#236",
-          "x": 0,
-          "y": 82,
-          "png": "1440/s09-tracker-week.s236-0-82.png",
+          "scroller": "div#300",
+          "x": 82,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s300-82-0.png",
           "box": [
-            16,
-            16,
-            1408,
-            868
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-week.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 610,
+          "png": "1440/s09-tracker-week.s300-82-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 953,
+          "png": "1440/s09-tracker-week.s300-0-953.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 82,
+          "y": 953,
+          "png": "1440/s09-tracker-week.s300-82-953.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-0-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 356,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-356-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
+          ]
+        },
+        {
+          "scroller": "section#497",
+          "x": 534,
+          "y": 0,
+          "png": "1440/s09-tracker-week.s497-534-0.png",
+          "box": [
+            542,
+            629,
+            356,
+            271
           ]
         }
       ],
-      "sha256": "f8a16909d5dfadf9f9e37915f7e8c3927735387e5153dc3c72d88c9d543a81f8",
+      "sha256": "1b461d9e2fb074e6eba8d0cba0ff35ec0577c1b27528cf34ab110134d253a359",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 514,
+      "elements": 616,
       "pageErrors": []
     },
     {
@@ -3713,7 +4278,7 @@
         {
           "label": "Tracker",
           "matches": 1,
-          "tag": "button",
+          "tag": "span",
           "seen": "tracker",
           "scoped": false,
           "recipe": "Tracker"
@@ -3728,13 +4293,86 @@
         }
       ],
       "png": "1440/s09-tracker-trends.png",
-      "scrolls": [],
-      "sha256": "5473c54a90a6d9f7f03d0fc10e47457f417a1a5a000b6bf7d8f52bd73b6de129",
+      "scrolls": [
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 0,
+          "png": "1440/s09-tracker-trends.s300-0-0.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 83,
+          "y": 0,
+          "png": "1440/s09-tracker-trends.s300-83-0.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 610,
+          "png": "1440/s09-tracker-trends.s300-0-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 83,
+          "y": 610,
+          "png": "1440/s09-tracker-trends.s300-83-610.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 0,
+          "y": 661,
+          "png": "1440/s09-tracker-trends.s300-0-661.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        },
+        {
+          "scroller": "div#300",
+          "x": 83,
+          "y": 661,
+          "png": "1440/s09-tracker-trends.s300-83-661.png",
+          "box": [
+            526,
+            247,
+            388,
+            610
+          ]
+        }
+      ],
+      "sha256": "c5061fe7aca684c68841a194f720de688122a35a82c2430b480be9c2b7519d59",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 348,
+      "elements": 428,
       "pageErrors": []
     },
     {
@@ -3755,12 +4393,12 @@
       ],
       "png": "1440/s09-tracker-config.png",
       "scrolls": [],
-      "sha256": "b91f011447a94551b5b7665138dc80eec257187e5f56483405eef6c301a277ed",
+      "sha256": "fdff9d7eed9271e664cb54ff95756157dd41fe0a4e10be85552308476408c427",
       "size": {
         "width": 1440,
-        "height": 1189
+        "height": 1369
       },
-      "elements": 254,
+      "elements": 285,
       "pageErrors": []
     },
     {
@@ -3781,12 +4419,12 @@
       ],
       "png": "1440/s10-appearance.png",
       "scrolls": [],
-      "sha256": "ce14e7a2e8d7894c38122a4bcb4307eee586cdfb5c476dfdc8605b199589c2d7",
+      "sha256": "e33776721a047d66eb54d4140a64e590ec7c881b4e78eb7ee6f0f50f5b21da56",
       "size": {
         "width": 1440,
-        "height": 2442
+        "height": 2545
       },
-      "elements": 373,
+      "elements": 379,
       "pageErrors": []
     },
     {
@@ -3798,12 +4436,12 @@
       "clicks": [],
       "png": "1440/s10-clients-studio.png",
       "scrolls": [],
-      "sha256": "9949871a581c71cf2821dddbd923374ba7b6138c840f0e9a1a246bd56dabd63a",
+      "sha256": "c72cdd1b7df6410c459bb7c8b9ef306dd5d1531f83334fc9974706f5ce349f31",
       "size": {
         "width": 1440,
-        "height": 3188
+        "height": 3158
       },
-      "elements": 570,
+      "elements": 571,
       "pageErrors": []
     },
     {
@@ -3815,12 +4453,12 @@
       "clicks": [],
       "png": "1440/s10-mealplan-studio.png",
       "scrolls": [],
-      "sha256": "c8c8798032ee319c9d2a7535d8b9919a5a38bf0f63ea10b01abb49d855222451",
+      "sha256": "b5cf6044f48b7268157dfdf68df8797f8f5e321dead9391fe35b399726bb8fa7",
       "size": {
         "width": 1440,
-        "height": 2213
+        "height": 2511
       },
-      "elements": 346,
+      "elements": 374,
       "pageErrors": []
     },
     {
@@ -3842,36 +4480,36 @@
       "png": "1440/s11-preferences.png",
       "scrolls": [
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
           "y": 0,
-          "png": "1440/s11-preferences.s236-0-0.png",
+          "png": "1440/s11-preferences.s245-0-0.png",
           "box": [
-            465,
-            25,
-            510,
-            850
+            401,
+            148,
+            638,
+            685
           ]
         },
         {
-          "scroller": "dialog#236",
+          "scroller": "div#245",
           "x": 0,
-          "y": 240,
-          "png": "1440/s11-preferences.s236-0-240.png",
+          "y": 304,
+          "png": "1440/s11-preferences.s245-0-304.png",
           "box": [
-            465,
-            25,
-            510,
-            850
+            401,
+            148,
+            638,
+            685
           ]
         }
       ],
-      "sha256": "c2f6367772f27f34573d23eec4df84ba46167962cd4000b48b15557fee8f266d",
+      "sha256": "deaef92440840f0660f65255db61f280834357ff912a14f9c740a07d6124121a",
       "size": {
         "width": 1440,
         "height": 900
       },
-      "elements": 276,
+      "elements": 284,
       "pageErrors": []
     },
     {
@@ -3898,49 +4536,141 @@
           "recipe": "EA Emma Anders Lifestyle"
         },
         {
-          "label": "Preview assigned tool",
+          "label": "Open client app",
           "matches": 1,
           "tag": "button",
-          "seen": "preview assigned tool",
+          "seen": "open client app",
           "scoped": false,
-          "recipe": "Preview assigned tool"
+          "recipe": "Open client app"
         }
       ],
       "png": "1440/s11-client-preview.png",
-      "scrolls": [
-        {
-          "scroller": "dialog#218",
-          "x": 0,
-          "y": 0,
-          "png": "1440/s11-client-preview.s218-0-0.png",
-          "box": [
-            16,
-            16,
-            1408,
-            868
-          ]
-        },
-        {
-          "scroller": "dialog#218",
-          "x": 0,
-          "y": 3,
-          "png": "1440/s11-client-preview.s218-0-3.png",
-          "box": [
-            16,
-            16,
-            1408,
-            868
-          ]
-        }
-      ],
-      "sha256": "b1244a0055406de9aed69c4e7524db8a883153e5a65cf092b87cf143738d41d4",
+      "scrolls": [],
+      "sha256": "3e764776abbed12ec99c9d5dfb0a92ab10651543597704ffed09a14f7765e898",
       "size": {
         "width": 1440,
-        "height": 1073
+        "height": 1260
       },
-      "elements": 315,
+      "elements": 300,
+      "pageErrors": []
+    },
+    {
+      "id": "s13-supplements@1440",
+      "vp": "1440",
+      "stem": "s13-supplements",
+      "route": "/coach",
+      "screen": "Supplement plan editor",
+      "clicks": [
+        {
+          "label": "Clients",
+          "matches": 1,
+          "tag": "span",
+          "seen": "clients",
+          "scoped": false,
+          "recipe": "Clients"
+        },
+        {
+          "label": "EA Emma Anders Lifestyle",
+          "matches": 1,
+          "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
+          "recipe": "EA Emma Anders Lifestyle"
+        },
+        {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Supplements",
+          "matches": 1,
+          "tag": "div",
+          "seen": "supplements",
+          "scoped": true,
+          "recipe": "Supplements"
+        },
+        {
+          "label": "Set up plan",
+          "matches": 1,
+          "tag": "button",
+          "seen": "set up plan",
+          "scoped": true,
+          "recipe": "Set up plan"
+        }
+      ],
+      "png": "1440/s13-supplements.png",
+      "scrolls": [],
+      "sha256": "c6bf7e729439db31f0645aa4f7d38a246a739c831c167f7207364a2786746d5e",
+      "size": {
+        "width": 1440,
+        "height": 900
+      },
+      "elements": 105,
+      "pageErrors": []
+    },
+    {
+      "id": "s12-activity-targets@1440",
+      "vp": "1440",
+      "stem": "s12-activity-targets",
+      "route": "/coach",
+      "screen": "Activity targets editor",
+      "clicks": [
+        {
+          "label": "Clients",
+          "matches": 1,
+          "tag": "span",
+          "seen": "clients",
+          "scoped": false,
+          "recipe": "Clients"
+        },
+        {
+          "label": "EA Emma Anders Lifestyle",
+          "matches": 1,
+          "tag": "button",
+          "seen": "ea emma anders lifestyle",
+          "scoped": false,
+          "recipe": "EA Emma Anders Lifestyle"
+        },
+        {
+          "label": "Edit plans",
+          "matches": 1,
+          "tag": "button",
+          "seen": "edit plans",
+          "scoped": false,
+          "recipe": "Edit plans"
+        },
+        {
+          "label": "Activity targets",
+          "matches": 1,
+          "tag": "div",
+          "seen": "activity targets",
+          "scoped": true,
+          "recipe": "Activity targets"
+        },
+        {
+          "label": "Set targets",
+          "matches": 1,
+          "tag": "button",
+          "seen": "set targets",
+          "scoped": true,
+          "recipe": "Set targets"
+        }
+      ],
+      "png": "1440/s12-activity-targets.png",
+      "scrolls": [],
+      "sha256": "463d26a027569c9fac45e6593bbd74e1290b2b1bec536aaa942a11cd4111ed2a",
+      "size": {
+        "width": 1440,
+        "height": 900
+      },
+      "elements": 129,
       "pageErrors": []
     }
   ],
-  "failures": []
+  "failures": [],
+  "retried": 0
 }

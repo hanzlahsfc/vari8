@@ -20,6 +20,7 @@ import {
   ROSTER_PAGE_SIZE,
   rosterPageNumber,
 } from "@/lib/workspace/roster-query";
+import { InvitePanel } from "./invite-panel";
 import { SetupManager } from "./setup-manager";
 
 export const dynamic = "force-dynamic";
@@ -109,6 +110,8 @@ export default async function ClientSetupPage({
           process.env.ENABLE_CLIENT_SETUP,
         )}
       />
+
+      <InvitePanel workspaceId={workspaceId} canWrite={canWrite} />
 
       {prevHref !== null || nextHref !== null ? (
         <nav className="roster-pagination" aria-label="Client setup pages">

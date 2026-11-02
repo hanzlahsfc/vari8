@@ -1,10 +1,10 @@
 "use client";
 import { Check, Moon, Sun } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { normalizeHex } from "@/lib/ethereal-appearance";
-import { useReducedMotion } from "@/lib/reduced-motion";
+import { Input as Vari8Input } from "../vari8/components";
 import type { CoachState } from "./model";
 import { Button } from "./ui";
 
@@ -174,38 +174,39 @@ export function AppearanceControls({
             <span className="cd-accent-hash" aria-hidden="true">
               #
             </span>
-            <input
-              type="text"
-              aria-label="Accent hex value"
-              aria-invalid={!!error}
-              aria-describedby={error ? "cd-accent-error" : undefined}
-              className="cd-accent-hex"
-              spellCheck={false}
-              maxLength={7}
-              value={draft}
-              onFocus={() => {
-                draftFocused.current = true;
-              }}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/^#/, "");
-                setDraft(raw);
-                setError("");
-                if (raw.trim().length === 6) {
-                  const normalized = normalizeHex(raw.trim());
-                  if (normalized) applyAccent(normalized);
-                }
-              }}
-              onBlur={() => {
-                draftFocused.current = false;
-                commitDraft();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
+            <div className="cd-accent-hex-field">
+              <Vari8Input
+                label="Accent hex value"
+                aria-invalid={!!error}
+                aria-describedby={error ? "cd-accent-error" : undefined}
+                className="cd-accent-hex"
+                spellCheck={false}
+                maxLength={7}
+                value={draft}
+                onFocus={() => {
+                  draftFocused.current = true;
+                }}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/^#/, "");
+                  setDraft(raw);
+                  setError("");
+                  if (raw.trim().length === 6) {
+                    const normalized = normalizeHex(raw.trim());
+                    if (normalized) applyAccent(normalized);
+                  }
+                }}
+                onBlur={() => {
+                  draftFocused.current = false;
                   commitDraft();
-                }
-              }}
-            />
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitDraft();
+                  }
+                }}
+              />
+            </div>
           </span>
           <Button onClick={() => applyAccent(DEFAULT_ACCENT)}>
             Reset accent

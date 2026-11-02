@@ -12,6 +12,42 @@ const { accentControlColors, contrastRatio } = await import(
   `data:text/javascript;base64,${Buffer.from(executable).toString("base64")}`
 );
 
+test("the screenshot pink keeps its fill and uses the readable foreground", () => {
+  assert.ok(contrastRatio("#D93A7F", "#FFFFFF") < 4.5);
+  const colors = accentControlColors("#D93A7F");
+  assert.deepEqual(colors, {
+    background: "#D93A7F",
+    hoverBackground: "#DB4284",
+    foreground: "#000000",
+  });
+  assert.ok(contrastRatio(colors.background, colors.foreground) >= 4.5);
+  assert.ok(contrastRatio(colors.hoverBackground, colors.foreground) >= 4.5);
+});
+
+test("pastels and bright accents retain their exact fill and dark labels", () => {
+  for (const accent of [
+    "#EB91B8",
+    "#FFFFFF",
+    "#FFFF00",
+    "#00FF00",
+    "#00FFFF",
+  ]) {
+    const colors = accentControlColors(accent);
+    assert.equal(colors.background, accent);
+    assert.equal(colors.foreground, "#000000");
+  }
+});
+
+test("dark accents use white without changing a fill that already passes", () => {
+  for (const accent of ["#000000", "#123ABC", "#333333"]) {
+    const colors = accentControlColors(accent);
+    assert.equal(colors.background, accent);
+    assert.equal(colors.foreground, "#FFFFFF");
+  }
+  assert.equal(accentControlColors("#777777").background, "#777777");
+  assert.equal(accentControlColors("#777777").foreground, "#000000");
+});
+
 test("white preference never requires excessive darkening or lowers text contrast", () => {
   for (const accent of ["#FF0000", "#0088FF", "#888888"]) {
     const colors = accentControlColors(accent);

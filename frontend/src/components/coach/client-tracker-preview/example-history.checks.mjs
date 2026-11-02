@@ -105,6 +105,163 @@ const base = {
   ratingScale: "1-10",
 };
 
+test("creates deterministic, consecutive 56-day history ending on asOf", () => {
+  const config = { ...base, parameterIds: ["weight", "sleep", "steps"] };
+  const first = history.createExampleHistory(config, "2026-10-13");
+  const second = history.createExampleHistory(config, "2026-10-13");
+  assert.deepEqual(first, second);
+  assert.equal(first.entries.length, 56);
+  assert.equal(first.entries[0].date, "2026-08-19");
+  assert.equal(first.entries.at(-1).date, "2026-10-13");
+  for (const entry of first.entries) {
+    assert.ok(entry.values.sleep >= 6 && entry.values.sleep <= 9);
+  }
+  for (let index = 1; index < first.entries.length; index += 1) {
+    assert.equal(
+      Date.parse(`${first.entries[index].date}T00:00:00Z`) -
+        Date.parse(`${first.entries[index - 1].date}T00:00:00Z`),
+      86_400_000,
+    );
+  }
+});
+
+test("fills each configured input type using its canonical and structured format", () => {
+  const ids = [
+    "weight",
+    "time",
+    "sleep",
+    "hunger",
+    "bedtime",
+    "bp",
+    "daily-note",
+    "cardio-type",
+    "pms-symptoms",
+    "muscle-soreness",
+    "travel-day",
+    "period-start",
+    "cycle-day",
+  ];
+  const config = { ...base, parameterIds: ids };
+  const { entries, textValues } = history.createExampleHistory(
+    config,
+    "2026-10-13",
+  );
+  const values = entries.at(-1).values;
+  assert.deepEqual(Object.keys(values).sort(), ["hunger", "sleep", "weight"]);
+  assert.match(textValues["2026-10-13:time"], /^\d{2}:\d{2}$/);
+  assert.equal(textValues["2026-10-13:bp"], "118/76");
+  assert.ok(textValues["2026-10-13:daily-note"]);
+  assert.ok(
+    ["Walking", "Running", "Cycling", "Swimming", "Other"].includes(
+      textValues["2026-10-13:cardio-type"],
+    ),
+  );
+  const multi = JSON.parse(textValues["2026-10-13:pms-symptoms"]);
+  assert.ok(multi.choices.length > 0);
+  assert.ok(
+    multi.choices.every((choice) =>
+      p.parameters
+        .find((item) => item.id === "pms-symptoms")
+        .options.includes(choice),
+    ),
+  );
+  const location = JSON.parse(textValues["2026-10-13:muscle-soreness"]);
+  assert.equal(typeof location.location, "string");
+  assert.ok(location.rating >= 1 && location.rating <= 10);
+  const context = JSON.parse(textValues["2026-10-13:travel-day"]);
+  assert.ok(["No", "Yes"].includes(context.answer));
+  assert.equal(textValues["2026-10-13:period-start"], "no");
+  assert.equal(textValues["2026-08-19:period-start"], "yes");
+  assert.equal(textValues["2026-10-13:cycle-day"], undefined);
+  assert.equal(
+    view.textValueFor(
+      p.parameters.find((item) => item.id === "cycle-day"),
+      "2026-10-13",
+      textValues,
+    ),
+    "28",
+  );
+});
+
+test("respects custom bounds, decimals, valid configured choices, and zero", () => {
+  const definitions = [
+    {
+      id: "custom-zero",
+      label: "Zero is valid",
+      categoryId: "custom",
+      unit: "pts",
+      kind: "number",
+      summary: "average",
+      decimals: 2,
+      min: 0,
+      max: 0,
+    },
+    {
+      id: "custom-count",
+      label: "Custom count",
+      categoryId: "custom",
+      unit: "items",
+      kind: "number",
+      summary: "average",
+      decimals: 0,
+      min: 2,
+      max: 5,
+    },
+    {
+      id: "custom-option",
+      label: "Custom option",
+      categoryId: "custom",
+      unit: "",
+      kind: "number",
+      summary: "latest",
+      decimals: 0,
+      min: 0,
+      max: 2,
+      inputType: "choice",
+      options: ["Easy", "Steady", "Hard"],
+    },
+  ];
+  const config = {
+    ...base,
+    parameterIds: definitions.map((item) => item.id),
+    parameterDefinitions: definitions,
+    fieldOptions: { "custom-option": ["Easy", "Steady"] },
+  };
+  const { entries, textValues } = history.createExampleHistory(
+    config,
+    "2026-10-13",
+  );
+  for (const entry of entries) {
+    assert.equal(entry.values["custom-zero"], 0);
+    assert.ok(
+      entry.values["custom-count"] >= 2 && entry.values["custom-count"] <= 5,
+    );
+    assert.equal(Number.isInteger(entry.values["custom-count"]), true);
+    assert.ok(
+      ["Easy", "Steady"].includes(textValues[`${entry.date}:custom-option`]),
+    );
+  }
+});
+
+test("uses only active fields and leaves the caller's config untouched", () => {
+  const config = structuredClone({
+    ...base,
+    parameterIds: ["weight", "removed-field", "daily-note", "cycle-day"],
+    cycleTrackingEnabled: false,
+  });
+  const before = structuredClone(config);
+  const result = history.createExampleHistory(config, "2028-02-29");
+  assert.deepEqual(config, before);
+  assert.deepEqual(Object.keys(result.entries[0].values), ["weight"]);
+  assert.deepEqual(
+    Object.keys(result.textValues).filter((key) => key.endsWith(":cycle-day")),
+    [],
+  );
+  assert.ok(
+    Object.keys(result.textValues).every((key) => key.endsWith(":daily-note")),
+  );
+});
+
 test("derives every cycle day when cycle-day is configured without period-start", () => {
   const result = history.createExampleHistory(
     {
@@ -132,4 +289,33 @@ test("derives every cycle day when cycle-day is configured without period-start"
     result.entries.map((entry) => entry.values),
     Array(56).fill({}),
   );
+});
+
+test("does not fabricate a choice when the configured option list is empty", () => {
+  const definition = {
+    id: "custom-choice",
+    label: "Custom choice",
+    categoryId: "custom",
+    unit: "",
+    kind: "number",
+    summary: "latest",
+    decimals: 0,
+    min: 0,
+    max: 1,
+    inputType: "choice",
+    options: [],
+  };
+  const result = history.createExampleHistory(
+    {
+      ...base,
+      parameterIds: [definition.id],
+      parameterDefinitions: [definition],
+    },
+    "2026-10-13",
+  );
+  assert.deepEqual(
+    result.entries.map((entry) => entry.values),
+    Array(56).fill({}),
+  );
+  assert.deepEqual(result.textValues, {});
 });

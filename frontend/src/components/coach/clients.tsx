@@ -3,19 +3,26 @@ import {
   ArrowUpRight,
   CalendarDays,
   ClipboardCheck,
-  LayoutGrid,
-  List,
   MessageCircle,
-  Plus,
+  Pin,
   Trash2,
-  Users,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import {
+  Checkbox,
+  SegmentedControl,
+  Input as SharedInput,
+  Tabs,
+} from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
+import { FormGrid, Toolbar } from "../vari8/layouts";
+import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
+import { AthleteTimelineTab } from "./athlete/timeline-tab";
+import { AthleteTrackerTab } from "./athlete/tracker-tab";
 import {
   addDays,
   assignTemplate,
   type CoachClient,
-  DAYS,
   eventsBetween,
   formatDate,
   TODAY,
@@ -25,11 +32,11 @@ import {
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
 import { templateSetup } from "./template-setup";
-import { PreviewDialog } from "./templates";
 import "./workspace-polish.css";
 import {
   Avatar,
   Button,
+  DateField,
   Dialog,
   Empty,
   IconButton,
@@ -111,7 +118,7 @@ export function ClientsWorkspace() {
         title="Clients"
         description="The people behind the progress."
       />
-      <div className="cd-roster-toolbar">
+      <Toolbar className="cd-roster-toolbar">
         <SearchBox
           value={search}
           onChange={setSearch}
@@ -129,23 +136,17 @@ export function ClientsWorkspace() {
           options={["Name", "Attention", "Next check-in"]}
           onChange={setSort}
         />
-        <div className="cd-tabs">
-          <IconButton
-            label="Table view"
-            aria-pressed={view === "Table"}
-            onClick={() => setView("Table")}
-          >
-            <List size={17} />
-          </IconButton>
-          <IconButton
-            label="Card view"
-            aria-pressed={view === "Cards"}
-            onClick={() => setView("Cards")}
-          >
-            <LayoutGrid size={17} />
-          </IconButton>
-        </div>
-      </div>
+        <SegmentedControl
+          label="Athlete display"
+          value={view}
+          onValueChange={setView}
+          className="cd-roster-view-control"
+          options={[
+            { value: "Table", label: "Table" },
+            { value: "Cards", label: "Cards" },
+          ]}
+        />
+      </Toolbar>
       {list.length === 0 ? (
         <Surface>
           <Empty
@@ -291,13 +292,16 @@ export function ClientsWorkspace() {
   );
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
-  const { state, setState, navigate, route, toast } = useCoach();
+  const { state, setState, navigate, route } = useCoach();
   const tab = route.tab ?? "Overview";
-  const [preview, setPreview] = useState(false);
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
-  const [text, setText] = useState("");
-  const [newKind, setNewKind] = useState("Private coach note");
+  const [noteText, setNoteText] = useState("");
+  const [notePinned, setNotePinned] = useState(false);
+  const [todoText, setTodoText] = useState("");
+  const [todoDue, setTodoDue] = useState("");
+  const [taskText, setTaskText] = useState("");
+  const [taskDue, setTaskDue] = useState(addDays(TODAY, 7));
   const [extra, setExtra] = useState(false);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
@@ -306,232 +310,14 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         client.id === c.id ? fn(client) : client,
       ),
     }));
-  const activeSchedule = c.schedules.at(-1);
   const history = state.submissions
     .filter((s) => s.clientId === c.id)
     .sort((a, b) => b.date.localeCompare(a.date));
-  const next = nextEvent(state, c.id);
-  const assignedSetup = c.assignment
-    ? templateSetup(c.assignment.snapshot, c.assignment.variantId)
-    : undefined;
-  const hasEditablePlan =
-    Boolean(
-      c.plans &&
-        (c.plans.nutrition.mealPlan.draft ||
-          c.plans.nutrition.mealPlan.active ||
-          c.plans.nutrition.iifym.draft ||
-          c.plans.nutrition.iifym.active ||
-          c.plans.training.draft ||
-          c.plans.training.active ||
-          c.plans.goals.length > 0),
-    ) || c.habits.length > 0;
-  return (
+  const profilePanel = (
     <>
-      <PageTitle
-        title={c.name}
-        description={`${c.label} · ${c.phase} · Week ${c.week}`}
-        back={() => navigate({ section: "clients" })}
-        actions={
-          <>
-            <Button
-              onClick={() => navigate({ section: "check-ins", client: c.id })}
-            >
-              <CalendarDays size={16} />
-              Check-in calendar
-            </Button>
-            <Button
-              onClick={() => navigate({ section: "messages", client: c.id })}
-            >
-              <MessageCircle size={16} />
-              Open chat
-              {unreadCount(state, c.id) > 0 && (
-                <span>{unreadCount(state, c.id)}</span>
-              )}
-            </Button>
-          </>
-        }
-      />
-      <div className="cd-profile-summary">
-        <Avatar client={c} />
-        <div>
-          <strong>{c.email}</strong>
-          <small>
-            Coaching since {formatDate(c.coachingSince, { year: "numeric" })} ·{" "}
-            {c.heightCm} cm
-          </small>
-        </div>
-        <div className="cd-profile-next">
-          <span>Next check-in</span>
-          <strong>
-            {next
-              ? formatDate(next.date, { weekday: "short" })
-              : "Not scheduled"}
-          </strong>
-        </div>
-      </div>
-      <div className="cd-tabs cd-profile-tabs">
-        {["Overview", "Plans", "Check-ins", "Notes & tasks", "Onboarding"].map(
-          (t) => (
-            <Button
-              key={t}
-              aria-pressed={tab === t}
-              onClick={() =>
-                navigate({
-                  ...route,
-                  section: "clients",
-                  client: c.id,
-                  tab: t === "Overview" ? undefined : t,
-                })
-              }
-            >
-              {t}
-            </Button>
-          ),
-        )}
-      </div>
-      {tab === "Overview" && (
-        <div className="cd-profile-grid">
-          <Surface>
-            <h2>Client setup</h2>
-            <div className="cd-stat-row">
-              <span>Current bodyweight</span>
-              <strong>{c.entries.at(-1)?.weight} kg</strong>
-            </div>
-            <div className="cd-stat-row">
-              <span>Assigned template</span>
-              <span>
-                <strong>{c.assignment?.snapshot.name ?? "Not assigned"}</strong>
-                {assignedSetup && (
-                  <small>
-                    {assignedSetup.views.join(" · ")} · Nutrition:{" "}
-                    {assignedSetup.views.some(
-                      (view) => view === "Nutrition" || view === "Mealplan",
-                    )
-                      ? assignedSetup.nutrition
-                      : "not included"}{" "}
-                    · Habits: {assignedSetup.habits ? "enabled" : "off"}
-                  </small>
-                )}
-              </span>
-            </div>
-
-            <div className="cd-actions cd-wrap cd-profile-actions">
-              <Button disabled={!c.assignment} onClick={() => setPreview(true)}>
-                <EyeIcon />
-                Preview assigned tool
-              </Button>
-              <Button primary={!c.assignment} onClick={() => setAssign(true)}>
-                <Users size={14} />
-                {c.assignment ? "Change assignment" : "Assign template"}
-              </Button>
-              {c.assignment && (
-                <Button
-                  primary
-                  onClick={() =>
-                    navigate({
-                      ...route,
-                      section: "clients",
-                      client: c.id,
-                      plan: "setup",
-                      tab: "Plans",
-                    })
-                  }
-                >
-                  {hasEditablePlan ? "Edit plans" : "Continue setup"}
-                  <ArrowUpRight size={14} />
-                </Button>
-              )}
-            </div>
-            <ClientPlansSummary client={c} />
-          </Surface>
-          <div className="cd-profile-side">
-            <Surface>
-              <h2>Coaching rhythm</h2>
-              <p className="cd-muted">Recurring check-ins · Europe/Vienna</p>
-              <div className="cd-weekdays">
-                {DAYS.map((d, i) => (
-                  <button
-                    type="button"
-                    key={d}
-                    aria-label={d}
-                    aria-pressed={activeSchedule?.weekdays.includes(i) ?? false}
-                    onClick={() => {
-                      const oldDays = c.schedules.at(-1)?.weekdays ?? [];
-                      const weekdays = oldDays.includes(i)
-                        ? oldDays.filter((d) => d !== i)
-                        : [...oldDays, i];
-                      update((c) => ({
-                        ...c,
-                        schedules: [
-                          ...c.schedules.filter(
-                            (s) => s.effective !== addDays(TODAY, 1),
-                          ),
-                          { effective: addDays(TODAY, 1), weekdays },
-                        ],
-                      }));
-                      toast(
-                        "Recurring schedule updated from tomorrow. Submitted history retained.",
-                      );
-                    }}
-                  >
-                    {d.slice(0, 2)}
-                  </button>
-                ))}
-              </div>
-              {c.schedules.some((s) => s.effective > TODAY) && (
-                <p className="cd-caption">
-                  From tomorrow:{" "}
-                  {c.schedules
-                    .at(-1)
-                    ?.weekdays.map((d) => DAYS[d])
-                    .join(", ") || "No recurring days"}
-                </p>
-              )}
-              <h3>Additional dates</h3>
-              {state.extras
-                .filter((e) => e.clientId === c.id)
-                .map((e) => (
-                  <div className="cd-setting-row" key={e.id}>
-                    <span>
-                      {formatDate(e.date)}
-                      <small>
-                        {e.type} · {e.note}
-                      </small>
-                    </span>
-                    <Button
-                      onClick={() =>
-                        navigate({ section: "check-ins", client: c.id })
-                      }
-                    >
-                      Manage
-                    </Button>
-                  </div>
-                ))}
-              {!state.extras.some((e) => e.clientId === c.id) && (
-                <p className="cd-muted">No additional dates.</p>
-              )}
-              <Button
-                className="cd-profile-add-date"
-                onClick={() => setExtra(true)}
-              >
-                <Plus size={14} />
-                Add date
-              </Button>
-            </Surface>
-            <Surface>
-              <h2>Priority messages</h2>
-              <Toggle
-                label="Allow priority flags"
-                detail="Applies to new chat flags. Training set notes stay separate."
-                checked={c.priorityMessages}
-                onChange={(priorityMessages) =>
-                  update((c) => ({ ...c, priorityMessages }))
-                }
-              />
-            </Surface>
-          </div>
-        </div>
-      )}
+      {tab === "Overview" && <AthleteOverview client={c} />}
+      {tab === "Timeline" && <AthleteTimelineTab client={c} />}
+      {tab === "Tracker" && <AthleteTrackerTab client={c} />}
       {tab === "Plans" && (
         <ClientPlansSummary
           client={c}
@@ -582,176 +368,241 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
         </Surface>
       )}
       {tab === "Notes & tasks" && (
-        <div className="cd-profile-grid">
+        <div className="cd-nt-grid">
           <Surface>
-            <h2>Private coach notes</h2>
+            <h2>Private note</h2>
             <p className="cd-muted">Visible only in your workspace.</p>
-            {c.internalNotes.map((n) => (
-              <div className="cd-setting-row" key={n.id}>
-                <p>{n.text}</p>
-                <IconButton
-                  label="Remove coach note"
-                  onClick={() =>
-                    update((c) => ({
-                      ...c,
-                      internalNotes: c.internalNotes.filter(
-                        (x) => x.id !== n.id,
-                      ),
-                    }))
-                  }
-                >
-                  <Trash2 size={14} />
-                </IconButton>
-              </div>
-            ))}
-            <h3>General coaching notes</h3>
-            {c.generalNotes.map((n) => (
-              <p className="cd-note-text" key={n.id}>
-                {n.text}
-              </p>
-            ))}
-            <h3>Your to-dos</h3>
-            {c.coachTasks.map((t) => (
-              <label className="cd-task" key={t.id}>
-                <input
-                  type="checkbox"
-                  checked={t.complete}
-                  onChange={(e) =>
-                    update((c) => ({
-                      ...c,
-                      coachTasks: c.coachTasks.map((x) =>
-                        x.id === t.id
-                          ? { ...x, complete: e.target.checked }
-                          : x,
-                      ),
-                    }))
-                  }
-                />
-                <span>{t.title}</span>
-              </label>
-            ))}
-            <Select
-              label="Add to"
-              value={newKind}
-              onChange={setNewKind}
-              options={[
-                "Private coach note",
-                "Coach to-do",
-                "Client-assigned task",
-              ]}
+            <TextArea
+              label="Note"
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              rows={3}
             />
-            <label className="cd-field">
-              {newKind}
-              <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                rows={3}
-              />
-            </label>
+            <Toggle
+              label="Pin to overview"
+              checked={notePinned}
+              onChange={setNotePinned}
+            />
             <Button
               primary
-              disabled={!text.trim()}
+              disabled={!noteText.trim()}
               onClick={() => {
-                const id = uid("note");
-                update((c) =>
-                  newKind === "Private coach note"
-                    ? {
-                        ...c,
-                        internalNotes: [
-                          ...c.internalNotes,
-                          { id, text: text.trim() },
-                        ],
-                      }
-                    : newKind === "Coach to-do"
-                      ? {
-                          ...c,
-                          coachTasks: [
-                            ...c.coachTasks,
-                            { id, title: text.trim(), complete: false },
-                          ],
-                        }
-                      : {
-                          ...c,
-                          clientTasks: [
-                            ...c.clientTasks,
-                            {
-                              id,
-                              title: text.trim(),
-                              dueDate: addDays(TODAY, 7),
-                              status: "open",
-                            },
-                          ],
-                        },
-                );
-                setText("");
+                update((c) => ({
+                  ...c,
+                  internalNotes: [
+                    ...c.internalNotes,
+                    {
+                      id: uid("note"),
+                      text: noteText.trim(),
+                      ...(notePinned ? { pinned: true } : {}),
+                    },
+                  ],
+                }));
+                setNoteText("");
+                setNotePinned(false);
               }}
             >
-              Add
+              Add note
             </Button>
+            <div className="cd-nt-list">
+              {[...c.internalNotes]
+                .sort(
+                  (a, b) =>
+                    Number(b.pinned ?? false) - Number(a.pinned ?? false),
+                )
+                .map((n) => (
+                  <div className="cd-nt-row" key={n.id}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={n.pinned ? "cd-nt-pin is-pinned" : "cd-nt-pin"}
+                      onClick={() =>
+                        update((c) => ({
+                          ...c,
+                          internalNotes: c.internalNotes.map((x) =>
+                            x.id === n.id ? { ...x, pinned: !x.pinned } : x,
+                          ),
+                        }))
+                      }
+                    >
+                      <Pin
+                        size={13}
+                        aria-hidden="true"
+                        fill={n.pinned ? "currentColor" : "none"}
+                      />
+                      {n.pinned ? "Unpin" : "Pin"}
+                    </Button>
+                    <p data-pinned={n.pinned || undefined}>{n.text}</p>
+                    <IconButton
+                      label="Remove note"
+                      onClick={() =>
+                        update((c) => ({
+                          ...c,
+                          internalNotes: c.internalNotes.filter(
+                            (x) => x.id !== n.id,
+                          ),
+                        }))
+                      }
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </div>
+                ))}
+            </div>
+            {c.generalNotes.length > 0 && (
+              <details className="cd-nt-general">
+                <summary>General coaching notes</summary>
+                {c.generalNotes.map((n) => (
+                  <p className="cd-note-text" key={n.id}>
+                    {n.text}
+                  </p>
+                ))}
+              </details>
+            )}
           </Surface>
           <Surface>
-            <h2>Client-assigned tasks</h2>
-            <p className="cd-muted">
-              {c.clientTasks.filter((t) => t.status === "complete").length}{" "}
-              completed ·{" "}
-              {c.clientTasks.filter((t) => t.status === "overdue").length}{" "}
-              overdue
-            </p>
-            {c.clientTasks.map((t) => (
-              <div className="cd-client-task" key={t.id}>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={t.status === "complete"}
-                    onChange={(e) =>
+            <h2>Coach to-do</h2>
+            <p className="cd-muted">Your own reminders.</p>
+            <SharedInput
+              label="To-do"
+              value={todoText}
+              onChange={(e) => setTodoText(e.target.value)}
+            />
+            <DateField
+              label="Due (optional)"
+              value={todoDue}
+              onChange={setTodoDue}
+            />
+            <Button
+              primary
+              disabled={!todoText.trim()}
+              onClick={() => {
+                update((c) => ({
+                  ...c,
+                  coachTasks: [
+                    ...c.coachTasks,
+                    {
+                      id: uid("task"),
+                      title: todoText.trim(),
+                      complete: false,
+                      ...(todoDue ? { deadline: todoDue } : {}),
+                    },
+                  ],
+                }));
+                setTodoText("");
+                setTodoDue("");
+              }}
+            >
+              Add to-do
+            </Button>
+            <div className="cd-nt-list">
+              {c.coachTasks.map((t) => (
+                <div className="cd-nt-row" key={t.id}>
+                  <Checkbox
+                    className="cd-task"
+                    label={t.title}
+                    checked={t.complete}
+                    onCheckedChange={(checked) =>
                       update((c) => ({
                         ...c,
-                        clientTasks: c.clientTasks.map((x) =>
-                          x.id === t.id
-                            ? {
-                                ...x,
-                                status: e.target.checked
-                                  ? "complete"
-                                  : x.dueDate < TODAY
-                                    ? "overdue"
-                                    : "open",
-                              }
-                            : x,
+                        coachTasks: c.coachTasks.map((x) =>
+                          x.id === t.id ? { ...x, complete: checked } : x,
                         ),
                       }))
                     }
                   />
-                  {t.title}
-                </label>
-                <small>
-                  {formatDate(t.dueDate)} · {t.status}
-                </small>
-              </div>
-            ))}
+                  {t.deadline && <small>Due {formatDate(t.deadline)}</small>}
+                </div>
+              ))}
+            </div>
+          </Surface>
+          <Surface>
+            <h2>Client task</h2>
+            <p className="cd-muted">Assigned to the client app.</p>
+            <SharedInput
+              label="Task"
+              value={taskText}
+              onChange={(e) => setTaskText(e.target.value)}
+            />
+            <DateField label="Deadline" value={taskDue} onChange={setTaskDue} />
+            <Button
+              primary
+              disabled={!taskText.trim() || !taskDue}
+              onClick={() => {
+                update((c) => ({
+                  ...c,
+                  clientTasks: [
+                    ...c.clientTasks,
+                    {
+                      id: uid("task"),
+                      title: taskText.trim(),
+                      dueDate: taskDue,
+                      status: "open",
+                    },
+                  ],
+                }));
+                setTaskText("");
+              }}
+            >
+              Assign task
+            </Button>
+            <div className="cd-nt-list">
+              {c.clientTasks.map((t) => {
+                const status =
+                  t.status === "complete"
+                    ? "Done"
+                    : t.dueDate < TODAY
+                      ? "Overdue"
+                      : "Open";
+                return (
+                  <div className="cd-nt-row" key={t.id}>
+                    <span className="cd-nt-task-title">
+                      {t.title}
+                      <small>Due {formatDate(t.dueDate)}</small>
+                    </span>
+                    <Status text={status} />
+                  </div>
+                );
+              })}
+            </div>
           </Surface>
         </div>
       )}
-      {tab === "Onboarding" && (
-        <Surface>
-          <h2>Submitted onboarding</h2>
-          <p className="cd-muted">
-            Original answers retained with {c.name.split(" ")[0]}’s profile.
-          </p>
-          {c.onboarding.map((a) => (
-            <div className="cd-answer" key={a.question}>
-              <h3>{a.question}</h3>
-              <p>{a.answer}</p>
-            </div>
-          ))}
-        </Surface>
-      )}
-      {preview && c.assignment && (
-        <PreviewDialog
-          template={c.assignment.snapshot}
-          client={c}
-          onClose={() => setPreview(false)}
-        />
-      )}
+    </>
+  );
+  return (
+    <>
+      <AthleteProfileHeader
+        client={c}
+        onBack={() => navigate({ section: "clients" })}
+        onAssign={() => setAssign(true)}
+        onAddDate={() => setExtra(true)}
+      />
+      <Tabs
+        label="Client profile"
+        value={tab}
+        onValueChange={(value) =>
+          navigate({
+            ...route,
+            section: "clients",
+            client: c.id,
+            tab: value === "Overview" ? undefined : value,
+          })
+        }
+        className="cd-profile-tabs"
+        items={[
+          "Overview",
+          "Timeline",
+          "Tracker",
+          "Plans",
+          "Check-ins",
+          "Notes & tasks",
+        ].map((value) => ({
+          value,
+          label: value,
+          content: value === tab ? profilePanel : null,
+        }))}
+      />
       {assign && (
         <Dialog
           title={`Assign a setup to ${c.name}`}
@@ -808,9 +659,6 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       )}
     </>
   );
-}
-function EyeIcon() {
-  return <ArrowUpRight size={14} />;
 }
 function AssignmentInline({
   client,
@@ -912,36 +760,34 @@ export function ExtraDateDialog({
       }
       onClose={onClose}
     >
-      <Select
-        label="Athlete"
-        value={client}
-        options={state.clients.map((c) => ({ value: c.id, label: c.name }))}
-        onChange={setClient}
-      />
-      <label className="cd-field">
-        Date · Europe/Vienna
-        <input
-          type="date"
+      <FormGrid columns={2} className="cd-extra-date-grid">
+        <Select
+          label="Athlete"
+          value={client}
+          options={state.clients.map((c) => ({ value: c.id, label: c.name }))}
+          onChange={setClient}
+        />
+        <DateField
+          label="Date · Europe/Vienna"
           min={TODAY}
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
         />
-      </label>
-      <Select
-        label="Requested update"
-        value={type}
-        options={["Custom", "Full"]}
-        onChange={(v) => setType(v as "Full" | "Custom")}
-      />
-      <label className="cd-field">
-        Note to athlete
-        <textarea
+        <Select
+          label="Requested update"
+          value={type}
+          options={["Custom", "Full"]}
+          onChange={(v) => setType(v as "Full" | "Custom")}
+        />
+        <TextArea
+          label="Note to athlete"
+          className="cd-dialog-note"
           rows={3}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="What would you like to follow up on?"
         />
-      </label>
+      </FormGrid>
       {duplicate && (
         <p role="alert" className="cd-error">
           This athlete already has an additional request on this date.

@@ -2,7 +2,13 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 
-import type { MealPlanDraft, MealPlanTargetMode } from "@/lib/mealplan/service";
+import type { Food } from "@/lib/nutrition/math";
+import type {
+  MealPlanDraft,
+  MealTargets,
+  TargetValue,
+  VariantSchedule,
+} from "@/lib/mealplan/service";
 import { MealPlanVersionView } from "@/components/mealplan/plan-version-view";
 
 import {
@@ -12,146 +18,372 @@ import {
 } from "@/app/workspace/[workspaceId]/clients/[clientProfileId]/meal-plan/actions";
 
 /**
- * MEAL-PLAN-I1 — staff meal-plan draft editor (decision #115).
- *
- * Client-side editing model only: every value is entered manually,
- * serialized to the strict payload contract, and re-validated
- * server-side. Nothing is computed — no totals, percentages,
- * conversions, or variant selection. Blank numeric fields stay absent;
- * an entered "0" stays 0.
- *
- * The timezone control is an explicit confirmation: on an existing plan
- * it calls the timezone action; before the container exists it records
- * the confirmation locally and sends it with the first save.
+ * MEAL-PLAN-I1 + PR-M5 — staff meal-plan draft editor (decision #115,
+ * canvas-shaped payload). Edits the canvas `MealPlan` draft shape:
+ * plan name/start date, variants with optional daily targets, meals of
+ * catalog-food portions with approved swaps, a per-meal target, an
+ * active variant and a manual/weekly/cycle schedule. Blank numeric
+ * fields stay absent (#36); the server re-validates everything.
+ * Published versions are immutable (O11) — corrections publish a new
+ * version, never an edit.
  */
 
-const MODES: readonly MealPlanTargetMode[] = ["FIXED", "RANGE", "MINIMUM"];
-const MACROS = ["kcal", "proteinG", "carbsG", "fatG"] as const;
-type Macro = (typeof MACROS)[number];
+const TARGET_FIELDS = ["calories", "protein", "carbs", "fat"] as const;
+type TargetField = (typeof TARGET_FIELDS)[number];
 
-type TargetFields = { value: string; min: string; max: string };
+type TargetValueFields = {
+  kind: "" | "fixed" | "range" | "minimum";
+  value: string;
+  min: string;
+  max: string;
+};
+type TargetsFields = {
+  enabled: boolean;
+  style: "calories" | "macros";
+  fields: Record<TargetField, TargetValueFields>;
+};
+type SwapFields = { foodId: string; quantity: string; note: string };
+type PortionFields = { foodId: string; quantity: string; swaps: SwapFields[] };
 type MealFields = {
-  name: string;
+  id: string;
+  label: string;
   time: string;
   frequency: string;
-  foodText: string;
-  kcal: string;
-  proteinG: string;
-  carbsG: string;
-  fatG: string;
+  target: TargetsFields;
+  portions: PortionFields[];
 };
 type VariantFields = {
   id: string;
   label: string;
-  targetMode: MealPlanTargetMode;
-  targets: Record<Macro, TargetFields>;
+  dailyTarget: TargetsFields;
   meals: MealFields[];
 };
+type ScheduleFields =
+  | { mode: "manual"; selectedVariantId: string }
+  | { mode: "weekly"; days: Record<string, string> }
+  | {
+      mode: "cycle";
+      anchorDate: string;
+      steps: { variantId: string; days: string }[];
+    }
+  | { mode: "flexible" };
 
-const emptyTarget = (): TargetFields => ({ value: "", min: "", max: "" });
-const emptyTargets = (): Record<Macro, TargetFields> => ({
-  kcal: emptyTarget(),
-  proteinG: emptyTarget(),
-  carbsG: emptyTarget(),
-  fatG: emptyTarget(),
+const emptyTargetValue = (): TargetValueFields => ({
+  kind: "",
+  value: "",
+  min: "",
+  max: "",
+});
+const emptyTargets = (): TargetsFields => ({
+  enabled: false,
+  style: "macros",
+  fields: {
+    calories: emptyTargetValue(),
+    protein: emptyTargetValue(),
+    carbs: emptyTargetValue(),
+    fat: emptyTargetValue(),
+  },
 });
 const emptyMeal = (): MealFields => ({
-  name: "",
-  time: "",
+  id: "",
+  label: "",
+  time: "12:00",
   frequency: "",
-  foodText: "",
-  kcal: "",
-  proteinG: "",
-  carbsG: "",
-  fatG: "",
+  target: emptyTargets(),
+  portions: [],
 });
 const emptyVariant = (): VariantFields => ({
   id: "",
   label: "",
-  targetMode: "FIXED",
-  targets: emptyTargets(),
+  dailyTarget: emptyTargets(),
   meals: [emptyMeal()],
 });
 
-function toFields(draft: MealPlanDraft | null): VariantFields[] {
-  if (!draft || draft.variants.length === 0) return [emptyVariant()];
-  return draft.variants.map((v) => ({
+function targetsToFields(targets: MealTargets | undefined): TargetsFields {
+  const f = emptyTargets();
+  if (!targets) return f;
+  f.enabled = true;
+  f.style = targets.style;
+  for (const field of TARGET_FIELDS) {
+    const t = targets[field];
+    if (!t) continue;
+    const out = f.fields[field];
+    if (t.kind === "range") {
+      out.kind = "range";
+      out.min = String(t.min);
+      out.max = String(t.max);
+    } else {
+      out.kind = t.kind;
+      out.value = String(t.value);
+    }
+  }
+  return f;
+}
+
+function toFields(draft: MealPlanDraft | null): {
+  name: string;
+  startDate: string;
+  activeVariantId: string;
+  schedule: ScheduleFields;
+  variants: VariantFields[];
+} {
+  const variants: VariantFields[] = (draft?.variants ?? []).map((v) => ({
     id: v.id,
     label: v.label,
-    targetMode: v.targetMode,
-    targets: Object.fromEntries(
-      MACROS.map((m) => {
-        const t = v.targets[m];
-        const f = emptyTarget();
-        if (t !== null) {
-          if ("value" in t) f.value = String(t.value);
-          else {
-            f.min = String(t.min);
-            if ("max" in t) f.max = String(t.max);
-          }
-        }
-        return [m, f];
-      }),
-    ) as Record<Macro, TargetFields>,
+    dailyTarget: targetsToFields(v.dailyTarget),
     meals: v.meals.length
       ? v.meals.map((m) => ({
-          name: m.name,
-          time: m.time ?? "",
+          id: m.id,
+          label: m.label,
+          time: m.time,
           frequency: m.frequency ?? "",
-          foodText: m.foodText,
-          kcal: m.kcal === undefined ? "" : String(m.kcal),
-          proteinG: m.proteinG === undefined ? "" : String(m.proteinG),
-          carbsG: m.carbsG === undefined ? "" : String(m.carbsG),
-          fatG: m.fatG === undefined ? "" : String(m.fatG),
+          target: targetsToFields(m.target),
+          portions: m.portions.map((p) => ({
+            foodId: p.foodId,
+            quantity: String(p.quantity),
+            swaps: (p.swaps ?? []).map((s) => ({
+              foodId: s.foodId,
+              quantity: String(s.quantity),
+              note: s.note ?? "",
+            })),
+          })),
         }))
       : [emptyMeal()],
   }));
+  const schedule: ScheduleFields =
+    draft?.schedule?.mode === "weekly"
+      ? { mode: "weekly", days: { ...draft.schedule.days } }
+      : draft?.schedule?.mode === "cycle"
+        ? {
+            mode: "cycle",
+            anchorDate: draft.schedule.anchorDate,
+            steps: draft.schedule.steps.map((s) => ({
+              variantId: s.variantId,
+              days: String(s.days),
+            })),
+          }
+        : draft?.schedule?.mode === "flexible"
+          ? { mode: "flexible" }
+          : {
+              mode: "manual",
+              selectedVariantId:
+                draft?.schedule?.mode === "manual"
+                  ? draft.schedule.selectedVariantId
+                  : (draft?.activeVariantId ?? ""),
+            };
+  return {
+    name: draft?.name ?? "",
+    startDate: draft?.startDate ?? "",
+    activeVariantId: draft?.activeVariantId ?? "",
+    schedule,
+    variants: variants.length ? variants : [emptyVariant()],
+  };
 }
 
 const num = (s: string): number | undefined =>
   s.trim() === "" ? undefined : Number(s);
 
-function serializeVariants(variants: VariantFields[]): unknown {
+function serializeTargetValue(f: TargetValueFields): TargetValue | null {
+  if (f.kind === "") return null;
+  if (f.kind === "range") {
+    if (f.min.trim() === "" || f.max.trim() === "") return null;
+    return { kind: "range", min: num(f.min)!, max: num(f.max)! };
+  }
+  if (f.value.trim() === "") return null;
+  return { kind: f.kind, value: num(f.value)! };
+}
+
+function serializeTargets(f: TargetsFields): MealTargets | null {
+  if (!f.enabled) return null;
+  const fields =
+    f.style === "calories"
+      ? (["calories"] as const)
+      : (["protein", "carbs", "fat"] as const);
+  const out: Record<string, TargetValue> = {};
+  for (const field of fields) {
+    const t = serializeTargetValue(f.fields[field]);
+    if (t) out[field] = t;
+  }
+  return { style: f.style, ...out } as MealTargets;
+}
+
+function serializeSchedule(s: ScheduleFields): VariantSchedule | null {
+  if (s.mode === "manual") {
+    if (s.selectedVariantId.trim() === "") return null;
+    return { mode: "manual", selectedVariantId: s.selectedVariantId.trim() };
+  }
+  if (s.mode === "weekly") {
+    const days: Record<string, string> = {};
+    for (const [k, v] of Object.entries(s.days))
+      if (v.trim() !== "") days[k] = v;
+    return { mode: "weekly", days } as VariantSchedule;
+  }
+  if (s.mode === "flexible") return { mode: "flexible" };
   return {
-    variants: variants.map((v) => ({
+    mode: "cycle",
+    anchorDate: s.anchorDate.trim(),
+    steps: s.steps
+      .filter((st) => st.variantId.trim() !== "" && st.days.trim() !== "")
+      .map((st) => ({ variantId: st.variantId.trim(), days: num(st.days)! })),
+  };
+}
+
+function serializeDraft(input: {
+  name: string;
+  startDate: string;
+  activeVariantId: string;
+  schedule: ScheduleFields;
+  variants: VariantFields[];
+}): unknown {
+  const draft: Record<string, unknown> = {
+    variants: input.variants.map((v) => ({
       ...(v.id.trim() !== "" ? { id: v.id.trim() } : {}),
       label: v.label,
-      targetMode: v.targetMode,
-      targets: Object.fromEntries(
-        MACROS.map((m) => {
-          const f = v.targets[m];
-          if (
-            f.value.trim() === "" &&
-            f.min.trim() === "" &&
-            f.max.trim() === ""
-          )
-            return [m, null];
-          if (v.targetMode === "FIXED")
-            return [m, f.value.trim() === "" ? null : { value: num(f.value) }];
-          if (v.targetMode === "MINIMUM")
-            return [m, f.min.trim() === "" ? null : { min: num(f.min) }];
-          return [
-            m,
-            {
-              ...(f.min.trim() !== "" ? { min: num(f.min) } : {}),
-              ...(f.max.trim() !== "" ? { max: num(f.max) } : {}),
-            },
-          ];
-        }),
-      ),
-      meals: v.meals.map((m, j) => ({
-        order: j + 1,
-        name: m.name,
-        ...(m.time.trim() !== "" ? { time: m.time.trim() } : {}),
+      meals: v.meals.map((m) => ({
+        ...(m.id.trim() !== "" ? { id: m.id.trim() } : {}),
+        label: m.label,
+        time: m.time,
         ...(m.frequency.trim() !== "" ? { frequency: m.frequency.trim() } : {}),
-        foodText: m.foodText,
-        ...(num(m.kcal) !== undefined ? { kcal: num(m.kcal) } : {}),
-        ...(num(m.proteinG) !== undefined ? { proteinG: num(m.proteinG) } : {}),
-        ...(num(m.carbsG) !== undefined ? { carbsG: num(m.carbsG) } : {}),
-        ...(num(m.fatG) !== undefined ? { fatG: num(m.fatG) } : {}),
+        portions: m.portions.map((p) => ({
+          foodId: p.foodId.trim(),
+          quantity: num(p.quantity),
+          ...(p.swaps.length
+            ? {
+                swaps: p.swaps.map((s) => ({
+                  foodId: s.foodId.trim(),
+                  quantity: num(s.quantity),
+                  ...(s.note.trim() !== "" ? { note: s.note.trim() } : {}),
+                })),
+              }
+            : {}),
+        })),
+        ...(serializeTargets(m.target)
+          ? { target: serializeTargets(m.target) }
+          : {}),
       })),
+      ...(serializeTargets(v.dailyTarget)
+        ? { dailyTarget: serializeTargets(v.dailyTarget) }
+        : {}),
     })),
   };
+  if (input.name.trim() !== "") draft.name = input.name.trim();
+  if (input.startDate.trim() !== "") draft.startDate = input.startDate.trim();
+  if (input.activeVariantId.trim() !== "")
+    draft.activeVariantId = input.activeVariantId.trim();
+  const schedule = serializeSchedule(input.schedule);
+  if (schedule) draft.schedule = schedule;
+  return draft;
+}
+
+function TargetsEditor({
+  value,
+  onChange,
+  disabled,
+  testidPrefix,
+  legend,
+}: {
+  value: TargetsFields;
+  onChange: (next: TargetsFields) => void;
+  disabled: boolean;
+  testidPrefix: string;
+  legend: string;
+}) {
+  const fields =
+    value.style === "calories"
+      ? (["calories"] as const)
+      : (["protein", "carbs", "fat"] as const);
+  return (
+    <fieldset data-testid={testidPrefix}>
+      <legend>{legend}</legend>
+      <label>
+        <input
+          type="checkbox"
+          data-testid={`${testidPrefix}-enabled`}
+          checked={value.enabled}
+          onChange={(e) => onChange({ ...value, enabled: e.target.checked })}
+          disabled={disabled}
+        />{" "}
+        Set targets
+      </label>
+      {value.enabled ? (
+        <>
+          <select
+            aria-label={`${legend} style`}
+            data-testid={`${testidPrefix}-style`}
+            value={value.style}
+            onChange={(e) =>
+              onChange({
+                ...value,
+                style: e.target.value as TargetsFields["style"],
+              })
+            }
+            disabled={disabled}
+          >
+            <option value="calories">Calories only</option>
+            <option value="macros">Macros</option>
+          </select>
+          {fields.map((field) => {
+            const tv = value.fields[field];
+            const patch = (p: Partial<TargetValueFields>) =>
+              onChange({
+                ...value,
+                fields: { ...value.fields, [field]: { ...tv, ...p } },
+              });
+            return (
+              <span key={field} data-testid={`${testidPrefix}-${field}`}>
+                <label>{field}</label>
+                <select
+                  aria-label={`${field} kind`}
+                  data-testid={`${testidPrefix}-${field}-kind`}
+                  value={tv.kind}
+                  onChange={(e) =>
+                    patch({
+                      kind: e.target.value as TargetValueFields["kind"],
+                    })
+                  }
+                  disabled={disabled}
+                >
+                  <option value="">unset</option>
+                  <option value="fixed">fixed</option>
+                  <option value="range">range</option>
+                  <option value="minimum">minimum</option>
+                </select>
+                {tv.kind === "range" ? (
+                  <>
+                    <input
+                      aria-label={`${field} min`}
+                      data-testid={`${testidPrefix}-${field}-min`}
+                      inputMode="decimal"
+                      value={tv.min}
+                      onChange={(e) => patch({ min: e.target.value })}
+                      disabled={disabled}
+                    />
+                    <input
+                      aria-label={`${field} max`}
+                      data-testid={`${testidPrefix}-${field}-max`}
+                      inputMode="decimal"
+                      value={tv.max}
+                      onChange={(e) => patch({ max: e.target.value })}
+                      disabled={disabled}
+                    />
+                  </>
+                ) : tv.kind !== "" ? (
+                  <input
+                    aria-label={`${field} value`}
+                    data-testid={`${testidPrefix}-${field}-value`}
+                    inputMode="decimal"
+                    value={tv.value}
+                    onChange={(e) => patch({ value: e.target.value })}
+                    disabled={disabled}
+                  />
+                ) : null}
+              </span>
+            );
+          })}
+        </>
+      ) : null}
+    </fieldset>
+  );
 }
 
 export function MealPlanEditor({
@@ -159,6 +391,7 @@ export function MealPlanEditor({
   clientProfileId,
   plan,
   canWrite,
+  foods,
 }: {
   workspaceId: string;
   clientProfileId: string;
@@ -170,20 +403,31 @@ export function MealPlanEditor({
     draft: MealPlanDraft;
   } | null;
   canWrite: boolean;
+  /** Catalog foods as a plain array — Map is built client-side
+   * (React Flight boundary). */
+  foods?: Food[];
 }) {
+  const foodMap = foods ? new Map(foods.map((f) => [f.id, f])) : undefined;
+  const initial = toFields(plan?.draft ?? null);
   const [title, setTitle] = useState(plan?.title ?? "");
   const [timezone, setTimezone] = useState(plan?.timezone ?? "");
   const [timezoneSet, setTimezoneSet] = useState(plan?.timezone !== null);
   const [revision, setRevision] = useState(plan?.draftRevision ?? 0);
-  const [variants, setVariants] = useState<VariantFields[]>(() =>
-    toFields(plan?.draft ?? null),
+  const [name, setName] = useState(initial.name);
+  const [startDate, setStartDate] = useState(initial.startDate);
+  const [activeVariantId, setActiveVariantId] = useState(
+    initial.activeVariantId,
   );
+  const [schedule, setSchedule] = useState<ScheduleFields>(initial.schedule);
+  const [variants, setVariants] = useState<VariantFields[]>(initial.variants);
   const [effectiveDate, setEffectiveDate] = useState("");
   const [status, setStatus] = useState<
     | { tone: "ok" | "error"; message: string }
     | { tone: "idle"; message: string }
   >({ tone: "idle", message: "" });
   const [pending, startTransition] = useTransition();
+
+  const variantOptions = variants.filter((v) => v.id.trim() !== "");
 
   const patchVariant = (i: number, patch: Partial<VariantFields>) =>
     setVariants((vs) => vs.map((v, j) => (j === i ? { ...v, ...patch } : v)));
@@ -200,20 +444,6 @@ export function MealPlanEditor({
           : v,
       ),
     );
-  const patchTarget = (i: number, m: Macro, patch: Partial<TargetFields>) =>
-    setVariants((vs) =>
-      vs.map((v, vi) =>
-        vi === i
-          ? {
-              ...v,
-              targets: {
-                ...v.targets,
-                [m]: { ...v.targets[m], ...patch },
-              },
-            }
-          : v,
-      ),
-    );
 
   const confirmTimezone = () =>
     startTransition(async () => {
@@ -223,8 +453,6 @@ export function MealPlanEditor({
         return;
       }
       if (plan === null) {
-        // No container yet — record the explicit confirmation locally;
-        // the first draft save carries it and stamps provenance.
         setTimezoneSet(true);
         setStatus({
           tone: "ok",
@@ -255,7 +483,13 @@ export function MealPlanEditor({
         ...(timezoneSet && timezone.trim() !== plan?.timezone
           ? { timezone: timezone.trim() }
           : {}),
-        draft: serializeVariants(variants),
+        draft: serializeDraft({
+          name,
+          startDate,
+          activeVariantId,
+          schedule,
+          variants,
+        }),
       });
       if (r.status !== "ok") {
         setStatus({
@@ -307,6 +541,7 @@ export function MealPlanEditor({
           <MealPlanVersionView
             payload={plan.draft}
             testidPrefix="mealplan-draft-view"
+            foods={foodMap}
           />
         )}
       </div>
@@ -369,9 +604,37 @@ export function MealPlanEditor({
           </p>
         )}
 
+        <label htmlFor="mealplan-name">Plan name</label>
+        <input
+          id="mealplan-name"
+          data-testid="mealplan-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={120}
+          disabled={pending}
+        />
+        <label htmlFor="mealplan-start-date">Start date (YYYY-MM-DD)</label>
+        <input
+          id="mealplan-start-date"
+          data-testid="mealplan-start-date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          placeholder="YYYY-MM-DD"
+          disabled={pending}
+        />
+
         {variants.map((v, i) => (
           <fieldset key={i} data-testid={`variant-${i}`}>
             <legend>Variant {i + 1}</legend>
+            <label htmlFor={`variant-id-${i}`}>Id (blank = new)</label>
+            <input
+              id={`variant-id-${i}`}
+              data-testid={`variant-id-${i}`}
+              value={v.id}
+              onChange={(e) => patchVariant(i, { id: e.target.value })}
+              maxLength={64}
+              disabled={pending}
+            />
             <label htmlFor={`variant-label-${i}`}>Label</label>
             <input
               id={`variant-label-${i}`}
@@ -381,83 +644,28 @@ export function MealPlanEditor({
               maxLength={80}
               disabled={pending}
             />
-            <label htmlFor={`variant-mode-${i}`}>Target mode</label>
-            <select
-              id={`variant-mode-${i}`}
-              data-testid={`variant-mode-${i}`}
-              value={v.targetMode}
-              onChange={(e) =>
-                patchVariant(i, {
-                  targetMode: e.target.value as MealPlanTargetMode,
-                })
-              }
-              disabled={pending}
-            >
-              {MODES.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
 
-            {MACROS.map((m) => (
-              <fieldset key={m} data-testid={`target-${m}-${i}`}>
-                <legend>
-                  {m} target ({v.targetMode})
-                </legend>
-                {v.targetMode === "FIXED" ? (
-                  <input
-                    aria-label={`${m} value`}
-                    data-testid={`target-${m}-${i}-value`}
-                    inputMode="decimal"
-                    value={v.targets[m].value}
-                    onChange={(e) =>
-                      patchTarget(i, m, { value: e.target.value })
-                    }
-                    disabled={pending}
-                  />
-                ) : (
-                  <>
-                    <input
-                      aria-label={`${m} min`}
-                      data-testid={`target-${m}-${i}-min`}
-                      inputMode="decimal"
-                      value={v.targets[m].min}
-                      onChange={(e) =>
-                        patchTarget(i, m, { min: e.target.value })
-                      }
-                      disabled={pending}
-                    />
-                    {v.targetMode === "RANGE" ? (
-                      <input
-                        aria-label={`${m} max`}
-                        data-testid={`target-${m}-${i}-max`}
-                        inputMode="decimal"
-                        value={v.targets[m].max}
-                        onChange={(e) =>
-                          patchTarget(i, m, { max: e.target.value })
-                        }
-                        disabled={pending}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </fieldset>
-            ))}
+            <TargetsEditor
+              value={v.dailyTarget}
+              onChange={(t) => patchVariant(i, { dailyTarget: t })}
+              disabled={pending}
+              testidPrefix={`variant-${i}-daily-target`}
+              legend="Daily target"
+            />
 
             {v.meals.map((m, j) => (
               <fieldset key={j} data-testid={`meal-${i}-${j}`}>
                 <legend>Meal {j + 1}</legend>
-                <label htmlFor={`meal-name-${i}-${j}`}>Name</label>
+                <label htmlFor={`meal-label-${i}-${j}`}>Label</label>
                 <input
-                  id={`meal-name-${i}-${j}`}
-                  data-testid={`meal-name-${i}-${j}`}
-                  value={m.name}
-                  onChange={(e) => patchMeal(i, j, { name: e.target.value })}
+                  id={`meal-label-${i}-${j}`}
+                  data-testid={`meal-label-${i}-${j}`}
+                  value={m.label}
+                  onChange={(e) => patchMeal(i, j, { label: e.target.value })}
                   maxLength={80}
                   disabled={pending}
                 />
-                <label htmlFor={`meal-time-${i}-${j}`}>Time (optional)</label>
+                <label htmlFor={`meal-time-${i}-${j}`}>Time (HH:MM)</label>
                 <input
                   id={`meal-time-${i}-${j}`}
                   data-testid={`meal-time-${i}-${j}`}
@@ -479,35 +687,200 @@ export function MealPlanEditor({
                   maxLength={80}
                   disabled={pending}
                 />
-                <label htmlFor={`meal-food-${i}-${j}`}>Food</label>
-                <textarea
-                  id={`meal-food-${i}-${j}`}
-                  data-testid={`meal-food-${i}-${j}`}
-                  value={m.foodText}
-                  onChange={(e) =>
-                    patchMeal(i, j, { foodText: e.target.value })
-                  }
-                  maxLength={2000}
-                  rows={3}
-                  disabled={pending}
-                />
-                {MACROS.map((macro) => (
-                  <span key={macro}>
-                    <label htmlFor={`meal-${macro}-${i}-${j}`}>
-                      {macro} (optional)
-                    </label>
+
+                {m.portions.map((p, pi) => (
+                  <fieldset key={pi} data-testid={`portion-${i}-${j}-${pi}`}>
+                    <legend>Portion {pi + 1}</legend>
+                    <label>Food id</label>
                     <input
-                      id={`meal-${macro}-${i}-${j}`}
-                      data-testid={`meal-${macro}-${i}-${j}`}
-                      inputMode="decimal"
-                      value={m[macro]}
+                      aria-label={`portion ${pi + 1} food id`}
+                      data-testid={`portion-food-${i}-${j}-${pi}`}
+                      value={p.foodId}
                       onChange={(e) =>
-                        patchMeal(i, j, { [macro]: e.target.value })
+                        patchMeal(i, j, {
+                          portions: m.portions.map((x, xi) =>
+                            xi === pi ? { ...x, foodId: e.target.value } : x,
+                          ),
+                        })
+                      }
+                      maxLength={64}
+                      disabled={pending}
+                    />
+                    <label>Quantity</label>
+                    <input
+                      aria-label={`portion ${pi + 1} quantity`}
+                      data-testid={`portion-qty-${i}-${j}-${pi}`}
+                      inputMode="decimal"
+                      value={p.quantity}
+                      onChange={(e) =>
+                        patchMeal(i, j, {
+                          portions: m.portions.map((x, xi) =>
+                            xi === pi ? { ...x, quantity: e.target.value } : x,
+                          ),
+                        })
                       }
                       disabled={pending}
                     />
-                  </span>
+                    {p.swaps.map((s, si) => (
+                      <span key={si} data-testid={`swap-${i}-${j}-${pi}-${si}`}>
+                        <label>Swap food id</label>
+                        <input
+                          aria-label={`swap ${si + 1} food id`}
+                          data-testid={`swap-food-${i}-${j}-${pi}-${si}`}
+                          value={s.foodId}
+                          onChange={(e) =>
+                            patchMeal(i, j, {
+                              portions: m.portions.map((x, xi) =>
+                                xi === pi
+                                  ? {
+                                      ...x,
+                                      swaps: x.swaps.map((y, yi) =>
+                                        yi === si
+                                          ? { ...y, foodId: e.target.value }
+                                          : y,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            })
+                          }
+                          maxLength={64}
+                          disabled={pending}
+                        />
+                        <label>Swap qty</label>
+                        <input
+                          aria-label={`swap ${si + 1} quantity`}
+                          data-testid={`swap-qty-${i}-${j}-${pi}-${si}`}
+                          inputMode="decimal"
+                          value={s.quantity}
+                          onChange={(e) =>
+                            patchMeal(i, j, {
+                              portions: m.portions.map((x, xi) =>
+                                xi === pi
+                                  ? {
+                                      ...x,
+                                      swaps: x.swaps.map((y, yi) =>
+                                        yi === si
+                                          ? {
+                                              ...y,
+                                              quantity: e.target.value,
+                                            }
+                                          : y,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            })
+                          }
+                          disabled={pending}
+                        />
+                        <label>Note</label>
+                        <input
+                          aria-label={`swap ${si + 1} note`}
+                          data-testid={`swap-note-${i}-${j}-${pi}-${si}`}
+                          value={s.note}
+                          onChange={(e) =>
+                            patchMeal(i, j, {
+                              portions: m.portions.map((x, xi) =>
+                                xi === pi
+                                  ? {
+                                      ...x,
+                                      swaps: x.swaps.map((y, yi) =>
+                                        yi === si
+                                          ? { ...y, note: e.target.value }
+                                          : y,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            })
+                          }
+                          maxLength={500}
+                          disabled={pending}
+                        />
+                        <button
+                          type="button"
+                          data-testid={`swap-remove-${i}-${j}-${pi}-${si}`}
+                          onClick={() =>
+                            patchMeal(i, j, {
+                              portions: m.portions.map((x, xi) =>
+                                xi === pi
+                                  ? {
+                                      ...x,
+                                      swaps: x.swaps.filter(
+                                        (_, yi) => yi !== si,
+                                      ),
+                                    }
+                                  : x,
+                              ),
+                            })
+                          }
+                          disabled={pending}
+                        >
+                          Remove swap
+                        </button>
+                      </span>
+                    ))}
+                    <button
+                      type="button"
+                      data-testid={`swap-add-${i}-${j}-${pi}`}
+                      onClick={() =>
+                        patchMeal(i, j, {
+                          portions: m.portions.map((x, xi) =>
+                            xi === pi
+                              ? {
+                                  ...x,
+                                  swaps: [
+                                    ...x.swaps,
+                                    { foodId: "", quantity: "", note: "" },
+                                  ],
+                                }
+                              : x,
+                          ),
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      Add swap
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`portion-remove-${i}-${j}-${pi}`}
+                      onClick={() =>
+                        patchMeal(i, j, {
+                          portions: m.portions.filter((_, xi) => xi !== pi),
+                        })
+                      }
+                      disabled={pending}
+                    >
+                      Remove portion
+                    </button>
+                  </fieldset>
                 ))}
+                <button
+                  type="button"
+                  data-testid={`portion-add-${i}-${j}`}
+                  onClick={() =>
+                    patchMeal(i, j, {
+                      portions: [
+                        ...m.portions,
+                        { foodId: "", quantity: "", swaps: [] },
+                      ],
+                    })
+                  }
+                  disabled={pending}
+                >
+                  Add portion
+                </button>
+
+                <TargetsEditor
+                  value={m.target}
+                  onChange={(t) => patchMeal(i, j, { target: t })}
+                  disabled={pending}
+                  testidPrefix={`meal-${i}-${j}-target`}
+                  legend="Meal target"
+                />
+
                 {v.meals.length > 1 ? (
                   <button
                     type="button"
@@ -560,6 +933,192 @@ export function MealPlanEditor({
             Add variant
           </button>
         ) : null}
+      </section>
+
+      <section className="tracker-section">
+        <h2 className="tracker-section__title">Schedule</h2>
+        <label htmlFor="mealplan-active-variant">Active variant</label>
+        <select
+          id="mealplan-active-variant"
+          data-testid="mealplan-active-variant"
+          value={activeVariantId}
+          onChange={(e) => setActiveVariantId(e.target.value)}
+          disabled={pending}
+        >
+          <option value="">(none)</option>
+          {variantOptions.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.label || v.id}
+            </option>
+          ))}
+        </select>
+        <label htmlFor="mealplan-schedule-mode">Schedule mode</label>
+        <select
+          id="mealplan-schedule-mode"
+          data-testid="mealplan-schedule-mode"
+          value={schedule.mode}
+          onChange={(e) => {
+            const mode = e.target.value;
+            if (mode === "manual")
+              setSchedule({
+                mode: "manual",
+                selectedVariantId: activeVariantId,
+              });
+            else if (mode === "weekly")
+              setSchedule({ mode: "weekly", days: {} });
+            else
+              setSchedule({
+                mode: "cycle",
+                anchorDate: startDate,
+                steps: [],
+              });
+          }}
+          disabled={pending || schedule.mode === "flexible"}
+        >
+          <option value="manual">Manual</option>
+          <option value="weekly">Weekly</option>
+          <option value="cycle">Cycle</option>
+          {schedule.mode === "flexible" ? (
+            <option value="flexible" disabled>
+              Client chooses
+            </option>
+          ) : null}
+        </select>
+        {schedule.mode === "manual" ? (
+          <>
+            <label htmlFor="mealplan-schedule-selected">Selected variant</label>
+            <select
+              id="mealplan-schedule-selected"
+              data-testid="mealplan-schedule-selected"
+              value={schedule.selectedVariantId}
+              onChange={(e) =>
+                setSchedule({
+                  mode: "manual",
+                  selectedVariantId: e.target.value,
+                })
+              }
+              disabled={pending}
+            >
+              <option value="">(none)</option>
+              {variantOptions.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.label || v.id}
+                </option>
+              ))}
+            </select>
+          </>
+        ) : schedule.mode === "weekly" ? (
+          (["1", "2", "3", "4", "5", "6", "7"] as const).map((day, di) => (
+            <span key={day}>
+              <label>
+                {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][di]}
+              </label>
+              <select
+                aria-label={`weekly day ${day}`}
+                data-testid={`schedule-day-${day}`}
+                value={schedule.days[day] ?? ""}
+                onChange={(e) =>
+                  setSchedule({
+                    mode: "weekly",
+                    days: { ...schedule.days, [day]: e.target.value },
+                  })
+                }
+                disabled={pending}
+              >
+                <option value="">(none)</option>
+                {variantOptions.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.label || v.id}
+                  </option>
+                ))}
+              </select>
+            </span>
+          ))
+        ) : schedule.mode === "flexible" ? (
+          <p className="app-lede" data-testid="schedule-flexible">
+            Client chooses
+          </p>
+        ) : (
+          <>
+            <label htmlFor="schedule-anchor">Anchor date (YYYY-MM-DD)</label>
+            <input
+              id="schedule-anchor"
+              data-testid="schedule-anchor"
+              value={schedule.anchorDate}
+              onChange={(e) =>
+                setSchedule({ ...schedule, anchorDate: e.target.value })
+              }
+              placeholder="YYYY-MM-DD"
+              disabled={pending}
+            />
+            {schedule.steps.map((step, si) => (
+              <span key={si} data-testid={`schedule-step-${si}`}>
+                <select
+                  aria-label={`step ${si + 1} variant`}
+                  data-testid={`schedule-step-variant-${si}`}
+                  value={step.variantId}
+                  onChange={(e) =>
+                    setSchedule({
+                      ...schedule,
+                      steps: schedule.steps.map((x, xi) =>
+                        xi === si ? { ...x, variantId: e.target.value } : x,
+                      ),
+                    })
+                  }
+                  disabled={pending}
+                >
+                  <option value="">(variant)</option>
+                  {variantOptions.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.label || v.id}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  aria-label={`step ${si + 1} days`}
+                  data-testid={`schedule-step-days-${si}`}
+                  inputMode="numeric"
+                  value={step.days}
+                  onChange={(e) =>
+                    setSchedule({
+                      ...schedule,
+                      steps: schedule.steps.map((x, xi) =>
+                        xi === si ? { ...x, days: e.target.value } : x,
+                      ),
+                    })
+                  }
+                  disabled={pending}
+                />
+                <button
+                  type="button"
+                  data-testid={`schedule-step-remove-${si}`}
+                  onClick={() =>
+                    setSchedule({
+                      ...schedule,
+                      steps: schedule.steps.filter((_, xi) => xi !== si),
+                    })
+                  }
+                  disabled={pending}
+                >
+                  Remove step
+                </button>
+              </span>
+            ))}
+            <button
+              type="button"
+              data-testid="schedule-step-add"
+              onClick={() =>
+                setSchedule({
+                  ...schedule,
+                  steps: [...schedule.steps, { variantId: "", days: "" }],
+                })
+              }
+              disabled={pending}
+            >
+              Add step
+            </button>
+          </>
+        )}
 
         <button
           type="button"
@@ -576,7 +1135,8 @@ export function MealPlanEditor({
         <p className="app-lede">
           Publishing assigns this draft to the client as a new immutable version
           effective on the date below (start of that day in the confirmed
-          timezone).
+          timezone). Versions cannot be edited — corrections publish a new
+          version.
         </p>
         <label htmlFor="mealplan-effective-date">
           Effective date (YYYY-MM-DD)

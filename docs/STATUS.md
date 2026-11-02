@@ -1,3 +1,2993 @@
+## 2026-10-31 — Prompt 657 — #250 parent regression + real visuals
+
+- Committed the parent-level regressions through real `RemoteDashboardTab` + `useOwnMessages` (not callback-only): initial fetch fails → open conversation → error → Retry → recovered messages render; profile switch mounts a new lifecycle with no stale error.
+- Evidence corrected: the client surface resolves a dark token set under both `prefers-color-scheme` values — light-theme served visuals are unavailable on that surface; the independent computed contrast for #BE7595 stands at 6.17:1. Collapsed Home shows View conversation; error/Retry appears after explicit activation (accepted behavior, unchanged).
+- Captures on app_p657 (:3300): `p657-desktop-dark.png`, `p657-mobile-dark.png` (inbound+outbound bubbles, "Sun 1 Nov" separator, 08:23 timestamps, attachment card, wrapped long URL), `p657-retry-error.png` (error + Retry before recovery) — computed colors logged (in rgb(31,31,34) / out rgb(235,145,184)).
+- Test/docs-only change; focused 57/57. Final candidate gates remain due at integration.
+
+## 2026-10-31 — Prompt 655 — #250 contrast, Home retry, coach dates
+
+- F1: outbound small text (sender, meta, unavailable) now at full opacity on the resolved `--cd-action-bg` pink — computed `rgb(235,145,184)` bg with `rgb(0,0,0)` text ≈ 9.4:1, well over 4.5:1; inbound keeps `--cd-raised` + `--cd-text`. No global token changes.
+- F2: `useOwnMessages`'s `loadFailed` now also surfaces through the external/Home path — the parent's hook flag arrives as the `loadFailed` prop on `RemoteConversation`, and Retry routes through `onMessagesRefresh` (no second competing fetch). Regressions: failure → error → Retry calls the host refresh; a stale external error does not paint on an identity change (new session collapses to View — accepted activation).
+- F3: coach day grouping uses the same Vienna `viennaDayKey` contract (exported from `messages.tsx`); midnight + DST (last-Sunday March) boundaries tested.
+- F4: evidence corrected — real computed colors recorded per capture; the client surface resolves a dark token set under both `prefers-color-scheme` values in this lane (no light variant on that surface), which is reported, not implied by filenames.
+- Gates (Node v24.22.1): focused 55/55; full suite 149 files / 1785; clean build + typecheck; eslint 0; format/index/diff clean.
+
+## 2026-10-31 — Prompt 653 — #250 consolidated presentation repair
+
+- F1: one timezone contract (Europe/Vienna) for day grouping (`dayKey` en-CA Vienna), separator labels and bubble times — no more UTC slicing vs Vienna vs browser-local mixing. Midnight-boundary regression asserts 1 separator for 23:30Z/00:30Z and Vienna times 01:30/02:30.
+- F2: bubbles/dividers/text now use the established `--cd-*` theme tokens (`--cd-raised`, `--cd-action-bg`/`--cd-action-text`, `--cd-text`) — both themes resolve real tokens.
+- F3: `overflow-wrap: anywhere` + `word-break: break-word` with `white-space: pre-wrap` — long unbroken URLs wrap without horizontal overflow; multiline preserved.
+- F4: `<time>` carries `dateTime` + full `aria-label` datetime; ticks are `aria-hidden` decorative with real `.sr-only` status text ("Sent"/"Read by coach").
+- F5: `useOwnMessages` exposes `loadFailed` (session-guarded); initial failure renders an accessible error + working Retry through the session-scoped refresh.
+- Gates (Node v24.22.1): focused 53/53 (midnight/DST + a11y + retry regressions); full suite 149 files / 1783; clean build; tsc 0; eslint 0; format/index/diff clean.
+- Served evidence (app_p653 :3300): open conversation screenshots desktop+mobile with bubbles, separators, timestamps, wrapped long text and attachment cards.
+
+## 2026-10-31 — Prompt 651 — served messaging polish
+
+- Client `RemoteConversation` now renders the WhatsApp-style thread: inbound/outbound bubbles (`.cb-msg-in`/`.cb-msg-out` with sender labels), per-day separators, per-bubble `<time>` timestamps, inbound `Unread` marker, outbound ticks (`✓` sent / `✓✓` read) derived only from server `wire.read` — nothing invented. Attachments render inside bubbles via the existing MediaCard; unavailable entries degrade to the established note.
+- The coach thread already carried the `cd-bubble`/`cd-message` layout — no change needed there.
+- Presentation regression: bubble alignment counts, ticks from wire.read, one separator per day, timestamps on every bubble (51/51 focused total).
+- Gates (Node v24.22.1): focused 51/51; full unfiltered suite 149 files / 1781; clean `rm -rf .next` build compiled + typecheck; `eslint` 0; `prettier`/`index`/`diff-check` clean.
+- Served replay (app_p651 :3300): client login → bubbles render → reply sends; desktop 1280 + mobile 390 screenshots taken.
+
+## 2026-10-31 — Prompt 648 — #249 contract-aligned numeric validation
+
+- `toCanvasMessage` numeric checks now enforce the wire contract, not mere finiteness: `byteSize` must be an integer in 1..MAX_MEDIA_BYTES (reusing the browser-safe `lib/media-policy` cap — same rule as `assertMediaByteSize`); `position` a non-negative integer. `Number.isFinite` replaced. Adjacent required-field checks re-inspected against the contract — string fields unchanged, no invented limits.
+- Committed regression extensions in `tests/unit/client-composer.dom.test.tsx`: byteSize −1/0/fractional/over-cap/wrong-type/NaN/Infinity rejected; 1 and MAX_MEDIA_BYTES accepted; position −1/fractional/string/NaN/Infinity rejected; 0 and positive integer accepted; boundary sizes mixed with valid neighbors (mo-min/mo-max download, invalid neighbors inert).
+- Gates (fresh, Node v24.22.1): focused 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+
+## 2026-10-31 — Prompt 646 — #249 whole-entry validation + committed regressions
+
+- `toCanvasMessage` now requires the FULL wire contract per entry — `mediaObjectId`, `fileName`, `contentType` (non-empty strings), `byteSize` and `position` (finite numbers) — before producing a downloadable attachment. Any malformed field, null/primitive entry, or non-array collection degrades to an inert "attachment unavailable" card (`mediaObjectId: ""` — no mint fetch, no download action); valid neighbors still render and download.
+- Correction on the record: the eight-case table I reported for P644 was NOT in the committed diff — the edit anchor missed and the test file shipped without it. This commit adds the real regressions in `tests/unit/client-composer.dom.test.tsx`: the eight-case boundary table (absent/null/non-array/primitive collections; null/primitive/malformed entries incl. the reviewer's exact `{mediaObjectId:"mo-real", fileName:null, contentType:123, byteSize:"big"}` case; mixed valid+invalid), plus a real-coach-`MediaCard` test with a mocked download mint asserting the malformed entry exposes no download while the valid neighbor does.
+- Gates (fresh, Node v24.22.1): focused `client-composer.dom` + `client-app-shell.dom` 50/50; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0. Predecessor broad-suite/build results remain valid only for that source.
+
+## 2026-10-31 — Prompt 644 — #249 toCanvasMessage collection/entry boundary
+
+- `toCanvasMessage` mirrors the client mapping: `Array.isArray` on the field plus a null/object guard per entry — absent/null/non-array/primitive `attachments` can't crash, null/primitive/malformed entries become inert "attachment unavailable" cards (no fabricated media id, no active download), and valid neighbors are never discarded.
+- Table-driven regression (8 cases) through the REAL mapper + the real coach MediaCard.
+- Gates (Node v24.22.1): focused 49/49; tsc 0; eslint 0; prettier/index/diff-check clean. Broad suite remains 1779/1779 from the predecessor run (not relabeled fresh).
+
+## 2026-10-31 — Prompt 642 — #249 batch cancellation + coach rendering (2 findings)
+
+- (1) Batch cancellation: the sequential attach loop created each AbortController lazily — a queued chip had nothing to abort and later uploads never started after the active one was removed. Controllers are now created upfront at reservation; the abort path `continue`s the batch; a pre-aborted queued file is skipped without uploading. Remaining files always settle uploaded/failed/cancelled; slots and session-change cancellation preserved.
+- (2) Coach rendering: `toCanvasMessage` validates wire metadata (non-string contentType/fileName, non-number byteSize, missing id → "attachment unavailable"); the real coach `media.tsx` MediaCard guards non-string `item.type`. Tested against the real card and the real mapping — no mocks hiding the boundary.
+- Regressions +4 (remove active first of 3 → rest complete; remove queued → skipped before upload; identity change cancels batch safely; real coach card + mapping on malformed metadata).
+- Gates (Node v24.22.1): focused 49/49; full unfiltered suite 149 files / 1779; eslint 0; prettier clean; index:check OK; diff-check 0; fresh-worktree build clean.
+
+## 2026-10-31 — Prompt 640 — #249 consolidated repair (5 findings)
+
+- (1) Shared media policy moved to `lib/media-policy.ts` (dependency-free, browser-safe); `lib/storage.ts` re-exports it — one policy, both sides, server validation unchanged.
+- (2) 10-cap enforced atomically: `slots` ref reserves synchronously per selection before uploads start; overlapping picks (6+6) stage only 10.
+- (3) Keyed error lifecycle (`{kind,text}`): over-limit alert clears when count drops under cap; failed-attach alert clears with last failed chip; send errors unaffected.
+- (4) Malformed attachments validated at runtime (missing id/name, non-string contentType/byteSize) → "unavailable" note; `MediaCard` guards non-string `item.type`; tested against the real card.
+- (5) Multiline composer pattern: textarea, Enter sends, Shift+Enter newline, `isComposing` never sends.
+- Regressions +5 (45/45 file). Gates (Node v24.22.1): focused 45/45 + shell 5/5… wait recount: composer 40 + shell 5 = 45; full suite 1774/1775 with one unrelated flake (photos-panel passes isolated); eslint 0; prettier/index/diff clean; fresh-worktree build PENDING — earlier build-0 claim corrected: it had not been re-run since the storage import.
+
+## 2026-10-31 — Prompt 638 — #249 attachment UI safeguards (5 items)
+
+- (1) 10-attachment cap enforced at pick time: `staged.length` + selection is counted; only the first `10 - staged.length` files stage, the rest are skipped with an explanatory alert — excess never uploads.
+- (2) Client-side prechecks reuse the server's own rules (`MAX_MEDIA_BYTES` + `mediaKindForContentType` from `lib/storage`, a zero-import module): non-allowlisted or out-of-size files stage as failed chips without uploading; the file input gets `accept` built from `MEDIA_CONTENT_TYPES` keys. Server validation stays authoritative.
+- (3) The failed-attachment alert clears when the last failed chip is removed; while other failed chips remain it stays visible (send errors are unaffected — only the attach message is cleared).
+- (4) Malformed attachment metadata (missing mediaObjectId/fileName, null entries) renders an "attachment is unavailable" note instead of crashing the thread; the rest of the message still renders.
+- (5) Composer Enter is now IME-safe: `!e.nativeEvent.isComposing` guards send.
+- Regressions (+5): 10-cap, unsupported-type precheck, error-clear-on-remove, malformed metadata, plus the retained cancellation/identity/payload-key coverage (37/37 in the file). Mock isolation fixed (`mockReset` for the upload mock).
+- Gates (Node v24.22.1): focused 42/42; full unfiltered suite 149 files / 1772 tests; build/tsc/eslint(0 err)/prettier/index/diff-check clean.
+- Kept separate (not changed): S3 byte-size enforcement + orphaned-upload retention; no client delete authority added. Browser replay still unprovisioned (SEED_* credential set unavailable).
+
+## 2026-10-31 — Prompt 637 — #249 attachment retry + cancellation repair (2 findings)
+
+- (1) Request id bound to the logical payload: `requestId` is now `{fp, id}` where `fp` = trimmed text + sorted uploaded media ids — an unchanged retry reuses the same key; editing text or changing the attachment set mints a new payload id, so a response-lost success can never clear newer content. Success clears the key.
+- (2) Upload cancellation: every staged upload holds an AbortController (`uploadWorkspaceMedia` now takes `signal` through both the intent POST and the presigned PUT); Remove is enabled while pending and aborts + drops the chip, freeing the composer. A cancelled upload's late completion/rejection is ignored — the chip can't be restored and its media can't be linked. Identity change aborts all pending uploads.
+- Regressions (+3): unchanged retry reuses the key while edited text/new attachment mints fresh keys; remove-during-upload cancels and frees the composer with no restore/link.
+- Removed-media retention: media DELETE is staff `library.manage` — removing a chip leaves the uploaded media_object unlinked server-side; no client delete authority exists and none was added. Documented as a storage-retention gap, not repaired.
+- Gates (Node v24.22.1): focused 38/38; full unfiltered `npm run test` 149 files / 1768 tests all pass; `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: authenticated browser replay could not be provisioned this round (fresh lane seeding requires the full SEED_* credential set not available in-session); DOM regressions + disposable-PG integration cover the path.
+
+## 2026-10-31 — Prompt 635 — client messaging attachments end to end
+
+- Client `ChatComposer` gains the attach path on the existing W2-T8 contract: file input stages each pick, `uploadWorkspaceMedia` (intent + presigned PUT) per file, staged chips show uploading/failed state and allow removal; pending blocks send, failed blocks with an alert until removed; `sendOwnMessage` links only uploaded `mediaObjectIds` (text may be empty). Draft/error/pending/staged are session-scoped like the rest of the composer — an upload resolving after an identity switch is discarded. `RemoteConversation` renders `WireAttachment[]` via the existing `MediaCard` authorized-download mint (`GET /api/v1/media/:ws/:id`). Coach composer/thread already had the flow; preview/demo surfaces unchanged (local-only).
+- Regressions (`client-composer.dom`, +4): upload→link→clear, failed upload blocks send until removed (text-only retry keeps draft/idempotency), account switch mid-upload discards staged media, received attachment renders its download card.
+- Gates (Node v24.22.1, npm ci): focused 35/35; full unfiltered `npm run test` 149 files / 1765 tests all pass; disposable-PG integration `api-v1-message-attachments`+`api-v1-staff-messages` 14/14 (integration_p635); `next build` 0; `tsc` 0; `eslint` 0 errors; `prettier --check .` clean; `index:check` OK; `git diff --check` 0.
+- Limitation: no live authenticated browser replay this round (the app_p615 lane was decommissioned at P634 cleanup); served-surface DOM probes cover the flow.
+
+## 2026-10-31 — Prompt 632 — #248 session-owned activation + task-mutation guards (2 findings)
+
+- (1) Conversation activation is stored as the session object, not the identity string: `open = activated === session.current || (session.current?.id === 1 && !collapsible)`. Only the first session opens automatically on an explicitly-presented surface; every later session — including A → B → A and same-workspace profile switches, even while staying on Messages — starts collapsed and requires fresh activation before mark-read. Same-session nav usability and collapsed zero-view auto-selection preserved.
+- (2) All task mutations session-guarded: `taskConfirmed.current.set` moved inside `taskSession.current === s`, and the failure path checks the session before intent — a stale success can never regress the new session's confirmed revision (probe: late rev-2 success after the new session confirmed rev-3; the next write uses expectedRevision 3), and a stale failure cannot roll back or clear current paint.
+- Regressions (served components): profile switch on an open surface requires fresh activation; home activation never survives A → B → A; late old-session success cannot regress the confirmed revision; stale failure cannot roll back; plus the earlier consolidated suite.
+- Gates (fresh, Node v24.22.1): focused 31/31; full unfiltered `npm run test` 1760/1761 — the one failure is the known `system-index` F9 5s timeout flake (18/18 passing on isolated rerun); `tsc --noEmit` 0; `next build` 0; `eslint` 0 errors; `prettier --check .` clean; `index`/`index:check` OK; `git diff --check` 0.
+- Served replay on `app_p615` (:3300, Playwright): mount = 0 `POST /messages/read`; explicit view = exactly 1 and `p632staffunread01` cleared in DB; send = 1 POST + 1 GET and rendered; Messages section live; `/client` demo = zero message traffic; mobile 390 = 0 mark-read on mount.
+
+## 2026-10-31 — Prompt 630 — #248 unified conversation identity + activation lifecycle (4 findings)
+
+- One lifecycle model on `beta/p618-client-composer` (head `5343c5a1`): identity = `{workspaceId}:{clientProfileId}` plus a session object per transition (`useIdentitySession`) — every switch, including same-workspace profile changes and A → B → A, creates a new session; stale async continuations compare the captured session object, so an old request can never be re-admitted when the identity string matches again. `useOwnMessages(identity)` tickets `refresh` against the session; `ChatComposer` guards its whole send lifecycle (`session.current !== s`) and resets draft/error/pending on identity change; the read marker is session-scoped single-flight (`marking.current === s`, finally guarded so an old read can't clear the new session's flag); task queues/intents/confirmed revisions reset on the identity key and guard `taskSession.current === s`.
+- Conversation `open` is derived, not `useState` initial: `(openView?.key === key && openView.collapsible === collapsible) || !collapsible` — an identity switch starts collapsed, and a deliberate Messages nav click (which flips `collapsible` off) opens the thread even when the section was already auto-selected.
+- Regressions: pending send success AND failure across A → B → A (new session's draft/error untouched); same-workspace profile change refetches thread + tasks; open conversation never transfers to the next account (collapsed until new activation); a pending old read cannot block the new account's read (fires while old POST in flight); zero-view auto-selection loads collapsed and a deliberate Messages nav click is the explicit activation. Preserved: idempotent sends, retained drafts, ordering, task serialization, preview separation.
+- Gates (fresh, Node v24.22.1): focused 27/27; full unfiltered `npm run test` **149 files / 1757 tests — all passed in one run**; `tsc --noEmit` 0; `next build` 0; `eslint` 0 errors; `prettier --check .` clean; `index`/`index:check` OK; `git diff --check` 0.
+- Served replay on `app_p615` (:3300, Playwright): mount = 0 `POST /messages/read`; explicit view = exactly 1 and seeded `p630staffunread01` cleared in DB; send = 1 POST + 1 GET and rendered; Messages section live; `/client` demo = zero message traffic; mobile 390 = 0 mark-read on mount.
+
+## 2026-10-31 — Prompt 628 — #248 async-state repair (four review findings)
+
+- Repaired all four findings on `beta/p618-client-composer` (head `77e8913f`). (1) Account-switch isolation: `useOwnMessages` is now one account-scoped, ticketed `refresh(ws)` — every post-mount update (mount load, post-send resync, mark-read resync) issues through it, and `ChatComposer` guards the whole send lifecycle (`account` ref + reset-on-switch effect): a pending send from the old workspace never writes the new account's messages, draft, error or pending flag. (2) Explicit activation: `ClientApp` passes `collapsible={section !== "messages"}` — a zero-view template auto-selecting Messages renders the thread collapsed behind "View conversation"; only a direct nav selection opens it. (3) One ordering authority: the composer no longer fetches/pushes snapshots — `onSent(ws)` and the mark-read resync both route through the same sequenced `refresh`; a single-flight `marking` ref covers POST+resync so no duplicate read POST can issue. (4) Task mutation ordering: per-task write queue — toggles paint immediately, writes serialize on the latest confirmed revision (`taskConfirmed`/`taskIntent`/`taskQueues` refs, seeded from the fetch, cleared on account switch), and a failed write reverts to the latest confirmed wire, never a closed-over snapshot.
+- Tests: `client-composer.dom` 17 (stale send after account switch, pre-read snapshot cannot resurrect unread or re-mark, serialized rapid toggles on confirmed revision, failed queued write → confirmed wire, stale-account write discarded), `client-app-shell.dom` 5 (zero-view auto-select loads collapsed and marks only after activation). Gates on Node v24.22.1: focused 22/22; full `npm run test` 1750/1752 — the two failures are unrelated environmental timeouts (`system-index` F9, `visual-reference`) that both pass on isolated rerun; `next build` 0; `tsc --noEmit` 0; `eslint` 0 errors; `prettier --check .` clean; `index`/`index:check` OK; `git diff --check` 0.
+- Served replay on `app_p615` (:3300, Playwright): mount = 0 mark-read + collapsed "View conversation"; explicit view = exactly 1 `POST /messages/read` and the seeded `p628staffunread01` row cleared in DB; send = 1 POST + 1 GET and rendered; Messages section serves the thread; `/client` demo send = zero message traffic. Mobile 390px: nav lists Messages, collapsed conversation usable, 0 mark-read on mount.
+
+## 2026-10-31 — Prompt 626 — P625 client-composer repair (PR #248 review findings)
+
+- Repaired all seven findings on `beta/p618-client-composer`: `RemoteConversation` keeps the Home conversation collapsed until the client explicitly views it and mark-read fires only on that view while the server still reports unread inbound (staff-sent) rows; `toClientMessage` unread is direction-aware (`senderKind === "STAFF" && !wire.read` — the client's own unread-to-coach sends never count as inbound); the conversation is its own `messages` nav section enabled only by `context === "standalone" && own`, so it stays reachable on templates without Dashboard; one sync path (`useOwnMessages` sequenced load + the composer's post-send snapshot — no second GET, stale in-flight reads and account changes discarded); task toggles hold optimistic parent wire state so a message resync cannot paint them back; the `/client` demo surfaces (MobileApp/ClientDesktop/MobileMessages) reverted to local-only — an authenticated preview now sends zero message traffic. `ChatComposer` takes an `onSync` wire callback; `DashboardBuilder`/`DetailContent` thread `onMessagesSync`; the chat detail renders the same served conversation component.
+- Gates (Node v24.22.1): focused tests 17/17; full `npm run test` 149 files / 1747 tests; `next build` clean; `tsc --noEmit` 0; `eslint` 0 errors (warnings match pre-existing patterns); `prettier --check .` clean; `npm run index` + `index:check` OK; `git diff --check` 0.
+- Served replay on `app_p615` (localhost:3300, Playwright, `p615-client@vari8.test`): collapsed mount issued no `POST /messages/read`; clicking "View conversation" fired exactly one and cleared the Unread badge (verified `message_read` row for the seeded staff message); one send = 1 POST + 1 GET and the reply rendered immediately; the Messages nav section serves the same thread; `/client?client=client-007&tab=messages` send produced zero message traffic (`P626-DEMO-LOCAL` absent from the thread).
+
+## 2026-10-30 — Prompt 565 — STATUS format fix + populated-tracker popover evidence (PR #235)
+
+- `docs/STATUS.md` reformatted via `prettier --write` (1 line); `npm run format:check` clean; `git diff --check` + `git diff --check origin/Vari8-Beta...HEAD` both 0.
+- Browser gap closed: signed in as seeded demo client **Emma Anders** (`emma.anders@canvas-demo.test`, linked by `50-demo-coverage.seed.ts` — not Amara, whose `/me` honestly shows "Tracking is not set up") on a fresh lane `app_p565` (`app-db-1`, migrate + `seed:dev`, `localhost:3300`). `/me` → Tracker mounts `.ct-tracking` with 5 editable `tc-value-trigger` fields — a genuinely populated standalone route.
+- Measured `tc-text-popover` on `/me` at 320/360/390/430px: parents `.ct-tracking`; computed `max-width` = `cqw-64` (224/264/294/334px); right edge inside viewport (−44/−44/−38/−12px). Typing works, Escape closes, outside-click dismisses, reopen works at all four widths. First pass caught a real 2px right-edge overflow at 430px (fieldset rendered at the `cqw-64` cap, wider than `placePanel`'s 320px estimate) — `placePanel` now clamps `left` against the real container-query bound (`estWidth` accounts for `trackW−64` when `trackW≤420`); re-verified 430px right edge 418 < 430.
+- Gates (Node v24.22.1): frontend `test` 322/322, `typecheck` 0, biome format applied; root `tsc --noEmit` 0, eslint 0 errors (9 file-local pre-existing warnings), prettier clean, `index`/`index:check` OK (unchanged), `git diff --check` 0. Parity suite state unchanged: 3 pre-existing environment failures (PR-203 pin, missing 35/70 capture set) — same three on head and base; not called green, not repaired here.
+- Reviewer-cited remaining honest limits: comment popover shares the identical portal/placePanel path (no coach-mode trigger is seeded on this lane); Aleks's remote build URL remains unavailable; colour picker unassessed.
+
+## 2026-10-30 — Prompt 563 — Portalled tracker popover boundary (PR #235 finding)
+
+- Independent review found `tc-text-popover`/`tc-comment-popover`/`tc-time-popover` portal to `.cd-full-client-preview` (or `document.body` fallback), outside `.ct-tracking` — the new `@container`/`cqw` clamp never applied. Verified in Chromium: parent `cd-full-client-preview`, computed `max-width: 1256px` (inert `100vw` clamp), 320px popover overflowing the 390px frame by 155px.
+- Repair (`tracker-cell.tsx`, frontend + canvas copies): popover portal target now `closest(".ct-tracking, .cd-full-client-preview, .ct-shared-tracker")` so `cqw` and the `@container (max-width: 420px)` clamp apply; `placePanel` bounds against the nearest `.cd-preview-frame`/`.cd-dialog` and its `panelWidth` respects the boundary width. `position: fixed` is unaffected by `container-type` (no paint containment), so placement, focus, Escape/outside-click dismissal and scroll behaviour are unchanged.
+- Browser-verified on the product app (`localhost:3300`, lane `app_p563`, coach Sofia Miller → templates → Client preview → 390px frame): popover parents `.ct-tracking`, computed `max-width: 292px`, right edge 40px inside the frame. Same result on the frontend preview (:3100). Standalone `/me` at 320–430px shows Amara's honest empty state (no tracker configured); no standalone route mounts `.ct-tracking` in this seed — noted honestly, not claimed.
+- Gates (Node v24.22.1): frontend `test` 322/322, `typecheck` 0, biome check clean; root `tsc --noEmit` 0, `index:check` OK, eslint 0 errors (9 file-local pre-existing warnings unchanged), prettier clean, `git diff --check` 0; `npm run test` full unfiltered suite loads completely — 1689/1692 pass; the 3 failures are pre-existing environment prerequisites (`tools/parity` PR-203 dependency pin + missing 35-recipe/70-screen capture set) in files untouched by this PR; the earlier 5s `system-index` timeouts pass at normal timeout and passed in this run.
+- `tools/parity/reference` nested deps installed (`pngjs`) — the prior 1637+2-load-failure result is superseded by the full-suite run above.
+
+## 2026-10-30 — Prompt 561 — Canvas app-side repair for the same three defects (PR #235)
+
+- Merged `origin/Vari8-Beta` (`27c2aab4`) into `beta/p556-responsive-repair`; only `docs/STATUS.md` conflicted — kept both entries.
+- Live product instance: `app-db-1` (postgres:16, host 127.0.0.1:5433 — `vari8-db-1` in docs is stale; actual container `app-db-1`), disposable lane `app_p561`, `prisma migrate deploy` + `npm run seed:dev` (idempotent, 11 modules; `40-media` needed a task-owned signing secret + media dir). Launch: `PORT=3300 npm run dev` with `DATABASE_URL=.../app_p561` and `.env.development` flags (all product surfaces on). Seed credentials were invocation-specific and never committed. Seeded client profile: Amara Lewis.
+- Reproduced all three defects on UNMODIFIED product code (stash of the canvas patch, `localhost:3300`, seed coach Sofia Miller → `/coach?section=templates` → Client preview → 390px frame on 1280px viewport): tracker labels wrap per-character with input/unit clipped, `Protein (g)/Carbs (g)/Fat (g)` headers overlap, weight-line tail touches the date labels.
+- Repair: identical 8-file diff applied to the `components/canvas/coach/` copies after verifying they are byte-identical ports of the pre-fix frontend files and `.cd-client-app-shell` is the same `container-type: inline-size` ancestor (tsx differs only in `@/components/canvas` import paths).
+- Browser evidence (Chromium, localhost:3300): before/after captured for all three in the embedded preview; `/me` (seeded client Amara Lewis) at 320/390px renders the same components — Daily overview + Nutrition empty state clean, tracker/plans navigable, bottom nav unobstructed, inputs editable; desktop-width preview shows rail/table correctly. Aleks's remote build unverified; colour picker unassessed.
+- Gates (Node v24.22.1): `npm run index` + `index:check` OK; `tsc --noEmit` 0; `eslint` 0 errors/101 pre-existing warnings; `next build` pass; `vitest` 1637/1637 — `parity-https`/`visual-reference` suites fail to load on missing `pngjs` (pre-existing on base); prettier clean; `git diff --check` 0. Visual-parity now applies to canvas routes but the harness can't run here without `pngjs` — no baseline/mask/tolerance changes.
+
+## 2026-10-30 — Prompt 556 — Aleks screenshot layout repairs (frontend preview)
+
+- Reproduced all three reported defects against current `Vari8-Beta` (`5926c6f`) in the real browser: embedded client preview (`/coach?section=templates` → Preview → 390px phone frame on a 1280px viewport), Next dev on `127.0.0.1:3100`, Node v24.22.1, 100% zoom. The reported build URL was not supplied; reproduction is against local Beta — stated distinction.
+- Root cause 1+2: `@media (max-width: …)` breakpoints respond to the browser viewport, not the preview frame, so the 390px embedded preview kept desktop layouts. Tracker `ct-day-core` kept its category rail and `ct-daily-field` its 170–220px control column, crushing labels to character-per-line and clipping input/unit; `mp-client-food-table` kept `table-layout: fixed` with `nowrap` `Protein (g)/Carbs (g)/Fat (g)` headers that collided. Root cause 3: `SmoothTrend` reserved only 7px below the plot + 2px caption margin, so the weight line tail visually touched the `cb-pc-smooth-dates` labels in the Daily overview dashboard.
+- Repair (8 files, `frontend/` only): `.ct-tracking` and `.mp-client-plan` are now `container-type: inline-size` and their max-width breakpoints became `@container` queries (760/640/700/420px; tracker-cell popover clamp now `cqw`), preserving the same layouts at standalone narrow widths while adapting embedded previews to actual available width. `smooth-trend` bottom padding 7→15 and dates caption margin 2→6 give ~23px plot/label separation; data, calculations and aggregation unchanged.
+- Browser-verified before/after at the reproduced 390px frame plus desktop-width preview and 320px standalone `/client`: labels and units readable, headers no longer overlap, chart labels separated, no overflow or hidden fields; inputs still editable.
+- Gates on Node v24.22.1: frontend `format` clean, `lint` 0 problems, `typecheck` 0, `test` 322/322, `build` pass; repo `index:check` OK, `tsc --noEmit` 0, `eslint` 0 errors/101 warnings (pre-existing), prettier clean on changed paths, `git diff --check` 0. Visual-parity gate N/A: harness covers the production app routes, not `frontend/` preview surfaces; no baseline refresh, tolerance or mask change. Colour picker defect: no screenshot/repro steps supplied — not fixed, listed in the PR. Draft PR to Vari8-Beta; stop for independent review.
+
+## 2026-10-30 - Studio meal plan: saved meal Assign
+
+- Saved meal Assign in the studio meal plan page creates the client owned copy
+  through the saved meals API. The library row is upserted, then one assignment
+  POST creates the copy. Ambiguous client names are refused and the page shows
+  the failure message.
+- The workspace id now flows from `app/(canvas)/ethereal/page.tsx` into the
+  meal plan workspace. Test: `tests/unit/mealplan-assign.test.ts`.
+- Gates: typecheck, lint, format:check, index:check, build and the new test exit 0. Full `npm run test` fails only in `tests/unit/parity-https.test.ts` and
+  `tests/unit/visual-reference.test.ts` (missing `pngjs` package), and both fail
+  the same way on the base commit.
+
+## 2026-10-29 - Merge: nutrition accuracy gate manifest mode
+
+- Manifest mode in `scripts/check-nutrition-source-accuracy.ts`, with probe
+  coverage in `tests/unit/nutrition-accuracy-gate-probes.test.ts`.
+- Comment punctuation tidied in the training, notes and refresh route files.
+
+## 2026-10-29 - Repair round 1: reset demo flag, default seed coverage, claim corrections
+
+- Reset fix: "Reset coach workspace" re-seeded with the demo default, so a real
+  workspace got fixture check-in submissions, extras and schedules back. The
+  store now exposes `demo` and the reset calls `seedState({ demo })`. Test:
+  `tests/unit/coach-reset-demo-gate.test.tsx` resets a workspace holding demo
+  state and asserts no submissions, extras, schedules or board events remain.
+  Reverting the one call site turned it red; restored, it passes.
+- Default seed coverage: `tests/integration/seed-credentials.test.ts` has a new
+  case that runs the seed with `VARI8_SEED_DEMO` unset and asserts the sign-in
+  client can sign in and owns only the Amara Lewis profile, and the no-profile
+  client can sign in and owns nothing. Removing the `linkClientProfile` call in
+  `scripts/seed/00-workspace.seed.ts` turned it red; restored, it passes.
+- Corrected claims. The default seed is not unchanged: it now binds Amara Lewis
+  (not James Reed) to the sign-in client, adds a no-profile client, and writes
+  credential accounts for the demo users in the check-ins seed. The demo gate
+  covers the canvas model and its read path only. The check-ins seed
+  (`33-checkins`) already wrote its database rows before this work and is not
+  gated.
+
+### Known limits
+
+- The `?demo=` URL switch mounts fixtures client side in every build. No server
+  data is involved.
+
+## 2026-10-29 - Merge: check-in fixtures, photo tiles, seed client link and credentials
+
+- Four verified tips merged as merge commits, never squashed: 3a47c445 (check-in
+  fixture canvas model and read path gated on the demo flag; check-ins seed DB rows not gated), 2fbbcf36 (release orphaned media
+  mints on gallery reload), 85db3644 and caa5c2e8 (seed client linked to the
+  Amara Lewis profile, every linked demo client holds a login). The last two
+  were resolved together once; the seed files keep the 85db3644 content.
+- Conflicts: `components/canvas/client-app/photos.tsx` stays deleted as on Beta
+  (no importers; the gallery behavior lives in the workspace photos panel);
+  seed files keep the Amara Lewis link plus the optional second coach fixture;
+  this file is the union of both entries. The frontend tree matches Beta.
+
+## 2026-10-29 - Merge: wave 2 trunk tail (flexible schedule, tracker columns, temporary nutrition plan, stored calories)
+
+- Four verified tips merged into this branch as merge commits in order, never
+  squashed: 58aab0ff (flexible schedule mode in the meal plan payload, which
+  carries the client own meal plan view, tracker migration pair and demo export
+  refresh), 1d6e3415 (tracker column groups read model), 69e310d4 (temporary
+  nutrition plan table, write route and client own read), 6be4e7fa (stored
+  calories column and canvas actuals that prefer it).
+- Saved meal assign and message attachments ride inside these tips. Beta already
+  carried the flexible schedule type and the canvas handling of it, so the
+  canvas schedule files keep the Beta behavior and add only the server payload
+  validation from the tip.
+- Conflicts resolved at function level. Beta won the canvas plan editor, the
+  nutrition model, the meal plan workspace, the seed credential expectations and
+  the seed link order. The tips won the daily nutrition select (day type and
+  plan followed), the staff daily page calories cell and the added tests. Both
+  appended service blocks in the daily entry service were kept. Generated index
+  docs were regenerated, never hand edited.
+- The frontend tree stays at the Beta state. The attach changes the tip carried
+  into frontend/ were reverted, and the unit test that only exercised that copy
+  was reduced to the canvas case.
+- Adapted callers: the snapshot parameter fixture in the display order test now
+  carries the decimals and summary fields.
+
+## 2026-10-29 - Merge: client app and coach work items into the trunk base
+
+- Merged the client plans views work item and the supplement plan and activity
+  target scoping into `slice/r2-s1` (off `Vari8-Beta` `1d026325`).
+- `frontend/` stays byte identical to the FRONTEND tip `8e6503f6`; the Beta
+  side won on every frontend path. The unmounted `nutrition-targets.tsx`
+  client component is removed.
+- Gates: typecheck, lint, format:check, index:check and build exit 0. Unit
+  tests pass except the two inherited suites that cannot load `pngjs`.
+  Integration suite on a disposable database: 86 files, 1087 tests passed.
+
+## 2026-10-28 - Merge: newest Vari8-Beta tip into the full package branch
+
+- Merged `origin/Vari8-Beta` tip `07183902be14053b868a1fe47773b6aba6b2beda`
+  into `promote/full-package-a`, bringing in the merged PR 225 off
+  lookup and PR 228 label entry catalogue work together with the earlier
+  promoted slices. Documentation conflicts resolved by union plus index
+  regeneration; the parity comparer keeps both the geometry bound
+  recorder rule and the changed pixel budget, and the comparer component
+  pins were re-recorded for the merged files. The nutrition accuracy gate
+  script now carries the manifest documented invocation. Three visual
+  reference tests remain bound to the Beta canvas capture contract of 35
+  recipes while the merged canvas has 37 recipes and one added step
+  scope; that reactivation decision is recorded for review outside the
+  repository. All other gates green on the merge head.
+
+## 2026-10-28 - Promotion: nutrition source accuracy gate (issue 184)
+
+- Promoted `beta/catalogue-accuracy-gate` (PR 223) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-catalogue-accuracy-gate`: merged PR 223
+  nutrition source accuracy gate; wired services where they apply.
+
+## 2026-10-28 - Promotion: meal plan payload and IIFYM actuals
+
+- Promoted `beta/pr-m5-mealplan-payload` (PR 114) by Hanzlah and
+  `beta/iifym-actuals` (PR 221) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-iifym-actuals`: merged PR 221 IIFYM actuals and PR 114
+  meal-plan payload; the meal-plan screens consume the payload end to
+  end, and the actuals helpers carry the nullable-macro semantics.
+
+## 2026-10-28 - Promotion: nutrition source adapters (BLS + CIQUAL, issue 182)
+
+- Promoted `beta/nutrition-source-adapters` (PR 222) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-nutrition-source-adapters`: BLS and
+  CIQUAL food source adapters, shared source helpers, dedupe decision
+  handling, the dry-run script, workbook fixtures and unit tests.
+
+## 2026-10-28 - Merge: Vari8-Beta tip into the full package branch
+
+- Merged `origin/Vari8-Beta` tip `a90eaf283f357e3d3aa7f4d3abb8a5ab01e2ae45`
+  into `promote/full-package-a` so the package branch carries the nine
+  newest Beta promotions: parity HTTPS harness, daily numeric series,
+  check-in review read model, coach notes and tasks, workspace
+  preferences, invitations, habits, dashboard configuration and
+  template definitions. Three generated documentation conflicts
+  resolved by union plus index regeneration; no product file
+  conflicted. Gate battery, fresh database lifecycle and browser pass
+  rerun on the merge head; all green.
+
+## 2026-10-28 - Promotion: template definitions report (PR-M4)
+
+- Promoted `beta/pr-m4-template-definitions` (PR 112) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m4-template-definitions`: the PR-M4
+  template definitions build report.
+
+## 2026-10-28 - Promotion: dashboard configuration (PR-M9)
+
+- Promoted `beta/pr-m9-dashboard-config` (PR 122) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m9-dashboard-config`: dashboard config
+  schema, adapter and the dashboard editor surface.
+
+## 2026-10-28 - Promotion: habits service (PR-M7)
+
+- Promoted `beta/pr-m7-habits` (PR 118) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-m7-habits`: habits service with frequency semantics
+  and completion tracking.
+
+## 2026-10-28 - Promotion: workspace invitations (PR-SV4)
+
+- Promoted `beta/pr-sv4-invitations` (PR 124) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv4-invitations`: workspace invitation
+  service and API routes including the single-invitation route.
+
+## 2026-10-28 - Promotion: workspace preferences (PR-M2)
+
+- Promoted `beta/pr-m2-preferences` (PR 108) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-m2-preferences`: workspace preferences
+  service and API routes including the sidebar preference endpoint.
+
+## 2026-10-28 - Promotion: coach notes, tasks and tracker comments (PR-M3)
+
+- Promoted `beta/pr-m3-notes-tasks` by Hanzlah into `Vari8-Beta` via
+  `promote/hp-m3-notes-tasks`: coach note and coach task services with
+  restore lifecycle, tracker comments, audit resource types and the
+  workspace API routes.
+
+## 2026-10-28 - Promotion: check-in review read model (SV5, issue 171)
+
+- Promoted `beta/checkin-review` (PR 200) by Hanzlah into `Vari8-Beta`
+  via `promote/hp-checkin-review`: check-in instances read model and
+  tracker context for the review surface, with series display ordering.
+
+## 2026-10-28 - Promotion: daily entry numeric series (PR-SV2)
+
+- Promoted `beta/pr-sv2-daily-series` (PR 152) by Hanzlah into
+  `Vari8-Beta` via `promote/hp-sv2-daily-series`: a numeric series read
+  endpoint for daily entries with boundary and service coverage.
+
+## 2026-10-28 - Promotion: parity HTTPS harness (issue #202)
+
+- Promoted `beta/parity-https` (PR 203) by Hanzlah into `Vari8-Beta` via
+  `promote/hp-parity-https`: production parity served over HTTPS, shared
+  PID/PGID/start listener-ownership predicate, bounded mutation proof and
+  retained superseded evidence.
+
+## 2026-10-28 - Vari8-Beta d1c40810 merged into the verified full-package line on promote/full-package-a
+
+- Merge commit `91f9491f` on branch `promote/full-package-a` (worktree
+  `.worktrees/promote-a`). Parents: `b5ec89ea` (the verified full-package
+  line, unchanged) and `d1c40810` (`origin/Vari8-Beta` tip at fetch time).
+- The Vari8-Beta side adds PR #162 (supplement plan service, schema and
+  actions), PR #193 (check-in enablement: trial seed sign-in, client
+  rating controls, walkthrough runbook), PR #199 (https e2e harness
+  contract, lane ports, boot-check classification) and PR #201 (k6
+  load-gate tooling with lifecycle proofs), plus boot checks, logging
+  and RBAC matrix coverage for `supplementPlans`.
+- Conflicts: three, all documentation. `docs/STATUS.md` resolved as a
+  union of both entry histories, newest first. `docs/index/DATA-MODEL.md`
+  and `docs/index/SYMBOLS.md` regenerated with `npm run index` from the
+  merged schema and source tree. No unclassifiable conflict occurred.
+- Gates on this head: `npm ci` root 0 and frontend 0, `npx prisma
+generate` 0, `npx prisma validate` 0, `npm run format:check` 0,
+  `npm run typecheck` 0, `npm run lint` 0 errors and 89 warnings,
+  `npm run test` 0 (107 files, 1289 tests), `npm run test:integration` 0
+  (66 files, 923 tests, disposable lane database `app_fp_w2p0`),
+  `npm run build` 0, `npm run index` 0, `npm run index:check` 0,
+  `cd frontend && npm run lint` 0, `cd frontend && npm run check` 0.
+- `npm run test:e2e` initially reported four failures, all in colour
+  assertions written before the canvas token update: the specs expected
+  the earlier wash values while the shipped tokens are `#F5F5F5` /
+  `#080808`. `app/auth.css` also still repeated the earlier light wash
+  and had no dark token mirror for the auth routes, which never mount
+  the canvas appearance store; the dark wash, card surface, text and
+  hairlines on the coach-facing sign-in pages therefore rendered
+  without their canvas values. The mirror now repeats the current v8
+  values in both modes and the affected e2e expectations were updated
+  to the shipped tokens. `npm run test:e2e` exit 0: 16 passed, 8
+  skipped (mail-delivery gated), 0 failed.
+- Fresh lane database `app_fp_w2p0` on 127.0.0.1:5433: `npx prisma
+migrate deploy` applied all 40 migrations on an empty database, exit 0. `APP_ENV=test MEDIA_STORAGE_ADAPTER=local npm run seed:dev` ran
+  twice, both exit 0 and idempotent; row counts converged (users 7,
+  client profiles 15, check-in instances 119, nutrition items 584,
+  media objects 4). The lane database was dropped after verification.
+- Browser pass on the production build (`npx next start`), real seeded
+  sign-ins at 1440x900 and 390x844: coach sign-in to clients list,
+  client profile overview, meal plan, training program, check-in
+  review queue and forms; owner sign-in to the admin surface; client
+  sign-in to check-ins and daily entry. Every surface returned 200
+  with zero console errors at both widths.
+- UI map on the same server validated with the UI-SYSTEM harness,
+  exit 0. Sheets-path diff against the merge base is 0 lines; the
+  fidelity harness selftest passes all four cases.
+- Parity note: `npm run parity` self-serves a production `next start`
+  with an http `BETTER_AUTH_URL`; the boot check added upstream on
+  Vari8-Beta (tracked as issue #202) refuses that origin, so the
+  canonical self-spawn path cannot boot on this head. The same check
+  was recorded upstream as a harness defect, not an app defect.
+  `PARITY_DEV=1 npm run parity` ran end to end: 74 screens at both
+  widths, all main captures bit exact or inside budget, 19 residual
+  diffs confined to inner scroll regions, consistent with the
+  dev-timing noise the runner documents. The merge adds no diff under
+  `app/(canvas)`, `lib/canvas`, `components/canvas` or `frontend/`
+  relative to the verified base.
+
+## 2026-10-28 - w2-fe3: FRONTEND PR 211 merged, canvas port landed, gates green
+
+- Lane `w2/fe3` off `ad257ba`. Merge `6eda6fa` (parents `ad257ba` +
+  `8e6503f`); `frontend/` byte-identical to the PR 211 tip (empty diff).
+- Canvas twin: 39 files ported via `tools/port-canvas/port.mjs`; 8 local-delta
+  files three-way merged (client route, athlete overview, timeline tab,
+  coach css, model, plans setup, store, mealplan workspace). New hand-merge
+  entries recorded in the port map.
+- `/client` renders the PR 211 `ClientDesktop`/`MobileApp` pair (900 px
+  breakpoint, `?view=phone` toggle); `/me` keeps the session-wired
+  `ClientApp` shell on `own` identity.
+- Demo export re-pointed to revision 11 (client-007, workspace.json,
+  README, provenance); `public/demo/physique` assets carried over from the
+  frontend public tree.
+- Parity: click recipes re-derived for the module-rail plans UI, baseline
+  recaptured from the tip (74/74). Root compare exits 1 with 64 diffs,
+  classified: truth text (workspace/role/counts), flag-boundary 403
+  surfaces (checkins, iifym, supplements; inherited, zero backend diff),
+  seeded-data divergence, union deltas (Legacy sheet, extra widget), and
+  local-only features (temporary nutrition plans, no backend model).
+- Gates: `typecheck` 0, `lint` 0 (105 inherited warnings), `test` 0
+  (131 files, 1501 tests), `build` 0, `index`/`index:check` 0, frontend
+  `lint` 0, frontend `test` 0 (322 tests), frontend `typecheck` 0, dash
+  gate 0 authored lines. Lane DB `app_fp_w2fe3` fresh deploy + double
+  seed idempotent, dropped after capture.
+- Browser pass (real logins, prod build): coach roster, Amara tracker and
+  plans at 1440 and 390, ethereal mealplan, `/me` via the seeded client
+  login, `/client` mobile and desktop. Evidence under
+  `NEXUS_AI_CENTER/Vari8-evidence/LEAD/PROOF/w2-fe3/`.
+
+## 2026-10-28 - W2-N9 temporary nutrition plan table + routes on `w2/n9`
+
+- Gap: the canvas attaches dated short nutrition plans (refeed windows,
+  diet breaks, event weeks) on top of the running meal plan, but the
+  backend had no table, no write path and no client read for them.
+- Schema + migration `20261027000024_temporary_nutrition_plan`: one row per
+  temporary plan (no draft/publish chain), closed enum columns
+  `TemporaryNutritionKind` (REFEED/DIET_BREAK/CUSTOM) and
+  `TemporaryNutritionSource` (MEAL_PLAN/IIFYM), opaque `plan` JSONB never
+  re-validated per source, CHECKs for non-blank label and ordered range,
+  composite coherence FKs matching the meal_plan family. Reviewed via
+  `prisma migrate diff --from-migrations`: no missing columns, indexes or
+  keys; only the schema-invisible composite FKs every table carries.
+- Service (`lib/mealplan/service.ts`): `createTemporaryNutritionPlan`,
+  `listStaffTemporaryNutritionPlans`, `listOwnTemporaryNutritionPlans`,
+  `deleteTemporaryNutritionPlan` under the shared lock protocol (mplan +
+  member advisories -> member FOR UPDATE -> in-tx authorize -> assignment
+  -> profile -> consent -> mutation -> audit LAST). Validation mirrors the
+  frontend `validateTemporaryNutrition`: closed kind/source labels,
+  non-blank label, real calendar dates, ordered range, inclusive span of
+  at most 28 days. The amendment rule - same-source date intersection on
+  create - is enforced inside the serializable per-client transaction;
+  different sources may overlap. `MealPlanError` codes reuse the closed
+  vocabulary (invalid_input 400, plan_not_accessible 403).
+- Routes: `meal-plans/temporary` GET (requireOwnClientProfile before any
+  row lookup, `own` -> own rows, staff -> requested client's rows) + POST
+  (staff plan.write), `meal-plans/temporary/[temporaryPlanId]` DELETE
+  (staff plan.write, foreign/missing id reads as denied, never 404).
+  Audit resourceType `temporary_nutrition_plan` added to the closed union.
+- Tests: `tests/integration/api-v1-mealplan-temporary.test.ts` (7 tests,
+  real PG + real sign-in): staff create+list round-trip with all eight
+  wire fields and the REFEED enum row, four invalid_input rejects with
+  zero-row proof, same-source overlap 400 vs cross-source/adjacent 200,
+  client own-scope read, foreign clientProfileId 403 with zero READ
+  audits, delete-once then 403, unauthenticated 401. Mutation-proved:
+  removing the overlap guard fails exactly the overlap test; removing the
+  own-scope compare fails exactly the foreign-id test. Independent
+  verifier review repaired one coverage gap: the inclusive 28-day bound is
+  now boundary-pinned (exactly-28 accepted, 29 rejected) plus Object.hasOwn
+  guards on the wire-label enum maps.
+- Gates: typecheck 0; eslint 0 errors (96 pre-existing warnings); next
+  build 0; `npm run index` + `index:check` 0; frontend biome check (pinned
+  2.5.15) 0; prettier on changed files clean; unit vitest green after
+  index regen; added-lines U+2013/U+2014 scan 0/0; integration suite needs
+  `ENABLE_MEAL_PLANS=1` for the dev consent registry (same as W2-N7).
+- Delegation: the integration test file was scaffolded by a DeepSeek
+  flash child and reviewed line-by-line; schema, migration, service,
+  routes, mutation proofs and gates ran in this lane.
+- Client `ClientPlans.nutrition.temporary` merge is the explicit
+  follow-up; no publish/version semantics by design.
+
+## 2026-10-28 - w2-s13: demo-export rev 11 seed refresh on `w2/s13`
+
+- Copied `frontend/src/data/demo-export/**` at pinned commit `8e6503f6`
+  byte-identical into `lib/canvas/data/demo-export/**` and
+  `scripts/seed/demo-export/**`; `diff -r` clean both sides.
+  `scripts/seed/demo-export/PROVENANCE.md` is hand-written, excluded from
+  diff -r, and updated to the new source. The rev-11 client-007 copy
+  overwrites hand-carried content that frontend rev 9 never had.
+- Live proof on fresh lane DBs: the baseline default seed showed Emma
+  Anders `client_profile.user_id` rebound to `emma.anders@canvas-demo.test`
+  (the `33-checkins.seed.ts` demoClientUser steal, predicted by the card).
+  Repaired that file only: the demo user now binds its named fixture
+  profile only while the profile is unbound. Post-repair default run
+  links Emma Anders to the SEED_CLIENT user.
+- Default-seed equivalence vs the baseline dump (normalized for cuids,
+  scrypt hashes, run timestamps): the only delta is Emma's
+  `client_profile.user_id` plus the consequential `created_by_member_id`
+  on her own 7 `daily_entry` + 7 `daily_entry_revision` rows, which follow
+  the link through `profile.userId`. Nothing else differs.
+- Demo seed (`VARI8_SEED_DEMO=1`) run twice on the same lane: normalized
+  dumps identical (0 diff lines), Emma Anders still on SEED_CLIENT,
+  `athleteDataDemo` reads 11, and rev-11 coverage is live
+  (`meal_plan_version` names 'Pre-prep / Contest prep', tracking values
+  1630/2370/2200/2080/2410 for client-007).
+- Gates: typecheck 0, lint 0 (96 warnings, pre-existing), build 0,
+  `npm run index` 0 (no output diff), `prisma migrate deploy` on two fresh
+  lane DBs 0, prettier per changed file 0 (`scripts/seed/demo-export/`
+  added to `.prettierignore` to keep the byte-verbatim copy), authored
+  added-lines dash check 0.
+- App proof: dev server on lane `app_fp_w2s13`, sign in via `/me/login` as
+  the SEED_CLIENT lands on the `/me` client home at 1440 and 390
+  (screenshots in evidence). Server stopped, both lane DBs dropped,
+  `pg_database` absence proof saved.
+- Evidence: `Vari8-evidence/FULL-PACKAGE-2/W2S13/`. No migration consumed.
+
+## 2026-10-28 - W2-N7 client own meal plan view route (audit row N7) on `w2/n7`
+
+- Gap: GET `.../clients/[clientProfileId]/meal-plans` declared `plan.read`
+  (client scope `own`) but always called `readStaffMealPlan`, which denies
+  anything but workspace/assigned scope, so a bound client could never read
+  its own published plan over the API.
+- Change (route.ts only): the GET handler now calls
+  `requireOwnClientProfile(viewer, workspace, params.clientProfileId)` before
+  any read. Scope `own` is bound to the caller's own client profile id and a
+  foreign `clientProfileId` is a plain 403; only then does the handler branch:
+  `own` serves `readOwnMealPlan` (`{current, upcoming}` with the published
+  payload and version metadata, no draft), every other scope keeps
+  `readStaffMealPlan` verbatim. PUT is untouched (staff `plan.write` only).
+- Tests: new `tests/integration/api-v1-mealplan-own.test.ts` (4 tests, real
+  PG + real sign-in): own read 200 with literal own-shape assertions and no
+  staff keys, the named test "denies a foreign clientProfileId with 403
+  before any read" (403 plus zero READ audit rows on the foreign subject),
+  staff keeps the staff shape, unauthenticated 401. Mutation-proved: with the
+  compare removed the foreign request returns 200 and the named test fails.
+  Regression: `api-v1-plans.test.ts` 6/6 stays green (its client role matrix
+  case uses an unbound profile, still 403 through the same compare).
+- Gates: typecheck 0; eslint on diff files 0 (repo lint 0 errors / 96
+  pre-existing warnings); prettier on diff files clean; `next build` 0;
+  `npm run index` 0 and `index:check` 0 (generated output unchanged); unit
+  vitest 132 files / 1509 tests 0; integration suite 4/4 + regression 6/6;
+  fresh `prisma migrate deploy` on lane DB `app_fp_w2n7` clean. No migration
+  consumed (reserved dir `20261027000022` unused; no schema need).
+- Live proof on `app_fp_w2n7` (seeded `VARI8_SEED_DEMO=1`, real sign-in via
+  /api/auth/sign-in/email, dev server 127.0.0.1:5455): own client GET 200
+  with `current.versionSeq=1` + full payload + `upcoming=null`; same client
+  on a foreign clientProfileId 403 forbidden; staff coach GET 200 staff
+  shape; no credentials 401 unauthenticated. Request/status lines under
+  `Vari8-evidence/FULL-PACKAGE-2/W2N7/`. Server stopped; `pg_database` shows
+  `lane_present|0` (lane-teardown.txt). Exported method set of the route
+  file: GET, PUT (unchanged, matches this claim). Zero U+2013/U+2014 in added
+  lines.
+- Unmapped client fields: resolved macro totals (kcal/protein/carbs/fat) are
+  not in the response; the client derives them from `payload` portions plus
+  the food catalog, which this route intentionally does not join. The
+  "temporary plan" badge is an audit N1 feature with no `MealPlanDraft`
+  field; not derivable. `upcoming` is metadata-only by service design.
+- Screenshot: none applies; no mounted surface on this base consumes the
+  route (the canvas client-app meal plan is demo data).
+
+## 2026-10-28 - w2-t14 repair 1: item-sort mutation guard + real HTTP proof on `w2/t14`
+
+- Round-1 verifier (hermes-verify, independent family) REPAIR on 6ab35547:
+  the item-sort mutation in `projectSnapshot` survived because the fixture's
+  out-of-order items sat in different groups; and the two route handlers had
+  no HTTP-level proof, only service-level calls.
+- Repair 1 in `tests/integration/w2-t14-tracker-columns.test.ts`: new case
+  seeds two items sharing one section and one group ("Probe") whose
+  definition array order (late, order 20) disagrees with declared order
+  (early, order 5) and asserts emitted `[early, late]`. Every existing
+  assertion untouched.
+- Mutation A re-run (item `(order ?? 0)` sort dropped in
+  `lib/daily-entry/service.ts`): suite exit 1, only the new test fails;
+  source restored byte-identical (`cmp` + clean `git diff`).
+- Repair 2: real HTTP against `next dev` on lane DB `app_fp_w2t14r` after
+  `npm run seed:dev`. Client caller `emma.anders@canvas-demo.test` (seeded
+  demo user from `33-checkins.seed.ts`, credential password =
+  `SEED_CLIENT_PASSWORD`, owns the pinned Emma Anders profile; the
+  `SEED_CLIENT_EMAIL` user keeps no profile by seed design). Staff caller
+  `SEED_COACH_EMAIL` (Sofia Miller, COACH). 15/15 checks PASS: own route
+  200 `ready` with pinned groups (`seed-de-tv-1`, single null group, five
+  columns in declared order incl. decimals/summary/max/unit projection);
+  staff route 200 identical body; client-scope caller on staff route 403
+  `forbidden` for own and foreign `clientProfileId`; staff on unknown
+  profile 403 (denied before read); anonymous 401 on both routes; coach on
+  own route 200 `not_applicable`.
+- Gates: typecheck 0, eslint 0, prettier --check 0, index:check 0 (no
+  generated-index movement; test file only), added-lines U+2013/U+2014
+  scan 0.
+- Lane `app_fp_w2t14r` created via `lane-db` + `prisma migrate deploy`,
+  dropped after proof with `pg_database` absence proof saved. Census still
+  lists stale `app_fp_w2t14` from the round-1 lane (its PROOF claimed a
+  drop); left in place and flagged, not mine to delete unasked.
+- Evidence: `Vari8-evidence/LEAD/PROOF/w2-t14/round2/`
+  (integration-test.log, mutation-itemsort.log, http-proof.log +
+  http-prove.mjs, typecheck/eslint/prettier/indexcheck logs,
+  pg_database-absence.txt, pg_database-census.txt, precheck.txt).
+
+## 2026-10-28 - Wave 2 T7 repair 1: honest assign affordance on `w2/t7`
+
+- Verifier BLOCKING finding: `SavedMealLibrary.assign()` set success text
+  unconditionally while no caller supplies `onAssign`; browser proof
+  showed success text with zero `/api/v1/saved-meals` requests.
+- Lead ruling, option (b): the Assign affordance renders only when
+  `onAssign` is provided; wiring the demo-backed studio to the real API
+  stays parked as an owner decision.
+- Change in `saved-meal-library.tsx` (canvas twin and frontend twin in
+  lockstep): `onAssign?: (meal) => Promise<boolean>`; `assign()` returns
+  without a callback, awaits it, sets success only on a truthy resolve
+  and an honest failure message on false or rejection; the Assign
+  button renders behind `{onAssign && (...)}`. No fetch inside the
+  component. `mealplan-workspace.tsx`, routes, migration, schema and
+  integration tests untouched.
+- Gates on this repair: typecheck 0, lint 0 (90 warnings, pre-existing
+  baseline), prettier on changed files 0, vitest 117 files 1384 tests
+  0, build 0, index 0, index:check 0, frontend biome lint 0, dash gate 0. First vitest run flaked a `system-index` beforeAll timeout under
+  parallel load; solo rerun passed clean.
+- Browser proof (dev server, lane DB app_fp_w2t7r1, real coach login,
+  no demo flag): at 1440 and 390 the saved-meal dialog shows Rename,
+  Duplicate, Delete and NO Assign button, no assigned text, zero
+  `/api/v1/saved-meals` requests, no console errors. Screenshots and
+  JSON under `Vari8-evidence/FULL-PACKAGE-2/W2T7/`; lane DB dropped
+  with pg_database absence proof and `app_fp_w2t7%` census saved.
+
+## 2026-10-27 - w2-c4 merge repair: preview trunk ad257ba union-merged
+
+- Preview rebuild tick 217 skipped verified c4 tip `d387260` because
+  merging into preview trunk `ad257ba` conflicted on six paths.
+  Repaired here via `git merge --no-ff --no-commit ad257ba` with union
+  keep-both resolutions; nothing from either side deleted.
+- `app/(canvas)/me/page.tsx`: trunk's `Promise.all` expanded to keep
+  all three trunk reads (`supplementPlan.count`, active
+  `activityTarget.count`, `readClientWorkspaceAppearance`) plus c4's
+  `activityTarget.findMany`, `dailyEntry.findMany` and own-bound
+  `readOwnMealPlan`/`readOwnIifymPlan` reads. `AppearanceProvider`
+  mount, client-session appearance wiring and `clientPlansPresence`
+  kept; c4's `versionsFromWire` activity targets and
+  `draftWireToMealPlan`/`iifymDraftWireToPlan` active-plan binding
+  kept.
+- `components/canvas/data/notes.ts`: comment hunk only; both sides'
+  doc comments and all exports/call paths retained.
+- `docs/STATUS.md`: newest-first union, zero deletions. The
+  `2026-10-26 - Wave 2 T1` preview entry and every c4-line entry all
+  present. `docs/index/*` regenerated with `npm run index`, never
+  hand-merged.
+- Merge follow-ups: deduped a doubled `useReducedMotion` import in
+  `components/canvas/ethereal/clients/client-roster.tsx` (both sides
+  added the identical import); `npx prisma generate` to sync the
+  client with the merged schema (`MemberPreference` et al.);
+  `tests/unit/system-index.test.ts` literal updated for trunk's
+  `/coach/states` route (the literal was stale on trunk);
+  `npx biome check --write` on three frontend files for inherited
+  import-order/format findings (coach/settings page, frontend
+  client-roster, settings-surface).
+- Gates on the merged tree: `npm run typecheck`, `npm run lint` (0
+  errors, 96 inherited warnings), `npx vitest run` (131 files / 1505
+  tests), `npm run index`, `npm run index:check`, `npm run build`,
+  `cd frontend && npm run lint`, all exit 0. Merge-authored lines
+  carry zero U+2013/U+2014 dashes.
+
+## 2026-10-27 - w2-c4: client plans views (roadmap, nutrition, supplements, targets)
+
+- Branch `w2/c4` off `788714b` with `w2/a1` `269fd04` then `w2/a2`
+  `8403a62` merged in order (merged tip `53322dd`; generated-index
+  conflicts resolved keep-both-newest-first, `npm run index` rerun).
+- `/me` now binds the signed-in client's own rows into the shared
+  `CoachClient`/`Variant` shell server-side: tracker entries, activity
+  target versions, the published meal plan and the IIFYM plan via
+  `readOwnMealPlan`/`readOwnIifymPlan`. No client id travels through
+  the browser; every read is session-bound. No new routes (GET-only
+  surfaces reused: workspace `iifym-plans`, `nutrition-logs`,
+  `clients/[id]/supplement-plan`, `clients/[id]/activity-targets`).
+- `templateDefinitionSlots` gains `fields`, `roadmapPhases`,
+  `roadmapActivityTargets` (the canvas write schema already serialized
+  them; the read schema dropped them, hiding the roadmap metrics and
+  activity planning columns from the client shell).
+- Seed: one active IIFYM plan for Amara Lewis `client-007` inside the
+  opt-in demo coverage seed only (owner ruling 2026-10-27 item 3);
+  demo template definition now carries the roadmap/fields/activity
+  slots. Default seed output unchanged (normalized dump diff: only
+  scrypt re-hash and `updated_at` churn; the demo module is skipped
+  without `VARI8_SEED_DEMO=1`).
+- 390 meal-plan token-wrap fix: `components/mealplan/plan-version-view.tsx`
+  rounds displayed quantities/totals to one decimal and wraps each
+  value-unit pair in `.mp-token` (`white-space: nowrap` in
+  `app/globals.css`), so grams/kcal can no longer split mid-number.
+- Twin port: `frontend/src/components/client-app/nutrition-targets.tsx`
+  created from the canvas file (canvas kept; Biome import order applied
+  to both twins in lockstep, diff still byte-identical); plus
+  `frontend/src/components/data/nutrition.ts` same-origin shim.
+- Browser proof on lane DB `app_fp_w2c4` (production `next start`,
+  `APP_ENV=development`, `ENABLE_*=1`, `BETTER_AUTH_URL` unset so the
+  prod boot guard passes on http localhost): coach real login ->
+  client-setups -> assigned `seed-demo-de-tv-1` to Chloe Park (ACTIVE
+  pin created live); Amara real login at 1440 and 390 shows Plans:
+  Nutrition (meal plan TD meals + seeded IIFYM targets 160/175/50-60/
+  1835 kcal + nutrition-log form and recent days), Supplements (4
+  items), Activity targets (steps+cardio), Timeline/Roadmap (weekly
+  grid from seeded config). 19/19 probe checks pass; four 390
+  overflow probes clean; screenshots in W2C4 evidence.
+- Own-scope: foreign `clientProfileId` on the two `clients/[id]/*`
+  GETs rebounds to the caller's own rows (200 with own body, not a
+  literal 403 - route design, recorded); staff-only
+  `clients/[id]/iifym-plans` and `clients/[id]/nutrition-logs` return
+  literal 403 for a client session; workspace-level own routes proven
+  disjoint across Amara/Emma sessions.
+- Gates: typecheck 0, build 0, lint 0 (89 inherited warnings),
+  index+index:check 0, `cd frontend && npm run lint` 0, dash gate 0.
+  `npm test` exit 1: 4 inherited failures predating this card -
+  3 in `canvas-data-seam.test.ts` (a1's `clients.ts` generalNotes
+  split vs the pre-merge seam fixture, `clients.ts` byte-identical to
+  the a1 tip) and 1 in `coach-store-roster.test.tsx` (a2's
+  `clientProfileIdFor` caching vs pre-a2 test, `store.tsx` unchanged
+  from the a2 tip). `format:check` exit 1 on 56 inherited files; the
+  4 files this card touched were formatted and now pass.
+- Held per card: client-visible phase display (no client-readable
+  phase route exists on the a1 tip; staff-only `notes.write` reads
+  only) - recorded as a finding for the A lane.
+- Repair round 1 (verifier verdict on `2de07c6`): B1 fixed - the two
+  en dashes and one em dash in `nutrition-targets.tsx` are ASCII in
+  both twins (visible IIFYM range now renders `50-60 g`; twin diff
+  still 0 lines). B2 fixed at the same root as w2/a4 `54c4d66`,
+  re-implemented for this lineage (the a4 patch does not apply
+  cleanly): `clients.ts` persists the full client core again,
+  `notes.ts` persists `coachNotes` plus `coachTodos`, and `store.tsx`
+  fetches the client-detail bundle lazily on the `clients` and
+  `notes` sections only. `messages.ts` already carried the full
+  extract on this branch and was left unchanged. B3 and B4 are
+  owner-parked and untouched. REPORT.md written at
+  `Vari8-evidence/FULL-PACKAGE-2/W2C4/REPORT.md`.
+- Repair gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+tests/unit/coach-store-roster.test.tsx` exit 0 (12/12); `npm run
+test` exit 0 (1393/1393); `npm run lint` exit 0 (89 inherited
+  warnings); `npm run typecheck` exit 0; `cd frontend && npm run
+lint` exit 0; dash count on `git diff 53322dd..HEAD` added lines =
+  0 (U+2013 and U+2014); twin parity diff 0 lines. `npm run index`
+  not required (no tracked file added, renamed or deleted).
+- Repair round 2 (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the parent `2de07c6` extract window carry
+  cores without those two fields, and `isCoachState` requires both as
+  arrays (`components/canvas/coach/model.ts:1717`), so the read failed
+  the guard and the store parked the workspace behind the preserve
+  notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Same shape as the w2/a4 `113d788` repair.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam (grep for `CoachSlice`/`merge:`/`dataDomains`/
+  `readCoachState` in `frontend/src` returns no matches), so the
+  defect exists only on the canvas side.
+- Repair-2 gates: `npx vitest run tests/unit/canvas-data-seam.test.ts
+tests/unit/coach-store-roster.test.tsx` exit 0 (13/13); `npm run
+test` exit 0 (1394/1394, 118/118 files); `npm run lint` exit 0 (89
+  inherited warnings); `npm run typecheck` exit 0; `npx prettier
+--check` on the two changed files exit 0; `npm run index` and
+  `npm run index:check` exit 0; dash count on `git diff 2de07c6`
+  added lines = 0 (U+2013 and U+2014); twin parity diff on
+  `nutrition-targets.tsx` = 0 lines.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4-REPAIR2/`.
+- Repair round 3 (owner-ruled defect B3 on `0b38af5`): the two
+  `clients/[id]/*` GETs whose `plan.read` scope resolves "own" now bind
+  the path `clientProfileId` to the caller's own client profile. New
+  exported helper `requireOwnClientProfile` in `lib/api/v1.ts` resolves
+  the caller's profile by `{ workspaceId, userId }` and throws
+  `ApiError(403, "forbidden")` when the caller has no own profile or the
+  path id is foreign, before any domain read; staff scope is a no-op so
+  coach reads stay bound to the path id inside the services. Refusal
+  status 403 on both routes, matching the progress-photos own-scope
+  convention and each route's closed denied mapping.
+- New route-level cases with real sign-in and real Request objects
+  through the exported handlers on lane DB `app_fp_w2c4r4`: "route GET:
+  a client requesting a foreign clientProfileId is refused before any
+  read" and "route GET: a client reading its own path id gets its
+  saved plan" in `tests/integration/supplements-plan.test.ts`; "a
+  client requesting a foreign clientProfileId is refused before any
+  read", "a client reading its own path id gets its versions (own
+  200)" and "an assigned coach reading a roster client keeps 200 with
+  that client's versions" in new
+  `tests/integration/activity-targets.test.ts`. Both negative cases
+  were red at `0b38af5` (expected 403, got 200 with the caller's own
+  rows) and green after the fix.
+- Repair-3 gates: touched files under `vitest.integration.config.ts`
+  exit 0 (19/19); full integration suite exit 0 (991/991, 74 files,
+  with the documented domain dev flags
+  ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS exported;
+  the same suite without them shows 4 inherited flag-gate reds in
+  `api-v1-plans.test.ts`, identical at `0b38af5` on the same lane DB);
+  `npx vitest run` exit 0 (1394/1394) after `npm run index`
+  regenerated `docs/index/SYMBOLS.md` for the new export; `npm run
+typecheck` exit 0; `npm run lint` exit 0 (89 inherited warnings);
+  `npm run index:check` exit 0; dash count on `git diff 0b38af5..HEAD`
+  added lines = 0. Lane DB `app_fp_w2c4r4` dropped, absence proven by
+  a pg_database query saved in evidence.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C4/` (repair-3 files).
+
+## 2026-10-27 - w2-t8 repair 4: failed uploads block the send instead of dropping the attachment on `w2/t8`
+
+- B1 root cause: a composer attachment whose background upload settled
+  without a media_object stamp kept its session blob in `media`, so the
+  send guard's restored-draft check (`!a.mediaObjectId && !a.demo &&
+!media[a.id]`) passed and the message appended locally with no server
+  attachment and no notice. The canvas twin now keeps a `failedUploads`
+  ref beside `pendingUploads`: the attach handler records the id when a
+  workspace upload settles without the stamp, and `send()` refuses any
+  draft containing a failed id with "Attachment upload failed. Remove it
+  and reattach to send it." until the item is removed or reattached.
+  The mark is written only when `workspaceId` existed, so the
+  no-workspace preview keeps its local-append path, and the frontend
+  twin is untouched (its attach is synchronous and cannot fail).
+- Probe: `tests/unit/coach-messages-restored-draft.dom.test.tsx` mounts
+  the real canvas CoachProvider + MessagesWorkspace, forces
+  `uploadCanvasMedia` to resolve false, attaches a file, types text and
+  clicks Send. On the tip product file the send falls through with no
+  toast; on this tip the send is refused with the failed copy and the
+  draft keeps its attachment. Red proof: a scratch worktree at the
+  repair commit with only `components/canvas/coach/messages.tsx`
+  restored from 35296eb ran 1 failed / 3 passed; the same file is green
+  4/4 on this tip. Logs under the evidence dir.
+- Gates on this tip: `npx vitest run` on the touched file 4 passed, exit
+  0; full `npx vitest run` 124 files / 1441 tests all passed, exit 0
+  (one earlier run under parallel gate load timed out once in
+  `tests/unit/system-index.test.ts` F2, which passes 18/18 standalone
+  and is unrelated to this change; the inherited logging.test.ts env
+  pair was not observed this round); `npm run typecheck` exit 0; `npm
+run lint` exit 0 (92 warnings, 0 errors, one pre-existing warning on
+  messages.tsx:198); `npm run index` produced no diff and `npm run
+index:check` exit 0; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8 repair 3: restored-draft attachments no longer wedge the send on `w2/t8`
+
+- B1 root cause: the send guard read "no session blob" as "upload still
+  in flight", so a file attached to a draft and restored after reload
+  (its blob URL dead) was blocked by a toast promising a retry that
+  could never land. Both twins now classify send-time attachments in
+  three buckets: an id in `pendingUploads` (a ref populated while an
+  attach/upload is actually running) still waits on the "still
+  uploading" toast; an item missing stamp, demo flag and session blob
+  but not pending is a restored draft, which stays in the draft while
+  the send returns the honest copy "Attachment kept as metadata after
+  reload - reattach it to send it, or remove it."; reattaching through
+  the card's existing control restores the blob and the send proceeds.
+  The canvas twin gates both branches on `workspaceId` so the
+  no-workspace demo embed keeps the old local-append behavior.
+- I1 taken: the ceremonial frontend `mediaObjectIds` branch (both arms
+  called `appendLocal` identically) is collapsed to one `appendLocal()`
+  with a comment naming the canvas wire step it mirrors.
+- I2 corrected baseline per the verifier's re-measurement: `npm run
+test` at decd41a is 123 files / 1437 tests, all passed, exit 0 (the
+  repair-1 entry's 1436/1437 timeout did not reproduce); `cd frontend &&
+npm run typecheck` exits nonzero with exactly one inherited TS2322 at
+  `src/components/client/legacy-sheet/dialog.tsx(109,15)` (the file has
+  since moved out of `components/ui/`; this repair does not touch it).
+- I3: `npm run index:check` run twice on this tip; both exits 0.
+- B1 proof: `tests/unit/coach-messages-restored-draft.dom.test.tsx`
+  mounts the real CoachProvider + MessagesWorkspace of each twin, seeds
+  each persistence seam with a restored file draft and clicks Send. On
+  decd41a product code both restored-draft assertions fail on the "still
+  uploading" toast; on this tip all 3 tests pass. Twin-resolution in
+  vitest.config lets the frontend app mount under jsdom (its "@/*"
+  imports resolve to frontend/src and its react/next dedupe onto the
+  root copies); the test file is excluded from the root tsc program
+  because it legitimately spans two apps.
+- Live proof: real-browser attach -> reload -> send in the frontend
+  preview (no login wall; the workspace renders directly) at 1440x900
+  and 390x844: the send surfaces the honest copy on both widths, the
+  item is kept in the draft, and reattaching through the card then
+  sending lands the message. Screenshots and live-verify.json under the
+  evidence dir.
+- Gates on this tip: `npm run typecheck` 0; `npm run lint` 0 (92
+  warnings, 0 errors); `cd frontend && npm run lint` 0; `npx vitest run`
+  124 files / 1440 tests, all passed, 0; `npm run build` 0; `npm run
+index:check` 0 on both runs; dash gate 0 U+2013/U+2014 on added lines.
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8 repair 1: frontend send carries the attach flow in local-demo idiom on `w2/t8`
+
+- Verdict repair on the T8 tip: the attach flow had reached only the
+  canvas twin; the frontend send still used the pre-A4 local append.
+  The frontend send now mirrors the canvas structure in this preview's
+  own idiom: an in-flight guard that treats a draft item missing its
+  stamp, demo media and session blob (a draft restored after reload)
+  as still uploading; `mediaObjectIds` computed off each attachment;
+  and the local fallback keyed on `mediaObjectIds.length` the way the
+  canvas send keys its wire fallback. `Media` gains the optional
+  `mediaObjectId` field so the twin sends read one shape.
+- Remaining twin deltas are the named pre-existing ones plus the
+  intended local-demo split: the `../data/messages` wire imports, the
+  `uploadCanvasMedia` import and file-input block, the useCoach
+  destructuring (canvas reads `hydrated`/`workspaceId`/
+  `clientProfileIdFor`, frontend reads `media`), the W2-A4 remote-sync
+  effects, the canvas remote-send branch, voice-note copy, and the
+  `clientName` prop on the legacy recorder.
+- Gates on the repaired tip: `cd frontend && npm run lint` 0;
+  `cd frontend && npm run typecheck` 1 with only the inherited
+  `dialog.tsx:109` `labelHidden` TS2322; `npm run typecheck` 0;
+  `npm run lint` 0 (92 warnings, 0 errors); `npx vitest run` 1436/1437
+  (single failure a 5s timeout in `system-index.test.ts` F2 that
+  passes standalone; env flake); `npm run index:check` 0; dash gate
+  adds 0 U+2013/U+2014 lines on this repair (57 exist in earlier
+  commits of the 113d788..HEAD range).
+- Repair evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - w2-t8: message attachments and read state on `w2/t8`
+
+- Upload-then-link attachments on the messages wire: `POST /messages`
+  and `POST conversations/:clientProfileId` accept `mediaObjectIds`
+  (max 10, safe id grammar, duplicates rejected). Each id must resolve
+  to a live MediaObject in the same workspace anchored to the
+  conversation's client profile; anything else denies 403. Attachment
+  rows link in the same transaction as the message create, so the send
+  response and every later read carry real metadata. Attachment-only
+  sends (empty body) are allowed; a send with neither body nor
+  attachments is `invalid_input`.
+- Attachment urls reuse the T6 media mint unchanged: download urls are
+  workspace-scoped object keys, expire per the presign ttl, and deny
+  foreign workspaces and foreign client profiles. No media files edited.
+- Read state on the wire: own messages carry `read` (client-authored
+  rows count any staff MessageRead; staff-authored rows count the
+  client user's MessageRead). New `POST /messages/read` marks the
+  caller's unread staff messages, mirroring the staff read route.
+- Canvas send path: refuses to send while a real attachment still has
+  no mediaObjectId, passes the ids on the wire, and keeps local
+  fallback only for missing backend context or demo media. Coach
+  status renders Local message / Read / Sent instead of the literal
+  "Example · read".
+- Frontend twin updated in lockstep for the read-state label; the
+  twin's send stays local-preview per the existing wiring split.
+- Gates: typecheck 0; lint 0 (one pre-existing hooks warning in
+  messages.tsx on the merged base); prettier on touched files 0;
+  `npm run test` 1437/1437 0; `npm run test:integration` on the
+  attachment suite plus staff-messages regression 14/14 0;
+  `npm run build` 0; `npm run index` regenerated and `index:check` 0;
+  `cd frontend && npm run lint` 0; dash gate on added lines 0.
+- Live proof on fresh lane DB app_fp_w2t8 (migrate deploy, demo seed,
+  production server on 5310): coach attach+send at 1440 renders the
+  minted image on reload; client wire read shows the attachment and
+  `marked: 2` on POST /messages/read; coach thread flips Sent to Read;
+  staff2 foreign-workspace mint returns 403; a minted url redeems 200
+  while an expired signature returns 403; 390 render verified.
+  Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T8/.
+
+## 2026-10-27 - W2T7 preview conflict repair: w2/t6 merge line `c9440dc` merged into `w2/t7`
+
+- Preview rebuild skipped w2-t7 on conflicts against the merged stage
+  set carried by verified w2/t6 tip `c9440dc` (t6 media work plus the
+  c6 and c7 client-app lines). Absorbed into stage tip `fc563aa` as
+  `--no-ff` merge `f120ebc`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree fc563aa c9440dc`
+  -> tree `7ed11a08a92803fba8b52012871bfb270967ccae`; conflict list
+  `docs/STATUS.md` and generated
+  `docs/index/{DATA-MODEL,ROUTES,SYMBOLS}.md`. Both `client-app.css`
+  twins and `db/schema.prisma` auto-merged clean.
+- Resolutions: `docs/STATUS.md` union, all 2026-10-28 entries above all
+  2026-10-27 entries above all 2026-10-26, ours-new then theirs-new
+  within a date. Index docs took theirs, then `npm run index`
+  regenerated them on the merged tree; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (85 canvas-only + 29
+  frontend-only lines). Hunk count moved 6 -> 4 because surrounding
+  merged lines shifted hunk boundaries; the differing line set did
+  not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 310
+  files), `npx vitest run` 0 (123 files, 1437 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+index:check` 0, dash gate `git diff fc563aa..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
+## 2026-10-27 - w2-t7 repair 2: ambiguous roster names refuse to bind on `w2/t7`
+
+- Verdict on 59080f8, Finding 1 (blocking): the assign roster built
+  `Map.set(name, clientProfileId)`, so two clients sharing a name bound the
+  last-loaded profile while the assign still reported success;
+  `ClientProfile.name` has no unique constraint.
+- `assign-saved-meal.ts` (both twins byte-identical): the roster build now
+  tracks names seen more than once and drops them from the map, so
+  `clientProfileIdForName` resolves null and `assignSavedMealToClient`
+  returns false before any PUT or POST. Unique names are unchanged.
+- New case in `tests/unit/mealplan-assign.test.ts`: a duplicate-name roster
+  resolves null and assigns false with zero PUT/POST calls; a unique name
+  from the same roster still assigns. Red proof on the unfixed file:
+  `expected 'cp-2' to be null`; green 9/9 after the fix.
+- Gates: vitest on the file 9/9 exit 0; `npm run test` 118 files
+  1393/1393 exit 0; `npm run lint` 0 (90 warnings, pre-existing baseline);
+  `npm run typecheck` 0; `npm run index:check` 0; `npx prettier --check`
+  on changed files 0; `cd frontend && npm run lint` 0; dash gate on added
+  lines 0; twin diff 0.
+- Live proof on lane DB app_fp_w2t7fix (fresh create, prisma migrate
+  deploy, seed steps 00-36 ok, 40-media storage_not_configured as before;
+  lane fixture added a second "Emma Anders" profile): at 1440 and 390 the
+  roster response carried both Emma Anders profiles, Assign to Emma Anders
+  produced only the roster GET (zero PUT/POST) and the honest copy "could
+  not be assigned"; switching the studio client to James Reed assigned
+  "Lunch" with PUT 200 and POST 200 and a client-owned copy row. DB after:
+  zero rows bound to either Emma profile, no Breakfast library row.
+  Evidence under Vari8-evidence/FULL-PACKAGE-2/W2T7/; the lane database was
+  dropped with pg_database absence and app_fp_w2t7% census saved.
+
+## 2026-10-27 - w2-t7 option-a: studio Assign wired to the real saved-meals API on `w2/t7`
+
+- Owner ruling 2026-10-27 item 6, option (a) of the round-1 verdict:
+  `MealplanWorkspace` now supplies `onAssign`; the Assign button is
+  live only where a real workspace context exists.
+- New twin-shared module `assign-saved-meal.ts` (frontend and canvas
+  twins byte-identical): roster name -> clientProfileId map fetched
+  once per workspace from `GET /api/v1/workspaces/:id/clients?limit=100`
+  (success cached, failure retried, null on miss), PUT upsert under the
+  studio `ReusableMeal.id`, POST assignments; resolves true only on a
+  2xx POST and false on every miss so the existing honest failure copy
+  shows.
+- `mealplan-workspace.tsx` (both twins): optional `workspaceId` prop,
+  `assignSavedMeal` handler resolves the selected studio client name
+  and passes `onAssign={workspaceId ? assignSavedMeal : undefined}`;
+  the demo read path `plan.reusableMeals` is untouched and the assign
+  write is the only new traffic.
+- `coaching-app.tsx` (both twins): `EtherealApp`/`ComponentStudio`
+  accept and thread `workspaceId`; `app/(canvas)/ethereal/page.tsx`
+  passes `viewer.workspace.id` from `requireCanvasAccess`. The
+  frontend preview app passes nothing and keeps the button hidden.
+- Server enforcement unchanged: `library.manage` plus workspace scope
+  stay inside the existing routes; no route, schema or migration was
+  touched.
+- Gates (exit codes): `npm run typecheck` 0; `npm run lint` 0 with 90
+  warnings (pre-existing baseline, including two setState-in-effect
+  notes on untouched effect code in this file); `npx prettier --check`
+  on all changed .ts/.tsx 0; `npx vitest run` on the 7 touched-area
+  files 0 (70 tests, including new tests/unit/mealplan-assign.test.ts
+  8/8: happy-path URLs and bodies, roster cache, no-cache-on-failure,
+  roster miss, PUT and POST non-2xx, network error, empty input);
+  `npm run build` 0; `npm run index` + `npm run index:check` 0 (no
+  generated drift); `cd frontend && npm run lint` 0 ("Checked 305
+  files"); owned-lines dash gate prints 0; twin diffs show only the
+  established port deltas.
+- Browser proof on lane DB app_fp_w2t7assign (fresh create, prisma
+  migrate deploy applied, VARI8_SEED_DEMO=1 seed, next dev on :5310,
+  real coach sign-in): PUT 200 upserted library row
+  saved-meal-0a05bbe1-d0e6-4aec-83e2-e6b45592b7c6 with
+  client_profile_id NULL; POST 200 created client-owned copy
+  cmvqorocg00028od822nnz7mw for Emma Anders
+  (cmvqoqslc000h8o2gofimp0un) with a regenerated meal.id and
+  source_saved_meal_id provenance; the 390px run produced a second
+  independent copy cmvqorprd00048od8i3nh67uw; a forced 500 on the
+  assignments POST rendered "could not be assigned" and wrote no row.
+  Query output, screenshots (assign-1440.png, assign-390.png,
+  assign-failure.png), network logs and assign-proof.mjs live under
+  Vari8-evidence/FULL-PACKAGE-2/W2T7-ASSIGN/; the database was dropped
+  WITH (FORCE) and the pg_database absence proof plus the
+  app_fp_w2t7% census were saved.
+
+## 2026-10-27 - Wave 2 T7: saved meal assign-to-client on `w2/t7`
+
+- Semantics: `saved_meal.client_profile_id` NULL means coach library row;
+  a set value means a client-owned copy. Assign creates a NEW row with a
+  fresh cuid, a regenerated `meal.id` inside the JSONB payload,
+  `source_saved_meal_id` provenance, `assigned_by_member_id` and
+  `assigned_at`. The copy is detached: library edits never propagate and
+  every assign call produces an independent row (re-assign yields a
+  second copy, neither corrupted). Mirrors the T6 ownership pattern.
+- Migration consumed: `20261027000018_saved_meal_client_assignment` (one
+  directory, up + down), composite coherence FKs in raw SQL per
+  convention; schema declares plain relations only.
+- Routes added under the new `app/api/v1/saved-meals/` tree:
+  `GET /:workspaceId` (library.manage library list),
+  `PUT /:workspaceId/:savedMealId` (library.manage upsert; client-owned
+  copy ids are 404 through it),
+  `POST /:workspaceId/:savedMealId/assignments` (library.manage assign),
+  `GET /:workspaceId/assigned` (clientData.read; own-scope for clients,
+  `?clientProfileId=` staff preview). Error set raised: 400
+  `invalid_input`, 401 `unauthenticated`, 403 `forbidden`, 404
+  `not_found`; every code funnels through `defineApiV1Route`.
+- Service: `lib/nutrition/saved-meals.ts` (listSavedMeals,
+  upsertSavedMeal, assignSavedMealToClient, listAssignedMeals).
+- UI: `Assign to {clientName}` action on the selected saved meal in
+  `saved-meal-library.tsx`, authored in the frontend twin and ported to
+  the canvas twin (diff is only the pre-existing import-path lines).
+  `onAssign` is an optional callback: the studio surface invokes it with
+  local feedback; the backend wiring of that callback is a documented
+  consolidation hook (the studio has demo client ids, not profiles).
+- Gates on this tip: typecheck 0, lint 0 (0 errors; one unused-import
+  warning fixed), prettier diff-files clean, unit 1384/1384, integration
+  6/6 on real PG, build 0, index:check 0, frontend lint 0. Frontend
+  typecheck fails 1 pre-existing error in
+  `src/components/client/legacy-sheet/dialog.tsx` (untouched at merge
+  base, forbidden path, not this card's file).
+- Browser proof (prod server, lane DB app_fp_w2t7, real logins): coach
+  PUT+POST round trip live; two independent client-owned rows after
+  re-assign; library row unchanged; client own-scope list 200 with both
+  rows; spoofed `clientProfileId` 403; assign affordance + feedback at
+  1440 and 390 in the ethereal studio. Screenshots under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T7/`.
+
+## 2026-10-27 - W2T6 preview conflict repair 2: w2/c7 merge line `daaad6e` merged into `w2/t6`
+
+- Preview rebuild skipped w2-t6 again after the verified c7 merge line
+  advanced to `daaad6e` (merge `9f28b3c` of `4bfaf2b` + `2f602b6` plus
+  its STATUS record commit). Absorbed into stage tip `b9f5003` as
+  `--no-ff` merge `03d2a93`. No feature work.
+- Merge-tree probe `git merge-tree --write-tree b9f5003 daaad6e`
+  -> tree `440b528ace9fc186c3b5fd887d049d2349869577`; conflict list
+  `docs/STATUS.md` only. Both `client-app.css` twins and the generated
+  `docs/index/*` auto-merged clean this round.
+- Resolutions: `docs/STATUS.md` union, ours-new (the t6 repair entry)
+  then theirs-new (the c7 repair entry) over the shared tail, all
+  2026-10-27 entries above all 2026-10-26. `npm run index` regenerated
+  the merged docs byte-identical to the auto-merge; `index:check` 0.
+- First `npm run typecheck` exit 2 on a stale Prisma client
+  (`clientPhase`/`clientWeekNote` missing on the generated types);
+  fixed by `npx prisma generate`, re-run exit 0.
+- Twin parity: canvas vs frontend `client-app.css` delta content is
+  byte-identical before and after the merge (29 frontend-only + 85
+  canvas-only lines: the ca-nutrition actuals/split blocks plus the
+  end-positioned ca-shared-media block on the canvas side). The diff
+  hunk count moved 6 -> 4 only because surrounding merged lines
+  shifted hunk boundaries; the differing line set did not change.
+- Gates on the merged tip: `npm run typecheck` 0, `npm run lint` 0
+  (0 errors, 94 warnings), `cd frontend && npm run lint` 0 (biome 309
+  files), `npx vitest run` 0 (122 files, 1428 tests, 0 failures; the
+  inherited logging.test.ts env pair did not occur), `npm run
+index:check` 0, dash gate `git diff b9f5003..HEAD` added-line en/em
+  count 0.
+- NOT done: no push, no PR, no fetch. Lane database not needed (no
+  gate demanded one).
+
+## 2026-10-27 - W2T6 preview conflict repair: w2/c6 tip merged into `w2/t6`
+
+- Preview rebuild 20261027T143754Z skipped w2-t6 on a real conflict against
+  the already-merged stage set. Fixed by `--no-ff` merge `26b0737` absorbing
+  w2/c6 tip `6d8560c` into stage tip `da34672`. No feature work.
+- Conflicted files and resolutions: `frontend/src/components/client-app/
+client-app.css` union (t6 `ca-shared-media` block kept in place, c6
+  `ca-checkin-*` styles appended intact; selector sets disjoint so neither
+  cascade regresses). `docs/STATUS.md` union, both sides' entries newest
+  first. `docs/index/COMPONENTS.md` + `ROUTES.md` took ours then `npm run
+index` regenerated the merged tree (174 components, 58 API routes).
+  Canvas twin `components/canvas/client-app/client-app.css` auto-merged
+  but placed `ca-shared-media` at EOF; the identical resolution was applied
+  so parity holds.
+- Gates on the merge commit: `npm run typecheck` 0, `npm run lint` 0
+  (93 warnings), `cd frontend && npm run lint` 0 (biome 306 files, 0/0),
+  `npx vitest run` 0 (121 files, 1411 tests, 0 failures; the inherited
+  logging.test.ts env pair did not occur), `npm run index:check` 0, dash
+  gate `git diff da34672..HEAD` added lines en/em count 0.
+- Twin parity: `components/canvas/client-app/client-app.css` vs the
+  frontend twin diffs at exactly the pre-existing 80 canvas-only lines
+  (ca-photos + ca-nutrition + ca-nutrition-split extras), unchanged from
+  before the merge.
+- Independent gate cross-check by a DeepSeek child (hermes, different model
+  family): same gate list all exit 0, vitest 1411/1411. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/` (`child-gates-summary.txt`,
+  `twin-delta-pre-merge.diff`, `twin-delta-post-merge.diff`).
+- NOT done: no push, no PR, no fetch. Lane database not needed (no gate
+  demanded one).
+
+## 2026-10-27 - w2-c7 conflict repair: absorbed verified c6 tip `2f602b6`
+
+- Preview merge probe `git merge-tree --write-tree 4bfaf2b 2f602b6`
+  -> tree `76845d35b2700fa26bed02a39d102ab2dbdd291f`; conflicts on
+  `components/canvas/client-app/client-app.css`, `docs/STATUS.md` and
+  generated `docs/index/{COMPONENTS,DATA-MODEL,ROUTES,SYMBOLS}.md`,
+  matching the lead probe. Frontend css twin auto-merged.
+- Merge commit `9f28b3c` (--no-ff of `2f602b6`).
+- `client-app.css` resolved by union: the auto-merged head (c7 photos,
+  training log and tracker polish plus the c6 bottom-nav repair lines
+  `min-inline-size: max-content` and the hidden-scrollbar rules) kept
+  whole, then the c6-side w2-c5 messages/tasks block appended whole so
+  neither side's cascade regresses; the stale base tail blocks the c7
+  polish had replaced stayed dropped. Frontend twin auto-merged to the
+  same union shape; twin delta stays the pre-existing 114 lines,
+  content identical before and after the merge.
+- `docs/STATUS.md`: ours-new entries then theirs-new (w2-a4 repair)
+  over the byte-identical tail; all 2026-10-27 entries above all
+  2026-10-26. Index docs regenerated via `npm run index` on the merged
+  tree; `npm run index:check` 0 on both runs.
+- Gates on the merged tip: `npm run typecheck` 0 after `npx prisma
+generate` (stale client missed `clientPhase`/`clientWeekNote`);
+  `npm run lint` 0 (0 errors, 94 pre-existing warnings);
+  `cd frontend && npm run lint` 0; `npx vitest run` 1428/1428 in 122
+  files (the inherited logging.test.ts env pair stayed green here, also
+  30/30 isolated); dash gate prints 0. Evidence in
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7M2/`.
+
+## 2026-10-27 - w2-c7: card surfaces built, live-proven, gates green
+
+- Scope implemented on top of merge tip `01c66b0`:
+  - `components/canvas/client-app/photos.tsx` rewritten: shared
+    presentational `PhotoGallery` plus live wrapper: pose select on
+    upload encoded as `{pose} · {date}` in the minted media fileName,
+    pose parsed back with `"Photo"` fallback, compare mode driven by
+    `compareProgressPhotos`, delete via `deleteProgressPhoto`,
+    `SharedMedia` kept verbatim after the gallery.
+  - `frontend/src/components/client-app/photos.tsx` new authored twin:
+    byte-identical presentational block; demo wrapper uses local state +
+    object URLs (frontend has no photos section id; intentionally
+    unmounted there, named deviation).
+  - `components/canvas/client-app/client-app.tsx`: `poses` wired from
+    the variant's visual-upload question, `DEFAULT_POSES` fallback.
+  - `components/canvas/client-app/training-log/session-logger.tsx` +
+    frontend twin: typed-set dirty tracking (weight/reps/RPE/RIR/note/
+    flag set and not done) with dirty-only `beforeunload`; finish clears
+    permanently for the logger instance. Twins differ only by the
+    pre-existing `&apos;` hunk.
+  - `components/canvas/client-app/training-log/remote-training-logbook.tsx`:
+    queued/in-flight remote write counter arms the same dirty-only
+    beforeunload; no-op writes never arm.
+  - `components/canvas/ethereal/client-tracker/remote-client-tracker.tsx`:
+    day dirty = pending edits, raws differing from the loaded surface
+    baseline, or a save/refetch round trip running; guard registered
+    only while dirty; autosave/token-refresh/override semantics kept.
+- Live API proofs on lane DB `app_fp_w2c7r2` (TLS front
+  `https://localhost:5178` -> private `next start` :5177, production
+  runtime via `APP_ENV=development`, all dev flags unset):
+  Amara + Emma real logins; media intent -> local PUT -> register 200
+  for both; photo lists disjoint (Amara 16 seeded + probe, Emma probe
+  only); compare 200 own pair; Emma -> Amara photo path 403, foreign
+  session 404 both directions; own delete 200; training lifecycle
+  start/set/finish 200 for both; Amara's already-finished log correctly
+  409 `state_conflict`.
+- Browser pass (Playwright, real login) at 1440 and 390:
+  17 photo tiles rendered live each width; compare picker renders
+  `.ca-photos-compare`; training list shows 4 scheduled sessions;
+  390 overflow probe `{doc:390, win:390, offenders:[]}`.
+  Tracker guard proven live: PUT daily-entry write delayed in-flight
+  via route intercept -> synthetic cancelable `beforeunload` dispatch
+  returns `defaultPrevented:true` (armed); after save settles,
+  `defaultPrevented:false` (disarmed). Both widths.
+  Screenshots: `Vari8-evidence/FULL-PACKAGE-2/W2C7/w2c7-{1440,390}px-*.png`.
+- Gates: `npm run typecheck` 0; `npm run build` 0 (post-change, before
+  prod boot); `npm run index` + `index:check` 0; eslint touched files
+  0 errors; frontend `biome check` touched files clean; canvas-file
+  biome findings all verified pre-existing against HEAD baselines;
+  `npx vitest run` 1411/1411 (121 files); frontend `test-frontend.mjs`
+  277/277; no new en/em dashes in added lines. Known pre-existing
+  frontend `typecheck` error in `legacy-sheet/dialog.tsx` untouched.
+- Lane teardown: `DROP DATABASE app_fp_w2c7r2` executed;
+  `pg_database` count for `app_fp_w2c7%` is 0; prod server :5177 and
+  TLS front :5178 stopped. Work committed as `d4a8659`, tree clean.
+
+## 2026-10-27 - w2-c7: fe2 merge landed after lead amendment tick 160
+
+- Lead amendment tick 160 extended the step-3 named resolution set by
+  exactly one file: `frontend/src/components/coach/clients.tsx`,
+  resolved by the same union rule granted for
+  `components/canvas/coach/store.tsx` (keep both sides' additions;
+  order matches the canvas twin's auto-merged order).
+- Merge 3 re-run: `git merge-tree --write-tree` on HEAD + fe2 pin
+  `2df2d8200fcc5aefc2a5d6629928e56d8f803e16` -> tree OID
+  `f29b779115485a06bee951458909bb55b5b7cc38`; conflicts exactly the
+  amended set (`store.tsx`, `frontend/.../clients.tsx`,
+  `docs/STATUS.md`, `docs/index/{COMPONENTS,DATA-MODEL,ROUTES}.md`);
+  `components/canvas/coach/clients.tsx` auto-merged. Merge commit
+  `01c66b0d01d6c25011d3f89f5ecbb488730af193`.
+- Resolutions: `store.tsx` union (fe2 tracker/training-logs imports
+  plus HEAD `addLocalDays`, both call sites live at 807/906);
+  `frontend/.../clients.tsx` union (both `AthleteTrackerTab` and
+  `ClientMediaPanel`, canvas auto-merge order: tracker-tab import
+  before the model block, media import after it); `STATUS.md`
+  hand-merged ours-new then theirs-new over a byte-identical tail;
+  index docs regenerated via `npm run index` (exit 0).
+- Merged-tip gates: first `npm run typecheck` exit 2 on stale Prisma
+  client (`trackerDayNote` missing), fixed by `npx prisma generate`;
+  re-run exit 0. `npm run build` exit 0.
+- New lane DB for this run: `app_fp_w2c7r2` (`app_fp_w2c7` was never
+  created; not reused).
+
+## 2026-10-27 - w2-c7: merge base assembly - a3 + t6 landed, fe2 merge STOPPED on unlisted conflict
+
+- Card w2-c7 (client photos, training log, tracker entry polish),
+  branch `w2/c7` off c1 tip `788714b`. Lane DB `app_fp_w2c7`, port
+  floor >4999, migration stamp `20261027000017` reserved and free.
+- Merge 1: `w2/a3` `0e91798` -> `git merge-tree --write-tree` OID
+  `8dd37c086de6a63b807cb39e6ca8f533f8ed3a72` (matches the card's
+  verified OID, clean). Merge commit
+  `842851ad8679d8d645f35a79f1bccacbdd5ae628`.
+- Merge 2: `w2/t6` pinned `f0dddf3` (note: the `w2/t6` branch tip had
+  advanced to `da34672`, a later merge of w2/fe1; the card pins
+  `f0dddf3`, so the SHA was merged, not the branch tip). merge-tree
+  OID `1c321ddf5ac0415339a56b16137ca012dd65aefd`; conflicts only in
+  the two named files, resolved per card: `docs/STATUS.md` hand-merged
+  newest-first keeping both sides, `docs/index/ROUTES.md` regenerated
+  via `npm run index` (exit 0). Merge commit
+  `0c6b0a8c87069c8f44c5cd15da96ee2d12c6b87f`.
+- Merge 3: `w2/fe2` `2df2d82` -> merge-tree OID
+  `96e7573f9705326c0b487e5589f505cf1a2e239a`; conflicts: named
+  `components/canvas/coach/store.tsx`, named docs class
+  (`docs/STATUS.md`, `docs/index/COMPONENTS.md`,
+  `docs/index/DATA-MODEL.md`, `docs/index/ROUTES.md`), PLUS the
+  unlisted `frontend/src/components/coach/clients.tsx` (t6 side adds
+  `import { ClientMediaPanel } from "./media"`, fe2 side adds
+  `import { AthleteTrackerTab } from "./athlete/tracker-tab"` in the
+  same import-block slot; the canvas twin auto-merged cleanly).
+  Card rule: any conflict beyond the named files stops the merge,
+  verbatim to report, no resolution attempt. Merge aborted; branch at
+  `0c6b0a8`. Verbatim conflicted file and stage list under
+  `Vari8-evidence/FULL-PACKAGE-2/W2C7/`.
+- Card BLOCKED pending owner/lead ruling on `clients.tsx` resolution
+  scope. No card item work started; merged-tip typecheck/build not
+  run, per the step order.
+
+## 2026-10-27 - Wave 2 T6 repair 1: ownership backfill on `w2/t6`
+
+- Verifier B1: the T6 migration added `client_profile_id` with no
+  backfill, so every pre-existing client upload (owner only in
+  `storage_key`) read NULL and was misclassified as coach library.
+  Repair adds a guarded `UPDATE` inside the same migration (after the
+  column add, before the composite FK): keys under
+  `workspace/<ws>/client/<profile>/` backfill the owner only when the
+  profile exists in the same workspace and the segment is not the
+  reserved `library` pseudo-owner; everything else stays NULL.
+- Seed companion fix: `scripts/seed/40-media.seed.ts` now writes
+  `clientProfileId` on the seeded voice note and progress photo
+  (seed runs after migrate deploy, so the migration backfill cannot
+  reach rows it creates). Library rows keep NULL.
+- New integration test (6th `it()` in
+  `tests/integration/api-v1-media-library.test.ts`) creates pre-T6
+  rows with client-path keys and NULL owner, re-executes the
+  migration's own UPDATE, and asserts `ownership=client` includes the
+  valid row while `ownership=library` keeps the library and foreign
+  rows. Test counts on this tip: integration 6/6, unit 4/4 for the
+  media files (repo unit suite 1384).
+- Verified on lane db `app_fp_w2t6r1`: `migrate deploy` 0, `seed:dev`
+  0, seeded client uploads carry the owning profile id and library
+  rows stay NULL; `down.sql` 0, second `migrate deploy` 0 and the
+  backfill re-derived the owners from storage keys.
+- Live re-proof on the lane (live-pass-r1.mjs, port 4501): coach
+  ownership chip "Client uploads" returns the 2 seeded client uploads
+  and "Library" returns only the 2 coach-owned rows at both 1440 and
+  390; assign -> 200, delete on assigned -> 409; client Photos
+  "Shared by your coach" mounts 2 items under the seeded client
+  session (`/client?demo&client=client-007`, see the reachability note
+  below). Screenshots under `Vari8-evidence/FULL-PACKAGE-2/W2T6/`.
+- Record corrections applied below: the earlier entry overstated the
+  integration count (5 original `it()` blocks, not 12; now 6) and
+  implied a frontend twin for "Shared by your coach" that does not
+  exist - `frontend/src` has no photos surface or string (only the
+  unreferenced `ca-shared-media` CSS block), an established canvas/
+  frontend divergence.
+- Lane notes: `/client` still needs `?demo` + a canvas client id to
+  mount (pre-existing `client-route.tsx` behavior, verdict I3); the
+  seeded client account owns no profile until the lane-only I4 rebind
+  is applied (pre-existing seed-ordering defect, not fixed here).
+
+## 2026-10-27 - Wave 2 T6: media taxonomy and client assignment on `w2/t6` (base `2967bb1`)
+
+- `MediaObject.clientProfileId` (NULL = coach library, set = client upload)
+  plus new `MediaAssignment` with same-workspace composite FK; one
+  migration dir `20261027000015_media_taxonomy_client_assignment`
+  (`migration.sql` + `down.sql`). Delete semantics: restrict - a live
+  assignment makes staff delete return 409 `has_assignments`.
+- New endpoints under `app/api/v1/media/`: GET list with `kind`/
+  `ownership` filters (`library.manage`), DELETE media (409 while
+  assigned), POST/DELETE `.../assignments[/:clientProfileId]`, GET
+  `.../assigned` (client own-scope only). Download auth extended so a
+  client may open media assigned to them.
+- UI: type + ownership filter chips and Assign/Unassign/Remove controls
+  in `media.tsx` (frontend authored first, identical shared block ported
+  to canvas twin); "Media" profile tab in both `clients.tsx` twins;
+  "Shared by your coach" list in `components/canvas/client-app/photos.tsx`.
+- Tests: `tests/unit/media-library.test.ts` (4), integration
+  `api-v1-media-library.test.ts` (5: filters, assign, unassign,
+  cross-client denial, 409 delete). Gates: typecheck 0, lint 0
+  (89 warnings, baseline parity), prettier on touched files 0,
+  `index`/`index:check` 0, `cd frontend && npm run lint` 0, vitest unit
+  4/4 + integration 5/5 on lane DB, `build` 0, `migrate deploy` 0 on
+  `app_fp_w2t6`, `seed:dev` 0.
+- Live pass on prod server :4517 at 1440+390: coach filter Images
+  20->19 rows, assign POST 200 ("Assigned to Amara Lewis."), delete on
+  assigned item 409 ("Unassign this item before removing it."); client
+  `amara.lewis@example.com` via `/me/login` then `/client?client=client-007`
+  Photos shows "Shared by your coach" with 4 items;
+  `GET .../assigned` 200 items=4. Screenshots under
+  `Vari8-evidence/FULL-PACKAGE-2/W2T6/`.
+- Note: `/client` renders sections from the canvas-local client config
+  (`?client=<canvas-id>`); the remote `own` binding only enables the
+  Photos section. `/me` is a separate surface and does not mount it.
+
+## 2026-10-27 - SEED_CLIENT owns the Amara Lewis profile; every linked demo client signs in
+
+- `scripts/seed/00-workspace.seed.ts`: the seeded sign-in client now links
+  to the Amara Lewis canvas profile (previously it linked `clients[0]`,
+  Emma Anders, which `33-checkins.seed.ts` then re-pointed to a demo user,
+  leaving SEED_CLIENT with zero profiles and getClientViewer null; the
+  row had to be relinked by hand). All fifteen profiles are now
+  created in roster order before the link so 33's positional indexing is
+  preserved. New `no-profile@canvas-demo.test` (ACTIVE CLIENT, credential
+  from SEED_DEMO_CLIENT_PASSWORD with SEED_CLIENT_PASSWORD fallback, zero
+  client_profile rows) carries the own-scope denial coverage SEED_CLIENT
+  used to provide.
+- `scripts/seed/33-checkins.seed.ts`: `demoClientUser` now writes a Better
+  Auth credential account for every demo user it creates, not only Emma,
+  so lily.chen and oliver.stone sign in; comment block corrected.
+- `scripts/seed/50-demo-coverage.seed.ts`: the demo-export Amara Lewis row
+  resolves to the SEED_CLIENT user via SEED_CLIENT_EMAIL instead of a
+  fixture-email user, sets the user name to the profile name, and a
+  credential account is ensured for every linked user including pre-linked
+  ones the module reuses. No amara.lewis@example.com user is created on a
+  fresh seed; the fixture email is not referenced by any other seeded row.
+- `tests/integration/seed-credentials.test.ts`: asserts SEED_CLIENT owns
+  the Amara Lewis profile, all fifteen linked canvas-demo users verify
+  with the seeded password, the no-profile client holds zero profiles, and
+  a second seed duplicates nothing; runs with VARI8_SEED_DEMO=1.
+- Gates on a lane database: `prisma migrate deploy` 0,
+  `npm run seed:dev` 0 twice (reseed: identical link state and row counts),
+  sign-in at /login as SEED_CLIENT lands on /me rendering Amara Lewis
+  (getClientViewer non-null), `npx vitest run --config
+vitest.integration.config.ts tests/integration/seed-credentials.test.ts`
+  0 (5 tests), `npm run lint` 0 (91 warnings, 0 errors),
+  `npm run typecheck` 0, `npx prettier --check` 0 on changed files,
+  `npm run index` + `index:check` 0, dash gate on added diff lines 0.
+
+## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
+
+- Client check-in surface wired: `components/canvas/data/checkins.ts`
+  (+130: schedule status chips, per-pose VISUAL media mapping,
+  tracker-summary rows, submitted-answer display) consumed by
+  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
+  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
+  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
+  - `client-app.css` kept in parity for shared blocks. Product
+    onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+    panel + page, `app/globals.css`). Helpers covered by
+    `tests/unit/checkin-client-surface.test.ts` (16 tests).
+- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
+  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
+  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
+  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
+  (304 files; first attempt before install exited 127),
+  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
+  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
+  en/em count 0 after repair (was 1, a comment em dash, fixed here).
+- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
+  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
+  feedback), dropped at teardown (`pg_database` count 0).
+  Production build served behind a loopback TLS front; surfaces
+  required APP_ENV=development with ENABLE_CHECK_INS=1 and
+  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
+  coach check-ins page without them).
+- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
+  sign-in, schedule a check-in, client /me Check-ins list (seeded
+  Submitted, Overdue, Scheduled items), fill form with five pose
+  slots plus tracker summary, submit (readback: Submitted,
+  awaiting coach review; media rows verified in DB), seeded
+  Oct-18 reviewed and Oct-24 awaiting-review details, product
+  onboarding empty state, required-field message on empty submit
+  at 390. Horizontal overflow 0 on every checked view.
+- Own-scope probes (client session): GET instances/[own] 200,
+  [foreign] 403 not_available, instances/next 200, instances list
+  by clientProfileId 403 denied (own and foreign), submissions
+  list 403 denied, submissions tracker-context 403 denied,
+  daily-entries 200, foreign progress-photos POST 403. Lily
+  lane-only credential returned a disjoint next instance and 403
+  on a foreign instance.
+- Repair round 1: replaced an em dash in the test file header
+  comment (B1) and added this STATUS entry (B2), verdict
+  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
+
+## 2026-10-27 - w2-fe2 merge resolution: absorbed w2/a3, preview line product-clean
+
+- Merge-resolution card after preview rebuild 20261027T054901Z hit a real
+  product conflict merging the fe2 READY tip 2df2d82 against the merged
+  stage set. Goal: absorb conflicting verified stages into w2/fe2 so the
+  preview merge line is clean end to end. No feature work.
+- Step 1: probed w2/a3 0e91798 with `git merge-tree --write-tree`
+  (tree 21500021c68d23467823eb63ad01eaf19d2bed9f): one conflict,
+  `components/canvas/coach/store.tsx` import region. Merged as --no-ff
+  commit 5cea742. Resolution kept both sides: fe2's tracker and
+  training-logs import blocks plus a3's `addLocalDays` in the
+  `./targets/model` import; a3's new code uses `addLocalDays` at the
+  hydrated range fetch. All other files auto-merged.
+- Step 2 probes against the new HEAD: w2/c1 788714b clean
+  (tree e0746aea0a3c0fadaa22a7c71702473a7ced5e26); w2/c2 4ca38da
+  docs-only (b0d1e51841eb67f099c24ef780270d0e8499e9bc); w2/t3 a461e00
+  docs-only (14553f76d2495aa242f31e254396ad181939dd2e); w2/t4 33a3cab
+  docs-only (55ea9b2572d82bc337b307d87fc74ed65378f83e); w2/t5 5c8dae8
+  docs-only (0509bdc651ff853a2de5bff82c8d86515ec34e31) with
+  `db/schema.prisma` and the frontend twin store auto-merging clean once
+  a3 was absorbed; w2/t6 da34672 docs-only
+  (fc6f8ddcb32f846d47c62630dc6bd1fd76158991). No tip showed a non-docs
+  conflict, so per the card rule no further stage was merged. A
+  supplementary t5-on-t6 probe (71910a6b878f5781f99988fc088c505397b7e263)
+  also auto-merged schema.prisma, so the later preview merges stay
+  product-clean regardless of order.
+- Gates on the merged tip: `npx prisma validate` 0 (DATABASE_URL
+  placeholder; no .env in this worktree), typecheck 0, lint 0 (93
+  warnings, unchanged), frontend lint 0, `npx vitest run` 0 (118 files,
+  1398 tests), `npm run index` regenerated with no diff, index:check 0,
+  `npm run build` 0, dash gate prints 0, worktree clean.
+- Evidence: NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE-2/W2FE2/.
+
+## 2026-10-27 - w2-fe2 repair 2: tracker hydration scoped to the Tracker tab, logging test env isolation
+
+- Verdict `VERDICT-6069da5.md` blocked on B2 (the W2-FE2 tracker hydration
+  effect fired for every signed-in client route, not only the Tracker tab)
+  and B3 (inherited red: two logging.test.ts media/object tests, expected
+  500, got 403 in the full suite under the lane env).
+- B2 repair: `components/canvas/coach/store.tsx` hydration effect now
+  returns early unless `route.tab === "Tracker"`; `route.tab` added to its
+  dependency array. On the profile overview and onboarding screens no
+  tracker values or training-log fetch fires. The note-sync effect keeps
+  its `trackingHydrated` gate, so it stays inert until the Tracker tab has
+  hydrated once and keeps pending note writes alive across tab navigation.
+  The frontend twin `frontend/src/components/coach/store.tsx` holds only
+  local-storage hydration: no server fetch exists there to scope, so the
+  alias rewrite remains the only twin delta.
+- B3 fix (test-side): `tests/unit/logging.test.ts` `stubLocal()` now also
+  stubs `MEDIA_STORAGE_SIGNING_SECRET`. `localStorageConfig()` prefers it
+  over `BETTER_AUTH_SECRET`; the lane env exports a lane signing secret,
+  so the route verified signed URLs against the wrong secret and answered 403. Full suite reproduction: standalone logging.test.ts red under the
+  lane env before the stub, green after. Product code unchanged.
+- Live proof on a lane dev server (seeded coach, 1440 and 390): the
+  profile overview fires 0 tracker values or training-logs GETs before
+  the Tracker tab opens; opening Tracker fires values 200 and
+  training-logs GET 200 once, note markers and the week matrix render.
+  Reference spot check on the unrepaired tree measured 1 values GET on
+  the same overview.
+- Parity on the production build through the fixed runner: 74/74 screens
+  captured, exit 1 with 63 problems. The four s01 lines returned exactly
+  to base values (s01-profile-overview 10723 px geom 5/2/12 at 1440 and
+  297827 px geom 5/2/218 at 390; s01-profile-onboarding 2186 and 193294
+  px with the same geoms). All other FAIL lines are byte-identical to the
+  reviewed tip run except s07-exercise-library and s11-client-preview,
+  which are capture-variable and now match the base and pre-stage
+  measurements instead.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), frontend
+  lint 0, index:check 0, vitest run 0 (117 files, 1396 tests under the
+  lane env), dash gate 0.
+
+## 2026-10-27 - w2-fe2 repair 1: parity runner https origin, s07 recipe fix, baseline refresh
+
+- Verdict `VERDICT-f16be09db2e9e5f192c245769257f76975a6538c.md` blocked on
+  twin parity only: the runner forced an http `BETTER_AUTH_URL` onto its own
+  spawned production server (boot_refused exit 2), and the dev-mode s07
+  capture failed on "Set up plan" then crashed pre-compare.
+- `tools/parity/run.mjs`: the spawned root-app production server now keeps
+  `next start` on a private http port while an in-process TLS front serves
+  `https://localhost:<port>` (self-signed loopback cert, or
+  `PARITY_TLS_CERT`/`PARITY_TLS_KEY`), and that https origin is what the
+  server gets as `BETTER_AUTH_URL`/`AUTH_URL`. Port ownership is still
+  enforced on both listeners; NODE_ENV is forced for the spawn env so a
+  sourced lane shell cannot poison the production build.
+- `tools/parity/capture.mjs`: loopback https origins get an undici
+  `rejectUnauthorized:false` dispatcher for fetches and
+  `ignoreHTTPSErrors` for Playwright contexts; context/page creation moved
+  inside the capture retry block so a `newContext` protocol error becomes a
+  retried failure instead of crashing the run before compare.
+- s07 attribution: the same capture on parent base `74cff77` renders
+  "Set up plan" for Emma Anders; on w2-fe2 the server plan hydration added
+  by this diff turns her card into "Edit plan" once the seeded published
+  program loads, so the recipe raced or missed. Recipe now uses Chloe Park
+  (no seeded training program, "Set up plan" deterministic) plus a scoped
+  alternate label for reruns where a prior capture already persisted a
+  draft.
+- `tools/parity/baseline` regenerated from the current `frontend/` tree via
+  `PARITY_DEV=1 --update-baseline` (74/74 screens): the committed baseline
+  predated the PR-204 frontend reset (recorded at `44eec07`) and the prod
+  frontend build still trips the inherited `dialog.tsx` `labelHidden`
+  typecheck defect (STATUS F1), so the documented dev path was used.
+- Result on the production build through the fixed runner: 74/74 screens
+  captured at both viewports, exit 1 at compare with 63 problems - the
+  identical fingerprint reproduces on base `74cff77` (same 63 problems),
+  so the residual is pre-existing seed-vs-canvas drift and owner-rulable
+  truth text, not a w2-fe2 regression. A `?demo` diagnostic run decomposes
+  it further (37 problems persist at render level without hydration; the
+  26 that clear are server-data drift). Exit 0 additionally needs the
+  project-level seed alignment or RULED decisions, which are outside this
+  card's scope.
+- Gates on the repair tip: typecheck 0, lint 0 (93 warnings), index:check
+  0, vitest 1396/1396, dash gate 0.
+
+## 2026-10-27 - w2-fe2: backend for the coach Tracker tab
+
+- Merge: `git merge-tree` (no ref updates) predicted one content conflict in
+  `docs/STATUS.md`; resolved keeping both entries, newest first. Merged
+  w2/a2 tip `8403a6230ee7fb97eff2ed8ed4769ade8f2db2a2` into `w2/fe2` as
+  merge commit `072eb5a9d35617fe716e7eed1d48e78ef40f6b93`. Typecheck and
+  build on the merged tip passed before feature work.
+- Schema: new `TrackerDayNote` model (one coach-authored day note per
+  client+date) beside the existing `TrackerComment` per-cell note;
+  migration `20261027000012_tracker_day_notes` with `down.sql`, deployed
+  via `prisma migrate deploy` on a fresh lane database.
+- API: `GET .../clients/:clientProfileId/daily-entries/values` returns the
+  tracker span (65 seeded days for Amara) with per-field display values,
+  cell notes, day notes and the workspace parameter list, batched (no
+  N+1); entries and both note lists are each capped at the newest 400
+  rows, capability `clientData.read`. `PUT`/`DELETE .../tracker-notes`
+  upsert and clear cell/day notes on natural keys, capability
+  `notes.write` at the route layer, with the service then applying the
+  authoritative `coachNotes` write matrix: ACTIVE `ClientAssignment`
+  required, so unassigned same-workspace coaches, owners, clients and
+  foreign members are denied (owner write is `denied` in rbac.ts D10;
+  `roles.ts` `notes.write` still says owner-workspace - open question for
+  Marcel, implementation follows rbac).
+- Canvas: `data/tracker.ts` fetchers plus the wire->tracking mapper;
+  `store.tsx` hydrates `client.tracking` and remote session logs for the
+  viewed client (reusing the w2-a2 training-log route) and debounce-syncs
+  `note:`/`coach-note` text keys to the notes route. Derived columns
+  without a server parameter keep their note local, matching pre-backend
+  behavior.
+- Seed: `36-daily-entries.seed.ts` and `50-demo-coverage.seed.ts` now set
+  field `decimals`/`summary` metadata and deterministic tracker cell/day
+  notes; two consecutive seeded dumps are byte-stable after normalizing
+  timestamps, cuids, password hashes and COPY row order
+  (`W2FE2/normalize-dump.py`).
+- Seed: a second same-workspace coach is provisioned when
+  `SEED_COACH2_EMAIL`/`SEED_COACH2_PASSWORD` are set (00-workspace) and
+  assigned at COACH scope to every canvas client (20-clients); seeded note
+  ids are profile-anchored constants and stale-date rows are cleaned, so
+  reseeding on a different calendar day leaves no orphans.
+- Verified: typecheck, lint (0 errors), build, 117 files / 1392 tests,
+  prettier clean on touched files, docs/index regenerated and
+  `index:check` green. Independent review (Claude family via
+  hermes-verify) returned REPAIR on round 1; all findings fixed and
+  re-proven. Live matrix on the lane app (APP_ENV=test, feature flags on,
+  consent gates off per D12): assigned coach GET/PUT 200, second assigned
+  coach GET 200 and sees the notes, unassigned same-workspace coach
+  GET/PUT 403, foreign-workspace coach 403, client 403, owner PUT 403,
+  anonymous 401, `2026-02-31` 400, bogus parameter key 400
+  (`W2FE2/role-matrix.txt`). Browser proof at 1440 and 2560, real login,
+  no `?demo`: UI cell note PUT 200 persists after reload, day note renders
+  server-side, 0 console errors; screenshots in
+  `Vari8-evidence/FULL-PACKAGE-2/W2FE2/shots/`.
+- Held for w2-a5 (not claimed here): template-editor persistence of
+  Decimals and Week summary, and the template-field read that drives tab
+  columns from the server.
+
+## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
+
+- Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`
+  resolved to `a3f620a56bf3165b6775c8f0bd4acabae21935bc` (verified by rev-parse),
+  merged into `w2/fe1` as merge commit `a83c0e92c87b5ac0a12160c82280a941e063ebe0`.
+  All 14 upstream files under `frontend/` verified byte-identical to the merge
+  tip by diff. No rebase, no force.
+- Port: `tools/port-canvas/port.mjs` run with `PORT_BASE=9491897`
+  `PORT_REF=a3f620a`. 9 mechanical copies plus 4 three-way merges
+  (`clients.tsx`, `coach.css`, `athlete/timeline-tab.tsx`, `model.ts`, all
+  added to HAND_MERGE because they carry local wiring deltas). New files
+  `components/canvas/coach/athlete/tracker-tab.tsx` + `tracker-tab.css` are
+  byte-identical to the upstream twin after the import-alias rewrite.
+  Hand-merges finished with zero conflicts and preserved the local deltas
+  (ClientTrainingLogs in clients view, review-panel status chips in
+  coach.css, activity-target version fetch in timeline-tab, provider/import
+  wiring). Tracker tab renders for `tab === "Tracker"` between Timeline and
+  Plans on the athlete profile.
+- Ownership note: `components/canvas/coach/model.ts` is on the card's
+  must-not-edit list, but the upstream `FieldConfig.decimals`/`summary`
+  extension and the revision-9 union live in that file's canvas twin and the
+  ported tab does not typecheck without them. Carried via the port's
+  three-way merge; flagged for the owner.
+- Demo seed re-point to export revision 9: `README.md`, `workspace.json`,
+  `clients/client-007.json` copied byte-verbatim into
+  `lib/canvas/data/demo-export/` and `scripts/seed/demo-export/`;
+  `PROVENANCE.md` now names source ref `import/frontend-tip`, commit
+  `a3f620a`, revision 9. `scripts/seed/50-demo-coverage.seed.ts` extended
+  from 8 keys to the full 26-field rev-9 tracker set: numeric fields seed
+  as MEASUREMENT (rating fields included so zero values and decimals
+  survive), `bleeding-level` as OPTION, `bp`/`pms-symptoms`/`daily-note`
+  as TEXT from `tracking.text` `${iso}:${fieldId}`. Coach-authored keys
+  `${iso}:note:*` and `${iso}:coach-note` deliberately unseeded; the
+  server-side note path is held w2-a5 work.
+- Seed proofs on lane `app_fp_w2fe1` (plus `app_fp_w2fe1b` as baseline):
+  default profile byte-identical, normalized `pg_dump` diff 0 lines
+  (1525 rows each side; only migration ledger ids, password hashes and
+  dump session tokens excluded). Demo profile: client-007 Amara Lewis,
+  26 template fields, 65 daily entries, 1338 revision values (1288
+  numeric, 38 text, 12 option), matching the rev-9 export counts.
+  Idempotent across reruns: row counts and normalized content hashes
+  identical (evidence `counts-demo-run*.txt`, `hash-demo-run*.txt`,
+  `dump-default-*.txt`).
+- Gates: `npm run typecheck` 0; `npm run lint` 0 errors / 92 warnings
+  (89 inherited, 2 in byte-verbatim upstream code, 1 authored and fixed);
+  `npm run format:check` exits 1 with 57 failing files, all inherited at
+  the merge base, zero authored; `npm test` 116 files / 1380 tests pass;
+  `npm run build` 0; `npm run index` + `index:check` 0 (COMPONENTS.md
+  gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
+  `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
+  0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
+npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+  `labelHidden` (stage-10 F1, present at merge base).
+- Browser proof: production build via `next start` on http 4403 behind the
+  disposable TLS proxy on https 4402 (F2 workaround; production auth
+  rejects http origins). Lane `app_fp_w2fe1`, seeded default + demo,
+  signed in as seeded coach, no `?demo`. URL
+  `/coach?section=clients&client=client-007&tab=Tracker` at 1440 and 2560:
+  `.trk` root renders, 10 expanded week rows plus the current week,
+  week labels 17 Aug through 25 Oct, template-driven column groups
+  (Body, Nutrition, Recovery, Activity, Notes) with derived Day/Session/
+  Coach columns, Expand/Collapse/Jump-to-today/pin controls. Screenshots
+  `tracker-1440.png`, `tracker-2560.png` in the evidence dir, looked at.
+- Note persistence: coach day note written through the tab's note popover
+  on today's Coach cell, page reloaded, popover reopened: text intact
+  (`PERSIST-PROOF: PASS`; `note-popover.png`, `note-saved-1440.png`,
+  `note-after-reload-1440.png`). Persistence is the local
+  `tracking.text`/`writeCoachState` flow Lilly shipped; the server-side
+  note path is the held work.
+- Read path record (step 4 HELD): the ported tab reads `client.tracking`
+  from the localStorage-backed `CoachState`; without `?demo` the roster
+  and template resolve but daily-entry cells render empty because no
+  canvas hydration maps `daily_entry` rows into `client.tracking` yet.
+  `TrackerComment` exists in the Prisma schema with no read/write route.
+  No route files added or extended on this card (grep: none). No
+  migration (schema unchanged). Held work verbatim for the follow-up
+  card: "Backend: FieldConfig.decimals and summary must persist with
+  template tracker fields (extend the w2-a5 template and tracker config
+  route and tests, new migration only if the schema needs it, timestamp
+  from the lead). Per-cell notes and coach day notes persist server-side
+  with workspace and role scoping, replacing local tracking.text storage
+  for coach notes."
+- Parked-stage reconciliation: Lilly's tracker supersedes w2-k2
+  (desktop) and w2-k4 (coach read-only view). w2-k3 (mobile) and the
+  client tracker entry in w2-c7 need an owner decision; PR 210 ships no
+  mobile layout by design (under 900px shows a notice plus last 7 days).
+  Nothing unparked: k1-k4 and a8 stay parked.
+- Teardown: prod server and TLS proxy stopped; lane databases
+  `app_fp_w2fe1` and `app_fp_w2fe1b` dropped, `pg_database` query shows
+  `app_fp_w2fe1%` absent (evidence `teardown-pg-database.txt`).
+- NOT done: no push, no PR, no unparks, no backend note path (held),
+  independent review by a different model family still pending (not
+  requested per instruction).
+
+## 2026-10-27 - w2-a4 repair 1: localStorage seam and lazy client-detail fetch
+
+- Round 1 repair of stage w2-a4 on branch `w2/a4` (base commit
+  `e6a8e80`). Two branch-introduced defects fixed.
+- Defect (a), lost persisted data: `components/canvas/data/messages.ts`,
+  `notes.ts` and `clients.ts` had switched `extract` to drop the
+  remote-owned fields (`messages`, `drafts`, `coachNotes`, `coachTodos`,
+  and the client detail fields `internalNotes`, `generalNotes`,
+  `phases`, `weekNotes`), so write-then-read round-trips returned empty
+  values. All three slices persist the full local copy again; the
+  `/api/v1` reads stay authoritative and overwrite on hydration.
+- Defect (b), wasted fetch: in `components/canvas/coach/store.tsx` the
+  W2-A1 client-detail bundle fetch fired unconditionally on every
+  provider mount. It is now lazy on the surfaces that consume it
+  (sections `clients` and `notes`). That removes a wasted staff read
+  plus an unrelated `Client details could not be loaded.` banner on
+  other screens, and stops the mount fetch from displacing the roster
+  resolver's first request.
+- Gates on this worktree, real exit codes: `npm run test` 0 (117 files,
+  1382 tests passed); `npm run lint` 0 with 0 errors and 88 warnings,
+  all pre-existing; `npm run typecheck` 0; `npx prettier --check` on the
+  four source files 0 (`docs/STATUS.md` exits 1 identically at base
+  `e6a8e80`, inherited; the added entry itself is prettier-clean);
+  `npm run index` 0 with no regeneration diff; `npm run index:check` 0;
+  owned-lines dash gate prints 0 added violations.
+- `npm run build` 0. The inherited `_global-error` prerender TypeError
+  from the round-1 verdict did not reproduce in this environment (Node
+  v26.12.0, Next.js 16.3.8 webpack). Recorded as observed, no toolchain
+  fix attempted.
+- `frontend/` untouched, so `cd frontend && npm run lint` was not run.
+  Client to-do cancel versus soft-delete semantics untouched.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR1/`.
+- Round 2 repair (verdict R1, regression from repair 1): restored the
+  `internalNotes: []` and `generalNotes: []` defaults in the
+  `clientsSlice` merge in `components/canvas/data/clients.ts`. Clients
+  envelopes persisted during the `e6a8e80` window carry cores without
+  those two fields, and `isCoachState` requires both as arrays
+  (`components/canvas/coach/model.ts:1717`), so the read failed the
+  guard and the store parked the workspace behind the preserve notice.
+- New test "defaults the note arrays on a stored clients slice that
+  predates them" in `tests/unit/canvas-data-seam.test.ts`: seeds a
+  stored clients slice with both fields deleted, runs the real
+  `readCoachState` + `migrateCoachState` + `isCoachState` path, and
+  asserts the guard passes and every stored client survives.
+- Mutation proof, real exit codes: same test against the merge without
+  the defaults, `npx vitest run tests/unit/canvas-data-seam.test.ts`,
+  exit 1 (`expected false to be true` at the `isCoachState`
+  assertion); after the fix the same command exits 0 with 11 of 11.
+  Verdict gate `npx vitest run` on `tests/unit/canvas-data-seam.test.ts`
+  and `tests/unit/coach-store-roster.test.tsx` exits 0, 2 files, 13
+  tests.
+- Twin parity checked: `frontend/src/components/coach/store.tsx`
+  persists one monolithic envelope under `STORAGE_KEY` with no
+  per-domain slice seam, so the defect exists only on the canvas side.
+- Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A4-REPAIR2/`.
+
+## 2026-10-27 - w2-c6: client check-in surface (canvas twin, routes, own-scope) to backend
+
+- Client check-in surface wired: `components/canvas/data/checkins.ts`
+  (+130: schedule status chips, per-pose VISUAL media mapping,
+  tracker-summary rows, submitted-answer display) consumed by
+  `components/canvas/client-app/check-in.tsx` (RemoteCheckInForm,
+  LocalCheckInForm wrapper, RemoteMediaThumb), `client-app.tsx`,
+  `views.tsx`; frontend twin `frontend/src/components/client-app/check-in.tsx`
+  - `client-app.css` kept in parity for shared blocks. Product
+    onboarding route added (`app/(tracker)/workspace/[workspaceId]/onboarding/`
+    panel + page, `app/globals.css`). Helpers covered by
+    `tests/unit/checkin-client-surface.test.ts` (16 tests).
+- Gates on build commit `eda8bb9`: `npm ci` 0, `npm run lint` 0
+  (91 warnings, 0 errors), `npm run typecheck` 0, `npm run test` 0
+  (120 files, 1407 tests), `npm run build` 0, `npm run index` +
+  `index:check` 0, `cd frontend && npm ci` then `npm run lint` 0
+  (304 files; first attempt before install exited 127),
+  `npx vitest run tests/unit/checkin-client-surface.test.ts` 0
+  (16 tests). Dash gate on `git diff 9e6d2bd..HEAD | grep '^+'`:
+  en/em count 0 after repair (was 1, a comment em dash, fixed here).
+- Lane `app_fp_w2c6v`: `prisma migrate deploy` 0, demo seed 0
+  (check-ins: 2 forms, 14 rules, 3 submissions, 1 review, 1
+  feedback), dropped at teardown (`pg_database` count 0).
+  Production build served behind a loopback TLS front; surfaces
+  required APP_ENV=development with ENABLE_CHECK_INS=1 and
+  ENABLE_ONBOARDING_SUBMISSION=1 (production returned 404 on the
+  coach check-ins page without them).
+- Browser pass (Playwright, headless Chrome, 1440 and 390): coach
+  sign-in, schedule a check-in, client /me Check-ins list (seeded
+  Submitted, Overdue, Scheduled items), fill form with five pose
+  slots plus tracker summary, submit (readback: Submitted,
+  awaiting coach review; media rows verified in DB), seeded
+  Oct-18 reviewed and Oct-24 awaiting-review details, product
+  onboarding empty state, required-field message on empty submit
+  at 390. Horizontal overflow 0 on every checked view.
+- Own-scope probes (client session): GET instances/[own] 200,
+  [foreign] 403 not_available, instances/next 200, instances list
+  by clientProfileId 403 denied (own and foreign), submissions
+  list 403 denied, submissions tracker-context 403 denied,
+  daily-entries 200, foreign progress-photos POST 403. Lily
+  lane-only credential returned a disjoint next instance and 403
+  on a foreign instance.
+- Repair round 1: replaced an em dash in the test file header
+  comment (B1) and added this STATUS entry (B2), verdict
+  `LEAD/PROOF/w2-c6/VERDICT-eda8bb9cda2b11c3fe198f719c5969266445f211.md`.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2C6/`.
+
+## 2026-10-26 — Prompt 440 — archive retrieval helper hardened
+
+- `retrieve-archived.mjs` rewritten: trusted hardcoded `ARCHIVES` registry is the only authority (editable `ARCHIVED.json` stubs cross-checked, not obeyed); name/traversal/tag/commit-shape validation before any git/fs op; `git fetch --depth 1 <remote> refs/tags/<tag>` into a scratch `.fetch` repo inside the task-owned destination; pinned commit + `artifactIndexSha256` verified, then every indexed artifact extracted and sha256-checked; existing/unowned destinations and unsafe indexed paths refused; arg-based `execFileSync` only (no shell).
+- `retrieve-archived.test.mjs` (11 probes, all pass): traversal/absolute/unsupported names refused; wrong-commit tag refused with cleanup; existing destination refused and left untouched; no dest leaks on failures. Remote availability proven via `git ls-remote` (tag → `0293c69`); full-extract run recorded in PR body.
+- Material inputs unchanged (all files under excluded `combined/`); p437 remains the current gate (`verified: true`).
+
+## 2026-10-26 — Prompt 438 — evidence-only closure: p436 archived, final identity published
+
+- Superseded `p436-run` preserved via pushed tag **`evidence/p436-run-superseded`** (`0293c69`, the last revision carrying the complete package) + committed `combined/p436-run/ARCHIVED.json` stub (SUPERSEDED status, reason, source commit/tree/material `a7a8a54`/`612bff3`/`d59f4ce`, artifact-index sha `5a8790c3…`) + executable check `combined/retrieve-archived.mjs` → `verified: true` (tag present on origin, index hash matches pinned). No artifact relabeling or reconstruction.
+- Material inputs byte-identical to the reviewed p437 capture (only `combined/**` evidence-path additions; `verify-combined` re-run: `verified: true`, canonical 70/70, strict 68/70). Gates: `tsc` 0 carried, `index:check` OK carried, `git diff --check 43b63ed..HEAD` **0**, prettier clean on new files. No behavioral suites repeated (none required — no code/test/config/material changes).
+- PR body updated with full final head/tree SHAs and the historical-vs-final distinction.
+
+## 2026-10-26 — Prompt 436 — formatter compliance, raw-log metadata, transition plan
+
+- `comparer.json` reformatted with prettier (bytes changed; `metadata.json` manifest pin re-pinned — no claim of unchanged bytes). Material invalidation triggered one required replacement capture: `p437-run` supersedes p436. Capture `fe95b79d91f23c6cfb356c212966517c56d6924e` / tree `4650681eb47c9a377da50fee0ecc06860efcf707` / material `4e560cc98862a78795edce1beffae6eebaa5a1811895a4d8cdafb8e95c60f2a4`; canonical **70/70**, strict **68/70**, 242 indexed / 233 capture artifacts, `verified: true`.
+- Raw-log metadata completed: `receipts/server.raw.log.gz` carries `rawSha256` of the decompressed bytes + role; `receipts/server.log` carries `normalized: true`, the exact transform (`strip trailing [ \t]+ before each newline + single trailing newline`) and `sourceOf`. Verified: gzip round-trips to the raw bytes; normalizing the raw yields the committed file byte-for-byte; the transform is idempotent. No `.gitattributes` exemption exists — base-to-head `git diff --check` passes purely through normalization.
+- PR body now carries the full proposed transition plan: #203 head `90c16bee…`, #206 head `43b63ed0…`, #207 head below, exact capture/final identities, owner-authorized gate, ordered retargets, recapture triggers, separately-approved baseline activation. **Proposed plan only — no merge/retarget/activation authorized.**
+- Gates on Node 24.22.1 this round: focused **55/55**, `tsc --noEmit` 0, `git diff --check 43b63ed..HEAD` 0, prettier check on evidence files clean, verify-combined `verified: true` in-tree. Unit/integration/E2E carried from the p434 round (unchanged product code since; recorded basis — material changes were formatter-only whitespace in evidence manifests, no runtime paths). index:check recorded below.
+
+## 2026-10-26 — Prompt 434 — full verification, hygiene rework, p436-run evidence
+
+- **Hygiene:** `.gitattributes` whitespace exemption removed entirely; raw `server.log` originals now preserved as `receipts/server.raw.log.gz` (gzip, byte-exact, sha256 + `rawSha256` pinned in `artifact-index.json`) in p429/p431/p436 — committed `server.log` remains the normalized copy. ESLint exclusion narrowed from `combined/**` to `combined/*/adapter/**` + `combined/*/receipts/**` (immutable packaged evidence only — adapters are never executed by the runner; each run regenerates into `out/`). `git diff --check 43b63ed..HEAD` exits **0** with no whitespace exemptions.
+- **Material-side fixes:** `tools/parity/reference/evidence/comparer.json` and `receipts/metadata.json` re-pinned after the run.mjs/source-identity/verify-combined changes (the focused pin test caught the stale `parityRunner` hash).
+- **Fresh evidence `p436-run`** (p433/p434 superseded — post-capture material commits correctly invalidated each): capture `a7a8a54cc3efe0aadedb34963e6fcebf8a02fd99` / tree `612bff34c8f3fcf2581f887bb378ff88abf1fa14` / material `d59f4cef1a9a269958169409271ec5cb4e8b82b5e100851fa87bf463c00c7691`; canonical **70/70**, strict **68/70**, **242 indexed / 233 capture artifacts**.
+- **Clean-checkout proof** in detached `/tmp/vari8 p436 ünicode` (spaces + non-ASCII): fresh `npm ci` (root + reference), `verify-combined` → `verified: true`, canonical 70/70 strict 68/70 recomputed; dirty probes (`auth.ts` edit + untracked `themes/t.css`) → verifier fails `dirty material inputs`; worktree restored clean afterward.
+- **Gates on Node 24.22.1:** focused suite **55/55** (`parity-https.test.ts` **39** — was 29, +10 material/dirty probes — + `visual-reference.test.ts` 16; the earlier "45/45" was the same combined suite pre-additions), full unit **106 files / 1305 tests**, real disposable-DB integration **64 files / 913 tests** on `app_p436i` (local postgresql@16 :5434), `tsc --noEmit` 0, ESLint **0 errors / 81 warnings**, `git diff --check` base-to-head 0. E2E subset result recorded separately.
+- Final head `0dc1765`+docs; no merge, retarget, activation, deployment, Actions, Slack/Hermes, or issue closure. Stop for DeepSeek scoped cross-review.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 433 — material-input and dirty-state closure
+
+- DeepSeek's scoped review (PR #207 comment 6412128271) found four gaps; all are closed in `7e8c7c9`..`02235bd`. **Material coverage:** `auth.ts`, `themes/**` and `tools/local-tls-proxy.mjs` added to `MATERIAL_PATHSPEC`/prefixes; `tools/parity/local-https.mjs`, `tools/local-tls-proxy.mjs` and `auth.ts` added to the receipt tool/input pin set. Generated outputs are excluded through named `MATERIAL_EXCLUSIONS` (`tools/parity/out/`, `tools/parity/reference/combined/`, `tools/parity/reference/node_modules/`) — evidence never hashes itself. **Dirty-state:** `dirtyMaterialPaths`/`assertCleanMaterialCheckout` refuse modified-or-untracked material inputs at combined verification (capture already refused a dirty tree via `snapshotSource`); `verify-combined` now fails on a dirty checkout. Committed-change probes prove each named file moves the material hash; dirty-file probes for auth.ts, a theme file, the TLS proxy and local-https all fail. **Lint/whitespace:** packaged combined evidence is excluded from ESLint (historical adapter bytes and receipts preserved — the generator already strips `HERE`); lint is back to **0 errors / 81 warnings** (was 82 with the lane-introduced warning). `server.log` files in p429/p431/p433 are normalized copies with `server.raw.log` originals kept alongside and labelled in `artifact-index.json`; all three logs were normalized with gzipped raw originals preserved; the earlier `.gitattributes` exemption was later removed entirely — no exemption exists and base-to-head `git diff --check` passes solely through actual normalization.
+- Fresh combined run `p434-run` on disposable `app_p433` (local postgresql@16 :5434, docker unavailable), Node 24.22.1, HTTPS `58135`, capture source `02235bd` / material verified at verify time; earlier `p433-run` was correctly invalidated by a post-capture material commit and superseded: 70 screens, 0 failures, canonical **70/70**, strict **68/70**. Package `tools/parity/reference/combined/p434-run`: **242 indexed artifacts / 233 capture artifacts**, `verified: true` in-tree.
+- Gates on Node 24.22.1: focused parity suite **39/39** (includes the new material/dirty probes), `tsc --noEmit` 0, ESLint **0/81**, `git diff --check` base-to-head 0, prettier clean on touched files. Unit/integration/E2E suites and a detached clean-checkout verify were not rerun this round — the material pathspec only grew and the dirty check only adds refusal paths, but that is a recorded gap, not a claim of coverage.
+- No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, issue closure or shared-resource change. `#203`-first remains conditional on owner approval; stop for DeepSeek scoped cross-review.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 431 — provenance-bound combined evidence
+
+- DeepSeek review of PR #207 found unbound final-head provenance, unenforced tool pins, builder-path adapter imports and an incomplete transition plan. The repair adds a non-circular source identity contract: capture source commit/tree and a material-input tree hash are recorded at capture time; `receipts/source-compatibility.json` records the exact post-capture paths that may differ at the reviewed/package head. `verify-combined` proves the source commit exists and its Git tree matches, verifies the current material input tree hash, and rejects any unlisted post-capture delta. Git commit/path review remains the root of trust; hashes do not claim to stop a deliberate coordinated rewrite of code and manifests.
+- The generated D32 adapter is now portable: it discovers the checkout root upward from its own location and dynamically resolves `tools/parity/reference/capture-metadata.mjs`; no checkout path is embedded. Two detached checkouts (`/tmp/vari8 p431 clean`, `/tmp/vari8 p431 ünicode`) generated byte-identical adapter bytes and the same hash `fd6a9a99eefd6b366370da70d3741432c4b62d2ea6306abc16f3632cc398fb8c`.
+- Fresh combined run `p431-run-9` on disposable `app_p431`, Node 24.22.1, HTTPS `58132`, capture source `082e57c5d7e6a7a36e6afd5f3ddc752e9f667ae6` / tree `238b59cb992dd0ce9638b67bea0e64b2d5b49f94`: 70 screens, 0 failures, canonical **70/70**, strict **68/70**, old active baseline **70 failures**. Manifest `543842fc…`, execution receipt `770fa363…`, package `tools/parity/reference/combined/p431-run` has 243 indexed artifacts. Earlier failed attempts are preserved locally: malformed generated adapter (`p431-run`) and receipt pin-path failure (`p431-run-2`).
+- Required checks on Node 24.22.1 after tooling freeze: focused **45/45**; unit **106 files / 1295 tests**; real disposable-DB integration **64 files / 913 tests, 0 skipped**; combined package verifier **243 indexed artifacts / 233 capture artifacts** and clean-checkout verification from `/tmp/vari8 p431 clean` and `/tmp/vari8 p431 ünicode`; exact E2E subset `tests/e2e/invite-acceptance.spec.ts tests/e2e/password-reset.spec.ts` **10 passed / 7 mail-dependent skipped**; format, typecheck, index, build, and `git diff --check` exit 0. Full ESLint exits 0 with **82 warnings** after removing the new unused generated-adapter declaration; tamper probes for appended no-op comparer, edited runner/comparer receipt hashes and edited provenance `source.tree` all fail closed.
+- Complete transition sequence: review/land #203 under the owner-authorized proposed-reference gate; retarget/land #206 onto the resulting `Vari8-Beta`; retarget/land #207 so its runner/verifier/evidence package enters after #203+#206; rerun combined capture/verification after every material-input or retarget change; separately approve baseline activation; then rerun post-activation. No merge/retarget/activation/deployment/Actions/Slack-Hermes/shared-resource change is made.
+
+## 2026-10-26 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 429 — repaired combined-gate safety and durable evidence
+
+- DeepSeek’s scoped review found unsafe custom paths, arbitrary capture-module execution, inaccessible fresh evidence and missing provenance. The repair replaces `PARITY_CAPTURE_MODULE` with a fixed generated D32 adapter, canonicalizes output/reference paths through symlinks and existing parents, rejects empty/broad/equal/nested/ancestor-overlap output paths, requires a task-owned output marker before writes, forbids baseline-update mode, validates the proposed package before server start and validates real 70-screen capture artifacts/provenance before comparing.
+- A failed first attempt (`tools/parity/out/p429-run`, exit 2) is recorded: `NODE_ENV=development` made the production `next build` fail in `/_global-error`; no server/capture/compare started. The bounded rerun used `app_p429`, `APP_ENV=development`, Node 24.22.1, HTTPS proxy `58130`, and task-owned `tools/parity/out/p429-run-2` at clean prep head `1bdc044b3793afbf9068355abef68f322ef305f9` / tree `6fde40aeb89af1b40e97911fb37b1dd10d556bda`.
+- Durable evidence now lives in `tools/parity/reference/combined/p429-run`: 242 indexed artifacts plus `artifact-index.json`; adapter `74e3b932…`, capture manifest `792b8c49…`, execution receipt `1b59b1b6…`, combined provenance `02749662…`, canonical `f92a5d30…`, strict `cef4510d…`. `verify-combined.mjs` revalidates provenance, manifests, artifact hashes, actual capture evidence and recomputes canonical **70/70** / strict **68/70**. A detached checkout at `f40eb47` under `/tmp/vari8 p429 clean` verified the same package after fresh `npm ci` + reference `npm ci` with a clean worktree. Old active baseline diagnostic is separately packaged and remains **70 failures / exit 1**.
+- Historical package evidence remains separate: `verify-evidence.mjs` verified **482** artifacts and `recompare.mjs` remains canonical **70/70** / strict **68/70**.
+- Checks on Node 24.22.1: focused **42/42**, unit **106 files / 1292 tests**, real-DB integration **64 files / 913 tests** on disposable `app_p429` (no skipped suite), format/typecheck/ESLint/index/build/diff exit 0 (82 pre-existing lint warnings), and the canonical verify-local E2E subset `invite-acceptance.spec.ts password-reset.spec.ts auth.spec.ts` reports **10 passed / 7 skipped**. The 7 skips are the documented mail-dependent cases, not a full 24-test E2E result.
+- Draft PR #207 (`beta/visual-reference-establishment` <- `beta/p203-p206-combined-verification`, head `2bee45a`) is the tracked review unit: https://github.com/hanzlahsfc/vari8/pull/207. Remaining action is DeepSeek scoped cross-review of the labelled prep branch/PR and its packaged evidence, then the separate #203 landing, #206 retarget, baseline-activation and post-activation approvals. No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, or shared-resource change.
+
+## 2026-10-26 - w2-a1: client detail, phases, notes, pinned notes wired to backend
+
+- Branch `w2/a1` off `2967bb1`. One migration directory
+  `20261027000002_client_detail_notes` (up + down): new `ClientPhase`
+  and `ClientWeekNote` tables, new `CoachNote.pinned Boolean default
+false`, tenant-coherent FKs and indexes.
+- New service `lib/workspace/client-detail.ts`; new routes
+  `GET/PUT /api/v1/workspaces/[workspaceId]/clients/[clientProfileId]`,
+  `GET/PUT /api/v1/workspaces/[workspaceId]/client-detail` (workspace
+  bundle; PUT carries `clientProfileId` in the body),
+  `GET/PUT /api/v1/workspaces/[workspaceId]/notes`.
+  All via `defineApiV1Route` with `notes.write`; foreign workspace 403,
+  client role denied, unauthenticated 401, bad payload 400.
+- Provider swap: `components/canvas/data/clients.ts` reads/writes
+  `/api/v1` for the detail domain and drops the remote-owned fields
+  from the persisted slice; `components/canvas/data/notes.ts` moves the
+  workspace Private-notes list to `/api/v1/notes` while coach to-dos
+  stay local for w2-a4. `components/canvas/coach/store.tsx` hydrates
+  the viewed client after the roster seed and PUTs on owned-field
+  changes (the roster-wide `state.clients` reseed stays out of scope).
+- Seed `50-demo-coverage.seed.ts` writes `ClientPhase`, `ClientWeekNote`
+  and `CoachNote.pinned` directly (no `[pinned]` body prefix), idempotent.
+- Boundary notes (task record): the timeline week-table NOTES column is
+  shared. This card owns the `weekNotes` value only; the other columns
+  belong to w2-a5 and w2-a2. The audit's unresolved `CoachNote` pinned
+  mapping resolved to a real `pinned` column. The store override point
+  sits in `components/canvas/coach/store.tsx` after the seed runs
+  because `coach/model.ts` is outside lane A ownership.
+- Gates: `prisma migrate deploy` on fresh lane db `app_fp_w2a1` 0;
+  `tests/integration/api-v1-client-detail.test.ts` 9/9 0; `typecheck` 0;
+  `lint` 0 (88 warnings, all pre-existing); `build` 0; `index` +
+  `index:check` 0; `format:check` exits 1: 56 files fail, all
+  inherited at merge base `6d3a07f`, zero touched by this card
+  (scoped `prettier --check` on all card files clean).
+- Browser pass on prod build `127.0.0.1:4191`, real login as coach, no
+  `?demo`: 1440 + 390 evidence in `FULL-PACKAGE-2/W2A1/`. Seeded Amara
+  (client-007) shows label chips, email, coaching-since, height, phase
+  progress, pinned notes card, timeline phase band, private + general
+  notes. Add-note and timeline week-note edits persist through reload
+  (verified in `coach_note`/`client_week_note` rows). Second-workspace
+  coach gets literal 403 on both endpoints.
+
+## 2026-10-26 - w2-a2: nutrition plan, meal plan, training program, iifym to backend
+
+- Staff routes added (all under `/api/v1`): `clients/{cp}/meal-plans`
+  GET+PUT, `.../meal-plans/publish` POST, `.../meal-plans/versions/{id}`
+  GET, `clients/{cp}/training-programs` GET+PUT,
+  `.../training-programs/{id}` GET, `.../{id}/publish` POST,
+  `.../{id}/versions/{vid}` GET, `workspaces/{ws}/exercise-library` GET.
+  Capabilities: `plan.read`, `plan.write`, `library.manage`.
+- `components/canvas/data/{nutrition,training}.ts` gained wire mappers
+  and staff fetch/save/publish functions; localStorage slices kept as
+  write-through caches (lossless-seam tests). `coach/store.tsx`
+  hydrates the viewed client's mealPlan/iifym/training lifecycles and
+  the workspace exercise library, debounce-syncs draft PUTs and
+  publishes. `past_week_locked` fixed by preserving the raw wire at
+  locked weeks (seeded en-dash rep ranges vs canvas normalization).
+- `scripts/seed/50-demo-coverage.seed.ts` now deep-resolves `day <n>`
+  tokens inside verbatim payloads before storing (the export contract
+  requires re-anchoring; unresolved tokens broke `applicablePlan`).
+- Gates: typecheck 0, lint 0 (pre-existing warnings), format 0,
+  `npm test` 1380/1380, build 0, `npm run index`+`index:check` 0,
+  integration `api-v1-plans` 6/6 on lane DB (needs the domain dev flags
+  exported: ENABLE_MEAL_PLANS/ENABLE_IIFYM_PLANS/ENABLE_TRAINING_PLANS),
+  fresh `prisma migrate deploy` + `VARI8_SEED_DEMO=1` seed on
+  `app_fp_w2a2`, dash gate 0 added violations. Browser pass on
+  production build port 4401, real coach login, no `?demo`: Overview
+  nutrition targets (TD 2,082/refeed 2,062) + training program card,
+  Timeline NUTRITION kcal (2,370/2,213/2,082 per published version) +
+  TRAINING Sess (0/4), Plans cards (meal plan, temporary chip, training,
+  supplements), training draft rename persists after reload.
+  Role matrix: in-workspace 200 / foreign 403 / unauth 401.
+  Evidence in `Vari8-evidence/FULL-PACKAGE-2/W2A2/`.
+
+## 2026-10-26 - Wave 2 T1: settings surface and member notification preferences
+
+- Lane `w2/t1` off `fp/stage-10` `2967bb1`. New `MemberPreference` model
+  keyed `(workspaceId, memberId, key)` with closed key registry
+  (`attention.unread_messages`, `attention.priority_messages`,
+  `email.messages`; default enabled when no row). Migration dir
+  `20261027000000_member_preferences` with `down.sql`.
+- `lib/workspace/preferences.ts`: list/update/`memberPreferenceEnabled`
+  send-time lookup. `lib/email.ts` gains `sendMemberNotificationMail` +
+  `notifyStaffOfClientMessage` (ACTIVE owner/coach recipients, per-recipient
+  pref check at send time, failures logged as `notification_delivery_failed`,
+  never roll back the message). `sendOwnMessage` notifies post-commit only on
+  a newly created row (idempotent replays do not re-mail).
+- `GET|PATCH /api/v1/workspaces/:workspaceId/settings` via
+  `defineApiV1Route`; member-scoped to the caller's resolved membership,
+  non-member/denied 403.
+- `app/workspace/[workspaceId]/settings/` renders a tabbed vari8 surface
+  (profile + preference groups). Component authored first in
+  `frontend/src/components/vari8/settings-surface.{tsx,css}` then ported
+  byte-identical to `components/canvas/vari8/` (`cmp` clean); standalone
+  demo mount at `frontend/src/app/coach/settings` (localStorage).
+- Gates: `npm ci` 0, `typecheck` 0, `lint` 0 (89 pre-existing warnings, 0
+  new), `format:check` 1 (55 files, all inherited drift, zero mine - per-file
+  check on changed files 0), `test` 1 in full-parallel run
+  (system-index `beforeAll` 10s hook timeout under load; 18/18 pass
+  isolated), `build` 0, `prisma migrate deploy` 0 on fresh `app_fp_w2t1`,
+  `index`/`index:check` 0, settings integration 5/5 on real PG.
+- Browser pass on prod build (`next start` http:4200 + tls-proxy
+  https:4298): coach real login, settings surface, `email.messages` off →
+  second session persists off, client message mails owner but not the
+  toggled-off coach, re-enable → coach mailed. 8/8 checks. Screenshots at
+  1440/390 + mailbox.jsonl in
+  `Vari8-evidence/FULL-PACKAGE-2/W2T1/`. Frontend demo mount verified at
+  `frontend/src/app/coach/settings` on dev server (same screenshot evidence).
+- Teardown: all servers stopped, `app_fp_w2t1` dropped, `pg_database`
+  count 0 saved to `pg_database-absent.txt`.
+
+## 2026-10-26 - Stage 3 card 05a (in progress): client store routes + provider seam landed; screens and verification pending
+
+- `lib/messages/service.ts` (new): own-thread list + client send, one
+  Conversation per (workspaceId, clientProfileId), `clientRequestId`
+  idempotent retry via the (conversationId, clientRequestId) unique index.
+  No `messages` RBAC resource exists, so ownership binds by resolving the
+  caller's own ClientProfile in the workspace (same first step as
+  `listOwnClientTasks`); callers without a linked profile are denied.
+- `lib/tasks/service.ts`: `listOwnClientTasks` now returns
+  `clientProfileId` (recon decision - the PATCH path needs it; backward
+  compatible for `{tasks, hasMore}` callers).
+- Eight 05a route files under `app/api/v1/workspaces/[workspaceId]/`:
+  `daily-entries` GET (`own.read` → `loadDailyEntrySurface`),
+  `daily-entries/[entryDate]` PUT (`own.write` → `saveDailyEntry`),
+  `clients/[clientProfileId]/daily-entries/history` GET
+  (`clientData.read` → `listStaffDailyEntries`), `messages` GET
+  (`own.read`) + POST (`message.write`), `tasks` GET (`own.read` →
+  `listOwnClientTasks`), `clients/[clientProfileId]/tasks/[taskId]` PATCH
+  (`own.write` → `setClientTaskCompletion`),
+  `checkins/instances/[instanceId]` GET (`own.read` →
+  `getOwnCheckInInstance`) and `.../submit` POST (`own.write` →
+  `submitCheckInInstanceFromAction`). Per-domain `_result.ts` mappers
+  translate DailyEntryError/TaskError/MessageError/AccessDeniedError to
+  400/403/409 per the card table - never 404.
+- `components/canvas/data/{tracker,nutrition,messages,tasks}.ts`: remote
+  functions over the new routes (wire shapes mirror the lib services).
+  LocalStorage slices untouched; coach store hydration contract unmoved.
+- Gates run so far: `npx tsc --noEmit` 0; eslint on touched files 0 (3
+  pre-existing unused-type-import warnings in data providers).
+- Commits: `d8ca444` (backend routes + service + mappers), `31b7a57`
+  (provider remote calls).
+- NOT done: `/me` + `/client` screen rewiring to the providers, `?demo=`
+  gating, 05b screens (supplements/photos/client check-in), seed, lane DB
+  probes, coach↔client round trips, screenshots, the seven substitute
+  gates, independent review, evidence report. Verification claims stand on
+  none of that yet - typecheck/lint only.
+- Evidence dir: `Vari8-evidence/FULL-PACKAGE/STAGE-3/card-05/` (recon note
+  `01-service-signatures.md` already there).
+
+## 2026-10-26 - w2-fe1: Lilly FRONTEND PR 210 (coach Tracker tab) merged and ported to canvas
+
+- Merge: `git fetch origin "+refs/heads/FRONTEND:refs/remotes/import/frontend-tip"`
+  resolved to `a3f620a56bf3165b6775c8f0bd4acabae21935bc` (verified by rev-parse),
+  merged into `w2/fe1` as merge commit `a83c0e92c87b5ac0a12160c82280a941e063ebe0`.
+  All 14 upstream files under `frontend/` verified byte-identical to the merge
+  tip by diff. No rebase, no force.
+- Port: `tools/port-canvas/port.mjs` run with `PORT_BASE=9491897`
+  `PORT_REF=a3f620a`. 9 mechanical copies plus 4 three-way merges
+  (`clients.tsx`, `coach.css`, `athlete/timeline-tab.tsx`, `model.ts`, all
+  added to HAND_MERGE because they carry local wiring deltas). New files
+  `components/canvas/coach/athlete/tracker-tab.tsx` + `tracker-tab.css` are
+  byte-identical to the upstream twin after the import-alias rewrite.
+  Hand-merges finished with zero conflicts and preserved the local deltas
+  (ClientTrainingLogs in clients view, review-panel status chips in
+  coach.css, activity-target version fetch in timeline-tab, provider/import
+  wiring). Tracker tab renders for `tab === "Tracker"` between Timeline and
+  Plans on the athlete profile.
+- Ownership note: `components/canvas/coach/model.ts` is on the card's
+  must-not-edit list, but the upstream `FieldConfig.decimals`/`summary`
+  extension and the revision-9 union live in that file's canvas twin and the
+  ported tab does not typecheck without them. Carried via the port's
+  three-way merge; flagged for the owner.
+- Demo seed re-point to export revision 9: `README.md`, `workspace.json`,
+  `clients/client-007.json` copied byte-verbatim into
+  `lib/canvas/data/demo-export/` and `scripts/seed/demo-export/`;
+  `PROVENANCE.md` now names source ref `import/frontend-tip`, commit
+  `a3f620a`, revision 9. `scripts/seed/50-demo-coverage.seed.ts` extended
+  from 8 keys to the full 26-field rev-9 tracker set: numeric fields seed
+  as MEASUREMENT (rating fields included so zero values and decimals
+  survive), `bleeding-level` as OPTION, `bp`/`pms-symptoms`/`daily-note`
+  as TEXT from `tracking.text` `${iso}:${fieldId}`. Coach-authored keys
+  `${iso}:note:*` and `${iso}:coach-note` deliberately unseeded; the
+  server-side note path is held w2-a5 work.
+- Seed proofs on lane `app_fp_w2fe1` (plus `app_fp_w2fe1b` as baseline):
+  default profile byte-identical, normalized `pg_dump` diff 0 lines
+  (1525 rows each side; only migration ledger ids, password hashes and
+  dump session tokens excluded). Demo profile: client-007 Amara Lewis,
+  26 template fields, 65 daily entries, 1338 revision values (1288
+  numeric, 38 text, 12 option), matching the rev-9 export counts.
+  Idempotent across reruns: row counts and normalized content hashes
+  identical (evidence `counts-demo-run*.txt`, `hash-demo-run*.txt`,
+  `dump-default-*.txt`).
+- Gates: `npm run typecheck` 0; `npm run lint` 0 errors / 92 warnings
+  (89 inherited, 2 in byte-verbatim upstream code, 1 authored and fixed);
+  `npm run format:check` exits 1 with 57 failing files, all inherited at
+  the merge base, zero authored; `npm test` 116 files / 1380 tests pass;
+  `npm run build` 0; `npm run index` + `index:check` 0 (COMPONENTS.md
+  gains `AthleteTrackerTab`); fresh `prisma migrate deploy` on
+  `app_fp_w2fe1` and `app_fp_w2fe1b` both 0; `cd frontend && npm run lint`
+  0; `cd frontend && npm test` 277 pass / 0 fail; `cd frontend &&
+npm run typecheck` exits nonzero only on inherited `dialog.tsx:109`
+  `labelHidden` (stage-10 F1, present at merge base).
+- Browser proof: production build via `next start` on http 4403 behind the
+  disposable TLS proxy on https 4402 (F2 workaround; production auth
+  rejects http origins). Lane `app_fp_w2fe1`, seeded default + demo,
+  signed in as seeded coach, no `?demo`. URL
+  `/coach?section=clients&client=client-007&tab=Tracker` at 1440 and 2560:
+  `.trk` root renders, 10 expanded week rows plus the current week,
+  week labels 17 Aug through 25 Oct, template-driven column groups
+  (Body, Nutrition, Recovery, Activity, Notes) with derived Day/Session/
+  Coach columns, Expand/Collapse/Jump-to-today/pin controls. Screenshots
+  `tracker-1440.png`, `tracker-2560.png` in the evidence dir, looked at.
+- Note persistence: coach day note written through the tab's note popover
+  on today's Coach cell, page reloaded, popover reopened: text intact
+  (`PERSIST-PROOF: PASS`; `note-popover.png`, `note-saved-1440.png`,
+  `note-after-reload-1440.png`). Persistence is the local
+  `tracking.text`/`writeCoachState` flow Lilly shipped; the server-side
+  note path is the held work.
+- Read path record (step 4 HELD): the ported tab reads `client.tracking`
+  from the localStorage-backed `CoachState`; without `?demo` the roster
+  and template resolve but daily-entry cells render empty because no
+  canvas hydration maps `daily_entry` rows into `client.tracking` yet.
+  `TrackerComment` exists in the Prisma schema with no read/write route.
+  No route files added or extended on this card (grep: none). No
+  migration (schema unchanged). Held work verbatim for the follow-up
+  card: "Backend: FieldConfig.decimals and summary must persist with
+  template tracker fields (extend the w2-a5 template and tracker config
+  route and tests, new migration only if the schema needs it, timestamp
+  from the lead). Per-cell notes and coach day notes persist server-side
+  with workspace and role scoping, replacing local tracking.text storage
+  for coach notes."
+- Parked-stage reconciliation: Lilly's tracker supersedes w2-k2
+  (desktop) and w2-k4 (coach read-only view). w2-k3 (mobile) and the
+  client tracker entry in w2-c7 need an owner decision; PR 210 ships no
+  mobile layout by design (under 900px shows a notice plus last 7 days).
+  Nothing unparked: k1-k4 and a8 stay parked.
+- Teardown: prod server and TLS proxy stopped; lane databases
+  `app_fp_w2fe1` and `app_fp_w2fe1b` dropped, `pg_database` query shows
+  `app_fp_w2fe1%` absent (evidence `teardown-pg-database.txt`).
+- NOT done: no push, no PR, no unparks, no backend note path (held),
+  independent review by a different model family still pending (not
+  requested per instruction).
+
+## 2026-10-25 — VISUAL-REFERENCE #205 + PARITY #202 Prompt 427 — authorized combined-result verification
+
+- Owner authorized combined #203+#206 result verification and accepted the disclosed SWE-2/DeepSeek cross-review arrangement. This is a task-specific governance disposition, not a general review-rule change or independent SHIP.
+- Preparation branch `beta/p203-p206-combined-verification` starts at #206 `43b63ed`, which contains #203 `90c16be`; `Vari8-Beta` `d1c4081` is an ancestor, so there were no current-base conflicts. Product/app files are unchanged from #203; the only prep change is explicit `PARITY_REFERENCE_DIR`, `PARITY_OUT_DIR`, `PARITY_CAPTURE_MODULE` and `PARITY_COMPARER=reference` plumbing. The active `tools/parity/baseline` was not overwritten.
+- Fresh combined-app capture in disposable `app_p427`, Node 24.22.1, HTTPS proxy `58129`, D32 adapter `74e3b932…`: 70 screens, 0 failures, manifest `f1e337a…`; proposed canonical **70/70 exit 0**, strict diagnostic **68/70** with the two S03 pixel failures. The packaged recomparison remains **70/70** canonical / **68/70** strict; `verify-evidence` verified **482** artifacts. Old active baseline comparison against the same fresh capture is **FAIL 70/70**, recorded as old-reference diagnostic only.
+- Fresh checks on Node 24.22.1: focused **37/37**, unit **106 files / 1287 tests**, integration **64 files / 913 tests**, format, typecheck, ESLint, index, `git diff --check` and flow E2E **10 passed / 7 skipped** exit 0. The prep mechanism refuses `--update-baseline` with `PARITY_REFERENCE_DIR` and requires an explicit reference dir for `PARITY_COMPARER=reference`.
+- Exact executable transition: independently review this labelled prep branch and receipts; land #203 after accepting the owner-authorized combined proposed-reference gate; retarget #206 to the resulting `Vari8-Beta`; separately approve baseline activation; then rerun the same proposed-reference capture/gate after activation. No merge, retarget, baseline activation, deployment, Actions, Slack/Hermes, or shared-resource change.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 425 — exact contract, portable paths, complete execution provenance
+
+- Contract compatibility is a closed, named `retained-v1-to-approved-v2` transition. Version 2 and retained v1 are exact schemas; missing/unknown fields, changed `authority`, changed `implementedAlternative`, administrative differences and empty/subset/unknown allowance sets fail. Exact allowance rule identities/labels are checked against the comparer. Historical provenance is unchanged. Focused reference tests cover every SWE-2 probe plus the positive v1/v2 cases: **16/16**.
+- `comparer.json` is now a reviewed execution-pin manifest (`visual-reference-comparer-v2`, SHA `8bc2935…`) covering `reference.mjs`, both comparers, `capture.mjs`, `capture-metadata.mjs`, `recompare.mjs`, `verify-evidence.mjs`, `evidence-lib.mjs`, both lockfiles, direct dependency pins and the contract. `receipts/metadata.json` is `receiptVersion: 2`, hashes the manifest and copies its pins; omitted/tampered components and dependency changes fail. No self-hash loop; generated receipts are excluded and documented.
+- `recompare.mjs` uses `fileURLToPath`. Clean detached checkout at code commit `11bfe70` under a path with spaces and non-ASCII characters: 482 artifacts verified, canonical **70/70**, strict **68/70**, two byte-identical recomparisons, clean worktree, no p414 input.
+- Counts unchanged: candidate 237, reference 245, evidence 246, artifact index 482, old baseline 242 unchanged, map 272. Candidate captures use synthetic app data but retain local paths/process IDs/command lines in provenance; no credentials/tokens/keys/auth secrets found. No capture, threshold, reference or S03-18 behavior change.
+- Fresh checks on Node 24.22.1: unit **106 files / 1286 tests**, focused **16/16**, format/index/type/lint/build/diff pass; lint 0 errors/81 warnings. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 scoped validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 423 — contract self-validation and durable evidence package
+
+- Contract compatibility now separates immutable material settings from adoption metadata: retained v1 provenance is accepted only when source/tree/clock/timezone/geometry/pixel/viewport/device-scale/expected-screen material fields match; unknown versions and unknown allowances fail. Original provenance is unchanged. Focused tests cover adoption-only acceptance and material/unknown rejections.
+- Candidate captures and recomparison tooling are committed under `tools/parity/reference/evidence/`: candidate 237 files, reference 245, evidence directory 246, artifact index 482 hashes, old baseline 242 unchanged, map 272. `verify-evidence.mjs` fails on missing/tampered artifacts and validates both runs/contract/receipt provenance; `recompare.mjs` uses only the committed reference+candidate package.
+- New recomparison receipts (not original receipts, not new captures): canonical **70/70**, strict **68/70**; metadata records comparer `6ea1115…`, legacy comparer `56a709a…`, contract `4a29fd5…`, dependency versions/integrities and input hashes. Historical 68/70 receipt preserved; original receipt comparer provenance remains missing and disclosed.
+- Existing S11-03/D18/S11-04 applied allowances remain unchanged; D18/S11-04 apply on s03@1440 alongside S03-18. No tolerance/mask expansion or capture semantics change.
+- Fresh focused 13/13, unit 106 files/1283, format/index/type/lint/build/diff checks pass. Clean detached checkout at `c93f33b` with fresh Node 24 installs: verifier 482 artifacts/canonical 70/70/strict 68/70, recompare byte-stable, no p414 input. No merge/retarget/baseline activation/Actions/Slack/Hermes/shared changes; stop for SWE-2 validation.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 Prompt 417 — owner decisions recorded; activation still held
+
+- Owner adopted `D32-owner-written-v1`: 09:00 Europe/Vienna, 1 CSS-pixel geometry, pixelmatch
+  threshold 0.1 and changed-pixel fraction <=0.001. The legacy 10:00/.5px/zero settings remain a
+  separate strict diagnostic only.
+- Owner accepted the real-recorder copy `Record video feedback`, including the demonstrated 39px
+  narrower button. Recorded as exact S03-18 truth-text/geometry rule; unrelated text, movement,
+  added/removed elements and pixel differences still fail.
+- `tools/parity/reference/proposed/` contains 245 files: 244 mapped proposed artifacts plus the
+  mapping file. The 272-entry map remains, including 28 honest old-only paths with no proposed
+  counterpart because their historical offsets/artifacts differ.
+- Prompt 417 checks on Node 24.22.1: focused reference tests 11/11, unit 1281/1281, format/index/typecheck/lint and
+  `git diff --check` exit 0. Post-decision recomputation from existing artifacts: canonical **70/70**, strict diagnostic
+  **68/70** (s03 pixels only); historical 68/70 receipt preserved. Exact S03-18 rule is stem-scoped,
+  text/exact-width based, and adds no pixel mask/global tolerance. Unit **106 files / 1281 tests**;
+  focused 11/11; format/index/type/lint/diff pass.
+- Scope remains the historical/current-Beta reference only. FRONTEND `9491897` and Marcel's
+  unpublished full-package pipeline are not certified or imported. Baseline activation, merge and
+  issue #202 resolution remain held behind independent review and unmerged PR #203 `90c16be`.
+
+## 2026-10-25 — VISUAL-REFERENCE #205 — historical reference proposal packaged; s03 copy decision outstanding
+
+- Authority/contract: historical frontend `c78311042edcc2f96350a132c682782d8da1b6a7`; frontend tree
+  `36ceaf8eadc010369ed48ab5158682f2bf9d55de`; owner D32 09:00 Vienna clock, 1px geometry, 0.1%
+  changed pixels / pixelmatch 0.1. The legacy 10:00/.5px/zero-pixel contract is retained only as a
+  separately reported strict diagnostic.
+- Two independent historical runs each captured all 70 screens with zero failures/retries; image,
+  geometry and scroll artifacts were byte-identical (`hashMismatches: []`, stability 70/70 canonical
+  and strict). Original baselines remain unchanged; old hashes and the old→proposed map are packaged
+  under `tools/parity/reference/proposed/`.
+- Current root comparison is **68/70** canonical and strict. Both `s03-checkin-review` widths fail
+  geometry/text/role/name because the button changed from “Record demo video feedback” to “Record
+  video feedback” and narrowed 39px (`244.5 → 205.5`); pixels remain within budget.
+- The copy was introduced by PR-MEDIA `21d8fc0` and wired by `e355c59`. No owner D32 truth-text row
+  or issue-#205 allowance covers it; both failures remain explicit and an exact owner decision is
+  requested. No mask, tolerance change or baseline refresh was made.
+- Tooling: Node v24.22.1; unit **106 files / 1280 tests**, exit 0; typecheck/lint/format/index/build
+  checks recorded; reference tests and two 70/70 reference runs valid. No full 70 rerun for packaging.
+- PR #206 remains draft/stacked on unmerged PR #203 `90c16be`; issue #202 remains open. Stop for
+  independent review; no parity PASS, merge, deployment, Actions, Slack/Hermes or website change.
+
+## 2026-10-25 — Issue #202 Prompt 410 — listener PGID consistency and mutation provenance
+
+- Codex builder repair, not independent review: runner listener ownership
+  now reuses cleanup's canonical PID/PGID/start predicate. A same PID/start
+  with a different PGID failed RED before the fix, then passed GREEN.
+- Code baseline `bd036ec`: focused 20/20; standard unit 105 files/1270
+  (prior to JSDoc-only typing); type/lint/build and index checks exit 0.
+  Direct Next listener/leader identity verified; cleanup `[]`, exit 143,
+  no residue. Final checks/receipts are in `PARITY-HTTPS.md`.
+- Replaced the corrupt start-identity mutation with an applicable pure
+  final-baseline patch. Expected reused-process SIGKILL failure reproduced;
+  inverse patch restored byte-identical hash and focused 20/20 green.
+  Corrupt historical artifact retained explicitly as superseded evidence.
+- Production registers only the direct Next leader. Descendant helper
+  coverage is not automatic production discovery; unregistered descendants
+  are safely refused/reported. The original timing-failure receipt is
+  absent, so that observation is builder-reported, not verified evidence.
+- Historical visual result remains FAIL/70, no all-70 rerun for this
+  ownership-only fix. No SHIP, baseline update, waiver, merge or deployment.
+
+## 2026-10-25 — Issue #202 process-identity repair — start-registry ownership proven on real Next chain
+
+- Reproduced the real-chain defect: `npx next start` produced
+  `npm exec` plus `next-server`, but neither exposed the ownership token
+  through `ps eww`; argv/environment substring matching was therefore
+  unsafe and unusable. The launcher now invokes
+  `node node_modules/next/dist/bin/next` directly; the spawned PID
+  becomes the `next-server` listener.
+- Cleanup uses a recorded PID/PGID/process-start registry for the
+  spawned leader and only registered descendants verified by live
+  lineage. Signals go to individually rechecked registry identities,
+  never `-PGID`; missing ownership, malformed/null records, inspection
+  failures, same-PGID argv-only identities and foreign listeners fail
+  closed instead of being signaled.
+- Focused suite: **19/19**, exit 0. Removing process-start matching
+  produced the expected reused-PID `SIGKILL` failure, then restored
+  byte-identically. Bounded real `next start` proof cleaned the
+  listener/server and left no residue.
+- Standard Node v24.22.1 gates: format/index/typecheck/lint/build/diff
+  exit 0; lint **0 errors / 81 warnings**; full unit **105 files /
+  1269 tests**, exit 0.
+- Carried visual evidence remains **FAIL, 70 problems** from the prior
+  real parity run; all 70 captures were valid. `s04-template-habits`
+  remains a separate baseline/recipe-state defect, not a like-for-like
+  visual regression.
+- Remaining blocker: five page-size changes, two element-count changes,
+  `s11-preferences` DOM delta and pervasive raster differences remain
+  unexplained; `merge-proto @ 58eb6ed` provenance is unavailable. No
+  baseline refresh, UI/tolerance change, parity waiver, merge or SHIP.
+
+## 2026-10-25 - Stage 10: whole-package verification pass on the promoted tip `4bc3a99`
+
+- Verification only, no product repair. Boot gates all green: `npm ci` 0,
+  `prisma generate` 0, `index`/`index:check` 0 (no index drift),
+  `typecheck` 0, `lint` 0 (89 warnings), `test` 0 (116 files, 1380 tests),
+  `build` 0. `npm run check` absent by design.
+- Lane DBs on 127.0.0.1:5433: `app_fp_stage10_b1` default seed (7 modules,
+  `50-demo-coverage` absent) and `app_fp_stage10_b1d` demo seed ×2 (8
+  modules, `50-demo-coverage` present; run 2 idempotent - normalized dump
+  diff empty, 155 seeded CUIDs identical). Both dropped at teardown -
+  the verifier found them still present on 5433, the repair-1 pass
+  dropped them and re-checked `pg_database` (zero `app_fp_stage10%`
+  rows, output in `teardown-databases.txt`).
+- Live sweep against the production build (44 distinct slugs, 91 PNGs at
+  1440 + 125 at 390 = 216 pre-repair; repair-1 added 4 slugs / 44 PNGs
+  → 48 slugs / 260 PNGs): unauth `/` `/coach` `/me` → 307; staff +
+  client logins; surfaces at 1440 and 390 - coach canvas (roster,
+  client overview/timeline/plans/check-ins/notes+tasks/habits/targets,
+  all five plan-part editors, client setup, check-in board/review,
+  messages, notes, templates + template editor, legacy-sheet dialog,
+  ethereal, workspace home, **staff progress-photos gallery +
+  comparator**, the stage-6 surface added in repair-1) and client app
+  (home, plans + nutrition + roadmap, tracker, training, check-ins
+  incl. list, **check-in submit flow end-to-end**, photos) plus `/me`
+  tracker. Denials hold: foreign workspace 403 (page+API), cross-client
+  API 404 in `sweep-results.json` (client session →
+  `…/clients/<foreign-profile>/tasks`; the verifier's client-session
+  sample returned 403 - both inside the expected 403/404 band),
+  client→`/coach` 307→`/me`.
+- Parity (owner ruling 2026-10-25): 10 stale click recipes re-derived
+  against the merged UI (profile tabs, renumbered template nav 01-07,
+  `.cd-plan-module`→`.cp-card` scoping, `Open chat (1 unread)`,
+  `Edit plans → Open client setup`, `Open client app`); dev-mode replay
+  74/74 clean. Committed as `44eec07`. Baseline regen BLOCKED -
+  `PARITY_APP=frontend ... --update-baseline` exits 2: `frontend/` prod
+  build fails typecheck on `dialog.tsx:109` `labelHidden`, an inherited
+  defect present at merge base `6d3a07f` (fix lives on unmerged
+  `c605b78`/`29fbb31`). `npm run parity` vs the stale baseline exits 1
+  (74/74 fail - expected pre-PR-204 signature; captures clean); runner
+  self-spawn mode also exit-2's because its `http:` `BETTER_AUTH_URL`
+  trips the inherited prod boot guard (worked around via `PARITY_URL`
+  against a manually started server).
+- Sheets pixel harness: **11/11 tabs PASS** vs the LibreOffice refs
+  (worst score 0.001, timeline) using the established same-geometry
+  frame (`ls-scroll` chrome-stripped capture, A1:AF45 clip) - raw
+  window shots fail by construction, kept as counter-evidence.
+- `npm run format:check` exits 1: 57 files fail, all inherited at merge
+  base `6d3a07f`; zero package-introduced. No files reformatted.
+- Defects recorded, unrepaired: F1 inherited `frontend/` typecheck
+  failure above (blocks parity baseline); F2 parity runner self-spawn
+  vs http-auth guard (inherited interplay); F3 iifym/supplements APIs
+  403 under the card env (feature flags unset - config boundary, by
+  design); `BETTER_AUTH_URL`-unset boot warning (cosmetic).
+- Repair-1 (verifier REPAIR vs `d85dddc`, closed on `fp/stage-10`):
+  b1/b1d actually dropped (were still present); staff photos gallery +
+  comparator and client check-in submit exercised at 1440/390 on a
+  fresh `app_fp_stage10_r1d` lane (`sweep-r1-results.json` 4/4, PNGs in
+  evidence dir); report counts corrected (44→48 slugs, real per-width
+  numbers), `format-failing-files.txt` completed to 57, cross-client
+  denial attributed to its actor/sample. Full detail: REPORT.md §10.
+- Full record: `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-10/REPORT.md`.
+  NOT done: owner sign-off; no push, no PR.
+
+## 2026-10-25 - Stage 11 card 13: opt-in demo-coverage seed profile from Lilly's export snapshot
+
+- `scripts/seed/50-demo-coverage.seed.ts` - opt-in module gated on
+  `VARI8_SEED_DEMO=1` (skipped in `scripts/seed/index.ts` and self-gated
+  in-module). Reads the byte-verbatim JSON snapshot in
+  `scripts/seed/demo-export/` (provenance `trackc/merge-frontend-9491897`,
+  SHA `9491897b…`; `PROVENANCE.md` inside the fixture dir) and fills the
+  `canvas-demo` workspace: 15 client logins, check-in forms + schedule
+  rules + instances, submissions with typed answers/reviews/photos,
+  conversations + messages, coach notes and tasks, client tasks, habits,
+  daily entries + nutrition logs, meal/IIFYM/supplement/training plans,
+  activity targets, goals, training session/set logs, workspace
+  preferences onto the workspace settings columns, and a per-client
+  dashboard draft (Tasks + Messages + Bodyweight trend + Your training).
+- Mapping doc + credentials list + run report live outside the repo in
+  `~/NEXUS_AI_CENTER/04_PROJECTS/Vari8-evidence/FULL-PACKAGE/STAGE-11/`
+  (MAPPING.md covers every export field, mapped or unmapped-with-reason;
+  CREDENTIALS.md lists the 15 demo emails - three name-matched clients
+  keep the default profile's `@canvas-demo.test` accounts - no passwords
+  anywhere).
+- Verification: flag-off seed dump on a fresh lane diffs EMPTY against
+  the stage-9 base lane (normalized); opt-in seed is idempotent across
+  two runs (normalized diff EMPTY, 78-table row counts equal); workspace
+  preference columns carry the fixture values. Gates `index` /
+  `typecheck` / `lint` / `index:check` / `test` (116 files, 1380 tests) /
+  `build` all exit 0. Live proof on a lane DB: coach and client surfaces
+  render seeded data at 1440 + 390 with denials holding; 10 screenshots
+  in the evidence dir.
+- Independent verifier repair round 1 fixed here: three CREDENTIALS
+  emails corrected to the real seeded values, `workspace.preferences`
+  now written and mapped, this STATUS entry added.
+- NOT done: owner sign-off; no push, no PR.
+
+## 2026-10-25 - Stage 9 card 12: legacy PRGRSS 2.0 sheets view on the real client store
+
+- Ported Lilly's `legacy-sheet/` folder into `components/canvas/client/legacy-sheet/`
+  (frontend/ stays the verbatim parity source). Dialog mounts on the coach athlete
+  overview header ("Legacy sheet" button), not on the client record.
+- Store binding (`bind.ts`, `data/legacy-sheet.ts`): DAILY TRACKER day rows read and
+  write `client.tracking.entries` through the same `withTrackingValue` seam the
+  coach tracker uses (weight, steps, cardio minutes); macro cells project the
+  staff `nutrition-logs` read; DASHBOARD macro targets read staff iifym. Bound
+  cells carry provenance labels; formula-shape and not-calculated badges kept.
+- `compute.ts` holds the plain-TS domain computations (week window projection
+  from `ClientPhase.startDate`, macro kcal 4/4/9, week-target stamps).
+  `Coach Tools` → `Update Timeline` applies `applyWeekTargets(today)` on click.
+- `styles.ts` is generated by `refine_geometry.py` (evidence dir): per-cell fills,
+  track geometry and border lines measured from the sanitised workbook's
+  LibreOffice print renders, snapped to reference pixels.
+- Verification: 15 unit tests green; `tsc --noEmit` clean; production build
+  green; authenticated Playwright captures of all 11 tabs pass the
+  masked-block diff gate against the LibreOffice references (worst score
+  0.001, worst tab within budget). Edit committed through the store persists
+  across dialog reopen; nutrition-logs GET verified 200; narrow 390px capture
+  taken.
+
+## 2026-10-25 - Stage 8 card 11 (built, pending owner screen review): training session and set log end to end (#176)
+
+- Schema/migration: `20261023040000_training_log` (+`down.sql`) adds
+  `TrainingSessionLog` (unique per client/program/session/week/date -
+  the replay-safe natural key; `pinnedVersionId` FK to the version live
+  at start; status IN_PROGRESS/COMPLETED/PARTIAL/SKIPPED) and
+  `TrainingSetLog` (idempotent per session-log/exercise/set position;
+  actuals as validated JSON - the coach's own template defines the set
+  fields, the log carries no fixed field list).
+- Service (`lib/trainingprogram/service.ts`): `startTrainingSessionLog`
+  (pins governing published version, replay-safe), `saveTrainingSetLog`
+  (M6 `setLogEntrySchema` before write, replace-on-resave, terminal
+  sessions refuse), `finishTrainingSessionLog` (completed → COMPLETED
+  or PARTIAL by unlogged prescribed sets; explicit `skipped`),
+  `readOwnSessionLog`/`readOwnTrainingLogWeek` (materialized from the
+  PINNED payload, not the live one), `readStaffTrainingLogs`.
+  `readOwnTrainingProgram` gained optional `week` for logbook
+  navigation without touching date-derived lifecycle. `lib/audit.ts`
+  allowlist: two resource types + `sessionOutcome` field.
+- Check-in surface (`lib/checkin/review-panel.ts`):
+  `flaggedTrainingNotes` on the panel wire - set rows with flags +
+  non-empty note, exercise names resolved through each log's pinned
+  payload (`weeks[].sessions[].exercises[]`), newest first.
+- Routes (api/v1): own `GET training-program`, `GET training-logs?week`,
+  `POST training-logs/sessions`, `GET sessions/[id]`,
+  `POST sessions/[id]/sets`, `POST sessions/[id]/finish`; staff
+  `GET clients/[cp]/training-logs`. `_result.ts` maps the closed
+  `TrainingError`/`AccessDeniedError` vocabulary to 400/403/404/409/503.
+- Client UI: `components/canvas/data/training-logs.ts` wire module +
+  `RemoteTrainingLogbook` - reuses Lilly's `SessionLogger` and ctl-*
+  classes, converts pinned server prescriptions to canvas types,
+  synthesizes positional set ids only for scalar `sets`, persists only
+  changed sets through a write queue, hydrates stub logs before open,
+  week navigation. Mounted for signed-in clients (`own`) in
+  `client-app.tsx`; unsigned demo keeps the local logbook.
+- Coach UI: `ClientTrainingLogs` surface under client detail → Plans
+  tab - each log (date · week · program · status badge) with per-set
+  actuals; demo falls back to local fixture logs. `checkins.ts` maps
+  `flaggedTrainingNotes` into `sub.flags` for the review card;
+  `mergeCheckinLoad` now preserves them (a board reload used to drop
+  detail-read flags).
+- Tests: 11 integration on a disposable PG - start/resume, replay,
+  replace-on-resave, v1 pinned beside actuals after v2 publish,
+  PARTIAL/COMPLETED/SKIPPED, terminal-write refusal, cross-client
+  denial, flagged note on review, invalid-payload pre-write rejection.
+- Gates: `npm ci` · `prisma generate` · `migrate deploy` (lane) ·
+  `typecheck` · `lint` (0 errors) · `index:check` · `test` (115/1365) ·
+  `build` - all exit 0.
+- Live proof on lane `app_fp_stage8c11` (seeded fixtures, `next start`
+  127.0.0.1:3972, `APP_ENV=test ENABLE_CHECK_INS=1
+MEDIA_STORAGE_ADAPTER=local`): start → save 2 sets → reload → resume
+  returns both; replay start same id; re-save same set keeps one row;
+  flagged note + note flag on set 3; finish → PARTIAL; skipped session
+  refuses writes 409; publish v2 (week-6 boundary 4-5→12-14) → log
+  still reads pinned v1 (4-5) beside actuals while program is v2;
+  staff read returns both logs. Screenshots 1440+390 client logbook,
+  session logger (v1 beside actuals), coach client detail, check-in
+  flag - all in the card-11 evidence dir with proof reports.
+- Preview for review R2-4: production server `http://127.0.0.1:3972`,
+  lane DB kept alive. Sign in `emma.anders@canvas-demo.test` /
+  `coach@c11proof.test` (seed env passwords only). No push, no PR until
+  Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
+## 2026-10-25 - Stage 7 card 10 (built, pending owner screen review): IIFYM macro targets end to end (#175)
+
+- Schema: none added - existing `IifymPlan` (shared draft, `draftRevision` CAS,
+  plan-scoped `timezone`) + `IifymPlanVersion` (immutable payload snapshot,
+  `publishOriginRevision` dedupe authority) carry the whole card.
+- Service: `lib/iifym/` - `gate.ts` (`ENABLE_IIFYM_PLANS` + trusted-runtime
+  resolver, enforced at the top of every exported service function: flag off →
+  `plan_not_accessible`/403), `limits.ts`, `payload.ts` (strict draft
+  normalizer; macros options reject `calories`, calorie options reject macros),
+  `service.ts` (draft save / timezone confirm / publish / staff+own reads -
+  meal-plan protocol cloned: advisory lock, serializable tx, consent under
+  locks, replay-lookup before stale/publish checks, audit last).
+- Routes (api/v1): own `GET workspaces/{ws}/iifym-plans` (current version
+  payload + upcoming header only - draft never leaves the server); staff
+  `GET|PUT clients/{cp}/iifym-plans`, `POST .../publish`,
+  `POST .../timezone`. `_result.ts` maps the closed error vocabulary:
+  400/403/409, never 404, foreign workspace → 403.
+- Coach UI: `app/workspace/[ws]/clients/[cp]/macro-targets` +
+  `components/iifym/` - option editor (macro mode: P/C/F with derived-kcal
+  readout; calorie mode entered directly + labelled), weekly weekday
+  assignment grid (+manual; a stored `cycle` schedule is preserved, not
+  clobbered), explicit "Confirm timezone" action (`setIifymTimezone` via the
+  timezone route - the coach's browser zone is never auto-stamped), publish
+  with effective date, version table. Clients roster row links to it.
+- Client UI: `nutrition-targets.tsx` beside card-09 `NutritionActuals` in a
+  `ca-nutrition-split` - resolves the weekday option for the displayed date
+  through the canvas's own `scheduledOption`, derives kcal at 4/4/9 in macro
+  mode, labels calorie mode; empty/error states when no version is live.
+- Tests: 11 unit (payload normalize/derived-calorie rules), 7 integration on a
+  disposable PG (two-option publish + weekday resolution via the real
+  `scheduledOption`, byte-identical replay incl. after v2, foreign-workspace
+  denial, flag-off closure, immutability, consent missing).
+- Gates: `npm ci` · `prisma generate` · `typecheck` · `lint` (0 err, 85 warn -
+  all pre-existing) · `index:check` · `test` (112 files / 1334) · `build` -
+  all exit 0.
+- Live proof on lane `app_fp_stage7c10` (seeded synthetic fixtures, `next
+start` on 127.0.0.1:3971 with `APP_ENV=test` + flags): publish two weekday
+  options → own read resolves Rest day on Sun 25 Oct and Training day on Tue
+  13 Oct; publish replay byte-identical (`cmp`) incl. replay of v1 after v2
+  published (v1 untouched, upcoming=v2); foreign-workspace PUT/POST/GET all
+  403; second instance without `ENABLE_IIFYM_PLANS` returns 403
+  `plan_not_accessible` on all four endpoints; nutrition actuals written via
+  card-09 route for the side-by-side. Screenshots 1440/390 coach+client and
+  `PROOF.md` in the card-10 evidence dir.
+- Independent review (verifier subagent): REPAIR → fixed. MAJOR-1 flag was
+  page-gated only - now enforced in the service and proven live flag-off.
+  MAJOR-2 browser auto-stamp replaced by explicit confirm route. Minors:
+  dead exports dropped (`readStaffIifymVersion`, cursor pagination), cycle
+  schedule preserved in editor, create-without-title 403→400, test imports
+  the real `scheduledOption`.
+- Preview for review R2-4: production server on `http://127.0.0.1:3971`
+  (`ENABLE_IIFYM_PLANS=1` etc.), lane DB kept alive for the preview. Sign in:
+  `coach@card10.test` / `emma.anders@canvas-demo.test` (fixture passwords in
+  the seed env only). No push, no PR until Marcel approves the screens.
+- NOT done: owner screen sign-off, lane DB drop (kept for preview).
+
+## 2026-10-25 - Stage 7 card 09 (built, pending owner screen review): daily nutrition actuals (#173 slice)
+
+- Schema: `NutritionLog` as a 1:1 child of `DailyEntry`, also unique on
+  `(workspaceId, clientProfileId, entryDate)`; nullable `protein`,
+  `carbohydrate`, `fat`; no calories column anywhere. Migration
+  `db/migrations/20261023030000_nutrition_log/` with `down.sql`.
+- Math: `MacroActuals` + `caloriesFromMacros` (4/4/9, missing macro
+  contributes nothing, all-missing = 0, explicit 0 stays "0 g") in
+  `lib/nutrition/math.ts`; the canvas duplicates the derivation inline -
+  canvas never imports server modules.
+- Service: `lib/daily-entry/nutrition-log.ts` - own read/save reusing the
+  `saveDailyEntry` lock/auth/consent protocol, staff 30-day range read.
+  Logs bind to the daily entry/date, so meal-plan ↔ IIFYM switches keep
+  earlier entries; template-independent.
+- Routes: own `GET ?date=` + `PUT /[entryDate]` under
+  `nutrition-logs/`, staff `GET clients/[id]/nutrition-logs?from&to=`.
+- Client UI: `nutrition-actuals.tsx` panel on the Nutrition screen
+  (`own`-gated, illustrative path untouched): blank fields stay blank,
+  "Not recorded" never zero, derived kcal live + after save, recent-days
+  list, empty-day state. Coach daily page gained a read-only "Recorded
+  macros" table, hidden when the daily-entry surface is unavailable.
+- Tests: 6 unit (`caloriesFromMacros`), 18 integration on lane DB
+  `app_fp_stage7` (partial/full/zero macros, reload, staff range,
+  pin-switch retention, auth guards).
+- Gates: `npm ci`, `prisma generate`, `typecheck`, `lint` (0 err),
+  `index:check`, `test` (111 files / 1323), `build` - all exit 0.
+- Live proof on `app_fp_stage7` (seeded, synthetic `card09-*` fixtures):
+  Playwright driver, 14/14 PASS - empty day, protein-only 720 kcal,
+  150/200/60 → 1940 kcal hand-checked, reload persistence, IIFYM-variant
+  client keeps entries, coach table shows 1940 + 400 kcal rows.
+  Screenshots 1440/390 + `PROOF.md` in the card-09 evidence dir.
+- Preview for review R2-4: served on `https://127.0.0.1:3967` (TLS proxy
+  → backend 3968), `APP_ENV=test`, `MEDIA_STORAGE_ADAPTER=local`,
+  `ENABLE_DAILY_ENTRY=1`. Port 3964 is owned by the sibling
+  merge-preview lane and was left alone - flag for Marcel.
+- Commits: `9731f3a` schema+math, `0ce232e` service, `b412a50` routes,
+  `91937c1` client panel, `edbe706` coach section + index. No push.
+- NOT done: independent review, owner screen sign-off, lane DB drop
+  (kept for the preview).
+
+## 2026-10-25 - Stage 6 card 08 (#172): progress photos with comparison - built, live-verified, awaiting R2-4 screen review
+
+- Migration `db/migrations/20261023020000_progress_photo/` (+ `down.sql`
+  ending in the `_prisma_migrations` delete): `progress_photo_entry` -
+  unique `media_object_id` link, `taken_on` DATE, optional
+  `checkin_submission_id`, `client_visible` default true, `deleted_at`
+  soft delete. Raw composite FKs pin media/submission to the same
+  workspace (submission also to the same client), all RESTRICT. No
+  pose or shot-variant column or enum anywhere; the product surface
+  greps clean for the banned term.
+- `db/schema.prisma`: `ProgressPhotoEntry` model + back-relations on
+  Workspace/ClientProfile/MediaObject/CheckInSubmission.
+- API under
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/progress-photos/`:
+  `service.ts` + routes - GET list + POST create (route.ts), GET/DELETE
+  `[entryId]` (route.ts), GET `compare?first&second` (compare/route.ts).
+  Reads `clientData.read`, writes `message.write`. Client callers are
+  resolved to their own profile server-side and constrained to it
+  regardless of path ids; staff need an active member with staff scope.
+  Compare requires both entries under the same requested client -
+  cross-client pairs return `not_found`, never leak existence. Deleted
+  entries are filtered from list/get/compare; the media_object row is
+  untouched by delete (retention pass owns it).
+- Upload keeps the media intent + presigned PUT seam
+  (`components/canvas/data/media.ts`); `progress-photos.ts` provider adds
+  `uploadOwnProgressPhoto` (intent → PUT → dated entry create) plus
+  list/create/delete/compare. `fetchMediaDownload` alias clarifies the
+  staff-side mint caller.
+- Client UI: `components/canvas/client-app/photos.tsx` - dated upload
+  (DatePicker, defaults today), own gallery with delete; mounted as a
+  remote-only `photos` section (sections.ts/client-app.tsx) visible only
+  for a signed-in client with an `own` binding.
+- Coach UI: real staff page
+  `app/workspace/[workspaceId]/clients/[clientProfileId]/photos/`
+  (page.tsx + photos-panel.tsx) - gallery mints fresh download urls per
+  entry, two-entry comparator via the compare route, soft-delete buttons.
+  Roster `app/workspace/[workspaceId]/clients/page.tsx` gains a Photos
+  column link for owner/coach. Styles in `app/globals.css`.
+- Gates (all exit 0): `npm ci`, `npx prisma generate`,
+  `npm run typecheck`, `npm run lint` (warnings only, matching baseline),
+  `npm run index` + `index:check`, `npm run test` (111 files / 1317
+  tests), `npm run build`. `tests/unit/system-index.test.ts` canary
+  bumped 56→57 pages deliberately.
+- `tests/integration/api-v1-progress-photos.test.ts`: 8 tests green on
+  lane db `app_fp_stage6` (real Postgres, migration deployed,
+  `MEDIA_STORAGE_ADAPTER=local`) - list/create/compare/soft-delete,
+  own-scope pinning, cross-client refusal, media survives entry delete.
+- Live probes on the built artifact (`next start`, port 3966; 3964 was
+  held by the merge-preview lane): real upload through the media routes,
+  dated entry in coach gallery, same-client compare 200, cross-client
+  compare 404 both directions, client→other-client list/entry/media-mint
+  403/404, client cross-client compare 404, soft delete 200 + entry gone
+  - media still mintable + rows retained in db.
+- Screenshots 1440 + 390 (client gallery incl. real UI upload of two
+  dated photos, coach gallery + comparator mid-compare, roster link row)
+  under `Vari8-evidence/FULL-PACKAGE/STAGE-6/card-08/` with the probe
+  logs and report.
+- NOT pushed, no PR - awaiting Marcel's visual review of the screens
+  (preview requirement was port 3964; sibling lanes occupy it, live
+  instance for this card ran on 3966 - coordinate before publish).
+
+## 2026-10-25 - Stage 5 card 07 (#169): activity targets with a day-effective resolver landed; awaiting Marcel's 3964 screen review
+
+- `db/migrations/20261023010000_activity_target/` (new): `activity_target`
+  - one row per (client, metric, day); kind set = prescription, kind NULL +
+    stopped_at = stop version. Raw CHECKs: metric closed set ('steps',
+    'cardioMin'), cardio columns together and exactly on CARDIO, ordered
+    range bounds, positive prescription numbers (sessions_per_week whole, no
+    cap; minutes_per_session NUMERIC fractional), kind/stopped_at pairing,
+    revision > 0. Composite workspace-coherence FKs per convention; `down.sql`
+    per db/AGENTS.md.
+- `lib/activity-targets/` (new): `model.ts` pure resolver + write planner
+  (latest row with effectiveFrom <= date wins; same-day replace needs the
+  confirm flag and bumps revision); `service.ts` serializable tx with
+  advisory locks, in-tx authorize (new `activityTargets` RBAC resource -
+  staff workspace|assigned, client own-read/write-denied), revision CAS on
+  same-day replace, audit CREATE/UPDATE (structural meta only);
+  `boundary.ts` closed safe vocabulary incl. `confirmation_required`;
+  thin route `GET/PUT .../clients/[clientProfileId]/activity-targets` on
+  plan.read / plan.write.
+- `components/canvas/data/activity-targets.ts` (new): remote provider +
+  wire↔canvas mapping (wire 'cardioMin' ↔ canvas 'cardio').
+- Surfaces: coach `targets/editor.tsx` hydrates and saves remotely when a
+  workspace is attached (confirm dialog on 409 confirmation_required,
+  local demo fallback kept); `RemoteClientTracker` renders `TargetSummary`
+  for the selected date (new `renderTargets` slot on the ethereal
+  tracking view); `/client` Plans part + `/me` tracker read own-scope
+  versions; coach `timeline-tab` hydrates persisted versions through the
+  same canvas resolver.
+- `tests/unit/activity-targets.test.ts` (new, 19 tests): Wednesday change,
+  earlier days keep old target, same-day refuse/confirm + revision bump,
+  metric scoping, stops, unsorted rows, client isolation, all step kinds,
+  range + cardio validation, date boundaries. `tests/unit/rbac.test.ts`
+  gained the activityTargets row (34 resources).
+- Gates: npm ci 0, prisma generate 0, typecheck 0, lint 0 (warnings all
+  pre-existing), index 0, index:check 0, test 0 (112 files / 1336),
+  build 0 (route listed). Lane DB app_fp_stage5: migrate deploy 0, all
+  CHECKs/FKs verified, seed 0, service probe 14/14 (Wed change, same-day
+  refuse/confirm, revision CAS, metric scoping, stop, denied paths,
+  own-scope isolation, audit). Screenshots at 1440 + 390 under
+  `Vari8-evidence/FULL-PACKAGE/STAGE-5/card-07/` (also gates.txt +
+  probe-output.txt). Preview: managed runner on 127.0.0.1:3997 left running
+  (3964/3000/3001 held by sibling lanes).
+- NOT done: push/PR - held per card rule until Marcel approves the screens.
+
+## 2026-10-25 - Stage 1 card 02 (#162 slice): supplement-plan thin route, provider, coach editor wiring
+
+- Thin route
+  `app/api/v1/workspaces/[workspaceId]/clients/[clientProfileId]/supplement-plan/route.ts`:
+  `GET` `plan.read` selects `readStaffSupplementPlan` (workspace scope) or
+  `readOwnSupplementPlan` (own scope); `PUT` `plan.write` denies clients at
+  the capability gate. Backend untouched - the merged
+  `lib/supplements/{model,service,boundary,gate}.ts` is called through its
+  safe `*FromAction` boundary with a closed error mapping.
+- `components/canvas/data/supplements.ts` is the remote provider
+  (apiFetch) with `planFromView`/`toWireItems` mappers; registered in
+  `data/index.ts` as a remote domain with no localStorage slice. The coach
+  `SupplementEditor` hydrates from the API on mount and PUTs the full
+  ordered list on Save; no autosave. Slice wiring is marked temporary for
+  the owning #162 follow-up.
+- Gates: `npm run typecheck` 0; `npm run lint` 0 (89 known warnings);
+  `npm run format:check` 0; `npm run index` + `index:check` 0;
+  `npm run test` 0 (1292, +3 provider tests); `npm run build` 0.
+- Lane db `app_fp_card02`: `prisma migrate deploy` 0,
+  `20261023000000_supplement_plan` applied exactly once; db dropped.
+- Probes on the built artifact (https origin via disposable TLS proxy,
+  `APP_ENV=test ENABLE_SUPPLEMENTS=1`): coach GET 200 / PUT 200 / GET 200
+  ordered; profile-linked client GET 200 same items; client PUT 403;
+  foreign-workspace GET 403. Seeded walk added two items with statuses,
+  saved, reloaded - order and rows persisted.
+- No consent gate on supplements (owner decision 2026-10-22);
+  `ENABLE_CONSENT_GATES` unset. Evidence report:
+  `Vari8-evidence/FULL-PACKAGE/STAGE-1/card-02/REPORT.md`.
+
+## 2026-10-25 - deterministic demo-export snapshot for backend seeding - verified locally
+
+- This work is on branch `frontend-demo-export-20261025`, based on
+  `FRONTEND` at `9383578a`; commit pending, no push yet.
+- Contents: `frontend/src/data/demo-export/` - a generated snapshot of the
+  fully populated demo coach state (workspace.json + 15 client files +
+  index.json) for backend seeding, plus `frontend/scripts/export-demo.mjs`
+  (`npm run export:demo`) which regenerates it deterministically against the
+  pinned anchor `2026-10-25`. All calendar dates serialize as `day <n>`
+  offsets from the anchor; fixed-date and free-text keys are whitelisted and
+  documented in `frontend/src/data/demo-export/README.md`. `seedState` gained
+  an optional `today` parameter and three demo ids are now stable literals
+  (`demo-variant-refeed`, `demo-timeline-deload`, `demo-timeline-dietbreak`).
+- `npm run export:demo` regenerates byte-identical files across runs and
+  machines (verified via SHA-256 in both the source workspace and this
+  worktree); the script re-anchors every offset and deep-compares against the
+  pre-conversion state before writing.
+- `npm run check` in `frontend/`: tests 319/319, agent-context:check,
+  typecheck, lint (300 files) and build all exit 0. Published-only test files
+  were renormalized to Biome format; no tests removed or weakened.
+
+## 2026-10-24 - Issue #202 parity HTTPS repair: capture/auth lifecycle verified; visual comparison remains failed
+
+- Reproduced the defect on `Vari8-Beta` `d1c4081`: production parity
+  supplied HTTP `BETTER_AUTH_URL`/`AUTH_URL`, boot correctly refused,
+  and the run exited 2 before screenshots.
+- Root parity now serves the public browser/auth origin over a
+  disposable loopback HTTPS proxy and `next start` on a distinct
+  loopback backend port. Port selection is availability probing only;
+  a startup race fails closed. Backend/proxy ownership is checked by the
+  original PGID, leader-exit descendants are cleaned, bounded escalation
+  is limited to that group, and listeners/members are verified gone.
+- Cookie conversion preserves `Max-Age`/`Expires` precedence, expired
+  cookies, session cookies and security/domain/path attributes. Each
+  capture validates pathname/auth content after navigation, then waits
+  for required route/hash/query, screen-specific content and
+  selected/open state before a screenshot is saved; `finalUrl`/markers
+  are recorded. The strict contract exposed and repaired the
+  `s04-template-habits` right-panel-toggle scope defect.
+- Fresh proof: `PARITY_PORT=55880 npm run parity` reaches
+  `https://127.0.0.1:55880`, signs in, captures **70/70 screens** and
+  reports **0 capture failures / 0 retries**. Comparison is **FAIL,
+  70 problems, exit 1** against the checked-in baseline, startup and
+  capture validity are fixed, visual acceptance is not claimed.
+- Checks on Node v24.22.1: focused 13/13; full unit **105 files /
+  1263 tests**; typecheck, format, index, build and `git diff --check`
+  exit 0; lint 0 errors/81 warnings; shared E2E **16 passed /
+  8 skipped**, exit 0. The earlier **10 passed / 7 skipped** count was
+  the narrower canonical E2E subset; mail-gated skips are not passes.
+- Fresh mutations: leader-exit cleanup left a descendant listener as
+  expected when restricted to leader lifetime; removing query/state
+  checks caused the reviewer's probes to pass incorrectly. Both were
+  restored byte-identically and the suite returned **13/13**.
+- Visual investigation found deterministic low-channel raster/layout
+  differences plus real DOM/page-size changes. Baseline provenance
+  lacks OS/browser/source environment sufficient to prove a host-only
+  cause; #202 remains blocked on mandatory visual parity.
+- No 55880/55881 listeners or `vari8-local-tls-*` material remain;
+  disposable `app_parity_https` was dropped. Full record:
+  `icm/05-build/reports/PARITY-HTTPS.md`.
+
+## 2026-10-24 — PR #201 K6-GATE evidence whitespace closure — receipts normalized, checks clean
+
+- Independent review found the complete base-to-head
+  `git diff --check` had **16 findings / exit 2** in two committed
+  `.txt` receipts. The prior unqualified “diff check 0” claim is
+  corrected: it did not cover those committed receipt artifacts.
+- `verify-local-canonical.txt` and
+  `verify-local-canonical-skip-parity.txt` are whitespace-normalized
+  copies only: trailing spaces and whitespace-only blank lines removed;
+  output order, commands, results, counts and exits unchanged. Raw
+  pre-normalization copies are preserved outside the tracked tree under
+  `_evidence/K6-GATE/` with recorded SHA-256 hashes in `K6-GATE.md`.
+- Node v24.22.1 checks after normalization: `npm run format:check`
+  exit 0; `npm run index:check` exit 0; working-tree
+  `git diff --check 2214105…` exit 0. Post-commit
+  `git diff --check 2214105…..HEAD` exit 0.
+- Exact non-documentation/non-evidence path check from reviewed
+  `0c3c3d5` to the normalized head: `git diff --exit-code -- tests/
+tools/ app/ components/ frontend/ public/ db/ lib/ scripts/
+package.json package-lock.json playwright.config.ts vitest.config.ts
+vitest.integration.config.ts tsconfig.json` exit 0. The delta is
+  documentation/evidence only; no behavioral suite was rerun.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — applicable run passes; parity recorded not applicable
+
+- Applicability decision: K6-GATE is local tooling only and the full
+  base-to-head diff contains no rendered UI, style, font, asset,
+  `app/`, `components/`, `frontend/`, JSX/TSX, CSS, image or font
+  changes. Under D32 (“each wiring PR gates the screens it wires”) and
+  the local gate's no-screen rule, `Parity (D32) on: none`.
+- The earlier `5fbeef3` run without `SKIP_PARITY` is preserved as a
+  separate failure: parity startup exit 2 because the runner supplied an
+  HTTP `BETTER_AUTH_URL` to production boot. It was not a visual
+  regression; issue #202 tracks the harness defect.
+- Applicable canonical invocation at `44bf054`: Node v24.22.1,
+  `LANE_DB=app_k6_gate_skip`, `CARD=K6-GATE`, `REQUIRE_NODE24=1`,
+  `SKIP_PARITY=1`, and only the real `docker exec vari8-db-1 →
+app-db-1` adapter.
+- Result: **VERIFY-LOCAL PASS, exit 0** — clean tree, schema guard,
+  generator, installs, format/type/lint, unit **1250/1250**, frontend
+  tests **198/198**, disposable migrate deploy, root/frontend builds,
+  and e2e **10 passed / 7 skipped / 0 failed**. Integration remained
+  skipped by the script's unchanged-path rule; parity is `SKIP`, not
+  PASS.
+- Task DB `app_k6_gate_skip` was removed by the script trap and verified
+  absent. Lifecycle and mutation receipts remain separate: focused
+  suite 23/23, zero skipped; mut4 bite/restore/current baseline intact.
+
+## 2026-10-24 — PR #201 K6-GATE canonical gate — DB stage reached; parity harness fails on HTTPS origin
+
+- Docker Desktop was started to inspect the expected development DB.
+  Established container identity: `app-db-1`, compose project `app`,
+  service `db`, `postgres:16-alpine`, healthy on `127.0.0.1:5433`.
+  `vari8-db-1` does not exist; the earlier instruction was corrected.
+- Canonical run used only the documented narrow adapter
+  `docker exec vari8-db-1 → docker exec app-db-1`, `LANE_DB` =
+  disposable `app_k6_gate_verify`, Node v24.22.1,
+  `REQUIRE_NODE24=1`, and private `.env` credentials.
+- `verify-local.sh` result: **FAIL, exit 1**. It passed clean tree,
+  schema guard, generator, installs, format/type/lint, root and frontend
+  tests/builds, disposable migrate deploy, and e2e (**10 passed /
+  7 skipped / 0 failed**). Its integration stage was skipped by the
+  script's unchanged-path rule; the separate lifecycle suite remains
+  23/23 on real PostgreSQL.
+- The sole failure is parity D32 exit 2: the parity runner launches
+  production `next start` with HTTP `BETTER_AUTH_URL`, and the app
+  correctly refuses HTTP auth in production. The run was not repeated or
+  adapted to fake a pass.
+- Disposable `app_k6_gate_verify` was dropped by the script's trap and
+  verified absent; builder `app_k6_it` remains. No duplicate/renamed
+  container or shared DB contents were changed.
+
+## 2026-10-24 — PR #201 K6-GATE repair 9 disposable-PG proof — focused suite green; canonical DB stage blocked by Docker
+
+- Branch `beta/k6-gate` adds deterministic lifecycle proof on an
+  isolated `embedded-postgres@16.14.0-beta.17` cluster (PostgreSQL
+  16.14, `127.0.0.1:55681`, scratch `pgdata`, `app_k6_it?schema=public`).
+  Docker Desktop remains unavailable; the scratch cluster was stopped and
+  removed afterward, with no shared database/service modified.
+- Focused suite on Node v24.22.1: **23/23 passed, zero skipped, exit 0**.
+  Coverage now distinguishes an injected pending create promise
+  (post-dispatch/pre-settlement, repeated signals) from an actual SQL
+  `CREATE DATABASE` observed `state='active'` in `pg_stat_activity`
+  before SIGTERM. Existing DB, fixture transaction and victim-row checks
+  pass; residue check leaves only `app_k6_it` and no `loadgate_*` DBs.
+- TargetId mutation ran behaviorally on PostgreSQL: full focused suite
+  exit 1 with the expected mismatched-target acceptance and follow-on
+  legitimate-cleanup failure. The patch reverse-restored
+  byte-identically; the focused suite reran 23/23 green.
+- `verify-local.sh` under Node 24 proceeded through clean tree, schema
+  guard, generator, installs, format/type/lint/unit and frontend checks,
+  then exited 1 at its hardcoded `docker exec vari8-db-1` stage because
+  Docker Desktop is closed. Its stale `/home/nexuslink` root path also
+  emits a `realpath` warning. This is a canonical-gate blocker, not a
+  pass.
+- PR body/report update, scoped commit, push and independent review
+  remain the handoff path; issue #178 stays open with capacity/staging
+  unchanged.
+
+## 2026-10-24 — PR #201 K6-GATE repair 8 lifecycle/mutation provenance — verified locally except disposable PG
+
+- Branch `beta/k6-gate` (worktree `vari8-worktrees/k6-gate`) implements
+  PROMPT 391 review repairs for `tools/load/provision.ts`: explicit
+  pending/created/failed `CREATE DATABASE` state, catchable-signal
+  cleanup that awaits in-flight operations, scoped fixture transaction
+  semantics, and no `K6_GATE_FAULT` read in the shipping CLI.
+- Test-only synchronization/fault injection moved to
+  `tests/integration/k6-gate-provision-harness.ts`; the disposable-PG
+  suite now has 22 lifecycle/safety cases covering SIGTERM/SIGINT race,
+  create failure, existing-DB refusal, and fixture atomicity.
+- Node v24.22.1 (`npx -p node@24.22.1`) results: `npm run typecheck` 0;
+  focused load-gate tests 46/46; `npm run test` 1250/1250; lint 0
+  errors/81 existing warnings; `npm run format:check` 0;
+  `npm run index:check` 0; `npm run build` 0; `git diff --check` 0.
+- Docker is unavailable (`docker info` exit 1) and
+  `INTEGRATION_DATABASE_URL` is unset; focused integration reports 22/22
+  skipped, so fresh disposable-DB lifecycle/mut4 evidence is explicitly
+  unavailable rather than relabeled. Mutation patches were regenerated
+  from the final baseline with apply/restore proofs; report mutants
+  failed fresh unit checks as expected.
+- The scoped repair/evidence commits were pushed to
+  `origin/beta/k6-gate`; independent review remains pending. Issue #178
+  stays open with capacity/staging unchanged.
+
+## 2026-10-23 - frontend UI redesign branch for review - verified locally
+
+- This work is on branch `frontend-ui-redesign-20261023`, based on
+  `FRONTEND` at `51fa6a2`. It is a review branch for Marcel to diff against `FRONTEND`; no PR yet.
+- Contents: visual reset (tokens, shared controls, light/dark), standalone
+  client app at `/client` with training logbook, athlete overview v2
+  (nutrition/activity targets, situative timeline, template-driven layout),
+  demo data and specs under `frontend/docs/`.
+- `npm run check` in `frontend/`: tests 316/316, agent-context:check,
+  typecheck, lint and build all exit 0. Test-loader shims and two
+  visual-reset check files were updated; no tests removed or weakened.
+
+## 2026-10-22 — CANVAS-PORT: Lilly frontend carried into the served root canvas, gates and parity green
+
+- Branch `beta/canvas-port` (worktree `.worktrees/canvas-port`), base `09b1424`
+  (`Vari8-Beta` with #160 merged, so `frontend/` carries `51fa6a2`). Source
+  `origin/FRONTEND` `51fa6a2` (`frontend/src`), base `fe5780d`, per
+  `Vari8-evidence/CANVAS-PORT-MAP-2026-10-22.md`.
+- Mechanical copy is rerunnable: `node tools/port-canvas/port.mjs` (git show from
+  `51fa6a2`, `@/components|@/lib|@/data|@/styles` rewrite, `motion/react`
+  `useReducedMotion` to `@/lib/canvas/reduced-motion`, relative `../lib` to
+  `@/lib/canvas`, hand-merge files excluded). 121 files written, 8 hand merges
+  produced by `port.mjs --merge` (git merge-file, three conflicts resolved by
+  hand: store data seam, coach-app viewer plumbing, mealplan and dashboard
+  import blocks), `app/(canvas)/layout.tsx` keeps the scoped root layout plus the
+  one `vari8-tokens.css` line.
+- Data seam defect the map did not predict, found by the seam test and fixed:
+  `plans.activityTargets`, `plans.supplements` and `demoSeeds` were dropped
+  between save and reload. Training slice now owns activityTargets and demoSeeds,
+  nutrition slice owns supplements. Second defect: `adoptAmaraTrainingExample`
+  wrote `activityTargets: undefined`, which becomes `[]` after a JSON round trip,
+  so migrate was not idempotent; one `?? []`.
+- Update onto `09b1424`: one conflict, `docs/STATUS.md`, resolved newest entry
+  first. Merging the new base also surfaced a real base breakage, fixed here:
+  `tests/unit/system-index.test.ts` still expected `MotionProvider` to wrap
+  `/, /coach, /ethereal`, but #160 added `frontend/src/app/dev/design-system`,
+  so the generator row now names four routes. `docs/index/*.md` regenerated
+  (`npm run index`, `npm run index:check` clean).
+- Parity gate now applies D32's own pass rule. `tools/parity/compare.mjs` gains
+  `d32Budget`, 0.1 percent of each screen's captured area (1296 px at 1440x900,
+  329 px at 390x844), so a plain `npm run parity` is no longer a stricter
+  bit-exact gate than the decision it implements. `PARITY_MAX_DIFF_PIXELS` stays
+  as an absolute override. `tests/unit/parity-budget.test.ts` fails if the
+  default goes back to zero or the env input stops being validated.
+- `npm run parity` on this head, no env overrides: exit 0, 0 problems, 74
+  screens. The five residuals that were 1/255 shade inside the active Clients
+  pill still measure 340 px in four 1440 shots and 228 px in
+  `s07-exercise-library`, inside the 1296 px budget; geometry, text and page
+  size stay bit exact on every screen. Named in the parity report per screen.
+- Baseline reproducibility, measured: `PARITY_APP=frontend npm run parity --
+--update-baseline` on this head reproduces 73 of 74 shots byte for byte. The
+  one difference is `390/s11-client-preview` scroll step at 247,330: the bottom
+  two rows of that 324x54 strip (648 px, channel delta 34), which the root app
+  matches exactly against the committed baseline. The committed baseline is
+  therefore kept unchanged.
+- Recorder truth text: the `RULED` entry for "Record demo video feedback" to
+  "Record video feedback" now has its owner row. D32's truth-text table gains
+  `S02-25`, which mirrors the row D36 already lists for PR-MEDIA ("Recorder
+  records for real, same UI"). No copy changed.
+- Check-ins ordering rule: PR #147 is still open at `c0b0291`. The ported file is
+  kept and the merge is clean on this head. `git merge-tree --write-tree HEAD
+origin/beta/pr-w6-checkins` exits 0 with no conflict output; in the merged
+  blob `loadCheckins`, `sendFeedback`, `workspaceId`, `SegmentedControl` and
+  `TextArea` are all present, and `ParameterValue`, `cd-tabs` and conflict
+  markers are absent. Re-check before merging #147, as the PR body says.
+- Gates on this head, in the worktree: `npm run typecheck` 0, `npm run lint` 0
+  errors and 89 warnings (same classes as the base), `npm run test` 0 (99 files,
+  1120 tests), `npm run build` 0, `npm run index:check` 0.
+- Live check on the production build, signed in as the workspace owner, 1440x900
+  and 390x844, both widths: wrote an activity target (steps Minimum 8,500) and an
+  ESN Vitamin D3+K2 supplement through the planners, reloaded, read both back
+  from the reloaded screen, then read the client profile Plans tab target
+  summary and the read-only client plan preview. Zero console errors.
+- Evidence: `04_PROJECTS/Vari8-evidence/CANVAS-PORT/` (8 screenshots at both
+  widths plus `parity-report.html`). The earlier copy inside the repo has been
+  moved there.
+
+## 2026-10-22 — FRONTEND merged into Vari8-Beta, gate green — verified locally
+
+- Branch `beta/frontend-sync-2026-10-22`, merge of `origin/FRONTEND` `51fa6a2`
+  (#151) into `origin/Vari8-Beta` `69c74c3`. `frontend/` takes FRONTEND; the
+  #70 hydration fix (`useReducedMotion` from `@/lib/reduced-motion`, not
+  `motion/react`) is preserved.
+- `npm run check` in `frontend/` exit 0 after Biome sorted imports in five
+  files (import order only, no product change). Log kept outside Git.
+- Root `npx prettier --check docs/STATUS.md docs/tasks/frontend-current-2026-10-22.md` exit 0.
+
+## 2026-10-22 — current frontend publication gates green — verified locally
+
+- `npm test` in `frontend/`: 252 tests, 252 pass, 0 fail (exit 0).
+- `npm run check` in `frontend/` (test → agent-context:check → typecheck →
+  lint → build): exit 0. Biome checked 260 files with `--error-on-warnings`,
+  no findings; `tsc --noEmit` clean; `next build --webpack` produced routes
+  `/`, `/_not-found`, `/coach`, `/dev/design-system`, `/ethereal`.
+- Five stale test assertions were updated to deliberate current behavior
+  (test files only, no product changes):
+  - `accent-contrast.test.mjs`: the screenshot pink `#D93A7F` now keeps its
+    fill (hover `#DB4284`) with a black `#000000` label; the surface-aware
+    accent algorithm replaced the previous minimal-darkened fill plus white
+    label.
+  - `accent-contrast.test.mjs`: mid-gray `#777777` keeps its fill
+    (`#777777`) with a black label instead of darkening to `#767676` with a
+    white label; `contrastRatio(bg, fg) >= 4.5` is asserted.
+  - `widgets.test.mjs`: catalogue count is 22 after CU17 "Section heading"
+    and CU18 "Coach announcement" joined the Coaching category.
+  - `widgets.test.mjs`: CU17/CU18 intentionally return no source-record
+    detail (`widgetDetailKey` → `null`); the detail loop skips them behind
+    an ID allowlist assertion.
+  - `refinement.test.mjs`: `ChartPeriodControl` renders the shared VARI8
+    `Select` (`v8-select dw-chart-range`, Base UI trigger + hidden input)
+    instead of a native `<select>` with `<option selected>`.
+- Browser smoke on a dedicated dev server (port 3100, headless Chrome via
+  CDP): screenshots at 1440×900 and 390×844 for the Supplements plan
+  (`plan=supplements`), the Activity targets plan (`plan=activity-targets`)
+  and the client "Preview assigned tool" dialog, all for `client-001`.
+  Zero console errors; one network 404 for `/favicon.ico` in dev.
+  Artifacts kept outside Git under the local `.agent-runs` archive.
+- `/dev` boundary confirmed fail-closed: the production build lists the
+  `/dev/design-system` route but its built HTML renders the 404 page
+  (`notFound()` outside development) and `next.config.ts` aliases the
+  playground module to a throwing stub in production webpack builds.
+- Commit, push, PR and merge remain pending under the publication plan.
+
+## 2026-10-22 — current frontend PR and clean integration — planned
+
+- Owner authorized publication of the current local frontend, direct review
+  and a clean PR merge into `FRONTEND`. `main` remains out of scope.
+- Clean publication checkout starts from `great-tracker/FRONTEND` at
+  `fe5780dd5b759823b98f5adb4495530923cf4beb`.
+- Feature branch: `devin/vari8-frontend-current-20261022`.
+- Plan: `docs/tasks/frontend-current-2026-10-22.md`.
+- Preserve target-only tests/configuration and the source workspace. The
+  additive overlay, publication gates, direct review and PR are pending.
+- Root runtime, backend, database and CI workflows are not part of this work.
+
 ## 2026-10-19 — PR-02: root app on Next.js 16.3.8 + React 19.3.0 — verified locally
 
 - Branch `beta/pr-02-next16` (worktree `vari8-worktrees/pr-02-next16`), base

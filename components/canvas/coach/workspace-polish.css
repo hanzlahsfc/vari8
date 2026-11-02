@@ -1,20 +1,13 @@
-/* Small interaction refinements for the roster, profile, and message workspaces. */
-.coach-root .cd-roster-cards > .cd-roster-card-surface {
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease;
-}
-
-.coach-root .cd-roster-cards > .cd-roster-card-surface .cd-core {
+/* The nested button fills the shared card surface, so the card has no inset. */
+.coach-root .cd-roster-cards > .cd-roster-card-surface.cd-core {
   padding: 0;
   overflow: hidden;
-  transition: background-color 160ms ease;
 }
 
 .coach-root .cd-roster-card-surface .cd-roster-card {
   display: block;
   min-height: 100%;
-  padding: 22px;
+  padding: 20px;
   border-radius: inherit;
   color: inherit;
   cursor: pointer;
@@ -46,60 +39,102 @@
   margin-top: 14px;
 }
 
-.coach-root .cd-bubble-meta button.cd-icon-button.cd-message-flag {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
-  min-height: 32px;
+.coach-root .cd-bubble-meta button.v8-icon-button.cd-message-flag {
   margin: 0;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: 7px;
   cursor: pointer;
 }
 
-.coach-root
-  .cd-bubble-meta
-  button.cd-icon-button.cd-message-flag[aria-pressed="true"] {
-  color: var(--cd-accent-text);
-  border-color: color-mix(in srgb, var(--cd-accent) 22%, var(--cd-line));
-  background: color-mix(in srgb, var(--cd-accent) 11%, var(--cd-surface));
-}
-
-.coach-root
-  .cd-bubble-meta
-  button.cd-icon-button.cd-message-flag:focus-visible {
-  outline: 2px solid var(--cd-accent);
-  outline-offset: 2px;
-}
-
-.coach-root .cd-bubble-meta button.cd-icon-button.cd-message-flag:disabled {
+.coach-root .cd-bubble-meta button.v8-icon-button.cd-message-flag:disabled {
   cursor: not-allowed;
   opacity: 0.55;
 }
 
-@media (hover: hover) and (pointer: fine) {
-  .coach-root .cd-roster-cards > .cd-roster-card-surface:hover {
-    border-color: color-mix(in srgb, var(--cd-accent) 35%, var(--cd-line));
-    background-color: color-mix(
-      in srgb,
-      var(--cd-accent) 4%,
-      var(--cd-surface)
-    );
-  }
-
-  .coach-root .cd-roster-cards > .cd-roster-card-surface:hover .cd-core {
-    background-color: color-mix(
-      in srgb,
-      var(--cd-accent) 3%,
-      var(--cd-surface)
-    );
+.coach-root .cd-nt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+.coach-root .cd-nt-grid > * {
+  min-width: 0;
+}
+.coach-root .cd-nt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+}
+.coach-root .cd-nt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+}
+.coach-root .cd-nt-row p {
+  flex: 1;
+  margin: 0;
+  min-width: 0;
+}
+.coach-root .cd-nt-row p[data-pinned] {
+  font-weight: 550;
+}
+.coach-root .cd-nt-row .cd-task {
+  flex: 1;
+  min-width: 0;
+}
+.coach-root .cd-nt-row small {
+  color: var(--cd-muted);
+  white-space: nowrap;
+}
+.coach-root .cd-nt-task-title {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cd-nt-general {
+  margin-top: 16px;
+  color: var(--cd-text-secondary);
+}
+.coach-root .cd-nt-general summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+@media (max-width: 1100px) {
+  .coach-root .cd-nt-grid {
+    grid-template-columns: 1fr;
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .coach-root .cd-roster-cards > .cd-roster-card-surface,
-  .coach-root .cd-roster-cards > .cd-roster-card-surface .cd-core {
-    transition: none;
-  }
+.coach-root .cd-nt-pin.is-pinned {
+  color: var(--cd-accent);
+}
+
+/* Card 11/#176: logged training sessions on client detail. */
+.coach-root .cd-training-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.coach-root .cd-training-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--cd-line, var(--v8-border, rgba(0, 0, 0, 0.08)));
+}
+.coach-root .cd-training-log:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.coach-root .cd-training-log-ex {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+}
+.coach-root .cd-training-log-ex small {
+  color: var(--cd-muted);
 }

@@ -28,6 +28,13 @@ export const templateRoadmapRow = z.object({
 });
 export type TemplateRoadmapRow = z.infer<typeof templateRoadmapRow>;
 
+export const templateField = z.object({
+  id: z.string(),
+  unit: z.string(),
+  options: z.array(z.string()).optional(),
+});
+export type TemplateField = z.infer<typeof templateField>;
+
 export const templateDefinitionSlots = z.object({
   modules: templateModules.optional(),
   // DB CHECK bound: at most four summary parameters.
@@ -39,5 +46,11 @@ export const templateDefinitionSlots = z.object({
   cycleTrackingEnabled: z.boolean().optional(),
   roadmap: z.array(templateRoadmapRow).optional(),
   phaseOptions: z.array(z.string()).optional(),
+  // w2-c4: the canvas write schema already serializes these three slots on
+  // publish; the read schema dropped them, which hid the roadmap metrics
+  // and the activity planning columns from the client shell.
+  fields: z.array(templateField).optional(),
+  roadmapPhases: z.boolean().optional(),
+  roadmapActivityTargets: z.array(z.enum(["steps", "cardio"])).optional(),
 });
 export type TemplateDefinitionSlots = z.infer<typeof templateDefinitionSlots>;

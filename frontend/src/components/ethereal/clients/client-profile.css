@@ -1,7 +1,7 @@
 .cp-profile {
-  --cp-radius: var(--cw-radius, 28px);
-  --cp-inner-radius: var(--cw-inner-radius, 22px);
-  --cp-bezel: var(--cw-bezel, 5px);
+  --cp-radius: var(--v8-radius-card, 16px);
+  --cp-inner-radius: var(--v8-radius-card, 16px);
+  --cp-bezel: 0px;
   --cp-surface: var(--cw-surface, var(--surface));
   --cp-raised: var(
     --cw-raised,
@@ -14,9 +14,11 @@
   --cp-soft: var(--eg-wash, var(--surface-subtle));
   --cp-ink: var(--eg-fg, var(--text));
   --cp-muted: var(--eg-muted, var(--muted-foreground));
-  width: 100%;
+  width: min(100%, 1280px);
   margin: 22px auto 48px;
   color: var(--cp-ink);
+  font-size: 15px;
+  line-height: 22px;
   font-family: var(--font-ui, inherit);
 }
 
@@ -24,9 +26,10 @@
   stroke-width: 1.5;
 }
 
-.cp-profile button,
-.cp-profile input,
-.cp-profile textarea {
+.cp-profile
+  button:not(.v8-button, .v8-icon-button, .v8-select, .v8-picker-trigger),
+.cp-profile input:not(.v8-input, .v8-searchable-input),
+.cp-profile textarea:not(.v8-textarea) {
   font: inherit;
 }
 
@@ -77,28 +80,26 @@
 .cp-profile-shell,
 .cp-section {
   min-width: 0;
-  border: 1px solid var(--cp-edge);
+  border: 1px solid var(--v8-border, var(--cp-line));
   border-radius: var(--cp-radius);
-  padding: var(--cp-bezel);
-  background: color-mix(in srgb, var(--cp-edge) 45%, var(--cp-surface));
-  box-shadow: var(--cp-shadow);
+  padding: 0;
+  background: var(--v8-surface-raised, var(--cp-surface));
+  box-shadow: var(--v8-elevation-card, 0 2px 8px rgb(0 0 0 / 8%));
 }
 .cp-profile-core,
 .cp-panel-core {
   min-width: 0;
-  border: 1px solid var(--cp-line);
-  border-radius: var(--cp-inner-radius);
-  background: var(--cp-raised);
-  box-shadow:
-    inset 0 1px color-mix(in srgb, var(--panel-highlight) 72%, transparent),
-    0 1px color-mix(in srgb, white 4%, transparent);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .cp-profile-core {
-  padding: 19px 22px 14px;
+  padding: var(--v8-card-padding-md, 20px);
 }
 .cp-panel-core {
   min-width: 0;
-  padding: 22px;
+  padding: var(--v8-card-padding-md, 20px);
 }
 
 .cp-header {
@@ -148,10 +149,10 @@
 }
 .cp-name-line h1 {
   margin: 0;
-  font-size: clamp(34px, 3.6vw, 42px);
-  font-weight: 530;
-  letter-spacing: -0.045em;
-  line-height: 1.1;
+  font-size: 28px;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  line-height: 34px;
   overflow-wrap: anywhere;
 }
 .cp-name-block > p {
@@ -384,13 +385,11 @@
   padding-top: 16px;
 }
 .cp-section {
-  padding: var(--cp-bezel);
-  background: color-mix(in srgb, var(--cp-edge) 45%, var(--cp-surface));
-  box-shadow: var(--cp-shadow);
+  padding: 0;
 }
 .cp-section .cp-panel-core {
   width: 100%;
-  padding: 22px;
+  padding: var(--v8-card-padding-md, 20px);
 }
 .cp-overview > .cp-section {
   display: flex;
@@ -409,8 +408,9 @@
 }
 .cp-section-heading h2 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 560;
+  font-size: 20px;
+  font-weight: 550;
+  line-height: 28px;
   letter-spacing: -0.02em;
 }
 /* biome-ignore lint/style/noDescendingSpecificity: this shared section metadata rule intentionally follows heading-specific layout. */
@@ -495,48 +495,13 @@
   background: color-mix(in srgb, var(--cp-raised) 92%, var(--surface));
   padding: 10px 11px;
 }
-.cp-recurring label,
 .cp-extra-heading {
   color: var(--cp-muted);
   font-size: 11px;
 }
-.cp-select-wrap {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-.cp-select-wrap select {
-  min-width: 110px;
-  height: 40px;
-  appearance: none;
-  border: 1px solid var(--cp-line);
-  border-radius: 9px;
-  padding: 0 34px 0 11px;
-  background: color-mix(in srgb, var(--surface) 92%, transparent);
-  color: var(--cp-ink);
-  font-size: 14px;
-  cursor: pointer;
-}
-.cp-select-wrap > svg {
-  position: absolute;
-  right: 10px;
-  pointer-events: none;
-  color: var(--cp-muted);
-}
-.cp-select-wrap select:focus-visible {
-  outline-offset: 2px;
-  border-color: var(--accent);
-}
-.cp-select-wrap:focus-within {
-  border-radius: 10px;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
-}
-.cp-select-wrap select {
-  min-width: 124px;
-  padding-right: 38px;
-}
-.cp-select-wrap > svg {
-  right: 12px;
+.cp-recurring .v8-field {
+  flex: 1;
+  min-width: 0;
 }
 .cp-current-submission {
   display: grid;
@@ -631,29 +596,10 @@
   gap: 7px;
   margin-top: 12px;
 }
-.cp-inline-form input,
-.cp-date-form input,
-.cp-add-task-form input,
-.cp-add-form textarea,
-.cp-feedback-form textarea,
-.cp-message-form textarea {
-  min-width: 0;
-  border: 1px solid var(--cp-line);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--canvas) 70%, var(--surface));
-  color: var(--cp-ink);
-}
-.cp-inline-form input,
-.cp-date-form input,
-.cp-add-task-form input {
-  height: 34px;
-  padding: 0 9px;
-  font-size: 11px;
-}
-.cp-date-form input {
+.cp-inline-form .v8-field {
   flex: 1;
+  min-width: 0;
 }
-
 .cp-tasks-overview {
   grid-area: tasks;
 }
@@ -772,26 +718,12 @@
 .cp-checkin-detail > p {
   margin: 0 0 13px;
   color: var(--cp-muted);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 22px;
 }
 .cp-feedback-form {
   display: grid;
   gap: 7px;
-}
-.cp-feedback-form > label,
-.cp-add-task-form > label {
-  font-size: 11px;
-  font-weight: 550;
-}
-.cp-feedback-form textarea,
-.cp-add-form textarea,
-.cp-message-form textarea {
-  width: 100%;
-  resize: vertical;
-  padding: 10px;
-  font-size: 12px;
-  line-height: 1.5;
 }
 .cp-feedback-form > div {
   justify-content: space-between;
@@ -845,8 +777,9 @@
   justify-content: space-between;
   gap: 8px;
   margin: 0 0 9px;
-  font-size: 12px;
+  font-size: 16px;
   font-weight: 550;
+  line-height: 22px;
 }
 .cp-note-meta {
   color: var(--cp-muted);
@@ -863,8 +796,8 @@
 }
 .cp-note-list p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 22px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -877,8 +810,8 @@
   gap: 8px;
   margin-top: 11px;
 }
-.cp-add-form textarea {
-  min-height: 68px;
+.cp-add-form .v8-field {
+  width: 100%;
 }
 .cp-task-list > li {
   display: grid;
@@ -921,8 +854,9 @@
   justify-content: space-between;
   gap: 10px;
   margin: 0 0 6px;
-  font-size: 12px;
-  font-weight: 560;
+  font-size: 16px;
+  font-weight: 550;
+  line-height: 22px;
 }
 .cp-note-preview-group h3 span {
   color: var(--cp-muted);
@@ -931,8 +865,8 @@
 }
 .cp-note-preview-group p {
   margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 22px;
   overflow-wrap: anywhere;
 }
 .cp-coach-work-link {
@@ -1044,15 +978,16 @@
   gap: 7px;
   margin-top: 14px;
 }
-.cp-add-task-form > input {
+.cp-add-task-form > .v8-field {
   width: 100%;
 }
 .cp-add-task-form > div {
   display: flex;
   gap: 7px;
 }
-.cp-add-task-form > div input {
+.cp-add-task-form > div > .v8-field {
   flex: 1;
+  min-width: 0;
 }
 .cp-coach-task-list {
   margin-bottom: 11px;
@@ -1154,8 +1089,8 @@
 }
 .cp-message p {
   margin: 6px 0 0;
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 15px;
+  line-height: 22px;
   white-space: pre-wrap;
 }
 .cp-message-empty {
@@ -1167,8 +1102,9 @@
   border-top: 1px solid var(--cp-line);
   padding-top: 13px;
 }
-.cp-message-form textarea {
+.cp-message-form :where(.v8-field) {
   flex: 1;
+  min-width: 0;
 }
 .cp-onboarding-list {
   display: grid;
@@ -1240,6 +1176,8 @@
 @media (max-width: 760px) {
   .cp-profile {
     margin-top: 16px;
+    font-size: 16px;
+    line-height: 24px;
   }
   .cp-header {
     align-items: flex-start;
@@ -1247,10 +1185,10 @@
     gap: 14px;
   }
   .cp-profile-core {
-    padding: 16px 15px 12px;
+    padding: var(--v8-card-padding-sm, 16px);
   }
   .cp-section .cp-panel-core {
-    padding: 17px;
+    padding: var(--v8-card-padding-sm, 16px);
   }
   .cp-header-actions {
     width: 100%;
@@ -1280,12 +1218,6 @@
   }
   .cp-checkin-summary {
     min-height: 52px;
-  }
-  .cp-inline-form input,
-  .cp-date-form input,
-  .cp-add-task-form input,
-  .cp-select-wrap select {
-    height: 44px;
   }
   .cp-summary {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1391,13 +1323,14 @@
     border-radius: 50%;
   }
   .cp-name-line h1 {
-    font-size: 31px;
+    font-size: 28px;
+    line-height: 34px;
   }
   .cp-profile-core {
-    padding: 14px 12px 10px;
+    padding: var(--v8-card-padding-sm, 16px);
   }
   .cp-section .cp-panel-core {
-    padding: 15px;
+    padding: var(--v8-card-padding-sm, 16px);
   }
   .cp-summary > div {
     padding: 10px 8px;

@@ -1,7 +1,9 @@
 // Compares a capture run with the baseline, screen by screen:
 //   1. pixel diff: a pixel counts as changed when any channel moves more than AA_TOLERANCE
 //      (default 0, bit-exact on the reference host; env PARITY_AA_TOLERANCE for other hosts);
-//      a screen fails above MAX_DIFF_PIXELS changed pixels (env PARITY_MAX_DIFF_PIXELS) or on any size change.
+//      a screen fails above its changed-pixel budget or on any size change. The budget is D32's own
+//      pass rule, at most 0.1 percent of the captured area (env PARITY_MAX_DIFF_PIXELS overrides it
+//      with an absolute count, 0 for bit-exact).
 //   2. DOM-geometry diff: visible elements added, removed, or moved by more than 0.5 px, or whose own text changed
 //      (text covers scroll-clipped content that pixels cannot show).
 //   Owner-ruled differences (RULED below) are the only exceptions: exact matches, listed per screen in the report.
@@ -17,13 +19,19 @@ import { chromium } from "@playwright/test";
 
 const MOVE_PX = 0.5;
 
+// D32 pass rule: "a pixel diff of at most 0.1 percent of pixels". Applied to the captured area of each
+// screen, so the allowance scales with page size instead of being one magic number for every shot.
+export const D32_MAX_CHANGED_FRACTION = 0.001;
+export const d32Budget = (total) =>
+  Math.floor(total * D32_MAX_CHANGED_FRACTION);
+
 // Bad input is a refusal (exit 2), never a silent fallback: Number("abc") is NaN and `d > NaN` is always false,
 // which would switch the pixel check off.
 export class ConfigError extends Error {}
 export function envThresholds(env = process.env) {
-  const int = (name, max) => {
+  const int = (name, max, dflt) => {
     const raw = env[name];
-    if (raw === undefined) return 0;
+    if (raw === undefined) return dflt;
     if (!/^\d+$/.test(raw) || Number(raw) > max)
       throw new ConfigError(
         `${name}="${raw}" must be a whole number from 0 to ${max === Infinity ? "any size" : max}`,
@@ -31,8 +39,9 @@ export function envThresholds(env = process.env) {
     return Number(raw);
   };
   return {
-    tol: int("PARITY_AA_TOLERANCE", 255),
-    maxDiff: int("PARITY_MAX_DIFF_PIXELS", Infinity),
+    tol: int("PARITY_AA_TOLERANCE", 255, 0),
+    // null means D32's per screen fraction (d32Budget); a number is an absolute pixel budget.
+    maxDiff: int("PARITY_MAX_DIFF_PIXELS", Infinity, null),
   };
 }
 
@@ -57,6 +66,24 @@ export const RULED = [
       now: "Liliana Mansfeld Coaching",
     },
   },
+  {
+    rule: "S03-18 real video feedback copy and width (Prompt 417)",
+    stem: "s03-checkin-review",
+    text: {
+      tag: "button",
+      base: "Record demo video feedback",
+      now: "Record video feedback",
+    },
+    geometry: {
+      baseWidth: 244.5,
+      baseHeight: 44,
+      nowWidth: 205.5,
+      nowHeight: 44,
+    },
+    // Owner approved the copy and its exact width consequence, not a
+    // button/screen-wide pixel mask. Canonical pixels already remain in budget.
+    maskPixels: false,
+  },
 ];
 
 // Three sigma of the coach dialog's 7 px backdrop blur (coach.css .cd-dialog::backdrop): a ruled text change under an
@@ -65,15 +92,33 @@ const RULED_PAD = 14;
 
 export function applyRuled(stem, g, baseRows, curRows) {
   const keys = new Set();
+  const maskKeys = new Set();
+  const unmasked = new Set();
   const rules = new Set();
   for (const r of RULED) {
     for (const t of r.text ? g.texts : [])
       if (
+        (!r.stem || r.stem === stem) &&
         t.tag === r.text.tag &&
         t.base === r.text.base &&
-        t.now === r.text.now
+        t.now === r.text.now &&
+        (!r.geometry ||
+          (() => {
+            const moved = g.moved.find((m) => m.key === t.key);
+            return (
+              moved &&
+              moved.base[0] === moved.now[0] &&
+              moved.base[1] === moved.now[1] &&
+              moved.base[2] === r.geometry.baseWidth &&
+              moved.base[3] === r.geometry.baseHeight &&
+              moved.now[2] === r.geometry.nowWidth &&
+              moved.now[3] === r.geometry.nowHeight
+            );
+          })())
       ) {
         keys.add(t.key);
+        if (r.maskPixels === false) unmasked.add(t.key);
+        else maskKeys.add(t.key);
         rules.add(r.rule);
       }
     if (!r.added || r.added.stem !== stem) continue;
@@ -81,15 +126,27 @@ export function applyRuled(stem, g, baseRows, curRows) {
     for (const a of g.added)
       if (a[1] === r.added.tag && a[6] === r.added.text) {
         keys.add(a[0]);
+        maskKeys.add(a[0]);
         // Its own wrapper (the sign-out form) when that is new too, and anything inside it.
         const parent = a[0].slice(0, a[0].lastIndexOf(">"));
-        if (added.has(parent)) keys.add(parent);
-        for (const k of added) if (k.startsWith(`${a[0]}>`)) keys.add(k);
+        if (added.has(parent)) {
+          keys.add(parent);
+          maskKeys.add(parent);
+        }
+        for (const k of added)
+          if (k.startsWith(`${a[0]}>`)) {
+            keys.add(k);
+            maskKeys.add(k);
+          }
         rules.add(r.rule);
       }
   }
+  // A rule that rules text or geometry but leaves pixels counted (maskPixels:
+  // false, the S03-18 shape) wins over any looser rule that would mask the same
+  // element: the owner approved the copy and width, not a pixel exception.
+  for (const k of unmasked) maskKeys.delete(k);
   const masks = [...baseRows, ...curRows]
-    .filter((row) => keys.has(row[0]))
+    .filter((row) => maskKeys.has(row[0]))
     .map((row) => [
       row[2] - RULED_PAD,
       row[3] - RULED_PAD,
@@ -279,7 +336,7 @@ tr.fail{background:#fde2e2}tr.pass td:last-child{color:#166534}.imgs{display:fle
 <h1>Canvas visual parity</h1>
 <p>${esc(meta)}</p>
 <p><b>${failed.length + extra.length ? "FAIL" : "PASS"}</b>: ${failed.length} of ${results.length} screens changed${extra.length ? `, ${extra.length} capture problems` : ""}.
-Pixel tolerance ${tol}/255 per channel, max ${maxDiff} changed pixels. Geometry: added/removed/moved elements.</p>
+Pixel tolerance ${tol}/255 per channel, changed-pixel budget ${maxDiff === null ? `0.1 percent of the screen area (D32)` : `${maxDiff} pixels`}. Geometry: added/removed/moved elements.</p>
 ${extra.length ? `<ul>${extra.map((e) => `<li>${esc(e)}</li>`).join("")}</ul>` : ""}
 <table><tr><th>screen</th><th>route</th><th>changed px</th><th>geom +/-/moved</th><th>result</th></tr>
 ${rows}</table>
@@ -343,7 +400,10 @@ export async function compareRuns({
       const sizeChanged = px.sizes[0].join() !== px.sizes[1].join();
       if (sizeChanged)
         r.problems.push(`page size ${px.sizes[0]} -> ${px.sizes[1]}`);
-      if (px.diff > maxDiff) r.problems.push(`${px.diff} changed pixels`);
+      const budget = maxDiff ?? d32Budget(px.total);
+      r.budget = budget;
+      if (px.diff > budget)
+        r.problems.push(`${px.diff} changed pixels, budget ${budget}`);
       // Inner scroll containers: one PNG per scroll step (see capture.mjs). A paint change on a clipped row shows here.
       const bs = b.scrolls ?? [];
       const cs = c.scrolls ?? [];
@@ -370,8 +430,11 @@ export async function compareRuns({
           );
           if (sp.sizes[0].join() !== sp.sizes[1].join())
             r.problems.push(`${where}: size ${sp.sizes[0]} -> ${sp.sizes[1]}`);
-          if (sp.diff > maxDiff)
-            r.problems.push(`${where}: ${sp.diff} changed pixels`);
+          const sbudget = maxDiff ?? d32Budget(sp.total);
+          if (sp.diff > sbudget)
+            r.problems.push(
+              `${where}: ${sp.diff} changed pixels, budget ${sbudget}`,
+            );
         }
       }
       const g = r.geom;

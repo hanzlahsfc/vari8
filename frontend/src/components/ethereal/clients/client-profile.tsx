@@ -5,17 +5,17 @@ import {
   ArrowUpRight,
   CalendarDays,
   Check,
-  ChevronDown,
   ClipboardList,
   MessageCircle,
   Plus,
   Send,
   Trash2,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import type { FormEvent } from "react";
 import { useMemo, useState } from "react";
-import { useReducedMotion } from "@/lib/reduced-motion";
+import { Input, Select } from "@/components/vari8/components";
+import { DatePicker, TextArea } from "@/components/vari8/inputs";
 import {
   formatClientDate,
   needsAttention,
@@ -489,21 +489,16 @@ export function ClientProfile({
                 </button>
               </div>
               <div className="cp-recurring">
-                <label htmlFor="cp-recurring-day">Recurring</label>
-                <span className="cp-select-wrap">
-                  <select
-                    id="cp-recurring-day"
-                    value={recurringDay}
-                    onChange={(event) => updateRecurringDay(event.target.value)}
-                  >
-                    {CHECK_IN_DAYS.map((day) => (
-                      <option key={day} value={day}>
-                        {day}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown size={14} aria-hidden="true" />
-                </span>
+                <Select
+                  id="cp-recurring-day"
+                  label="Recurring check-in"
+                  value={recurringDay}
+                  onValueChange={updateRecurringDay}
+                  options={CHECK_IN_DAYS.map((day) => ({
+                    value: day,
+                    label: day,
+                  }))}
+                />
               </div>
               <div className="cp-extra-heading">
                 <span>Additional dates</span>
@@ -528,17 +523,16 @@ export function ClientProfile({
                 <p className="cp-empty-inline">No extra dates scheduled.</p>
               )}
               <form className="cp-inline-form cp-date-form" onSubmit={addDate}>
-                <label className="cp-sr-only" htmlFor="cp-extra-date">
-                  Add an additional check-in date
-                </label>
-                <input
-                  id="cp-extra-date"
-                  type="date"
+                <DatePicker
+                  label="Add an additional check-in date"
                   value={extraDate}
-                  onChange={(event) => setExtraDate(event.target.value)}
-                  required
+                  onValueChange={setExtraDate}
                 />
-                <button type="submit" className="cp-button cp-button-small">
+                <button
+                  type="submit"
+                  className="cp-button cp-button-small"
+                  disabled={!extraDate}
+                >
                   <Plus size={14} /> Add date
                 </button>
               </form>
@@ -762,10 +756,8 @@ export function ClientProfile({
                               submitFeedback(item.id);
                             }}
                           >
-                            <label htmlFor={`cp-feedback-${item.id}`}>
-                              Feedback
-                            </label>
-                            <textarea
+                            <TextArea
+                              label="Feedback"
                               id={`cp-feedback-${item.id}`}
                               value={feedbackDrafts[item.id] ?? ""}
                               onChange={(event) =>
@@ -859,10 +851,8 @@ export function ClientProfile({
                   className="cp-add-form"
                   onSubmit={(event) => addNote("internal", event)}
                 >
-                  <label className="cp-sr-only" htmlFor="cp-internal-note">
-                    Add an internal note
-                  </label>
-                  <textarea
+                  <TextArea
+                    label="Add an internal note"
                     id="cp-internal-note"
                     rows={2}
                     placeholder="Add a coach-only note"
@@ -911,10 +901,8 @@ export function ClientProfile({
                   className="cp-add-form"
                   onSubmit={(event) => addNote("general", event)}
                 >
-                  <label className="cp-sr-only" htmlFor="cp-general-note">
-                    Add a general note
-                  </label>
-                  <textarea
+                  <TextArea
+                    label="Add a general note"
                     id="cp-general-note"
                     rows={2}
                     placeholder="Add a general note"
@@ -1018,8 +1006,8 @@ export function ClientProfile({
                 <p className="cp-empty-inline">No tasks assigned.</p>
               )}
               <form className="cp-add-task-form" onSubmit={addClientTask}>
-                <label htmlFor="cp-client-task">Assign a task</label>
-                <input
+                <Input
+                  label="Assign a task"
                   id="cp-client-task"
                   type="text"
                   value={clientTaskDraft}
@@ -1027,15 +1015,10 @@ export function ClientProfile({
                   placeholder="Task for the client"
                 />
                 <div>
-                  <label className="cp-sr-only" htmlFor="cp-client-task-date">
-                    Due date
-                  </label>
-                  <input
-                    id="cp-client-task-date"
-                    type="date"
+                  <DatePicker
+                    label="Client task due date"
                     value={clientTaskDate}
-                    onChange={(event) => setClientTaskDate(event.target.value)}
-                    required
+                    onValueChange={setClientTaskDate}
                   />
                   <button
                     className="cp-button cp-button-small"
@@ -1104,10 +1087,8 @@ export function ClientProfile({
                   <p className="cp-empty-inline">No coach to-dos linked.</p>
                 )}
                 <form className="cp-inline-form" onSubmit={addCoachTask}>
-                  <label className="cp-sr-only" htmlFor="cp-coach-task">
-                    Add a coach to-do
-                  </label>
-                  <input
+                  <Input
+                    label="Add a coach to-do"
                     id="cp-coach-task"
                     type="text"
                     value={coachTaskDraft}
@@ -1193,10 +1174,8 @@ export function ClientProfile({
               )}
             </div>
             <form className="cp-message-form" onSubmit={addMessage}>
-              <label className="cp-sr-only" htmlFor="cp-message">
-                Write a message
-              </label>
-              <textarea
+              <TextArea
+                label="Write a message"
                 id="cp-message"
                 rows={2}
                 placeholder="Write a message for this local preview"

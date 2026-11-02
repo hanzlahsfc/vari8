@@ -17,6 +17,7 @@ import {
   STORAGE_KEY as LEGACY_KEY,
 } from "@/components/canvas/coach/model";
 import { migrateCoachState } from "@/components/canvas/coach/plans/domain";
+import { emptyClientPlans } from "@/components/canvas/coach/plans/types";
 import { normalizeTemplateSetups } from "@/components/canvas/coach/template-setup";
 
 class MemoryStorage {
@@ -66,7 +67,9 @@ describe("coach data seam", () => {
 
     const read = migrateCoachState(readCoachState());
     expect(isCoachState(read)).toBe(true);
-    expect(read).toEqual(state);
+    // The state migration enriches plans it sees as data (temporary plans,
+    // schedule modes), so the fixed point is migrate(state), not state.
+    expect(read).toEqual(migrateCoachState(state));
   });
 
   it("round-trips domain slices that live off the client core", () => {
@@ -103,11 +106,56 @@ describe("coach data seam", () => {
     ];
     state.coachNotes = [{ id: "n1", text: "note" }];
     state.coachTodos = [{ id: "t1", title: "todo", complete: false }];
+    // The new domains the port added: a target version, a supplement plan and
+    // the one shot demo seed. Empty values would pass this test while the seam
+    // still dropped them, so each one carries data.
+    client.plans ??= emptyClientPlans();
+    client.plans.activityTargets = [
+      {
+        id: "at1",
+        effectiveFrom: "2026-10-01",
+        metric: "steps",
+        target: { kind: "minimum", value: 8500 },
+      },
+    ];
+    client.plans.supplements = {
+      id: "sp1",
+      clientId: client.id,
+      name: "Supplement plan",
+      savedAt: "2026-10-01T09:00:00.000Z",
+      items: [
+        {
+          id: "si1",
+          product: {
+            id: "supplement-010",
+            brand: "ESN",
+            name: "Vitamin D3+K2",
+            referenceQuantity: 1,
+            quantityUnit: null,
+            declaredAmount: 5600,
+            declaredUnit: "i. E",
+            url: null,
+          },
+          quantity: 1,
+          doseUnit: "reference unit",
+          timing: "morning",
+          status: "must-have",
+          notes: "",
+        },
+      ],
+    };
+    state.demoSeeds = { amaraTraining: 1 };
     writeCoachState(state);
 
     const read = migrateCoachState(readCoachState());
     expect(isCoachState(read)).toBe(true);
-    expect(read).toEqual(state);
+    expect(read).toEqual(migrateCoachState(state));
+    const roundTripped = read as CoachState;
+    expect(roundTripped.clients[0].plans?.activityTargets).toHaveLength(1);
+    expect(
+      roundTripped.clients[0].plans?.supplements?.items[0].product.name,
+    ).toBe("Vitamin D3+K2");
+    expect(roundTripped.demoSeeds).toEqual({ amaraTraining: 1 });
   });
 
   it("adopts the legacy envelope once, then serves the slices", () => {
@@ -116,7 +164,7 @@ describe("coach data seam", () => {
 
     const first = migrateCoachState(readCoachState());
     expect(isCoachState(first)).toBe(true);
-    expect(first).toEqual(state);
+    expect(first).toEqual(migrateCoachState(state));
     // The legacy key survives the read so a crash before the first save
     // cannot lose the last complete copy.
     expect(localStorage.getItem(LEGACY_KEY)).not.toBeNull();
@@ -124,7 +172,7 @@ describe("coach data seam", () => {
     writeCoachState(first as CoachState);
     expect(localStorage.getItem(LEGACY_KEY)).toBeNull();
     const second = migrateCoachState(readCoachState());
-    expect(second).toEqual(state);
+    expect(second).toEqual(migrateCoachState(state));
   });
 
   it("rejects an incomplete set of domain keys", () => {
@@ -153,6 +201,36 @@ describe("coach data seam", () => {
     localStorage.setItem(checkinsKey, JSON.stringify(raw));
     const assembled = migrateCoachState(readCoachState());
     expect(isCoachState(assembled)).toBe(false);
+  });
+
+  it("defaults the note arrays on a stored clients slice that predates them", () => {
+    const state = storedSeed();
+    writeCoachState(state);
+    // Envelopes written while the detail fields lived outside the clients
+    // slice carry cores with no internalNotes or generalNotes. The merge
+    // must re-default them: isCoachState requires both as arrays, and a
+    // false verdict is the exact condition that sets preserveRaw in the
+    // store and shows "Saved workspace could not be read".
+    const clientsKey = dataDomains.find(({ domain }) => domain === "clients")
+      ?.slice?.key as string;
+    const raw = JSON.parse(localStorage.getItem(clientsKey) as string);
+    for (const client of raw.data as Record<string, unknown>[]) {
+      delete client.internalNotes;
+      delete client.generalNotes;
+    }
+    localStorage.setItem(clientsKey, JSON.stringify(raw));
+
+    const assembled = migrateCoachState(readCoachState());
+    expect(isCoachState(assembled)).toBe(true);
+    const read = assembled as CoachState;
+    // The roster survives the merge, so the clients list still renders.
+    expect(read.clients.map((client) => client.id)).toEqual(
+      state.clients.map((client) => client.id),
+    );
+    for (const client of read.clients) {
+      expect(client.internalNotes).toEqual([]);
+      expect(client.generalNotes).toEqual([]);
+    }
   });
 });
 

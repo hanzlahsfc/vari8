@@ -1,5 +1,6 @@
 "use client";
 
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { AnimatePresence, motion } from "motion/react";
 import {
   type FormEvent,
@@ -9,13 +10,20 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import {
+  Checkbox as SharedCheckbox,
+  Input as SharedInput,
+  Select as SharedSelect,
+} from "@/components/canvas/vari8/components";
+import { TextArea as SharedTextArea } from "@/components/canvas/vari8/inputs";
 import { supportedSizes } from "./grid";
 import {
   catalogue,
+  type DashboardContentSettings,
   defaultSettings,
   type SizeName,
   type SourceRecords,
+  safeResourceUrl,
   sourceOptions,
   summaryOptions,
   type WidgetInstance,
@@ -88,7 +96,20 @@ const browseDescriptions: Record<WidgetKind, string> = {
   CU02: "Review your coaching week and selected indicators.",
   CU09: "Compare separately labelled weekly trends.",
   CU10: "See the current phase and coaching week.",
+  CU17: "Add a clear divider between dashboard sections.",
+  CU18: "Share an update with an optional resource link.",
 };
+
+function contentDefaults(kind: "CU17" | "CU18"): DashboardContentSettings {
+  return (
+    defaultSettings(kind).content ?? {
+      body: "",
+      tone: "neutral",
+      actionLabel: "",
+      actionUrl: "",
+    }
+  );
+}
 
 export function BuilderGallery({
   mode,
@@ -240,6 +261,24 @@ export function BuilderGallery({
       setError("Add a title before saving this widget.");
       return;
     }
+    if (editing.kind === "CU18") {
+      const content = editing.settings.content;
+      if (!content?.body.trim()) {
+        setError("Add announcement text before saving this widget.");
+        return;
+      }
+      if (
+        (content.actionLabel.trim() !== "") !==
+        (content.actionUrl.trim() !== "")
+      ) {
+        setError("Add both a link label and URL, or leave both empty.");
+        return;
+      }
+      if (content.actionUrl && !safeResourceUrl(content.actionUrl)) {
+        setError("Use a valid http or https link for this resource.");
+        return;
+      }
+    }
     if (
       [
         "BN15",
@@ -360,14 +399,16 @@ export function BuilderGallery({
           >
             <div className="cb-eg-gallery-filters">
               <div className="cb-eg-gallery-filter-row">
-                <label className="cb-eg-gallery-search">
+                <div className="cb-eg-gallery-search">
                   <SearchIcon />
-                  <input
+                  <SharedInput
+                    label="Search widgets"
+                    className="cb-eg-gallery-search-input"
                     ref={searchRef}
-                    aria-label="Search widgets"
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
                     placeholder="Search by name, source or measure"
+                    size="sm"
                   />
                   {search && (
                     <button
@@ -378,18 +419,18 @@ export function BuilderGallery({
                       ×
                     </button>
                   )}
-                </label>
-                <label>
-                  <span>Category</span>
-                  <select
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value)}
-                  >
-                    {categories.map((name) => (
-                      <option key={name}>{name}</option>
-                    ))}
-                  </select>
-                </label>
+                </div>
+                <SharedSelect
+                  label="Category"
+                  className="cb-eg-category-select"
+                  value={category}
+                  onValueChange={setCategory}
+                  options={categories.map((name) => ({
+                    value: name,
+                    label: name,
+                  }))}
+                  size="sm"
+                />
               </div>
             </div>
 
@@ -538,9 +579,15 @@ export function BuilderGallery({
                   className="cb-eg-gallery-form"
                   onSubmit={saveConfiguration}
                 >
-                  <label className="cb-eg-gallery-field">
-                    <span>Title</span>
-                    <input
+                  <div className="cb-eg-gallery-field">
+                    <span>
+                      {editing.kind === "CU17" ? "Section heading" : "Title"}
+                    </span>
+                    <SharedInput
+                      label={
+                        editing.kind === "CU17" ? "Section heading" : "Title"
+                      }
+                      size="sm"
                       ref={titleInputRef}
                       required
                       maxLength={48}
@@ -549,13 +596,134 @@ export function BuilderGallery({
                         changeSettings({ title: event.target.value })
                       }
                     />
-                  </label>
-                  <label className="cb-eg-gallery-field">
+                  </div>
+                  {editing.kind === "CU17" && (
+                    <div className="cb-eg-gallery-field">
+                      <span>
+                        Supporting line <small>Optional</small>
+                      </span>
+                      <SharedTextArea
+                        label="Supporting line"
+                        size="sm"
+                        rows={2}
+                        maxLength={180}
+                        value={editing.settings.content?.body ?? ""}
+                        onChange={(event) =>
+                          changeSettings({
+                            content: {
+                              ...contentDefaults("CU17"),
+                              ...editing.settings.content,
+                              body: event.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                  {editing.kind === "CU18" && (
+                    <>
+                      <div className="cb-eg-gallery-field">
+                        <span>Announcement</span>
+                        <SharedTextArea
+                          label="Announcement"
+                          size="sm"
+                          rows={4}
+                          maxLength={2000}
+                          required
+                          value={editing.settings.content?.body ?? ""}
+                          onChange={(event) =>
+                            changeSettings({
+                              content: {
+                                ...contentDefaults("CU18"),
+                                ...editing.settings.content,
+                                body: event.target.value,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="cb-eg-gallery-field">
+                        <span>Emphasis</span>
+                        <SharedSelect
+                          label="Emphasis"
+                          size="sm"
+                          value={editing.settings.content?.tone ?? "accent"}
+                          options={[
+                            { value: "neutral", label: "Quiet" },
+                            { value: "accent", label: "Accent" },
+                            { value: "important", label: "Important" },
+                          ]}
+                          onValueChange={(next) =>
+                            changeSettings({
+                              content: {
+                                ...contentDefaults("CU18"),
+                                ...editing.settings.content,
+                                tone:
+                                  next === "neutral" || next === "important"
+                                    ? next
+                                    : "accent",
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="cb-eg-gallery-field-pair">
+                        <div className="cb-eg-gallery-field">
+                          <span>Resource link label</span>
+                          <SharedInput
+                            label="Resource link label"
+                            size="sm"
+                            maxLength={64}
+                            value={editing.settings.content?.actionLabel ?? ""}
+                            onChange={(event) =>
+                              changeSettings({
+                                content: {
+                                  ...contentDefaults("CU18"),
+                                  ...editing.settings.content,
+                                  actionLabel: event.target.value,
+                                },
+                              })
+                            }
+                            placeholder="Open the guide"
+                          />
+                        </div>
+                        <div className="cb-eg-gallery-field">
+                          <span>Resource URL</span>
+                          <SharedInput
+                            label="Resource URL"
+                            size="sm"
+                            type="url"
+                            maxLength={2048}
+                            value={editing.settings.content?.actionUrl ?? ""}
+                            onChange={(event) =>
+                              changeSettings({
+                                content: {
+                                  ...contentDefaults("CU18"),
+                                  ...editing.settings.content,
+                                  actionUrl: event.target.value,
+                                },
+                              })
+                            }
+                            placeholder="https://…"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <div className="cb-eg-gallery-field">
                     <span>Source</span>
-                    <select
+                    <SharedSelect
+                      label="Source"
+                      size="sm"
                       value={editing.settings.source}
-                      onChange={(event) => {
-                        const next = event.target.value;
+                      options={configurableSources.map(
+                        ({ value, label, disabled }) => ({
+                          value,
+                          label,
+                          disabled,
+                        }),
+                      )}
+                      onValueChange={(next) => {
                         const available = summaryOptions(editing.kind, next);
                         changeSettings({
                           source: next,
@@ -574,18 +742,14 @@ export function BuilderGallery({
                             : {}),
                         });
                       }}
-                    >
-                      {configurableSources.map(({ value, label, disabled }) => (
-                        <option key={value} value={value} disabled={disabled}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    />
+                  </div>
                   {["BN15", "BN19"].includes(editing.kind) && (
-                    <label className="cb-eg-gallery-field">
+                    <div className="cb-eg-gallery-field">
                       <span>Graph format</span>
-                      <select
+                      <SharedSelect
+                        label="Graph format"
+                        size="sm"
                         value={
                           editing.settings.option === "active"
                             ? editing.kind === "BN15"
@@ -593,11 +757,32 @@ export function BuilderGallery({
                               : "single"
                             : editing.settings.option
                         }
-                        onChange={(event) =>
+                        options={
+                          editing.kind === "BN15"
+                            ? [
+                                { value: "circles", label: "Three circles" },
+                                { value: "lines", label: "Three target lines" },
+                              ]
+                            : [
+                                {
+                                  value: "line",
+                                  label: "Consumed and target lines",
+                                },
+                                {
+                                  value: "stacked",
+                                  label: "Stacked daily columns",
+                                },
+                                {
+                                  value: "single",
+                                  label: "Single-day target card",
+                                },
+                              ]
+                        }
+                        onValueChange={(next) =>
                           changeSettings({
-                            option: event.target.value,
+                            option: next,
                             ...(editing.kind === "BN19" &&
-                            ["line", "stacked"].includes(event.target.value)
+                            ["line", "stacked"].includes(next)
                               ? {
                                   target: true,
                                   summary: "actual-target",
@@ -615,75 +800,70 @@ export function BuilderGallery({
                                 : {}),
                           })
                         }
-                      >
-                        {editing.kind === "BN15" ? (
-                          <>
-                            <option value="circles">Three circles</option>
-                            <option value="lines">Three target lines</option>
-                          </>
-                        ) : (
-                          <>
-                            <option value="line">
-                              Consumed and target lines
-                            </option>
-                            <option value="stacked">
-                              Stacked daily columns
-                            </option>
-                            <option value="single">
-                              Single-day target card
-                            </option>
-                          </>
-                        )}
-                      </select>
-                    </label>
+                      />
+                    </div>
                   )}
                   {editing.kind === "BN19" && (
-                    <label className="cb-eg-gallery-field">
+                    <div className="cb-eg-gallery-field">
                       <span>Nutrient</span>
-                      <select
+                      <SharedSelect
+                        label="Nutrient"
+                        size="sm"
                         value={editing.settings.fields[0] ?? "protein"}
-                        onChange={(event) =>
+                        options={[
+                          { value: "protein", label: "Protein" },
+                          { value: "carbs", label: "Carbohydrate" },
+                          { value: "fat", label: "Fat" },
+                          { value: "calories", label: "Energy" },
+                        ]}
+                        onValueChange={(next) =>
                           changeSettings({
-                            fields: [event.target.value],
-                            unit:
-                              event.target.value === "calories" ? "kcal" : "g",
+                            fields: [next],
+                            unit: next === "calories" ? "kcal" : "g",
                           })
                         }
-                      >
-                        <option value="protein">Protein</option>
-                        <option value="carbs">Carbohydrate</option>
-                        <option value="fat">Fat</option>
-                        <option value="calories">Energy</option>
-                      </select>
-                    </label>
+                      />
+                    </div>
                   )}
                   {editing.kind === "BN08" && (
-                    <label className="cb-eg-gallery-field">
+                    <div className="cb-eg-gallery-field">
                       <span>Change display</span>
-                      <select
+                      <SharedSelect
+                        label="Change display"
+                        size="sm"
                         value={editing.settings.option}
-                        onChange={(event) =>
-                          changeSettings({ option: event.target.value })
+                        options={[
+                          {
+                            value: "absolute",
+                            label: `Change in ${editing.settings.unit}`,
+                          },
+                          { value: "percentage", label: "Percentage change" },
+                        ]}
+                        onValueChange={(next) =>
+                          changeSettings({ option: next })
                         }
-                      >
-                        <option value="absolute">
-                          Change in {editing.settings.unit}
-                        </option>
-                        <option value="percentage">Percentage change</option>
-                      </select>
-                    </label>
+                      />
+                    </div>
                   )}
                   {editing.kind === "TL21" && (
-                    <label className="cb-eg-gallery-field">
+                    <div className="cb-eg-gallery-field">
                       <span>Presentation</span>
-                      <select
+                      <SharedSelect
+                        label="Presentation"
+                        size="sm"
                         value={
                           editing.settings.option === "contributions"
                             ? "contributions"
                             : "list"
                         }
-                        onChange={(event) => {
-                          const presentation = event.target.value;
+                        options={[
+                          { value: "list", label: "List" },
+                          {
+                            value: "contributions",
+                            label: "Contribution graph",
+                          },
+                        ]}
+                        onValueChange={(presentation) => {
                           changeSettings({
                             option: presentation,
                             period:
@@ -696,13 +876,8 @@ export function BuilderGallery({
                                   : editing.settings.period,
                           });
                         }}
-                      >
-                        <option value="list">List</option>
-                        <option value="contributions">
-                          Contribution graph
-                        </option>
-                      </select>
-                    </label>
+                      />
+                    </div>
                   )}
                   <div className="cb-eg-gallery-config-preview">
                     <div className="cb-eg-gallery-config-preview-heading">
@@ -733,101 +908,109 @@ export function BuilderGallery({
                       {["TL21", "TL22"].includes(editing.kind) &&
                         (editing.kind === "TL22" ||
                           editing.settings.option === "contributions") && (
-                          <label className="cb-eg-gallery-field">
+                          <div className="cb-eg-gallery-field">
                             <span>Contribution history</span>
-                            <select
+                            <SharedSelect
+                              label="Contribution history"
+                              size="sm"
                               value={editing.settings.historyPeriod ?? "auto"}
-                              onChange={(event) =>
+                              options={[
+                                {
+                                  value: "auto",
+                                  label: "Automatic · fits card width",
+                                },
+                                { value: "3m", label: "3 months" },
+                                { value: "6m", label: "6 months" },
+                                {
+                                  value: "1y",
+                                  label:
+                                    (previewDimensions?.width ?? 512) - 34 < 413
+                                      ? "1 year · widen the card first"
+                                      : "1 year",
+                                  disabled:
+                                    (previewDimensions?.width ?? 512) - 34 <
+                                    413,
+                                },
+                              ]}
+                              onValueChange={(next) =>
                                 changeSettings({
-                                  historyPeriod: event.target
-                                    .value as WidgetSettings["historyPeriod"],
+                                  historyPeriod:
+                                    next as WidgetSettings["historyPeriod"],
                                 })
                               }
-                            >
-                              <option value="auto">
-                                Automatic · fits card width
-                              </option>
-                              <option value="3m">3 months</option>
-                              <option value="6m">6 months</option>
-                              <option
-                                value="1y"
-                                disabled={
-                                  (previewDimensions?.width ?? 512) - 34 < 413
-                                }
-                              >
-                                {(previewDimensions?.width ?? 512) - 34 < 413
-                                  ? "1 year · widen the card first"
-                                  : "1 year"}
-                              </option>
-                            </select>
-                          </label>
+                            />
+                          </div>
                         )}
                       {currentSummaries.length > 1 &&
                         !(
                           editing.kind === "BN19" &&
                           ["line", "stacked"].includes(editing.settings.option)
                         ) && (
-                          <label className="cb-eg-gallery-field">
+                          <div className="cb-eg-gallery-field">
                             <span>Summary</span>
-                            <select
+                            <SharedSelect
+                              label="Summary"
+                              size="sm"
                               value={editing.settings.summary}
-                              onChange={(event) =>
-                                changeSettings({ summary: event.target.value })
-                              }
-                            >
-                              {currentSummaries.map((value) => (
-                                <option key={value} value={value}>
-                                  {editing.kind === "CU03" && value === "both"
+                              options={currentSummaries.map((value) => ({
+                                value,
+                                label:
+                                  editing.kind === "CU03" && value === "both"
                                     ? "Open and completed"
-                                    : settingLabel(value)}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                                    : settingLabel(value),
+                              }))}
+                              onValueChange={(next) =>
+                                changeSettings({ summary: next })
+                              }
+                            />
+                          </div>
                         )}
                       <div className="cb-eg-gallery-field-pair">
                         {currentPeriods.length > 0 && (
-                          <label className="cb-eg-gallery-field">
+                          <div className="cb-eg-gallery-field">
                             <span>
                               {["TL21", "TL22"].includes(editing.kind)
                                 ? "Summary period"
                                 : "Period"}
                             </span>
-                            <select
-                              value={editing.settings.period}
-                              onChange={(event) =>
-                                changeSettings({ period: event.target.value })
+                            <SharedSelect
+                              label={
+                                ["TL21", "TL22"].includes(editing.kind)
+                                  ? "Summary period"
+                                  : "Period"
                               }
-                            >
-                              {currentPeriods.map(({ value, label }) => (
-                                <option key={value} value={value}>
-                                  {label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                              size="sm"
+                              value={editing.settings.period}
+                              options={currentPeriods.map(
+                                ({ value, label }) => ({ value, label }),
+                              )}
+                              onValueChange={(next) =>
+                                changeSettings({ period: next })
+                              }
+                            />
+                          </div>
                         )}
-                        <label className="cb-eg-gallery-field">
+                        <div className="cb-eg-gallery-field">
                           <span>Card size</span>
-                          <select
+                          <SharedSelect
+                            label="Card size"
+                            size="sm"
                             value={editing.settings.size}
                             disabled={mode === "replace"}
-                            onChange={(event) =>
-                              changeSettings({
-                                size: event.target.value as SizeName,
-                              })
-                            }
-                          >
-                            {supportedSizes(
+                            options={supportedSizes(
                               activeItem.id,
                               activeItem.sizes,
-                            ).map((value) => (
-                              <option key={value} value={value}>
-                                {value} · {sizeMeasures[value].label}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
+                            ).map((value) => ({
+                              value,
+                              label: `${value} · ${sizeMeasures[value].label}`,
+                            }))}
+                            onValueChange={(next) =>
+                              changeSettings({
+                                size: next as SizeName,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                       {mode === "replace" && (
                         <p className="cb-eg-gallery-config-note">
@@ -844,22 +1027,21 @@ export function BuilderGallery({
                       <div className="cb-eg-gallery-field-pair">
                         {unitChoices(editing.kind, editing.settings.source)
                           .length > 1 && (
-                          <label className="cb-eg-gallery-field">
+                          <div className="cb-eg-gallery-field">
                             <span>Unit</span>
-                            <select
+                            <SharedSelect
+                              label="Unit"
+                              size="sm"
                               value={editing.settings.unit}
-                              onChange={(event) =>
-                                changeSettings({ unit: event.target.value })
-                              }
-                            >
-                              {unitChoices(
+                              options={unitChoices(
                                 editing.kind,
                                 editing.settings.source,
-                              ).map((value) => (
-                                <option key={value}>{value}</option>
-                              ))}
-                            </select>
-                          </label>
+                              ).map((value) => ({ value, label: value }))}
+                              onValueChange={(next) =>
+                                changeSettings({ unit: next })
+                              }
+                            />
+                          </div>
                         )}
                       </div>
                       {editing.kind !== "BN19" &&
@@ -869,29 +1051,27 @@ export function BuilderGallery({
                             <div className="cb-eg-gallery-checkboxes">
                               {fieldChoices(editing.kind, records).map(
                                 (field) => (
-                                  <label key={field}>
-                                    <input
-                                      type="checkbox"
-                                      checked={editing.settings.fields.includes(
-                                        field,
-                                      )}
-                                      onChange={(event) => {
-                                        const next = event.target.checked
-                                          ? [...editing.settings.fields, field]
-                                          : editing.settings.fields.filter(
-                                              (value) => value !== field,
-                                            );
-                                        changeSettings({ fields: next });
-                                      }}
-                                    />
-                                    <span>
-                                      {["TL21", "TL22"].includes(editing.kind)
+                                  <SharedCheckbox
+                                    key={field}
+                                    label={
+                                      ["TL21", "TL22"].includes(editing.kind)
                                         ? (records.habits.find(
                                             (habit) => habit.id === field,
                                           )?.name ?? field)
-                                        : field}
-                                    </span>
-                                  </label>
+                                        : field
+                                    }
+                                    checked={editing.settings.fields.includes(
+                                      field,
+                                    )}
+                                    onCheckedChange={(checked) => {
+                                      const next = checked
+                                        ? [...editing.settings.fields, field]
+                                        : editing.settings.fields.filter(
+                                            (value) => value !== field,
+                                          );
+                                      changeSettings({ fields: next });
+                                    }}
+                                  />
                                 ),
                               )}
                             </div>
@@ -954,7 +1134,7 @@ export function BuilderGallery({
                         )}
                       {["TL21", "CU16"].includes(editing.kind) &&
                         editing.settings.fields.map((field) => (
-                          <label
+                          <div
                             className="cb-eg-gallery-field"
                             key={`label-${field}`}
                           >
@@ -966,7 +1146,9 @@ export function BuilderGallery({
                                   )?.name ?? field)
                                 : field}
                             </span>
-                            <input
+                            <SharedInput
+                              label={`Display label for ${field}`}
+                              size="sm"
                               maxLength={64}
                               value={editing.settings.labels?.[field] ?? ""}
                               placeholder="Use source label"
@@ -979,57 +1161,49 @@ export function BuilderGallery({
                                 })
                               }
                             />
-                          </label>
+                          </div>
                         ))}
                       {editing.kind === "CU04" && (
-                        <label className="cb-eg-gallery-target-toggle">
-                          <input
-                            type="checkbox"
-                            checked={editing.settings.option !== "recurring"}
-                            onChange={(event) =>
-                              changeSettings({
-                                option: event.target.checked
-                                  ? "all"
-                                  : "recurring",
-                              })
-                            }
-                          />
-                          <span>Include additional scheduled check-ins</span>
-                        </label>
+                        <SharedCheckbox
+                          className="cb-eg-gallery-target-toggle"
+                          label="Include additional scheduled check-ins"
+                          checked={editing.settings.option !== "recurring"}
+                          onCheckedChange={(checked) =>
+                            changeSettings({
+                              option: checked ? "all" : "recurring",
+                            })
+                          }
+                        />
                       )}
                       {targetAvailable(editing.kind) &&
                         !(
                           editing.kind === "BN19" &&
                           ["line", "stacked"].includes(editing.settings.option)
                         ) && (
-                          <label className="cb-eg-gallery-target-toggle">
-                            <input
-                              type="checkbox"
-                              checked={
-                                ["BN15", "BN19", "CU02", "CU09"].includes(
-                                  editing.kind,
-                                ) && editing.settings.target
-                              }
-                              disabled={
-                                !["BN15", "BN19", "CU02", "CU09"].includes(
-                                  editing.kind,
-                                )
-                              }
-                              onChange={(event) =>
-                                changeSettings({ target: event.target.checked })
-                              }
-                            />
-                            <span>
-                              <strong>Show target</strong>
-                              <small>
-                                {["BN15", "BN19"].includes(editing.kind)
-                                  ? "Keep fixed, range and minimum plan targets visible."
-                                  : ["CU02", "CU09"].includes(editing.kind)
-                                    ? "Show each source metric’s own applicable target."
-                                    : "This fixture has no numeric target assigned to this source."}
-                              </small>
-                            </span>
-                          </label>
+                          <SharedCheckbox
+                            className="cb-eg-gallery-target-toggle"
+                            label="Show target"
+                            description={
+                              ["BN15", "BN19"].includes(editing.kind)
+                                ? "Keep fixed, range and minimum plan targets visible."
+                                : ["CU02", "CU09"].includes(editing.kind)
+                                  ? "Show each source metric’s own applicable target."
+                                  : "This fixture has no numeric target assigned to this source."
+                            }
+                            checked={
+                              ["BN15", "BN19", "CU02", "CU09"].includes(
+                                editing.kind,
+                              ) && editing.settings.target
+                            }
+                            disabled={
+                              !["BN15", "BN19", "CU02", "CU09"].includes(
+                                editing.kind,
+                              )
+                            }
+                            onCheckedChange={(checked) =>
+                              changeSettings({ target: checked })
+                            }
+                          />
                         )}
                     </div>
                   </details>

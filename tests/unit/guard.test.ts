@@ -268,6 +268,9 @@ describe("authorize — scopes", () => {
     ).toBe("not_owner");
   });
   it("assigned scope requires an ACTIVE assignment; REMOVED/absent is denied", async () => {
+    // D10/D22 widened COACH reads to workspace on plan/client-data
+    // resources; clientProfiles keeps the assigned cell and exercises the
+    // assigned-scope machinery.
     const { repo } = makeRepo({
       membership: { id: "m1", role: "COACH", status: "ACTIVE" },
     });
@@ -276,7 +279,7 @@ describe("authorize — scopes", () => {
         await authorize(
           session(),
           {
-            resource: "dailyTracking",
+            resource: "clientProfiles",
             action: "read",
             workspaceId: w,
             clientProfileId: c,
@@ -294,7 +297,7 @@ describe("authorize — scopes", () => {
         authorize(
           session(),
           {
-            resource: "dailyTracking",
+            resource: "clientProfiles",
             action: "read",
             workspaceId: w,
             clientProfileId: c,
@@ -314,7 +317,7 @@ describe("authorize — scopes", () => {
         authorize(
           session(),
           {
-            resource: "dailyTracking",
+            resource: "clientProfiles",
             action: "read",
             workspaceId: w,
             clientProfileId: c,
@@ -330,7 +333,7 @@ describe("authorize — scopes", () => {
       await reason(() =>
         authorize(
           session(),
-          { resource: "dailyTracking", action: "read", workspaceId: w },
+          { resource: "clientProfiles", action: "read", workspaceId: w },
           r2,
         ),
       ),
@@ -353,7 +356,7 @@ describe("authorize — scopes", () => {
     const ctx = await authorize(
       session(),
       {
-        resource: "dailyTracking",
+        resource: "clientProfiles",
         action: "read",
         workspaceId: w,
         clientProfileId: c,
@@ -409,7 +412,7 @@ describe("authorize — scopes", () => {
         authorize(
           session(),
           {
-            resource: "dailyTracking",
+            resource: "clientProfiles",
             action: "read",
             workspaceId: w,
             clientProfileId: c,
@@ -445,6 +448,80 @@ describe("authorize — scopes", () => {
     expect(error?.action).toBe("read");
     expect(Object.keys(error ?? {})).not.toContain("clientName");
     expect(String(error?.message)).not.toMatch(/c1|w1|u1|client|workspace/i);
+  });
+});
+
+// D10/D22 (owner ruling 2026-10-27, w2/coach-reads): staff read every client
+// of their own workspace on the plan + client-data resources behind the
+// coach profile reads: no ACTIVE ClientAssignment needed for READ. WRITE
+// stays assigned per decision #111.
+describe("authorize: D10/D22 coach workspace-wide reads", () => {
+  const WIDENED = [
+    "mealPlans",
+    "checkinInstances",
+    "checkinsCoachReviews",
+    "dailyTracking",
+  ] as const;
+  it("COACH read resolves workspace scope without an assignment on the widened resources", async () => {
+    for (const resource of WIDENED) {
+      const { repo, calls } = makeRepo({
+        membership: { id: "m1", role: "COACH", status: "ACTIVE" },
+        assignment: null,
+      });
+      const ctx = await authorize(
+        session(),
+        {
+          resource,
+          action: "read",
+          workspaceId: w,
+          clientProfileId: c,
+        },
+        repo,
+      );
+      expect(ctx.grantedScope, resource).toBe("workspace");
+      expect(ctx.workspaceId, resource).toBe(w);
+      expect(calls.getActiveAssignment, resource).not.toHaveBeenCalled();
+    }
+  });
+  it("COACH write still requires an ACTIVE assignment on the widened resources", async () => {
+    for (const resource of WIDENED) {
+      const { repo } = makeRepo({
+        membership: { id: "m1", role: "COACH", status: "ACTIVE" },
+        assignment: null,
+      });
+      expect(
+        await reason(() =>
+          authorize(
+            session(),
+            {
+              resource,
+              action: "write",
+              workspaceId: w,
+              clientProfileId: c,
+            },
+            repo,
+          ),
+        ),
+        resource,
+      ).toBe("not_assigned");
+    }
+  });
+  it("non-member of the workspace is still denied on a widened resource", async () => {
+    const { repo } = makeRepo({ membership: null });
+    expect(
+      await reason(() =>
+        authorize(
+          session(),
+          {
+            resource: "checkinInstances",
+            action: "read",
+            workspaceId: w,
+            clientProfileId: c,
+          },
+          repo,
+        ),
+      ),
+    ).toBe("membership_missing_or_inactive");
   });
 });
 
@@ -571,7 +648,7 @@ describe("authorize — PD29 platform-admin dual-role on onboardingFormTemplates
     const assigned = await authorize(
       session(),
       {
-        resource: "dailyTracking",
+        resource: "clientProfiles",
         action: "read",
         workspaceId: w,
         clientProfileId: c,

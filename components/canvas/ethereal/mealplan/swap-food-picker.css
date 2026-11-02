@@ -40,54 +40,34 @@
 }
 
 .mp-workspace .mp-swap-picker-close {
-  display: grid;
-  width: 30px;
-  height: 30px;
-  min-height: 30px;
-  min-width: 30px;
-  padding: 0;
   flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--mp-edge);
-  border-radius: 50%;
-  color: var(--mp-muted);
-}
-
-.mp-workspace .mp-swap-picker-close:hover {
-  color: var(--mp-text);
-  background: var(--surface-subtle);
 }
 
 .mp-workspace .mp-swap-picker-search {
   display: flex;
-  height: 38px;
   align-items: center;
-  gap: 9px;
+  gap: 7px;
   margin: 0 12px 8px;
-  padding: 0 11px;
-  border: 1px solid var(--mp-edge);
-  border-radius: 8px;
+  padding: 0;
   color: var(--mp-muted);
 }
 
-.mp-workspace .mp-swap-picker-search input {
+.mp-workspace .mp-swap-picker-search .v8-field {
   width: 100%;
   min-width: 0;
-  min-height: 34px;
-  padding: 0;
-  box-shadow: none;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--mp-text);
-  font: inherit;
-  font-size: 12px;
+  flex: 1;
 }
 
 .mp-workspace .mp-swap-picker-results {
   max-height: min(260px, calc(var(--available-height, 420px) - 140px));
   overflow: auto;
-  padding: 0 6px 7px;
+  padding: 5px;
+  border: 1px solid var(--mp-edge);
+  border-radius: 18px;
+  background: var(--surface-subtle);
+  box-shadow:
+    inset 0 1px color-mix(in srgb, var(--text) 6%, transparent),
+    0 12px 26px rgb(0 0 0 / 20%);
 }
 
 .mp-workspace .mp-swap-picker-results button {
@@ -96,8 +76,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 9px;
-  border-radius: 7px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border-radius: 999px;
   color: var(--mp-text);
   text-align: left;
 }
@@ -105,19 +86,19 @@
 .mp-workspace .mp-swap-picker-results button:hover,
 .mp-workspace .mp-swap-picker-results button:focus-visible {
   outline: none;
-  background: color-mix(in srgb, var(--mp-accent) 9%, var(--surface-subtle));
+  background: color-mix(in srgb, var(--mp-accent) 8%, var(--surface));
 }
 
 .mp-workspace .mp-swap-picker-results button > span {
   display: grid;
   min-width: 0;
-  gap: 3px;
+  gap: 1px;
 }
 
 .mp-workspace .mp-swap-picker-results strong {
   overflow: hidden;
-  font-size: 12px;
-  font-weight: 560;
+  font-size: 13px;
+  font-weight: 520;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -125,7 +106,7 @@
 .mp-workspace .mp-swap-picker-results small,
 .mp-workspace .mp-swap-picker-results p {
   color: var(--mp-muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .mp-workspace .mp-swap-picker-results p {
@@ -133,9 +114,9 @@
   padding: 13px 10px;
 }
 
-.mp-workspace .mp-swap-picker :focus-visible {
+.mp-workspace .mp-swap-picker button:not(.v8-button):focus-visible {
   outline: 2px solid var(--mp-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 @media (prefers-reduced-transparency: reduce) {
@@ -143,16 +124,4 @@
     background: var(--surface);
     backdrop-filter: none;
   }
-}
-
-.mp-workspace .mp-swap-picker-search:focus-within {
-  border-color: var(--accent);
-  outline: 2px solid var(--accent-ring, var(--accent));
-  outline-offset: 2px;
-}
-
-.mp-workspace .mp-swap-picker-search input:focus-visible {
-  outline: none;
-  border: 0;
-  box-shadow: none;
 }

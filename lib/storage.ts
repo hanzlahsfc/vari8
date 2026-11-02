@@ -159,52 +159,19 @@ export function assertPresignGetTtl(
  * CHECK mirrors as 1..20971520) plus the closed content-type allowlist.
  * ---------------------------------------------------------------------- */
 
-export const MAX_MEDIA_BYTES = 20 * 1024 * 1024;
+import {
+  MAX_MEDIA_BYTES,
+  MEDIA_CONTENT_TYPES,
+  mediaKindForContentType,
+} from "./media-policy";
+export { MAX_MEDIA_BYTES, MEDIA_CONTENT_TYPES, mediaKindForContentType };
+export type { MediaKindName } from "./media-policy";
 
 /** Upper bound for every presigned URL this port issues. */
 export const MAX_PRESIGN_TTL_SECONDS = 3600;
 
 /** Default presigned-URL lifetime when MEDIA_URL_TTL_SECONDS is unset. */
 export const DEFAULT_PRESIGN_TTL_SECONDS = 300;
-
-export type MediaKindName = "IMAGE" | "VIDEO" | "AUDIO" | "DOCUMENT";
-
-/**
- * Closed allowlist (D20): images, documents, audio and video only, matching
- * what the canvas picker can produce and the recorder emits. Anything else —
- * including `application/octet-stream` — maps to no kind and is rejected.
- */
-export const MEDIA_CONTENT_TYPES: Readonly<Record<string, MediaKindName>> = {
-  "image/jpeg": "IMAGE",
-  "image/png": "IMAGE",
-  "image/webp": "IMAGE",
-  "image/gif": "IMAGE",
-  "image/avif": "IMAGE",
-  "image/heic": "IMAGE",
-  "audio/wav": "AUDIO",
-  "audio/x-wav": "AUDIO",
-  "audio/mpeg": "AUDIO",
-  "audio/mp4": "AUDIO",
-  "audio/ogg": "AUDIO",
-  "audio/webm": "AUDIO",
-  "audio/aac": "AUDIO",
-  "video/webm": "VIDEO",
-  "video/mp4": "VIDEO",
-  "video/quicktime": "VIDEO",
-  "application/pdf": "DOCUMENT",
-  "text/plain": "DOCUMENT",
-  "application/msword": "DOCUMENT",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
-    "DOCUMENT",
-};
-
-/** Content type -> MediaKind, or null for a rejected (non-allowlisted) type. */
-export function mediaKindForContentType(
-  contentType: unknown,
-): MediaKindName | null {
-  if (typeof contentType !== "string") return null;
-  return MEDIA_CONTENT_TYPES[contentType.toLowerCase().trim()] ?? null;
-}
 
 /**
  * The D20 size guard: an integer byte count in `1..MAX_MEDIA_BYTES`.
@@ -276,5 +243,37 @@ export async function getObjectStorage(): Promise<ObjectStorageBackend> {
     }
     default:
       return nullObjectStorage;
+  }
+}
+
+/**
+ * BOOT-CHECKS (READINESS B6): a production boot with
+ * `MEDIA_STORAGE_ADAPTER=s3` must refuse to start when a required S3
+ * variable is missing — the adapter would otherwise boot clean and throw
+ * `storage_not_configured` on the first media request. Called once from
+ * `instrumentation.ts` at server start; `next build`'s production-build
+ * phase is exempt (no env is bound there). The four names mirror
+ * `requireConfig()` in `./storage/s3` — only the missing names are
+ * reported, never their values.
+ */
+const S3_REQUIRED_ENV_VARS = [
+  "S3_BUCKET",
+  "S3_REGION",
+  "S3_ACCESS_KEY_ID",
+  "S3_SECRET_ACCESS_KEY",
+] as const;
+
+export function assertMediaStorageConfigured(
+  env: Record<string, string | undefined> = process.env,
+): void {
+  if (env.NODE_ENV !== "production") return;
+  if (env.NEXT_PHASE === "phase-production-build") return;
+  const adapter = (env.MEDIA_STORAGE_ADAPTER ?? "none").toLowerCase();
+  if (adapter !== "s3") return;
+  const missing = S3_REQUIRED_ENV_VARS.filter((k) => !env[k]?.trim());
+  if (missing.length > 0) {
+    throw new Error(
+      `Refusing to start: MEDIA_STORAGE_ADAPTER=s3 requires ${S3_REQUIRED_ENV_VARS.join(", ")}; missing: ${missing.join(", ")}.`,
+    );
   }
 }

@@ -15,6 +15,9 @@ import type {
   MealPlanVersionDetail,
   StaffMealPlanView,
 } from "@/lib/mealplan/service";
+import { collectMealPlanFoodIds } from "@/lib/mealplan/payload";
+import { loadNutritionFoodMap } from "@/lib/nutrition/foods";
+import type { Food } from "@/lib/nutrition/math";
 
 /**
  * MEAL-PLAN-I1 (decision 115) — staff meal-plan server actions.
@@ -160,7 +163,7 @@ export async function publishMealPlanVersionAction(input: {
 export type MealPlanVersionDetailState =
   | { status: "idle" }
   | { status: "error"; message: string }
-  | { status: "ok"; detail: MealPlanVersionDetail };
+  | { status: "ok"; detail: MealPlanVersionDetail; foods: Food[] };
 
 /** Explicit version detail read — one committed call = one READ audit. */
 export async function viewMealPlanVersionAction(input: {
@@ -182,7 +185,12 @@ export async function viewMealPlanVersionAction(input: {
     input,
   );
   if (!result.ok) return { status: "error", message: result.message };
-  return { status: "ok", detail: result.value };
+  // Catalog foods for the published payload's portion references —
+  // totals come from the shared canvas math (D29).
+  const foods = await loadNutritionFoodMap(
+    collectMealPlanFoodIds(result.value.payload),
+  );
+  return { status: "ok", detail: result.value, foods: [...foods.values()] };
 }
 
 export type MealPlanMoreVersionsState =

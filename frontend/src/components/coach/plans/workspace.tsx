@@ -1,6 +1,8 @@
 "use client";
 import { Archive, ArrowLeft, Eye, Save } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { Input as Vari8Input } from "@/components/vari8/components";
+import { EditorHeader, FormGrid } from "@/components/vari8/layouts";
 import foodData from "@/data/food-database.json";
 import type { MealPlan } from "../../ethereal/mealplan/model";
 import {
@@ -9,8 +11,19 @@ import {
 } from "../../ethereal/mealplan/model";
 import { type CoachClient, type CoachState, type Route, TODAY } from "../model";
 import { useCoach } from "../store";
+import { SupplementEditor } from "../supplements/editor";
+import { ActivityTargetEditor } from "../targets/editor";
 import { templateSetup } from "../template-setup";
-import { Button, Dialog, Empty, PageTitle, Status, Surface } from "../ui";
+import {
+  Button,
+  DateField,
+  Dialog,
+  Empty,
+  IconButton,
+  PageTitle,
+  Status,
+  Surface,
+} from "../ui";
 import {
   activateLifecycle,
   applicablePlan,
@@ -35,6 +48,7 @@ import {
   ClientHabitsEditor,
   ClientPlansSummary,
 } from "./setup-ui";
+import { TemporaryPlanEditor } from "./temporary-editor";
 import { TrainingEditor, TrainingPrescription } from "./training/editor";
 import {
   emptyClientPlans,
@@ -159,6 +173,21 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
         ? { section: "check-ins", review: route.review }
         : { section: "clients", client: client.id, tab: "Plans" },
     );
+  // Full-page temporary plan editor: `temporary:new`,
+  // `temporary:new@YYYY-MM-DD` (prefilled start) or `temporary:<id>`.
+  if (route.plan?.startsWith("temporary:")) {
+    const spec = route.plan.slice("temporary:".length);
+    const at = spec.indexOf("@");
+    const id = at === -1 ? spec : spec.slice(0, at);
+    const start = at === -1 ? undefined : spec.slice(at + 1);
+    return (
+      <TemporaryPlanEditor
+        client={client}
+        existingId={id === "new" ? undefined : id}
+        initialStartDate={start}
+      />
+    );
+  }
   if (!setup)
     return (
       <>
@@ -218,6 +247,28 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
             Open schedule
           </Button>
         </Surface>
+      </>
+    );
+  if (plan === "activity-targets")
+    return (
+      <>
+        <PageTitle
+          title={`${client.name} · Activity targets`}
+          description="Steps and weekly cardio prescriptions, separate from general goals."
+          back={back}
+        />
+        <ActivityTargetEditor key={client.id} client={client} />
+      </>
+    );
+  if (plan === "supplements")
+    return (
+      <>
+        <PageTitle
+          title={`${client.name} · Supplements`}
+          description="Catalogue products, prescribed quantities, timing and status."
+          back={back}
+        />
+        <SupplementEditor key={client.id} client={client} />
       </>
     );
   if (plan === "goals" || plan === "habits")
@@ -420,51 +471,41 @@ function PlanEditor({
   };
   return (
     <div className="cp-workspace">
-      <div className="cp-context">
-        <Button onClick={back}>
-          <ArrowLeft size={16} />
-          {route.review ? "Back to check-in" : `Back to ${client.name}`}
-        </Button>
-        <span>
-          {client.name} · {client.phase}
-        </span>
-        <Status text={lifecycleStatus(life)} />
-      </div>
-      <header className="cp-toolbar">
-        <div>
-          <h1>
-            {kind === "training"
-              ? "Training program"
-              : kind === "iifym"
-                ? "Nutrition targets"
-                : "Meal plan"}
-          </h1>
-          <p>
-            Local workspace demo · activation updates this browser’s client
-            preview.
-          </p>
-        </div>
-        <div className="cd-actions cd-wrap">
-          <Button onClick={() => setHistory(true)}>
-            History ({life.history.length})
-          </Button>
-          <Button onClick={() => setPreview(true)}>
-            <Eye size={16} />
-            Preview draft
-          </Button>
-          <Button onClick={save}>
-            <Save size={16} />
-            Save draft
-          </Button>
-          <Button
-            primary
-            disabled={activationUnchanged}
-            onClick={reviewActivation}
-          >
-            Review & activate
-          </Button>
-        </div>
-      </header>
+      <EditorHeader
+        onBack={back}
+        backLabel={route.review ? "Back to check-in" : `Back to ${client.name}`}
+        context={`${client.name} · ${client.phase}`}
+        title={
+          kind === "training"
+            ? "Training program"
+            : kind === "iifym"
+              ? "Nutrition targets"
+              : "Meal plan"
+        }
+        status={<Status text={lifecycleStatus(life)} />}
+        actions={
+          <>
+            <Button onClick={() => setHistory(true)}>
+              History ({life.history.length})
+            </Button>
+            <Button onClick={() => setPreview(true)}>
+              <Eye size={16} />
+              Preview draft
+            </Button>
+            <Button onClick={save}>
+              <Save size={16} />
+              Save draft
+            </Button>
+            <Button
+              primary
+              disabled={activationUnchanged}
+              onClick={reviewActivation}
+            >
+              Review & activate
+            </Button>
+          </>
+        }
+      />
       <div className="cp-save-state" role="status">
         {!storageOk
           ? "Session-only · browser storage is unavailable or protected"
@@ -473,28 +514,25 @@ function PlanEditor({
             : saveState ||
               "Saved draft and active client content are separate."}
       </div>
-      <div className="cp-plan-meta">
-        <label className="cd-field">
-          <span>Plan name</span>
-          <input
-            value={value.name}
-            onChange={(e) => setValue({ ...value, name: e.target.value })}
-          />
-        </label>
-        <div className="cn-editor cp-date-control">
-          <CoachPlanDatePicker
-            value={value.startDate}
-            label="Starts"
-            onChange={(startDate) => setValue({ ...value, startDate })}
-          />
-        </div>
+      <FormGrid columns={2} className="cp-plan-meta">
+        <Vari8Input
+          label="Plan name"
+          value={value.name}
+          onChange={(e) => setValue({ ...value, name: e.target.value })}
+          size="md"
+        />
+        <CoachPlanDatePicker
+          value={value.startDate}
+          label="Starts"
+          onChange={(startDate) => setValue({ ...value, startDate })}
+        />
         {life.active && (
-          <p>
+          <p className="cp-plan-meta-status">
             Active: {life.active.content.name} · Starts{" "}
             {life.active.content.startDate}
           </p>
         )}
-      </div>
+      </FormGrid>
       {errors.length > 0 && (
         <div className="cp-errors" role="alert">
           <strong>Before activation</strong>
@@ -524,13 +562,14 @@ function PlanEditor({
             : "Save partial work now, or review and activate when ready."}
         </p>
         <div className="cd-actions cd-wrap">
-          <Button
+          <IconButton
             className="cp-mobile-back"
-            aria-label={`Back to ${client.name}`}
+            label={`Back to ${client.name}`}
+            size="sm"
             onClick={back}
           >
             <ArrowLeft size={17} />
-          </Button>
+          </IconButton>
           <Button onClick={save}>Save draft</Button>
           <Button
             primary
@@ -567,6 +606,7 @@ function PlanEditor({
           ) : kind === "iifym" ? (
             <IifymPlanPreview
               value={value as IifymPlan}
+              allOptions
               optionId={scheduledOption(
                 (value as IifymPlan).schedule,
                 (value as IifymPlan).options.map((o) => o.id),
@@ -577,6 +617,7 @@ function PlanEditor({
             <NutritionPlanPreview
               value={value as MealPlan}
               clientName={client.name}
+              allOptions
             />
           )}{" "}
           {errors.length > 0 && (
@@ -633,11 +674,12 @@ function PlanEditor({
                     configuration={setup}
                   />
                 ) : kind === "iifym" ? (
-                  <IifymPlanPreview value={v.content as IifymPlan} />
+                  <IifymPlanPreview value={v.content as IifymPlan} allOptions />
                 ) : (
                   <NutritionPlanPreview
                     value={v.content as MealPlan}
                     clientName={client.name}
+                    allOptions
                   />
                 )}
               </details>
@@ -757,25 +799,31 @@ function PlanEditor({
 export function ActiveClientNutrition({
   client,
   date = TODAY,
+  onDateChange,
+  override,
 }: {
   client: CoachClient;
   date?: string;
+  /** When set, the picker becomes controlled by the parent. */
+  onDateChange?: (date: string) => void;
+  /** Temporary plan (or a specific option) applied instead of the schedule. */
+  override?: { plan?: MealPlan | IifymPlan; optionId?: string };
 }) {
-  const [selectedDate, setDate] = useState(date);
+  const [internalDate, setInternalDate] = useState(date);
+  const selectedDate = onDateChange ? date : internalDate;
+  const setDate = onDateChange ?? setInternalDate;
   const setup = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
   const p = client.plans;
   const control = (
-    <label className="cp-date-preview">
-      Prescription for
-      <input
-        aria-label="Nutrition prescription date"
-        type="date"
+    <div className="cp-date-preview">
+      <DateField
+        label="Nutrition prescription date"
         value={selectedDate}
-        onChange={(e) => setDate(e.target.value)}
+        onChange={setDate}
       />
-    </label>
+    </div>
   );
   if (!setup || !p)
     return (
@@ -785,13 +833,18 @@ export function ActiveClientNutrition({
       </>
     );
   if (setup.nutrition === "IIFYM") {
-    const plan = applicablePlan(p.nutrition.iifym, selectedDate);
+    const plan =
+      (override?.plan as IifymPlan | undefined) ??
+      applicablePlan(p.nutrition.iifym, selectedDate);
     const option = plan
-      ? scheduledOption(
-          plan.schedule,
-          plan.options.map((o) => o.id),
-          selectedDate,
-        )
+      ? override?.optionId &&
+        plan.options.some((o) => o.id === override.optionId)
+        ? override.optionId
+        : scheduledOption(
+            plan.schedule,
+            plan.options.map((o) => o.id),
+            selectedDate,
+          )
       : undefined;
     return (
       <>
@@ -807,7 +860,9 @@ export function ActiveClientNutrition({
       </>
     );
   }
-  const plan = applicablePlan(p.nutrition.mealPlan, selectedDate);
+  const plan =
+    (override?.plan as MealPlan | undefined) ??
+    applicablePlan(p.nutrition.mealPlan, selectedDate);
   if (!plan)
     return (
       <>
@@ -818,11 +873,14 @@ export function ActiveClientNutrition({
   const option = plan.variants.find(
     (o) =>
       o.id ===
-      scheduledOption(
-        plan.schedule,
-        plan.variants.map((o) => o.id),
-        selectedDate,
-      ),
+      (override?.optionId &&
+      plan.variants.some((v) => v.id === override.optionId)
+        ? override.optionId
+        : scheduledOption(
+            plan.schedule,
+            plan.variants.map((v) => v.id),
+            selectedDate,
+          )),
   );
   return (
     <>
@@ -859,15 +917,13 @@ export function ActiveClientTraining({
     : undefined;
   return (
     <>
-      <label className="cp-date-preview">
-        Prescription for
-        <input
-          aria-label="Training prescription date"
-          type="date"
+      <div className="cp-date-preview">
+        <DateField
+          label="Training prescription date"
           value={selectedDate}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={setDate}
         />
-      </label>
+      </div>
       {plan && setup ? (
         <TrainingPrescription
           value={plan}

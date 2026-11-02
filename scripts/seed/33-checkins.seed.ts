@@ -1,5 +1,6 @@
 import { CHECKIN_SCHEDULE_HORIZON_DAYS } from "../../lib/checkin/schedules";
 import { resolveLocalInstant } from "../../lib/checkin/timezone";
+import { hashPassword } from "../../lib/password";
 import type { SeedContext } from "./index";
 
 /**
@@ -276,9 +277,20 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     }
   }
 
-  // ── Demo users for the three submitted clients (no credentials — the
-  //    SEED-FIX credential path owns sign-in; live-user.ts grants it on
-  //    throwaway lane databases). ──
+  // ── Demo users for the three submitted clients. Every user linked to a
+  //    client_profile must be able to sign in, so each gets the same Better
+  //    Auth credential shape as `00-workspace.seed.ts`
+  //    (`providerId="credential"`, `accountId=user.id`,
+  //    `password=hashPassword`), sourced from SEED_DEMO_CLIENT_PASSWORD with
+  //    fallback to SEED_CLIENT_PASSWORD so the 8-var seed env contract stays
+  //    unchanged. ──
+
+  const demoClientPassword =
+    process.env.SEED_DEMO_CLIENT_PASSWORD ?? process.env.SEED_CLIENT_PASSWORD;
+  if (!demoClientPassword)
+    throw new Error(
+      "SEED_DEMO_CLIENT_PASSWORD or SEED_CLIENT_PASSWORD is required for the demo client credentials",
+    );
 
   const demoClientUser = async (i: number, slug: string) => {
     const user = await prisma.user.upsert({
@@ -288,6 +300,22 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         email: `${slug}@canvas-demo.test`,
         name: clients[i]!.name,
         status: "ACTIVE",
+      },
+    });
+    const demoPasswordHash = await hashPassword(demoClientPassword);
+    await prisma.account.upsert({
+      where: {
+        providerId_accountId: {
+          providerId: "credential",
+          accountId: user.id,
+        },
+      },
+      update: { password: demoPasswordHash },
+      create: {
+        userId: user.id,
+        accountId: user.id,
+        providerId: "credential",
+        password: demoPasswordHash,
       },
     });
     // Rerun safety: free the user from any profile it already owns —
@@ -474,6 +502,12 @@ export default async function seed(ctx: SeedContext): Promise<void> {
 
   // ── submission-emma (Full, recurring 2026-10-12) ──
 
+  // CHECKIN-ENABLE — the trial client walkthrough signs in as the first
+  // canvas demo client (`emma.anders@canvas-demo.test`), who owns
+  // `clients[0]` (Emma Anders) and its seeded check-in history. Its
+  // credential comes from `demoClientUser`, the same as every seeded client
+  // link; `no-profile@canvas-demo.test` (`00-workspace.seed.ts`) keeps the
+  // own-scope denial coverage instead.
   const emma = await demoClientUser(0, "emma.anders");
   for (const [n, label] of [
     [1, "Front · 12 October"],

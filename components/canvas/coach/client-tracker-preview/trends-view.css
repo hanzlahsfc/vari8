@@ -114,11 +114,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
-  padding: 0 10px;
-  border: 1px solid var(--ct-edge, var(--ct-rule));
-  border-radius: 8px;
-  background: var(--ct-field, var(--surface-subtle));
   color: var(--ct-text-secondary, var(--ct-quiet));
 }
 
@@ -129,12 +124,20 @@
 .coach-root .ct-tracking .ct-trends-search-label input {
   width: 100%;
   min-width: 0;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: var(--ct-text, var(--text));
-  font: inherit;
-  font-size: 13px;
+}
+
+.coach-root .ct-tracking .ct-trends-search-label > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.coach-root .ct-tracking .ct-trends-search-label > div > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .coach-root .ct-tracking .ct-trends-options-groups {
@@ -171,7 +174,7 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 7px;
   border-radius: 7px;
   color: var(--ct-text-secondary, var(--ct-quiet));
@@ -180,25 +183,6 @@
   transition:
     background 150ms cubic-bezier(0.22, 1, 0.36, 1),
     color 150ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.coach-root .ct-tracking .ct-trends-options fieldset label:hover,
-.coach-root .ct-tracking .ct-trends-options fieldset label.is-selected {
-  background: color-mix(in srgb, var(--ct-trends-accent) 9%, transparent);
-  color: var(--ct-text, var(--text));
-}
-
-.coach-root .ct-tracking .ct-trends-options fieldset label:has(input:disabled) {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.coach-root .ct-tracking .ct-trends-options input[type="checkbox"] {
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--ct-trends-accent);
 }
 
 .coach-root .ct-tracking .ct-trends-options fieldset label span {
@@ -257,7 +241,7 @@
   color: var(--ct-text, var(--text));
 }
 
-.coach-root .ct-tracking .ct-trends-range button.is-selected {
+.coach-root .ct-tracking .ct-trends-range button[aria-pressed="true"] {
   background: var(--ct-panel, var(--surface));
   color: var(--ct-text, var(--text));
   box-shadow:
@@ -726,7 +710,7 @@
   }
 }
 
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .coach-root .ct-tracking .ct-trends-controls {
     align-items: stretch;
     grid-template-columns: 1fr;

@@ -1,4 +1,5 @@
 .coach-root .mp-client-plan {
+  container-type: inline-size;
   --mp-client-ink: var(--mp-text, var(--text));
   --mp-client-muted: color-mix(in srgb, var(--mp-client-ink) 69%, transparent);
   --mp-client-rule: color-mix(
@@ -14,18 +15,15 @@
   font-variant-numeric: tabular-nums lining-nums;
 }
 .coach-root .mp-client-plan-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
   padding: 7px 4px 17px;
   border-bottom: 1px solid var(--mp-client-rule);
 }
 .coach-root .mp-client-plan-heading p {
-  margin: 0 0 4px;
+  margin: 8px 0 0;
   color: var(--mp-client-muted);
-  font-size: 12px;
+  font-size: var(--v8-font-size-supporting);
 }
-.coach-root .mp-client-plan-heading h2 {
+.coach-root .mp-client-plan-heading h1 {
   margin: 0;
   font-size: clamp(20px, 2.4vw, 27px);
   font-weight: 560;
@@ -46,7 +44,7 @@
 .coach-root .mp-client-meal-index {
   flex: 0 0 23px;
   color: var(--mp-client-muted);
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
 }
 .coach-root .mp-client-meal-heading h3 {
   min-width: 0;
@@ -68,8 +66,8 @@
 .coach-root .mp-client-frequency {
   margin: 6px 0 2px 35px;
   color: var(--mp-client-ink);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: var(--v8-font-size-body);
+  line-height: var(--v8-line-height-body);
 }
 .coach-root .mp-client-food-table {
   width: 100%;
@@ -91,7 +89,7 @@
 .coach-root .mp-client-food-table thead th {
   border-bottom: 1px solid var(--mp-client-rule);
   color: var(--mp-client-muted);
-  font-size: 10px;
+  font-size: var(--v8-font-size-supporting);
   font-weight: 450;
   white-space: nowrap;
 }
@@ -115,14 +113,14 @@
   text-align: left;
 }
 .coach-root .mp-client-food-name {
-  font-size: 13px;
+  font-size: var(--v8-font-size-body);
   font-weight: 520;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
 .coach-root .mp-client-food-row td {
   color: var(--mp-client-ink);
-  font-size: 12px;
+  font-size: var(--v8-font-size-table);
 }
 .coach-root .mp-client-food-table .mp-client-food-portion {
   color: var(--mp-client-muted);
@@ -144,7 +142,7 @@
 .coach-root .mp-client-food-table .mp-client-swap-row th {
   padding: 1px 7px 10px 15px;
   color: var(--mp-client-ink);
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
   font-weight: 450;
   line-height: 1.5;
   text-align: left;
@@ -161,19 +159,19 @@
 .coach-root .mp-client-swap-label {
   flex: none;
   color: var(--accent-ink, var(--accent));
-  font-size: 11px;
+  font-size: var(--v8-font-size-supporting);
   font-weight: 550;
 }
 .coach-root .mp-client-swap-name {
   color: var(--mp-client-ink);
-  font-size: 13px;
+  font-size: var(--v8-font-size-table);
   font-weight: 500;
 }
 .coach-root .mp-client-swap-row td {
   padding-top: 1px;
   padding-bottom: 10px;
   color: var(--mp-client-ink);
-  font-size: 12px;
+  font-size: var(--v8-font-size-table);
   white-space: nowrap;
 }
 .coach-root .mp-client-swap-note-row td {
@@ -186,32 +184,32 @@
   border-left: 2px solid
     color-mix(in srgb, var(--accent) 58%, var(--mp-client-rule));
   color: var(--mp-client-ink);
-  font-size: 12px;
+  font-size: var(--v8-font-size-supporting);
   line-height: 1.55;
   white-space: normal;
 }
 .coach-root .mp-client-food-table tfoot td {
   padding-top: 12px;
-  font-size: 12px;
+  font-size: var(--v8-font-size-table);
   font-weight: 620;
 }
 .coach-root .mp-client-food-table tfoot .mp-client-meal-total-label {
   padding-top: 12px;
-  font-size: 12px;
+  font-size: var(--v8-font-size-table);
   font-weight: 620;
   text-align: left;
 }
 .coach-root .mp-client-food-table .mp-client-empty {
   padding: 14px 4px;
   color: var(--mp-client-ink);
-  font-size: 13px;
+  font-size: var(--v8-font-size-body);
   text-align: left;
 }
 .coach-root .mp-client-empty-plan {
   padding: 20px 4px 8px;
 }
 
-@media (max-width: 700px) {
+@container (max-width: 700px) {
   .coach-root .mp-client-plan-heading {
     padding-inline: 2px;
   }
@@ -267,14 +265,14 @@
   }
   .coach-root .mp-client-food-table td[data-label] {
     text-align: left;
-    font-size: 13px;
+    font-size: var(--v8-font-size-table);
   }
   .coach-root .mp-client-food-table td[data-label]::before {
     display: block;
     margin-bottom: 3px;
     color: var(--mp-client-muted);
     content: attr(data-label);
-    font-size: 10px;
+    font-size: var(--v8-font-size-supporting);
     font-weight: 400;
   }
   .coach-root .mp-client-food-table tfoot .mp-client-meal-total-label {

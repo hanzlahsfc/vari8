@@ -59,6 +59,15 @@ export default async function seed(ctx: SeedContext): Promise<void> {
     throw new Error(
       `workspace ${WORKSPACE_SLUG} missing; run 00-workspace.seed.ts first`,
     );
+  const coachMembers = await prisma.workspaceMember.findMany({
+    where: { workspaceId: workspace.id, role: "COACH", status: "ACTIVE" },
+    orderBy: { createdAt: "asc" },
+    select: { id: true },
+  });
+  const coachMember = coachMembers[0];
+  // W2-FE2: any further seeded coaches are assigned at COACH scope so the
+  // assigned-scope matrix has more than one authorized staff member.
+  const extraCoachMembers = coachMembers.slice(1);
 
   let written = 0;
   const clients = canvasClients();
@@ -76,16 +85,54 @@ export default async function seed(ctx: SeedContext): Promise<void> {
       where: { workspaceId: workspace.id, name: client.name },
       select: { id: true },
     });
-    if (existing) {
-      await prisma.clientProfile.update({
-        where: { id: existing.id },
-        data,
+    const profile = existing
+      ? await prisma.clientProfile.update({
+          where: { id: existing.id },
+          data,
+          select: { id: true },
+        })
+      : await prisma.clientProfile.create({
+          data: { workspaceId: workspace.id, name: client.name, ...data },
+          select: { id: true },
+        });
+    // CHECKIN-ENABLE — the canvas demo is a single-coach workspace: staff
+    // check-in scheduling/review reads require a coherent ACTIVE
+    // client_assignment, so every canvas client is linked to the seeded
+    // COACH member as PRIMARY. Idempotent on the (profile, member) key.
+    if (coachMember)
+      await prisma.clientAssignment.upsert({
+        where: {
+          clientProfileId_coachMemberId: {
+            clientProfileId: profile.id,
+            coachMemberId: coachMember.id,
+          },
+        },
+        update: { status: "ACTIVE" },
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          coachMemberId: coachMember.id,
+          role: "PRIMARY",
+          status: "ACTIVE",
+        },
       });
-    } else {
-      await prisma.clientProfile.create({
-        data: { workspaceId: workspace.id, name: client.name, ...data },
+    for (const extraCoach of extraCoachMembers)
+      await prisma.clientAssignment.upsert({
+        where: {
+          clientProfileId_coachMemberId: {
+            clientProfileId: profile.id,
+            coachMemberId: extraCoach.id,
+          },
+        },
+        update: { status: "ACTIVE" },
+        create: {
+          workspaceId: workspace.id,
+          clientProfileId: profile.id,
+          coachMemberId: extraCoach.id,
+          role: "COACH",
+          status: "ACTIVE",
+        },
       });
-    }
     written += 1;
   }
   console.log(

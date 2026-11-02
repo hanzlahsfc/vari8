@@ -1,0 +1,748 @@
+/* derived colors the mockup uses — defined locally so no hard-coded hex */
+.coach-root .cm-app {
+  --cm-soft: color-mix(in srgb, var(--cd-accent) 16%, transparent);
+  --cm-soft-line: color-mix(in srgb, var(--cd-accent) 30%, transparent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--cd-bg);
+  color: var(--cd-text);
+  font-variant-numeric: tabular-nums;
+}
+.cm-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 16px 16px;
+}
+.cm-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.cm-tabs {
+  flex: none;
+  height: 84px;
+  border-top: 1px solid var(--cd-line);
+  background: var(--cd-surface);
+  display: flex;
+  padding: 8px 10px 24px;
+}
+.coach-root .cm-app .cm-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--cd-muted);
+  position: relative;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-tab.on {
+  color: var(--cd-accent);
+}
+.coach-root .cm-app .cm-badge {
+  position: absolute;
+  top: -3px;
+  right: calc(50% - 22px);
+  background: var(--cd-accent);
+  color: var(--cd-accent-contrast);
+  border-radius: 999px;
+  min-width: 16px;
+  height: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+.cm-card {
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: 14px;
+  padding: 12px 16px;
+}
+.cm-card + .cm-card {
+  margin-top: 9px;
+}
+.cm-sh {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.cm-mut {
+  color: var(--cd-muted);
+}
+.cm-row {
+  display: flex;
+  align-items: center;
+}
+.coach-root .cm-app .cm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 0;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-btnA {
+  background: var(--cd-accent);
+  color: var(--cd-accent-contrast);
+  padding: 9px 16px;
+}
+.coach-root .cm-app .cm-btnG {
+  background: var(--cd-wash);
+  color: var(--cd-text);
+  border: 1px solid var(--cd-line);
+  padding: 9px 16px;
+}
+.coach-root .cm-app .cm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--cd-line);
+  color: var(--cd-muted);
+}
+.coach-root .cm-app .cm-chipA {
+  background: var(--cm-soft);
+  color: var(--cd-accent-text);
+  border-color: transparent;
+}
+.coach-root .cm-app .cm-chipF {
+  background: var(--cd-wash);
+  border-color: transparent;
+  color: var(--cd-text);
+}
+.cm-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--cd-wash);
+  overflow: hidden;
+}
+.cm-bar i {
+  display: block;
+  height: 100%;
+  background: var(--cd-accent);
+  border-radius: 999px;
+}
+.coach-root .cm-app .cm-tick {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1.5px solid var(--cd-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+}
+.coach-root .cm-app .cm-tick svg {
+  opacity: 0;
+  color: var(--cd-accent-contrast);
+}
+.coach-root .cm-app .cm-tick.on {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+}
+.coach-root .cm-app .cm-tick.on svg {
+  opacity: 1;
+}
+.cm-avt {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--cm-soft);
+  color: var(--cd-accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex: none;
+}
+.cm-h1 {
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.cm-h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.cm-note {
+  font-size: 12.5px;
+  color: var(--cd-muted);
+}
+.coach-root .cm-app .cm-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--cm-soft);
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--cd-accent-text);
+  cursor: pointer;
+  text-align: left;
+}
+.coach-root .cm-app .cm-banner.on {
+  background: color-mix(in srgb, var(--cd-accent) 32%, transparent);
+  font-weight: 500;
+  margin-bottom: 9px;
+}
+.coach-root .cm-app .cm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cd-muted);
+  font-size: 13px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+}
+/* sheet */
+.coach-root .cm-app .cm-dim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 40;
+  border: 0;
+  cursor: pointer;
+}
+.cm-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 64px;
+  background: var(--cd-bg);
+  border-radius: 22px 22px 0 0;
+  border-top: 1px solid var(--cd-line);
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  animation: cm-up 0.24s ease-out;
+}
+@keyframes cm-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.cm-grab {
+  width: 36px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--cd-line);
+  margin: 8px auto 6px;
+  flex: none;
+}
+.cm-sheet-head {
+  padding: 4px 18px 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex: none;
+}
+.cm-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 18px 20px;
+}
+/* hide the wrapped form's own page header inside the sheet */
+.cm-sheet-body .cd-preview-section[aria-label="Check-in form"] > h2 {
+  display: none;
+}
+.cm-sheet-body input[type="text"],
+.cm-sheet-body input[type="number"],
+.cm-sheet-body textarea,
+.cm-sheet-body select {
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-radius: 12px;
+  color: var(--cd-text);
+  padding: 10px 12px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+}
+.coach-root .cm-app .cm-x {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--cd-wash);
+  border: 1px solid var(--cd-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--cd-muted);
+  font-size: 15px;
+}
+/* messages */
+.coach-root .cm-app .cm-msg-day {
+  text-align: center;
+  font-size: 11px;
+  color: var(--cd-muted);
+  margin: 4px 0;
+}
+.cm-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 78%;
+}
+.cm-bub {
+  border-radius: 18px;
+  padding: 9px 13px;
+  font-size: 13.5px;
+}
+.cm-msg.coach {
+  align-self: flex-start;
+}
+.cm-msg.coach .cm-bub {
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+  border-bottom-left-radius: 5px;
+}
+.cm-msg.client {
+  align-self: flex-end;
+}
+.cm-msg.client .cm-bub {
+  background: var(--cm-soft);
+  border-bottom-right-radius: 5px;
+}
+.coach-root .cm-app .cm-msg-t {
+  font-size: 11px;
+  color: var(--cd-muted);
+  margin-top: 3px;
+}
+.cm-msg.client .coach-root .cm-app .cm-msg-t {
+  text-align: right;
+}
+.cm-comp {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--cd-line);
+  background: var(--cd-bg);
+}
+.cm-comp input {
+  flex: 1;
+  height: 38px;
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  background: var(--cd-surface);
+  color: var(--cd-text);
+  padding: 0 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+}
+.coach-root .cm-app .cm-cbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  border: 1px solid var(--cd-line);
+  background: var(--cd-surface);
+  color: var(--cd-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+}
+.coach-root .cm-app .cm-cbtn.send {
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  color: var(--cd-accent-contrast);
+}
+.coach-root .cm-app .cm-cbtn.send:disabled {
+  background: var(--cd-surface);
+  border-color: var(--cd-line);
+  color: var(--cd-muted);
+  cursor: default;
+}
+/* desktop frame */
+.cm-frame {
+  width: 390px;
+  height: 844px;
+  border-radius: 54px;
+  background: #1b1b1e;
+  padding: 11px;
+  box-shadow:
+    0 0 0 1px var(--cd-line),
+    0 24px 60px -24px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+[data-mode="light"] .cm-frame {
+  background: #d4d4d8;
+}
+.cm-frame .cm-app {
+  border-radius: 44px;
+  overflow: hidden;
+}
+.cm-desk-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--cd-muted);
+  font-size: 14px;
+}
+/* tracker inputs */
+.cm-field {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  background: var(--cd-field);
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  height: 36px;
+  padding: 0 10px;
+  min-width: 0;
+}
+.cm-num {
+  background: none;
+  border: 0;
+  color: var(--cd-text);
+  font-size: 16px;
+  text-align: right;
+  width: 100%;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+}
+.cm-num:focus {
+  outline: none;
+}
+.cm-num::placeholder {
+  color: var(--cd-muted);
+  opacity: 0.55;
+}
+.cm-unit {
+  color: var(--cd-muted);
+  font-size: 12px;
+  flex: none;
+}
+.cm-field:focus-within,
+.cm-field:focus {
+  border-color: var(--cd-accent);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--cd-accent);
+}
+.cm-field input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  min-width: 0;
+}
+.coach-root .cm-app .cm-field input:focus-visible,
+.coach-root .cm-app .cm-field input:focus,
+.coach-root .cm-app input.cm-field:focus-visible,
+.coach-root .cm-app .cm-area:focus-visible {
+  outline: none;
+}
+.cm-area {
+  background: var(--cd-field);
+  border: 1px solid var(--cd-line);
+  border-radius: 10px;
+  color: var(--cd-text);
+  padding: 9px 12px;
+  width: 100%;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.cm-area:focus {
+  border-color: var(--cd-accent);
+  outline: none;
+  box-shadow: 0 0 0 1px var(--cd-accent);
+}
+.cm-area::placeholder {
+  color: var(--cd-muted);
+  opacity: 0.55;
+}
+.coach-root .cm-app .cm-seg {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cd-muted);
+  background: var(--cd-wash);
+  border: 0;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-seg.on {
+  background: var(--cd-accent);
+  color: var(--cd-accent-contrast);
+  font-weight: 600;
+}
+.coach-root .cm-app .cm-optchip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 500;
+  background: var(--cd-wash);
+  border: 1px solid var(--cd-line);
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-optchip.on {
+  background: var(--cd-accent);
+  color: var(--cd-accent-contrast);
+  border-color: var(--cd-accent);
+}
+input[type="time"].cm-field {
+  color: var(--cd-text);
+  font-size: 16px;
+  width: 110px;
+}
+/* segmented + logbook */
+.coach-root .cm-app .cm-segwrap {
+  display: flex;
+  gap: 4px;
+  background: var(--cd-wash);
+  border-radius: 12px;
+  padding: 3px;
+}
+.coach-root .cm-app .cm-segopt {
+  flex: 1;
+  padding: 7px 4px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--cd-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-segopt.on {
+  background: var(--cd-surface);
+  color: var(--cd-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.cm-lb-pill {
+  background: var(--cd-field);
+  border: 1px solid var(--cd-line);
+  border-radius: 9px;
+  height: 34px;
+  padding: 0 8px;
+  color: var(--cd-text);
+  font-size: 16px;
+  text-align: right;
+  width: 100%;
+}
+.cm-navcard {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.coach-root .cm-app .cm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cd-muted);
+  font-size: 13px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 10px;
+}
+/* week selector: single scrollable row, hidden scrollbar */
+.cm-weekrow {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.cm-weekrow::-webkit-scrollbar {
+  display: none;
+}
+/* exercise chip strip: hidden scrollbar */
+.cm-body [style*="overflowX"],
+.cm-body [style*="overflow-x"] {
+  scrollbar-width: none;
+}
+
+/* tracker week strip */
+.coach-root .cm-app .cm-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 6px 0 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: var(--cd-wash);
+  color: var(--cd-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-day b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cd-text);
+}
+.coach-root .cm-app .cm-day .cm-daydot {
+  width: 4px;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--cd-muted);
+  opacity: 0.6;
+}
+.coach-root .cm-app .cm-day.on {
+  background: var(--cd-accent);
+}
+.coach-root .cm-app .cm-day.on,
+.coach-root .cm-app .cm-day.on b {
+  color: var(--cd-accent-contrast);
+}
+.coach-root .cm-app .cm-day.on .cm-daydot {
+  background: var(--cd-accent-contrast);
+}
+.coach-root .cm-app .cm-day.today {
+  border-color: var(--cd-accent);
+}
+.coach-root .cm-app .cm-day:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cm-follow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.cm-follow input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--cd-accent);
+  flex: none;
+}
+
+/* rating slider (replaces number-button rows on phone) */
+.coach-root .cm-app .cm-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 44px;
+  background: transparent;
+  cursor: pointer;
+  margin: 0;
+  --cm-slider-fill: 0%;
+}
+.coach-root .cm-app .cm-slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 99px;
+  background: linear-gradient(
+    to right,
+    var(--cd-accent) var(--cm-slider-fill),
+    color-mix(in srgb, var(--cd-text) 14%, transparent) var(--cm-slider-fill)
+  );
+}
+.coach-root .cm-app .cm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--cd-accent);
+  margin-top: -10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.coach-root .cm-app .cm-slider.cm-slider-empty::-webkit-slider-runnable-track {
+  background: var(--cd-wash);
+}
+.coach-root .cm-app .cm-slider.cm-slider-empty::-webkit-slider-thumb {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--cd-text) 35%, transparent);
+  box-shadow: none;
+}
+.coach-root .cm-app .cm-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--cd-text) 14%, transparent);
+}
+.coach-root .cm-app .cm-slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 99px;
+  background: var(--cd-accent);
+}
+.coach-root .cm-app .cm-slider.cm-slider-empty::-moz-range-progress {
+  background: transparent;
+}
+.coach-root .cm-app .cm-slider::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1.5px solid var(--cd-accent);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+.coach-root .cm-app .cm-slider.cm-slider-empty::-moz-range-thumb {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--cd-text) 35%, transparent);
+  box-shadow: none;
+}
+.coach-root .cm-app .cm-slider:focus-visible {
+  outline: none;
+}
+.coach-root .cm-app .cm-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 2px var(--cd-surface),
+    0 0 0 4px var(--cd-accent);
+}
+.coach-root .cm-app .cm-slider-marks {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  margin-top: -16px;
+}
+.coach-root .cm-app .cm-slider-marks i {
+  display: block;
+  width: 1px;
+  height: 4px;
+  background: color-mix(in srgb, var(--cd-text) 22%, transparent);
+}
+.coach-root .cm-app .cm-slider-ends {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0 4px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--cd-muted);
+}

@@ -1,9 +1,20 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
+import Module, { createRequire } from "node:module";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const require = createRequire(import.meta.url);
+// Resolve the app's "@/…" (src/…) specifiers for the CJS-compiled modules.
+const srcRoot = fileURLToPath(new URL("../../../", import.meta.url));
+const originalResolve = Module._resolveFilename;
+Module._resolveFilename = function (specifier, ...args) {
+  return originalResolve.call(
+    this,
+    specifier.startsWith("@/") ? srcRoot + specifier.slice(2) : specifier,
+    ...args,
+  );
+};
 const ts = require("typescript");
 for (const extension of [".ts", ".tsx"])
   require.extensions[extension] = (module, filename) => {
@@ -86,6 +97,78 @@ test("upgrading saved records preserves intentional empty sources and completion
   assert.deepEqual(upgradeAdditionalFixture(saved).sleep, []);
 });
 
+test("sleep settings change the instance summary, period and display unit", () => {
+  const average = render("TL11", {
+    summary: "average",
+    period: "7d",
+    unit: "h",
+  });
+  const latest = render("TL11", {
+    summary: "latest",
+    period: "today",
+    unit: "h",
+  });
+  const minutes = render("TL11", {
+    summary: "latest",
+    period: "today",
+    unit: "min",
+  });
+  assert.match(average, /7\.3/);
+  assert.match(latest, /7\.8/);
+  assert.match(minutes, /468/);
+  assert.notEqual(average, latest);
+});
+
+test("single-nutrient comparison follows the active option and keeps missing distinct", () => {
+  const fat = render("BN19", {
+    option: "single",
+    fields: ["fat"],
+    period: "today",
+  });
+  assert.match(fat, /60 g/);
+  assert.match(fat, /55/);
+  const restDay = { ...initialRecords, activeNutritionOption: "NTD" };
+  const rest = render(
+    "BN19",
+    { option: "single", fields: ["fat"], period: "today" },
+    restDay,
+  );
+  assert.match(rest, /60/);
+  assert.match(rest, /68 g/);
+  const missing = structuredClone(initialRecords);
+  delete missing.macroIntake.find(
+    (row) => row.date === missing.client.asOf && row.option === "TD",
+  ).fat;
+  assert.match(
+    render(
+      "BN19",
+      { option: "single", fields: ["fat"], period: "today" },
+      missing,
+    ),
+    /Not logged/,
+  );
+  const zero = structuredClone(initialRecords);
+  zero.macroIntake.find(
+    (row) => row.date === zero.client.asOf && row.option === "TD",
+  ).protein = 0;
+  assert.match(
+    render("BN19", { option: "single", fields: ["protein"] }, zero),
+    />0\s*g</,
+  );
+  const actualOnly = render("BN19", {
+    option: "single",
+    period: "today",
+    fields: ["protein"],
+    summary: "actual",
+    target: true,
+  });
+  assert.match(actualOnly, />88 g</);
+  assert.doesNotMatch(
+    actualOnly,
+    /fixed target|Fixed 130|No applicable target/,
+  );
+});
+
 test("habit consistency changes when the shared schedule completion changes", () => {
   const before = render("TL22", { fields: ["water"], period: "7d" });
   const records = structuredClone(initialRecords);
@@ -97,4 +180,19 @@ test("habit consistency changes when the shared schedule completion changes", ()
   const after = render("TL22", { fields: ["water"], period: "7d" }, records);
   assert.notEqual(before, after);
   assert.equal(render("TL22", { fields: ["water"], period: "7d" }), before);
+});
+
+test("phase progress presents phase, week and published context without a percentage headline", () => {
+  const progress = render("CU10");
+  assert.match(progress, /Strength foundation/);
+  assert.match(progress, /Week 6 of 9/);
+  assert.match(progress, /aria-valuemax="62" aria-valuenow="36"/);
+  assert.match(progress, /dateTime="2026-11-01">Nov 1/);
+  assert.match(progress, /Current focus/);
+  assert.doesNotMatch(progress, /% elapsed|days left/);
+  const records = structuredClone(initialRecords);
+  records.publishedMilestones.forEach((item) => {
+    item.published = false;
+  });
+  assert.match(render("CU10", {}, records), /No published milestones/);
 });

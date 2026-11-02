@@ -350,8 +350,7 @@
 
 .coach-root .ct-tracking .ct-field-control .tc-value-trigger:focus-visible,
 .coach-root .ct-tracking .ct-category-option:focus-visible,
-.coach-root .ct-tracking .ct-overview button:focus-visible,
-.coach-root .ct-tracking .ct-category-select:focus-visible {
+.coach-root .ct-tracking .ct-overview button:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ct-day-accent) 76%, transparent);
   outline-offset: 2px;
 }
@@ -372,27 +371,8 @@
   .ct-tracking
   .ct-field-control
   :is(.tc-number-input, .tc-rating-select) {
-  min-height: 40px;
-  padding: 7px 14px;
-  border: 1px solid
-    color-mix(in srgb, var(--ct-day-accent) 44%, var(--ct-day-border));
-  border-radius: 999px;
-  background: color-mix(
-    in srgb,
-    var(--ct-day-accent) 5%,
-    var(--ct-field, var(--surface))
-  );
-  color: var(--ct-text, var(--text));
-  font: inherit;
-  font-size: 15px;
-  box-shadow: none;
-}
-
-.coach-root
-  .ct-tracking
-  .ct-field-control
-  :is(.tc-number-input, .tc-rating-select):focus-visible {
-  outline: none;
+  width: 100%;
+  max-width: 100%;
 }
 
 .coach-root .ct-tracking .ct-control-unit {
@@ -432,7 +412,7 @@
   margin-top: 18px;
 }
 
-@media (max-width: 760px) {
+@container (max-width: 760px) {
   .coach-root .ct-tracking .ct-day-heading {
     margin-bottom: 13px;
   }
@@ -472,21 +452,8 @@
   }
 
   .coach-root .ct-tracking .ct-category-select {
-    display: block;
     width: 100%;
-    min-height: 44px;
     margin: 0 0 15px;
-    padding: 6px 10px;
-    border: 1px solid var(--ct-day-border);
-    border-radius: 999px;
-    background: var(--ct-field, var(--surface));
-    color: var(--ct-text, var(--text));
-    font: inherit;
-    font-size: 16px;
-  }
-
-  .coach-root .ct-tracking .ct-category-select:disabled {
-    opacity: 0.62;
   }
 
   .coach-root .ct-tracking .ct-daily-field,
@@ -506,11 +473,7 @@
     min-height: 44px;
   }
 
-  .coach-root .ct-tracking .ct-field-control .tc-value-trigger,
-  .coach-root
-    .ct-tracking
-    .ct-field-control
-    :is(.tc-number-input, .tc-rating-select) {
+  .coach-root .ct-tracking .ct-field-control .tc-value-trigger {
     min-height: 44px;
     font-size: 16px;
   }

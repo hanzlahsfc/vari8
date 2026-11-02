@@ -46,12 +46,21 @@ import { writeAuditEvent } from "../audit";
 import {
   hasExactActiveConsent,
   requiredConsentsFor,
+  type ConsentKind,
   type ConsentPolicyRegistry,
 } from "../consent";
 import { resolveCheckInConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
+import {
+  DailyEntryError,
+  dailyEntryConsentRegistry,
+  loadStaffDailyEntryDetailTx,
+  type StaffDailyEntryDetail,
+} from "../daily-entry/service";
 import { CHECKIN_RATING_WORD_LABELS } from "./forms";
 import type { CheckInDefinition, CheckInField } from "./forms";
+import { isCheckInsEnabled } from "./forms-gate";
+import { localDateInZone } from "./timezone";
 
 // Type-only re-export — app surfaces consume the definition contract
 // through THIS module (the P-025-A seam rule forbids app→forms imports).
@@ -301,6 +310,7 @@ function hasAnswerValue(v: unknown): boolean {
 export function canonicalizeCheckInAnswers(
   definition: CheckInDefinition,
   raw: readonly RawCheckInAnswerEntry[],
+  fieldSelection?: string[] | null,
 ): CanonicalCheckInAnswer[] {
   if (!isPlainObject(definition) || !Array.isArray(definition.fields))
     throw new CheckInInstanceError("not_available");
@@ -320,10 +330,18 @@ export function canonicalizeCheckInAnswers(
     seen.add(entry.fieldId);
     if (!definition.fields.some((f) => f.fieldId === entry.fieldId))
       throw new CheckInInstanceError("invalid_input");
+    // Custom: answers outside the instance's field selection reject — the
+    // wire must stay within what the coach asked.
+    if (fieldSelection != null && !fieldSelection.includes(entry.fieldId))
+      throw new CheckInInstanceError("invalid_input");
   }
   const byId = new Map(raw.map((e) => [e.fieldId, e]));
+  const fields =
+    fieldSelection != null
+      ? definition.fields.filter((f) => fieldSelection.includes(f.fieldId))
+      : definition.fields;
 
-  return definition.fields.map((field) => {
+  return fields.map((field) => {
     const wire = byId.get(field.fieldId);
     const present = wire !== undefined && hasAnswerValue(wire.value);
     if (field.required && !present)
@@ -645,6 +663,7 @@ type LockedInstanceRow = {
   clientProfileId: string;
   formId: string;
   formVersionId: string;
+  fieldSelection: unknown;
   dueAt: Date;
   cancelledAt: Date | null;
   cancelledByMemberId: string | null;
@@ -661,6 +680,7 @@ async function lockInstance(
             form_id AS "formId",
             form_version_id AS "formVersionId",
             due_at AS "dueAt",
+            field_selection AS "fieldSelection",
             cancelled_at AS "cancelledAt",
             cancelled_by_member_id AS "cancelledByMemberId"
      FROM "checkin_instance"
@@ -713,11 +733,88 @@ async function checkRequiredConsent(
   }
 }
 
+/**
+ * Consent intersection shared by the tracker-context read and the
+ * submission detail's embedded parameter packet. Locks every required
+ * kind's consent rows FOR UPDATE in sorted-kind order (the same global
+ * lock order everywhere — no lock-order inversion against the detail
+ * read's own consent step, which uses the same union when the packet
+ * is in play).
+ */
+export async function checkConsentIntersection(
+  tx: Prisma.TransactionClient,
+  clientProfileId: string,
+  pairs: Array<{
+    resource: "checkinsCoachReviews" | "dailyTracking";
+    registry: ConsentPolicyRegistry;
+  }>,
+): Promise<void> {
+  // D19: parked consent gate — allows (and skips the consent reads) when
+  // ENABLE_CONSENT_GATES is off.
+  if (!consentGatesEnabled()) return;
+  const required: { kind: ConsentKind; version: string }[] = [];
+  for (const { resource, registry } of pairs) {
+    for (const kind of requiredConsentsFor(resource) ?? []) {
+      const version = registry.currentVersion(kind);
+      if (version === null)
+        throw new CheckInInstanceError("policy_not_configured");
+      required.push({ kind, version });
+    }
+  }
+  const kinds = [...new Set(required.map((r) => r.kind))].sort();
+  for (const kind of kinds) {
+    const rows = (
+      await tx.$queryRawUnsafe<
+        { kind: string; version: string; revoked_at: Date | null }[]
+      >(
+        `SELECT kind, version, revoked_at
+         FROM "consent_record"
+         WHERE client_profile_id = $1
+           AND kind = CAST($2 AS "public"."ConsentKind")
+         FOR UPDATE`,
+        clientProfileId,
+        kind,
+      )
+    ).map((r) => ({
+      kind: r.kind,
+      version: r.version,
+      revokedAt: r.revoked_at,
+    }));
+    for (const req of required.filter((r) => r.kind === kind))
+      if (!hasExactActiveConsent(rows, kind, req.version))
+        throw new CheckInInstanceError("consent_missing");
+  }
+}
+
+/** Effective-scope reconciliation for the two-resource reads: the
+ *  stricter of both authorized scopes wins; `own`, denials, or unknown
+ *  values fail closed. */
+export function reconcileTrackerContextScopes(
+  checkinScope: string | null | undefined,
+  dailyScope: string | null | undefined,
+): "workspace" | "assigned" | "denied" {
+  if (
+    (checkinScope !== "workspace" && checkinScope !== "assigned") ||
+    (dailyScope !== "workspace" && dailyScope !== "assigned")
+  )
+    return "denied";
+  return checkinScope === "assigned" || dailyScope === "assigned"
+    ? "assigned"
+    : "workspace";
+}
+
 // ── Inputs ───────────────────────────────────────────────────────────────
 
 export type CheckInInstanceDeps = {
   db?: PrismaLike;
   registry?: ConsentPolicyRegistry;
+  /** Check-in review packet (PR-SV5): the daily-consent registry for the
+   *  embedded tracker-parameter packet; defaults to the deployed daily
+   *  consent policy. */
+  dailyRegistry?: ConsentPolicyRegistry;
+  /** PR-SV5 test seam — injectable dailyTracking authorization for the
+   *  embedded packet (asymmetric-capability coverage). */
+  authorizeDaily?: typeof authorize;
 };
 
 export type ScheduleCheckInInstanceInput = {
@@ -725,6 +822,10 @@ export type ScheduleCheckInInstanceInput = {
   clientProfileId: string;
   formId: string;
   formVersionId: string;
+  /** Custom: the per-instance subset of the pinned form's fieldIds.
+   *  undefined/null = Full (all fields); a present value must be a
+   *  non-empty deduped array of fieldIds from the pinned definition. */
+  fieldSelection?: string[] | null;
   dueAt: string;
   dueTz?: string | null;
   /** PR-M8: optional staff note on the instance (canvas `Extra.note`). */
@@ -801,6 +902,25 @@ export type ScheduleCheckInInstanceResult =
  * Coach: assigned scope, coherent ACTIVE assignment re-resolved + locked.
  * Assistant/client/SUPPORT/PLATFORM_ADMIN denied by the matrix.
  */
+
+/** Custom field selection — non-empty, deduped, string ids only. The
+ *  caller validates them against the pinned definition; this enforces the
+ *  shape before any DB work. */
+function parseCheckInFieldSelection(
+  v: string[] | null | undefined,
+): string[] | null {
+  if (v == null) return null;
+  if (!Array.isArray(v) || v.length === 0)
+    throw new CheckInInstanceError("invalid_input");
+  const seen = new Set<string>();
+  for (const id of v) {
+    if (typeof id !== "string" || id.length === 0 || seen.has(id))
+      throw new CheckInInstanceError("invalid_input");
+    seen.add(id);
+  }
+  return [...seen];
+}
+
 export async function scheduleCheckInInstance(
   session: SessionLike,
   input: ScheduleCheckInInstanceInput,
@@ -818,6 +938,7 @@ export async function scheduleCheckInInstance(
   if (!dueAt) throw new CheckInInstanceError("invalid_input");
   const dueTz = parseCheckInDueTz(input.dueTz);
   const coachNote = parseCheckInCoachNote(input.coachNote);
+  const fieldSelection = parseCheckInFieldSelection(input.fieldSelection);
 
   const attempt = (): Promise<ScheduleCheckInInstanceResult> =>
     withSerializedRetry(() =>
@@ -840,11 +961,25 @@ export async function scheduleCheckInInstance(
                 workspaceId: input.workspaceId,
                 formId: input.formId,
               },
-              select: { id: true, form: { select: { status: true } } },
+              select: {
+                id: true,
+                definition: true,
+                form: { select: { status: true } },
+              },
             }),
           ]);
           if (!profile || !formVersion || formVersion.form.status !== "ACTIVE")
             throw new CheckInInstanceError("not_available");
+          // Custom: every selected fieldId must exist in the PINNED published
+          // version — a later publish never reshapes this instance's set.
+          if (fieldSelection !== null) {
+            const def = formVersion.definition as CheckInDefinition;
+            if (!isPlainObject(def) || !Array.isArray(def.fields))
+              throw new CheckInInstanceError("not_available");
+            const ids = new Set(def.fields.map((f) => f.fieldId));
+            if (fieldSelection.some((id) => !ids.has(id)))
+              throw new CheckInInstanceError("invalid_input");
+          }
 
           // 2–5. Advisories → member lock → in-transaction authorize.
           const { ctx, member } = await lockedAuthorize(
@@ -916,6 +1051,10 @@ export async function scheduleCheckInInstance(
               dueAt,
               dueTz,
               coachNote,
+              fieldSelection:
+                fieldSelection !== null
+                  ? (fieldSelection as Prisma.InputJsonValue)
+                  : Prisma.DbNull,
               scheduledByMemberId: member.id,
             },
             select: { id: true },
@@ -1401,6 +1540,9 @@ export type OwnCheckInInstanceDetail = {
   /** Pinned immutable definition — for the fill form AND submitted-state
    * rendering. Always present (it is definition metadata, not answers). */
   definition: CheckInDefinition;
+  /** Custom: the pinned field subset the coach asked for — NULL means
+   *  Full (every field of the pinned version renders). */
+  fieldSelection?: string[] | null;
   /** Submitted answers joined to the definition — present ONLY when a
    * submission exists AND consent currently holds. Otherwise null. */
   submittedAnswers: Array<{
@@ -1456,7 +1598,7 @@ export async function getOwnCheckInInstance(
         workspaceId: input.workspaceId,
         clientProfileId: profile.id,
       },
-      select: { formId: true },
+      select: { formId: true, fieldSelection: true },
     });
     if (!pre) throw new CheckInInstanceError("not_available");
 
@@ -1600,6 +1742,7 @@ export async function getOwnCheckInInstance(
       late: presentation.late,
       submittedAt: submissionRow?.submittedAt.toISOString() ?? null,
       definition: version.definition as CheckInDefinition,
+      fieldSelection: (pre.fieldSelection as string[] | null) ?? null,
       submittedAnswers:
         submittedAnswerRows?.map((a) => ({
           fieldId: a.fieldId,
@@ -1752,6 +1895,7 @@ export async function submitCheckInInstance(
           const answers = canonicalizeCheckInAnswers(
             version.definition as CheckInDefinition,
             rawAnswers,
+            instance.fieldSelection as string[] | null,
           );
 
           // 10b. VISUAL answers: every referenced media object must
@@ -1874,6 +2018,12 @@ export async function submitCheckInInstance(
 
 // ── Staff: published-version picker (scheduling form select) ────────────
 
+export type ScheduleFormFieldOption = {
+  fieldId: string;
+  label: string;
+  required: boolean;
+};
+
 export type ScheduleFormOption = {
   /** Positional token — the browser selects position N and the action
    * re-runs this list server-side to map index → (formId, versionId);
@@ -1884,6 +2034,8 @@ export type ScheduleFormOption = {
   /** Server-only — never rendered into browser values. */
   formId: string;
   formVersionId: string;
+  /** Custom checklist — the pinned version's selectable fields. */
+  fields: ScheduleFormFieldOption[];
 };
 
 export async function listSchedulableFormVersions(
@@ -1920,6 +2072,7 @@ export async function listSchedulableFormVersions(
       formId: true,
       form: { select: { name: true } },
       versionSeq: true,
+      definition: true,
     },
     orderBy: [{ formId: "asc" }, { versionSeq: "desc" }],
     take: 200,
@@ -1930,12 +2083,21 @@ export async function listSchedulableFormVersions(
   for (const v of versions) {
     if (seen.has(v.formId)) continue;
     seen.add(v.formId);
+    const def = v.definition as CheckInDefinition;
     options.push({
       position: options.length,
       formName: v.form.name,
       versionSeq: v.versionSeq,
       formId: v.formId,
       formVersionId: v.id,
+      fields:
+        isPlainObject(def) && Array.isArray(def.fields)
+          ? def.fields.map((f) => ({
+              fieldId: f.fieldId,
+              label: f.label ?? f.fieldId,
+              required: f.required === true,
+            }))
+          : [],
     });
   }
   return { options };
@@ -2067,6 +2229,24 @@ export type StaffCheckInSubmissionFieldView = {
   mediaIds: string[];
 };
 
+/** PR-SV5: canvas flag column shape — one flagged athlete set note. */
+export type CheckInFlaggedSetNote = {
+  exercise: string;
+  set: number;
+  date: string;
+  text: string;
+};
+
+/** PR-SV5 slot — no fields are defined until issue 11's progress-photo
+ *  contract lands; the column ships as `null` (unavailable), never
+ *  fabricated rows. */
+export type CheckInReviewPhoto = Record<string, never>;
+
+/** PR-SV5 slot — no fields are defined until issue 12a's contract
+ *  lands; the column ships as `null` (unavailable), never fabricated
+ *  rows. */
+export type CheckInNutritionItem = Record<string, never>;
+
 export type StaffCheckInSubmissionDetail = {
   submissionId: string;
   instanceId: string;
@@ -2096,10 +2276,25 @@ export type StaffCheckInSubmissionDetail = {
    * caller's assigned write cell + ACTIVE assignment. The send action
    * re-authorizes independently. */
   canSend: boolean;
+  /** PR-SV5: tracker-parameter packet for the check-in date — the same
+   *  values the explicit tracker-context read serves, embedded in this
+   *  audited view. `null` = withheld (dailyTracking denied, scope
+   *  reconcile denied, daily consent missing or policy unconfigured);
+   *  `[]` = authorized but no committed entry for the date. Never
+   *  fabricated. */
+  parameterValues: StaffDailyEntryDetail["values"] | null;
+  /** PR-SV5 availability slots — `null` = the feature has not landed
+   *  (unavailable), distinguishable from an authorized-but-empty `[]`.
+   *  Flagged set notes arrive with issue 14, progress photos with
+   *  issue 11 (answer attachments in `fields[].mediaIds` are a separate
+   *  thing), nutrition with issue 12a. */
+  flags: CheckInFlaggedSetNote[] | null;
+  photos: CheckInReviewPhoto[] | null;
+  nutrition: CheckInNutritionItem[] | null;
   fields: StaffCheckInSubmissionFieldView[];
 };
 
-function displayCheckInAnswer(
+export function displayCheckInAnswer(
   field: CheckInField,
   answer:
     | {
@@ -2184,6 +2379,14 @@ export async function readCheckInSubmissionDetail(
 ): Promise<StaffCheckInSubmissionDetail> {
   const db = deps.db ?? defaultPrisma;
   const registry = deps.registry ?? resolveCheckInConsentPolicy();
+  // PR-SV5: the embedded parameter packet uses the DAILY registry —
+  // gated on the Check-In trusted-runtime classification exactly as
+  // the explicit tracker-context read does; production/unknown
+  // resolves unconfigured and withholds (never fabricated).
+  const dailyRegistry =
+    deps.dailyRegistry ??
+    dailyEntryConsentRegistry(isCheckInsEnabled(process.env));
+  const authorizeDaily = deps.authorizeDaily ?? authorize;
   if (
     !validId(input.workspaceId) ||
     !validId(input.clientProfileId) ||
@@ -2279,8 +2482,118 @@ export async function readCheckInSubmissionDetail(
         if (state !== "SUBMITTED")
           throw new CheckInInstanceError("not_available");
 
+        // 7b. PR-SV5 packet pre-lock — authorize dailyTracking, reconcile
+        // both scopes and (for an assigned effective scope) re-resolve +
+        // lock the ACTIVE assignment BEFORE the consent step, mirroring
+        // the tracker-context read's authorize → scope → assignment →
+        // consent order so the two paths never invert lock acquisition.
+        // Any denial withholds the packet; the detail read itself
+        // continues on the check-in contract alone.
+        let ctxDaily: Awaited<ReturnType<typeof authorize>> | null = null;
+        let packetScope: "workspace" | "assigned" | "denied" = "denied";
+        try {
+          ctxDaily = await authorizeDaily(
+            session,
+            {
+              resource: "dailyTracking",
+              action: "read",
+              workspaceId: input.workspaceId,
+              clientProfileId: input.clientProfileId,
+            },
+            createPrismaAuthorizationRepo(tx),
+          );
+          packetScope = reconcileTrackerContextScopes(
+            ctx.grantedScope,
+            ctxDaily.grantedScope,
+          );
+          if (packetScope === "assigned")
+            await lockAssignmentForScope(
+              tx,
+              input.workspaceId,
+              input.clientProfileId,
+              member.id,
+              "checkinsCoachReviews",
+            );
+        } catch (e) {
+          if (!(e instanceof AccessDeniedError)) throw e;
+          ctxDaily = null;
+          packetScope = "denied";
+        }
+
         // 8. Consent rows FOR UPDATE before ANY answer read (#85).
-        await checkRequiredConsent(tx, input.clientProfileId, registry, true);
+        // The check-in kinds are asserted fatally. The UNION of the
+        // daily registry's required kinds is locked in the same
+        // sorted-kind order at the same step — one global lock order
+        // shared with the tracker-context intersection — and the held
+        // rows feed the packet's withheld-vs-served decision below
+        // without a second, potentially order-inverting lock.
+        const dailyConsentRequirements = consentGatesEnabled()
+          ? (requiredConsentsFor("dailyTracking") ?? []).map((kind) => ({
+              kind,
+              version: dailyRegistry.currentVersion(kind),
+            }))
+          : [];
+        const unionKinds = consentGatesEnabled()
+          ? [
+              ...new Set([
+                ...(requiredConsentsFor("checkinsCoachReviews") ?? []),
+                ...dailyConsentRequirements.map((r) => r.kind),
+              ]),
+            ].sort()
+          : [];
+        const heldConsentRows = new Map<
+          string,
+          { kind: string; version: string; revokedAt: Date | null }[]
+        >();
+        for (const kind of unionKinds) {
+          heldConsentRows.set(
+            kind,
+            (
+              await tx.$queryRawUnsafe<
+                { kind: string; version: string; revoked_at: Date | null }[]
+              >(
+                `SELECT kind, version, revoked_at
+                 FROM "consent_record"
+                 WHERE client_profile_id = $1
+                   AND kind = CAST($2 AS "public"."ConsentKind")
+                 FOR UPDATE`,
+                input.clientProfileId,
+                kind,
+              )
+            ).map((r) => ({
+              kind: r.kind,
+              version: r.version,
+              revokedAt: r.revoked_at,
+            })),
+          );
+        }
+        if (consentGatesEnabled()) {
+          for (const kind of requiredConsentsFor("checkinsCoachReviews") ??
+            []) {
+            const version = registry.currentVersion(kind);
+            if (version === null)
+              throw new CheckInInstanceError("policy_not_configured");
+            if (
+              !hasExactActiveConsent(
+                heldConsentRows.get(kind) ?? [],
+                kind,
+                version,
+              )
+            )
+              throw new CheckInInstanceError("consent_missing");
+          }
+        }
+        // The packet's consent state — every daily requirement holds an
+        // exact active version against the held rows.
+        const dailyConsented = dailyConsentRequirements.every(
+          (r) =>
+            r.version !== null &&
+            hasExactActiveConsent(
+              heldConsentRows.get(r.kind) ?? [],
+              r.kind,
+              r.version,
+            ),
+        );
 
         // 9. Pinned version + answers (only now — after consent holds).
         const version = await tx.checkInFormVersion.findUnique({
@@ -2418,6 +2731,48 @@ export async function readCheckInSubmissionDetail(
           if (!(e instanceof AccessDeniedError)) throw e;
         }
 
+        // 10b. PR-SV5 tracker-parameter packet — the daily values for
+        // the check-in date (the Vienna local date of the instance's
+        // due date — the same date the canvas passes to the explicit
+        // tracker-context endpoint). Governed inside this same
+        // transaction by the DAILY contract: dailyTracking/read denied,
+        // scope reconcile denied, missing assignment, daily consent
+        // missing or daily policy unconfigured → withheld (`null` —
+        // never an empty array that would present as "no entry"); an
+        // authorized date with no committed entry → `[]`. The shared
+        // audit-free loader supplies values; the single
+        // checkin_submission audit below covers the whole view — one
+        // READ audit per view, zero on passive GET.
+        let parameterValues: StaffCheckInSubmissionDetail["parameterValues"] =
+          null;
+        if (ctxDaily !== null && packetScope !== "denied" && dailyConsented) {
+          // The check-in date contract is the canvas's
+          // `viennaDate(dueAt)` — Europe/Vienna local date of the
+          // instance due instant.
+          const entryDate = localDateInZone(instance.dueAt, "Europe/Vienna");
+          if (entryDate !== null) {
+            try {
+              const load = await loadStaffDailyEntryDetailTx(tx, {
+                workspaceId: input.workspaceId,
+                clientProfileId: input.clientProfileId,
+                entryDate,
+                ctx: ctxDaily,
+              });
+              parameterValues = load.detail.values;
+            } catch (e) {
+              // No entry for the date → honest empty. An ineligible
+              // template stays withheld — a withheld state, never
+              // presented as "no entry".
+              if (e instanceof DailyEntryError && e.code === "not_available")
+                parameterValues = [];
+              else if (!(
+                e instanceof DailyEntryError && e.code === "ineligible"
+              ))
+                throw e;
+            }
+          }
+        }
+
         // 11. Structural READ audit — last; a failed write rolls the
         // detail read (and its values) back (#89-analog).
         await writeAuditEvent(tx, ctx, {
@@ -2456,6 +2811,14 @@ export async function readCheckInSubmissionDetail(
             sendWriteScope === "assigned" &&
             sendAssignment !== null &&
             review !== null,
+          parameterValues,
+          // PR-SV5 availability slots — `null` = unavailable until the
+          // owning lane lands, never fabricated rows: flagged set notes
+          // (issue 14), progress photos (issue 11 — answer attachments
+          // stay on fields[].mediaIds), nutrition (issue 12a).
+          flags: null,
+          photos: null,
+          nutrition: null,
           fields: definition.fields.map((f) => {
             const a = byField.get(f.fieldId);
             const mediaIds = (a?.media ?? []).map((m) => m.mediaObjectId);

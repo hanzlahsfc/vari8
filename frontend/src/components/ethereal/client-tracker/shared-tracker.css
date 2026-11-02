@@ -18,20 +18,37 @@
   --cd-wash: var(--eg-wash);
 }
 
-.ct-shared-tracker :where(button, input, select, textarea) {
+.ct-shared-tracker
+  :where(
+    button:not([class*="v8-"]),
+    input:not([class*="v8-"]),
+    select:not([class*="v8-"]),
+    textarea:not([class*="v8-"])
+  ) {
   color: inherit;
   font: inherit;
 }
 
-.ct-shared-tracker :where(button) {
+.ct-shared-tracker :where(button:not([class*="v8-"])) {
   background-color: transparent;
 }
 
-.ct-shared-tracker :where(input, select, textarea) {
+.ct-shared-tracker
+  :where(
+    input:not([class*="v8-"]),
+    select:not([class*="v8-"]),
+    textarea:not([class*="v8-"])
+  ) {
   background-color: var(--cd-field);
 }
 
-.ct-shared-tracker :where(button, input, select, textarea):focus-visible {
+.ct-shared-tracker
+  :where(
+    button:not([class*="v8-"]),
+    input:not([class*="v8-"]),
+    select:not([class*="v8-"]),
+    textarea:not([class*="v8-"])
+  ):focus-visible {
   outline: 2px solid var(--cd-accent-ring, var(--cd-accent));
   outline-offset: 2px;
 }

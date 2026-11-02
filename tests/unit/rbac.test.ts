@@ -59,7 +59,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   dailyTracking: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "denied"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
@@ -71,7 +72,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   mealPlans: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "assigned"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
@@ -94,7 +96,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   checkinsCoachReviews: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "assigned"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "own"],
@@ -281,7 +284,8 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
   checkinInstances: {
     PLATFORM_ADMIN: ["denied", "denied"],
     WORKSPACE_OWNER: ["workspace", "workspace"],
-    COACH: ["assigned", "assigned"],
+    // D10/D22: coach reads every workspace client; write stays assigned.
+    COACH: ["workspace", "assigned"],
     ASSISTANT_COACH: ["assigned", "denied"],
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
@@ -311,6 +315,26 @@ const EXPECTED: Record<Resource, Record<string, Cell>> = {
     SUPPORT: ["denied", "denied"],
     CLIENT: ["own", "denied"],
   },
+  supplementPlans: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
+  },
+  // Issue #169 (Stage 5 card 07): same reviewed posture as supplementPlans -
+  // staff author activity targets only for clients they hold an ACTIVE
+  // assignment to; owner reads workspace-wide; assistants read-only;
+  // clients read their own versions and never write.
+  activityTargets: {
+    PLATFORM_ADMIN: ["denied", "denied"],
+    WORKSPACE_OWNER: ["workspace", "assigned"],
+    COACH: ["assigned", "assigned"],
+    ASSISTANT_COACH: ["assigned", "denied"],
+    SUPPORT: ["denied", "denied"],
+    CLIENT: ["own", "denied"],
+  },
 };
 
 const PRINCIPAL_ROLES: PrincipalRole[] = [
@@ -324,7 +348,7 @@ const PRINCIPAL_ROLES: PrincipalRole[] = [
 
 describe("RBAC matrix", () => {
   it("covers every resource × principal role × action", () => {
-    expect(RESOURCES).toHaveLength(32);
+    expect(RESOURCES).toHaveLength(34);
     for (const resource of RESOURCES) {
       for (const role of PRINCIPAL_ROLES) {
         const cell = RBAC_MATRIX[resource]?.[role];

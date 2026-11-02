@@ -11,7 +11,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   type ComponentPropsWithoutRef,
   useEffect,
@@ -19,11 +19,16 @@ import {
   useMemo,
   useState,
 } from "react";
+import {
+  Button,
+  Input,
+  Select,
+  IconButton as V8IconButton,
+} from "@/components/vari8/components";
+import { DatePicker, TimePicker } from "@/components/vari8/inputs";
 import foodSource from "@/data/food-database.json";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import { createInitialClients } from "../clients/model";
 import { ClientPlanPreview } from "./client-plan-preview";
-import { DatePicker, TimePicker } from "./date-time-fields";
 import {
   addMealToVariant,
   calculateMealNutrients,
@@ -104,13 +109,14 @@ function NutrientLine({
   );
 }
 
-function IconButton({
+function TooltipIconButton({
   title,
   children,
   ...props
 }: ComponentPropsWithoutRef<"button">) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const tooltipId = useId();
+  const label = props["aria-label"] ?? title ?? "Action";
   return (
     <Tooltip.Root>
       <Tooltip.Trigger
@@ -118,6 +124,7 @@ function IconButton({
         ref={setAnchor}
         delay={350}
         aria-describedby={tooltipId}
+        render={<V8IconButton label={label} title={title} />}
       >
         {children}
       </Tooltip.Trigger>
@@ -352,13 +359,15 @@ export function MealplanWorkspace() {
                 variantId: step.variantId === id ? active.id : step.variantId,
               })),
             }
-          : {
-              mode: "manual",
-              selectedVariantId:
-                plan.schedule.selectedVariantId === id
-                  ? active.id
-                  : plan.schedule.selectedVariantId,
-            };
+          : plan.schedule.mode === "manual"
+            ? {
+                mode: "manual",
+                selectedVariantId:
+                  plan.schedule.selectedVariantId === id
+                    ? active.id
+                    : plan.schedule.selectedVariantId,
+              }
+            : plan.schedule;
     update({
       ...plan,
       variants,
@@ -383,35 +392,35 @@ export function MealplanWorkspace() {
           <span className="mp-demo-status">Demo workspace</span>
         </div>
         <div className="mp-header-controls">
-          <label className="mp-client-select">
-            <span>Client</span>
-            <select
+          <div className="mp-client-select">
+            <Select
+              label="Client"
               value={clientId}
-              onChange={(event) => {
-                setClientId(event.target.value);
+              onValueChange={(value) => {
+                setClientId(value);
                 setPreview(false);
               }}
-              aria-label="Select client"
-            >
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
+              options={clients.map((client) => ({
+                value: client.id,
+                label: client.name,
+              }))}
+            />
+          </div>
+          <Button
+            variant={preview ? "primary" : "secondary"}
+            size="sm"
             type="button"
-            className={`mp-button ${preview ? "mp-button-active" : ""}`}
+            aria-pressed={preview}
             onClick={() => setPreview((value) => !value)}
           >
             <Eye size={15} />
             {preview ? "Coach edit" : "Plan preview"}
-          </button>
+          </Button>
           {!preview && (
-            <button
+            <Button
+              variant="primary"
+              size="sm"
               type="button"
-              className="mp-button mp-primary"
               onClick={() => {
                 const issue = errors[0];
                 if (issue) {
@@ -433,7 +442,7 @@ export function MealplanWorkspace() {
             >
               <Check size={15} />
               Save plan
-            </button>
+            </Button>
           )}
         </div>
       </header>
@@ -452,42 +461,46 @@ export function MealplanWorkspace() {
         </div>
       ) : (
         <div className="mp-planbar">
-          <label className="mp-name-field">
-            <span>Plan name</span>
-            <input
+          <div className="mp-name-field">
+            <Input
+              label="Plan name"
               value={plan.name}
               onChange={(event) =>
                 update({ ...plan, name: event.target.value })
               }
               disabled={preview}
             />
-          </label>
+          </div>
           <div className="mp-date-field">
-            <span>Starts</span>
             <DatePicker
               value={plan.startDate}
-              onChange={(startDate) => update({ ...plan, startDate })}
-              ariaLabel="Plan start date"
+              onValueChange={(startDate) => update({ ...plan, startDate })}
+              label="Starts"
             />
           </div>
-          <button
+          <Button
             type="button"
-            className="mp-button mp-quiet"
+            variant="ghost"
+            size="sm"
+            className="mp-planbar-action"
             onClick={archivePlan}
             disabled={preview}
           >
             <Archive size={14} />
             Archive & start version
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="mp-button mp-quiet mp-history-trigger"
+            variant={historyOpen ? "secondary" : "ghost"}
+            size="sm"
+            className="mp-history-trigger mp-planbar-action"
+            aria-expanded={historyOpen}
             onClick={() => setHistoryOpen((value) => !value)}
           >
             {historyOpen
               ? "Hide history"
               : `History · ${plan.archivedPlans.length}`}
-          </button>
+          </Button>
           <SavedMealLibrary
             key={clientId}
             meals={plan.reusableMeals}
@@ -543,13 +556,13 @@ export function MealplanWorkspace() {
       {notice && (
         <div className="mp-notice" role="status">
           {notice}
-          <IconButton
+          <TooltipIconButton
             type="button"
             aria-label="Dismiss"
             onClick={() => setNotice("")}
           >
             <X size={14} />
-          </IconButton>
+          </TooltipIconButton>
         </div>
       )}
       <PlanOverview
@@ -643,19 +656,19 @@ export function MealplanWorkspace() {
               )}
               {!preview && (
                 <div className="mp-variant-actions">
-                  <label className="mp-variant-name">
-                    <span>Variant name</span>
-                    <input
+                  <div className="mp-variant-name">
+                    <Input
+                      id={`mp-variant-name-${variant.id}`}
+                      size="sm"
+                      label="Variant name"
                       value={variant.label}
-                      aria-label="Variant label"
                       onChange={(event) =>
                         changeVariantLabel(variant.id, event.target.value)
                       }
                     />
-                  </label>
-                  <IconButton
+                  </div>
+                  <TooltipIconButton
                     type="button"
-                    className="mp-icon-button"
                     aria-label={`Duplicate ${variant.label}`}
                     title="Duplicate variant"
                     onClick={() => {
@@ -669,26 +682,26 @@ export function MealplanWorkspace() {
                     }}
                   >
                     <Copy size={14} />
-                  </IconButton>
+                  </TooltipIconButton>
                   {plan.variants.length > 1 && (
-                    <IconButton
+                    <TooltipIconButton
                       type="button"
-                      className="mp-icon-button"
                       aria-label={`Delete ${variant.label}`}
                       title="Delete variant"
                       onClick={() => deleteVariant(variant.id)}
                     >
                       <X size={14} />
-                    </IconButton>
+                    </TooltipIconButton>
                   )}
-                  <button
+                  <Button
                     type="button"
-                    className="mp-add-variant"
+                    variant="ghost"
+                    size="sm"
                     onClick={addVariant}
                   >
                     <Plus size={14} />
                     Add variant
-                  </button>
+                  </Button>
                 </div>
               )}
             </section>
@@ -725,9 +738,10 @@ export function MealplanWorkspace() {
                               <span className="mp-meal-index">
                                 {String(index + 1).padStart(2, "0")}
                               </span>
-                              <input
+                              <Input
+                                size="sm"
                                 className="mp-meal-label"
-                                aria-label="Meal name"
+                                label="Meal name"
                                 value={meal.label}
                                 onChange={(event) =>
                                   updateMeal(meal.id, (current) => ({
@@ -739,9 +753,8 @@ export function MealplanWorkspace() {
                               />
                               <TimePicker
                                 value={meal.time}
-                                ariaLabel={`Time for ${meal.label || "meal"}`}
-                                className="mp-meal-time-picker"
-                                onChange={(time) =>
+                                label="Meal time"
+                                onValueChange={(time) =>
                                   updateMeal(meal.id, (current) => ({
                                     ...current,
                                     time,
@@ -751,18 +764,16 @@ export function MealplanWorkspace() {
                               <div className="mp-meal-actions">
                                 {!preview && (
                                   <>
-                                    <IconButton
+                                    <TooltipIconButton
                                       type="button"
-                                      className="mp-icon-button"
                                       aria-label={`Save ${meal.label} to reusable meals`}
                                       title="Save reusable meal"
                                       onClick={() => saveMeal(meal)}
                                     >
                                       <Archive size={14} />
-                                    </IconButton>
-                                    <IconButton
+                                    </TooltipIconButton>
+                                    <TooltipIconButton
                                       type="button"
-                                      className="mp-icon-button"
                                       aria-label={`Duplicate ${meal.label}`}
                                       title="Duplicate meal"
                                       onClick={() =>
@@ -783,16 +794,15 @@ export function MealplanWorkspace() {
                                       }
                                     >
                                       <Copy size={14} />
-                                    </IconButton>
-                                    <IconButton
+                                    </TooltipIconButton>
+                                    <TooltipIconButton
                                       type="button"
-                                      className="mp-icon-button mp-danger"
                                       aria-label={`Delete ${meal.label}`}
                                       title="Delete meal"
                                       onClick={() => removeMeal(meal.id)}
                                     >
                                       <Trash2 size={14} />
-                                    </IconButton>
+                                    </TooltipIconButton>
                                   </>
                                 )}
                               </div>
@@ -821,13 +831,14 @@ export function MealplanWorkspace() {
                                         {format(portion.quantity, 1)}
                                       </span>
                                     ) : (
-                                      <input
+                                      <Input
+                                        size="sm"
                                         className="mp-quantity"
+                                        label={`${food.name} quantity in ${food.unit}`}
                                         type="number"
                                         min="0"
                                         step="any"
                                         value={portion.quantity}
-                                        aria-label={`${food.name} quantity in ${food.unit}`}
                                         onChange={(event) =>
                                           updateMeal(meal.id, (current) => ({
                                             ...current,
@@ -902,9 +913,9 @@ export function MealplanWorkspace() {
                                       />
                                     )}
                                     {!preview && (
-                                      <IconButton
+                                      <TooltipIconButton
                                         type="button"
-                                        className="mp-icon-button mp-remove-food"
+                                        className="mp-remove-food"
                                         aria-label={`Remove ${food.name}`}
                                         onClick={() =>
                                           updateMeal(meal.id, (current) => ({
@@ -916,7 +927,7 @@ export function MealplanWorkspace() {
                                         }
                                       >
                                         <X size={13} />
-                                      </IconButton>
+                                      </TooltipIconButton>
                                     )}
                                     {Boolean(portion.swaps?.length) && (
                                       <fieldset
@@ -935,7 +946,7 @@ export function MealplanWorkspace() {
                                                 )
                                               : undefined;
                                             return swapFood ? (
-                                              <span
+                                              <div
                                                 className="mp-swap-label"
                                                 // biome-ignore lint/suspicious/noArrayIndexKey: duplicate food swaps are allowed and have no persisted ID
                                                 key={`${swap.foodId}-${swapIndex}`}
@@ -953,11 +964,12 @@ export function MealplanWorkspace() {
                                                     {format(swap.quantity, 1)}
                                                   </span>
                                                 ) : (
-                                                  <input
+                                                  <Input
+                                                    size="sm"
                                                     type="number"
                                                     min="0"
                                                     step="any"
-                                                    aria-label={`${swapFood.name} equivalent portion`}
+                                                    label={`${swapFood.name} equivalent portion`}
                                                     value={swap.quantity}
                                                     onChange={(event) =>
                                                       updateMeal(
@@ -1025,9 +1037,9 @@ export function MealplanWorkspace() {
                                                   </span>
                                                 )}
                                                 {!preview && (
-                                                  <IconButton
+                                                  <TooltipIconButton
                                                     type="button"
-                                                    className="mp-icon-button mp-remove-swap"
+                                                    className="mp-remove-swap"
                                                     aria-label={`Remove ${swapFood.name} swap`}
                                                     onClick={() =>
                                                       updateMeal(
@@ -1058,9 +1070,9 @@ export function MealplanWorkspace() {
                                                     }
                                                   >
                                                     <X size={11} />
-                                                  </IconButton>
+                                                  </TooltipIconButton>
                                                 )}
-                                              </span>
+                                              </div>
                                             ) : null;
                                           },
                                         )}
@@ -1080,15 +1092,17 @@ export function MealplanWorkspace() {
                                 {searchMeal === meal.id ? (
                                   <div className="mp-food-search">
                                     <Search size={15} />
-                                    <input
+                                    <Input
+                                      size="sm"
+                                      className="mp-food-search-input"
                                       value={query}
                                       onChange={(event) =>
                                         setQuery(event.target.value)
                                       }
                                       placeholder="Search foods…"
-                                      aria-label="Search food database"
+                                      label="Search food database"
                                     />
-                                    <IconButton
+                                    <TooltipIconButton
                                       type="button"
                                       aria-label="Close food search"
                                       onClick={() => {
@@ -1097,7 +1111,7 @@ export function MealplanWorkspace() {
                                       }}
                                     >
                                       <X size={14} />
-                                    </IconButton>
+                                    </TooltipIconButton>
                                     <div className="mp-food-results">
                                       {filteredFoods.length ? (
                                         filteredFoods.map((food) => (
@@ -1124,8 +1138,10 @@ export function MealplanWorkspace() {
                                     </div>
                                   </div>
                                 ) : (
-                                  <button
+                                  <Button
                                     type="button"
+                                    variant="link"
+                                    size="sm"
                                     className="mp-text-action"
                                     onClick={() => {
                                       setSearchMeal(meal.id);
@@ -1135,18 +1151,17 @@ export function MealplanWorkspace() {
                                   >
                                     <Plus size={14} />
                                     Add food
-                                  </button>
+                                  </Button>
                                 )}
                                 {plan.reusableMeals.length > 0 && (
-                                  <label className="mp-reusable-select">
-                                    Use saved meal
-                                    <select
-                                      aria-label="Load reusable meal"
-                                      defaultValue=""
-                                      onChange={(event) => {
+                                  <div className="mp-reusable-select">
+                                    <Select
+                                      label="Use saved meal"
+                                      size="sm"
+                                      value=""
+                                      onValueChange={(reusableMealId) => {
                                         const saved = plan.reusableMeals.find(
-                                          (item) =>
-                                            item.id === event.target.value,
+                                          (item) => item.id === reusableMealId,
                                         );
                                         if (saved)
                                           updateMeal(meal.id, (current) => ({
@@ -1160,19 +1175,20 @@ export function MealplanWorkspace() {
                                               }),
                                             ),
                                           }));
-                                        event.target.value = "";
                                       }}
-                                    >
-                                      <option value="" disabled>
-                                        Select…
-                                      </option>
-                                      {plan.reusableMeals.map((saved) => (
-                                        <option key={saved.id} value={saved.id}>
-                                          {saved.name}
-                                        </option>
-                                      ))}
-                                    </select>
-                                  </label>
+                                      options={[
+                                        {
+                                          value: "",
+                                          label: "Select…",
+                                          disabled: true,
+                                        },
+                                        ...plan.reusableMeals.map((saved) => ({
+                                          value: saved.id,
+                                          label: saved.name,
+                                        })),
+                                      ]}
+                                    />
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -1186,8 +1202,10 @@ export function MealplanWorkspace() {
                     })}
                   </AnimatePresence>
                   {!preview && (
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       className="mp-add-meal"
                       onClick={() =>
                         updateVariant(variant.id, (current) =>
@@ -1197,7 +1215,7 @@ export function MealplanWorkspace() {
                     >
                       <Plus size={16} />
                       Add meal
-                    </button>
+                    </Button>
                   )}
                 </>
               )}

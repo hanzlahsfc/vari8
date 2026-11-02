@@ -46,6 +46,7 @@ import {
   type ConsentPolicyRegistry,
 } from "../consent";
 import { resolveLocalInstant } from "../checkin/timezone";
+import { isLocalCalendarDate } from "../activity-targets/model";
 import { resolveMealPlanConsentPolicy } from "../consent";
 import { consentGatesEnabled } from "../runtime";
 import { MEALPLAN_LIMITS } from "./limits";
@@ -60,9 +61,11 @@ export type {
   MealPlanDraft,
   MealPlanVariant,
   MealPlanMeal,
-  MealPlanTarget,
-  MealPlanTargetMode,
-  MealPlanMacroTargets,
+  MealPlanPortion,
+  MealPlanSwap,
+  MealTargets,
+  TargetValue,
+  VariantSchedule,
 } from "./payload";
 
 export type MealPlanDeps = {
@@ -1146,6 +1149,431 @@ export async function readOwnMealPlan(
               }
             : null,
         };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+// ── Temporary nutrition plans (W2-N9) ─────────────────────────────────
+// Dated short plans (refeed windows, diet breaks, event weeks) layered on
+// top of the running nutrition plan. One row per plan - no draft/publish
+// chain. `plan` is an opaque MealPlan|IifymPlan payload: the service never
+// re-validates it per source. The wire shape matches the frontend
+// `TemporaryNutrition` contract exactly (kind/source map to the closed
+// enum columns).
+
+export const TEMPORARY_NUTRITION_MAX_DAYS = 28;
+
+const TEMPORARY_KIND_FROM_WIRE = {
+  refeed: "REFEED",
+  "diet-break": "DIET_BREAK",
+  custom: "CUSTOM",
+} as const;
+
+const TEMPORARY_KIND_TO_WIRE = {
+  REFEED: "refeed",
+  DIET_BREAK: "diet-break",
+  CUSTOM: "custom",
+} as const;
+
+const TEMPORARY_SOURCE_FROM_WIRE = {
+  mealPlan: "MEAL_PLAN",
+  iifym: "IIFYM",
+} as const;
+
+const TEMPORARY_SOURCE_TO_WIRE = {
+  MEAL_PLAN: "mealPlan",
+  IIFYM: "iifym",
+} as const;
+
+export type TemporaryNutritionWire = {
+  id: string;
+  kind: keyof typeof TEMPORARY_KIND_FROM_WIRE;
+  label: string;
+  startDate: string;
+  endDate: string;
+  source: keyof typeof TEMPORARY_SOURCE_FROM_WIRE;
+  plan: unknown;
+  createdAt: string;
+};
+
+type TemporaryRow = {
+  id: string;
+  kind: keyof typeof TEMPORARY_KIND_TO_WIRE;
+  label: string;
+  startDate: Date;
+  endDate: Date;
+  source: keyof typeof TEMPORARY_SOURCE_TO_WIRE;
+  plan: unknown;
+  createdAt: Date;
+};
+
+function temporaryWire(row: TemporaryRow): TemporaryNutritionWire {
+  return {
+    id: row.id,
+    kind: TEMPORARY_KIND_TO_WIRE[row.kind],
+    label: row.label,
+    startDate: isoDate(row.startDate),
+    endDate: isoDate(row.endDate),
+    source: TEMPORARY_SOURCE_TO_WIRE[row.source],
+    plan: row.plan,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/**
+ * Strict create-input validation, mirroring the frontend
+ * validateTemporaryNutrition rules: closed kind/source labels, a non-blank
+ * label, two real calendar dates, an ordered range, an inclusive span of
+ * at most TEMPORARY_NUTRITION_MAX_DAYS, and a non-null JSON object plan.
+ * Returns the normalized values; throws MealPlanError("invalid_input").
+ */
+function validateTemporaryInput(input: {
+  kind: unknown;
+  label: unknown;
+  startDate: unknown;
+  endDate: unknown;
+  source: unknown;
+  plan: unknown;
+}): {
+  kind: (typeof TEMPORARY_KIND_FROM_WIRE)[keyof typeof TEMPORARY_KIND_FROM_WIRE];
+  label: string;
+  startDate: Date;
+  endDate: Date;
+  source: (typeof TEMPORARY_SOURCE_FROM_WIRE)[keyof typeof TEMPORARY_SOURCE_FROM_WIRE];
+  plan: Prisma.InputJsonValue;
+} {
+  const kind =
+    typeof input.kind === "string" &&
+    Object.hasOwn(TEMPORARY_KIND_FROM_WIRE, input.kind)
+      ? TEMPORARY_KIND_FROM_WIRE[
+          input.kind as keyof typeof TEMPORARY_KIND_FROM_WIRE
+        ]
+      : undefined;
+  if (kind === undefined) throw new MealPlanError("invalid_input");
+  const source =
+    typeof input.source === "string" &&
+    Object.hasOwn(TEMPORARY_SOURCE_FROM_WIRE, input.source)
+      ? TEMPORARY_SOURCE_FROM_WIRE[
+          input.source as keyof typeof TEMPORARY_SOURCE_FROM_WIRE
+        ]
+      : undefined;
+  if (source === undefined) throw new MealPlanError("invalid_input");
+  const label = cleanTitle(input.label);
+  if (
+    typeof input.startDate !== "string" ||
+    typeof input.endDate !== "string" ||
+    !isLocalCalendarDate(input.startDate) ||
+    !isLocalCalendarDate(input.endDate)
+  )
+    throw new MealPlanError("invalid_input");
+  const start = Date.parse(`${input.startDate}T00:00:00Z`);
+  const end = Date.parse(`${input.endDate}T00:00:00Z`);
+  if (end < start) throw new MealPlanError("invalid_input");
+  if ((end - start) / 86400_000 + 1 > TEMPORARY_NUTRITION_MAX_DAYS)
+    throw new MealPlanError("invalid_input");
+  if (typeof input.plan !== "object" || input.plan === null)
+    throw new MealPlanError("invalid_input");
+  return {
+    kind,
+    label,
+    startDate: new Date(start),
+    endDate: new Date(end),
+    source,
+    plan: input.plan as Prisma.InputJsonValue,
+  };
+}
+
+const TEMPORARY_SELECT = {
+  id: true,
+  kind: true,
+  label: true,
+  startDate: true,
+  endDate: true,
+  source: true,
+  plan: true,
+  createdAt: true,
+} as const;
+
+export type CreateTemporaryNutritionInput = {
+  workspaceId: string;
+  clientProfileId: string;
+  kind: unknown;
+  label: unknown;
+  startDate: unknown;
+  endDate: unknown;
+  source: unknown;
+  plan: unknown;
+};
+
+/**
+ * Staff create - same lock protocol as every meal-plan write (mplan +
+ * member advisories → member FOR UPDATE → in-tx authorize → assignment
+ * → profile → consent → mutation → audit LAST). The same-source
+ * non-overlap guard runs under the per-client mplan advisory inside the
+ * serializable transaction, so concurrent creates for the same client
+ * serialize; different sources may overlap freely.
+ */
+export async function createTemporaryNutritionPlan(
+  session: SessionLike,
+  input: CreateTemporaryNutritionInput,
+  deps: MealPlanDeps = {},
+): Promise<{ temporary: TemporaryNutritionWire }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new MealPlanError("invalid_input");
+  const normalized = validateTemporaryInput(input);
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "write");
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "write",
+          );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const clash = await tx.temporaryNutritionPlan.findFirst({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+            source: normalized.source,
+            startDate: { lte: normalized.endDate },
+            endDate: { gte: normalized.startDate },
+          },
+          select: { id: true },
+        });
+        if (clash) throw new MealPlanError("invalid_input");
+
+        const row = await tx.temporaryNutritionPlan.create({
+          data: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+            kind: normalized.kind,
+            label: normalized.label,
+            startDate: normalized.startDate,
+            endDate: normalized.endDate,
+            source: normalized.source,
+            plan: normalized.plan,
+            createdByMemberId: member.id,
+          },
+          select: TEMPORARY_SELECT,
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "CREATE",
+          resourceType: "temporary_nutrition_plan",
+          resourceId: row.id,
+          subjectClientProfileId: input.clientProfileId,
+        });
+        return { temporary: temporaryWire(row) };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Staff list - every temporary plan for the requested client, ascending
+ * start date. Same read lock protocol as readStaffMealPlan.
+ */
+export async function listStaffTemporaryNutritionPlans(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: MealPlanDeps = {},
+): Promise<{ temporary: TemporaryNutritionWire[] }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (!validId(input.workspaceId) || !validId(input.clientProfileId))
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "read");
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "read",
+          );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const rows = await tx.temporaryNutritionPlan.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: input.clientProfileId,
+          },
+          orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
+          select: TEMPORARY_SELECT,
+        });
+        for (const row of rows)
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "temporary_nutrition_plan",
+            resourceId: row.id,
+            subjectClientProfileId: input.clientProfileId,
+          });
+        return { temporary: rows.map(temporaryWire) };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Client own-scope list - the caller's own profile is rebound from the
+ * session before any client-scoped key is derived, identical to
+ * readOwnMealPlan. Never reads a foreign profile's rows.
+ */
+export async function listOwnTemporaryNutritionPlans(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: MealPlanDeps = {},
+): Promise<{ temporary: TemporaryNutritionWire[] }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (!validId(input.workspaceId)) throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const userId = session?.user?.id;
+        if (typeof userId !== "string" || userId.length === 0)
+          throw new AccessDeniedError("unauthenticated", "mealPlans", "read");
+        const profile = await tx.clientProfile.findFirst({
+          where: { workspaceId: input.workspaceId, userId },
+          select: { id: true },
+        });
+        if (!profile)
+          throw new AccessDeniedError("not_owner", "mealPlans", "read");
+        const { ctx } = await lockedAuthorize(tx, session, {
+          action: "read",
+          workspaceId: input.workspaceId,
+          clientProfileId: profile.id,
+        });
+        if (ctx.grantedScope !== "own")
+          throw new AccessDeniedError("role_denied", "mealPlans", "read");
+        await lockProfile(tx, input.workspaceId, profile.id);
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const rows = await tx.temporaryNutritionPlan.findMany({
+          where: {
+            workspaceId: input.workspaceId,
+            clientProfileId: profile.id,
+          },
+          orderBy: [{ startDate: "asc" }, { createdAt: "asc" }],
+          select: TEMPORARY_SELECT,
+        });
+        for (const row of rows)
+          await writeAuditEvent(tx, ctx, {
+            action: "READ",
+            resourceType: "temporary_nutrition_plan",
+            resourceId: row.id,
+            subjectClientProfileId: profile.id,
+          });
+        return { temporary: rows.map(temporaryWire) };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    ),
+  );
+}
+
+/**
+ * Staff delete - the row is resolved scoped to (workspace, client); a
+ * foreign or missing id reads as denied, never 404.
+ */
+export async function deleteTemporaryNutritionPlan(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    temporaryPlanId: string;
+  },
+  deps: MealPlanDeps = {},
+): Promise<{ deleted: true }> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? resolveMealPlanConsentPolicy();
+  if (
+    !validId(input.workspaceId) ||
+    !validId(input.clientProfileId) ||
+    !validId(input.temporaryPlanId)
+  )
+    throw new MealPlanError("invalid_input");
+  return withSerializedRetry(() =>
+    db.$transaction(
+      async (tx) => {
+        const { ctx, member } = await lockedAuthorize(tx, session, {
+          action: "write",
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+        });
+        if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+          throw new AccessDeniedError("role_denied", "mealPlans", "write");
+        if (ctx.grantedScope === "assigned")
+          await lockAssignmentForScope(
+            tx,
+            input.workspaceId,
+            input.clientProfileId,
+            member.id,
+            "write",
+          );
+        const profile = await lockProfile(
+          tx,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!profile) throw new MealPlanError("plan_not_accessible");
+        await checkRequiredConsent(tx, profile.id, registry, true);
+
+        const rows = await tx.$queryRawUnsafe<{ id: string }[]>(
+          `SELECT id FROM "temporary_nutrition_plan"
+           WHERE id = $1 AND workspace_id = $2 AND client_profile_id = $3
+           FOR UPDATE`,
+          input.temporaryPlanId,
+          input.workspaceId,
+          input.clientProfileId,
+        );
+        if (!rows[0]) throw new MealPlanError("plan_not_accessible");
+        await tx.temporaryNutritionPlan.delete({
+          where: { id: input.temporaryPlanId },
+        });
+        await writeAuditEvent(tx, ctx, {
+          action: "DELETE",
+          resourceType: "temporary_nutrition_plan",
+          resourceId: input.temporaryPlanId,
+          subjectClientProfileId: input.clientProfileId,
+        });
+        return { deleted: true };
       },
       { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
     ),

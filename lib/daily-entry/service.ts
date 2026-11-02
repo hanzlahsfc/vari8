@@ -82,7 +82,7 @@ export type DailyEntryDeps = {
 
 // ── Concurrency protocol (mirrors the reviewed client-setup service) ──────
 
-async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
+export async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   return sharedWithSerializedRetry(fn, {
     maxAttempts: 8,
     backoffBaseMs: 10,
@@ -91,7 +91,7 @@ async function withSerializedRetry<T>(fn: () => Promise<T>): Promise<T> {
   });
 }
 
-async function advisoryLock(
+export async function advisoryLock(
   tx: Prisma.TransactionClient,
   key: string,
 ): Promise<void> {
@@ -103,7 +103,7 @@ async function advisoryLock(
   );
 }
 
-async function lockRow(
+export async function lockRow(
   tx: Prisma.TransactionClient,
   sql: string,
   ...params: string[]
@@ -158,8 +158,11 @@ type VersionDefinition = {
       helpText?: string | null;
       unit?: string | null;
       ratingScheme?: string | null;
+      decimals?: number | null;
+      summary?: string | null;
       options?: Array<{ optionId?: string; label?: string }>;
       validation?: { min?: number | null; max?: number | null } | null;
+      group?: string | null;
       dataClassification?: string | null;
       revision?: number;
     }
@@ -206,6 +209,8 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
         required: item.required === true,
         unit: p.unit ?? null,
         ratingScheme: p.ratingScheme ?? null,
+        decimals: typeof p.decimals === "number" ? p.decimals : null,
+        summary: typeof p.summary === "string" ? p.summary : null,
         options: (p.options ?? []).map((o) => ({
           optionId: String(o.optionId ?? ""),
           label: String(o.label ?? ""),
@@ -227,6 +232,7 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
         snapshotRevision: typeof p.revision === "number" ? p.revision : 0,
         sectionId: String(section.sectionId ?? ""),
         itemId: item.itemId,
+        itemOrder: item.order ?? 0,
       });
     }
   }
@@ -235,7 +241,7 @@ function projectSnapshot(definition: unknown): SnapshotParam[] | null {
 
 // ── Shared context resolution ─────────────────────────────────────────────
 
-async function resolveOwnClient(
+export async function resolveOwnClient(
   tx: Prisma.TransactionClient,
   workspaceId: string,
   userId: string,
@@ -248,7 +254,7 @@ async function resolveOwnClient(
 
 /** Consent read in deterministic kind order — write path locks each kind's
  * rows FOR UPDATE; read path uses the same order without the lock. */
-async function checkRequiredConsent(
+export async function checkRequiredConsent(
   tx: PrismaLike,
   clientProfileId: string,
   registry: ConsentPolicyRegistry,
@@ -582,7 +588,7 @@ function valueRow(
   }
 }
 
-type StoredValue = {
+export type StoredValue = {
   parameterId: string;
   kind: string;
   valueNumeric: unknown;
@@ -664,14 +670,25 @@ export type StaffDailyEntryListResult =
 
 /** Renders a revision's stored values through an immutable version snapshot.
  * Parameters outside the snapshot — or not GENERAL_HEALTH — are dropped;
- * OPTION values resolve to their snapshot labels. Display strings only. */
-function renderRevisionDisplayRows(
+ * OPTION values resolve to their snapshot labels. Display strings only.
+ * Rows render in the snapshot's item order regardless of stored order
+ * (PR-SV5 stable ordering; exported for the ordering contract test). */
+export function renderRevisionDisplayRows(
   values: readonly StoredValue[],
   snapshot: readonly SnapshotParam[],
   def: VersionDefinition,
 ): DailyEntryHistoryRow[] {
   const paramById = new Map(snapshot.map((p) => [p.parameterId, p]));
+  // Stable ordering (PR-SV5): DB row order is arbitrary — render in the
+  // immutable template version's item order.
+  const orderOf = new Map(snapshot.map((p, i) => [p.parameterId, i]));
   return (values ?? [])
+    .slice()
+    .sort(
+      (a, b) =>
+        (orderOf.get(a.parameterId) ?? Number.MAX_SAFE_INTEGER) -
+        (orderOf.get(b.parameterId) ?? Number.MAX_SAFE_INTEGER),
+    )
     .map((v) => {
       const p = paramById.get(v.parameterId);
       if (!p || p.dataClassification !== "GENERAL_HEALTH") return null;
@@ -810,6 +827,437 @@ export async function listStaffDailyEntries(
       ? (items[items.length - 1]?.entryDate ?? null)
       : null;
   return { state: "ready", clientName: profile.name, items, nextCursor };
+}
+
+// ---------------------------------------------------------------------------
+// W2-FE2 staff tracker span read. The coach Tracker tab needs every logged
+// day's per-field values plus the staff-authored notes in one call - the
+// header list above cannot carry them. Same authorization contract as
+// listStaffDailyEntries (dailyTracking read, workspace|assigned scope);
+// every lookup is batched so queries never scale with days or fields.
+// ---------------------------------------------------------------------------
+
+export type StaffTrackerValueRow = {
+  parameterKey: string;
+  kind: string;
+  display: string;
+};
+
+export type StaffTrackerNote = {
+  entryDate: string;
+  body: string;
+};
+
+export type StaffTrackerCellNote = StaffTrackerNote & {
+  parameterKey: string;
+};
+
+export type StaffTrackerValuesResult =
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      clientName: string;
+      entries: { entryDate: string; values: StaffTrackerValueRow[] }[];
+      cellNotes: StaffTrackerCellNote[];
+      dayNotes: StaffTrackerNote[];
+      parameters: { key: string; kind: string }[];
+    };
+
+type TrackerValueWireRow = {
+  parameterId: string;
+  kind: string;
+  valueNumeric: Prisma.Decimal | null;
+  valueRating: number | null;
+  valueOptionId: string | null;
+  valueText: string | null;
+  valueMinutes: number | null;
+  valueSystolic: number | null;
+  valueDiastolic: number | null;
+  valueOptionIds: unknown;
+};
+
+function trackerValueDisplay(
+  row: TrackerValueWireRow,
+  optionLabels: Map<string, string>,
+): string {
+  switch (row.kind) {
+    case "MEASUREMENT":
+      return row.valueNumeric?.toString() ?? "";
+    case "RATING":
+    case "LOCATION_RATING":
+      return row.valueRating === null ? "" : String(row.valueRating);
+    case "OPTION":
+      return row.valueOptionId === null
+        ? ""
+        : (optionLabels.get(row.valueOptionId) ?? "");
+    case "MULTI_CHOICE": {
+      const ids = Array.isArray(row.valueOptionIds)
+        ? (row.valueOptionIds as string[])
+        : [];
+      return ids.map((id) => optionLabels.get(id) ?? "").join(", ");
+    }
+    case "BLOOD_PRESSURE":
+      return row.valueSystolic === null || row.valueDiastolic === null
+        ? ""
+        : `${row.valueSystolic} / ${row.valueDiastolic}`;
+    case "TIME":
+      return row.valueText ?? "";
+    case "DURATION":
+      return row.valueMinutes === null ? "" : String(row.valueMinutes);
+    case "TEXT":
+    case "CONTEXT":
+    default:
+      return row.valueText ?? "";
+  }
+}
+
+// The tab renders roughly 11 weeks; the cap bounds the span while staying
+// far above anything the tracker UI can display.
+const TRACKER_SPAN_LIMIT = 400;
+
+export async function listStaffTrackerValues(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: DailyEntryDeps = {},
+): Promise<StaffTrackerValuesResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { name: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+
+  try {
+    await checkRequiredConsent(db, input.clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { state: "consent_missing" };
+    throw error;
+  }
+
+  const entries = (
+    await db.dailyEntry.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        currentRevisionId: { not: null },
+      },
+      // Bounded span: newest TRACKER_SPAN_LIMIT days, returned ascending.
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, currentRevisionId: true },
+    })
+  ).reverse();
+  const revisionIds = entries.map((entry) => entry.currentRevisionId as string);
+  const revisions = revisionIds.length
+    ? await db.dailyEntryRevision.findMany({
+        where: { id: { in: revisionIds } },
+        select: {
+          id: true,
+          values: {
+            select: {
+              parameterId: true,
+              kind: true,
+              valueNumeric: true,
+              valueRating: true,
+              valueOptionId: true,
+              valueText: true,
+              valueMinutes: true,
+              valueSystolic: true,
+              valueDiastolic: true,
+              valueOptionIds: true,
+            },
+          },
+        },
+      })
+    : [];
+  const valuesByRevision = new Map(revisions.map((r) => [r.id, r.values]));
+
+  const comments = (
+    await db.trackerComment.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, parameterId: true, body: true },
+    })
+  ).reverse();
+  const dayNotes = (
+    await db.trackerDayNote.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+      },
+      orderBy: { entryDate: "desc" },
+      take: TRACKER_SPAN_LIMIT,
+      select: { entryDate: true, body: true },
+    })
+  ).reverse();
+
+  // Every workspace parameter definition, one batched read: the display
+  // mapping needs labels for the params present in the span, and the caller
+  // needs the full key list so a cell note resolves its parameter even when
+  // that field logged no values inside the window.
+  const parameters = await db.parameterDefinition.findMany({
+    where: { workspaceId: input.workspaceId },
+    select: { id: true, key: true, kind: true, options: true },
+  });
+  const paramById = new Map(parameters.map((p) => [p.id, p]));
+  const optionLabelsByParam = new Map<string, Map<string, string>>();
+  for (const p of parameters) {
+    const options = Array.isArray(p.options) ? p.options : [];
+    optionLabelsByParam.set(
+      p.id,
+      new Map(
+        options
+          .map((option) => {
+            const o = option as { optionId?: unknown; label?: unknown };
+            return typeof o.optionId === "string" && typeof o.label === "string"
+              ? ([o.optionId, o.label] as const)
+              : null;
+          })
+          .filter((row): row is readonly [string, string] => row !== null),
+      ),
+    );
+  }
+
+  return {
+    state: "ready",
+    clientName: profile.name,
+    entries: entries.map((entry) => ({
+      entryDate: entry.entryDate.toISOString().slice(0, 10),
+      values: (
+        valuesByRevision.get(entry.currentRevisionId as string) ?? []
+      ).flatMap((value) => {
+        const parameter = paramById.get(value.parameterId);
+        if (!parameter) return [];
+        return [
+          {
+            parameterKey: parameter.key,
+            kind: value.kind,
+            display: trackerValueDisplay(
+              value,
+              optionLabelsByParam.get(value.parameterId) ?? new Map(),
+            ),
+          },
+        ];
+      }),
+    })),
+    cellNotes: comments.flatMap((comment) => {
+      const parameter = paramById.get(comment.parameterId);
+      if (!parameter) return [];
+      return [
+        {
+          entryDate: comment.entryDate.toISOString().slice(0, 10),
+          parameterKey: parameter.key,
+          body: comment.body,
+        },
+      ];
+    }),
+    dayNotes: dayNotes.map((note) => ({
+      entryDate: note.entryDate.toISOString().slice(0, 10),
+      body: note.body,
+    })),
+    parameters: parameters.map((p) => ({ key: p.key, kind: p.kind })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// W2-FE2 staff tracker note writes. The v1 layer already enforces the
+// notes.write capability (owner+coach workspace scope; client and
+// non-members denied); the service then applies the authoritative
+// coachNotes/write matrix (coach assigned scope, everyone else denied)
+// and upserts on the natural keys.
+// ---------------------------------------------------------------------------
+
+const TRACKER_NOTE_MAX = 2000;
+
+export async function writeStaffTrackerNote(
+  session: SessionLike,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    parameterKey?: string | null;
+    body: string | null;
+  },
+  deps: DailyEntryDeps = {},
+): Promise<{ state: "ok" }> {
+  const db = deps.db ?? defaultPrisma;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "coachNotes", "write");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128 ||
+    typeof input.entryDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(input.entryDate) ||
+    (input.body !== null &&
+      (typeof input.body !== "string" || input.body.length > TRACKER_NOTE_MAX))
+  )
+    throw new DailyEntryError("invalid_input");
+  const entryDate = new Date(`${input.entryDate}T00:00:00Z`);
+  if (
+    Number.isNaN(entryDate.getTime()) ||
+    entryDate.toISOString().slice(0, 10) !== input.entryDate
+  )
+    throw new DailyEntryError("invalid_input");
+
+  // coachNotes/write is the authoritative matrix: COACH resolves assigned
+  // scope (ACTIVE ClientAssignment to this client required); owner, client,
+  // assistant, support and non-members deny. The route capability only
+  // gates membership-level write, so the assignment check must live here.
+  const ctx = await authorize(
+    session,
+    {
+      resource: "coachNotes",
+      action: "write",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "assigned" && ctx.grantedScope !== "workspace")
+    throw new AccessDeniedError("role_denied", "coachNotes", "write");
+
+  const member = await db.workspaceMember.findFirst({
+    where: {
+      userId,
+      workspaceId: input.workspaceId,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!member)
+    throw new AccessDeniedError("role_denied", "coachNotes", "write");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { id: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "coachNotes",
+      "write",
+    );
+
+  const body = input.body?.trim() ?? "";
+  // A provided-but-blank parameterKey is a malformed cell-note write, not a
+  // day note - it must not fall through to the day-note delete/upsert.
+  if (typeof input.parameterKey === "string" && !input.parameterKey.trim())
+    throw new DailyEntryError("invalid_input");
+  const parameterKey =
+    typeof input.parameterKey === "string" ? input.parameterKey.trim() : null;
+
+  if (parameterKey === null) {
+    if (body === "") {
+      await db.trackerDayNote.deleteMany({
+        where: {
+          workspaceId: input.workspaceId,
+          clientProfileId: input.clientProfileId,
+          entryDate,
+        },
+      });
+      return { state: "ok" };
+    }
+    await db.trackerDayNote.upsert({
+      where: {
+        clientProfileId_entryDate: {
+          clientProfileId: input.clientProfileId,
+          entryDate,
+        },
+      },
+      update: { body, authorMemberId: member.id },
+      create: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        body,
+        authorMemberId: member.id,
+      },
+    });
+    return { state: "ok" };
+  }
+
+  const parameter = await db.parameterDefinition.findFirst({
+    where: { workspaceId: input.workspaceId, key: parameterKey },
+    select: { id: true },
+  });
+  // A delete on a parameter that no longer exists is a no-op, not a client
+  // error - the sync loop must not retry a failing key forever.
+  if (!parameter) {
+    if (body === "") return { state: "ok" };
+    throw new DailyEntryError("invalid_input");
+  }
+
+  if (body === "") {
+    await db.trackerComment.deleteMany({
+      where: {
+        workspaceId: input.workspaceId,
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        parameterId: parameter.id,
+      },
+    });
+    return { state: "ok" };
+  }
+  await db.trackerComment.upsert({
+    where: {
+      clientProfileId_entryDate_parameterId: {
+        clientProfileId: input.clientProfileId,
+        entryDate,
+        parameterId: parameter.id,
+      },
+    },
+    update: { body, authorMemberId: member.id },
+    create: {
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+      entryDate,
+      parameterId: parameter.id,
+      body,
+      authorMemberId: member.id,
+    },
+  });
+  return { state: "ok" };
 }
 
 export type StaffDailyEntryDetail = {
@@ -973,7 +1421,21 @@ export async function readStaffDailyEntryDetail(
  * the dailyTracking authorization context for the audit. Used by the
  * public detail service and by P-025-D6's Check-In tracker context.
  */
-export async function readStaffDailyEntryDetailTx(
+export type StaffDailyEntryLoad = {
+  /** Internal row id — audit resource target only, never leaves the tx
+   *  boundary in the public detail shape. */
+  entryId: string;
+  detail: StaffDailyEntryDetail;
+};
+
+/**
+ * Audit-free detail loader shared by `readStaffDailyEntryDetailTx`
+ * (which writes its own `READ daily_entry` audit) and the Check-In
+ * review packet embedded in the submission detail read (which carries
+ * one `checkin_submission` audit for the whole view instead — see
+ * `readCheckInSubmissionDetail`).
+ */
+export async function loadStaffDailyEntryDetailTx(
   tx: Prisma.TransactionClient,
   input: {
     workspaceId: string;
@@ -981,7 +1443,7 @@ export async function readStaffDailyEntryDetailTx(
     entryDate: string;
     ctx: Awaited<ReturnType<typeof authorize>>;
   },
-): Promise<StaffDailyEntryDetail> {
+): Promise<StaffDailyEntryLoad> {
   // Entry + coherent current pointer + count.
   const entry = await tx.dailyEntry.findUnique({
     where: {
@@ -1047,23 +1509,38 @@ export async function readStaffDailyEntryDetailTx(
     version.definition as VersionDefinition,
   );
 
+  return {
+    entryId: entry.id,
+    detail: {
+      entryDate: input.entryDate,
+      revisionSeq: revision.seq,
+      revisionCount,
+      declaredAt: revision.declaredAt.toISOString(),
+      values,
+    },
+  };
+}
+
+export async function readStaffDailyEntryDetailTx(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    clientProfileId: string;
+    entryDate: string;
+    ctx: Awaited<ReturnType<typeof authorize>>;
+  },
+): Promise<StaffDailyEntryDetail> {
+  const { entryId, detail } = await loadStaffDailyEntryDetailTx(tx, input);
   // Structural READ audit — last, inside the same transaction; a failed
   // write rolls the detail read's audit (and result) back.
   await writeAuditEvent(tx, input.ctx, {
     action: "READ",
     resourceType: "daily_entry",
-    resourceId: entry.id,
+    resourceId: entryId,
     subjectClientProfileId: input.clientProfileId,
     meta: { changed: false },
   });
-
-  return {
-    entryDate: input.entryDate,
-    revisionSeq: revision.seq,
-    revisionCount,
-    declaredAt: revision.declaredAt.toISOString(),
-    values,
-  };
+  return detail;
 }
 
 // ── Read surface (form + history payload for the client's own page) ───────
@@ -1080,6 +1557,8 @@ export type DailyEntrySurfaceItem = {
   kind: string;
   required: boolean;
   ratingScheme: string | null;
+  decimals: number | null;
+  summary: string | null;
   options: Array<{ ordinal: number; label: string }>;
   validation: { min: number | null; max: number | null } | null;
   /** Prefill raw value (canonical form) for the client's current entry. */
@@ -1302,6 +1781,8 @@ export async function loadDailyEntrySurface(
           kind: p.kind,
           required: p.required,
           ratingScheme: p.ratingScheme,
+          decimals: p.decimals,
+          summary: p.summary,
           options: p.options.map((o, i) => ({
             ordinal: i,
             label: o.label,
@@ -1400,5 +1881,471 @@ export async function loadDailyEntrySurface(
     entryDate,
     sections,
     history,
+  };
+}
+
+// ── PR-SV2 numeric series (Week/Trends reads; api/v1 clientData.read) ──────
+
+/** Maximum inclusive span (calendar days) a single series request may cover.
+ * Bounds the entries scan so one request cannot page through unbounded
+ * history; comfortably covers every canvas span (Week 7, Trends up to 180). */
+export const SERIES_MAX_SPAN_DAYS = 372;
+
+/** Kinds whose stored values are single numbers the canvas charts. */
+const SERIES_NUMERIC_KINDS = new Set(["MEASUREMENT", "RATING"]);
+
+export type DailyEntryNumericSeriesPoint = {
+  /** Declared client calendar date (`YYYY-MM-DD`). */
+  date: string;
+  /** Latest-revision numeric value; a recorded 0 is a value, not missing. */
+  value: number;
+};
+
+export type DailyEntryNumericSeriesResult =
+  | {
+      state: "ready";
+      parameter: {
+        parameterId: string;
+        key: string;
+        label: string;
+        unit: string | null;
+        kind: string;
+      };
+      /** Inclusive declared-date bounds (echoed, normalized). */
+      from: string;
+      to: string;
+      /** Ascending by declared date; only dates whose current revision
+       * holds a numeric value for the parameter appear. */
+      points: DailyEntryNumericSeriesPoint[];
+    }
+  | { state: "consent_missing" };
+
+/** Real `YYYY-MM-DD` calendar date without the write path's future bound:
+ * a read range may end in the future (the Week view shows the whole week,
+ * with unrecorded days simply absent from the series). */
+function parseSeriesDate(raw: unknown): string {
+  if (typeof raw !== "string" || !DATE_RE.test(raw))
+    throw new DailyEntryError("invalid_input");
+  const [y, m, d] = raw.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  if (
+    dt.getUTCFullYear() !== y ||
+    dt.getUTCMonth() !== m - 1 ||
+    dt.getUTCDate() !== d ||
+    raw < "1970-01-01"
+  )
+    throw new DailyEntryError("invalid_input");
+  return raw;
+}
+
+/** Strict declared-date range: both ends real `YYYY-MM-DD` dates,
+ * `from <= to`, and the inclusive span within SERIES_MAX_SPAN_DAYS. */
+export function parseDailyEntrySeriesRange(
+  rawFrom: unknown,
+  rawTo: unknown,
+): { from: string; to: string } {
+  const from = parseSeriesDate(rawFrom);
+  const to = parseSeriesDate(rawTo);
+  if (from > to) throw new DailyEntryError("invalid_input");
+  const spanDays =
+    (new Date(`${to}T00:00:00Z`).getTime() -
+      new Date(`${from}T00:00:00Z`).getTime()) /
+      86_400_000 +
+    1;
+  if (spanDays > SERIES_MAX_SPAN_DAYS)
+    throw new DailyEntryError("invalid_input");
+  return { from, to };
+}
+
+function seriesPointValue(v: {
+  kind: string;
+  valueNumeric: unknown;
+  valueRating: number | null;
+}): number | null {
+  if (v.kind === "MEASUREMENT")
+    return v.valueNumeric === null ? null : Number(v.valueNumeric);
+  if (v.kind === "RATING") return v.valueRating === null ? null : v.valueRating;
+  return null;
+}
+
+/**
+ * Typed per-parameter numeric series for the tracker Week and Trends views.
+ * Authorization is resolved by the /api/v1 route (`clientData.read`); this
+ * service enforces the granted scope: `own` only ever reads the caller's
+ * own profile, `workspace` any client of the workspace. Profile and
+ * parameter must both belong to the workspace — foreign or missing ids are
+ * non-disclosing denials. The parameter must carry a numeric kind and the
+ * GENERAL_HEALTH classification (same disclosure rule as the detail read).
+ * Points come from each entry's CURRENT revision only (#79); dates without
+ * a numeric value stay missing, never zero (D29). Archived clients keep
+ * their history: archive removes the roster row, not the records (D27).
+ */
+export async function readDailyEntryNumericSeries(
+  viewer: { userId: string },
+  workspace: { workspaceId: string; scope: "workspace" | "own" },
+  input: {
+    clientProfileId: unknown;
+    parameterId: unknown;
+    from: unknown;
+    to: unknown;
+  },
+  deps: DailyEntryDeps = {},
+): Promise<DailyEntryNumericSeriesResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  if (
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128 ||
+    typeof input.parameterId !== "string" ||
+    input.parameterId.length === 0 ||
+    input.parameterId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+  const range = parseDailyEntrySeriesRange(input.from, input.to);
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: workspace.workspaceId },
+    select: { id: true, userId: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+  if (workspace.scope === "own" && profile.userId !== viewer.userId)
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const parameter = await db.parameterDefinition.findFirst({
+    where: { id: input.parameterId, workspaceId: workspace.workspaceId },
+    select: {
+      id: true,
+      key: true,
+      label: true,
+      unit: true,
+      kind: true,
+      dataClassification: true,
+    },
+  });
+  if (
+    !parameter ||
+    !SERIES_NUMERIC_KINDS.has(parameter.kind) ||
+    parameter.dataClassification !== "GENERAL_HEALTH"
+  )
+    throw new DailyEntryError("not_available");
+
+  try {
+    await checkRequiredConsent(db, input.clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { state: "consent_missing" };
+    throw error;
+  }
+
+  const entries = await db.dailyEntry.findMany({
+    where: {
+      workspaceId: workspace.workspaceId,
+      clientProfileId: input.clientProfileId,
+      entryDate: {
+        gte: new Date(`${range.from}T00:00:00Z`),
+        lte: new Date(`${range.to}T00:00:00Z`),
+      },
+    },
+    orderBy: { entryDate: "asc" },
+    select: { entryDate: true, currentRevisionId: true },
+  });
+  const revisionIds = entries
+    .map((e) => e.currentRevisionId)
+    .filter((id): id is string => id !== null);
+  // One bounded batched lookup for the pointed revisions' values, never a
+  // per-row query (same discipline as the staff list read).
+  const values = revisionIds.length
+    ? await db.dailyEntryRevisionValue.findMany({
+        where: {
+          revisionId: { in: revisionIds },
+          workspaceId: workspace.workspaceId,
+          parameterId: input.parameterId,
+        },
+        select: {
+          revisionId: true,
+          kind: true,
+          valueNumeric: true,
+          valueRating: true,
+        },
+      })
+    : [];
+  const valueByRevision = new Map(values.map((v) => [v.revisionId, v]));
+  const points: DailyEntryNumericSeriesPoint[] = [];
+  for (const entry of entries) {
+    if (entry.currentRevisionId === null) continue;
+    const value = seriesPointValue(
+      valueByRevision.get(entry.currentRevisionId) ?? {
+        kind: "",
+        valueNumeric: null,
+        valueRating: null,
+      },
+    );
+    if (value === null) continue;
+    points.push({
+      date: entry.entryDate.toISOString().slice(0, 10),
+      value,
+    });
+  }
+
+  return {
+    state: "ready",
+    parameter: {
+      parameterId: parameter.id,
+      key: parameter.key,
+      label: parameter.label,
+      unit: parameter.unit,
+      kind: parameter.kind,
+    },
+    from: range.from,
+    to: range.to,
+    points,
+  };
+}
+
+// ── Tracker column groups read model (w2-t14) ─────────────────────────────
+
+/** One tracker column: a pinned template parameter projected for display.
+ * `group` is the template definition's own group label (never mapped into
+ * the frontend's hardcoded buckets); `max` is the template validation max
+ * where the definition carries one, else null; `order` is the declared
+ * section-item order resolved as `(order ?? 0)`. */
+export type TrackerColumn = {
+  key: string;
+  label: string;
+  unit: string | null;
+  decimals: number | null;
+  summary: string | null;
+  group: string | null;
+  sectionId: string;
+  order: number;
+  type: string;
+  max: number | null;
+};
+
+export type TrackerColumnGroup = {
+  group: string | null;
+  columns: TrackerColumn[];
+};
+
+export type TrackerColumnsResult =
+  | { state: "not_applicable" }
+  | { state: "unavailable" }
+  | { state: "ineligible" }
+  | { state: "consent_missing" }
+  | {
+      state: "ready";
+      templateVersionId: string;
+      groups: TrackerColumnGroup[];
+    };
+
+/** Projects the pinned version definition into template-owned column
+ * groups. Parameter order and section/item ordering are inherited verbatim
+ * from the daily-entry snapshot projection (stable `(order ?? 0)` sort with
+ * the definition array as the equal-order tie-break); group buckets appear
+ * in first-appearance order of the definition's own `group` labels. */
+function projectTrackerColumnGroups(
+  definition: unknown,
+): TrackerColumnGroup[] | null {
+  const snapshot = projectSnapshot(definition);
+  if (!snapshot) return null;
+  const def = definition as VersionDefinition;
+  const groups: TrackerColumnGroup[] = [];
+  const byGroup = new Map<string | null, TrackerColumn[]>();
+  for (const p of snapshot) {
+    const meta = def.parameters?.[p.parameterId] ?? {};
+    const group = typeof meta.group === "string" ? meta.group : null;
+    const column: TrackerColumn = {
+      key: p.parameterKey,
+      label: typeof meta.label === "string" ? meta.label : "",
+      unit: p.unit,
+      decimals: p.decimals,
+      summary: p.summary,
+      group,
+      sectionId: p.sectionId,
+      order: p.itemOrder ?? 0,
+      type: p.kind,
+      max: p.validation?.max ?? null,
+    };
+    const columns = byGroup.get(group);
+    if (columns) {
+      columns.push(column);
+    } else {
+      const fresh: TrackerColumn[] = [column];
+      byGroup.set(group, fresh);
+      groups.push({ group, columns: fresh });
+    }
+  }
+  return groups;
+}
+
+type ResolvedTrackerColumns =
+  | { tag: "unavailable" | "ineligible" | "consent_missing" }
+  | { tag: "ready"; templateVersionId: string; groups: TrackerColumnGroup[] };
+
+/** Shared pin chain both tracker-column reads run after their own caller
+ * authorization: clientSetup by composite key, ACTIVE clientSetupPin, the
+ * pinned coachingTemplateVersion, daily-entry eligibility, the column
+ * projection, then the consent check the daily-entry surface enforces - so
+ * a pin the daily form refuses is never served. */
+async function resolveTrackerColumns(
+  db: PrismaClient,
+  registry: ConsentPolicyRegistry,
+  workspaceId: string,
+  clientProfileId: string,
+): Promise<ResolvedTrackerColumns> {
+  const setup = await db.clientSetup.findUnique({
+    where: {
+      workspaceId_clientProfileId: { workspaceId, clientProfileId },
+    },
+    select: { id: true },
+  });
+  if (!setup) return { tag: "unavailable" };
+  const pin = await db.clientSetupPin.findFirst({
+    where: { clientSetupId: setup.id, status: "ACTIVE" },
+    select: { id: true, templateVersionId: true },
+  });
+  if (!pin) return { tag: "unavailable" };
+  const version = await db.coachingTemplateVersion.findUnique({
+    where: { id: pin.templateVersionId },
+    select: { id: true, definition: true },
+  });
+  if (!version) return { tag: "unavailable" };
+  if (!evaluateDailyEntryVersionEligibility(version.definition).eligible)
+    return { tag: "ineligible" };
+  const groups = projectTrackerColumnGroups(version.definition);
+  if (!groups) return { tag: "ineligible" };
+
+  try {
+    await checkRequiredConsent(db, clientProfileId, registry, false);
+  } catch (error) {
+    if (error instanceof DailyEntryError) return { tag: "consent_missing" };
+    throw error;
+  }
+  return { tag: "ready", templateVersionId: version.id, groups };
+}
+
+/** Own read - resolves the caller's own client profile and runs the same
+ * setup/pin/eligibility chain `loadDailyEntrySurface` uses. Non-client
+ * principals and members without a client profile read `not_applicable`. */
+export async function loadOwnTrackerColumns(
+  session: SessionLike,
+  input: { workspaceId: string },
+  deps: DailyEntryDeps = {},
+): Promise<TrackerColumnsResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (typeof input.workspaceId !== "string" || input.workspaceId.length === 0)
+    throw new DailyEntryError("invalid_input");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { workspaceId: input.workspaceId, userId },
+    select: { id: true },
+  });
+  if (!profile) return { state: "not_applicable" };
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: profile.id,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "own") return { state: "not_applicable" };
+
+  const member = await db.workspaceMember.findUnique({
+    where: {
+      workspaceId_userId: {
+        workspaceId: input.workspaceId,
+        userId,
+      },
+    },
+    select: { id: true, role: true, status: true },
+  });
+  if (!member || member.status !== "ACTIVE" || member.role !== "CLIENT")
+    return { state: "not_applicable" };
+
+  const resolved = await resolveTrackerColumns(
+    db,
+    registry,
+    input.workspaceId,
+    profile.id,
+  );
+  if (resolved.tag !== "ready") return { state: resolved.tag };
+  return {
+    state: "ready",
+    templateVersionId: resolved.templateVersionId,
+    groups: resolved.groups,
+  };
+}
+
+/** Staff read - dailyTracking read for a named client profile, authorized
+ * exactly as `listStaffTrackerValues` is: grantedScope must be `workspace`
+ * or `assigned`; client callers and foreign profiles are denied before any
+ * template read. */
+export async function loadStaffTrackerColumns(
+  session: SessionLike,
+  input: { workspaceId: string; clientProfileId: string },
+  deps: DailyEntryDeps = {},
+): Promise<TrackerColumnsResult> {
+  const db = deps.db ?? defaultPrisma;
+  const registry = deps.registry ?? unconfiguredConsentPolicy;
+  const userId = session?.user?.id;
+  if (typeof userId !== "string" || userId.length === 0)
+    throw new AccessDeniedError("unauthenticated", "dailyTracking", "read");
+  if (
+    typeof input.workspaceId !== "string" ||
+    input.workspaceId.length === 0 ||
+    input.workspaceId.length > 128 ||
+    typeof input.clientProfileId !== "string" ||
+    input.clientProfileId.length === 0 ||
+    input.clientProfileId.length > 128
+  )
+    throw new DailyEntryError("invalid_input");
+
+  const ctx = await authorize(
+    session,
+    {
+      resource: "dailyTracking",
+      action: "read",
+      workspaceId: input.workspaceId,
+      clientProfileId: input.clientProfileId,
+    },
+    createPrismaAuthorizationRepo(db),
+  );
+  if (ctx.grantedScope !== "workspace" && ctx.grantedScope !== "assigned")
+    throw new AccessDeniedError("role_denied", "dailyTracking", "read");
+
+  const profile = await db.clientProfile.findFirst({
+    where: { id: input.clientProfileId, workspaceId: input.workspaceId },
+    select: { id: true },
+  });
+  if (!profile)
+    throw new AccessDeniedError(
+      "client_outside_workspace",
+      "dailyTracking",
+      "read",
+    );
+
+  const resolved = await resolveTrackerColumns(
+    db,
+    registry,
+    input.workspaceId,
+    input.clientProfileId,
+  );
+  if (resolved.tag !== "ready") return { state: resolved.tag };
+  return {
+    state: "ready",
+    templateVersionId: resolved.templateVersionId,
+    groups: resolved.groups,
   };
 }

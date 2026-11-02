@@ -10,25 +10,30 @@ import {
   useMemo,
   useState,
 } from "react";
+import { ThemeScope } from "@/components/canvas/vari8/theme";
+import { vari8Theme } from "./vari8-theme";
 
 import {
   loadEtherealAppearance,
   saveEtherealAppearance,
 } from "@/components/canvas/data/appearance";
+import {
+  type Appearance,
+  type AppearanceFont,
+  type AppearanceMode,
+  mergeWorkspaceAppearance,
+  normalizeHex,
+  type WorkspaceAppearance,
+} from "./workspace-appearance";
 
-export type AppearanceMode = "light" | "dark";
-export type AppearanceFont =
-  | "sans"
-  | "serif"
-  | "condensed"
-  | "mono"
-  | "rounded";
-
-export type Appearance = {
-  mode: AppearanceMode;
-  accent: string;
-  font: AppearanceFont;
-};
+export type {
+  Appearance,
+  AppearanceDensity,
+  AppearanceFont,
+  AppearanceMode,
+  WorkspaceAppearance,
+} from "./workspace-appearance";
+export { normalizeHex } from "./workspace-appearance";
 
 export const fontOptions: {
   id: AppearanceFont;
@@ -72,10 +77,13 @@ export const defaultAppearance: Appearance = {
   mode: "dark",
   accent: "#EB91B8",
   font: "sans",
+  density: "comfortable",
+  logoMediaId: null,
 };
 
 const fontIds = new Set<AppearanceFont>(fontOptions.map(({ id }) => id));
 const modes = new Set<AppearanceMode>(["light", "dark"]);
+const densities = new Set(["comfortable", "compact"]);
 
 type AppearanceContextValue = {
   appearance: Appearance;
@@ -110,48 +118,64 @@ function readStoredAppearance(): Appearance | null {
       font: fontIds.has(record.font as AppearanceFont)
         ? (record.font as AppearanceFont)
         : defaultAppearance.font,
+      density: densities.has(record.density as string)
+        ? (record.density as Appearance["density"])
+        : defaultAppearance.density,
+      logoMediaId:
+        typeof record.logoMediaId === "string" && record.logoMediaId
+          ? record.logoMediaId
+          : null,
     };
   } catch {
     return null;
   }
 }
 
-export function AppearanceProvider({ children }: { children: ReactNode }) {
-  const [appearance, setAppearance] = useState(defaultAppearance);
+export function AppearanceProvider({
+  children,
+  workspace,
+}: {
+  children: ReactNode;
+  /** Workspace-resolved appearance; each set field wins over the local store. */
+  workspace?: WorkspaceAppearance | null;
+}) {
+  const [stored, setStored] = useState(defaultAppearance);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = readStoredAppearance();
-    if (stored) setAppearance(stored);
+    const local = readStoredAppearance();
+    if (local) setStored(local);
     setHydrated(true);
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     try {
-      saveEtherealAppearance(appearance);
+      saveEtherealAppearance(stored);
     } catch {
       // Keep appearance usable when browser storage is unavailable.
     }
-  }, [appearance, hydrated]);
+  }, [stored, hydrated]);
+
+  const appearance = useMemo(
+    () => mergeWorkspaceAppearance(stored, workspace),
+    [stored, workspace],
+  );
 
   const setMode = useCallback((mode: AppearanceMode) => {
-    if (modes.has(mode)) setAppearance((current) => ({ ...current, mode }));
+    if (modes.has(mode)) setStored((current) => ({ ...current, mode }));
   }, []);
 
   const setAccent = useCallback((value: string) => {
     const accent = normalizeHex(value);
-    if (accent) setAppearance((current) => ({ ...current, accent }));
+    if (accent) setStored((current) => ({ ...current, accent }));
   }, []);
 
   const setFont = useCallback((font: AppearanceFont) => {
-    if (fontIds.has(font)) setAppearance((current) => ({ ...current, font }));
+    if (fontIds.has(font)) setStored((current) => ({ ...current, font }));
   }, []);
 
-  const resetAppearance = useCallback(
-    () => setAppearance(defaultAppearance),
-    [],
-  );
+  const resetAppearance = useCallback(() => setStored(defaultAppearance), []);
 
   const value = useMemo(
     () => ({ appearance, setMode, setAccent, setFont, resetAppearance }),
@@ -160,23 +184,16 @@ export function AppearanceProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppearanceContext.Provider value={value}>
-      <div
-        className="appearance-root eg-root"
-        data-mode={appearance.mode}
+      <ThemeScope
+        mode={appearance.mode}
+        accent={appearance.accent}
+        className={`appearance-root eg-root${appearance.density === "compact" ? " eg-density-compact" : ""}`}
         style={themeVariables(appearance)}
       >
         {children}
-      </div>
+      </ThemeScope>
     </AppearanceContext.Provider>
   );
-}
-
-export function normalizeHex(value: string): string | null {
-  const raw = value.trim().replace(/^#/, "");
-  if (/^[\da-fA-F]{3}$/.test(raw)) {
-    return `#${raw[0]}${raw[0]}${raw[1]}${raw[1]}${raw[2]}${raw[2]}`;
-  }
-  return /^[\da-fA-F]{6}$/.test(raw) ? `#${raw}` : null;
 }
 
 function relativeLuminance(hex: string): number {
@@ -219,6 +236,25 @@ function mixHex(color: string, destination: string, amount: number): string {
   return `#${channels.join("")}`;
 }
 
+function colorAtLuminance(color: string, target: number): string {
+  const source = normalizeHex(color) ?? defaultAppearance.accent;
+  const sourceLuminance = relativeLuminance(source);
+  const destination = target > sourceLuminance ? "#FFFFFF" : "#000000";
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 24; step += 1) {
+    const middle = (low + high) / 2;
+    const candidate = mixHex(source, destination, middle);
+    const reachedTarget =
+      target > sourceLuminance
+        ? relativeLuminance(candidate) >= target
+        : relativeLuminance(candidate) <= target;
+    if (reachedTarget) high = middle;
+    else low = middle;
+  }
+  return mixHex(source, destination, high);
+}
+
 function contrastSafe(
   color: string,
   backgrounds: string[],
@@ -245,7 +281,21 @@ function contrastSafe(
     .color;
 }
 
-export function themeVariables(appearance: Appearance): CSSProperties {
+/**
+ * The fields the theme variables consume; `density` is optional so the coach
+ * theme path (which has no density input) keeps its call signature.
+ */
+export type AppearanceThemeInput = {
+  mode: AppearanceMode;
+  accent: string;
+  font: AppearanceFont;
+  density?: Appearance["density"];
+};
+
+export function themeVariables(
+  appearance: AppearanceThemeInput,
+): CSSProperties {
+  const compact = appearance.density === "compact";
   const accent = normalizeHex(appearance.accent) ?? defaultAppearance.accent;
   const font =
     fontOptions.find((option) => option.id === appearance.font) ??
@@ -256,20 +306,37 @@ export function themeVariables(appearance: Appearance): CSSProperties {
       : ["#F4F4F4", "#FFFFFF", "#E8E8E8", "#E9E9E9"];
   const accentInk = contrastSafe(accent, backgrounds, 4.5);
   const accentBoundary = contrastSafe(accent, backgrounds, 3);
+  const effectiveAccent = contrastSafe(accent, backgrounds, 3);
+  const actionText = textOn(effectiveAccent);
   const ring = contrastSafe(accent, backgrounds, 3);
   const chartLine = contrastSafe(accent, backgrounds, 3.05);
+  const macroLuminanceTargets =
+    appearance.mode === "dark" ? [0.14, 0.36, 0.82] : [0.02, 0.1, 0.26];
+  const macroColors = macroLuminanceTargets.map((target) =>
+    colorAtLuminance(effectiveAccent, target),
+  );
 
   return {
-    "--accent": accent,
+    ...vari8Theme({ mode: appearance.mode, accent: appearance.accent }),
+    "--accent": effectiveAccent,
+    "--accent-raw": accent,
     "--accent-ink": accentInk,
-    "--accent-contrast": textOn(accent),
+    "--accent-contrast": actionText,
     "--accent-soft": `color-mix(in srgb, ${accent} 14%, var(--canvas))`,
     "--accent-border": accentBoundary,
+    "--accent-action": effectiveAccent,
+    "--accent-action-text": actionText,
     "--accent-ring": ring,
     "--font-ui": font.family,
     "--font-tracking": appearance.font === "sans" ? "-0.012em" : "0em",
     "--chart-line": chartLine,
-    "--chart-fill": accent,
+    "--chart-fill": chartLine,
+    "--nutrition-macro-protein": macroColors[0],
+    "--nutrition-macro-carbs": macroColors[1],
+    "--nutrition-macro-fat": macroColors[2],
     "--ring": ring,
+    "--eg-density-topbar-block": compact ? "42px" : "52px",
+    "--eg-density-gap": compact ? "8px" : "10px",
+    "--eg-density-pad-x": compact ? "12px" : "16px",
   } as CSSProperties;
 }

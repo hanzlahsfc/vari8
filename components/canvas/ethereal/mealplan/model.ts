@@ -61,6 +61,7 @@ export type MealPlanVariant = {
 };
 
 export type VariantSchedule =
+  | { mode: "flexible" }
   | { mode: "manual"; selectedVariantId: string }
   | {
       mode: "weekly";
@@ -177,6 +178,7 @@ function isVariant(value: unknown): value is MealPlanVariant {
 
 function isVariantSchedule(value: unknown): value is VariantSchedule {
   if (!isRecord(value)) return false;
+  if (value.mode === "flexible") return true;
   if (value.mode === "manual")
     return typeof value.selectedVariantId === "string";
   if (value.mode === "cycle")
@@ -340,11 +342,10 @@ export function addMealToVariant(
   variant: MealPlanVariant,
   label = `Meal ${variant.meals.length + 1}`,
 ): MealPlanVariant {
-  const lastMeal = variant.meals.at(-1);
   const meal: Meal = {
     id: makeId("meal"),
     label,
-    time: lastMeal?.time ?? "12:00",
+    time: "",
     portions: [],
   };
   return { ...variant, meals: [...variant.meals, meal] };
@@ -467,7 +468,7 @@ export function createInitialMealPlan(
     startDate: date,
     variants: [{ id: variantId, label: "TD", meals }],
     activeVariantId: variantId,
-    schedule: { mode: "manual", selectedVariantId: variantId },
+    schedule: { mode: "flexible" },
     archivedPlans: [],
     reusableMeals: [],
   };
@@ -518,6 +519,8 @@ export function getActiveVariant(
     }
     return undefined;
   }
+  if (schedule.mode !== "weekly")
+    return plan.variants.find((v) => v.id === plan.activeVariantId);
   const weekday = ((date.getDay() + 6) % 7) + 1;
   const scheduledId = schedule.days[weekday as 1 | 2 | 3 | 4 | 5 | 6 | 7];
   return (
@@ -573,7 +576,7 @@ export function validateMealPlan(
     for (const meal of variant.meals) {
       if (!meal.label.trim())
         errors.push(`A meal in ${variant.label} needs a label.`);
-      if (!isValidTime(meal.time))
+      if (meal.time && !isValidTime(meal.time))
         errors.push(`Enter a valid time for ${meal.label}.`);
       for (const portion of meal.portions) {
         if (!foods.has(portion.foodId))

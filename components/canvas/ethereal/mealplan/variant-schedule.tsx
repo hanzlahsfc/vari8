@@ -1,5 +1,12 @@
 import { Plus, X } from "lucide-react";
-import { DatePicker } from "./date-time-fields";
+import {
+  Button,
+  IconButton,
+  Input,
+  SegmentedControl,
+  Select,
+} from "@/components/canvas/vari8/components";
+import { DatePicker } from "@/components/canvas/vari8/inputs";
 import type { MealPlan, VariantSchedule as Schedule } from "./model";
 import { MAX_CYCLE_DAYS } from "./model";
 import "./variant-schedule.css";
@@ -69,7 +76,9 @@ export function VariantSchedule({
       ? schedule.selectedVariantId
       : schedule.mode === "cycle"
         ? (schedule.steps[0]?.variantId ?? plan.activeVariantId)
-        : (schedule.days[1] ?? plan.activeVariantId);
+        : schedule.mode === "weekly"
+          ? (schedule.days[1] ?? plan.activeVariantId)
+          : plan.activeVariantId;
   const label = (id?: string) =>
     plan.variants.find((variant) => variant.id === id)?.label || "Not assigned";
   const cycleSummary =
@@ -137,26 +146,17 @@ export function VariantSchedule({
           <div className="mp-section-heading">
             <h2>Variant schedule</h2>
             {!preview && (
-              <fieldset className="mp-schedule-modes">
-                <legend>Schedule mode</legend>
-                {(
-                  [
-                    ["manual", "Everyday"],
-                    ["weekly", "Weekdays"],
-                    ["cycle", "Repeating rhythm"],
-                  ] as const
-                ).map(([mode, title]) => (
-                  <button
-                    type="button"
-                    key={mode}
-                    className={`mp-schedule-mode-pill ${schedule.mode === mode ? "is-active" : ""}`}
-                    aria-pressed={schedule.mode === mode}
-                    onClick={() => setMode(mode)}
-                  >
-                    {title}
-                  </button>
-                ))}
-              </fieldset>
+              <SegmentedControl
+                label="Schedule mode"
+                className="mp-schedule-modes"
+                value={schedule.mode}
+                onValueChange={(mode) => setMode(mode as ScheduleMode)}
+                options={[
+                  { value: "manual", label: "Everyday" },
+                  { value: "weekly", label: "Weekdays" },
+                  { value: "cycle", label: "Repeating rhythm" },
+                ]}
+              />
             )}
           </div>
           <p>
@@ -200,14 +200,12 @@ export function VariantSchedule({
                 <>
                   <div className="mp-cycle-toolbar">
                     <div className="mp-cycle-anchor">
-                      <span>Starts on</span>
                       <DatePicker
+                        label="Starts on"
                         value={schedule.anchorDate}
-                        onChange={(anchorDate) =>
+                        onValueChange={(anchorDate) =>
                           onChange({ ...schedule, anchorDate })
                         }
-                        ariaLabel="Repeating rhythm start date"
-                        className="mp-schedule-date"
                       />
                     </div>
                     <div className="mp-cycle-toolbar-actions">
@@ -215,8 +213,10 @@ export function VariantSchedule({
                         Repeats every {cycleLength}{" "}
                         {cycleLength === 1 ? "day" : "days"}
                       </span>
-                      <button
+                      <Button
                         type="button"
+                        variant="secondary"
+                        size="sm"
                         className="mp-cycle-add"
                         disabled={
                           schedule.steps.length >= MAX_CYCLE_DAYS ||
@@ -234,7 +234,7 @@ export function VariantSchedule({
                       >
                         <Plus size={14} aria-hidden="true" />
                         Add step
-                      </button>
+                      </Button>
                     </div>
                   </div>
                   <ol
@@ -247,9 +247,10 @@ export function VariantSchedule({
                           <span className="mp-cycle-step-number">
                             Step {String(index + 1).padStart(2, "0")}
                           </span>
-                          <button
+                          <IconButton
                             type="button"
-                            className="mp-cycle-remove"
+                            label={`Remove step ${index + 1}`}
+                            size="sm"
                             aria-label={`Remove step ${index + 1}`}
                             title={`Remove step ${index + 1}`}
                             disabled={schedule.steps.length <= 1}
@@ -263,45 +264,38 @@ export function VariantSchedule({
                             }
                           >
                             <X size={14} aria-hidden="true" />
-                          </button>
+                          </IconButton>
                         </div>
-                        <label>
-                          <span>Plan</span>
-                          <select
-                            aria-label={`Step ${index + 1} plan`}
-                            value={step.variantId}
+                        <Select
+                          label={`Step ${index + 1} plan`}
+                          size="sm"
+                          value={step.variantId}
+                          onValueChange={(variantId) =>
+                            updateCycleStep(index, { variantId })
+                          }
+                          options={plan.variants.map((variant) => ({
+                            value: variant.id,
+                            label: variant.label || "Untitled",
+                          }))}
+                        />
+                        <div className="mp-cycle-duration-control">
+                          <Input
+                            label={`Step ${index + 1} duration in days`}
+                            className="mp-cycle-duration-input"
+                            size="sm"
+                            type="number"
+                            min={1}
+                            max={28}
+                            step={1}
+                            value={step.days}
                             onChange={(event) =>
                               updateCycleStep(index, {
-                                variantId: event.target.value,
+                                days: Number(event.target.value),
                               })
                             }
-                          >
-                            {plan.variants.map((variant) => (
-                              <option key={variant.id} value={variant.id}>
-                                {variant.label || "Untitled"}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <label className="mp-cycle-duration">
-                          <span>Duration</span>
-                          <span className="mp-cycle-duration-control">
-                            <input
-                              aria-label={`Step ${index + 1} duration in days`}
-                              type="number"
-                              min={1}
-                              max={28}
-                              step={1}
-                              value={step.days}
-                              onChange={(event) =>
-                                updateCycleStep(index, {
-                                  days: Number(event.target.value),
-                                })
-                              }
-                            />
-                            <span>{step.days === 1 ? "day" : "days"}</span>
-                          </span>
-                        </label>
+                          />
+                          <span>{step.days === 1 ? "day" : "days"}</span>
+                        </div>
                       </li>
                     ))}
                   </ol>
@@ -324,31 +318,25 @@ export function VariantSchedule({
                     <strong>{label(schedule.days[weekday])}</strong>
                   </div>
                 ) : (
-                  <label key={day}>
-                    <span>{day}</span>
-                    <select
-                      aria-label={`${day} plan`}
-                      value={schedule.days[weekday] ?? ""}
-                      onChange={(event) =>
-                        onChange({
-                          mode: "weekly",
-                          days: {
-                            ...schedule.days,
-                            [weekday]: event.target.value,
-                          },
-                        })
-                      }
-                    >
-                      <option value="" disabled>
-                        Choose plan
-                      </option>
-                      {plan.variants.map((variant) => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.label || "Untitled"}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <Select
+                    key={day}
+                    label={day}
+                    size="sm"
+                    value={schedule.days[weekday] ?? ""}
+                    onValueChange={(variantId) =>
+                      onChange({
+                        mode: "weekly",
+                        days: { ...schedule.days, [weekday]: variantId },
+                      })
+                    }
+                    options={[
+                      { value: "", label: "Choose plan", disabled: true },
+                      ...plan.variants.map((variant) => ({
+                        value: variant.id,
+                        label: variant.label || "Untitled",
+                      })),
+                    ]}
+                  />
                 );
               })}
             </div>
@@ -358,25 +346,20 @@ export function VariantSchedule({
               <strong>{label(everydayId)}</strong>
             </div>
           ) : (
-            <label className="mp-schedule-everyday mp-schedule-assignment">
-              <span>Plan for every day</span>
-              <select
-                aria-label="Plan for every day"
+            <div className="mp-schedule-everyday mp-schedule-assignment">
+              <Select
+                label="Plan for every day"
+                size="sm"
                 value={everydayId}
-                onChange={(event) =>
-                  onChange({
-                    mode: "manual",
-                    selectedVariantId: event.target.value,
-                  })
+                onValueChange={(selectedVariantId) =>
+                  onChange({ mode: "manual", selectedVariantId })
                 }
-              >
-                {plan.variants.map((variant) => (
-                  <option key={variant.id} value={variant.id}>
-                    {variant.label || "Untitled"}
-                  </option>
-                ))}
-              </select>
-            </label>
+                options={plan.variants.map((variant) => ({
+                  value: variant.id,
+                  label: variant.label || "Untitled",
+                }))}
+              />
+            </div>
           )}
         </div>
       </div>

@@ -1,0 +1,19 @@
+Codex builder bounded direct-Next ownership proof; Node v24.22.1.
+Command: node _evidence/prompt410-real-chain.mjs
+Child command: node node_modules/next/dist/bin/next start -p 64361 -H 127.0.0.1
+No real database/account credentials were used; environment values not logged.
+
+httpLogin: 200
+listenerPids: [95692]
+leaderIdentity: {pid:95692, ppid:95691, pgid:95692, start:"Sun Oct 25 11:06:26 2026"}
+ownership: {pgid:"95692", processes:[{pid:95692, pgid:95692, start:"Sun Oct 25 11:06:26 2026"}]}
+ownsPort: true
+cleanupProblems: []
+remainingListeners: []
+exitCode: 143
+signalCode: null
+Command exit: 0
+
+After final-baseline mutation reverse application:
+npx vitest run tests/unit/parity-https.test.ts
+1 file / 20 tests passed, exit 0, 1.69s.

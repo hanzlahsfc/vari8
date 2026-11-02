@@ -16,6 +16,30 @@ import {
   X,
 } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
+import { SegmentedControl } from "../vari8/components";
+import { TextArea } from "../vari8/inputs";
+import {
+  fetchStaffConversations,
+  fetchStaffThread,
+  markStaffThreadRead,
+} from "../data/messages";
+
+// The thread's day grouping follows the messaging timezone contract
+// (Europe/Vienna) — the same contract the client surface uses — not
+// the wire's UTC date slice.
+export const viennaDayKey = (iso: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Vienna",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(iso));
+
+import {
+  saveStaffDraft,
+  sendStaffMessage,
+  toCanvasMessage,
+} from "../data/messages";
 import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import { uploadCanvasMedia } from "./media-card";
@@ -45,7 +69,9 @@ export function MessagesWorkspace() {
     route,
     navigate,
     attach,
+    media,
     toast,
+    hydrated,
     workspaceId,
     clientProfileIdFor,
   } = useCoach();
@@ -67,6 +93,8 @@ export function MessagesWorkspace() {
   const positions = useRef<Record<string, number>>({});
   const priorClient = useRef<string | null>(null);
   const priorCount = useRef(0);
+  const pendingUploads = useRef(new Set<string>());
+  const failedUploads = useRef(new Set<string>());
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
   const sortedClients = [...state.clients]
@@ -103,6 +131,79 @@ export function MessagesWorkspace() {
           ? unreadCount(state, c.id) > 0
           : state.messages.some((m) => m.clientId === c.id && m.priority))),
   );
+  // W2-A4: messages and drafts are remote. The conversation list names the
+  // threads; each listed thread is read in full and keyed by the canvas
+  // client carrying that name. The backend wins on every reload.
+  const threadsLoaded = useRef(false);
+  const threadsReady = useRef(false);
+  const serverDrafts = useRef<Record<string, string>>({});
+  useEffect(() => {
+    if (!hydrated || !workspaceId || threadsLoaded.current) return;
+    threadsLoaded.current = true;
+    void (async () => {
+      try {
+        const { conversations } = await fetchStaffConversations(workspaceId);
+        const threads = await Promise.all(
+          conversations.map((c) =>
+            fetchStaffThread(workspaceId, c.clientProfileId),
+          ),
+        );
+        const canvasIds = new Map(state.clients.map((c) => [c.name, c.id]));
+        const rows: Message[] = [];
+        const bodies: Record<string, string> = {};
+        conversations.forEach((conversation, index) => {
+          const canvasId = canvasIds.get(conversation.clientName);
+          if (!canvasId) return;
+          for (const row of threads[index].messages)
+            rows.push(toCanvasMessage(row, canvasId));
+          bodies[canvasId] = threads[index].draft?.body ?? "";
+        });
+        serverDrafts.current = bodies;
+        setState((s) => {
+          const drafts = { ...s.drafts };
+          for (const [id, body] of Object.entries(bodies))
+            drafts[id] = {
+              text: body,
+              attachments: s.drafts[id]?.attachments ?? [],
+            };
+          return { ...s, messages: rows, drafts };
+        });
+      } catch {
+        threadsLoaded.current = false;
+      } finally {
+        threadsReady.current = true;
+      }
+    })();
+  }, [hydrated, workspaceId, setState, state.clients]);
+  // W2-A4: opening a thread marks it read on the server (idempotent); the
+  // local paint below clears the badge in the same frame.
+  const selectedName = client?.name;
+  useEffect(() => {
+    if (!hydrated || !workspaceId || !selectedName) return;
+    void (async () => {
+      const clientProfileId = await clientProfileIdFor(selectedName);
+      if (clientProfileId)
+        await markStaffThreadRead(workspaceId, clientProfileId);
+    })().catch(() => {});
+  }, [hydrated, workspaceId, selectedName, clientProfileIdFor]);
+  // W2-A4: draft text saves remote on a 500ms pause; the local draft keeps the
+  // composer responsive and holds the attachments the wire has no field for.
+  const draftText = draft.text;
+  useEffect(() => {
+    if (!hydrated || !workspaceId || !client || !threadsReady.current) return;
+    const canvasId = client.id;
+    const name = client.name;
+    if ((serverDrafts.current[canvasId] ?? "") === draftText) return;
+    const timer = setTimeout(() => {
+      serverDrafts.current[canvasId] = draftText;
+      void (async () => {
+        const clientProfileId = await clientProfileIdFor(name);
+        if (clientProfileId)
+          await saveStaffDraft(workspaceId, clientProfileId, draftText);
+      })().catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [hydrated, workspaceId, client, clientProfileIdFor, draftText]);
   useEffect(() => {
     if (!selectedId) return;
     setState((s) =>
@@ -146,27 +247,120 @@ export function MessagesWorkspace() {
   const send = () => {
     if (!client || (!draft.text.trim() && !draft.attachments.length && !link))
       return;
-    const m: Message = {
-      id: uid("message"),
-      clientId: client.id,
-      text: draft.text.trim(),
-      from: "coach",
-      date: new Date().toISOString(),
-      read: true,
-      priority: false,
-      attachments: draft.attachments,
-      link,
-      local: true,
-    };
+    const text = draft.text.trim();
+    const attachments = draft.attachments;
+    const sentLink = link;
+    const canvasId = client.id;
+    // W2-T8: attachments ride the wire once their media_object ids exist.
+    // "In-flight" means an upload actually pending, tracked in
+    // pendingUploads by the attach handler - not a missing session blob.
+    // A draft item missing its stamp, demo flag and session bytes is a
+    // draft restored after reload whose blob is gone for good, so the
+    // send keeps it and says what recovers it instead of promising a
+    // retry that cannot land.
+    if (
+      workspaceId &&
+      attachments.some((a) => pendingUploads.current.has(a.id))
+    ) {
+      toast("Attachment still uploading - try sending again in a moment.");
+      return;
+    }
+    // A settled workspace upload that returned without a media_object
+    // stamp is a failed attachment. Its session blob still previews, but
+    // nothing can ride the wire, so the send refuses it until the item
+    // is removed or attached again.
+    if (
+      workspaceId &&
+      attachments.some((a) => failedUploads.current.has(a.id))
+    ) {
+      toast("Attachment upload failed. Remove it and reattach to send it.");
+      return;
+    }
+    if (
+      workspaceId &&
+      attachments.some(
+        (a) => !a.mediaObjectId && !a.demo && !media[a.id],
+      )
+    ) {
+      toast(
+        "Attachment kept as metadata after reload - reattach it to send it, or remove it.",
+      );
+      return;
+    }
+    const appendLocal = () =>
+      setState((s) => ({
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("message"),
+            clientId: canvasId,
+            text,
+            from: "coach",
+            date: new Date().toISOString(),
+            read: true,
+            priority: false,
+            attachments,
+            link: sentLink,
+            local: true,
+          },
+        ],
+      }));
     setState((s) => ({
       ...s,
-      messages: [...s.messages, m],
-      drafts: { ...s.drafts, [client.id]: { text: "", attachments: [] } },
+      drafts: { ...s.drafts, [canvasId]: { text: "", attachments: [] } },
     }));
     setLink(undefined);
     nearBottom.current = true;
     setMenu(null);
     composer.current?.focus();
+    // W2-T8: the send POSTs and the returned wire row is what lands in the
+    // thread - body and attachments alike. Anything without a stored
+    // media_object id (demo media, no backend) keeps the local row.
+    const mediaObjectIds = attachments
+      .map((a) => a.mediaObjectId)
+      .filter((id): id is string => Boolean(id));
+    if (
+      !workspaceId ||
+      mediaObjectIds.length !== attachments.length ||
+      (!text && mediaObjectIds.length === 0)
+    ) {
+      appendLocal();
+      return;
+    }
+    void (async () => {
+      try {
+        const clientProfileId = await clientProfileIdFor(client.name);
+        if (!clientProfileId) {
+          appendLocal();
+          return;
+        }
+        const { message } = await sendStaffMessage(
+          workspaceId,
+          clientProfileId,
+          text,
+          mediaObjectIds,
+        );
+        serverDrafts.current[canvasId] = "";
+        setState((s) => ({
+          ...s,
+          messages: [
+            ...s.messages,
+            { ...toCanvasMessage(message, canvasId), link: sentLink },
+          ],
+        }));
+        await saveStaffDraft(workspaceId, clientProfileId, "");
+      } catch {
+        setState((s) => ({
+          ...s,
+          drafts: {
+            ...s.drafts,
+            [canvasId]: { text, attachments },
+          },
+        }));
+        toast("Message could not be sent.");
+      }
+    })();
   };
   const flag = (m: Message) => {
     if (!client || (!client.priorityMessages && !m.priority)) return;
@@ -196,17 +390,16 @@ export function MessagesWorkspace() {
             onChange={setSearch}
             placeholder="Search conversations"
           />
-          <div className="cd-tabs">
-            {["All", "Unread", "Flagged"].map((f) => (
-              <Button
-                key={f}
-                aria-pressed={filter === f}
-                onClick={() => setFilter(f)}
-              >
-                {f}
-              </Button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Conversation filter"
+            value={filter}
+            onValueChange={setFilter}
+            className="cd-conversation-filter"
+            options={["All", "Unread", "Flagged"].map((f) => ({
+              value: f,
+              label: f,
+            }))}
+          />
           <div className="cd-conversation-list">
             {shownClients.map((c) => {
               const m = lastMessage(c.id);
@@ -376,8 +569,8 @@ export function MessagesWorkspace() {
                   .map((m, i, all) => (
                     <Fragment key={m.id}>
                       {(i === 0 ||
-                        all[i - 1].date.slice(0, 10) !==
-                          m.date.slice(0, 10)) && (
+                        viennaDayKey(all[i - 1].date) !==
+                          viennaDayKey(m.date)) && (
                         <div className="cd-date-divider">
                           <span>
                             {formatDate(m.date, {
@@ -428,22 +621,19 @@ export function MessagesWorkspace() {
                             </span>
                             {m.from === "coach" && (
                               <span>
-                                {m.local ? "Local message" : "Example · read"}
+                                {m.local
+                                  ? "Local message"
+                                  : m.read
+                                    ? "Read"
+                                    : "Sent"}
                                 <Check size={11} />
                               </span>
                             )}
                             {m.from === "client" && (
-                              <button
-                                type="button"
-                                className="cd-icon-button cd-message-flag"
-                                aria-label={
-                                  m.priority
-                                    ? "Remove priority flag"
-                                    : client.priorityMessages
-                                      ? "Flag message as priority"
-                                      : "Priority flags disabled for this athlete"
-                                }
-                                title={
+                              <IconButton
+                                size="sm"
+                                className="cd-message-flag"
+                                label={
                                   m.priority
                                     ? "Remove priority flag"
                                     : client.priorityMessages
@@ -457,7 +647,7 @@ export function MessagesWorkspace() {
                                 onClick={() => flag(m)}
                               >
                                 <Flag size={12} />
-                              </button>
+                              </IconButton>
                             )}
                           </div>
                         </div>
@@ -649,10 +839,12 @@ export function MessagesWorkspace() {
                       <Sparkles size={18} />
                     </IconButton>
                   </div>
-                  <textarea
+                  <TextArea
+                    label={`Message ${client.name}`}
+                    className="cd-composer-textarea"
+                    size="sm"
                     ref={composer}
                     rows={2}
-                    aria-label={`Message ${client.name}`}
                     placeholder="Write a message…"
                     value={draft.text}
                     onChange={(e) => setDraft({ text: e.target.value })}
@@ -709,14 +901,26 @@ export function MessagesWorkspace() {
                       items.push(item);
                       // PR-MEDIA: real upload in the background; the item
                       // stays local-previewable meanwhile (S02-08).
+                      pendingUploads.current.add(item.id);
                       void (async () => {
-                        const profileId = client
-                          ? await clientProfileIdFor(client.name)
-                          : null;
-                        await uploadCanvasMedia(item, f, {
-                          workspaceId,
-                          clientProfileId: profileId ?? undefined,
-                        });
+                        let uploaded = false;
+                        try {
+                          const profileId = client
+                            ? await clientProfileIdFor(client.name)
+                            : null;
+                          uploaded = await uploadCanvasMedia(item, f, {
+                            workspaceId,
+                            clientProfileId: profileId ?? undefined,
+                          });
+                        } finally {
+                          pendingUploads.current.delete(item.id);
+                          // No workspace means no upload was attempted, so
+                          // the item keeps its local-preview path. With a
+                          // workspace, a settled upload without a stamp
+                          // is a failed attachment and blocks send.
+                          if (workspaceId && !uploaded)
+                            failedUploads.current.add(item.id);
+                        }
                       })();
                     }
                     setDraft({ attachments: [...draft.attachments, ...items] });

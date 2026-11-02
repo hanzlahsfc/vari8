@@ -126,21 +126,8 @@
   flex: 0 1 240px;
 }
 
-.ct-configurator .ct-measure-search input {
-  display: block;
+.ct-configurator .ct-measure-search .v8-field {
   width: 100%;
-  min-height: 32px;
-  padding: 6px 10px;
-  border: 1px solid var(--ct-line-strong);
-  border-radius: 999px;
-  background: var(--ct-field);
-  color: var(--ct-ink);
-  font: inherit;
-  font-size: 11px;
-}
-
-.ct-configurator .ct-measure-search input::placeholder {
-  color: color-mix(in srgb, var(--ct-muted) 80%, transparent);
 }
 
 .ct-configurator .ct-category {
@@ -153,25 +140,19 @@
 
 .ct-configurator .ct-category-heading {
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   padding: 13px 0 8px;
-  cursor: pointer;
 }
 
-.ct-configurator .ct-category-copy h2 {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 590;
-  letter-spacing: -0.01em;
+.ct-configurator .ct-category-check {
+  grid-column: 1;
+  min-width: 0;
 }
 
-.ct-configurator .ct-category-copy p {
-  margin: 3px 0 0;
-  color: var(--ct-muted);
-  font-size: 10px;
-  line-height: 1.35;
+.ct-configurator .ct-category-check .v8-choice__copy {
+  gap: 3px;
 }
 
 .ct-configurator .ct-category-count {
@@ -180,71 +161,8 @@
   font-variant-numeric: tabular-nums;
 }
 
-.ct-configurator .ct-category-check,
 .ct-configurator .ct-individual-check {
-  position: relative;
-  display: inline-grid;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-  place-items: center;
-  cursor: pointer;
-}
-
-.ct-configurator .ct-category-check input,
-.ct-configurator .ct-individual-check input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  opacity: 0;
-}
-
-.ct-configurator .ct-checkmark {
-  display: grid;
-  width: 16px;
-  height: 16px;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--ct-ink) 26%, transparent);
-  border-radius: 5px;
-  background: var(--ct-field);
-  color: #171014;
-  transition:
-    background-color 150ms cubic-bezier(0.2, 0.75, 0.25, 1),
-    border-color 150ms cubic-bezier(0.2, 0.75, 0.25, 1),
-    color 150ms cubic-bezier(0.2, 0.75, 0.25, 1);
-}
-
-.ct-configurator .ct-checkmark::after {
-  width: 7px;
-  height: 4px;
-  border-bottom: 1.5px solid currentColor;
-  border-left: 1.5px solid currentColor;
-  content: "";
-  opacity: 0;
-  transform: translateY(-1px) rotate(-45deg);
-}
-
-.ct-configurator .ct-category-check input:checked + .ct-checkmark,
-.ct-configurator .ct-individual-check input:checked + .ct-checkmark,
-.ct-configurator .ct-category-check input:indeterminate + .ct-checkmark {
-  border-color: var(--ct-accent);
-  background: var(--ct-accent);
-  color: var(--accent-contrast, #21131a);
-}
-
-.ct-configurator .ct-category-check input:indeterminate + .ct-checkmark::after {
-  width: 7px;
-  height: 0;
-  border: 0;
-  border-top: 1.5px solid currentColor;
-  opacity: 1;
-  transform: none;
-}
-
-.ct-configurator .ct-category-check input:checked + .ct-checkmark::after,
-.ct-configurator .ct-individual-check input:checked + .ct-checkmark::after {
-  opacity: 1;
+  min-width: 0;
 }
 
 .ct-configurator .ct-parameter-list {
@@ -255,33 +173,13 @@
 .ct-configurator .ct-parameter {
   display: grid;
   min-height: 37px;
-  grid-template-columns: 18px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
-  cursor: pointer;
 }
 
 .ct-configurator .ct-parameter + .ct-parameter {
   border-top: 1px solid color-mix(in srgb, var(--ct-ink) 5%, transparent);
-}
-
-.ct-configurator .ct-parameter-copy {
-  display: flex;
-  min-width: 0;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 11px;
-}
-
-.ct-configurator .ct-parameter-copy > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.ct-configurator .ct-parameter-copy small {
-  flex: 0 0 auto;
-  color: var(--ct-muted);
-  font-size: 10px;
 }
 
 .ct-configurator .ct-summary-kind {
@@ -464,24 +362,15 @@
   margin-top: 8px;
 }
 
-.ct-configurator .ct-overview-add select,
-.ct-configurator .ct-unit-control select {
+.ct-configurator .ct-overview-add .v8-field {
   min-width: 0;
-  min-height: 30px;
-  border: 1px solid var(--ct-line-strong);
-  border-radius: 999px;
-  background: var(--ct-field);
-  padding: 0 10px;
-  color: var(--ct-ink);
-  font: inherit;
-  font-size: 10px;
 }
 
-.ct-configurator .ct-overview-add select {
+.ct-configurator .ct-overview-add .v8-select {
   width: 100%;
 }
 
-.ct-configurator .ct-overview-add select:disabled {
+.ct-configurator .ct-overview-add .v8-select:disabled {
   opacity: 0.54;
 }
 
@@ -502,6 +391,7 @@
 
 .ct-configurator .ct-unit-control {
   display: flex;
+  min-width: 0;
   min-height: 32px;
   align-items: center;
   justify-content: space-between;
@@ -510,10 +400,14 @@
   font-size: 10px;
 }
 
-.ct-configurator .ct-unit-control select {
+.ct-configurator .ct-unit-control .v8-field {
+  min-width: 76px;
+  margin-inline-start: auto;
+}
+
+.ct-configurator .ct-unit-control .v8-select {
   min-width: 76px;
   max-width: 112px;
-  min-height: 27px;
 }
 
 .ct-configurator .ct-actions {
@@ -585,7 +479,12 @@
   color: var(--ct-ink);
 }
 
-.ct-configurator :is(button, input, select):focus-visible {
+.ct-configurator
+  :is(
+    button:not(.v8-button, .v8-icon-button, .v8-select),
+    input:not(.v8-input),
+    select:not(.v8-select)
+  ):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ct-accent) 78%, transparent);
   outline-offset: 2px;
 }
@@ -663,10 +562,6 @@
     padding-inline: 12px;
   }
 
-  .ct-configurator .ct-category-copy p {
-    max-width: 34ch;
-  }
-
   .ct-configurator .ct-parameter-list {
     margin-left: 25px;
   }
@@ -674,13 +569,6 @@
   .ct-configurator .ct-parameter {
     min-height: 40px;
     gap: 7px;
-  }
-
-  .ct-configurator .ct-parameter-copy {
-    flex-direction: column;
-    align-items: start;
-    gap: 1px;
-    line-height: 1.25;
   }
 
   .ct-configurator .ct-summary-kind {
@@ -703,7 +591,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ct-configurator .ct-checkmark,
   .ct-configurator .ct-remove-measure,
   .ct-configurator .ct-overview-actions button,
   .ct-configurator .ct-save,

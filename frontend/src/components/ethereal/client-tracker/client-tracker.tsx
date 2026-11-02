@@ -1,8 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "@/lib/reduced-motion";
 import {
   defaultConfig,
   parameters,

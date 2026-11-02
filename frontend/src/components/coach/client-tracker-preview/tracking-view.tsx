@@ -1,9 +1,18 @@
 "use client";
 
 import { Check, ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
-import { LayoutGroup, motion } from "motion/react";
-import { useCallback, useId, useMemo, useState } from "react";
-import { useReducedMotion } from "@/lib/reduced-motion";
+import { LayoutGroup, motion, useReducedMotion } from "motion/react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { SegmentedControl } from "@/components/vari8/components";
+import { PageHeader } from "@/components/vari8/layouts";
 import { TrackerEditorContext } from "./editor-context";
 import type { TrackerConfig, TrackerEntry } from "./preview-model";
 import { TodayView } from "./today-view";
@@ -34,6 +43,10 @@ type TrackingViewProps = {
   onConfigure?: () => void;
   allowCoachMode?: boolean;
   persistenceHint?: string;
+  renderTargets?: (context: {
+    date: string;
+    view: "Today" | "Week";
+  }) => ReactNode;
 };
 type View = "Today" | "Week" | "Trends";
 
@@ -44,6 +57,8 @@ export function TrackingView(props: TrackingViewProps) {
   const [mode, setMode] = useState<"coach" | "client">("client");
   const animationId = useId();
   const [selectedDate, setSelectedDate] = useState(asOf);
+  const prevAsOf = useRef(asOf);
+  const deferredAsOf = useRef<{ from: string; to: string } | null>(null);
   const [focusedParameter, setFocusedParameter] = useState<string>();
   const [editors, setEditors] = useState<Record<string, boolean>>({});
   const [updated, setUpdated] = useState(false);
@@ -53,6 +68,20 @@ export function TrackingView(props: TrackingViewProps) {
   );
   const dates = weekDates(selectedDate);
   const editing = Object.values(editors).some(Boolean);
+  useEffect(() => {
+    const previous = prevAsOf.current;
+    prevAsOf.current = asOf;
+    if (asOf === previous) return;
+    if (selectedDate !== previous) return;
+    if (editing) deferredAsOf.current = { from: previous, to: asOf };
+    else setSelectedDate(asOf);
+  }, [asOf, selectedDate, editing]);
+  useEffect(() => {
+    if (editing || !deferredAsOf.current) return;
+    const { from, to } = deferredAsOf.current;
+    deferredAsOf.current = null;
+    setSelectedDate((current) => (current === from ? to : current));
+  }, [editing]);
   const reportEditing = useCallback((id: string, active: boolean) => {
     setEditors((current) => {
       if (Boolean(current[id]) === active) return current;
@@ -84,70 +113,59 @@ export function TrackingView(props: TrackingViewProps) {
         className="ct-tracking"
         aria-label={`${props.clientName}'s tracker`}
       >
-        <header className="ct-tracker-header">
-          <div className="ct-tracker-title">
-            <h1>Tracker</h1>
-            {props.allowCoachMode && <p>{props.clientName}</p>}
-          </div>
-          <div className="ct-tracker-actions">
-            {props.allowCoachMode && (
-              <fieldset className="ct-role-switch" aria-label="Entry mode">
-                {(["client", "coach"] as const).map((item) => (
-                  <button
-                    type="button"
-                    key={item}
-                    disabled={editing}
-                    aria-pressed={mode === item}
-                    onClick={() => setMode(item)}
-                  >
-                    {item === "client" ? "Log data" : "Coach notes"}
-                  </button>
-                ))}
-              </fieldset>
-            )}
-            {props.onConfigure && (
-              <button
-                className="ct-configure"
-                type="button"
-                aria-label="Configure tracker"
-                title="Configure tracker"
-                disabled={editing}
-                onClick={props.onConfigure}
-              >
-                <Settings2 size={15} strokeWidth={1.35} aria-hidden="true" />
-                <span>Configure</span>
-              </button>
-            )}
-          </div>
-        </header>
+        <PageHeader
+          className="ct-tracker-header"
+          width="wide"
+          title="Tracker"
+          description={props.allowCoachMode ? props.clientName : undefined}
+          actions={
+            <div className="ct-tracker-actions">
+              {props.allowCoachMode && (
+                <fieldset className="ct-role-switch" aria-label="Entry mode">
+                  {(["client", "coach"] as const).map((item) => (
+                    <button
+                      type="button"
+                      key={item}
+                      disabled={editing}
+                      aria-pressed={mode === item}
+                      onClick={() => setMode(item)}
+                    >
+                      {item === "client" ? "Log data" : "Coach notes"}
+                    </button>
+                  ))}
+                </fieldset>
+              )}
+              {props.onConfigure && (
+                <button
+                  className="ct-configure"
+                  type="button"
+                  aria-label="Configure tracker"
+                  title="Configure tracker"
+                  disabled={editing}
+                  onClick={props.onConfigure}
+                >
+                  <Settings2 size={15} strokeWidth={1.35} aria-hidden="true" />
+                  <span>Configure</span>
+                </button>
+              )}
+            </div>
+          }
+        />
         <div className="ct-workspace-toolbar">
-          <fieldset className="ct-view-switch" aria-label="Tracker views">
-            {(["Today", "Week", "Trends"] as const).map((name) => (
-              <button
-                key={name}
-                type="button"
-                aria-pressed={view === name}
-                disabled={editing}
-                onClick={() => {
-                  setView(name);
-                  setFocusedParameter(undefined);
-                }}
-              >
-                {view === name && (
-                  <motion.span
-                    className="ct-view-highlight"
-                    layoutId="tracker-view"
-                    transition={{
-                      type: "spring",
-                      bounce: 0,
-                      duration: reduceMotion ? 0 : 0.3,
-                    }}
-                  />
-                )}
-                <span>{name}</span>
-              </button>
-            ))}
-          </fieldset>
+          <SegmentedControl
+            className="ct-view-switch"
+            label="Tracker views"
+            value={view}
+            options={(["Today", "Week", "Trends"] as const).map((name) => ({
+              value: name,
+              label: name,
+              disabled: editing,
+            }))}
+            onValueChange={(next) => {
+              setView(next as View);
+              setFocusedParameter(undefined);
+            }}
+          />
           <div className="ct-week-navigation">
             <button
               type="button"
@@ -257,6 +275,8 @@ export function TrackingView(props: TrackingViewProps) {
             {status}
           </div>
         </div>
+        {view !== "Trends" &&
+          props.renderTargets?.({ date: selectedDate, view })}
         {groups.length === 0 ? (
           <div className="ct-tracker-empty">
             <h2>No tracking fields configured</h2>

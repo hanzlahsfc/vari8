@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import {
   buildComponents,
@@ -35,6 +35,47 @@ function walkAll(dirAbs: string, out: string[] = []): string[] {
 }
 
 describe("system index generator", () => {
+  // buildSymbols runs the full TypeScript-program scan (~seconds each
+  // call); the output is deterministic within a test file, so compute it
+  // once in beforeAll instead of inside each test (5s budget the
+  // parallel suite kept blowing past). F2's independent compiler count
+  // is a third program over the same file set — identical cost profile —
+  // so it shares this hook budget too; the hook gets an explicit budget
+  // sized for three compiler scans under worker contention.
+  let symbols: string;
+  let f2Counts: string;
+  beforeAll(() => {
+    symbols = buildSymbols();
+    const files = ["lib", "frontend/src/lib"]
+      .flatMap((dir) =>
+        walkAll(path.join(ROOT, dir)).filter(
+          (f) => /\.(ts|tsx)$/.test(f) && !/\.d\.ts$/.test(f),
+        ),
+      )
+      .filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(f));
+    const program = ts.createProgram(files, {
+      target: ts.ScriptTarget.ES2020,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      jsx: ts.JsxEmit.Preserve,
+      skipLibCheck: true,
+      noEmit: true,
+      allowJs: false,
+    });
+    const checker = program.getTypeChecker();
+    let modules = 0;
+    let names = 0;
+    for (const file of files) {
+      const sf = program.getSourceFile(file);
+      const symbol = sf ? checker.getSymbolAtLocation(sf) : undefined;
+      if (!symbol) continue;
+      const exported = checker.getExportsOfModule(symbol);
+      if (exported.length > 0) modules += 1;
+      names += exported.length;
+    }
+    f2Counts = `${modules} modules with exports, ${names} exported symbols.`;
+  }, 120_000);
+
   it("derives route paths the way the App Router does", () => {
     expect(
       routePath(
@@ -77,7 +118,6 @@ describe("system index generator", () => {
   });
 
   it("prints one-line signatures from the compiler and never an absolute path", () => {
-    const symbols = buildSymbols();
     expect(symbols).toContain(
       "`export type AuditAction = (typeof AUDIT_ACTIONS)[number]`",
     );
@@ -118,16 +158,15 @@ describe("system index generator", () => {
     }
   });
 
-  it("F1: indexes a route-segment directory such as app/sheets", () => {
+  it("F1: indexes a route-segment directory such as app/library/foods", () => {
     const routes = buildRoutes();
-    expect(routes).toContain("| `/sheets` | `app/sheets/page.tsx` |");
     expect(routes).toContain(
-      "| `/sheets/[slug]` | `app/sheets/[slug]/page.tsx` |",
+      "| `/library/foods` | `app/library/foods/page.tsx` |",
     );
     // Canary on the page count: update the literal deliberately when a PR adds or
-    // removes a page route, never by regenerating. 55 = 52 + the three
-    // app/(canvas)/me/* pages landed with PR #140.
-    expect(routes).toContain("Counts: 55 backend pages");
+    // removes a page route, never by regenerating. 58 = 60 minus the scrapped
+    // /sheets and /sheets/[slug] sheet-viewer routes.
+    expect(routes).toContain("Counts: 58 backend pages");
     // The same name collides inside spec/, which must be inventoried too: a
     // managed router exists for spec/ and its region carries no file counts.
     expect(
@@ -137,43 +176,13 @@ describe("system index generator", () => {
   });
 
   it("F2: indexes re-exports and matches an independent compiler count", () => {
-    const symbols = buildSymbols();
     expect(symbols).toContain("## `frontend/src/lib/utils.ts`");
     expect(symbols).toContain('- `export { cn } from "cn"`');
     expect(symbols).toContain(
       '- `export type { WorkspaceRole } from "./rbac"`',
     );
 
-    const files = ["lib", "frontend/src/lib"]
-      .flatMap((dir) =>
-        walkAll(path.join(ROOT, dir)).filter(
-          (f) => /\.(ts|tsx)$/.test(f) && !/\.d\.ts$/.test(f),
-        ),
-      )
-      .filter((f) => !/(^|\/)[^/]+\.(test|spec)\.tsx?$/.test(f));
-    const program = ts.createProgram(files, {
-      target: ts.ScriptTarget.ES2020,
-      module: ts.ModuleKind.ESNext,
-      moduleResolution: ts.ModuleResolutionKind.Bundler,
-      jsx: ts.JsxEmit.Preserve,
-      skipLibCheck: true,
-      noEmit: true,
-      allowJs: false,
-    });
-    const checker = program.getTypeChecker();
-    let modules = 0;
-    let names = 0;
-    for (const file of files) {
-      const sf = program.getSourceFile(file);
-      const symbol = sf ? checker.getSymbolAtLocation(sf) : undefined;
-      if (!symbol) continue;
-      const exported = checker.getExportsOfModule(symbol);
-      if (exported.length > 0) modules += 1;
-      names += exported.length;
-    }
-    expect(symbols).toContain(
-      `Counts: ${modules} modules with exports, ${names} exported symbols.`,
-    );
+    expect(symbols).toContain(`Counts: ${f2Counts}`);
   });
 
   it("F3: resolves @/ in the canvas tree against frontend/src", () => {
@@ -270,9 +279,11 @@ describe("system index generator", () => {
       );
     expect(rows.length).toBeGreaterThan(0);
     for (const row of rows) {
-      // Imported by the root layout, which wraps /, /coach and /ethereal.
+      // Imported by the root layout, which wraps /, /client, /coach,
+      // /dev/design-system (the frontend design system playground, dev only)
+      // and /ethereal.
       expect(row).toBe(
-        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /coach, /ethereal |",
+        "| `MotionProvider` | `frontend/src/components/motion-provider.tsx` | /, /client, /coach, /dev/design-system, /ethereal |",
       );
     }
   });
@@ -293,7 +304,9 @@ describe("system index generator", () => {
     expect(coach).not.toContain(
       "`frontend/src/components/ethereal/clients/clients-workspace.tsx`",
     );
-    // "meal plan editor" shows both, each under its surface.
+    // "meal plan editor" shows both, each under its surface; the coach
+    // surface mounts NutritionEditor while the client app renders its own
+    // meal-plan screens.
     expect(coach).toContain(
       "| `NutritionEditor` | `frontend/src/components/coach/plans/nutrition/editor.tsx` | /coach |",
     );

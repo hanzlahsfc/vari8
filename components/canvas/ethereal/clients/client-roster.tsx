@@ -6,14 +6,18 @@ import {
   ChevronRight,
   ClipboardCheck,
   Flag,
-  LayoutGrid,
   MessageCircle,
-  Rows3,
   Search,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useMemo, useState } from "react";
 import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import { useMemo, useState } from "react";
+import { Input, SegmentedControl, Select } from "@/components/canvas/vari8/components";
+import {
+  attentionPriority,
+  attentionReasons,
+  attentionSignalsFrom,
+} from "@/lib/canvas/attention";
 import {
   attentionCount,
   formatClientDate,
@@ -42,7 +46,7 @@ function initials(client: WorkspaceClient) {
   );
 }
 
-function matchingSearch(client: WorkspaceClient, query: string) {
+export function matchingSearch(client: WorkspaceClient, query: string) {
   const normalized = query.trim().toLocaleLowerCase();
   if (!normalized) return true;
   return [client.name, client.label, client.phase, client.template]
@@ -140,54 +144,14 @@ function ClientCounts({ client }: { client: WorkspaceClient }) {
   );
 }
 
-function attentionReasons(client: WorkspaceClient) {
-  const reasons: string[] = [];
-  const pendingTasks = client.clientTasks.filter(
-    (task) => task.status === "open",
-  ).length;
-
-  const hasCheckInAwaitingFeedback = client.checkIns.some(
-    (checkIn) => checkIn.status === "awaiting feedback",
-  );
-  if (hasCheckInAwaitingFeedback) {
-    reasons.push("check-in awaiting feedback");
-  } else if (client.checkInStatus === "overdue") {
-    reasons.push("check-in overdue");
-  }
-  if (client.unreadCount > 0) {
-    reasons.push(
-      `${client.unreadCount} unread message${client.unreadCount === 1 ? "" : "s"}`,
-    );
-  }
-  const overdueTasks = client.clientTasks.filter(
-    (task) => task.status === "overdue",
-  ).length;
-  if (overdueTasks > 0) {
-    reasons.push(
-      `${overdueTasks} overdue task${overdueTasks === 1 ? "" : "s"}`,
-    );
-  }
-  if (pendingTasks > 0) {
-    reasons.push(
-      `${pendingTasks} pending task${pendingTasks === 1 ? "" : "s"}`,
-    );
-  }
-  if (client.trainingFlags > 0) {
-    reasons.push(
-      `${client.trainingFlags} training flag${client.trainingFlags === 1 ? "" : "s"}`,
-    );
-  }
-  return reasons;
+// W2-T5: reasons and priority come from the shared attention module so
+// the triage widget surfaces the identical result.
+function reasonsFor(client: WorkspaceClient) {
+  return attentionReasons(attentionSignalsFrom(client));
 }
 
-function attentionPriority(client: WorkspaceClient) {
-  if (client.checkIns.some((checkIn) => checkIn.status === "awaiting feedback"))
-    return 5;
-  if (client.checkInStatus === "overdue") return 4;
-  if (client.clientTasks.some((task) => task.status === "overdue")) return 3;
-  if (client.unreadCount > 0) return 2;
-  if (client.trainingFlags > 0) return 1;
-  return 0;
+function priorityFor(client: WorkspaceClient) {
+  return attentionPriority(attentionSignalsFrom(client));
 }
 
 export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
@@ -227,7 +191,7 @@ export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "attention") {
         return (
-          attentionPriority(b) - attentionPriority(a) ||
+          priorityFor(b) - priorityFor(a) ||
           Number(needsAttention(b)) - Number(needsAttention(a)) ||
           attentionCount(b) - attentionCount(a) ||
           a.name.localeCompare(b.name)
@@ -280,104 +244,67 @@ export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
         </div>
       </header>
 
-      <div className="cr-controls-bezel">
-        <div className="cr-controls-core">
-          <div className="cr-filter-bar">
-            <fieldset className="cr-filter-tabs">
-              <legend className="cr-visually-hidden">Filter clients</legend>
-              {(
-                [
-                  ["all", "All", activeClients.length],
-                  ["attention", "Needs attention", attentionTotal],
-                  ["unread", "Unread", unreadTotal],
-                ] as const
-              ).map(([key, title, count]) => (
-                <button
-                  key={key}
-                  type="button"
-                  className="cr-filter-tab"
-                  data-active={filter === key}
-                  aria-pressed={filter === key}
-                  onClick={() => updateFilter(key)}
-                >
-                  {filter === key && (
-                    <motion.span
-                      className="cr-filter-thumb"
-                      layoutId="client-roster-active-filter"
-                      aria-hidden="true"
-                      transition={
-                        reduceMotion
-                          ? { duration: 0 }
-                          : { type: "spring", bounce: 0, duration: 0.3 }
-                      }
-                    />
-                  )}
-                  <span className="cr-filter-title">{title}</span>
-                  <span className="cr-filter-count">{count}</span>
-                </button>
-              ))}
-            </fieldset>
+      <div className="cr-controls-panel">
+        <div className="cr-filter-bar">
+          <SegmentedControl
+            label="Filter clients"
+            value={filter}
+            onValueChange={(value) => updateFilter(value as RosterFilter)}
+            className="cr-filter-tabs"
+            options={[
+              { value: "all", label: `All (${activeClients.length})` },
+              {
+                value: "attention",
+                label: `Needs attention (${attentionTotal})`,
+              },
+              { value: "unread", label: `Unread (${unreadTotal})` },
+            ]}
+          />
 
-            <div className="cr-controls">
-              <label className="cr-search">
-                <Search size={16} aria-hidden="true" />
-                <span className="cr-visually-hidden">Search clients</span>
-                <input
-                  type="search"
-                  value={query}
-                  onChange={(event) => updateQuery(event.currentTarget.value)}
-                  placeholder="Search clients"
-                />
-              </label>
-              <label className="cr-select-label">
-                <span className="cr-visually-hidden">
-                  Filter by client label
-                </span>
-                <select
-                  value={label}
-                  onChange={(event) => updateLabel(event.currentTarget.value)}
-                >
-                  <option value="all">All labels</option>
-                  {labels.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="cr-select-label cr-sort-label">
-                <span className="cr-visually-hidden">Sort clients</span>
-                <select
-                  value={sort}
-                  onChange={(event) =>
-                    updateSort(event.currentTarget.value as RosterSort)
-                  }
-                >
-                  <option value="next-check-in">Next check-in</option>
-                  <option value="attention">Attention first</option>
-                  <option value="name">Name</option>
-                </select>
-              </label>
-              <fieldset className="cr-view-toggle">
-                <legend className="cr-visually-hidden">View style</legend>
-                <button
-                  type="button"
-                  aria-label="Cards view"
-                  aria-pressed={view === "cards"}
-                  onClick={() => setView("cards")}
-                >
-                  <LayoutGrid size={16} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="List view"
-                  aria-pressed={view === "list"}
-                  onClick={() => setView("list")}
-                >
-                  <Rows3 size={16} aria-hidden="true" />
-                </button>
-              </fieldset>
+          <div className="cr-controls">
+            <div className="cr-search">
+              <Search size={16} aria-hidden="true" />
+              <Input
+                label="Search clients"
+                type="search"
+                value={query}
+                onChange={(event) => updateQuery(event.currentTarget.value)}
+                placeholder="Search clients"
+              />
             </div>
+            <div className="cr-select-label">
+              <Select
+                label="Client label"
+                value={label}
+                onValueChange={updateLabel}
+                options={[
+                  { value: "all", label: "All labels" },
+                  ...labels.map((item) => ({ value: item, label: item })),
+                ]}
+              />
+            </div>
+            <div className="cr-select-label cr-sort-label">
+              <Select
+                label="Sort clients"
+                value={sort}
+                onValueChange={(value) => updateSort(value as RosterSort)}
+                options={[
+                  { value: "next-check-in", label: "Next check-in" },
+                  { value: "attention", label: "Attention first" },
+                  { value: "name", label: "Name" },
+                ]}
+              />
+            </div>
+            <SegmentedControl
+              label="Client display"
+              value={view}
+              onValueChange={(value) => setView(value as RosterView)}
+              className="cr-view-toggle"
+              options={[
+                { value: "cards", label: "Cards" },
+                { value: "list", label: "List" },
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -414,9 +341,7 @@ export function ClientRoster({ clients, onOpenClient }: ClientRosterProps) {
           }
         >
           {visibleClients.map((client) => {
-            const reasons = needsAttention(client)
-              ? attentionReasons(client)
-              : [];
+            const reasons = needsAttention(client) ? reasonsFor(client) : [];
             const attentionId = `cr-attention-${client.id}`;
 
             return (

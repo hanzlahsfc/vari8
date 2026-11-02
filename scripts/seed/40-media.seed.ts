@@ -137,6 +137,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         contentType: item.contentType,
         byteSize: BigInt(item.bytes.byteLength),
         uploadedByUserId: coach.userId,
+        clientProfileId: client.id,
         deletedAt: null,
       },
       create: {
@@ -147,6 +148,7 @@ export default async function seed(ctx: SeedContext): Promise<void> {
         contentType: item.contentType,
         byteSize: BigInt(item.bytes.byteLength),
         uploadedByUserId: coach.userId,
+        clientProfileId: client.id,
       },
     });
   }

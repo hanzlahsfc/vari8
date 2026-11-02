@@ -66,6 +66,9 @@ export const dataDomains = [
     slice: trackerSlice,
     keys: ["coaching-client-tracker-maya-v1"],
   },
+  // Issue #162 slice (card 02): supplements persist remotely through
+  // ./supplements.ts (apiFetch), so the domain keeps no localStorage slice.
+  { domain: "supplements", slice: null, keys: [] },
 ] as const;
 
 const slices: CoachSlice[] = dataDomains.flatMap(({ slice }) =>

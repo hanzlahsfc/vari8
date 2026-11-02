@@ -12,6 +12,7 @@ import {
   Undo2,
   X,
 } from "lucide-react";
+import { useReducedMotion } from "@/lib/canvas/reduced-motion";
 import { motion } from "motion/react";
 import {
   type KeyboardEvent,
@@ -23,7 +24,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { useReducedMotion } from "@/lib/canvas/reduced-motion";
+import {
+  Input as SharedInput,
+  Select as SharedSelect,
+} from "@/components/canvas/vari8/components";
 import { BuilderGallery } from "./gallery";
 import {
   addToLayout,
@@ -121,11 +125,27 @@ export function DashboardBuilder({
   onChange,
   sourceRecords,
   previewOnly = false,
+  onRecordsChange,
+  workspaceId,
+  clientProfileId,
+  onMessagesRefresh,
 }: {
   value: Draft;
   onChange: (value: Draft) => void;
   sourceRecords: SourceRecords;
   previewOnly?: boolean;
+  /** Card 05a: observes record edits (task completion) so an own-bound
+   *  caller can persist them remotely. Optional; editing stays
+   *  session-local for every host that does not pass it. */
+  onRecordsChange?: (records: SourceRecords) => void;
+  /** Card 05a client surface: the caller's own workspace — presence turns the
+   *  dashboard chat detail into a real conversation with a composer. */
+  workspaceId?: string;
+  clientProfileId?: string;
+  /** Card 05a/P625: the own-scope host's thread refresh — the chat
+   *  detail's composer and read marker resync through the same
+   *  session-scoped ordering the host's mount load uses. */
+  onMessagesRefresh?: (identityKey: string) => Promise<void> | void;
 }) {
   const draft = value;
   const setDraft = onChange;
@@ -223,6 +243,7 @@ export function DashboardBuilder({
   };
   const changeRecords = (next: SourceRecords) => {
     setRecords(next);
+    onRecordsChange?.(next);
     setAnnouncement("Sample preview updated for this editing session.");
   };
   const syncGesture = useCallback((value: Gesture | null) => {
@@ -302,7 +323,7 @@ export function DashboardBuilder({
             sizedRect,
             cols,
             minimumWidthSpan(cols, width),
-            minimumHeight(bp),
+            minimumHeight(bp, widget?.kind),
           )
         : null;
       const next = {
@@ -381,7 +402,10 @@ export function DashboardBuilder({
       if (!widget) return;
       rect.w =
         bp === "mobile" ? cols : g.base.w + Math.round(dx / (track + 16));
-      rect.h = Math.max(minimumHeight(bp), g.base.h + Math.round(dy / 80));
+      rect.h = Math.max(
+        minimumHeight(bp, widget.kind),
+        g.base.h + Math.round(dy / 80),
+      );
       rect.size = classifyFootprint(rect.w, rect.h, bp, width);
     }
     propose({ ...g, pointerY: e.clientY }, rect);
@@ -445,7 +469,10 @@ export function DashboardBuilder({
         );
         if (g.type === "move") rect.y = Math.max(0, g.base.y + verticalSteps);
         else {
-          rect.h = Math.max(minimumHeight(bp), g.base.h + verticalSteps);
+          const kind = draftRef.current.widgets.find(
+            (item) => item.id === g.id,
+          )?.kind;
+          rect.h = Math.max(minimumHeight(bp, kind), g.base.h + verticalSteps);
           rect.size = classifyFootprint(rect.w, rect.h, bp, width);
         }
         propose(g, rect);
@@ -499,14 +526,18 @@ export function DashboardBuilder({
       const step = e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 1;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight")
         rect.w = bp === "mobile" ? cols : rect.w + step;
-      else rect.h = Math.max(minimumHeight(bp), rect.h + step);
+      else
+        rect.h = Math.max(
+          minimumHeight(bp, byId.get(g.id)?.kind),
+          rect.h + step,
+        );
       rect.size = classifyFootprint(rect.w, rect.h, bp, width);
     }
     propose(g, rect);
   };
   const applySize = (widget: WidgetInstance, size: SizeName) => {
     const current = currentLayout[widget.id];
-    const preset = footprint(size, bp, width);
+    const preset = footprint(size, bp, width, widget.kind);
     const max = maximumFootprint(widget.kind, bp);
     if (preset.w > max.w || preset.h > max.h) {
       setAnnouncement(
@@ -525,7 +556,7 @@ export function DashboardBuilder({
       rect,
       cols,
       minimumWidthSpan(cols, width),
-      minimumHeight(bp),
+      minimumHeight(bp, widget.kind),
     );
     if (!next) {
       setAnnouncement("This preset does not fit. Move the card left first.");
@@ -633,7 +664,12 @@ export function DashboardBuilder({
             }
           : {
               ...oldRect,
-              ...footprint(replacement.settings.size, key, canvasWidth),
+              ...footprint(
+                replacement.settings.size,
+                key,
+                canvasWidth,
+                replacement.kind,
+              ),
             };
         rect.x = Math.min(rect.x, columnsFor(key) - rect.w);
         layouts[key] =
@@ -643,7 +679,7 @@ export function DashboardBuilder({
             rect,
             columnsFor(key),
             minimumWidthSpan(columnsFor(key), canvasWidth),
-            minimumHeight(key),
+            minimumHeight(key, replacement.kind),
           ) ?? layouts[key];
       }
       commit(
@@ -682,7 +718,7 @@ export function DashboardBuilder({
                 custom,
                 columnsFor(key),
                 minimumWidthSpan(columnsFor(key), canvasWidth),
-                minimumHeight(key),
+                minimumHeight(key, widget.kind),
               ) ?? next;
           }
         }
@@ -711,7 +747,7 @@ export function DashboardBuilder({
       if (updated.settings.size !== old.settings.size) {
         const rect = {
           ...currentLayout[old.id],
-          ...footprint(updated.settings.size, bp, width),
+          ...footprint(updated.settings.size, bp, width, updated.kind),
         };
         rect.x = Math.min(rect.x, cols - rect.w);
         const result = resolvePlacement(
@@ -720,7 +756,7 @@ export function DashboardBuilder({
           rect,
           cols,
           minimumWidthSpan(cols, width),
-          minimumHeight(bp),
+          minimumHeight(bp, updated.kind),
         );
         if (result)
           next = { ...next, layouts: { ...next.layouts, [bp]: result } };
@@ -752,28 +788,23 @@ export function DashboardBuilder({
           {previewOnly ? (
             <h2>{draft.name || "Dashboard"}</h2>
           ) : (
-            <>
-              <label className="cb-db-name-label" htmlFor="dashboard-name">
-                Dashboard name
-              </label>
-              <input
-                id="dashboard-name"
-                value={name}
-                maxLength={80}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={() => {
-                  if (name.trim() && name !== draft.name)
-                    commit(
-                      { ...draft, name: name.trim() },
-                      "Dashboard renamed.",
-                    );
-                  else setName(draft.name);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") e.currentTarget.blur();
-                }}
-              />
-            </>
+            <SharedInput
+              label="Dashboard name"
+              id="dashboard-name"
+              className="cb-db-name-input"
+              value={name}
+              maxLength={80}
+              size="md"
+              onChange={(e) => setName(e.target.value)}
+              onBlur={() => {
+                if (name.trim() && name !== draft.name)
+                  commit({ ...draft, name: name.trim() }, "Dashboard renamed.");
+                else setName(draft.name);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
           )}
           <p>
             {records.client.name}
@@ -838,7 +869,11 @@ export function DashboardBuilder({
             <details
               className="cb-db-dashboard-menu"
               onClick={(event) => {
-                if ((event.target as HTMLElement).closest("button"))
+                if (
+                  (event.target as HTMLElement).closest(
+                    "button:not(.v8-select)",
+                  )
+                )
                   event.currentTarget.removeAttribute("open");
               }}
               onKeyDown={(event) => {
@@ -994,7 +1029,7 @@ export function DashboardBuilder({
               catalogue.find((entry) => entry.id === widget.kind)?.sizes ?? [],
             );
             const matchingPreset = availableSizes.find((size) => {
-              const preset = footprint(size, bp, width);
+              const preset = footprint(size, bp, width, widget.kind);
               return preset.w === rect.w && preset.h === rect.h;
             });
             return (
@@ -1003,6 +1038,8 @@ export function DashboardBuilder({
                 id={`widget-${id}`}
                 tabIndex={-1}
                 className="cb-db-card"
+                data-kind={widget.kind}
+                data-client-preview={clientPreview}
                 data-size={classifyFootprint(rect.w, rect.h, bp, width)}
                 data-affected={!!changed}
                 data-moving={gesture?.id === id}
@@ -1016,14 +1053,23 @@ export function DashboardBuilder({
               >
                 <header className="cb-db-card-header">
                   <h2 title={titleFor(widget)}>
-                    <button
-                      type="button"
-                      className="cb-db-source-title"
-                      aria-label={`Open ${titleFor(widget)} source details`}
-                      onClick={() => setDetail(widgetDetailKey(widget))}
-                    >
-                      {titleFor(widget)}
-                    </button>
+                    {widgetDetailKey(widget) ? (
+                      <button
+                        type="button"
+                        className="cb-db-source-title"
+                        aria-label={`Open ${titleFor(widget)} source details`}
+                        onClick={() => {
+                          const key = widgetDetailKey(widget);
+                          if (key) setDetail(key);
+                        }}
+                      >
+                        {titleFor(widget)}
+                      </button>
+                    ) : (
+                      <span className="cb-db-source-title">
+                        {titleFor(widget)}
+                      </span>
+                    )}
                   </h2>
                   {!clientPreview && (
                     <div className="cb-db-card-tools">
@@ -1040,7 +1086,10 @@ export function DashboardBuilder({
                       <details
                         className="cb-db-card-menu"
                         onKeyDown={(event) => {
-                          if (event.key === "Escape") {
+                          if (
+                            event.key === "Escape" &&
+                            !(event.target as HTMLElement).closest(".v8-select")
+                          ) {
                             event.currentTarget.removeAttribute("open");
                             event.currentTarget
                               .querySelector("summary")
@@ -1048,13 +1097,19 @@ export function DashboardBuilder({
                           }
                         }}
                         onClick={(e) => {
-                          if ((e.target as HTMLElement).closest("button"))
+                          if (
+                            (e.target as HTMLElement).closest(
+                              "button:not(.v8-select)",
+                            )
+                          )
                             e.currentTarget.removeAttribute("open");
                         }}
                         onKeyUp={(e) => {
                           if (
                             (e.key === "Enter" || e.key === " ") &&
-                            (e.target as HTMLElement).closest("button")
+                            (e.target as HTMLElement).closest(
+                              "button:not(.v8-select)",
+                            )
                           )
                             e.currentTarget.removeAttribute("open");
                         }}
@@ -1093,27 +1148,30 @@ export function DashboardBuilder({
                           >
                             Move with keyboard
                           </button>
-                          <label>
-                            Resize
-                            <select
-                              aria-label={`Resize ${titleFor(widget)}`}
-                              value={matchingPreset ?? "custom"}
-                              onChange={(e) =>
-                                applySize(widget, e.target.value as SizeName)
-                              }
-                            >
-                              {!matchingPreset && (
-                                <option value="custom" disabled>
-                                  Custom · {rect.w} × {rect.h}
-                                </option>
-                              )}
-                              {availableSizes.map((size) => (
-                                <option key={size} value={size}>
-                                  {size}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
+                          <SharedSelect
+                            label={`Resize ${titleFor(widget)}`}
+                            className="cb-db-resize-select"
+                            value={matchingPreset ?? "custom"}
+                            options={[
+                              ...(!matchingPreset
+                                ? [
+                                    {
+                                      value: "custom",
+                                      label: `Custom · ${rect.w} × ${rect.h}`,
+                                      disabled: true,
+                                    },
+                                  ]
+                                : []),
+                              ...availableSizes.map((size) => ({
+                                value: size,
+                                label: size,
+                              })),
+                            ]}
+                            onValueChange={(value) =>
+                              applySize(widget, value as SizeName)
+                            }
+                            size="sm"
+                          />
                           <button
                             type="button"
                             onClick={() => {
@@ -1292,49 +1350,49 @@ export function DashboardBuilder({
             {gesture.valid
               ? "Ready to place"
               : gesture.rect.w < minimumWidthSpan(cols, width) ||
-                  gesture.rect.h < minimumHeight(bp)
-                ? `Minimum ${minimumWidthSpan(cols, width)} columns × ${minimumHeight(bp)} rows`
+                  gesture.rect.h < minimumHeight(bp, byId.get(gesture.id)?.kind)
+                ? `Minimum ${minimumWidthSpan(cols, width)} columns × ${minimumHeight(bp, byId.get(gesture.id)?.kind)} rows`
                 : `Maximum ${maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w} columns × ${maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h} rows; keep within canvas`}
           </span>
           {gesture.type === "resize" && (
             <div className="cb-db-size-fields">
-              <label>
-                Width (columns)
-                <input
-                  aria-label="Widget width in columns"
-                  type="number"
-                  min={bp === "mobile" ? cols : minimumWidthSpan(cols, width)}
-                  max={
-                    maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w
-                  }
-                  step={1}
-                  value={gesture.rect.w}
-                  disabled={bp === "mobile"}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (Number.isInteger(value))
-                      propose(gesture, { ...gesture.rect, w: value });
-                  }}
-                />
-              </label>
-              <label>
-                Height (rows)
-                <input
-                  aria-label="Widget height in rows"
-                  type="number"
-                  min={minimumHeight(bp)}
-                  max={
-                    maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h
-                  }
-                  step={1}
-                  value={gesture.rect.h}
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    if (Number.isInteger(value))
-                      propose(gesture, { ...gesture.rect, h: value });
-                  }}
-                />
-              </label>
+              <SharedInput
+                label="Widget width in columns"
+                aria-label="Widget width in columns"
+                className="cb-db-gesture-input"
+                type="number"
+                min={bp === "mobile" ? cols : minimumWidthSpan(cols, width)}
+                max={
+                  maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).w
+                }
+                step={1}
+                value={gesture.rect.w}
+                size="sm"
+                disabled={bp === "mobile"}
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isInteger(value))
+                    propose(gesture, { ...gesture.rect, w: value });
+                }}
+              />
+              <SharedInput
+                label="Widget height in rows"
+                aria-label="Widget height in rows"
+                className="cb-db-gesture-input"
+                type="number"
+                min={minimumHeight(bp, byId.get(gesture.id)?.kind)}
+                max={
+                  maximumFootprint(byId.get(gesture.id)?.kind ?? "BN21", bp).h
+                }
+                step={1}
+                value={gesture.rect.h}
+                size="sm"
+                onChange={(event) => {
+                  const value = Number(event.target.value);
+                  if (Number.isInteger(value))
+                    propose(gesture, { ...gesture.rect, h: value });
+                }}
+              />
             </div>
           )}
           <button type="button" onClick={() => cancelGesture()}>
@@ -1387,10 +1445,13 @@ export function DashboardBuilder({
           onClose={() => setDetail(null)}
         >
           <DetailContent
+            workspaceId={workspaceId}
             detail={detail}
             records={records}
             clientPreview={clientPreview}
             onRecordsChange={changeRecords}
+            clientProfileId={clientProfileId}
+            onMessagesRefresh={onMessagesRefresh}
           />
         </LocalDialog>
       )}
