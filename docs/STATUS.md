@@ -1,3 +1,28 @@
+## 2026-11-02 — P712 Beta gate repairs (five diagnosed failures)
+
+Branch `beta/p712-gate-repairs` off `origin/Vari8-Beta` `ae409f38`.
+
+- `tests/integration/checkin-recurrence-i1.test.ts`: the London-overlap
+  collision case no longer branches on the runner's calendar month. r2's
+  `Europe/London` minutes are derived from the actual occurrence instant
+  (`${startDate}T09:00:00Z` via `Intl.DateTimeFormat`), and r1's persisted
+  `dueAt` is asserted before the collision — deterministic across GMT/BST.
+- `app/auth.css`: stale mirrored `--cd-bg` values now match the canvas
+  `--color-base` tokens (`#0b0b0c` pro-dark, `#f2f2f4` pro-white,
+  `lib/canvas/vari8-theme.ts`). Real CSS repair — no selector/structural
+  change.
+- `tests/e2e/me-auth-look.spec.ts`: stale root-bg expectations corrected
+  to the token contract (`rgb(11,11,12)`/`rgb(242,242,244)`; card
+  `rgb(22,22,24)`/`rgb(255,255,255)`), and the light case now sets the
+  workspace's authoritative `appearanceMode` (restored in `afterAll`)
+  instead of relying on localStorage.
+
+Before: 1 failed/1132 integration (`londonOverlap` month branch); e2e
+4 failed (`auth-card` ×2 color mismatch, `me-auth-look` ×2 mode/bg).
+After — Node v24.22.1: integration file 18/18; both e2e specs 7/7
+(`MAIL_DELIVERY_ADAPTER=dev-file`); Node v22.21.1: integration 18/18,
+e2e 7/7, `format:check`/`typecheck`/`lint` 0 errors, `npm run build` 0.
+
 ## 2026-10-31 — Prompt 657 — #250 parent regression + real visuals
 
 - Committed the parent-level regressions through real `RemoteDashboardTab` + `useOwnMessages` (not callback-only): initial fetch fails → open conversation → error → Retry → recovered messages render; profile switch mounts a new lifecycle with no stale error.

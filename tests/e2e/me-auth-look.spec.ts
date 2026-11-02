@@ -43,6 +43,8 @@ let clientProfileId: string | undefined;
 let clientInviteHref = "";
 let staffInviteHref = "";
 let inviteTokenIds: string[] = [];
+let workspaceId: string | undefined;
+let originalAppearanceMode: "DARK" | "LIGHT" = "DARK";
 
 type Look = Record<(typeof PROPS)[number], string>;
 
@@ -99,6 +101,8 @@ test.beforeAll(async () => {
     prisma.user.findUniqueOrThrow({ where: { email: E2E.owner } }),
     prisma.workspace.findUniqueOrThrow({ where: { slug: E2E.workspaceSlug } }),
   ]);
+  workspaceId = ws.id;
+  originalAppearanceMode = ws.appearanceMode;
 
   const existing = await prisma.clientProfile.findFirst({
     where: { userId: client.id, workspaceId: ws.id },
@@ -153,6 +157,12 @@ test.afterAll(async () => {
       data: { archivedAt: new Date() },
     });
   }
+  if (workspaceId) {
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { appearanceMode: originalAppearanceMode },
+    });
+  }
   await prisma.$disconnect();
 });
 
@@ -161,6 +171,13 @@ for (const mode of ["dark", "light"] as const) {
     page,
   }) => {
     await seedMode(page, mode);
+    // The workspace's authoritative appearance overrides the stored seed
+    // (mergeWorkspaceAppearance); the seeded preference alone cannot flip
+    // the shell while the workspace policy says otherwise.
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { appearanceMode: mode === "light" ? "LIGHT" : "DARK" },
+    });
 
     // /me is the reference: the client screen's own root.
     await signInAsClient(page);
@@ -168,7 +185,8 @@ for (const mode of ["dark", "light"] as const) {
     await expect(page.locator(".eg-root")).toHaveAttribute("data-mode", mode);
     const home = await computed(page, ".eg-root");
     expect(home["background-color"]).toBe(
-      mode === "dark" ? "rgb(8, 8, 8)" : "rgb(245, 245, 245)",
+      // --v8-canvas: #0B0B0C / #F2F2F4 (lib/canvas/vari8-theme.ts)
+      mode === "dark" ? "rgb(11, 11, 12)" : "rgb(242, 242, 244)",
     );
     expect(home["font-family"]).toContain("Ethereal Geist");
     expect(await fontLoaded(page)).toBe(true);
@@ -209,7 +227,8 @@ for (const mode of ["dark", "light"] as const) {
       const card = page.locator(".auth-card");
       await expect(card).toHaveCSS(
         "background-color",
-        mode === "dark" ? "rgb(16, 16, 16)" : "rgb(255, 255, 255)",
+        // --v8-surface: #161618 / #FFFFFF (lib/canvas/vari8-theme.ts)
+        mode === "dark" ? "rgb(22, 22, 24)" : "rgb(255, 255, 255)",
       );
       const shadow = await card.evaluate(
         (el) => getComputedStyle(el).boxShadow,
