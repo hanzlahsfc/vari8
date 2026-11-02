@@ -12,7 +12,7 @@ No admin reset tool, no new npm dependency.
 | `lib/mail/invitation.ts`                  | **Removed in the P707 Beta reconciliation.** Current Beta already delivers invitations inline through `createInvitationFromApi` (`/invite?workspace=...&token=...` link, 502 `delivery_failed`, rate limits, authorization); the helper was a dead duplicate caller.                                                                |
 | `instrumentation.ts`                      | boots the mail gate next to the auth-secret gate, same production-only refusal and the same `process.exit(1)` path.                                                                                                                                                                                                                 |
 | `.env.example`                            | names only for `MAIL_DELIVERY_ADAPTER=emaillabs`, `EMAILLABS_APP_KEY`, `EMAILLABS_SECRET_KEY`, `EMAILLABS_SMTP_ACCOUNT`, `MAIL_FROM`, `EMAILLABS_API_URL`. No values.                                                                                                                                                               |
-| `tests/unit/mail-emaillabs.test.ts` (new) | ten tests: provider form payload/basic auth/no tracking, no secrets in logs, boot refuse + boot allow, provider timeout propagation, non-2xx status-only rejection, current invitation boundary (`/invite` link + `delivery_failed` mapping), reset mail construction (`/reset` and `/me/reset`).                                   |
+| `tests/unit/mail-emaillabs.test.ts` (new) | ten tests: provider form payload/basic auth/no request-injected tracking, no secrets in logs, boot refuse + boot allow, provider timeout propagation, non-2xx status-only rejection, current invitation boundary (`/invite` link + `delivery_failed` mapping), reset mail construction (`/reset` and `/me/reset`).                  |
 
 `dev-file` is untouched and stays the default outside production. `sendMail`'s signature and the
 `MailAdapter` port are unchanged, so the one existing call site (the reset flow at
@@ -44,7 +44,11 @@ Two env names beyond the card's three were required by that contract and are add
 Both are names only in `.env.example`. A verifier that disagrees with either should reject this PR on
 the contract, not treat them as undocumented additions.
 
-## Gate results (all literal exit codes, Node v26.12.1)
+## Historical gate results (pre-merge head `4af4e492`, Node v26.12.1 — superseded)
+
+The table below is the PR's original evidence against the old base. It is
+kept for provenance only — it is NOT evidence for the current head. The
+authoritative results are in "P707 fix-forward verification" below.
 
 | Gate        | Command                                                                    | Exit                                                    |
 | ----------- | -------------------------------------------------------------------------- | ------------------------------------------------------- |
@@ -68,22 +72,23 @@ repair belongs to the SEC-DBROLE card.
 
 ## Bites (each guard removed, test watched fail, guard restored)
 
-| Guard removed                                                     | Test that failed                                                         | Result                        |
-| ----------------------------------------------------------------- | ------------------------------------------------------------------------ | ----------------------------- |
-| the `authorization: Basic ...` header                             | `posts the form the provider documents, with basic auth and no tracking` | failed, then green on restore |
-| the boot refusal throw in `assertMailDeliveryConfigured`          | `refuses to boot in production when a named key is missing`              | failed, then green on restore |
-| the status-only error path, replaced by `console.error(to, text)` | `never puts a message, token or key into a log line`                     | failed, then green on restore |
+| Guard removed                                                     | Test that failed                                                                          | Result                        |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------- |
+| the `authorization: Basic ...` header                             | `posts the form the provider documents, with basic auth and no request-injected tracking` | failed, then green on restore |
+| the boot refusal throw in `assertMailDeliveryConfigured`          | `refuses to boot in production when a named key is missing`                               | failed, then green on restore |
+| the status-only error path, replaced by `console.error(to, text)` | `never puts a message, token or key into a log line`                                      | failed, then green on restore |
 
 ## What this card does not do
 
-1. **`sendInvitationMail` has no live caller yet, on purpose.** `createWorkspaceInvitation` returns
-   the raw token in its `delivery` field instead of sending, because it runs inside a Serializable
-   transaction and a provider call must not live in one. The route that owns the request is the
-   caller, and that route is SV4's territory (`beta/pr-sv4-invitations`, PR #124, unmerged and
-   conflicting), the only place an invitations HTTP surface exists. Wiring is one line:
-   `await sendInvitationMail({ to: delivery.to, workspaceId: delivery.workspaceId, rawToken:
-delivery.rawToken, intendedRole })`. Whoever lands SV4 should add it and its own assertion; this
-   card must not reach into that branch.
+1. **The `lib/mail/invitation.ts` helper is removed (P707).** Current
+   Vari8-Beta already delivers invitations inline through
+   `createInvitationFromApi`: rate limit -> authorized
+   `createWorkspaceInvitation` -> normalized `created.delivery`
+   recipient/workspace/token -> `/invite?workspace=...&token=...` link ->
+   `sendMail`, with `502 delivery_failed` on send failure and replacement
+   as the recovery path. The PR-era helper was a dead duplicate and was
+   dropped in the reconciliation rather than wired as a second caller.
+   The served invitation path and its authorization are unchanged.
 2. **No real send was performed.** There are no provider keys on this machine and the card forbids
    committing any. Delivery is proved against a mocked `fetch` that asserts the exact wire request,
    which is what the card's acceptance asks for.
@@ -91,18 +96,6 @@ delivery.rawToken, intendedRole })`. Whoever lands SV4 should add it and its own
    `app/invite/page.tsx` already resolves the look from the token's intended role through
    `getInviteShellRole` and renders `ClientAuthShell` for clients, so the link stays `/invite` with
    `workspace` and `token`, the only path that accepts those parameters today. A `/me` link would 404.
-
-## Reproduce at head
-
-```
-cd .worktrees/mail-adapter
-npm ci && (cd frontend && npm ci)
-npx prettier --check . && npm run typecheck && npm run lint
-npm run index && npm run index:check
-npm run test
-INTEGRATION_DATABASE_URL=postgresql://mail_lane:<lanepw>@127.0.0.1:5433/app_mail_it?schema=public \
-  npm run test:integration
-```
 
 ## P707 fix-forward (merge of Vari8-Beta, builder)
 
@@ -114,3 +107,58 @@ INTEGRATION_DATABASE_URL=postgresql://mail_lane:<lanepw>@127.0.0.1:5433/app_mail
   `delivery_failed` mapping are current Beta's — no second caller added.
 - Deferred (proposed, not approved): production `dev-file` rejection and
   a mandatory canonical mail-link origin stay separate policy work.
+
+## P707 fix-forward verification (head `bcc10a44`)
+
+Builder results, fresh `npm ci` in an isolated worktree, Node **v24.22.1**:
+
+| Gate      | Command                                                                                                                                              | Result                                                |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| focused   | `npx vitest run tests/unit/mail-emaillabs.test.ts tests/unit/mail.test.ts tests/unit/password-reset-delivery.test.ts tests/unit/boot-checks.test.ts` | 4 files / **47 tests, exit 0**                        |
+| full unit | `npm test` (+ `npm ci` in `tools/parity/reference`)                                                                                                  | **150 files / 1797 tests, exit 0**                    |
+| build     | `npm run build`                                                                                                                                      | **exit 0**                                            |
+| static    | `npm run typecheck` / `npm run lint` / `npm run format:check` / `npm run index:check` / `git diff --check`                                           | 0 / 0 errors (136 pre-existing warnings) / 0 / OK / 0 |
+
+Builder results, Node **v22.21.1** (repo CI `node-version: 22` — the checks
+actually run; no full-suite or build was performed under 22):
+
+| Gate      | Command                                | Result                 |
+| --------- | -------------------------------------- | ---------------------- |
+| format    | `npm run format:check`                 | 0                      |
+| typecheck | `npm run typecheck`                    | 0                      |
+| lint      | `npm run lint`                         | 0 errors, 138 warnings |
+| focused   | mail-focused vitest set (same 4 files) | **47 tests, exit 0**   |
+
+Independent review results (opencode / deepseek-v4.1-flash, comment
+`6586332599`), fresh under Node **v24.22.1**:
+
+| Gate                                                            | Result                             |
+| --------------------------------------------------------------- | ---------------------------------- |
+| targeted (mail-emaillabs + mail + password-reset boundary/unit) | 4 files / **37 tests passed**      |
+| full `npm test` with nested parity deps                         | **150 files / 1797 tests, exit 0** |
+| fresh `rm -rf .next && npm run build`                           | **exit 0**                         |
+| `tsc --noEmit` / `prettier --check .`                           | 0 / 0                              |
+
+The reviewer's independent Node-22 run was not performed; the builder
+checks above are the only Node-22 evidence on record.
+
+## Request vs provider tracking
+
+The adapter's request body is inspected: `simpleHtml` adds no tracking
+pixel, no click rewriting and no remote asset — that is the extent of the
+code guarantee. Whether EmailLabs injects open/click tracking is
+account/provider configuration that no request inspection can prove; it
+remains a deployment prerequisite (below), not a verified property.
+
+## Remaining operational prerequisites
+
+- Authorized EmailLabs credentials: App Key, Secret Key, SMTP account
+  (`EMAILLABS_SMTP_ACCOUNT`), authorized `MAIL_FROM` sender domain
+  (SPF/DKIM/DMARC as the provider requires).
+- `MAIL_DELIVERY_ADAPTER=emaillabs` and a canonical HTTPS
+  `BETTER_AUTH_URL`/`AUTH_URL` for real mail links.
+- Written confirmation that account-level open/click tracking is disabled
+  on the EmailLabs account, if the owner wants no tracking.
+- An authorized sandbox send proving real delivery before integration
+  relies on it. No real mail was sent; no production credentials exist in
+  the branch.
