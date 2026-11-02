@@ -264,3 +264,92 @@ describe("VoiceTranscript — async run ownership (P700)", () => {
     expect(screen.queryByText(/unavailable/)).toBeNull();
   });
 });
+
+describe("VoiceTranscript — same-session run ownership (P703)", () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+    blobFetch();
+    mockSupported.mockReturnValue(true);
+    mockTranscribe.mockReset();
+  });
+  afterEach(() => cleanup());
+
+  /**
+   * Overlapping runs inside ONE actor scope: a take swap (cacheKey
+   * change) aborts and supersedes the in-flight run, but decode/
+   * inference itself is not cancellable mid-flight — the stale promise
+   * still settles. Only the per-run token can keep its settlement off
+   * the live run; the scope check alone passes for the same actor.
+   */
+  const mountSuperseded = async () => {
+    const runs: { res: (t: string) => void; rej: (e: unknown) => void }[] = [];
+    mockTranscribe.mockImplementation(
+      () =>
+        new Promise<string>((res, rej) => {
+          runs.push({ res, rej });
+        }),
+    );
+    const { rerender } = render(
+      <VoiceTranscript
+        audioUrl="blob:first"
+        cacheKey="mo-1"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View transcript" }));
+    await waitFor(() => expect(runs.length).toBe(1));
+    // Same actor, different attachment — run 1 is superseded in place.
+    rerender(
+      <VoiceTranscript
+        audioUrl="blob:second"
+        cacheKey="mo-2"
+        actor={actorOf("ws:uA")}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "View transcript" }));
+    await waitFor(() => expect(runs.length).toBe(2));
+    return runs;
+  };
+
+  it("a superseded run's late success cannot clobber the live run", async () => {
+    const runs = await mountSuperseded();
+    runs[0]!.res("stale same-session text");
+    // The cache write proves the stale settlement ran; it stays keyed
+    // to its own media id and must not disturb run 2's busy state.
+    await waitFor(() =>
+      expect(sessionStorage.getItem("vt1:w1:ws:uA:mo-1")).toBe(
+        "stale same-session text",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
+    expect(screen.queryByText("stale same-session text")).toBeNull();
+    runs[1]!.res("live take text");
+    await waitFor(() => screen.getByText("live take text"));
+    expect(screen.queryByText("stale same-session text")).toBeNull();
+    expect(sessionStorage.getItem("vt1:w1:ws:uA:mo-2")).toBe("live take text");
+  });
+
+  it("a superseded run's late failure cannot mark the live run errored", async () => {
+    const runs = await mountSuperseded();
+    runs[0]!.rej(new Error("stale inference failure"));
+    await waitFor(() => screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText(/unavailable/)).toBeNull();
+    runs[1]!.res("live take text");
+    await waitFor(() => screen.getByText("live take text"));
+  });
+
+  it("a superseded run's late abort cannot idle the live run", async () => {
+    const runs = await mountSuperseded();
+    runs[0]!.rej(new DOMException("Aborted", "AbortError"));
+    await waitFor(() => screen.getByRole("button", { name: "Cancel" }));
+    // Unguarded, the stale abort would return the panel to idle and
+    // hide run 2's pending state — Cancel must still be shown.
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "View transcript" }),
+    ).toBeNull();
+    runs[1]!.res("live take text");
+    await waitFor(() => screen.getByText("live take text"));
+  });
+});

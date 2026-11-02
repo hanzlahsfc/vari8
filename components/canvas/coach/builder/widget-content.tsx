@@ -976,6 +976,7 @@ export function RemoteConversation({
                     <div
                       className={`cb-msg ${outbound ? "cb-msg-out" : "cb-msg-in"}`}
                       data-sender={outbound ? "client" : "staff"}
+                      data-message-id={message.id}
                     >
                       <div className="cb-bubble">
                         <div className="cb-bubble-sender">

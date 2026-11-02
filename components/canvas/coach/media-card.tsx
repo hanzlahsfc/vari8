@@ -145,7 +145,10 @@ export function MediaCard({
   const audio = itemType.startsWith("audio/");
   const video = itemType.startsWith("video/");
   return (
-    <div className="cd-media-card">
+    <div
+      className="cd-media-card"
+      data-media-id={item.mediaObjectId ?? item.id}
+    >
       <div className="cd-media-heading">
         {video ? (
           <Video size={17} />

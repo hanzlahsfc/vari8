@@ -233,17 +233,49 @@ test("voice note replay: client → coach → client", async ({ browser }) => {
       timeout: 20_000,
     })
     .catch(() => {});
-  // Exact binding: the object URL embeds the media id, so the reply
-  // card is the one whose audio src carries replyId — never positional.
-  const replyCard = client.locator(
-    `div.cd-media-card:has(audio[src*="${replyId}"])`,
+  // Identity-boundary binding: the reply's exact message container
+  // (data-message-id on the inbound staff bubble) must hold the exact
+  // media card (data-media-id) — never positional, never a same-name
+  // or matching-request match.
+  expect(replyIds.messageId).toBeTruthy();
+  const replyMsg = client.locator(
+    `div.cb-msg[data-sender="staff"][data-message-id="${replyIds.messageId}"]`,
+  );
+  await replyMsg.waitFor({ timeout: 20_000 });
+  const replyCard = replyMsg.locator(
+    `div.cd-media-card[data-media-id="${replyId}"]`,
   );
   await replyCard.waitFor({ timeout: 20_000 });
-  await replyCard
-    .locator("audio")
-    .evaluate((a: HTMLAudioElement) => a.play().catch(() => {}));
+  const replyAudio = replyCard.locator("audio");
+  // Inspect the real rendered URL: the served mint carries the media
+  // id (local `key` param / S3 key path) — logged as evidence and kept
+  // as a cross-check under the stable attribute boundary.
+  const replySrc = await replyAudio.getAttribute("src");
+  console.log("REPLY audio src:", replySrc);
+  expect(replySrc ?? "", "audio src missing reply media id").toContain(replyId);
+  // Real playback on THIS attachment's element — muted so headless
+  // autoplay policy cannot block; play() must actually engage.
+  const playing = await replyAudio.evaluate(async (a: HTMLAudioElement) => {
+    a.muted = true;
+    try {
+      await a.play();
+    } catch {
+      return false;
+    }
+    return !a.paused;
+  });
+  expect(playing, "reply audio did not start playback").toBe(true);
+  // Transcript bound to THIS card: the button lives inside it and the
+  // rendered result must land inside the same card, not the page.
   await replyCard.getByRole("button", { name: /transcript/i }).click();
-  await client.getByText(/Auto-transcript/i).waitFor({ timeout: 180_000 });
+  await replyCard.getByText(/Auto-transcript/i).waitFor({ timeout: 180_000 });
+  const replyTranscript = (
+    await replyCard.locator(".cd-transcript p").last().innerText()
+  ).trim();
+  expect(
+    replyTranscript.length,
+    "reply card transcript rendered empty",
+  ).toBeGreaterThan(0);
   expect(clientMints, `client mint missing reply id ${replyId}`).toContain(
     replyId,
   );
