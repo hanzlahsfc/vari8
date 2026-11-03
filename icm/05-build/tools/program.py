@@ -35,7 +35,26 @@ problems = []
 # partial, malformed or duplicated fails here instead of crashing the ledger or
 # silently dropping a shot from coverage.
 BRIEFING_KEYS = {"annotated", "surface", "surfaceName", "rowsTotal", "rowsMatched", "matchedRows"}
+BRIEFING_SURFACES = {f"S{i:02d}" for i in range(1, 12)}
 SUPPLEMENTAL_SHOTS = {"s12-activity-targets.png", "s13-supplements.png"}
+
+
+def briefing_problem(e):
+    """None when e satisfies the documented briefing-surface contract, else the broken constraint."""
+    if e["surface"] not in BRIEFING_SURFACES:
+        return "surface not in S01-S11"
+    if not isinstance(e["surfaceName"], str) or not e["surfaceName"]:
+        return "surfaceName must be a non-empty string"
+    if not (e["annotated"] is None or (isinstance(e["annotated"], str) and e["annotated"])):
+        return "annotated must be a string or null"
+    for k in ("rowsTotal", "rowsMatched"):
+        if isinstance(e[k], bool) or not isinstance(e[k], int) or e[k] < 0:
+            return f"{k} must be a non-negative integer"
+    if not isinstance(e["matchedRows"], list):
+        return "matchedRows must be a list"
+    if e["rowsMatched"] != len(e["matchedRows"]) or e["rowsMatched"] > e["rowsTotal"]:
+        return "rowsMatched must equal len(matchedRows) and not exceed rowsTotal"
+    return None
 
 
 def classify_shots(entries):
@@ -62,11 +81,8 @@ def classify_shots(entries):
         if have and have != BRIEFING_KEYS:
             problems.append(f"shots/index.json: {name}: partial briefing metadata, "
                             f"missing {sorted(BRIEFING_KEYS - have)}")
-        elif have and not (re.match(r"^S\d\d$", str(e["surface"])) and isinstance(e["surfaceName"], str)
-                           and e["surfaceName"] and isinstance(e["matchedRows"], list)
-                           and isinstance(e["rowsTotal"], int) and isinstance(e["rowsMatched"], int)):
-            problems.append(f"shots/index.json: {name}: malformed briefing metadata "
-                            "(surface SNN, surfaceName, rowsTotal/rowsMatched ints, matchedRows list)")
+        elif have and briefing_problem(e):
+            problems.append(f"shots/index.json: {name}: malformed briefing metadata ({briefing_problem(e)})")
         elif have:
             briefing.append(e)
         elif name in SUPPLEMENTAL_SHOTS:
