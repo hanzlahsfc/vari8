@@ -1,3 +1,29 @@
+## 2026-11-03 — P723 forward-merge onto current Beta (#156)
+
+Merged `828adba1` (Vari8-Beta post-#251/#252) into `beta/mail-adapter`;
+merge commit `3692e08f`, tree `9b7f6a02`, parents `809066ce` + `828adba1`.
+Zero file-level conflicts — the branch delta (.env.example,
+instrumentation.ts, lib/mail, mail-emaillabs tests, SYMBOLS.md, icm
+records) intersects none of the paths Beta changed; `npm run index`
+regenerated indexes with no drift. Accepted EmailLabs behavior and
+current Beta's auth/media/logging/voice/dependency/fixture state
+preserved unchanged.
+
+Gates on the merge head (`/private/tmp/p156-mail`, `npm ci` root +
+`tools/parity/reference`, disposable `app_p723`/`app_p723i`,
+mocked/dev-file transport only — no real EmailLabs delivery):
+
+- Node v22.21.1 (CI): focused mail/me-look unit 21/21; `npm test`
+  154 files / 1844; `test:integration` 91 files / 1137; `npm run build`
+  exit 0; full `test:e2e` (`MAIL_DELIVERY_ADAPTER=dev-file
+MEDIA_STORAGE_ADAPTER=local`) 23 passed / 2 skipped;
+  `format:check`/`typecheck`/`lint` 0 errors (316 warnings),
+  `index:check` OK, `git diff --check` 0. No retries, skips or failures
+  beyond the two delivery-gated-off skips.
+- Node v24.22.1 (affected): focused mail/reset/invite/email unit
+  49/49; `checkin-recurrence-i1` + `me-look-fixture-db` 22/22;
+  `auth-card` + `me-auth-look` `--workers=2` 7/7.
+
 ## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
 
 Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;
