@@ -23,6 +23,7 @@ import { CheckInsWorkspace } from "./check-ins";
 import { ClientsWorkspace } from "./clients";
 import { coachThemeStyle } from "./coach-theme";
 import { MessagesWorkspace } from "./messages";
+import { clearVoiceTranscriptCache } from "./voice-transcript";
 import { type Section, seedState, unreadCount } from "./model";
 import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
@@ -407,7 +408,16 @@ function Workspace({ viewer }: { viewer: CoachAccount }) {
             <Button primary onClick={() => setSettings(false)}>
               Done
             </Button>
-            <form action="/logout" method="post" style={{ order: -1 }}>
+            <form
+              action="/logout"
+              method="post"
+              style={{ order: -1 }}
+              onSubmit={() => {
+                // P696: temporary transcripts are per-actor state — drop
+                // them at the logout boundary before the session ends.
+                clearVoiceTranscriptCache();
+              }}
+            >
               <Button type="submit">Sign out</Button>
             </form>
           </div>

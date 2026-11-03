@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 
 import type { Media } from "./model";
 import { Button } from "./ui";
+import { useActorScope } from "./voice-transcript-actor";
+import { VoiceTranscript } from "./voice-transcript-panel";
 
 /**
  * PR-MEDIA real MediaCard (D20, S02-24): the canvas `MediaCard` from
@@ -111,12 +113,16 @@ export function MediaCard({
   workspaceId,
   item,
   onRemove,
+  scope,
 }: {
   workspaceId: string;
+  /** Authenticated actor scope for the temporary transcript cache. */
+  scope?: string;
   /** Canvas Media shape; `item.id` is the media_object id. */
   item: Media;
   onRemove?: () => void;
 }) {
+  const actor = useActorScope(workspaceId);
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
@@ -139,7 +145,10 @@ export function MediaCard({
   const audio = itemType.startsWith("audio/");
   const video = itemType.startsWith("video/");
   return (
-    <div className="cd-media-card">
+    <div
+      className="cd-media-card"
+      data-media-id={item.mediaObjectId ?? item.id}
+    >
       <div className="cd-media-heading">
         {video ? (
           <Video size={17} />
@@ -170,9 +179,16 @@ export function MediaCard({
             />
           </a>
         ) : audio ? (
-          <audio src={url} controls aria-label={item.name}>
-            <track kind="captions" />
-          </audio>
+          <>
+            <audio src={url} controls aria-label={item.name}>
+              <track kind="captions" />
+            </audio>
+            <VoiceTranscript
+              audioUrl={url}
+              cacheKey={item.mediaObjectId ?? item.id}
+              actor={scope ? { status: "ready" as const, scope, retry: () => {} } : actor}
+            />
+          </>
         ) : video ? (
           <video src={url} controls playsInline aria-label={item.name}>
             <track kind="captions" />

@@ -1,0 +1,6 @@
+MIT License — OpenAI Whisper model weights (onnx-community/whisper-tiny,
+revision ff4177021cc41f7db950912b73ea4fdf7d01d8e7, exported ONNX).
+Copyright (c) 2022 OpenAI. Permission is hereby granted, free of charge,
+to use, copy, modify, merge, publish, distribute, sublicense and/or sell
+copies, subject to inclusion of this notice. THE SOFTWARE IS PROVIDED
+"AS IS", WITHOUT WARRANTY OF ANY KIND.

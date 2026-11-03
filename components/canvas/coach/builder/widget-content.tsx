@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { Mic } from "lucide-react";
 import { AdditionalDetailContent } from "./additional-widget-content";
 import {
   fetchOwnMessages,
@@ -22,8 +23,10 @@ import {
   MEDIA_CONTENT_TYPES,
   mediaKindForContentType,
 } from "@/lib/media-policy";
+import { DemoRecorder } from "../demo-recorder";
 import { MediaCard, uploadWorkspaceMedia } from "../media-card";
 import type { Media } from "../model";
+import { Dialog } from "../ui";
 import {
   type ClientTask,
   dateLabel,
@@ -442,8 +445,15 @@ export function ChatComposer({
   // W2-T8: staged uploads — only successfully uploaded media_object ids
   // are linked onto the message; pending blocks send, failed is removed
   // or reattached. Entries are session-scoped like the draft.
-  type Staged = Media & { state: "pending" | "uploaded" | "failed" };
+  type Staged = Media & {
+    state: "pending" | "uploaded" | "failed";
+  };
   const [staged, setStaged] = useState<Staged[]>([]);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  // One capacity model: slots.current tracks reservations (accepted picks
+  // + the open voice dialog); voiceReserved marks the dialog's hold so the
+  // staged-sync effect recomputes rather than clobbers it.
+  const voiceReserved = useRef(false);
   const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     // A switched identity starts a clean session — the previous
@@ -453,7 +463,13 @@ export function ChatComposer({
     setError(null);
     setSending(false);
     setStaged([]);
+    setVoiceOpen(false);
     setError(null);
+    voiceReserved.current = false;
+    // No global transcript teardown here: caches are actor-scoped so a
+    // different identity can never read them, and a shared worker run
+    // belongs to its caller — terminating it would kill another
+    // consumer's job. Logout paths clear explicitly.
     requestId.current = null;
     for (const controller of uploads.current.values())
       controller.abort();
@@ -461,9 +477,10 @@ export function ChatComposer({
     slots.current = 0;
   }, [key]);
   const MAX_ATTACHMENTS = 10;
-  // Keep the reservation counter in step with settled state.
+  // Keep the reservation counter in step with settled state — a live voice
+  // reservation survives a pending upload's completion.
   useEffect(() => {
-    slots.current = staged.length;
+    slots.current = staged.length + (voiceReserved.current ? 1 : 0);
   }, [staged]);
   const removeChip = (item: { id: string }) => {
     uploads.current.get(item.id)?.abort();
@@ -604,7 +621,11 @@ export function ChatComposer({
       if (session.current !== s) return;
       requestId.current = null;
       setDraft("");
-      setStaged([]);
+      // Only the acknowledged payload clears — a failed chip stays staged
+      // so a text send never implies it went out.
+      setStaged((current) =>
+        current.filter((item) => item.state !== "uploaded"),
+      );
     } catch {
       if (session.current !== s) return;
       setError({
@@ -662,6 +683,26 @@ export function ChatComposer({
       >
         Attach
       </button>
+      <button
+        type="button"
+        className="cb-dw-action"
+        aria-label="Record a voice note"
+        disabled={
+          sending ||
+          slots.current >= MAX_ATTACHMENTS ||
+          staged.some((i) => i.type.startsWith("audio/"))
+        }
+        onClick={() => {
+          // Slot reservation: recording/uploading holds the last attachment
+          // slot so a concurrent pick cannot consume it; released on
+          // close-without-attach.
+          voiceReserved.current = true;
+          slots.current += 1;
+          setVoiceOpen(true);
+        }}
+      >
+        <Mic size={14} aria-hidden="true" />
+      </button>
       <textarea
         rows={1}
         value={draft}
@@ -699,6 +740,49 @@ export function ChatComposer({
           {error.text}
         </p>
       ) : null}
+      {voiceOpen && (
+        <Dialog
+          title="Voice note"
+          onClose={() => {
+            // Release the reservation held while the dialog was open — the
+            // attach path already consumed it if a note landed.
+            if (voiceReserved.current) {
+              voiceReserved.current = false;
+              slots.current = Math.max(0, slots.current - 1);
+            }
+            setVoiceOpen(false);
+          }}
+        >
+          <p className="cd-muted">
+            Use your microphone to record a voice note of up to five
+            minutes.
+          </p>
+          <DemoRecorder
+            kind="voice"
+            workspaceId={workspaceId}
+            clientProfileId={clientProfileId || undefined}
+            onAttach={(item) => {
+              // The reservation from the open becomes the chip's permanent
+              // slot — consume it without double-counting.
+              voiceReserved.current = false;
+              // One recording per voice message (approved): an existing
+              // audio chip blocks another take; removing it re-allows.
+              // Belt guard: a raced second take never stages — and its
+              // slot reservation is released exactly once, outside any
+              // React state updater.
+              if (staged.some((i) => i.type.startsWith("audio/"))) {
+                slots.current = Math.max(0, slots.current - 1);
+                return;
+              }
+              setStaged((current) => [
+                ...current,
+                { ...item, state: "uploaded" },
+              ]);
+              setVoiceOpen(false);
+            }}
+          />
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -892,6 +976,7 @@ export function RemoteConversation({
                     <div
                       className={`cb-msg ${outbound ? "cb-msg-out" : "cb-msg-in"}`}
                       data-sender={outbound ? "client" : "staff"}
+                      data-message-id={message.id}
                     >
                       <div className="cb-bubble">
                         <div className="cb-bubble-sender">
@@ -922,6 +1007,7 @@ export function RemoteConversation({
                                     : 0,
                                 mediaObjectId: attachment.mediaObjectId,
                               }}
+
                             />
                           ) : (
                             <p

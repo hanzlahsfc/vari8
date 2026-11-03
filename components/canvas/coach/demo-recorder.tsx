@@ -31,6 +31,18 @@ function recordMime(kind: "voice" | "video"): string {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? "";
 }
 
+// Owner-approved cap (P680, hardened P682): voice notes auto-stop just
+// under five minutes and the finished take's real encoded duration is
+// verified before it may attach. The elapsed checks below come from a
+// start timestamp, so a backgrounded tab's delayed interval detects an
+// overrun on resume — it does not prevent one; the duration guard in
+// `complete` rejects those takes.
+const VOICE_MAX_SECONDS = 300;
+// The UX auto-stop aims one displayed second early so an on-time stop
+// encodes strictly under the cap. Anything that still lands over — only
+// possible via a delayed callback — is rejected, never trimmed.
+const VOICE_STOP_EARLY_SECONDS = 1;
+
 function extensionFor(contentType: string): string {
   if (contentType.includes("webm")) return "webm";
   if (contentType.includes("mp4")) return "mp4";
@@ -38,6 +50,34 @@ function extensionFor(contentType: string): string {
   if (contentType.includes("wav")) return "wav";
   if (contentType.includes("quicktime")) return "mov";
   return "bin";
+}
+
+/**
+ * P682: the only trustworthy "did we stay under the cap" signal is the
+ * encoded take itself. `decodeAudioData` measures the real audio length;
+ * `<audio>.duration` would read container metadata that recorded WebM
+ * files typically lack (it reports Infinity). `null` means the duration
+ * could not be determined for this take — the caller must refuse to
+ * attach rather than assume it is within the limit.
+ */
+async function voiceDurationSeconds(blob: Blob): Promise<number | null> {
+  const Decode =
+    globalThis.OfflineAudioContext ??
+    (
+      globalThis as {
+        webkitOfflineAudioContext?: typeof OfflineAudioContext;
+      }
+    ).webkitOfflineAudioContext;
+  if (!Decode) return null;
+  try {
+    const context = new Decode(1, 1, 44_100);
+    const { duration } = await context.decodeAudioData(
+      await blob.arrayBuffer(),
+    );
+    return Number.isFinite(duration) && duration >= 0 ? duration : null;
+  } catch {
+    return null;
+  }
 }
 
 export function DemoRecorder({
@@ -63,12 +103,23 @@ export function DemoRecorder({
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const live = useRef<HTMLVideoElement>(null);
+  const startedAt = useRef(0);
   const active = useRef(true);
+  // Abortable upload + preview-URL cleanup on every exit: a close/unmount
+  // mid-upload aborts the request and a late completion can never land an
+  // attach; the preview object URL is revoked on unmount, not only on
+  // explicit discard.
+  const uploadAbort = useRef<AbortController | null>(null);
+  const previewUrl = useRef<string | null>(null);
 
   useEffect(() => {
     active.current = true;
     return () => {
       active.current = false;
+      uploadAbort.current?.abort();
+      uploadAbort.current = null;
+      if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+      previewUrl.current = null;
       if (recorder.current?.state === "recording") recorder.current.stop();
       stream.current?.getTracks().forEach((track) => {
         track.stop();
@@ -77,9 +128,33 @@ export function DemoRecorder({
   }, []);
   useEffect(() => {
     if (phase !== "recording") return;
-    const timer = window.setInterval(() => setSeconds((n) => n + 1), 1000);
-    return () => window.clearInterval(timer);
-  }, [phase]);
+    const elapsed = () =>
+      Math.floor((Date.now() - startedAt.current) / 1000);
+    const check = () => {
+      const e = elapsed();
+      setSeconds(e);
+      if (kind === "voice" && e >= VOICE_MAX_SECONDS - VOICE_STOP_EARLY_SECONDS) {
+        // Auto-stop just under the approved cap — stops the recorder,
+        // which releases tracks and (once the duration guard passes)
+        // lands in the preview phase.
+        if (recorder.current?.state === "recording")
+          recorder.current.stop();
+      }
+    };
+    const timer = window.setInterval(check, 250);
+    // A backgrounded tab's interval may not fire until focus returns —
+    // checking elapsed on visibility/ focus closes the overrun window.
+    const onVisible = () => {
+      if (!document.hidden) check();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [phase, kind]);
 
   const stopStream = () => {
     stream.current?.getTracks().forEach((track) => {
@@ -88,9 +163,34 @@ export function DemoRecorder({
     stream.current = null;
   };
 
-  const complete = (blob: Blob) => {
+  const complete = async (blob: Blob) => {
     if (!active.current) return;
-    setPreview({ url: URL.createObjectURL(blob), blob });
+    // P682 (voice only): the UX auto-stop can arrive late — a delayed
+    // interval/visibility check still stops the recorder, but audio
+    // already encoded past the cap is inside this blob. Verify the
+    // take's real duration before it becomes attachable; never trim,
+    // never assume an unverifiable take is within the limit.
+    if (kind === "voice") {
+      const duration = await voiceDurationSeconds(blob);
+      if (!active.current) return;
+      if (duration === null) {
+        setPhase("idle");
+        setError(
+          "This recording's length could not be verified, so it can't be attached. Record it again.",
+        );
+        return;
+      }
+      if (duration > VOICE_MAX_SECONDS) {
+        setPhase("idle");
+        setError(
+          "This recording exceeded the five-minute limit, so it can't be attached. Record it again.",
+        );
+        return;
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    previewUrl.current = url;
+    setPreview({ url, blob });
     setPhase("preview");
   };
 
@@ -113,6 +213,7 @@ export function DemoRecorder({
         live.current.srcObject = media;
         await live.current.play().catch(() => {});
       }
+      startedAt.current = Date.now();
       const chunks: BlobPart[] = [];
       const r = new MediaRecorder(media, { mimeType: mime });
       r.ondataavailable = (e) => {
@@ -140,6 +241,7 @@ export function DemoRecorder({
 
   const discard = () => {
     if (preview) URL.revokeObjectURL(preview.url);
+    previewUrl.current = null;
     setPreview(null);
     setPhase("idle");
   };
@@ -161,6 +263,8 @@ export function DemoRecorder({
     }
     setPhase("uploading");
     setError("");
+    const controller = new AbortController();
+    uploadAbort.current = controller;
     try {
       const contentType = preview.blob.type.split(";")[0];
       const fileName = `${
@@ -172,10 +276,16 @@ export function DemoRecorder({
         fileName,
         contentType,
         blob: preview.blob,
+        signal: controller.signal,
       });
+      uploadAbort.current = null;
+      // A close/unmount mid-upload made this completion late — never land it.
+      if (!active.current) return;
       discard();
       onAttach(item);
     } catch {
+      uploadAbort.current = null;
+      if (controller.signal.aborted || !active.current) return;
       setPhase("preview");
       setError("Upload failed. Preview is kept — try again or discard it.");
     }
@@ -205,7 +315,10 @@ export function DemoRecorder({
       )}
       {phase === "recording" && (
         <div className="cd-recorder-active">
-          <span role="status">Recording · {seconds}s</span>
+          <span role="status">
+            Recording · {seconds}
+            {kind === "voice" ? ` / ${VOICE_MAX_SECONDS}` : ""}s
+          </span>
           <Button onClick={stop}>
             <Square size={14} />
             Stop & preview
