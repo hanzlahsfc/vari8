@@ -1,3 +1,36 @@
+## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
+
+Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;
+merge commit `28fb5229`, tree `a6e59cff`, parents `d0d2aa7b` + `7e1b93e2`.
+The inherited failures the branch's earlier verification recorded — the
+London-DST `checkin-recurrence-i1` collision and the auth-card/me-auth-look
+color assertions — were repaired by #252, so no waiver is carried.
+
+Conflicts: `docs/STATUS.md` only — resolved by keeping both newest-first
+entry blocks (Beta's 11-03/11-02 block first, then this branch's 11-02
+entries). `npm run index` regenerated indexes — no generated drift. No
+behavioral change to any voice path; #252's fixture/CSS/test repairs are
+preserved intact.
+
+Gates on the merge head (`/private/tmp/p671-voice-ui`, `npm ci` root +
+`tools/parity/reference`, disposable `app_p721`/`app_p721i`):
+
+- Node v22.21.1 (CI): focused voice 96/96; replay
+  `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts`
+  1 pass (~1.9m standalone — one earlier run timed out at 5m under build
+  load, the recording's length probe could not complete; same documented
+  flake class, passed standalone quiet); `npm test` 153 files/1834;
+  `npm run test:integration` **91 files / 1137 — all pass** (was
+  1 failed/1132 on the inherited London-DST failure); `npm run build` 0;
+  full `test:e2e` with `MAIL_DELIVERY_ADAPTER=dev-file
+  MEDIA_STORAGE_ADAPTER=local` **23 passed / 2 skipped** (delivery-gated-off
+  pair, proven in CI mode); `format:check`/`typecheck`/`lint` 0 errors
+  (314 baseline warnings), `index:check` OK, `git diff --check` 0.
+- Node v24.22.1 (task baseline, affected checks): focused 104/104
+  (voice 96 + me-look 8); `checkin-recurrence-i1` + `me-look-fixture-db`
+  22/22; `auth-card` + `me-auth-look` + `voice-messaging` `--workers=2`
+  **8 passed** (voice replay 1.4m).
+
 ## 2026-11-03 — P718 fixture-cleanup closure findings (#252)
 
 Review findings on `15b63cd1`: reset `verifications` rows and
