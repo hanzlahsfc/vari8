@@ -23,9 +23,65 @@ OUT = f"{OUTROOT}/icm/05-build"
 os.makedirs(f"{OUT}/cards", exist_ok=True)
 REPO = "hanzlahsfc/vari8"
 SHOTS = json.load(open(f"{ICM}/04-briefing/shots/index.json"))["shots"]
-SHOT_FILES = [s["file"] for s in SHOTS]
 PR_BY_ID = {p["id"]: p for p in PRS}
 problems = []
+
+# ---------- shot index: briefing screens vs supplemental parity shots ----------
+# The briefing program covers exactly the screens that carry briefing surface
+# metadata; parity additionally captures supplemental planner shots that have a
+# capture recipe only (s12-activity-targets, s13-supplements, CANVAS-PORT 72fddd95).
+# Only files registered in SUPPLEMENTAL_SHOTS may lack briefing metadata; every
+# other entry must be a complete, well-formed briefing screen. Anything missing,
+# partial, malformed or duplicated fails here instead of crashing the ledger or
+# silently dropping a shot from coverage.
+BRIEFING_KEYS = {"annotated", "surface", "surfaceName", "rowsTotal", "rowsMatched", "matchedRows"}
+SUPPLEMENTAL_SHOTS = {"s12-activity-targets.png", "s13-supplements.png"}
+
+
+def classify_shots(entries):
+    briefing, parity_only, seen = [], [], set()
+    for e in entries:
+        if not isinstance(e, dict):
+            problems.append(f"shots/index.json: entry is not an object: {e!r:.100}")
+            continue
+        name = e.get("file")
+        if not isinstance(name, str) or not name:
+            problems.append(f"shots/index.json: entry without a `file` name: {e!r:.100}")
+            continue
+        if name in seen:
+            problems.append(f"shots/index.json: duplicate entry {name}")
+            continue
+        seen.add(name)
+        if (not isinstance(e.get("screen"), str) or not e["screen"] or not isinstance(e.get("route"), str)
+                or not e["route"].startswith("/") or not isinstance(e.get("clicks"), list)
+                or not all(isinstance(c, str) for c in e["clicks"])):
+            problems.append(f"shots/index.json: {name}: malformed capture recipe "
+                            "(needs screen, /route and a clicks list)")
+            continue
+        have = BRIEFING_KEYS & e.keys()
+        if have and have != BRIEFING_KEYS:
+            problems.append(f"shots/index.json: {name}: partial briefing metadata, "
+                            f"missing {sorted(BRIEFING_KEYS - have)}")
+        elif have and not (re.match(r"^S\d\d$", str(e["surface"])) and isinstance(e["surfaceName"], str)
+                           and e["surfaceName"] and isinstance(e["matchedRows"], list)
+                           and isinstance(e["rowsTotal"], int) and isinstance(e["rowsMatched"], int)):
+            problems.append(f"shots/index.json: {name}: malformed briefing metadata "
+                            "(surface SNN, surfaceName, rowsTotal/rowsMatched ints, matchedRows list)")
+        elif have:
+            briefing.append(e)
+        elif name in SUPPLEMENTAL_SHOTS:
+            parity_only.append(e)
+        else:
+            problems.append(f"shots/index.json: {name}: no briefing surface metadata and not a registered "
+                            "supplemental parity shot (register it in SUPPLEMENTAL_SHOTS or add the briefing fields)")
+    return briefing, parity_only
+
+
+BRIEFING_SHOTS, PARITY_ONLY_SHOTS = classify_shots(SHOTS)
+if problems:
+    sys.stderr.write("program.py: shot index rejected:\n" + "".join(f"  {p}\n" for p in problems))
+    sys.exit(1)
+SHOT_FILES = [s["file"] for s in BRIEFING_SHOTS]
 
 # ---------- matrix rows ----------
 MATRIX = open(f"{ICM}/02-gap-matrix/output/GAP-MATRIX.md").read().split("\n")
@@ -272,7 +328,7 @@ def build_ledger():
         LEDGER.append(dict(kind="orphan", id=o["id"], detail=f'{o["element"][:110]} ({disp})', owner=owner))
     for pid, old, what, owner in PARKED:
         LEDGER.append(dict(kind="parked", id=pid, detail=f"{old}: {what}", owner=owner))
-    for s in SHOTS:
+    for s in BRIEFING_SHOTS:
         owner = next((p["id"] for p in PRS if s["file"] in p.get("screens", []) and p["track"] in ("Wiring",)
                       and p["id"] not in ("PR-W0",)), None)
         LEDGER.append(dict(kind="screen", id=s["file"], detail=f'{s["surface"]} {s["screen"]} ({s["route"]})', owner=owner))
@@ -802,6 +858,7 @@ with open(f"{OUT}/timeline.md", "w") as f:
         f.write(f"| {pid} | {who} | {g} | {s.strftime('%d %H:%M') if s else '-'} | {d.strftime('%d %H:%M') if d else '-'} |\n")
 
 print(json.dumps(dict(cards=len(cards), by_kind=by_kind, ledger=counts, unmapped=len(unmapped),
+                      briefing_screens=len(BRIEFING_SHOTS), supplemental_parity_shots=len(PARITY_ONLY_SHOTS),
                       cycles=len(cards) - len(topo), finish=summary["finish"], p0_rows=P0_COUNT,
                       p0_dispositions=summary["p0_dispositions"], wiring_gate=summary["wiring_gate"], problems=problems[:20]), indent=1))
 print("checkpoint (done by 05:00):", [k for k, _ in summary["checkpoint"]])
