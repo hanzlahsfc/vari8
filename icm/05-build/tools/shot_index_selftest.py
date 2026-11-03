@@ -4,11 +4,12 @@
 Runs the real `program.py` (and, for the check case, `generate.py --check`) — no stubs, no
 re-implementation. Mutation cases copy program.py's real inputs into a TemporaryDirectory
 PROGRAM_ROOT and rewrite `icm/04-briefing/shots/index.json` there; the repo tree is never
-touched. Every scratch path this invocation creates — shot roots and the sentinel
-fixture alike — is recorded as OWNED, removed in finally blocks on success, failure and
-exception paths, and accounted by `no-leftovers`. Paths already in TMPDIR before the run
-(`PREEXISTING`, e.g. sentinels left by other runs) are asserted still present, never
-inspected for removal and never deleted.
+touched. All scratch lives under one private test-owned parent (`invocation_parent`):
+`scratch/` holds the mutation roots the cleanup under test removes, `sentinel/` sits
+outside that cleanup's path set with marker content verified unchanged, and the parent
+itself is removed in finally. Every created path — parent included — is recorded as
+OWNED and accounted by `no-leftovers`. Nothing in TMPDIR outside the private parent is
+inspected, monitored or deleted: other tasks own their directories' lifetimes.
 
 Cases:
   ok                 committed index -> program.py exit 0, ledger rows are exactly the
@@ -33,20 +34,19 @@ Cases:
   nonobject          a non-dict is appended -> exit 1, "not an object"
   supplemental-grows a supplemental shot gains valid briefing metadata -> exit 1 via the
                      "screens 36 != 35" hard gate (membership cannot grow silently)
-  unrelated-survives a unique self-created sentinel fixture (shot-index-selftest-unrelated-*)
-                     survives while other owned roots run and clean, then is removed in
-                     finally and accounted
-  sentinel-error     an exception while a sentinel fixture exists still removes it
-  external-survives  shot-index-selftest-* dirs pre-existing this invocation remain untouched
+  cleanup-isolation  an owned root runs and cleans while the sentinel marker CONTENTS
+                     (outside the cleanup's path set) stay byte-identical
+  external-owner     an untracked path removed by its own owner mid-run does not fail the suite
+  parent-error       an exception inside the private parent fixture still removes the whole parent
   cleanup-on-error   an exception inside a scratch root still removes it
   retained-owned     an intentionally retained OWNED root is detected by the leftover scan,
                      then cleaned and accounted
-  no-leftovers       last: every scratch path OWNED by this invocation is gone
+  no-leftovers       last: every scratch path OWNED by this invocation — private parent
+                     included — is gone
 Exit 0 only when every case behaves as listed.
 """
 import contextlib
 import csv
-import glob
 import json
 import os
 import shutil
@@ -81,7 +81,31 @@ EXPECTED_BRIEFING = frozenset((
     "s10-mealplan-studio.png", "s11-preferences.png", "s11-client-preview.png"))
 failures = []
 OWNED = []  # every scratch path created by this invocation; no-leftovers asserts all are gone
-PREEXISTING = []  # shot-index-selftest-* dirs present before this invocation created anything
+INV = {}  # private invocation parent: {"parent", "scratch", "sentinel"}
+SENTINEL_MARKER = "external-owner-marker"
+
+
+@contextlib.contextmanager
+def invocation_parent():
+    """Private test-owned parent: `scratch/` holds mutation roots eligible for the cleanup
+    under test; `sentinel/` sits outside that path set with verifiable marker content.
+    TemporaryDirectory removes the entire parent in finally; the parent is OWNED and
+    accounted like every other created path."""
+    with tempfile.TemporaryDirectory(prefix="shot-index-selftest-inv-") as parent:
+        OWNED.append(parent)
+        scratch = os.path.join(parent, "scratch")
+        sentinel = os.path.join(parent, "sentinel")
+        os.makedirs(scratch)
+        os.makedirs(sentinel)
+        with open(os.path.join(sentinel, "marker.txt"), "w") as f:
+            f.write(SENTINEL_MARKER)
+        prev = dict(INV)
+        INV.update(parent=parent, scratch=scratch, sentinel=sentinel)
+        try:
+            yield INV
+        finally:
+            INV.clear()
+            INV.update(prev)
 
 
 def leftover_owned():
@@ -98,7 +122,8 @@ def check(name, cond, detail):
 def shot_root(mutate=None):
     """Copy program.py's real inputs into a TemporaryDirectory root; mutate the copied index
     per case. The scratch root is removed when the block exits on any path."""
-    with tempfile.TemporaryDirectory(prefix="shot-index-selftest-") as root:
+    with tempfile.TemporaryDirectory(prefix="shot-index-selftest-",
+                                     dir=INV.get("scratch")) as root:
         OWNED.append(root)
         for rel in INPUTS:
             dst = os.path.join(root, rel)
@@ -243,45 +268,36 @@ def case_supplemental_grows():
     expect_fail("supplemental-grows", m, "screens 36 != 35")
 
 
-@contextlib.contextmanager
-def unrelated_sentinel():
-    """Unique test-owned fixture standing in for an external shot-index-selftest-* dir:
-    created fresh per use, tracked as OWNED, preserved while the block runs and always
-    removed in finally."""
-    path = tempfile.mkdtemp(prefix="shot-index-selftest-unrelated-")
-    OWNED.append(path)
-    try:
-        yield path
-    finally:
-        os.rmdir(path)
+def case_cleanup_isolation():
+    with shot_root() as root:
+        r, _ = run_program(root)
+    marker = os.path.join(INV["sentinel"], "marker.txt")
+    content = open(marker).read() if os.path.exists(marker) else None
+    check("cleanup-isolation", r.returncode == 0 and content == SENTINEL_MARKER,
+          f"program exit {r.returncode}; sentinel marker contents {content!r}")
 
 
-def case_unrelated_survives():
-    with unrelated_sentinel() as sentinel:
-        with shot_root() as root:
-            r, _ = run_program(root)
-        check("unrelated-survives", os.path.isdir(sentinel) and r.returncode == 0,
-              f"sentinel fixture intact while owned root ran (program exit {r.returncode})")
-    check("unrelated-survives", not os.path.exists(sentinel),
-          "sentinel fixture removed in finally and accounted")
+def case_external_owner_removal():
+    foreign = os.path.join(INV["parent"], "external-owner")
+    os.makedirs(foreign)
+    open(os.path.join(foreign, "marker.txt"), "w").write("theirs")
+    shutil.rmtree(foreign)  # the external owner removes its own path mid-run
+    with shot_root() as root:
+        r, _ = run_program(root)
+    check("external-owner", r.returncode == 0 and not os.path.exists(foreign),
+          f"foreign removal ignored; program exit {r.returncode}")
 
 
-def case_sentinel_error():
+def case_parent_error():
     path = None
     try:
-        with unrelated_sentinel() as s:
-            path = s
+        with invocation_parent() as inner:
+            path = inner["parent"]
             raise RuntimeError("sentinel")
     except RuntimeError:
         pass
-    check("sentinel-error", path is not None and not os.path.exists(path),
-          f"sentinel fixture removed on the exception path ({path})")
-
-
-def case_external_survives():
-    gone = [p for p in PREEXISTING if not os.path.isdir(p)]
-    check("external-survives", gone == [],
-          f"{len(PREEXISTING)} pre-existing dirs untouched; removed: {gone[:3]}")
+    check("parent-error", path is not None and not os.path.exists(path),
+          f"private parent removed on the exception path ({path})")
 
 
 def case_cleanup_on_error():
@@ -312,12 +328,13 @@ def case_no_leftovers():
 
 
 if __name__ == "__main__":
-    PREEXISTING.extend(glob.glob(os.path.join(tempfile.gettempdir(), "shot-index-selftest-*")))
-    for case in (case_ok, case_check, case_missing_surface, case_unclassified_extra, case_swap,
-                 case_partial_metadata, case_malformed_metadata, case_surface_range, case_annotated_type,
-                 case_rows_bool, case_rows_negative, case_malformed_recipe, case_duplicate, case_nonobject,
-                 case_supplemental_grows, case_unrelated_survives, case_sentinel_error,
-                 case_external_survives, case_cleanup_on_error, case_retained_owned_detected,
-                 case_no_leftovers):
-        case()
+    with invocation_parent():
+        for case in (case_ok, case_check, case_missing_surface, case_unclassified_extra, case_swap,
+                     case_partial_metadata, case_malformed_metadata, case_surface_range,
+                     case_annotated_type, case_rows_bool, case_rows_negative, case_malformed_recipe,
+                     case_duplicate, case_nonobject, case_supplemental_grows, case_cleanup_isolation,
+                     case_external_owner_removal, case_parent_error, case_cleanup_on_error,
+                     case_retained_owned_detected):
+            case()
+    case_no_leftovers()  # after the private parent's teardown: every owned path must be gone
     sys.exit(1 if failures else print("shot index selftest: all cases pass"))
