@@ -309,3 +309,66 @@ test("valid scoped handoff stays portable and contains no credentials", async ()
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+async function setFixtureRuntime(directory, nvmrc, engine) {
+  await writeFile(path.join(directory, ".nvmrc"), `${nvmrc}\n`);
+  const packagePath = path.join(directory, "package.json");
+  const pkg = JSON.parse(await readFile(packagePath, "utf8"));
+  pkg.engines = { node: engine };
+  await writeFile(packagePath, `${JSON.stringify(pkg)}\n`);
+  const lockPath = path.join(directory, "package-lock.json");
+  const lock = JSON.parse(await readFile(lockPath, "utf8"));
+  lock.packages[""].engines.node = engine;
+  await writeFile(lockPath, `${JSON.stringify(lock)}\n`);
+}
+
+const NODE_VERSION_ERRORS =
+  /must contain a Node version|engine must match|engine does not match/;
+
+test("context check accepts a patch-level .nvmrc pin", async () => {
+  const directory = await createFixture();
+  try {
+    await setFixtureRuntime(directory, "26.12.1", ">=26.12.1");
+    const result = run("--check", directory);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stderr, NODE_VERSION_ERRORS);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("context check accepts a major-only .nvmrc floor", async () => {
+  const directory = await createFixture();
+  try {
+    await setFixtureRuntime(directory, "26", ">=26.0.0");
+    const result = run("--check", directory);
+    assert.equal(result.status, 0);
+    assert.doesNotMatch(result.stderr, NODE_VERSION_ERRORS);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("context check rejects an engine mismatch at patch granularity", async () => {
+  const directory = await createFixture();
+  try {
+    await setFixtureRuntime(directory, "26.12.1", ">=26.0.0");
+    const result = run("--check", directory);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /package\.json Node engine must match \.nvmrc/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("context check rejects a non-version .nvmrc value", async () => {
+  const directory = await createFixture();
+  try {
+    await setFixtureRuntime(directory, "lts/*", ">=26.12.1");
+    const result = run("--check", directory);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /must contain a Node version/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});

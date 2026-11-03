@@ -58,6 +58,11 @@ finish() {
 git rev-parse --verify "${BASE_SHA}^{commit}" >/dev/null
 step "clean tree" bash -c 'git diff --quiet && git diff --cached --quiet'
 
+if [[ -n "${REQUIRE_NODE24:-0}" && "${REQUIRE_NODE24:-0}" != "0" ]]; then
+  SUMMARY+=("FAIL node: REQUIRE_NODE24 is retired; use REQUIRE_NODE26=1 for the 26.12.1 floor (O18)")
+  finish 1
+fi
+
 NODE_TARGET="26.12.1"
 NODE_CURRENT="$(node --version | sed 's/^v//')"
 if [[ "$(printf '%s\n%s\n' "$NODE_TARGET" "$NODE_CURRENT" | sort -V | head -1)" != "$NODE_TARGET" ]]; then

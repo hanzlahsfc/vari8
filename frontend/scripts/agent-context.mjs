@@ -127,8 +127,7 @@ async function check() {
   const expectedNodeEngine = nodeVersion
     ? `>=${[nodeVersion[0], nodeVersion[1] ?? "0", nodeVersion[2] ?? "0"].join(".")}`
     : undefined;
-  if (!expectedNodeEngine)
-    errors.push(".nvmrc must contain a Node version");
+  if (!expectedNodeEngine) errors.push(".nvmrc must contain a Node version");
   if (packageMetadata && packageMetadata.engines?.node !== expectedNodeEngine)
     errors.push("package.json Node engine must match .nvmrc");
   if (

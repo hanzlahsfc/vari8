@@ -4,7 +4,7 @@ A standalone Next.js coaching UI prototype built with React, Tailwind CSS, shadc
 
 ## Run locally
 
-Use Node.js 24, as recorded in `.nvmrc`. From the repository root:
+Use Node.js 26.12.1 or newer, as recorded in `.nvmrc`. From the repository root:
 
 ```sh
 npm ci

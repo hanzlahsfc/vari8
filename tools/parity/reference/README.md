@@ -16,6 +16,8 @@ s04 uses the accepted template-navigation Habits state, not historical right-pan
 
 ## Procedure
 
+The Node versions named below belong to the recorded historical-capture lane that produced the pinned evidence; they are reproducibility instructions for that lane, not the current repository runtime floor. Current root/frontend verification runs under the `engines.node` floor (Node 26.12.1+, root `.nvmrc`).
+
 1. Create isolated exact historical/candidate checkouts, initially clean. Use Node 24.22.1. Provision the historical frontend and root app from their exact lockfiles. Install this tool's separately pinned dependencies with `npm ci --prefix tools/parity/reference --ignore-scripts`. Do not change either source lockfile. `installedDependencies` checks installed package version/integrity and hashes all installed files/symlinks, including generated files, for the receipt.
 2. Create a task-owned disposable loopback PostgreSQL database `app_<lane>`. Supply `DATABASE_URL`, eight synthetic `SEED_*` credentials, matching `BETTER_AUTH_SECRET`/`AUTH_SECRET`, real loopback HTTPS auth origin, `APP_ENV=development`, `NEXT_TELEMETRY_DISABLED=1`. Run Prisma generate/migrate and the full `scripts/seed/index.ts`. Do not use shared databases. Secrets stay outside git/evidence.
 3. Build `historical/frontend` and the candidate with their local `next build --webpack`, using Node24. Record command/exits/build IDs. On this lane both use Next16.3.8.

@@ -16,7 +16,7 @@ PostgreSQL · Better Auth (email+password) · Vitest · Playwright · ESLint · 
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 26.12.1+
 - npm 11+
 - Docker (for local PostgreSQL)
 
