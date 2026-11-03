@@ -23,7 +23,7 @@ Gates on the merge head (`/private/tmp/p671-voice-ui`, `npm ci` root +
   `npm run test:integration` **91 files / 1137 — all pass** (was
   1 failed/1132 on the inherited London-DST failure); `npm run build` 0;
   full `test:e2e` with `MAIL_DELIVERY_ADAPTER=dev-file
-  MEDIA_STORAGE_ADAPTER=local` **23 passed / 2 skipped** (delivery-gated-off
+MEDIA_STORAGE_ADAPTER=local` **23 passed / 2 skipped** (delivery-gated-off
   pair, proven in CI mode); `format:check`/`typecheck`/`lint` 0 errors
   (314 baseline warnings), `index:check` OK, `git diff --check` 0.
 - Node v24.22.1 (task baseline, affected checks): focused 104/104
