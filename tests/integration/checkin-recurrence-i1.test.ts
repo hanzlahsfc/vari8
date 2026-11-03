@@ -609,9 +609,25 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       },
       deps(),
     );
-    // Europe/London 10:00 == UTC 09:00 instant while London is GMT (Nov–Mar).
-    const londonOverlap =
-      new Date().getUTCMonth() >= 10 || new Date().getUTCMonth() <= 2;
+    // Deterministic across GMT/BST: r1 is UTC 09:00, so r2's London-local
+    // minutes are whatever London shows at the 09:00 UTC instant on the
+    // start date — 09:00 under GMT (winter), 10:00 under BST (summer). The
+    // offset is read from the occurrence date itself, never from the
+    // calendar month the test happens to run in.
+    const londonClock = new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    const londonParts = londonClock
+      .formatToParts(new Date(`${start.startDate}T09:00:00Z`))
+      .reduce(
+        (acc, part) => ({ ...acc, [part.type]: part.value }),
+        {} as Record<string, string>,
+      );
+    const londonLocalMinutes =
+      Number(londonParts.hour) * 60 + Number(londonParts.minute);
     const r2 = await createCheckInScheduleRule(
       session(ownerU.id),
       {
@@ -619,14 +635,14 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
         clientProfileId: cp.id,
         formId: form.formId,
         weekday: start.weekday,
-        localTimeMinutes: londonOverlap ? 10 * 60 : 11 * 60, // BST: 11:00 London = 10:00 UTC? no — see note
+        localTimeMinutes: londonLocalMinutes,
         timezone: "Europe/London",
         startDate: start.startDate,
         endDate: null,
       },
       deps(),
     );
-    await generateCheckInScheduleRuleInstances(
+    const g1 = await generateCheckInScheduleRuleInstances(
       session(ownerU.id),
       { workspaceId: w.id, clientProfileId: cp.id, ruleId: r1.ruleId },
       deps(),
@@ -636,16 +652,20 @@ describe.skipIf(!enabled)("CHECK-IN-RECURRENCE-I1 (real PG)", () => {
       { workspaceId: w.id, clientProfileId: cp.id, ruleId: r2.ruleId },
       deps(),
     );
-    if (g2.status !== "generated") throw new Error("expected generated");
-    // London winter offset +0 → 10:00 == UTC 09:00 instant → conflict.
-    // (BST +1 → 11:00 London = 10:00 UTC ≠ 09:00; then no overlap and
-    // skippedConflicts must be empty — assertion branches on season.)
-    if (londonOverlap) {
-      expect(g2.skippedConflicts.length).toBeGreaterThan(0);
-      expect(g2.created + g2.skippedConflicts.length).toBeLessThanOrEqual(9);
-    } else {
-      expect(g2.skippedConflicts).toEqual([]);
+    if (g1.status !== "generated" || g2.status !== "generated") {
+      throw new Error("expected generated");
     }
+    // Prove the intended instants really coincide before asserting the
+    // collision: r1's persisted occurrence sits at 09:00 UTC, and r2's
+    // London-local time resolves to that same instant on this date.
+    const r1Row = await prisma.checkInInstance.findFirstOrThrow({
+      where: { originRuleId: r1.ruleId },
+      orderBy: { dueAt: "asc" },
+      select: { dueAt: true },
+    });
+    expect(r1Row.dueAt.toISOString()).toBe(`${start.startDate}T09:00:00.000Z`);
+    expect(g2.skippedConflicts.length).toBeGreaterThan(0);
+    expect(g2.created + g2.skippedConflicts.length).toBeLessThanOrEqual(9);
   });
 
   it("cancelled generated occurrence occupies the instant — regeneration reports conflict, never resurrects", async () => {

@@ -4,6 +4,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
+import { hashPassword } from "../../lib/password";
+import {
+  newMeLookOwned,
+  setupMeLookFixtures,
+  teardownMeLookFixtures,
+  type MeLookFixture,
+} from "./me-look-fixture";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
 
 /**
@@ -20,9 +27,10 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * client reset mail points at /me/reset, and a staff invitation keeps the
  * coach look.
  *
- * Fixtures are the reserved E2E rows (tests/e2e/global-setup.ts) plus one
- * unarchived ClientProfile for E2E.client and one CLIENT invitation, both
- * removed in afterAll.
+ * Fixtures are spec-owned via ./me-look-fixture.ts: per-invocation
+ * identities, a dedicated workspace, memberships, one ClientProfile and
+ * two invitations, plus the reset verification/session/rate-limit rows
+ * the browser auth calls leave behind — all removed in afterAll.
  */
 
 const prisma = new PrismaClient({
@@ -39,10 +47,20 @@ const MAILBOX =
 
 const PROPS = ["background-color", "color", "font-family"] as const;
 
-let clientProfileId: string | undefined;
+// Spec-owned fixtures via ./me-look-fixture: per-invocation identities,
+// resources recorded the moment each create returns, and cleanup that
+// deletes only owned rows, in restrict-safe order, reporting failures
+// instead of masking the original error. The shared s1h-e2e-workspace's
+// authoritative appearanceMode is never touched.
+const owned = newMeLookOwned();
+let fixture: MeLookFixture | undefined;
 let clientInviteHref = "";
 let staffInviteHref = "";
-let inviteTokenIds: string[] = [];
+
+function fx(): MeLookFixture {
+  if (!fixture) throw new Error("me-look fixtures were not set up");
+  return fixture;
+}
 
 type Look = Record<(typeof PROPS)[number], string>;
 
@@ -73,7 +91,7 @@ async function fontLoaded(page: Page): Promise<boolean> {
 
 async function signInAsClient(page: Page) {
   await page.goto("/me/login");
-  await page.locator('input[name="email"]').fill(E2E.client);
+  await page.locator('input[name="email"]').fill(fx().clientEmail);
   await page.locator('input[name="password"]').fill(E2E.password);
   await page.locator(".auth-button").click();
   await page.waitForURL(/\/me$/, { timeout: 30_000 });
@@ -94,66 +112,25 @@ function seedMode(page: Page, mode: "light" | "dark") {
 }
 
 test.beforeAll(async () => {
-  const [client, owner, ws] = await Promise.all([
-    prisma.user.findUniqueOrThrow({ where: { email: E2E.client } }),
-    prisma.user.findUniqueOrThrow({ where: { email: E2E.owner } }),
-    prisma.workspace.findUniqueOrThrow({ where: { slug: E2E.workspaceSlug } }),
-  ]);
-
-  const existing = await prisma.clientProfile.findFirst({
-    where: { userId: client.id, workspaceId: ws.id },
-  });
-  if (existing) {
-    clientProfileId = existing.id;
-    if (existing.archivedAt) {
-      await prisma.clientProfile.update({
-        where: { id: existing.id },
-        data: { archivedAt: null },
-      });
-    }
-  } else {
-    const created = await prisma.clientProfile.create({
-      data: { userId: client.id, workspaceId: ws.id, name: "O17 Client" },
-    });
-    clientProfileId = created.id;
-  }
-
-  const clientInvite = await createWorkspaceInvitation(
-    { user: { id: owner.id } },
-    {
-      workspaceId: ws.id,
-      targetEmail: "o17-client-invite@s1h-e2e.test",
-      intendedRole: "CLIENT",
-    },
+  fixture = await setupMeLookFixtures(
     prisma,
-  );
-  const staffInvite = await createWorkspaceInvitation(
-    { user: { id: owner.id } },
     {
-      workspaceId: ws.id,
-      targetEmail: "o17-staff-invite@s1h-e2e.test",
-      intendedRole: "COACH",
+      hashPassword,
+      createInvitation: (owner, input) =>
+        createWorkspaceInvitation(owner, input, prisma),
     },
-    prisma,
+    owned,
   );
-  inviteTokenIds = [clientInvite.invitationId, staffInvite.invitationId];
-  clientInviteHref = `/invite?workspace=${ws.id}&token=${clientInvite.delivery.rawToken}`;
-  staffInviteHref = `/invite?workspace=${ws.id}&token=${staffInvite.delivery.rawToken}`;
+  clientInviteHref = fixture.clientInviteHref;
+  staffInviteHref = fixture.staffInviteHref;
 });
 
 test.afterAll(async () => {
-  if (inviteTokenIds.length > 0) {
-    await prisma.accessToken.deleteMany({
-      where: { id: { in: inviteTokenIds } },
-    });
-  }
-  if (clientProfileId) {
-    await prisma.clientProfile.update({
-      where: { id: clientProfileId },
-      data: { archivedAt: new Date() },
-    });
-  }
-  await prisma.$disconnect();
+  // Deletes only rows this run created; a mid-setup throw still leaves
+  // `owned` complete enough to clean. Disconnect runs even when cleanup
+  // fails, and every teardown failure is reported alongside — never
+  // masking — the original setup/test error.
+  await teardownMeLookFixtures(prisma, owned);
 });
 
 for (const mode of ["dark", "light"] as const) {
@@ -161,6 +138,14 @@ for (const mode of ["dark", "light"] as const) {
     page,
   }) => {
     await seedMode(page, mode);
+    // The spec-owned workspace's authoritative appearance overrides the
+    // stored seed (mergeWorkspaceAppearance); the seeded preference alone
+    // cannot flip the shell while the workspace policy says otherwise.
+    // Only this spec's workspace is mutated — parallel lanes are isolated.
+    await prisma.workspace.update({
+      where: { id: fx().workspaceId },
+      data: { appearanceMode: mode === "light" ? "LIGHT" : "DARK" },
+    });
 
     // /me is the reference: the client screen's own root.
     await signInAsClient(page);
@@ -168,7 +153,8 @@ for (const mode of ["dark", "light"] as const) {
     await expect(page.locator(".eg-root")).toHaveAttribute("data-mode", mode);
     const home = await computed(page, ".eg-root");
     expect(home["background-color"]).toBe(
-      mode === "dark" ? "rgb(8, 8, 8)" : "rgb(245, 245, 245)",
+      // --v8-canvas: #0B0B0C / #F2F2F4 (lib/canvas/vari8-theme.ts)
+      mode === "dark" ? "rgb(11, 11, 12)" : "rgb(242, 242, 244)",
     );
     expect(home["font-family"]).toContain("Ethereal Geist");
     expect(await fontLoaded(page)).toBe(true);
@@ -209,7 +195,8 @@ for (const mode of ["dark", "light"] as const) {
       const card = page.locator(".auth-card");
       await expect(card).toHaveCSS(
         "background-color",
-        mode === "dark" ? "rgb(16, 16, 16)" : "rgb(255, 255, 255)",
+        // --v8-surface: #161618 / #FFFFFF (lib/canvas/vari8-theme.ts)
+        mode === "dark" ? "rgb(22, 22, 24)" : "rgb(255, 255, 255)",
       );
       const shadow = await card.evaluate(
         (el) => getComputedStyle(el).boxShadow,
@@ -249,7 +236,7 @@ test("a coach signing in at /me/login still lands on /coach", async ({
 test("the client reset mail links to /me/reset", async ({ page }) => {
   test.skip(!DELIVERY_UP, "mail delivery adapter not configured");
   await page.goto("/me/reset-request");
-  await page.locator('input[name="email"]').fill(E2E.client);
+  await page.locator('input[name="email"]').fill(fx().clientEmail);
   await page.locator(".reset-form__submit").click();
   await expect(page.locator(".auth-success")).toBeVisible({ timeout: 30_000 });
 
@@ -257,6 +244,8 @@ test("the client reset mail links to /me/reset", async ({ page }) => {
   const messages = lines.map(
     (line) => JSON.parse(line) as { to: string; text: string },
   );
-  const mine = messages.filter((message) => message.to === E2E.client).at(-1);
+  const mine = messages
+    .filter((message) => message.to === fx().clientEmail)
+    .at(-1);
   expect(mine?.text).toContain("/me/reset?token=");
 });

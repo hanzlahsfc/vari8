@@ -1,3 +1,126 @@
+## 2026-11-03 — P718 fixture-cleanup closure findings (#252)
+
+Review findings on `15b63cd1`: reset `verifications` rows and
+`rate_limit` buckets were never cleaned; the unit mocks returned success
+for any `where` and let a workspace delete succeed after its
+Restrict-guarded member delete failed; and `afterAll` could lose a
+cleanup error to a `$disconnect` throw (no `finally`, no combined
+reporting).
+
+Repair — `tests/e2e/me-look-fixture.ts`:
+
+- cleanup now also deletes `verifications` by `value IN owned.userIds`
+  (the codebase's own reset-row convention — `value` carries the user
+  id), `sessions` for the run users, and `rate_limit` rows by the exact
+  recomputed key set `meLookRateLimitKeys` (`accountLimitKey` over the
+  run's emails for every email-scoped purpose + `userLimitKey` over the
+  run's user ids). Shared-identity buckets — e.g.
+  `acct:sign-in:<sha256(coach@s1h-e2e.test)>` — are absent by
+  construction and left alone; no prefix or namespace sweeps anywhere.
+- accessToken/auditEvent deletes widened to the owned boundary
+  `fixture-sweep.ts` already proves (workspace id OR owned user ids),
+  closing the `createdByUserId`/`subjectUserId` Restrict holes;
+  clientProfile covers workspace id OR owned user ids OR the tracked id.
+- new `teardownMeLookFixtures`: `$disconnect` attempted in `finally`;
+  cleanup and disconnect failures are aggregated into one thrown error
+  — reported next to, never instead of, the original setup/test error.
+  The spec's stale shared-fixture header comment corrected.
+
+`tests/unit/me-look-fixture.test.ts` rewritten — the success-by-default
+mocks replaced with an in-memory FK-honest fake: real `where` matching,
+real Restrict/Cascade/SetNull rules, injectable step failures. Every
+delete's filter is now verified by what survives (a planted foreign
+tenant), a blocked member delete genuinely fails the workspace/user
+deletes, and teardown proves both failures surface together.
+
+NEW `tests/integration/me-look-fixture-db.test.ts` — disposable-DB proof
+on the real migrated schema + real Better Auth pipeline: real sign-in
+and reset-request produce the session/verification/rate_limit artifacts
+the review found; cleanup removes all of them across two independent
+runs; a planted foreign tenant survives every delete; a live
+`client_assignment` Restrict violation reports labeled failures with no
+skip-ahead, and re-cleanup after removing the blocker finishes clean.
+
+Verified — Node v24.22.1: unit **8/8**, disposable-DB **4/4**
+(`app_p718i`, run twice back-to-back on one DB), auth specs
+`--workers=2` **7/7** (`app_p718e`). Node v22.21.1: unit **8/8**,
+disposable-DB **4/4**, auth specs **7/7**. Post-run inspection: **0**
+me-look users/accounts/sessions/workspaces/members/profiles/tokens/
+verifications/rate_limits/audit rows on either DB; the only rate_limit
+row left on `app_p718e` is the shared-coach bucket. `tsc`/`eslint`/
+`prettier`/`index:check`/`git diff --check` all clean. Accepted
+London-DST, auth-CSS and appearance assertions untouched.
+
+## 2026-11-02 — P716 partial-setup cleanup hardening (#252)
+
+Review finding: the guarded deletes were not safe after a mid-setup
+throw — untracked first invitation, untracked user on account failure,
+and one failing delete skipped the rest.
+
+Repair: fixture lifecycle extracted to `tests/e2e/me-look-fixture.ts`.
+Identities carry a per-invocation `runId` suffix
+(`me-look-<run>@s1h-e2e.test`, `s1h-e2e-me-look-<run>`) so two lanes can
+never share rows and deletes are owned by construction. Every resource
+is recorded the moment its create returns — user before account.upsert,
+each invitation independently. Cleanup attempts every safe delete in
+restrict-safe order (tokens → profile/members/audit → workspace →
+accounts → users), collects failures and reports them after
+`$disconnect` — never masking the original error.
+
+Proof: `tests/unit/me-look-fixture.test.ts` (4 tests) — second-invitation
+failure leaves the first token owned+cleaned; account failure leaves the
+user tracked+deleted; a failing delete neither blocks later steps nor
+hides its error; an empty ownership record deletes nothing.
+
+Verified — Node v24.22.1: unit 4/4; spec 5/5. Node v22.21.1: spec 5/5;
+`tsc`/`eslint`/`prettier` 0 errors. Accepted London/CSS/assertion repairs
+untouched.
+
+## 2026-11-02 — P714 appearance-test fixture isolation (#252)
+
+Review finding: `me-auth-look.spec.ts` mutated the shared
+`s1h-e2e-workspace` `appearanceMode` — safe only under `workers: 1`.
+
+Repair: the appearance cases now own dedicated fixtures following the
+e2e conventions — `me-look@s1h-e2e.test` client, `me-look-owner` user,
+`s1h-e2e-me-look` workspace, CLIENT/OWNER memberships and a spec-owned
+ClientProfile, all upserted in `beforeAll` and deleted in `afterAll`
+(guarded deletes: invitations, profile, members, audit events,
+workspace, accounts, users — safe after partial setup failure). The
+shared workspace's `appearanceMode` is never written. The reset-mail
+case now targets the spec client (the `/me/reset` branch requires its
+profile). No product or assertion changes.
+
+Verified, Node v24.22.1: spec 5/5; both auth specs `--workers=2` 7/7;
+repeat run 5/5 (no state leakage). Node v22.21.1: spec 5/5 (one timing
+flake on `.auth-success` under load — mail itself correct, passed on
+re-run); `format:check`/`tsc`/`eslint` 0 errors.
+
+## 2026-11-02 — P712 Beta gate repairs (five diagnosed failures)
+
+Branch `beta/p712-gate-repairs` off `origin/Vari8-Beta` `ae409f38`.
+
+- `tests/integration/checkin-recurrence-i1.test.ts`: the London-overlap
+  collision case no longer branches on the runner's calendar month. r2's
+  `Europe/London` minutes are derived from the actual occurrence instant
+  (`${startDate}T09:00:00Z` via `Intl.DateTimeFormat`), and r1's persisted
+  `dueAt` is asserted before the collision — deterministic across GMT/BST.
+- `app/auth.css`: stale mirrored `--cd-bg` values now match the canvas
+  `--color-base` tokens (`#0b0b0c` pro-dark, `#f2f2f4` pro-white,
+  `lib/canvas/vari8-theme.ts`). Real CSS repair — no selector/structural
+  change.
+- `tests/e2e/me-auth-look.spec.ts`: stale root-bg expectations corrected
+  to the token contract (`rgb(11,11,12)`/`rgb(242,242,244)`; card
+  `rgb(22,22,24)`/`rgb(255,255,255)`), and the light case now sets the
+  workspace's authoritative `appearanceMode` (restored in `afterAll`)
+  instead of relying on localStorage.
+
+Before: 1 failed/1132 integration (`londonOverlap` month branch); e2e
+4 failed (`auth-card` ×2 color mismatch, `me-auth-look` ×2 mode/bg).
+After — Node v24.22.1: integration file 18/18; both e2e specs 7/7
+(`MAIL_DELIVERY_ADAPTER=dev-file`); Node v22.21.1: integration 18/18,
+e2e 7/7, `format:check`/`typecheck`/`lint` 0 errors, `npm run build` 0.
+
 ## 2026-11-02 — P705 fresh-checkout verification, both runtimes (final)
 
 Fresh detached checkout `/private/tmp/p705-verify` at `cd201cd3` (tree `7b211468`; the record commit on top is docs-only), `npm ci` root + `npm ci` in `tools/parity/reference`, docker Postgres :5433. Runtimes: official tarballs Node v24.22.1 (task baseline) and Node v22.21.1 (CI `node-version: 22`).
