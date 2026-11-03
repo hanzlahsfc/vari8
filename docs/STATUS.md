@@ -1,3 +1,41 @@
+## 2026-11-03 — P728 runtime-only NODE-26 fix-forward (local, unpublished)
+
+Local branch `p728/node-26-fixforward` off `828adba1` (current Beta). The
+minimal runtime delta from approved `30c7cad7` (O18 floor Node 26.12.1)
+ported onto CURRENT files — not the old branch's stale copies: root
+`.nvmrc` 26.12.1 (new), `frontend/.nvmrc` 26.12.1, root/frontend
+`engines.node` `>=26.12.1`, `@types/node` 26 line (root `^26.6.5` →
+lock 26.6.6, frontend pin 26.6.5), `ci.yml` `node-version: 26`, current
+`verify-local.sh` `REQUIRE_NODE26` semver floor (`sort -V`), current
+`agent-context.mjs` patch-tolerant `.nvmrc` parse, D5/RUNBOOK/BLACKBOARD
+runtime rows. Lockfiles regenerated via `npm install` — only
+`@types/node` + `undici-types` moved, no unrelated dependency changes.
+Tamper pins repinned: `comparer.json` + `receipts/metadata.json`
+`locks.root.sha256` → new root lockfile hash `81821409` (comparer pin
+cascaded into metadata) — the same repin pattern #251 used; all other
+pins byte-identical. Evidence verifier: `verified: true`, canonical
+70/70 (observational strict/index drift unchanged, pre-existing).
+
+Gates under Node v26.12.1 (isolated tarball binary, disposable
+`app_p728`/`app_p728i` on shared `app-db-1`):
+
+- `npm ci` root + frontend + `tools/parity/reference` 0 (pre-existing
+  `onnxruntime-node`/`protobufjs` allowScripts warning, unchanged);
+  prisma generate/validate/migrate 0.
+- `format:check` 0, `typecheck` 0, `lint` 0 errors (314 warnings),
+  `index:check` OK, `git diff --check` 0.
+- `npm test` **153 files / 1834** (one initial failure —
+  `visual-reference` pin check — resolved by the repin above; full
+  suite rerun clean, recorded separately, not retry arithmetic).
+- `test:integration` (`app_p728i`) **91 files / 1137**; `npm run build`
+  exit 0; full `test:e2e` (`MAIL_DELIVERY_ADAPTER=dev-file
+MEDIA_STORAGE_ADAPTER=local`) **23 passed / 2 skipped**.
+
+P727 independently proved unchanged-Beta Node 26 compatibility
+(integration 1137, e2e 23/2 + 17/8, voice replay); this run certifies
+the CANDIDATE. No push, PR, merge, shared-checkout or `beta/node-26`
+changes; publication awaits owner confirmation.
+
 ## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
 
 Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;

@@ -4,7 +4,7 @@
 #
 # Required: BASE_SHA (the Vari8-Beta commit the change is measured against), LANE_DB (app_<lane>).
 # Optional: LANE_PORT (default 3999), CARD (plan id, for the schema guard), KEEP_DB=1,
-#           SKIP_E2E=1, SKIP_PARITY=1, PARITY_SCREENS (default ALL), REQUIRE_NODE24=1.
+#           SKIP_E2E=1, SKIP_PARITY=1, PARITY_SCREENS (default ALL), REQUIRE_NODE26=1.
 set -euo pipefail
 
 : "${BASE_SHA:?Set BASE_SHA to the Vari8-Beta commit this change is measured against}"
@@ -58,13 +58,14 @@ finish() {
 git rev-parse --verify "${BASE_SHA}^{commit}" >/dev/null
 step "clean tree" bash -c 'git diff --quiet && git diff --cached --quiet'
 
-NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
-if [[ "$NODE_MAJOR" != "24" ]]; then
-  if [[ "${REQUIRE_NODE24:-0}" == "1" ]]; then
-    SUMMARY+=("FAIL node: target 24, running $(node --version)")
+NODE_TARGET="26.12.1"
+NODE_CURRENT="$(node --version | sed 's/^v//')"
+if [[ "$(printf '%s\n%s\n' "$NODE_TARGET" "$NODE_CURRENT" | sort -V | head -1)" != "$NODE_TARGET" ]]; then
+  if [[ "${REQUIRE_NODE26:-0}" == "1" ]]; then
+    SUMMARY+=("FAIL node: target $NODE_TARGET or newer (O18), running $(node --version)")
     finish 1
   fi
-  SUMMARY+=("WARN node: target 24 (D5), running $(node --version); recorded, not certified")
+  SUMMARY+=("WARN node: target $NODE_TARGET (D5, O18), running $(node --version); recorded, not certified")
 fi
 
 schema_guard() {
