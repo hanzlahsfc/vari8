@@ -1,3 +1,200 @@
+## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
+
+Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;
+merge commit `28fb5229`, tree `a6e59cff`, parents `d0d2aa7b` + `7e1b93e2`.
+The inherited failures the branch's earlier verification recorded — the
+London-DST `checkin-recurrence-i1` collision and the auth-card/me-auth-look
+color assertions — were repaired by #252, so no waiver is carried.
+
+Conflicts: `docs/STATUS.md` only — resolved by keeping both newest-first
+entry blocks (Beta's 11-03/11-02 block first, then this branch's 11-02
+entries). `npm run index` regenerated indexes — no generated drift. No
+behavioral change to any voice path; #252's fixture/CSS/test repairs are
+preserved intact.
+
+Gates on the merge head (`/private/tmp/p671-voice-ui`, `npm ci` root +
+`tools/parity/reference`, disposable `app_p721`/`app_p721i`):
+
+- Node v22.21.1 (CI): focused voice 96/96; replay
+  `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts`
+  1 pass (~1.9m standalone — one earlier run timed out at 5m under build
+  load, the recording's length probe could not complete; same documented
+  flake class, passed standalone quiet); `npm test` 153 files/1834;
+  `npm run test:integration` **91 files / 1137 — all pass** (was
+  1 failed/1132 on the inherited London-DST failure); `npm run build` 0;
+  full `test:e2e` with `MAIL_DELIVERY_ADAPTER=dev-file
+MEDIA_STORAGE_ADAPTER=local` **23 passed / 2 skipped** (delivery-gated-off
+  pair, proven in CI mode); `format:check`/`typecheck`/`lint` 0 errors
+  (314 baseline warnings), `index:check` OK, `git diff --check` 0.
+- Node v24.22.1 (task baseline, affected checks): focused 104/104
+  (voice 96 + me-look 8); `checkin-recurrence-i1` + `me-look-fixture-db`
+  22/22; `auth-card` + `me-auth-look` + `voice-messaging` `--workers=2`
+  **8 passed** (voice replay 1.4m).
+
+## 2026-11-03 — P718 fixture-cleanup closure findings (#252)
+
+Review findings on `15b63cd1`: reset `verifications` rows and
+`rate_limit` buckets were never cleaned; the unit mocks returned success
+for any `where` and let a workspace delete succeed after its
+Restrict-guarded member delete failed; and `afterAll` could lose a
+cleanup error to a `$disconnect` throw (no `finally`, no combined
+reporting).
+
+Repair — `tests/e2e/me-look-fixture.ts`:
+
+- cleanup now also deletes `verifications` by `value IN owned.userIds`
+  (the codebase's own reset-row convention — `value` carries the user
+  id), `sessions` for the run users, and `rate_limit` rows by the exact
+  recomputed key set `meLookRateLimitKeys` (`accountLimitKey` over the
+  run's emails for every email-scoped purpose + `userLimitKey` over the
+  run's user ids). Shared-identity buckets — e.g.
+  `acct:sign-in:<sha256(coach@s1h-e2e.test)>` — are absent by
+  construction and left alone; no prefix or namespace sweeps anywhere.
+- accessToken/auditEvent deletes widened to the owned boundary
+  `fixture-sweep.ts` already proves (workspace id OR owned user ids),
+  closing the `createdByUserId`/`subjectUserId` Restrict holes;
+  clientProfile covers workspace id OR owned user ids OR the tracked id.
+- new `teardownMeLookFixtures`: `$disconnect` attempted in `finally`;
+  cleanup and disconnect failures are aggregated into one thrown error
+  — reported next to, never instead of, the original setup/test error.
+  The spec's stale shared-fixture header comment corrected.
+
+`tests/unit/me-look-fixture.test.ts` rewritten — the success-by-default
+mocks replaced with an in-memory FK-honest fake: real `where` matching,
+real Restrict/Cascade/SetNull rules, injectable step failures. Every
+delete's filter is now verified by what survives (a planted foreign
+tenant), a blocked member delete genuinely fails the workspace/user
+deletes, and teardown proves both failures surface together.
+
+NEW `tests/integration/me-look-fixture-db.test.ts` — disposable-DB proof
+on the real migrated schema + real Better Auth pipeline: real sign-in
+and reset-request produce the session/verification/rate_limit artifacts
+the review found; cleanup removes all of them across two independent
+runs; a planted foreign tenant survives every delete; a live
+`client_assignment` Restrict violation reports labeled failures with no
+skip-ahead, and re-cleanup after removing the blocker finishes clean.
+
+Verified — Node v24.22.1: unit **8/8**, disposable-DB **4/4**
+(`app_p718i`, run twice back-to-back on one DB), auth specs
+`--workers=2` **7/7** (`app_p718e`). Node v22.21.1: unit **8/8**,
+disposable-DB **4/4**, auth specs **7/7**. Post-run inspection: **0**
+me-look users/accounts/sessions/workspaces/members/profiles/tokens/
+verifications/rate_limits/audit rows on either DB; the only rate_limit
+row left on `app_p718e` is the shared-coach bucket. `tsc`/`eslint`/
+`prettier`/`index:check`/`git diff --check` all clean. Accepted
+London-DST, auth-CSS and appearance assertions untouched.
+
+## 2026-11-02 — P716 partial-setup cleanup hardening (#252)
+
+Review finding: the guarded deletes were not safe after a mid-setup
+throw — untracked first invitation, untracked user on account failure,
+and one failing delete skipped the rest.
+
+Repair: fixture lifecycle extracted to `tests/e2e/me-look-fixture.ts`.
+Identities carry a per-invocation `runId` suffix
+(`me-look-<run>@s1h-e2e.test`, `s1h-e2e-me-look-<run>`) so two lanes can
+never share rows and deletes are owned by construction. Every resource
+is recorded the moment its create returns — user before account.upsert,
+each invitation independently. Cleanup attempts every safe delete in
+restrict-safe order (tokens → profile/members/audit → workspace →
+accounts → users), collects failures and reports them after
+`$disconnect` — never masking the original error.
+
+Proof: `tests/unit/me-look-fixture.test.ts` (4 tests) — second-invitation
+failure leaves the first token owned+cleaned; account failure leaves the
+user tracked+deleted; a failing delete neither blocks later steps nor
+hides its error; an empty ownership record deletes nothing.
+
+Verified — Node v24.22.1: unit 4/4; spec 5/5. Node v22.21.1: spec 5/5;
+`tsc`/`eslint`/`prettier` 0 errors. Accepted London/CSS/assertion repairs
+untouched.
+
+## 2026-11-02 — P714 appearance-test fixture isolation (#252)
+
+Review finding: `me-auth-look.spec.ts` mutated the shared
+`s1h-e2e-workspace` `appearanceMode` — safe only under `workers: 1`.
+
+Repair: the appearance cases now own dedicated fixtures following the
+e2e conventions — `me-look@s1h-e2e.test` client, `me-look-owner` user,
+`s1h-e2e-me-look` workspace, CLIENT/OWNER memberships and a spec-owned
+ClientProfile, all upserted in `beforeAll` and deleted in `afterAll`
+(guarded deletes: invitations, profile, members, audit events,
+workspace, accounts, users — safe after partial setup failure). The
+shared workspace's `appearanceMode` is never written. The reset-mail
+case now targets the spec client (the `/me/reset` branch requires its
+profile). No product or assertion changes.
+
+Verified, Node v24.22.1: spec 5/5; both auth specs `--workers=2` 7/7;
+repeat run 5/5 (no state leakage). Node v22.21.1: spec 5/5 (one timing
+flake on `.auth-success` under load — mail itself correct, passed on
+re-run); `format:check`/`tsc`/`eslint` 0 errors.
+
+## 2026-11-02 — P712 Beta gate repairs (five diagnosed failures)
+
+Branch `beta/p712-gate-repairs` off `origin/Vari8-Beta` `ae409f38`.
+
+- `tests/integration/checkin-recurrence-i1.test.ts`: the London-overlap
+  collision case no longer branches on the runner's calendar month. r2's
+  `Europe/London` minutes are derived from the actual occurrence instant
+  (`${startDate}T09:00:00Z` via `Intl.DateTimeFormat`), and r1's persisted
+  `dueAt` is asserted before the collision — deterministic across GMT/BST.
+- `app/auth.css`: stale mirrored `--cd-bg` values now match the canvas
+  `--color-base` tokens (`#0b0b0c` pro-dark, `#f2f2f4` pro-white,
+  `lib/canvas/vari8-theme.ts`). Real CSS repair — no selector/structural
+  change.
+- `tests/e2e/me-auth-look.spec.ts`: stale root-bg expectations corrected
+  to the token contract (`rgb(11,11,12)`/`rgb(242,242,244)`; card
+  `rgb(22,22,24)`/`rgb(255,255,255)`), and the light case now sets the
+  workspace's authoritative `appearanceMode` (restored in `afterAll`)
+  instead of relying on localStorage.
+
+Before: 1 failed/1132 integration (`londonOverlap` month branch); e2e
+4 failed (`auth-card` ×2 color mismatch, `me-auth-look` ×2 mode/bg).
+After — Node v24.22.1: integration file 18/18; both e2e specs 7/7
+(`MAIL_DELIVERY_ADAPTER=dev-file`); Node v22.21.1: integration 18/18,
+e2e 7/7, `format:check`/`typecheck`/`lint` 0 errors, `npm run build` 0.
+
+## 2026-11-02 — P705 fresh-checkout verification, both runtimes (final)
+
+Fresh detached checkout `/private/tmp/p705-verify` at `cd201cd3` (tree `7b211468`; the record commit on top is docs-only), `npm ci` root + `npm ci` in `tools/parity/reference`, docker Postgres :5433. Runtimes: official tarballs Node v24.22.1 (task baseline) and Node v22.21.1 (CI `node-version: 22`).
+
+**Node v24.22.1** (fresh checkout):
+
+- Focused: `vitest run tests/unit/{voice-transcript.dom,p692-voice-repair.dom,client-composer.dom,demo-recorder.dom,client-app-shell.dom}` → **5 files / 96 tests, exit 0**.
+- Replay: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` → **1 passed, exit 0 (~2.3m)**; both-direction exact containers asserted.
+- Full suite: `npm test` → **152 files / 1826 tests, exit 0**.
+- Build: `npm run build` → **exit 0**. Gates: `format:check` 0, `typecheck` 0, `lint` 0 errors/314 pre-existing warnings, `index:check` OK, `git diff --check` 0.
+
+**Node v22.21.1** (CI parity, same checkout, `npm ci` re-run under 22):
+
+- `prisma generate`/`validate`/`migrate deploy` OK; `format:check` 0; `typecheck` 0; `lint` 0 errors; `npm test` → **152 / 1826, exit 0** (after the `blobFetch` string-body fix — `new Response(new Blob())` throws `object.stream is not a function` under Node 22 undici+jsdom; caught and repaired here, not reported as passing).
+- `npm run test:integration` → **1 failed / 1132 passed (1133)**: `checkin-recurrence-i1` "other-rule collision" — a London-DST seasonal assertion (`londonOverlap` branch); identical failure under Node 24.22.1 — pre-existing environmental, unrelated to this diff.
+- `npm run build` → **exit 0**. `test:e2e` (full suite): 12 passed, 8 skipped, 5 failed — `voice-messaging` timed out once inside the crowded full run ("Access denied" snapshot) but **passes standalone under Node 22 (1 passed, ~2.0m)**; `auth-card` ×2 + `me-auth-look` ×2 are auth-page color assertions (rgb 8,8,8 vs 11,11,12 etc.) failing **identically under Node 24.22.1** — pre-existing environmental, unrelated to this diff.
+
+## 2026-11-02 — P705 coach exact containers + committed recording regressions
+
+- **Correction:** the P700 entry claimed `client-composer.dom` regressions "one recording per draft: mic guard, removal re-allows, raced take drops without a slot leak" and "a pending audio file also guards the mic; removing a voice chip permits a replacement take". Those tests are not in the committed file — only normal one-voice coverage existed. The claim was wrong; the regressions are committed now.
+- **Coach-side exact containers:** `messages.tsx` `div.cd-message-line` gains `data-message-id={m.id}` (the real message id — `toCanvasMessage` maps `id: view.id`); `media.tsx` `div.cd-media-card` gains `data-media-id={item.mediaObjectId || item.id}`. The replay now binds both directions: coach side asserts the client's exact `cd-message-client[data-message-id]` container holds every captured `data-media-id` card, plays the voice take's exact card (muted `play()` engaged, `!paused`), and transcribes inside the exact jfk.wav card (button + "Auto-transcript" + "fellow Americans" all scoped to that card); the coach's own reply is asserted in `cd-message-coach[data-message-id]` holding the reply media card. Filename/`first()` selection removed; mint requests remain supporting evidence.
+- **Recording regressions committed** (`client-composer.dom`, describe "voice recording capacity — async regressions (P705)", real `RemoteConversation` → `ChatComposer` → real `DemoRecorder`, uploads deferred/mocked): "a pending upload's settle cannot consume the recorder's reservation" (8 settled + 1 in-flight + open dialog: pick rejected at the reserved slot, lands after close); "a raced second take never stages and frees its reservation exactly once" (audio file chip lands mid-dialog → take dropped, exactly 9 of 10 picks fit); "open-close cycles release the reservation exactly once each" (two cycles, exactly one pick fits); "a rejected attach keeps the reservation for retry and releases it on close" (upload rejection holds the slot, close frees exactly one); "removing a staged take permits a replacement inside the cap" (remove → mic re-enabled → replacement lands at 10, never 11). Proven: stripping the raced-guard release fails the raced test; stripping the close release fails 4 tests.
+- **Runtimes:** repo CI (`.github/workflows/ci.yml`, workflow_dispatch-only) pins `node-version: 22` — no root engines/.nvmrc. Task gate baseline is Node 24.22.1; earlier P703 verification ran under Node 26.8.1 and is producer-carried only. Fresh final-commit verification under both follows.
+
+## 2026-11-02 — P703 fresh-checkout verification (final)
+
+Fresh detached checkout `/private/tmp/p703-verify` at commit `64315dbf` (tree `d93e6c29`), `npm ci` root + `npm ci` in `tools/parity/reference` (nested package — required for `pngjs`; without it the two parity suites fail on missing package, an environment step not a defect), Node v26.8.1, docker Postgres on :5433:
+
+- Focused: `npx vitest run tests/unit/voice-transcript.dom.test.tsx tests/unit/p692-voice-repair.dom.test.tsx tests/unit/client-composer.dom.test.tsx` → **3 files / 77 tests, exit 0** (includes the 3 new same-session run-token regressions).
+- Self-contained browser replay: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` → **1 passed, exit 0 (~1.9m)**; renders real mint `…key=…%2F<mediaId>…`, asserts exact `data-message-id` container + `data-media-id` card + engaged playback + in-card transcript; zero external requests. (First attempt timed out on the cold 180s webServer build window under load; rerun passed — `.next` warm.)
+- Full unfiltered suite: `npm test` → **152 files / 1821 tests, exit 0** after the nested-parity install (1762 first run + 59 recovered).
+- Production build: `npm run build` → **exit 0** (Next 16.3.8 webpack).
+- Static gates: `npm run typecheck` 0; `npx eslint .` 0 errors / 314 pre-existing warnings; `npx prettier --check .` 0; `npm run index:check` OK; `git diff --check` 0.
+
+## 2026-11-02 — P703 run-token ownership + exact reply boundary
+
+- **Async ownership proven:** `runToken` (P703 commit) bumps on every actor transition — a distinct session token per identity change, so an A→B→A revisit can never re-admit a stale settlement even though the scope string repeats — and again inside `start()` for a distinct per-run token. Both settlement paths (success and catch, incl. the AbortError branch) require `scopeRef.current === runScope && runToken.current === runId`; no `finally` exists. Committed regressions now cover every stale settlement kind under BOTH boundaries: cross-actor stale success ("A→B→A late completion", P698), stale failure ("A pending → B current → A rejects", P700), cancel abort (P688) — plus three new same-session tests: a take swap (cacheKey change, same actor) supersedes an in-flight run whose uncancellable promise still settles; its late success cannot clobber the live run's busy state, its late failure cannot mark it errored, its late abort cannot idle it (cache write stays keyed to the producing media id). Proven: stripping `runToken.current !== runId` fails exactly those 3 tests (12→9), restoring passes 12/12.
+- **Exact reply boundary:** the rendered `<audio>` src is the signed object mint `/api/v1/media/object?op=get&key=…%2F<mediaObjectId>&e=…&s=…` — observed in the live replay — so the id is present, but the spec now binds on stable identity attributes instead of URL shape: `data-message-id` on `div.cb-msg` and `data-media-id` on `div.cd-media-card` (additive attributes). The replay asserts the coach reply's exact inbound staff message container (`data-message-id=<reply message id>`), the exact attachment card inside it (`data-media-id=<reply media id>`), the real src still containing the id (logged), muted `play()` actually engaging on that element (`!paused`), and the transcript label + non-empty body inside that same card — a matching URL request alone no longer suffices.
+- **Format-gate repair:** `prettier --check .` failed (exit 1) on 6 vendored `public/models/` artifacts (whisper-tiny configs + ORT wasm shims) — a P688 omission, pre-existing. `public/models/` is now `.prettierignore`d; the files are pinned by recorded SHA-256 so reformatting is never correct.
+- Worktree gates (Node v24.x, `/private/tmp/p671-voice-ui`): focused 77/77 (`voice-transcript.dom` 12, `p692-voice-repair.dom`, `client-composer.dom`); `tsc` 0; eslint 0 errors (15 pre-existing warnings); prettier clean; `index:check` OK; `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` exit 0 in ~2.1m (incl. its own `next build`). Fresh-checkout full verification follows.
+
 ## 2026-10-31 — Prompt 657 — #250 parent regression + real visuals
 
 - Committed the parent-level regressions through real `RemoteDashboardTab` + `useOwnMessages` (not callback-only): initial fetch fails → open conversation → error → Retry → recovered messages render; profile switch mounts a new lifecycle with no stale error.
@@ -8104,3 +8301,102 @@ repairs; flagged one new failure mode — unretried P2034 from the
 RepeatableRead reads' member-row FOR UPDATE surfacing as
 `not_available`. Reads now use `withSerializedRetry`; `mapError` maps
 raw P2034 → `serialization_conflict`. Integration 28/28 re-green.)
+
+## 2026-11-01 — P671 client voice-recording entry (draft)
+
+Served `ChatComposer` gains an accessible "Record a voice note" entry → real `DemoRecorder` dialog (`kind="voice"`, own `workspaceId`/`clientProfileId`) → `onAttach` stages the uploaded audio as a normal attachment (cap-guarded, session-scoped). The recorder owns permission/recording/preview/discard/track-release — no second recording engine. No transcript, voice-send policy or schema decisions implied.
+
+**Tests:** `client-composer.dom` "opens an accessible voice-recording dialog" — 58/58 focused; tsc/format/lint/index/diff clean.
+**Browser:** `app_p671` lane on :3300 — real `/me` conversation → mic entry → "Voice note" dialog rendered (screenshot verified).
+**Head:** pending commit; **state:** draft PR, pending owner decisions (transcript storage/hosting/duration/failure policy).
+
+## 2026-11-01 — P675 voice-entry capacity + held preservation
+
+- One capacity model: `voiceReserved` flag so the staged-sync effect recomputes rather than clobbers the dialog reservation; pending upload → open dialog → complete → close → pick can never over-accept or double-release.
+- Held preservation: `send()` clears only the acknowledged payload; held voice chips persist so a text send never implies they went out.
+- Evidence corrected: earlier "1732/1732" hid 2 unloadable suites (exit 1, missing `tools/parity` deps); nested parity deps installed → real full suite **149 files / 1791, exit 0**.
+
+**Tests:** 61/61 focused; build exit 0; format/lint/index/diff clean. Policy hold unchanged (held notes can't send).
+
+## 2026-11-01 — P680 five-minute voice-recording cap
+
+Owner-approved 300s cap on the existing recorder, voice-only: elapsed/limit display ("… / 300s"), auto-stop into the preview phase, elapsed-time (not tick-count) checks plus visibilitychange/focus recheck — these let a backgrounded tab's delayed callback _detect_ an overrun on resume; they do not guarantee the encoded recording stops at 300s (corrected by P682, which verifies the take's real duration before attach). Video recording uncapped. Recorder cleanup, capacity model and held-note preservation unchanged; notes remain held pending voice policy.
+
+**Server boundary:** no server-side duration enforcement exists — the client cap is UX policy only; remaining gap reported for owner coordination (no migration/dep added).
+**Tests:** 6 new deterministic recorder tests (elapsed display, manual/auto/throttled stop, discard/re-record, close-near-limit) — 67/67 focused, full suite 150 files/1797 exit 0, build exit 0.
+
+## 2026-11-02 — P682 over-limit voice takes cannot attach
+
+- **P680 overclaim corrected:** the elapsed/visibility checks _detect_ an overrun on resume; they never guaranteed the encoded recording stops at 300s — a delayed interval callback lets `MediaRecorder` keep encoding. The P680 entry above and the P680 PR comment are corrected accordingly.
+- **Real-duration guard (voice only):** on `onstop` the finished blob's actual duration is decoded (`OfflineAudioContext.decodeAudioData` — the encoded audio, not the displayed elapsed value and not container metadata, which recorded WebM lacks). `>300s` → the take is rejected to idle ("exceeded the five-minute limit … Record it again") — no preview, no upload, no attach, no trimming. Duration undeterminable for the recorded format → surfaced the same way ("length could not be verified"), never assumed within the limit. Video path untouched.
+- **UX auto-stop kept:** it now targets one displayed second early (≈299s) so an on-time stop encodes strictly under the cap; only a genuinely delayed callback can still land over — and is rejected.
+- **Tests:** genuinely delayed callback (clock advances 305s while the interval is suspended, then one resume check) → ~305s take rejected, no upload/attach; 300.0s boundary attaches; 300.5s rejected; unverifiable duration surfaced; microphone `track.stop` asserted on close near the limit; discard/re-record and cancellation preserved.
+- **Server boundary unchanged:** no server-side duration enforcement exists — the client guard is UX policy only; voice notes remain held pending owner voice policy. No merge/schema/hosting/transcription work.
+  **Tests (Node v24.22.1):** focused 65/65 (`demo-recorder.dom` 9 + `client-composer.dom` 56); full suite 150 files / 1800 exit 0; `tsc --noEmit` 0; `eslint` 0 errors (pre-existing warnings unchanged); `format:check` clean; `index:check` OK; fresh `rm -rf .next && npm run build` exit 0.
+
+## 2026-11-02 — P684 — #251 accepted handoff, parked
+
+Independent closure review (opencode / deepseek-v4.1-flash, comment `6562991597`) **technically accepted** the P682 completed-file duration guard at head `41b64ac5` / tree `aa5eef62` (base `ae409f38`): exactly 300s decodable takes attach; longer and undecodable voice takes cannot preview, upload or attach; the ~299s UX stop is documented headroom, not an encoding guarantee; video untouched. Reviewer reproduced the gates under Node v24.22.1: focused **70/70** (adds the 5 `client-app-shell` tests to the builder's 65/65), full **150 files / 1800, exit 0**, fresh build + `tsc` exit 0. Chromium `audio/webm`+`audio/mp4` decode verified on real blobs; Safari/Firefox untested — the guard fails closed. Recorded residual risks (non-blocking): no track-release assertion inside the delayed-rejection test; decode peak-memory (~53MB PCM at 300s) continues after close with results safely discarded; cross-browser decode unverified. PR description rewritten as the accepted handoff with draft status and owner decisions explicit. Parked — no merge/integration authorization; voice notes remain held.
+
+## 2026-11-02 — P688 owner-approved voice messaging completed
+
+- **Held restriction removed:** the served client `ChatComposer` stages recorder audio as a normal `uploaded` chip — sendable alone, one take per voice message (WhatsApp-style), cleared on ack like any attachment; capacity reservation, session isolation, cancel/abort and failed-chip rules preserved. Coach path was already unheld.
+- **Embedded on-device transcription:** `@huggingface/transformers` 4.3.1 + `onnxruntime-web` 1.31.0-dev.20260914 + `onnx-community/whisper-tiny` (rev `ff417702`, q8) vendored under `public/models/` (worker, same-origin only; remote models + CDN wasmPath disabled). "View transcript" on audio cards → fetch mint URL → 16k mono PCM → worker inference → labeled "Auto-transcript — may contain errors"; loading/progress, retry, real cancel via worker terminate; failure/unsupported never gates record/send/playback.
+- **Temporary transcripts:** sessionStorage `vt1:<mediaObjectId>` — no schema/message-body change (see `docs/voice-transcription.md` for hashes, licenses, cache rules, limits).
+- **Offline proof:** `allowRemoteModels=false` pipeline on vendored assets transcribed known jfk.wav correctly (Node, same assets the worker serves).
+  **Tests (Node v24.22.1):** focused 70/70; full suite **151 files / 1805 exit 0**; `tsc` 0; `eslint` 0 errors; `format:check`/`index:check` clean; fresh `rm -rf .next && npm run build` exit 0. Evidence limit: served browser flow covered by DOM tests + Node offline pipeline proof; headed-browser pass pending.
+
+## 2026-11-02 — P690 consolidated voice repair
+
+- One voice recording per draft enforced (mic disabled while an audio chip is staged; remove-to-replace; belt guard in onAttach); rapid/pending covered.
+- Temporary transcripts scoped `vt1:w1:<scope>:<id>` (model version + workspace/actor scope); panel reads only after the authorized mint resolves; `releaseVoiceTranscriber()` clears cache + worker on identity switch. No schema.
+- Coach threads: server conversations synthesize reachable clients by `clientProfileId` instead of dropping non-fixture names.
+- Worker lifecycle: session-reused worker (model loads once), `busy` bound, abort = terminate + discard (decode itself not abortable — documented); cancel forces reload.
+- Vendored provenance: `public/models/MANIFEST.json` (revisions, paths, sizes, sha256) + LICENSE files (Apache-2.0 transformers, MIT ort, MIT whisper).
+
+## 2026-11-02 — P692 coach identity, cache and worker repair
+
+- Coach: synthesized server-thread clients carry `serverProfileId` + full safe fields (crash at `coachTasks.map` fixed); reads/sends/uploads/mark-read resolve the authoritative profile id, never the display name.
+- Cache: real actor scope threaded (`${workspaceId}:${clientProfileId}` client / `:staff` coach); `releaseVoiceTranscriber(scope)` clears only that scope; cache display still mint-gated; version `w1`.
+- Worker: `busy` wraps decode+run in one try/finally; failed worker terminated for clean retry; abort rejects and releases; stale finishes discarded.
+- Raced second take releases its slot reservation — no capacity leak.
+
+## 2026-11-02 — P693 identity propagation + committed regressions
+
+- Transcript scope is the real authenticated actor: `useActorScope` resolves `GET /workspaces/:ws/session` → `${workspaceId}:${user.id}` for client and coach cards; `${workspaceId}:${clientProfileId}` fallback removed. `signOut` clears all `vt1:*` at the logout boundary; scoped clear keeps panels isolated.
+- Worker: `busy` wraps decode+run in one try/finally (decode-fail/abort releases); failed worker terminates for clean retry; abort rejects + releases.
+- Race: dropped second take releases its slot reservation.
+- Coach: `serverProfileId` authoritative through send/read/draft/upload (`profileIdFor`, `DemoRecorder.clientProfileId`); name fallback is demo-only.
+- Regressions committed: `tests/unit/p692-voice-repair.dom.test.tsx` (non-fixture coach render + exact-ID read AND send POST, scoped isolation/two consumers/logout-clear, decode/init/abort busy release+retry) + race/capacity in `client-composer.dom.test.tsx`.
+  **Tests (Node v24.22.1):** focused 78/78; full suite **152 files / 1810+ exit 0**; `tsc` 0; `eslint` 0 errors; `format`/`index` clean; fresh `rm -rf .next && npm run build` exit 0.
+
+## 2026-11-02 — P694 authenticated served voice replay
+
+- `tests/e2e/voice-messaging.spec.ts` (new, run via `MEDIA_STORAGE_ADAPTER=local npx playwright test`): client fake-mic voice take + known `jfk.wav` file → send; coach `/coach` opens the real `clientProfileId` thread, plays the audio, View transcript → expected sample text; coach fake-mic reply → client reload → playback + "Auto-transcript" label. Zero external requests (blob/data excluded). Screenshots in `_evidence/p694-*.png` (gitignored).
+- Found+fixed en route: `MEDIA_STORAGE_ADAPTER=local` required under `next start`; `/coach` is the canvas entry (workspace overview 403s for COACH role — expected); `fixture-sweep.ts` gained message/conversation/media ordering for teardown; `+1 todo` pointer removed (race coverage lives in `client-composer.dom.test.tsx`).
+- Outcome matrix: client→send ✓ / coach→open real thread ✓ / coach→play ✓ / coach→transcript ✓ / coach→reply ✓ / client→reload+play+transcript ✓ / external requests 0 ✓.
+
+## 2026-11-02 — P696 lifecycle and replay repair
+
+- **Fail-closed actor scope:** `useActorScope` now returns loading/error/ready(+retry); panel neither reads/writes cache nor starts inference until a real `user.id` resolves — `:pending` placeholder scopes removed from both cards.
+- **Cleanup ownership:** composer's `releaseVoiceTranscriber` fires only on a real identity _change_ (`prevIdentityKey` ref), never on routine mount. `SignOutButton` and the coach `/logout` form both clear `vt1:*`.
+- **Worker termination:** `releaseWorker` settles the in-flight run (`activeReject` → AbortError), resets concurrency, next call rebuilds; stale completions can't land.
+- **Reservation lifecycle:** raced-second-take check + slot release moved out of `setStaged` (no updater side effects, exactly-once release).
+- **Reproducible replay:** `tests/e2e/fixtures/jfk.wav` committed + provenance/README; spec captures POST `/messages` ids and asserts those exact attachments on the coach side. Self-contained: `MEDIA_STORAGE_ADAPTER=local npx playwright test tests/e2e/voice-messaging.spec.ts` — exit 0 in 56s.
+  **Tests (Node v24.22.1):** focused 79/79; full 152 files / **1814 exit 0**; `tsc`/`eslint`/`format`/`index` clean; fresh build exit 0; served replay exit 0.
+
+## 2026-11-02 — P698 actor isolation and reproducible evidence
+
+- Panel resets on every actor transition (loading/error/scope change) and binds writes/display to the producing actor — stale completions can never surface under a new identity. Component tests: ready A→loading→error, A→B, A→B→A late completion (`voice-transcript.dom`).
+- Composer no longer runs a global transcript teardown on identity change; actor-scoped keys are unreadable cross-identity and the shared worker belongs to its caller. Logout still clears (SignOutButton + coach `/logout`); `releaseWorker` settles in-flight runs.
+- Recording regressions committed: pending audio pick guards mic, removal permits replacement take carrying its own id (`client-composer.dom`).
+- Replay is deterministic: file-backed fake mic (`--use-file-for-fake-audio-capture` on the committed `jfk.wav`), fixture SHA-256 asserted in `beforeAll`, and assertions bind the exact `POST /messages` media ids — coach mint GETs must hit `/api/v1/media/<ws>/<id>` for each captured id.
+  **Tests (Node v24.22.1):** focused 79/79; full **152 files / 1815+ exit 0** (2 load-flake timeouts pass standalone); build/`tsc`/`eslint`/`format`/`index` clean; self-contained replay **exit 0** (1.7m).
+
+## 2026-11-02 — P700 stale-completion ownership and committed evidence
+
+- Panel async ownership: catch/idle paths now check `scopeRef.current === runScope` — a stale abort/error can't clear a newer actor's transcript or mark its error. Regression: `voice-transcript.dom` "A pending → B current → A rejects".
+- Replay is deterministic: `--use-fake-device-for-media-stream` + `--use-fake-ui-for-media-stream` + `--use-file-for-fake-audio-capture=<committed jfk.wav>` (all three required); fixture SHA-256 asserted in `beforeAll`.
+- Client direction is exact-ID bound: coach reply message/media ids captured; client mint for that exact id asserted before playback/transcript in its card.
+- Recording regressions committed: `client-composer.dom` — "one recording per draft: mic guard, removal re-allows, raced take drops without a slot leak"; "a pending audio file also guards the mic; removing a voice chip permits a replacement take".
+  **Tests (Node v24.22.1):** focused 79/79; replay **exit 0** (2.1m); full suite + build on this head pending.

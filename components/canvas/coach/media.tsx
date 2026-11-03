@@ -13,6 +13,8 @@ import {
 import { ApiClientError } from "../data/http";
 import { DemoRecorder as RealRecorder } from "./demo-recorder";
 import type { CoachClient, Media } from "./model";
+import { VoiceTranscript } from "./voice-transcript-panel";
+import { useActorScope } from "./voice-transcript-actor";
 import { useCoach } from "./store";
 import { Button, Empty } from "./ui";
 
@@ -59,6 +61,7 @@ export function MediaCard({
   onRemove?: () => void;
 }) {
   const { media, attach, workspaceId } = useCoach();
+  const actor = useActorScope(workspaceId ?? "");
   const url = media[item.id];
   // PR-MEDIA: stored media (uploaded via /api/v1/media) resolves a fresh
   // presigned URL instead of a local blob — same card, real bytes.
@@ -84,7 +87,10 @@ export function MediaCard({
   const audio = itemType.startsWith("audio/");
   const video = itemType.startsWith("video/");
   return (
-    <div className="cd-media-card">
+    <div
+      className="cd-media-card"
+      data-media-id={item.mediaObjectId || item.id}
+    >
       <div className="cd-media-heading">
         {video ? (
           <Video size={17} />
@@ -119,12 +125,19 @@ export function MediaCard({
             />
           </a>
         ) : audio ? (
-          <audio src={src} controls aria-label={item.name}>
-            <track
-              kind="captions"
-              src="data:text/vtt,WEBVTT%0A%0A00%3A00.000%20--%3E%2000%3A03.000%0ALocal%20demo%20audio%20tones.%0A"
+          <>
+            <audio src={src} controls aria-label={item.name}>
+              <track
+                kind="captions"
+                src="data:text/vtt,WEBVTT%0A%0A00%3A00.000%20--%3E%2000%3A03.000%0ALocal%20demo%20audio%20tones.%0A"
+              />
+            </audio>
+            <VoiceTranscript
+              audioUrl={src}
+              cacheKey={item.mediaObjectId ?? item.id}
+              actor={actor}
             />
-          </audio>
+          </>
         ) : video ? (
           <video src={src} controls playsInline aria-label={item.name}>
             <track kind="captions" />
@@ -166,24 +179,28 @@ export function DemoRecorder({
   kind,
   onAttach,
   clientName,
+  clientProfileId,
 }: {
   kind: "voice" | "video";
   onAttach: (item: Media) => void;
   /** Canvas client name, used to resolve the upload's profile anchor. */
   clientName?: string;
+  /** Authoritative server profile id — skips name resolution entirely. */
+  clientProfileId?: string;
 }) {
   const { workspaceId, clientProfileIdFor } = useCoach();
   const [profileId, setProfileId] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
-    if (clientName)
+    if (clientProfileId) setProfileId(clientProfileId);
+    else if (clientName)
       clientProfileIdFor(clientName).then((id) => {
         if (live) setProfileId(id);
       });
     return () => {
       live = false;
     };
-  }, [clientName, clientProfileIdFor]);
+  }, [clientName, clientProfileId, clientProfileIdFor]);
   return (
     <RealRecorder
       kind={kind}
