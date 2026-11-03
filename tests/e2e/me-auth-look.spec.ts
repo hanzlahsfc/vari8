@@ -6,9 +6,9 @@ import path from "node:path";
 import { createWorkspaceInvitation } from "../../lib/workspace/invitations";
 import { hashPassword } from "../../lib/password";
 import {
-  cleanupMeLookFixtures,
   newMeLookOwned,
   setupMeLookFixtures,
+  teardownMeLookFixtures,
   type MeLookFixture,
 } from "./me-look-fixture";
 import { E2E, e2eDatabaseUrl } from "./global-setup";
@@ -27,9 +27,10 @@ import { E2E, e2eDatabaseUrl } from "./global-setup";
  * client reset mail points at /me/reset, and a staff invitation keeps the
  * coach look.
  *
- * Fixtures are the reserved E2E rows (tests/e2e/global-setup.ts) plus one
- * unarchived ClientProfile for E2E.client and one CLIENT invitation, both
- * removed in afterAll.
+ * Fixtures are spec-owned via ./me-look-fixture.ts: per-invocation
+ * identities, a dedicated workspace, memberships, one ClientProfile and
+ * two invitations, plus the reset verification/session/rate-limit rows
+ * the browser auth calls leave behind — all removed in afterAll.
  */
 
 const prisma = new PrismaClient({
@@ -126,17 +127,10 @@ test.beforeAll(async () => {
 
 test.afterAll(async () => {
   // Deletes only rows this run created; a mid-setup throw still leaves
-  // `owned` complete enough to clean. Failures are reported after every
-  // safe attempt, never masking the original setup/test error.
-  const errors = await cleanupMeLookFixtures(prisma, owned);
-  await prisma.$disconnect();
-  if (errors.length > 0) {
-    throw new Error(
-      `me-look fixture cleanup failed: ${errors
-        .map((e) => e.message)
-        .join("; ")}`,
-    );
-  }
+  // `owned` complete enough to clean. Disconnect runs even when cleanup
+  // fails, and every teardown failure is reported alongside — never
+  // masking — the original setup/test error.
+  await teardownMeLookFixtures(prisma, owned);
 });
 
 for (const mode of ["dark", "light"] as const) {

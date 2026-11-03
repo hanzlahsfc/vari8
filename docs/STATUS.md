@@ -1,3 +1,56 @@
+## 2026-11-03 — P718 fixture-cleanup closure findings (#252)
+
+Review findings on `15b63cd1`: reset `verifications` rows and
+`rate_limit` buckets were never cleaned; the unit mocks returned success
+for any `where` and let a workspace delete succeed after its
+Restrict-guarded member delete failed; and `afterAll` could lose a
+cleanup error to a `$disconnect` throw (no `finally`, no combined
+reporting).
+
+Repair — `tests/e2e/me-look-fixture.ts`:
+
+- cleanup now also deletes `verifications` by `value IN owned.userIds`
+  (the codebase's own reset-row convention — `value` carries the user
+  id), `sessions` for the run users, and `rate_limit` rows by the exact
+  recomputed key set `meLookRateLimitKeys` (`accountLimitKey` over the
+  run's emails for every email-scoped purpose + `userLimitKey` over the
+  run's user ids). Shared-identity buckets — e.g.
+  `acct:sign-in:<sha256(coach@s1h-e2e.test)>` — are absent by
+  construction and left alone; no prefix or namespace sweeps anywhere.
+- accessToken/auditEvent deletes widened to the owned boundary
+  `fixture-sweep.ts` already proves (workspace id OR owned user ids),
+  closing the `createdByUserId`/`subjectUserId` Restrict holes;
+  clientProfile covers workspace id OR owned user ids OR the tracked id.
+- new `teardownMeLookFixtures`: `$disconnect` attempted in `finally`;
+  cleanup and disconnect failures are aggregated into one thrown error
+  — reported next to, never instead of, the original setup/test error.
+  The spec's stale shared-fixture header comment corrected.
+
+`tests/unit/me-look-fixture.test.ts` rewritten — the success-by-default
+mocks replaced with an in-memory FK-honest fake: real `where` matching,
+real Restrict/Cascade/SetNull rules, injectable step failures. Every
+delete's filter is now verified by what survives (a planted foreign
+tenant), a blocked member delete genuinely fails the workspace/user
+deletes, and teardown proves both failures surface together.
+
+NEW `tests/integration/me-look-fixture-db.test.ts` — disposable-DB proof
+on the real migrated schema + real Better Auth pipeline: real sign-in
+and reset-request produce the session/verification/rate_limit artifacts
+the review found; cleanup removes all of them across two independent
+runs; a planted foreign tenant survives every delete; a live
+`client_assignment` Restrict violation reports labeled failures with no
+skip-ahead, and re-cleanup after removing the blocker finishes clean.
+
+Verified — Node v24.22.1: unit **8/8**, disposable-DB **4/4**
+(`app_p718i`, run twice back-to-back on one DB), auth specs
+`--workers=2` **7/7** (`app_p718e`). Node v22.21.1: unit **8/8**,
+disposable-DB **4/4**, auth specs **7/7**. Post-run inspection: **0**
+me-look users/accounts/sessions/workspaces/members/profiles/tokens/
+verifications/rate_limits/audit rows on either DB; the only rate_limit
+row left on `app_p718e` is the shared-coach bucket. `tsc`/`eslint`/
+`prettier`/`index:check`/`git diff --check` all clean. Accepted
+London-DST, auth-CSS and appearance assertions untouched.
+
 ## 2026-11-02 — P716 partial-setup cleanup hardening (#252)
 
 Review finding: the guarded deletes were not safe after a mid-setup

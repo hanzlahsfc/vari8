@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
+
+import { accountLimitKey, userLimitKey } from "../../lib/auth/rate-limit";
 
 /**
  * P716 spec-owned fixtures for the me-auth-look appearance cases.
@@ -11,9 +13,17 @@ import type { PrismaClient } from "@prisma/client";
  *   returns, before the next operation, so a mid-setup throw still
  *   leaves a complete ownership record for cleanup;
  * - cleanup attempts every safe delete even when one fails, removes
- *   restrictive children (invitation tokens, profile, members, audit)
- *   before their parents, and reports every failure instead of
- *   swallowing or masking the original setup/test error.
+ *   restrictive children (invitation tokens, profile, members, audit,
+ *   reset verifications, sessions, accounts) before their parents, and
+ *   reports every failure instead of swallowing or masking the original
+ *   setup/test error;
+ * - the browser-driven auth calls leave rows the setup never sees:
+ *   `verification` reset rows (`value` = the run user id) and `rate_limit`
+ *   buckets (`acct:<purpose>:<sha256(email|user:id)>`). Both are derived
+ *   from this run's own identities, so cleanup recomputes the exact key
+ *   set instead of sweeping by prefix. Buckets keyed on SHARED fixture
+ *   identities (e.g. `acct:sign-in:<sha256(coach@s1h-e2e.test)>`) are not
+ *   owned by this run and are left for global teardown.
  */
 
 /** The subset of PrismaClient the fixture lifecycle needs — lets the
@@ -22,11 +32,14 @@ export type FixtureDb = Pick<
   PrismaClient,
   | "user"
   | "account"
+  | "session"
   | "workspace"
   | "workspaceMember"
   | "clientProfile"
   | "accessToken"
   | "auditEvent"
+  | "verification"
+  | "rateLimit"
 >;
 
 export type InviteResult = {
@@ -66,6 +79,43 @@ export type MeLookFixture = MeLookOwned & {
   staffInviteHref: string;
 };
 
+/** Every email identity a run can create state under — all derived from
+ * the per-invocation runId, so keys built from them belong to this run. */
+function meLookEmails(runId: string): string[] {
+  return [
+    `me-look-${runId}@s1h-e2e.test`,
+    `me-look-owner-${runId}@s1h-e2e.test`,
+    `me-look-client-invite-${runId}@s1h-e2e.test`,
+    `me-look-staff-invite-${runId}@s1h-e2e.test`,
+  ];
+}
+
+// Every purpose the codebase passes to `accountLimitKey`
+// (lib/auth/server.ts sign-in + reset-request, lib/auth/signup.ts
+// sign-up) and to `userLimitKey` (change-password, invitation-api
+// invite-create, the v1 refresh route). Enumerating all of them keeps
+// the owned key set exact: another run cannot mint any of these keys
+// because the inputs are this run's own ids and emails.
+const EMAIL_LIMIT_PURPOSES = ["sign-in", "reset-request", "sign-up"];
+const USER_LIMIT_PURPOSES = ["change-password", "invite-create", "refresh"];
+
+/**
+ * The exact `rate_limit` keys this invocation can own: account buckets
+ * hashed from the run's emails plus user buckets hashed from the run's
+ * user ids. Keys for shared identities (E2E coach sign-in) are absent by
+ * construction — deleting one would erase another lane's bucket.
+ */
+export function meLookRateLimitKeys(owned: MeLookOwned): string[] {
+  const keys: string[] = [];
+  for (const email of meLookEmails(owned.runId))
+    for (const purpose of EMAIL_LIMIT_PURPOSES)
+      keys.push(accountLimitKey(purpose, email));
+  for (const userId of owned.userIds)
+    for (const purpose of USER_LIMIT_PURPOSES)
+      keys.push(userLimitKey(purpose, userId));
+  return keys;
+}
+
 export function newMeLookOwned(): MeLookOwned {
   // Short unique suffix: `s1h-e2e-me-look-<run>` and
   // `me-look-<run>@s1h-e2e.test` stay inside the reserved e2e namespace
@@ -78,8 +128,8 @@ export async function setupMeLookFixtures(
   deps: MeLookDeps,
   owned: MeLookOwned,
 ): Promise<MeLookFixture> {
-  const clientEmail = `me-look-${owned.runId}@s1h-e2e.test`;
-  const ownerEmail = `me-look-owner-${owned.runId}@s1h-e2e.test`;
+  const [clientEmail, ownerEmail, clientInviteEmail, staffInviteEmail] =
+    meLookEmails(owned.runId);
   const workspaceSlug = `s1h-e2e-me-look-${owned.runId}`;
   const workspaceName = `S1H E2E Me Look ${owned.runId}`;
   const password = "s1h-e2e-password";
@@ -155,7 +205,7 @@ export async function setupMeLookFixtures(
     { user: owner },
     {
       workspaceId: ws.id,
-      targetEmail: `me-look-client-invite-${owned.runId}@s1h-e2e.test`,
+      targetEmail: clientInviteEmail,
       intendedRole: "CLIENT",
     },
   );
@@ -164,7 +214,7 @@ export async function setupMeLookFixtures(
     { user: owner },
     {
       workspaceId: ws.id,
-      targetEmail: `me-look-staff-invite-${owned.runId}@s1h-e2e.test`,
+      targetEmail: staffInviteEmail,
       intendedRole: "COACH",
     },
   );
@@ -181,11 +231,24 @@ export async function setupMeLookFixtures(
 }
 
 /**
- * Deletes only rows recorded in `owned`. Every step runs even when an
- * earlier one fails; failures are collected and returned so the caller
- * can surface them without masking the original setup/test error.
- * Restrict-FK children (tokens → profile/members/audit → workspace →
- * accounts → users) go before their parents.
+ * Deletes only rows recorded in `owned` or derived from this run's own
+ * identities. Every step runs even when an earlier one fails; failures
+ * are collected and returned so the caller can surface them without
+ * masking the original setup/test error. Restrict-FK children (tokens →
+ * profile/members/audit → workspace; verifications/sessions/accounts →
+ * users) go before their parents.
+ *
+ * Ownership boundary per delete (verified by the disposable-DB test):
+ * - accessToken / clientProfile / auditEvent: this run's workspace id OR
+ *   this run's user ids (the same boundary tests/e2e/fixture-sweep.ts
+ *   uses for the reserved shell);
+ * - workspaceMember / workspace: this run's workspace id only — a member
+ *   row for our user in another workspace is never ours;
+ * - verification: `value` carries the user id on reset rows
+ *   (lib/auth/server.ts convention), so `value IN owned.userIds`;
+ * - rateLimit: the exact recomputed key set from meLookRateLimitKeys —
+ *   buckets for shared identities are not deleted;
+ * - session / account / user: this run's user ids only.
  */
 export async function cleanupMeLookFixtures(
   prisma: FixtureDb,
@@ -204,27 +267,47 @@ export async function cleanupMeLookFixtures(
     }
   };
 
-  if (owned.workspaceId) {
-    // Workspace-scoped: covers invitation tokens whether or not the
-    // tracking list caught them. The workspace id is this run's own —
-    // per-run identity means it cannot belong to another fixture.
+  const hasUsers = owned.userIds.length > 0;
+  const userScope = { in: owned.userIds };
+  const ownedWorkspaceScope: Prisma.AccessTokenWhereInput[] = [
+    ...(owned.workspaceId ? [{ workspaceId: owned.workspaceId }] : []),
+    ...(hasUsers
+      ? [{ userId: userScope }, { createdByUserId: userScope }]
+      : []),
+  ];
+  const ownedAuditScope: Prisma.AuditEventWhereInput[] = [
+    ...(owned.workspaceId ? [{ workspaceId: owned.workspaceId }] : []),
+    ...(hasUsers
+      ? [{ subjectUserId: userScope }, { actorUserId: userScope }]
+      : []),
+  ];
+
+  if (ownedWorkspaceScope.length > 0) {
     await attempt("invitation tokens", () =>
       prisma.accessToken.deleteMany({
-        where: { workspaceId: owned.workspaceId },
+        where: { OR: ownedWorkspaceScope },
       }),
     );
     await attempt("client profile", () =>
       prisma.clientProfile.deleteMany({
-        where: { id: owned.clientProfileId ?? "__none__" },
-      }),
-    );
-    await attempt("workspace members", () =>
-      prisma.workspaceMember.deleteMany({
-        where: { workspaceId: owned.workspaceId },
+        where: {
+          OR: [
+            ...(owned.workspaceId ? [{ workspaceId: owned.workspaceId }] : []),
+            ...(hasUsers ? [{ userId: userScope }] : []),
+            ...(owned.clientProfileId ? [{ id: owned.clientProfileId }] : []),
+          ],
+        },
       }),
     );
     await attempt("audit events", () =>
-      prisma.auditEvent.deleteMany({
+      prisma.auditEvent.deleteMany({ where: { OR: ownedAuditScope } }),
+    );
+  }
+  if (owned.workspaceId) {
+    // Membership rows belong to the workspace itself — scoped to this
+    // run's workspace id only, never widened to the user ids.
+    await attempt("workspace members", () =>
+      prisma.workspaceMember.deleteMany({
         where: { workspaceId: owned.workspaceId },
       }),
     );
@@ -232,13 +315,59 @@ export async function cleanupMeLookFixtures(
       prisma.workspace.deleteMany({ where: { id: owned.workspaceId } }),
     );
   }
-  if (owned.userIds.length > 0) {
+  const rateLimitKeys = meLookRateLimitKeys(owned);
+  if (rateLimitKeys.length > 0) {
+    // Exact owned key set — never a prefix sweep. Shared-identity buckets
+    // (the E2E coach sign-in) are not in the set and stay behind.
+    await attempt("auth rate limits", () =>
+      prisma.rateLimit.deleteMany({ where: { key: { in: rateLimitKeys } } }),
+    );
+  }
+  if (hasUsers) {
+    await attempt("reset verifications", () =>
+      prisma.verification.deleteMany({ where: { value: userScope } }),
+    );
+    await attempt("sessions", () =>
+      prisma.session.deleteMany({ where: { userId: userScope } }),
+    );
     await attempt("credential accounts", () =>
-      prisma.account.deleteMany({ where: { userId: { in: owned.userIds } } }),
+      prisma.account.deleteMany({ where: { userId: userScope } }),
     );
     await attempt("users", () =>
-      prisma.user.deleteMany({ where: { id: { in: owned.userIds } } }),
+      prisma.user.deleteMany({ where: { id: userScope } }),
     );
   }
   return errors;
+}
+
+/**
+ * Spec teardown: cleanup, then disconnect — always, even when cleanup
+ * reports failures or throws. Every failure (each labeled cleanup step,
+ * a thrown cleanup, a failed disconnect) is collected and thrown as one
+ * error at the end, so a secondary teardown failure is reported next to
+ * — never instead of — the original setup/test error.
+ */
+export async function teardownMeLookFixtures(
+  prisma: FixtureDb & Pick<PrismaClient, "$disconnect">,
+  owned: MeLookOwned,
+): Promise<void> {
+  const failures: string[] = [];
+  const describe = (error: unknown) =>
+    error instanceof Error ? error.message : String(error);
+  try {
+    for (const error of await cleanupMeLookFixtures(prisma, owned)) {
+      failures.push(`cleanup: ${error.message}`);
+    }
+  } catch (error) {
+    failures.push(`cleanup: ${describe(error)}`);
+  } finally {
+    try {
+      await prisma.$disconnect();
+    } catch (error) {
+      failures.push(`disconnect: ${describe(error)}`);
+    }
+  }
+  if (failures.length > 0) {
+    throw new Error(`me-look fixture teardown failed: ${failures.join("; ")}`);
+  }
 }
