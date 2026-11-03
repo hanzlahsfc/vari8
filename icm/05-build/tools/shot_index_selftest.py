@@ -4,8 +4,9 @@
 Runs the real `program.py` (and, for the check case, `generate.py --check`) — no stubs, no
 re-implementation. Mutation cases copy program.py's real inputs into a TemporaryDirectory
 PROGRAM_ROOT and rewrite `icm/04-briefing/shots/index.json` there; the repo tree is never
-touched. Every scratch root is a TemporaryDirectory, removed on success, failure and
-exception paths; the `no-leftovers` case proves none remain.
+touched. Every scratch root is a TemporaryDirectory under a path this invocation records;
+the `no-leftovers` case asserts only those owned paths are gone — it never inspects or
+deletes unrelated `shot-index-selftest-*` directories left by other runs or agents.
 
 Cases:
   ok                 committed index -> program.py exit 0, ledger rows are exactly the
@@ -30,13 +31,15 @@ Cases:
   nonobject          a non-dict is appended -> exit 1, "not an object"
   supplemental-grows a supplemental shot gains valid briefing metadata -> exit 1 via the
                      "screens 36 != 35" hard gate (membership cannot grow silently)
+  unrelated-survives an unrelated shot-index-selftest-* dir exists before the run: the
+                     suite passes and leaves it untouched
   cleanup-on-error   an exception inside a scratch root still removes it
-  no-leftovers       last: zero shot-index-selftest-* directories remain in TMPDIR
+  retained-owned     an intentionally retained OWNED root is detected by the leftover scan
+  no-leftovers       last: every scratch root OWNED by this invocation is gone
 Exit 0 only when every case behaves as listed.
 """
 import contextlib
 import csv
-import glob
 import json
 import os
 import shutil
@@ -70,6 +73,11 @@ EXPECTED_BRIEFING = frozenset((
     "s09-tracker-trends.png", "s09-tracker-config.png", "s10-appearance.png", "s10-clients-studio.png",
     "s10-mealplan-studio.png", "s11-preferences.png", "s11-client-preview.png"))
 failures = []
+OWNED = []  # scratch roots created by this invocation; no-leftovers asserts only on these
+
+
+def leftover_owned():
+    return [p for p in OWNED if os.path.exists(p)]
 
 
 def check(name, cond, detail):
@@ -83,6 +91,7 @@ def shot_root(mutate=None):
     """Copy program.py's real inputs into a TemporaryDirectory root; mutate the copied index
     per case. The scratch root is removed when the block exits on any path."""
     with tempfile.TemporaryDirectory(prefix="shot-index-selftest-") as root:
+        OWNED.append(root)
         for rel in INPUTS:
             dst = os.path.join(root, rel)
             os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -226,6 +235,18 @@ def case_supplemental_grows():
     expect_fail("supplemental-grows", m, "screens 36 != 35")
 
 
+# Sentinel simulating an unrelated same-prefix directory owned by another run: created
+# before the cases, asserted intact at the end, and deliberately never removed.
+UNRELATED = os.path.join(tempfile.gettempdir(), "shot-index-selftest-unrelated")
+
+
+def case_unrelated_survives():
+    check("unrelated-survives", os.path.isdir(UNRELATED),
+          f"unrelated directory untouched at {UNRELATED}")
+    check("unrelated-survives", UNRELATED not in OWNED,
+          "unrelated directory was never tracked as an owned scratch root")
+
+
 def case_cleanup_on_error():
     path = None
     try:
@@ -238,15 +259,28 @@ def case_cleanup_on_error():
           f"scratch root removed after an exception path ({path})")
 
 
+def case_retained_owned_detected():
+    kept = tempfile.mkdtemp(prefix="shot-index-selftest-kept-")
+    OWNED.append(kept)
+    try:
+        check("retained-owned", kept in leftover_owned(),
+              f"intentionally retained owned root {kept} is detected")
+    finally:
+        OWNED.remove(kept)
+        os.rmdir(kept)
+
+
 def case_no_leftovers():
-    left = glob.glob(os.path.join(tempfile.gettempdir(), "shot-index-selftest-*"))
-    check("no-leftovers", left == [], f"{len(left)} scratch dirs remain: {left[:3]}")
+    left = leftover_owned()
+    check("no-leftovers", left == [], f"{len(left)} owned scratch dirs remain: {left[:3]}")
 
 
 if __name__ == "__main__":
+    os.makedirs(UNRELATED, exist_ok=True)
     for case in (case_ok, case_check, case_missing_surface, case_unclassified_extra, case_swap,
                  case_partial_metadata, case_malformed_metadata, case_surface_range, case_annotated_type,
                  case_rows_bool, case_rows_negative, case_malformed_recipe, case_duplicate, case_nonobject,
-                 case_supplemental_grows, case_cleanup_on_error, case_no_leftovers):
+                 case_supplemental_grows, case_unrelated_survives, case_cleanup_on_error,
+                 case_retained_owned_detected, case_no_leftovers):
         case()
     sys.exit(1 if failures else print("shot index selftest: all cases pass"))
