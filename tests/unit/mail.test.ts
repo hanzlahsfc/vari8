@@ -34,10 +34,15 @@ afterEach(() => {
 
 describe("mail delivery port", () => {
   it("an env value alone cannot enable delivery — unknown names fail closed", () => {
-    for (const env of ["", "1", "true", "smtp", "sendgrid", "noop"]) {
+    for (const env of ["", "1", "true", "sendgrid", "noop"]) {
       setEnv(MAIL_DELIVERY_ADAPTER_ENV, env);
       expect(mailDeliveryConfigured()).toBe(false);
     }
+  });
+
+  it("the smtp adapter is a registered name", () => {
+    setEnv(MAIL_DELIVERY_ADAPTER_ENV, "smtp");
+    expect(mailDeliveryConfigured()).toBe(true);
   });
 
   it("production without an explicit adapter is unconfigured", () => {

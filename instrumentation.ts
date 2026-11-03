@@ -16,7 +16,7 @@ export async function register() {
       const { assertMailDeliveryConfigured } = await import("./lib/mail");
       assertAuthSecretConfigured();
       assertMediaStorageConfigured();
-      // O22: production plus the emaillabs adapter plus a missing key refuses
+      // O22/P749: production plus the smtp adapter plus a missing key refuses
       // boot rather than serving reset and invitation forms that send nothing.
       assertMailDeliveryConfigured();
     } catch (error) {

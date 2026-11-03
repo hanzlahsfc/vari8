@@ -1,3 +1,28 @@
+## 2026-11-03 — P749 EmailLabs rejected; standard SMTP adapter (#156)
+
+Owner reversal (Marcel via Aleksey): the EmailLabs requirement is
+rejected — invitations and account emails must work without that paid
+service. The `emaillabs` adapter, `EMAILLABS_*` env names and vendor
+endpoint are removed; EmailLabs sections of `icm/05-build/reports/
+MAIL-ADAPTER.md` are marked historical. `lib/mail/index.ts` gains a
+zero-dependency `smtp` adapter (node:net/node:tls): `SMTP_TLS` require
+(default, fails closed without STARTTLS) / implicit / none, optional
+AUTH LOGIN when both `SMTP_USER`/`SMTP_PASSWORD` are set, CRLF-injection
+refusal before the wire, dot-stuffing, 10 s timeout, status-only errors.
+Required: `SMTP_HOST` + `MAIL_FROM` (production boot refuses when
+`MAIL_DELIVERY_ADAPTER=smtp` and either is missing or malformed);
+`.env.example` documents names only — the deployment supplies the relay.
+The port shape, `sendMail`, `mailDeliveryConfigured` name-check, the
+dev-file default, invitation delivery (`/invite` link, `delivery_failed` 502) and reset links (`/reset`, `/me/reset`) are unchanged. No repo or
+deployment SMTP/relay config existed to reuse; none was invented.
+
+New `tests/unit/mail-smtp.test.ts` drives a task-owned local SMTP
+capture server (transcript, AUTH LOGIN, 550 rejection, STARTTLS refusal,
+named config faults, CRLF refusal, boot gate) plus the unchanged
+invitation/reset boundary suites — no real mail sent. Gates on this
+commit (worktree `/private/tmp/p156-mail`, Node v26.8.1): focused
+mail-smtp + mail unit 17/17 exit 0; `mail-emaillabs.test.ts` removed.
+
 ## 2026-11-03 — P723 forward-merge onto current Beta (#156)
 
 Merged `828adba1` (Vari8-Beta post-#251/#252) into `beta/mail-adapter`;

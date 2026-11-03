@@ -4,7 +4,42 @@ Card `icm/05-build/cards/mail-adapter.md`, issue #155, PR #156. Owner ruling O22
 transactional email is approved for the beta (password reset links and invitation emails), reversing O19.
 No admin reset tool, no new npm dependency.
 
-## What changed
+## P749 revision — EmailLabs rejected, standard SMTP (current state)
+
+Owner reversal (Marcel via Aleksey): the EmailLabs requirement is
+rejected; invitations and account emails must work without that paid
+service. The `emaillabs` adapter, its `EMAILLABS_*` env names and its
+vendor endpoint are removed. The sections below describing the EmailLabs
+implementation and its gate evidence are **historical** — kept for
+provenance, not current instructions. Authoritative state is this
+section.
+
+The repository and deployment contract define no existing SMTP/relay
+configuration (docker-compose provisions PostgreSQL only; D17 leaves the
+production provider an open owner choice). The adapter is therefore a
+configurable standard SMTP boundary with no new npm dependency
+(node:net/node:tls):
+
+| File                                                               | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/mail/index.ts`                                                | `smtp` adapter replaces `emaillabs`: EHLO, `STARTTLS` upgrade when `SMTP_TLS=require` (default, fails closed if unoffered), implicit TLS on connect with `SMTP_TLS=implicit`, plaintext with `SMTP_TLS=none` (trusted relay only), optional `AUTH LOGIN` when both `SMTP_USER`/`SMTP_PASSWORD` are set, MAIL/RCPT/DATA with CRLF-injection refusal before the wire, dot-stuffing, 10 s timeout, status-only errors. `dev-file`, the port shape and `sendMail`/`mailDeliveryConfigured` semantics unchanged. |
+| `instrumentation.ts`                                               | boot gate now refuses `MAIL_DELIVERY_ADAPTER=smtp` with a missing/malformed required name (`SMTP_HOST`, `MAIL_FROM`, half auth pair, bad `SMTP_TLS`/`SMTP_PORT`).                                                                                                                                                                                                                                                                                                                                           |
+| `.env.example`                                                     | names only for the `SMTP_*` set + `MAIL_FROM`; no values, no invented hostname/credentials/domain.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `tests/unit/mail-smtp.test.ts` (replaces `mail-emaillabs.test.ts`) | task-owned local SMTP capture server: full transcript, AUTH LOGIN credentials on the wire, 550 recipient rejection, STARTTLS-required refusal, missing/half config named faults, CRLF refusal, boot refuse/allow; plus the unchanged invitation (`/invite` link, `delivery_failed`) and reset (`/reset`, `/me/reset`) boundary suites.                                                                                                                                                                      |
+| `tests/unit/mail.test.ts`                                          | `smtp` moved out of the unknown-name list; registered-name case added.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+
+Preserved: authorized invitation delivery, reset links, generic
+responses, rate limits and `delivery_failed` mapping — the call sites are
+untouched. No chat messages or transcripts are mailed. Missing selected
+transport config throws "not configured" at send and refuses production
+boot — nothing silently claims delivery.
+
+Deployment supplies: `SMTP_HOST` (and `SMTP_PORT`/`SMTP_TLS` for its
+submission mode), authorized `MAIL_FROM`, and `SMTP_USER`/`SMTP_PASSWORD`
+when the relay requires AUTH LOGIN. No mail server is provisioned here;
+no real mail was sent.
+
+## What changed (historical — pre-P749 EmailLabs implementation)
 
 | File                                      | Change                                                                                                                                                                                                                                                                                                                              |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -18,7 +53,7 @@ No admin reset tool, no new npm dependency.
 `MailAdapter` port are unchanged, so the one existing call site (the reset flow at
 `lib/auth/server.ts:200`) needed no edit.
 
-## The provider contract, and why it is the legacy endpoint
+## The provider contract, and why it is the legacy endpoint (historical — superseded by P749)
 
 The card says "the EmailLabs HTTP API" without pinning a path, and the vendor has two surfaces:
 
@@ -151,23 +186,24 @@ checks above are the only Node-22 evidence on record. The same four visual
 specs and the seasonal integration test also fail on the merged Beta alone
 — the mail-adapter diff is not implicated.
 
-## Request vs provider tracking
+## Request vs provider tracking (P749)
 
-The adapter's request body is inspected: `simpleHtml` adds no tracking
-pixel, no click rewriting and no remote asset — that is the extent of the
-code guarantee. Whether EmailLabs injects open/click tracking is
-account/provider configuration that no request inspection can prove; it
-remains a deployment prerequisite (below), not a verified property.
+The wire payload is inspected by the capture-server transcript: the
+base64 bodies carry plain text and `simpleHtml` output only — no tracking
+pixel, no click rewriting, no remote asset. Whether the deployment's
+relay rewrites links is outside the code boundary; it is a deployment
+choice (below), not a verified property.
 
-## Remaining operational prerequisites
+## Remaining operational prerequisites (P749)
 
-- Authorized EmailLabs credentials: App Key, Secret Key, SMTP account
-  (`EMAILLABS_SMTP_ACCOUNT`), authorized `MAIL_FROM` sender domain
-  (SPF/DKIM/DMARC as the provider requires).
-- `MAIL_DELIVERY_ADAPTER=emaillabs` and a canonical HTTPS
+- A reachable SMTP relay: `SMTP_HOST`, `SMTP_PORT` (587 default, 465 for
+  `SMTP_TLS=implicit`), `SMTP_TLS` matching the relay's mode
+  (`require` default; `none` only for a trusted internal relay).
+- `SMTP_USER`/`SMTP_PASSWORD` when the relay requires AUTH LOGIN, and an
+  authorized `MAIL_FROM` sender (SPF/DKIM/DMARC per the deployment's
+  mail path).
+- `MAIL_DELIVERY_ADAPTER=smtp` and a canonical HTTPS
   `BETTER_AUTH_URL`/`AUTH_URL` for real mail links.
-- Written confirmation that account-level open/click tracking is disabled
-  on the EmailLabs account, if the owner wants no tracking.
-- An authorized sandbox send proving real delivery before integration
+- An authorized sandbox relay proving real delivery before integration
   relies on it. No real mail was sent; no production credentials exist in
   the branch.
