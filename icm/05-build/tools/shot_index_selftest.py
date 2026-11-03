@@ -313,7 +313,7 @@ def case_cleanup_on_error():
 
 
 def case_retained_owned_detected():
-    kept = tempfile.mkdtemp(prefix="shot-index-selftest-kept-")
+    kept = tempfile.mkdtemp(prefix="shot-index-selftest-kept-", dir=INV["scratch"])
     OWNED.append(kept)
     try:
         check("retained-owned", kept in leftover_owned(),
