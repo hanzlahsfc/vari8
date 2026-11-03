@@ -1,3 +1,31 @@
+## 2026-11-04 — P752 full gate suite under CI runtime (#156)
+
+Resolved environment: no `app-db-1`/`vari8-db-1` assumption — the shared
+lane container `app-db-1` was already running (untouched); task-owned
+disposable databases `app_p752`/`app_p752i` were created and dropped
+inside it per the `app_<lane>` convention, fixture credentials only.
+CI runtime Node v22.23.4 via keg-only `node@22` (local default v26.8.1);
+fresh `npm ci` root + `tools/parity/reference`.
+
+Verification fix: `nodemailer` moved `package-lock.json`, so the parity
+toolchain pins were re-pinned — `comparer.json` root lock sha and
+`receipts/metadata.json` toolchain manifest hash + locks now match the
+committed lockfile. `visual-reference` pins test watched fail-then-pass
+(16/16 on re-pin).
+
+Gates under Node v22.23.4 (`/private/tmp/p156-mail`, mocked/dev-file +
+task-owned TLS fixtures only — no real mail):
+
+| Gate | Result |
+| --- | --- |
+| focused mail/reset/invite/boot (6 files) | 90/90, exit 0 |
+| `npm test` full unit | 154 files / 1858 tests, exit 0 |
+| `test:integration` | 91 files / 1137 tests, exit 0 |
+| `playwright test` (`dev-file` mail, `local` media) | 23 passed / 2 delivery-gated skips, exit 0 — incl. `npm run build` in webServer |
+| `typecheck` / `lint` / `format:check` / `index` + `index:check` / `diff --check` | 0 / 0 errors (316 pre-existing warnings) / clean / OK / 0 |
+
+External SMTP delivery remains separately authorized lane work.
+
 ## 2026-11-03 — P751 Nodemailer transport replaces hand-rolled SMTP (#156)
 
 Independent review (comment `6613763014`) rejected the hand-written SMTP
