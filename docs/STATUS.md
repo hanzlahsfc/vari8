@@ -1,3 +1,27 @@
+## 2026-11-03 — P732 narrow repair: floor guard rejects malformed Node versions
+
+Repairs P731 residual defect D1: GNU `sort -V` sorts `26.12.1-rc.1` and
+non-numeric strings after `26.12.1`, so malformed/pre-release values
+wrongly passed `REQUIRE_NODE26`. The guard in `verify-local.sh` now
+validates the raw `node --version` output against
+`^v[0-9]+\.[0-9]+\.[0-9]+$` BEFORE comparing, and replaces `sort -V`
+with a pure-bash numeric compare (also removes the BSD-sort portability
+gap on macOS). Preserved behavior: below-floor still FAIL/WARN with the
+existing messages; at/above-floor passes; `REQUIRE_NODE24` migration
+error unchanged; optional-vs-required split unchanged.
+
+Committed tests (`tests/unit/verify-local-node-guard.test.ts`) run the
+REAL script in a scratch clean git lane with a stubbed `node` binary:
+v26.12.0 refuses; v26.12.1/v26.13.0 pass; v26.12, v26.12.1-rc.1 and
+vgarbage reject with the explicit malformed-version message; optional
+mode warns-and-continues for malformed and below-floor input;
+REQUIRE_NODE24 migration error preserved. 9/9 pass under Node 26.12.1.
+
+Gates (focused, per narrow scope): guard tests 9/9; prettier check on
+the test file clean; eslint clean; `bash -n` OK. Broad suites not
+rerun — final integration/e2e certification remains due on the final
+candidate before integration, per the prompt.
+
 ## 2026-11-03 — P730 repair of the local NODE-26 candidate (local, unpublished)
 
 Repairs the P729 review findings on `8254ce91`:

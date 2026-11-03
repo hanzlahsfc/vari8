@@ -64,8 +64,26 @@ if [[ -n "${REQUIRE_NODE24:-0}" && "${REQUIRE_NODE24:-0}" != "0" ]]; then
 fi
 
 NODE_TARGET="26.12.1"
-NODE_CURRENT="$(node --version | sed 's/^v//')"
-if [[ "$(printf '%s\n%s\n' "$NODE_TARGET" "$NODE_CURRENT" | sort -V | head -1)" != "$NODE_TARGET" ]]; then
+NODE_RAW="$(node --version 2>/dev/null || true)"
+
+node_ge_floor() {
+  local cur="$1" want="$2"
+  local c1 c2 c3 w1 w2 w3
+  IFS=. read -r c1 c2 c3 <<<"$cur"
+  IFS=. read -r w1 w2 w3 <<<"$want"
+  (( 10#$c1 > 10#$w1 )) && return 0
+  (( 10#$c1 == 10#$w1 && 10#$c2 > 10#$w2 )) && return 0
+  (( 10#$c1 == 10#$w1 && 10#$c2 == 10#$w2 && 10#$c3 >= 10#$w3 )) && return 0
+  return 1
+}
+
+if [[ ! "$NODE_RAW" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  if [[ "${REQUIRE_NODE26:-0}" == "1" ]]; then
+    SUMMARY+=("FAIL node: malformed Node version '${NODE_RAW:-<none>}'; expected v<major>.<minor>.<patch> at floor $NODE_TARGET (O18)")
+    finish 1
+  fi
+  SUMMARY+=("WARN node: target $NODE_TARGET (D5, O18), running '${NODE_RAW:-<none>}' — not a stable v<major>.<minor>.<patch> version; recorded, not certified")
+elif ! node_ge_floor "${NODE_RAW#v}" "$NODE_TARGET"; then
   if [[ "${REQUIRE_NODE26:-0}" == "1" ]]; then
     SUMMARY+=("FAIL node: target $NODE_TARGET or newer (O18), running $(node --version)")
     finish 1
