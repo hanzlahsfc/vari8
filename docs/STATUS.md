@@ -1,3 +1,22 @@
+## 2026-11-04 — P754 recompare metadata regenerated (#156)
+
+Review `6615294332` was right: the P752 hand re-pin fixed the manifest
+hash and locks but left stale provenance — `inputs.shotIndexSha256` still
+named a prior shot-index hash. Correction: the earlier implication that
+hand-repinning produced a coherent fresh receipt was wrong; the receipt
+must come from the workflow.
+
+`tools/parity/reference/evidence/recompare.mjs` was run under Node
+v22.23.4 in the PR worktree. Generated diff is exactly one field:
+`metadata.inputs.shotIndexSha256` `9aaa2ec4…` → `a4619078…` = the actual
+`icm/04-briefing/shots/index.json` sha256. `canonical.json`/`strict.json`
+and all historical provenance/artifacts byte-identical (70/70 canonical,
+68/70 strict with the two ruled `s03-checkin-review` diffs).
+
+Verification: `verify-evidence.mjs` `"verified": true` exit 0; fresh
+recompare reproduces the committed receipt; `visual-reference` +
+`mail-smtp` 39/39; prettier + `diff --check` clean.
+
 ## 2026-11-04 — P752 full gate suite under CI runtime (#156)
 
 Resolved environment: no `app-db-1`/`vari8-db-1` assumption — the shared
