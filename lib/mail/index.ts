@@ -1,7 +1,8 @@
-import { appendFile, mkdir } from "node:fs/promises";
-import net from "node:net";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
+import { isIP } from "node:net";
 import path from "node:path";
-import tls from "node:tls";
+
+import nodemailer from "nodemailer";
 
 /**
  * Mail delivery port (D17): one adapter registry, fail-closed.
@@ -10,9 +11,11 @@ import tls from "node:tls";
  *   (`DEV_MAILBOX_FILE`, default `var/mailbox.jsonl`). This is the development
  *   adapter — it satisfies "one delivery port with a development adapter that
  *   writes to a local mailbox file" without promising real email.
- * - `smtp` submits through a standard SMTP relay the deployment supplies
- *   (`SMTP_HOST`, `MAIL_FROM` required; `SMTP_TLS` require/implicit/none;
- *   `SMTP_USER` + `SMTP_PASSWORD` as a pair for authenticated relays).
+ * - `smtp` submits through a standard SMTP relay the deployment supplies via
+ *   Nodemailer (`SMTP_HOST`, `MAIL_FROM` required; `SMTP_TLS`
+ *   require/implicit/none; `SMTP_USER` + `SMTP_PASSWORD` as a pair for
+ *   authenticated relays). Certificate and hostname validation always stay on;
+ *   `SMTP_TLS_CA_FILE` may add a private CA bundle, never disable it.
  * - `MAIL_DELIVERY_ADAPTER` selects an adapter explicitly. Outside production
  *   the dev-file adapter is the implicit default so the app works locally; in
  *   production an explicit adapter name is required, otherwise
@@ -29,6 +32,8 @@ export const SMTP_PORT_ENV = "SMTP_PORT";
 export const SMTP_TLS_ENV = "SMTP_TLS";
 export const SMTP_USER_ENV = "SMTP_USER";
 export const SMTP_PASSWORD_ENV = "SMTP_PASSWORD";
+export const SMTP_ALLOW_PLAINTEXT_ENV = "SMTP_ALLOW_PLAINTEXT";
+export const SMTP_TLS_CA_FILE_ENV = "SMTP_TLS_CA_FILE";
 export const MAIL_FROM_ENV = "MAIL_FROM";
 
 const SMTP_TIMEOUT_MS = 10_000;
@@ -50,6 +55,8 @@ function missingSmtpEnvs(): string[] {
   return missing;
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
+
 type SmtpConfig = {
   host: string;
   port: number;
@@ -57,9 +64,10 @@ type SmtpConfig = {
   user?: string;
   password?: string;
   from: string;
+  ca?: string;
 };
 
-function resolveSmtpConfig(): SmtpConfig {
+async function resolveSmtpConfig(): Promise<SmtpConfig> {
   const missing = missingSmtpEnvs();
   if (missing.length > 0) {
     // Names only. A missing value is a configuration fault, never a reason to
@@ -72,6 +80,27 @@ function resolveSmtpConfig(): SmtpConfig {
   if (!SMTP_TLS_MODES.includes(tlsMode as SmtpTlsMode)) {
     throw new Error(
       `mail delivery is not configured: ${SMTP_TLS_ENV} must be require, implicit or none`,
+    );
+  }
+  const host = process.env[SMTP_HOST_ENV] ?? "";
+  const user = process.env[SMTP_USER_ENV];
+  const password = process.env[SMTP_PASSWORD_ENV];
+  if (tlsMode === "none" && user) {
+    // Never send AUTH over an unencrypted connection, on any host.
+    throw new Error(
+      `mail delivery is not configured: ${SMTP_TLS_ENV}=none cannot carry credentials`,
+    );
+  }
+  if (
+    tlsMode === "none" &&
+    process.env.NODE_ENV === "production" &&
+    !LOOPBACK_HOSTS.has(host) &&
+    process.env[SMTP_ALLOW_PLAINTEXT_ENV] !== "1"
+  ) {
+    // Plaintext relay for local capture is explicitly local and unauthenticated;
+    // production plaintext to a non-local relay needs the deliberate opt-in.
+    throw new Error(
+      `mail delivery is not configured: ${SMTP_TLS_ENV}=none in production for a non-local relay requires ${SMTP_ALLOW_PLAINTEXT_ENV}=1`,
     );
   }
   const rawPort = process.env[SMTP_PORT_ENV];
@@ -87,14 +116,18 @@ function resolveSmtpConfig(): SmtpConfig {
     );
   }
   const config: SmtpConfig = {
-    host: process.env[SMTP_HOST_ENV] ?? "",
+    host,
     port,
     tls: tlsMode as SmtpTlsMode,
     from: process.env[MAIL_FROM_ENV] ?? "",
   };
-  if (process.env[SMTP_USER_ENV]) {
-    config.user = process.env[SMTP_USER_ENV];
-    config.password = process.env[SMTP_PASSWORD_ENV];
+  if (user) {
+    config.user = user;
+    config.password = password;
+  }
+  const caFile = process.env[SMTP_TLS_CA_FILE_ENV];
+  if (caFile) {
+    config.ca = await readFile(caFile, "utf8");
   }
   return config;
 }
@@ -116,16 +149,6 @@ function simpleHtml(text: string): string {
   return `<!doctype html><html><body>${paragraphs}</body></html>`;
 }
 
-const base64 = (value: string): string =>
-  Buffer.from(value, "utf8").toString("base64");
-
-const wrap76 = (value: string): string => value.replace(/.{1,76}/g, "$&\r\n");
-
-/** RFC 2047 encoded-word for a non-ASCII header value; ASCII passes through. */
-function headerValue(value: string): string {
-  return /^[\x20-\x7e]*$/.test(value) ? value : `=?UTF-8?B?${base64(value)}?=`;
-}
-
 function assertSafeHeaders(cfg: SmtpConfig, message: MailMessage): void {
   for (const [field, value] of [
     ["to", message.to],
@@ -138,151 +161,60 @@ function assertSafeHeaders(cfg: SmtpConfig, message: MailMessage): void {
   }
 }
 
-function buildMessage(cfg: SmtpConfig, message: MailMessage): string {
-  const boundary = `=_vari8_${Date.now().toString(36)}`;
-  const part = (type: string, body: string) =>
-    `Content-Type: ${type}; charset=utf-8\r\n` +
-    `Content-Transfer-Encoding: base64\r\n\r\n${wrap76(base64(body))}\r\n`;
-  return (
-    `From: ${cfg.from}\r\n` +
-    `To: ${message.to}\r\n` +
-    `Date: ${new Date().toUTCString()}\r\n` +
-    `Subject: ${headerValue(message.subject)}\r\n` +
-    "MIME-Version: 1.0\r\n" +
-    `Content-Type: multipart/alternative; boundary="${boundary}"\r\n\r\n` +
-    `--${boundary}\r\n${part("text/plain", message.text)}` +
-    `--${boundary}\r\n${part("text/html", simpleHtml(message.text))}` +
-    `--${boundary}--\r\n`
-  );
-}
-
-type SmtpReply = { code: number; lines: string[] };
-
 /**
- * Minimal SMTP session: line-buffered replies (multiline "NNN-" until "NNN "),
- * a per-socket inactivity timeout, and status-only errors — a reply body can
- * echo the recipient and the message can carry a single-use token, so neither
- * reaches an error string.
+ * Nodemailer owns the wire: MIME building, header encoding/folding and
+ * dot-stuffing. Certificate and hostname validation stay enabled; the relay
+ * reply text can echo the recipient and the message can carry a single-use
+ * token, so failures surface a status code or the library's error category
+ * only — never a secret, a body or an address.
  */
 async function smtpSend(cfg: SmtpConfig, message: MailMessage): Promise<void> {
-  // Header injection is refused before a byte reaches the wire.
   assertSafeHeaders(cfg, message);
-  let socket: net.Socket | tls.TLSSocket;
-  if (cfg.tls === "implicit") {
-    socket = tls.connect({
-      host: cfg.host,
-      port: cfg.port,
-      servername: cfg.host,
-    });
-  } else {
-    socket = net.connect({ host: cfg.host, port: cfg.port });
-  }
-  socket.setTimeout(SMTP_TIMEOUT_MS);
-
-  let buffer = "";
-  const ready: SmtpReply[] = [];
-  const lines: string[] = [];
-  const waiters: {
-    resolve: (r: SmtpReply) => void;
-    reject: (e: Error) => void;
-  }[] = [];
-  const failAll = (error: Error) => {
-    for (const w of waiters.splice(0)) w.reject(error);
-  };
-  socket.on("data", (chunk) => {
-    buffer += chunk.toString("utf8");
-    for (;;) {
-      const end = buffer.indexOf("\n");
-      if (end === -1) break;
-      const line = buffer.slice(0, end + 1);
-      buffer = buffer.slice(end + 1);
-      const m = /^(\d{3})([ -])/.exec(line);
-      if (!m) {
-        failAll(new Error("mail delivery failed: malformed relay reply"));
-        socket.destroy();
-        return;
-      }
-      lines.push(line.slice(4).trim());
-      if (m[2] === " ") {
-        const reply = { code: Number(m[1]), lines: lines.splice(0) };
-        const w = waiters.shift();
-        if (w) w.resolve(reply);
-        else ready.push(reply);
-      }
-    }
+  const transport = nodemailer.createTransport({
+    host: cfg.host,
+    port: cfg.port,
+    secure: cfg.tls === "implicit",
+    requireTLS: cfg.tls === "require",
+    ignoreTLS: cfg.tls === "none",
+    auth:
+      cfg.user === undefined
+        ? undefined
+        : { user: cfg.user, pass: cfg.password },
+    tls: {
+      // SNI only for name hosts — an IP literal is rejected by node, while the
+      // certificate chain + name/IP check still runs either way.
+      ...(isIP(cfg.host) === 0 ? { servername: cfg.host } : {}),
+      rejectUnauthorized: true,
+      minVersion: "TLSv1.2",
+      ...(cfg.ca === undefined ? {} : { ca: cfg.ca }),
+    },
+    connectionTimeout: SMTP_TIMEOUT_MS,
+    greetingTimeout: SMTP_TIMEOUT_MS,
+    socketTimeout: SMTP_TIMEOUT_MS,
+    disableFileAccess: true,
+    disableUrlAccess: true,
+    logger: false,
+    debug: false,
   });
-  socket.on("timeout", () => {
-    failAll(new Error("mail delivery timed out"));
-    socket.destroy();
-  });
-  socket.on("error", (e) => failAll(e));
-
-  const nextReply = () =>
-    new Promise<SmtpReply>((resolve, reject) => {
-      const reply = ready.shift();
-      if (reply) resolve(reply);
-      else waiters.push({ resolve, reject });
-    });
-  const say = async (line: string, ...ok: number[]): Promise<SmtpReply> => {
-    socket.write(line + "\r\n");
-    const reply = await nextReply();
-    if (!ok.includes(reply.code)) {
-      throw new Error(`mail delivery failed with status ${reply.code}`);
-    }
-    return reply;
-  };
-  const ehlo = async (): Promise<string[]> => {
-    const reply = await say("EHLO localhost", 250);
-    return reply.lines;
-  };
-
   try {
-    const greeting = await nextReply();
-    if (greeting.code !== 220) {
-      throw new Error(`mail delivery failed with status ${greeting.code}`);
+    await transport.sendMail({
+      from: cfg.from,
+      to: message.to,
+      subject: message.subject,
+      text: message.text,
+      html: simpleHtml(message.text),
+    });
+  } catch (error) {
+    const e = error as { responseCode?: number; code?: string };
+    if (typeof e.responseCode === "number") {
+      throw new Error(`mail delivery failed with status ${e.responseCode}`);
     }
-    let capabilities = await ehlo();
-    if (cfg.tls === "require") {
-      if (!capabilities.some((c) => /^STARTTLS$/i.test(c))) {
-        throw new Error("mail delivery failed: relay does not offer STARTTLS");
-      }
-      await say("STARTTLS", 220);
-      socket = await new Promise<tls.TLSSocket>((resolve, reject) => {
-        const wrapped = tls.connect({
-          socket,
-          servername: cfg.host,
-        });
-        wrapped.once("secureConnect", () => resolve(wrapped));
-        wrapped.once("error", reject);
-      });
-      capabilities = await ehlo();
+    if (typeof e.code === "string" && /^[A-Z_]+$/.test(e.code)) {
+      throw new Error(`mail delivery failed (${e.code})`);
     }
-    if (cfg.user !== undefined) {
-      await say("AUTH LOGIN", 334);
-      socket.write(base64(cfg.user) + "\r\n");
-      const u = await nextReply();
-      if (u.code !== 334) {
-        throw new Error(`mail delivery failed with status ${u.code}`);
-      }
-      socket.write(base64(cfg.password ?? "") + "\r\n");
-      const p = await nextReply();
-      if (p.code !== 235) {
-        throw new Error(`mail delivery failed with status ${p.code}`);
-      }
-    }
-    await say(`MAIL FROM:<${cfg.from}>`, 250);
-    await say(`RCPT TO:<${message.to}>`, 250, 251);
-    await say("DATA", 354);
-    const data = buildMessage(cfg, message).replace(/(^|\r?\n)\./g, "$1..");
-    socket.write(data + "\r\n.\r\n");
-    const accepted = await nextReply();
-    if (accepted.code !== 250) {
-      throw new Error(`mail delivery failed with status ${accepted.code}`);
-    }
-    socket.write("QUIT\r\n");
-    await nextReply().catch(() => undefined);
+    throw new Error("mail delivery failed");
   } finally {
-    socket.destroy();
+    transport.close();
   }
 }
 
@@ -299,7 +231,7 @@ const adapters: Record<string, MailAdapter> = {
     );
   },
   smtp: async (message) => {
-    await smtpSend(resolveSmtpConfig(), message);
+    await smtpSend(await resolveSmtpConfig(), message);
   },
 };
 
@@ -321,11 +253,11 @@ export function mailDeliveryConfigured(): boolean {
  * that is deliberately off (no adapter named) is not an error here: the
  * mail-gated routes already fail closed through `mailDeliveryConfigured`.
  */
-export function assertMailDeliveryConfigured(): void {
+export async function assertMailDeliveryConfigured(): Promise<void> {
   if (process.env.NODE_ENV !== "production") return;
   if (process.env.NEXT_PHASE === "phase-production-build") return;
   if (process.env[MAIL_DELIVERY_ADAPTER_ENV] !== "smtp") return;
-  resolveSmtpConfig();
+  await resolveSmtpConfig();
 }
 
 export async function sendMail(message: MailMessage): Promise<void> {

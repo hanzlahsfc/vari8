@@ -18,7 +18,7 @@ export async function register() {
       assertMediaStorageConfigured();
       // O22/P749: production plus the smtp adapter plus a missing key refuses
       // boot rather than serving reset and invitation forms that send nothing.
-      assertMailDeliveryConfigured();
+      await assertMailDeliveryConfigured();
     } catch (error) {
       // Next 16 catches instrumentation failures and keeps the process alive
       // serving 500s with the port open; in production a refused auth-env

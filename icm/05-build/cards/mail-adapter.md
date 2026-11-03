@@ -13,7 +13,8 @@ Pipeline rules in `icm/05-build/cards/PIPELINE-FOOTER.md` are binding. Lane data
 ## Change (one PR, explicit pathspecs, never `git add -A`)
 
 1. Add one production adapter to the adapters map in `lib/mail/index.ts` named `smtp`. It submits through a
-   standard SMTP relay (net/tls builtins, EHLO/STARTTLS/AUTH LOGIN/MAIL/RCPT/DATA). No new npm dependency.
+   standard SMTP relay via the maintained Nodemailer client (`STARTTLS` required by default, implicit TLS
+   supported, certificate and hostname validation always on, AUTH only over encrypted connections).
 2. Env: `MAIL_DELIVERY_ADAPTER=smtp`, `SMTP_HOST`, `MAIL_FROM` (required), `SMTP_PORT`, `SMTP_TLS`
    (require|implicit|none), `SMTP_USER` + `SMTP_PASSWORD` (pair). Add the NAMES only to `.env.example`,
    never a value.

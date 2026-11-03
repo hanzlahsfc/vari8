@@ -1,3 +1,19 @@
+## 2026-11-03 — P751 Nodemailer transport replaces hand-rolled SMTP (#156)
+
+Independent review (comment `6613763014`) rejected the hand-written SMTP
+client; zero-dependency was not an owner requirement. The `smtp` adapter
+now uses Nodemailer 10.2.1 (MIT-0, Node ≥20): MIME/header folding owned
+by the library, `SMTP_TLS` require (default)/implicit/none, bounded
+connection/greeting/socket timeouts (10 s), `disableFileAccess`/
+`disableUrlAccess`, logger/debug off, cert + hostname validation always
+on (`SMTP_TLS_CA_FILE` adds a private CA only), AUTH never over cleartext,
+and `SMTP_TLS=none` on a non-loopback host in production requires
+`SMTP_ALLOW_PLAINTEXT=1`. `assertMailDeliveryConfigured` is now async.
+Tests commit task-owned LibreSSL CA fixtures + TLS-capable capture
+servers covering STARTTLS/implicit success, untrusted cert, wrong
+hostname, AUTH 535, early disconnect, idle timeout, RCPT 550,
+dot-stuffing, CRLF refusal and non-ASCII folding — 90 focused tests exit 0. Typecheck/lint/format green. No real mail sent.
+
 ## 2026-11-03 — P749 EmailLabs rejected; standard SMTP adapter (#156)
 
 Owner reversal (Marcel via Aleksey): the EmailLabs requirement is

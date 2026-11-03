@@ -4,7 +4,30 @@ Card `icm/05-build/cards/mail-adapter.md`, issue #155, PR #156. Owner ruling O22
 transactional email is approved for the beta (password reset links and invitation emails), reversing O19.
 No admin reset tool, no new npm dependency.
 
-## P749 revision — EmailLabs rejected, standard SMTP (current state)
+## P751 revision — Nodemailer replaces the hand-written client (current state)
+
+Independent review (comment `6613763014`) rejected the hand-rolled SMTP
+client (post-TLS socket rebinding, unsettled disconnect, no committed TLS
+success/cert cases, missing RFC 2047 folding, unenforced plaintext
+policy). Zero-dependency was not an owner requirement. The adapter now
+uses **Nodemailer 10.2.1** (MIT-0, Node ≥20, maintained): it owns MIME,
+header encoding/folding and dot-stuffing; `requireTLS`/`secure` map
+`SMTP_TLS` require/implicit; `connectionTimeout`/`greetingTimeout`/
+`socketTimeout` bound every phase; `disableFileAccess`/`disableUrlAccess`
+and `logger`/`debug` off; certificate and hostname validation always on
+(`SMTP_TLS_CA_FILE` only adds a private CA). Plaintext is hardened:
+`SMTP_TLS=none` cannot carry credentials, and production `none` on a
+non-loopback host requires `SMTP_ALLOW_PLAINTEXT=1`. Errors surface a
+status code or the library's category only.
+
+Task-owned CA/server fixtures (`tests/fixtures/mail-tls/`, LibreSSL-
+generated) commit wire regressions for STARTTLS success, implicit TLS,
+untrusted cert, wrong hostname, AUTH rejection (535), early disconnect,
+idle timeout, recipient rejection, dot-stuffing, CRLF refusal and long
+non-ASCII subject/body. All gate evidence below remains from the
+EmailLabs era unless a section says otherwise.
+
+## P749 revision — EmailLabs rejected, standard SMTP (superseded by P751)
 
 Owner reversal (Marcel via Aleksey): the EmailLabs requirement is
 rejected; invitations and account emails must work without that paid
