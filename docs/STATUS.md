@@ -1,3 +1,33 @@
+## 2026-11-04 — P769 narrow repair: Node floor single-sourced from root .nvmrc
+
+Addresses the remaining runtime-maintenance note: `verify-local.sh`
+hardcoded `26.12.1` separately from the root `.nvmrc`. The guard now
+reads the floor from `$TOP/.nvmrc` (whitespace stripped, leading `v`
+tolerated) and hard-fails when the file is missing/unreadable or does
+not contain a complete stable `X.Y.Z` version — never a silent
+fallback. The `REQUIRE_NODE24` retirement message now names the
+`.nvmrc` floor instead of a second literal. Preserved: the pure-bash
+numeric compare, the `REQUIRE_NODE26` required/optional split, and all
+FAIL/WARN message shapes.
+
+Tests (`tests/unit/verify-local-node-guard.test.ts` — the REAL script in
+a scratch clean git lane, node/docker/npm/npx all non-delegating
+stubs): the lane defaults to the committed `.nvmrc`; replacing it
+(`30.0.0`/`26.0.0`) flips the same unedited script's verdicts; missing
+`.nvmrc` fails clearly even in optional mode; malformed floors (`""`,
+`26`, `26.12`, `26.12.1.2`, `26.12.1-rc.1`, `lts/*`, `garbage`) fail
+before any stubbed infrastructure runs; a `v`-prefixed floor is
+accepted; below/exact/above, malformed runtime, optional-mode
+warn-and-continue and the `REQUIRE_NODE24` error are unchanged.
+**19/19 pass** under isolated Node 26.12.1.
+
+Gates (focused, per narrow scope): guard tests 19/19; `bash -n` OK;
+prettier `format:check` clean; eslint clean; `tsc --noEmit` 0;
+`git diff --check` 0. Actual runtime floor, CI config, dependencies,
+lockfiles, parity receipts and shared infrastructure untouched.
+Local commit only — canonical VERIFY-LOCAL and integration
+authorization remain pending; stop for independent review.
+
 ## 2026-11-03 — P732 narrow repair: floor guard rejects malformed Node versions
 
 Repairs P731 residual defect D1: GNU `sort -V` sorts `26.12.1-rc.1` and

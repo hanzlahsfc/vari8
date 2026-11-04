@@ -59,11 +59,23 @@ git rev-parse --verify "${BASE_SHA}^{commit}" >/dev/null
 step "clean tree" bash -c 'git diff --quiet && git diff --cached --quiet'
 
 if [[ -n "${REQUIRE_NODE24:-0}" && "${REQUIRE_NODE24:-0}" != "0" ]]; then
-  SUMMARY+=("FAIL node: REQUIRE_NODE24 is retired; use REQUIRE_NODE26=1 for the 26.12.1 floor (O18)")
+  SUMMARY+=("FAIL node: REQUIRE_NODE24 is retired; use REQUIRE_NODE26=1 for the .nvmrc floor (O18)")
   finish 1
 fi
 
-NODE_TARGET="26.12.1"
+# The O18 floor is single-sourced from the root .nvmrc; a missing or malformed
+# floor is a hard failure, never a silent fallback.
+NVMRC="$TOP/.nvmrc"
+if [[ ! -r "$NVMRC" ]]; then
+  SUMMARY+=("FAIL node: $NVMRC is missing or unreadable; the Node floor is read from the root .nvmrc (O18)")
+  finish 1
+fi
+NODE_FLOOR_RAW="$(tr -d '[:space:]' <"$NVMRC")"
+NODE_TARGET="${NODE_FLOOR_RAW#v}"
+if [[ ! "$NODE_TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  SUMMARY+=("FAIL node: $NVMRC must contain a complete stable X.Y.Z floor; got '${NODE_FLOOR_RAW:-<empty>}' (O18)")
+  finish 1
+fi
 NODE_RAW="$(node --version 2>/dev/null || true)"
 
 node_ge_floor() {
