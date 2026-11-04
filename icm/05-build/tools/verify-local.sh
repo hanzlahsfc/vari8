@@ -70,12 +70,18 @@ if [[ ! -r "$NVMRC" ]]; then
   SUMMARY+=("FAIL node: $NVMRC is missing or unreadable; the Node floor is read from the root .nvmrc (O18)")
   finish 1
 fi
-NODE_FLOOR_RAW="$(tr -d '[:space:]' <"$NVMRC")"
-NODE_TARGET="${NODE_FLOOR_RAW#v}"
-if [[ ! "$NODE_TARGET" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+# Validate the file, never reinterpret it: trim surrounding whitespace only and
+# require the remaining content to be exactly one stable v?X.Y.Z version, so
+# internal spaces, tabs, newlines and multiple entries fail instead of
+# concatenating into a different floor.
+NODE_FLOOR_RAW="$(<"$NVMRC")"
+NODE_FLOOR_RAW="${NODE_FLOOR_RAW#"${NODE_FLOOR_RAW%%[![:space:]]*}"}"
+NODE_FLOOR_RAW="${NODE_FLOOR_RAW%"${NODE_FLOOR_RAW##*[![:space:]]}"}"
+if [[ ! "$NODE_FLOOR_RAW" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   SUMMARY+=("FAIL node: $NVMRC must contain a complete stable X.Y.Z floor; got '${NODE_FLOOR_RAW:-<empty>}' (O18)")
   finish 1
 fi
+NODE_TARGET="${NODE_FLOOR_RAW#v}"
 NODE_RAW="$(node --version 2>/dev/null || true)"
 
 node_ge_floor() {

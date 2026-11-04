@@ -147,15 +147,44 @@ describe("verify-local Node floor guard (root .nvmrc, O18)", () => {
     expect(out).toContain("VERIFY-LOCAL FAIL");
   });
 
-  it.each(["", "26", "26.12", "26.12.1.2", "26.12.1-rc.1", "lts/*", "garbage"])(
-    "fails clearly on malformed .nvmrc floor %j",
+  it.each([
+    "",
+    "26",
+    "26.12",
+    "26.12.1.2",
+    "26.12.1-rc.1",
+    "lts/*",
+    "garbage",
+    "26 .12.1",
+    "26 .13.0",
+    "26.12.\t1",
+    "26.12.1\n26.13.0",
+    "v26.12.1\nlts/*",
+  ])(
+    "fails clearly on malformed .nvmrc floor %j in required and optional mode",
     (nvmrc) => {
-      const out = runGuard("v26.13.0", { REQUIRE_NODE26: "1" }, nvmrc);
-      expect(out).toMatch(/FAIL node:.*complete stable X\.Y\.Z floor/);
-      expect(out).not.toMatch(/STUB docker/);
-      expect(out).toContain("VERIFY-LOCAL FAIL");
+      // Whitespace inside or between versions must not concatenate into a
+      // valid floor; malformed config fails before any infrastructure runs.
+      const modes: Record<string, string>[] = [{ REQUIRE_NODE26: "1" }, {}];
+      for (const env of modes) {
+        const out = runGuard("v26.13.0", env, nvmrc);
+        expect(out).toMatch(/FAIL node:.*complete stable X\.Y\.Z floor/);
+        expect(out).not.toMatch(/STUB docker/);
+        expect(out).toContain("VERIFY-LOCAL FAIL");
+      }
     },
   );
+
+  it("accepts surrounding whitespace and a normal trailing newline", () => {
+    const out = runGuard(
+      `v${FLOOR}`,
+      { REQUIRE_NODE26: "1" },
+      ` \t${FLOOR} \n\n`,
+    );
+    expect(out).not.toMatch(/FAIL node/);
+    expect(out).not.toMatch(/WARN node/);
+    expect(out).toContain("VERIFY-LOCAL PASS");
+  });
 
   it("accepts a v-prefixed .nvmrc floor", () => {
     const out = runGuard(`v${FLOOR}`, { REQUIRE_NODE26: "1" }, `v${FLOOR}\n`);

@@ -1,3 +1,31 @@
+## 2026-11-04 — P771 repair: malformed .nvmrc whitespace rejected, not reinterpreted
+
+Repairs P770 review finding F1 (+coverage gap F2): the floor parser used
+`tr -d '[:space:]'`, which deleted internal whitespace and silently
+concatenated malformed configuration into a valid floor — `26 .13.0`
+enforced as `26.13.0`, `26.12.\n1` as `26.12.1`. The parser now trims
+leading/trailing whitespace only (pure-bash, keeps surrounding space and
+the normal trailing newline valid, `v` prefix still tolerated) and
+requires the remaining content to be exactly one `v?X.Y.Z`; internal
+spaces, tabs, newlines and multiple entries fail before node execution
+or any infrastructure command, in required and optional mode alike.
+Numeric compare, runtime FAIL/WARN shapes and the `REQUIRE_NODE24`
+retirement error are unchanged.
+
+Tests: the malformed-floor `it.each` now covers `""`, `26`, `26.12`,
+`26.12.1.2`, `26.12.1-rc.1`, `lts/*`, `garbage`, `26 .12.1`,
+`26 .13.0`, an embedded tab, `26.12.1\n26.13.0` and `v26.12.1\nlts/*`,
+each asserted in BOTH required and optional mode with no `STUB`
+interception marker reached; new positive case for surrounding
+whitespace + trailing newline. **25/25 pass** under isolated Node
+26.12.1.
+
+Gates (focused): guard tests 25/25; `bash -n` OK; prettier check clean;
+eslint clean; `tsc --noEmit` 0; `git diff --check` 0. Runtime pins, CI,
+dependencies, lockfiles and parity receipts untouched. Local commit
+only — canonical VERIFY-LOCAL and integration authorization remain
+pending; stop for narrow review.
+
 ## 2026-11-04 — P769 narrow repair: Node floor single-sourced from root .nvmrc
 
 Addresses the remaining runtime-maintenance note: `verify-local.sh`
