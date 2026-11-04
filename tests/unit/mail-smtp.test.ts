@@ -10,6 +10,7 @@ import {
   MAIL_DELIVERY_ADAPTER_ENV,
   MAIL_FROM_ENV,
   sendMail,
+  SMTP_ALLOW_PLAINTEXT_ENV,
   SMTP_HOST_ENV,
   SMTP_PASSWORD_ENV,
   SMTP_PORT_ENV,
@@ -275,11 +276,13 @@ function tlsCaptureServer(options: {
   });
 }
 
-async function useServer(options: { auth?: boolean } = {}): Promise<Capture> {
+async function useServer(
+  options: { auth?: boolean; host?: string } = {},
+): Promise<Capture> {
   const server = await captureServer(options);
   servers.push(server);
   applyEnv({
-    [SMTP_HOST_ENV]: "127.0.0.1",
+    [SMTP_HOST_ENV]: options.host ?? "127.0.0.1",
     [SMTP_PORT_ENV]: String(server.port),
   });
   return server;
@@ -589,6 +592,85 @@ describe("smtp adapter", () => {
     setEnv("NODE_ENV", "production");
     applyEnv({ [MAIL_DELIVERY_ADAPTER_ENV]: undefined });
     await expect(assertMailDeliveryConfigured()).resolves.toBeUndefined();
+  });
+
+  describe("plaintext relay policy (SMTP_TLS=none)", () => {
+    // ::ffff:127.0.0.1 is an IPv4-mapped literal: outside the adapter's
+    // LOOPBACK_HOSTS set (a "non-local relay" to the policy) yet delivered to
+    // the loopback listener — the "remote" relay stays on this host.
+    it("refuses a non-local plaintext relay in production without the opt-in", async () => {
+      const server = await useServer({ host: "::ffff:127.0.0.1" });
+      setEnv("NODE_ENV", "production");
+      await expect(
+        sendMail({ to: "a@b.test", subject: "s", text: `token=${TOKEN}` }),
+      ).rejects.toThrow(/SMTP_ALLOW_PLAINTEXT=1/);
+      await expect(
+        sendMail({ to: "a@b.test", subject: "s", text: "t" }),
+      ).rejects.not.toThrow(TOKEN);
+      await expect(assertMailDeliveryConfigured()).rejects.toThrow(
+        /SMTP_ALLOW_PLAINTEXT=1/,
+      );
+      expect(server.transcript()).toEqual([]);
+    });
+
+    it("permits that relay with the explicit opt-in and no credentials", async () => {
+      const server = await useServer({ host: "::ffff:127.0.0.1" });
+      setEnv("NODE_ENV", "production");
+      applyEnv({ [SMTP_ALLOW_PLAINTEXT_ENV]: "1" });
+      await sendMail({ to: "a@b.test", subject: "s", text: `token=${TOKEN}` });
+      expect(server.transcript()).toContain("MAIL FROM:<no-reply@vari8.test>");
+      expect(server.data()).toContain(TOKEN);
+    });
+
+    it("still refuses plaintext AUTH even with the opt-in", async () => {
+      const server = await useServer({
+        host: "::ffff:127.0.0.1",
+        auth: true,
+      });
+      setEnv("NODE_ENV", "production");
+      applyEnv({
+        [SMTP_ALLOW_PLAINTEXT_ENV]: "1",
+        [SMTP_USER_ENV]: USER,
+        [SMTP_PASSWORD_ENV]: PASSWORD,
+      });
+      await expect(
+        sendMail({ to: "a@b.test", subject: "s", text: "t" }),
+      ).rejects.toThrow(/cannot carry credentials/);
+      expect(server.transcript()).toEqual([]);
+    });
+
+    it("still permits loopback capture without credentials or the opt-in", async () => {
+      const server = await useServer();
+      setEnv("NODE_ENV", "production");
+      await sendMail({ to: "a@b.test", subject: "s", text: "t" });
+      expect(server.transcript()).toContain("MAIL FROM:<no-reply@vari8.test>");
+    });
+
+    it("leaves STARTTLS delivery unaffected in production", async () => {
+      const server = await useTlsServer({
+        cert: pem("srv-a-cert.pem"),
+        key: pem("srv-a-key.pem"),
+        starttls: true,
+      });
+      setEnv("NODE_ENV", "production");
+      applyEnv({ [SMTP_TLS_ENV]: "require" });
+      await sendMail({ to: "a@b.test", subject: "s", text: `token=${TOKEN}` });
+      const t = server.transcript();
+      expect(t).toContain("STARTTLS");
+      expect(t).toContain("MAIL FROM:<no-reply@vari8.test>");
+      expect(server.data()).toContain(TOKEN);
+    });
+
+    it("leaves implicit-TLS delivery unaffected in production", async () => {
+      const server = await useTlsServer({
+        cert: pem("srv-a-cert.pem"),
+        key: pem("srv-a-key.pem"),
+      });
+      setEnv("NODE_ENV", "production");
+      applyEnv({ [SMTP_TLS_ENV]: "implicit" });
+      await sendMail({ to: "a@b.test", subject: "s", text: "t" });
+      expect(server.transcript()).toContain("MAIL FROM:<no-reply@vari8.test>");
+    });
   });
 });
 

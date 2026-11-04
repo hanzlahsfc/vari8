@@ -1,3 +1,32 @@
+## 2026-11-04 — P776 committed SMTP plaintext-policy regression coverage (#156)
+
+Closes the P753 review note: `SMTP_ALLOW_PLAINTEXT` had no committed
+regression. Six new tests in `tests/unit/mail-smtp.test.ts` under
+`describe("plaintext relay policy (SMTP_TLS=none)")` pin the existing
+policy — test-only, no implementation or policy change:
+
+- production + `SMTP_TLS=none` + non-local relay without the opt-in is
+  refused at config resolution (error names `SMTP_ALLOW_PLAINTEXT=1`,
+  empty transcript proves refusal precedes wire contact, boot gate
+  `assertMailDeliveryConfigured` refuses identically);
+- the explicit opt-in permits that configuration with no credentials —
+  a real delivery to the task-owned capture;
+- `SMTP_TLS=none` with credentials is still refused even with the
+  opt-in (`cannot carry credentials`, no wire contact);
+- loopback capture stays permitted without credentials or the opt-in;
+- STARTTLS and implicit-TLS delivery are unaffected in production.
+
+The "non-local relay" fixture is the IPv4-mapped literal
+`::ffff:127.0.0.1` — outside the adapter's `LOOPBACK_HOSTS` string set
+but delivered to the loopback listener, so no packet leaves the host
+(`useServer` gained a `host` option decoupling the env value from the
+capture bind). No external SMTP, no real mail.
+
+Gates under Node v22.21.1 (isolated tarball): `mail-smtp.test.ts`
+**29/29**; prettier/eslint/tsc/`diff --check` clean (2 pre-existing
+eslint warnings in the mock doubles). Local commit only — stop for
+independent review.
+
 ## 2026-11-04 — P754 recompare metadata regenerated (#156)
 
 Review `6615294332` was right: the P752 hand re-pin fixed the manifest
