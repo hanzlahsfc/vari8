@@ -276,13 +276,24 @@ function tlsCaptureServer(options: {
   });
 }
 
+// The capture fixture is loopback-only: the host override exists so tests can
+// name a "non-local relay" string, never a real one. Validate before any
+// listener or env mutation — a Set lookup, no DNS, no socket.
+const FIXTURE_HOSTS = new Set(["127.0.0.1", "::ffff:127.0.0.1"]);
+
 async function useServer(
   options: { auth?: boolean; host?: string } = {},
 ): Promise<Capture> {
+  const host = options.host ?? "127.0.0.1";
+  if (!FIXTURE_HOSTS.has(host)) {
+    throw new Error(
+      `mail test fixture: host must be a loopback literal (${[...FIXTURE_HOSTS].join(" or ")}); got '${host}'`,
+    );
+  }
   const server = await captureServer(options);
   servers.push(server);
   applyEnv({
-    [SMTP_HOST_ENV]: options.host ?? "127.0.0.1",
+    [SMTP_HOST_ENV]: host,
     [SMTP_PORT_ENV]: String(server.port),
   });
   return server;
@@ -671,6 +682,20 @@ describe("smtp adapter", () => {
       await sendMail({ to: "a@b.test", subject: "s", text: "t" });
       expect(server.transcript()).toContain("MAIL FROM:<no-reply@vari8.test>");
     });
+  });
+
+  describe("loopback-only capture fixture", () => {
+    it.each(["relay.example.test", "192.0.2.10"])(
+      "rejects non-loopback fixture host %s before startup or env mutation",
+      async (host) => {
+        const createServer = vi.spyOn(net, "createServer");
+        const before = process.env[SMTP_HOST_ENV];
+        await expect(useServer({ host })).rejects.toThrow(/loopback literal/);
+        expect(createServer).not.toHaveBeenCalled();
+        expect(process.env[SMTP_HOST_ENV]).toBe(before);
+        expect(servers).toHaveLength(0);
+      },
+    );
   });
 });
 

@@ -1,3 +1,22 @@
+## 2026-11-04 — P778 repair: loopback allowlist on the mail capture fixture (#156)
+
+Repairs P777 finding F1: `useServer`'s `host` override accepted arbitrary
+hostnames, so a test could point the fixture at a real external relay.
+The helper now validates the override against an explicit allowlist
+(`127.0.0.1`, `::ffff:127.0.0.1` — the only literals existing callers
+use) BEFORE creating a listener or mutating `SMTP_HOST`/`SMTP_PORT` —
+a Set lookup, no DNS, no socket. Two committed regressions prove a
+hostname (`relay.example.test`) and a non-loopback IP (`192.0.2.10`)
+are rejected with `net.createServer` never called, env unchanged and
+no server registered. Accepted plaintext-policy, STARTTLS and
+implicit-TLS tests unchanged.
+
+Gates under Node v22.21.1 (isolated tarball): `mail-smtp.test.ts`
+**31/31**; prettier/eslint/tsc/`diff --check` clean (2 pre-existing
+eslint warnings in the mock doubles). Test-only; no implementation,
+policy, dependency or receipt changes. Local commit — stop for narrow
+review.
+
 ## 2026-11-04 — P776 committed SMTP plaintext-policy regression coverage (#156)
 
 Closes the P753 review note: `SMTP_ALLOW_PLAINTEXT` had no committed
