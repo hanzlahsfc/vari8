@@ -31,7 +31,7 @@ describe("mailDeliveryConfigured (the reset delivery gate)", () => {
   });
 
   it("an env value alone cannot enable delivery — unknown names fail closed", () => {
-    for (const env of ["1", "true", "smtp", "sendgrid", "resend", "noop"]) {
+    for (const env of ["1", "true", "sendgrid", "resend", "noop"]) {
       vi.stubEnv(MAIL_DELIVERY_ADAPTER_ENV, env);
       expect(mailDeliveryConfigured()).toBe(false);
     }
@@ -88,7 +88,7 @@ describe("dev-file adapter", () => {
   });
 
   it("sendMail with an unknown adapter name rejects — there is no silent sink", async () => {
-    vi.stubEnv(MAIL_DELIVERY_ADAPTER_ENV, "smtp");
+    vi.stubEnv(MAIL_DELIVERY_ADAPTER_ENV, "sendgrid");
     await expect(
       sendMail({ to: "u@example.test", subject: "s", text: "t" }),
     ).rejects.toThrow("mail delivery is not configured");

@@ -4,7 +4,7 @@ Generated file. Do not edit by hand: changes are overwritten by `npm run index`.
 Verify the committed copy is current with `npm run index:check` (exit 1 = drift).
 
 Source: TypeScript compiler API over `lib/**` and `frontend/src/lib/**`.
-Counts: 186 modules with exports, 1848 exported symbols.
+Counts: 186 modules with exports, 1857 exported symbols.
 
 Signatures are one line, collapsed from source and cut at 200 characters with a trailing `...`.
 Signatures are source text only (no compiler-inferred types), so the output never depends on installed packages.
@@ -1498,8 +1498,17 @@ Imported type names are shown without their `import("...")` prefix.
 
 - `export const DEV_MAILBOX_FILE_ENV = "DEV_MAILBOX_FILE"`
 - `export const MAIL_DELIVERY_ADAPTER_ENV = "MAIL_DELIVERY_ADAPTER"`
+- `export const MAIL_FROM_ENV = "MAIL_FROM"`
 - `export type MailAdapter = (message: MailMessage) => Promise<void>`
 - `export type MailMessage = { to: string; subject: string; text: string }`
+- `export const SMTP_ALLOW_PLAINTEXT_ENV = "SMTP_ALLOW_PLAINTEXT"`
+- `export const SMTP_HOST_ENV = "SMTP_HOST"`
+- `export const SMTP_PASSWORD_ENV = "SMTP_PASSWORD"`
+- `export const SMTP_PORT_ENV = "SMTP_PORT"`
+- `export const SMTP_TLS_CA_FILE_ENV = "SMTP_TLS_CA_FILE"`
+- `export const SMTP_TLS_ENV = "SMTP_TLS"`
+- `export const SMTP_USER_ENV = "SMTP_USER"`
+- `export async function assertMailDeliveryConfigured(): Promise<void>`
 - `export function mailDeliveryConfigured(): boolean`
 - `export async function sendMail(message: MailMessage): Promise<void>`
 

@@ -1,3 +1,165 @@
+## 2026-11-04 — P778 repair: loopback allowlist on the mail capture fixture (#156)
+
+Repairs P777 finding F1: `useServer`'s `host` override accepted arbitrary
+hostnames, so a test could point the fixture at a real external relay.
+The helper now validates the override against an explicit allowlist
+(`127.0.0.1`, `::ffff:127.0.0.1` — the only literals existing callers
+use) BEFORE creating a listener or mutating `SMTP_HOST`/`SMTP_PORT` —
+a Set lookup, no DNS, no socket. Two committed regressions prove a
+hostname (`relay.example.test`) and a non-loopback IP (`192.0.2.10`)
+are rejected with `net.createServer` never called, env unchanged and
+no server registered. Accepted plaintext-policy, STARTTLS and
+implicit-TLS tests unchanged.
+
+Gates under Node v22.21.1 (isolated tarball): `mail-smtp.test.ts`
+**31/31**; prettier/eslint/tsc/`diff --check` clean (2 pre-existing
+eslint warnings in the mock doubles). Test-only; no implementation,
+policy, dependency or receipt changes. Local commit — stop for narrow
+review.
+
+## 2026-11-04 — P776 committed SMTP plaintext-policy regression coverage (#156)
+
+Closes the P753 review note: `SMTP_ALLOW_PLAINTEXT` had no committed
+regression. Six new tests in `tests/unit/mail-smtp.test.ts` under
+`describe("plaintext relay policy (SMTP_TLS=none)")` pin the existing
+policy — test-only, no implementation or policy change:
+
+- production + `SMTP_TLS=none` + non-local relay without the opt-in is
+  refused at config resolution (error names `SMTP_ALLOW_PLAINTEXT=1`,
+  empty transcript proves refusal precedes wire contact, boot gate
+  `assertMailDeliveryConfigured` refuses identically);
+- the explicit opt-in permits that configuration with no credentials —
+  a real delivery to the task-owned capture;
+- `SMTP_TLS=none` with credentials is still refused even with the
+  opt-in (`cannot carry credentials`, no wire contact);
+- loopback capture stays permitted without credentials or the opt-in;
+- STARTTLS and implicit-TLS delivery are unaffected in production.
+
+The "non-local relay" fixture is the IPv4-mapped literal
+`::ffff:127.0.0.1` — outside the adapter's `LOOPBACK_HOSTS` string set
+but delivered to the loopback listener, so no packet leaves the host
+(`useServer` gained a `host` option decoupling the env value from the
+capture bind). No external SMTP, no real mail.
+
+Gates under Node v22.21.1 (isolated tarball): `mail-smtp.test.ts`
+**29/29**; prettier/eslint/tsc/`diff --check` clean (2 pre-existing
+eslint warnings in the mock doubles). Local commit only — stop for
+independent review.
+
+## 2026-11-04 — P754 recompare metadata regenerated (#156)
+
+Review `6615294332` was right: the P752 hand re-pin fixed the manifest
+hash and locks but left stale provenance — `inputs.shotIndexSha256` still
+named a prior shot-index hash. Correction: the earlier implication that
+hand-repinning produced a coherent fresh receipt was wrong; the receipt
+must come from the workflow.
+
+`tools/parity/reference/evidence/recompare.mjs` was run under Node
+v22.23.4 in the PR worktree. Generated diff is exactly one field:
+`metadata.inputs.shotIndexSha256` `9aaa2ec4…` → `a4619078…` = the actual
+`icm/04-briefing/shots/index.json` sha256. `canonical.json`/`strict.json`
+and all historical provenance/artifacts byte-identical (70/70 canonical,
+68/70 strict with the two ruled `s03-checkin-review` diffs).
+
+Verification: `verify-evidence.mjs` `"verified": true` exit 0; fresh
+recompare reproduces the committed receipt; `visual-reference` +
+`mail-smtp` 39/39; prettier + `diff --check` clean.
+
+## 2026-11-04 — P752 full gate suite under CI runtime (#156)
+
+Resolved environment: no `app-db-1`/`vari8-db-1` assumption — the shared
+lane container `app-db-1` was already running (untouched); task-owned
+disposable databases `app_p752`/`app_p752i` were created and dropped
+inside it per the `app_<lane>` convention, fixture credentials only.
+CI runtime Node v22.23.4 via keg-only `node@22` (local default v26.8.1);
+fresh `npm ci` root + `tools/parity/reference`.
+
+Verification fix: `nodemailer` moved `package-lock.json`, so the parity
+toolchain pins were re-pinned — `comparer.json` root lock sha and
+`receipts/metadata.json` toolchain manifest hash + locks now match the
+committed lockfile. `visual-reference` pins test watched fail-then-pass
+(16/16 on re-pin).
+
+Gates under Node v22.23.4 (`/private/tmp/p156-mail`, mocked/dev-file +
+task-owned TLS fixtures only — no real mail):
+
+| Gate                                                                             | Result                                                                          |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| focused mail/reset/invite/boot (6 files)                                         | 90/90, exit 0                                                                   |
+| `npm test` full unit                                                             | 154 files / 1858 tests, exit 0                                                  |
+| `test:integration`                                                               | 91 files / 1137 tests, exit 0                                                   |
+| `playwright test` (`dev-file` mail, `local` media)                               | 23 passed / 2 delivery-gated skips, exit 0 — incl. `npm run build` in webServer |
+| `typecheck` / `lint` / `format:check` / `index` + `index:check` / `diff --check` | 0 / 0 errors (316 pre-existing warnings) / clean / OK / 0                       |
+
+External SMTP delivery remains separately authorized lane work.
+
+## 2026-11-03 — P751 Nodemailer transport replaces hand-rolled SMTP (#156)
+
+Independent review (comment `6613763014`) rejected the hand-written SMTP
+client; zero-dependency was not an owner requirement. The `smtp` adapter
+now uses Nodemailer 10.2.1 (MIT-0, Node ≥20): MIME/header folding owned
+by the library, `SMTP_TLS` require (default)/implicit/none, bounded
+connection/greeting/socket timeouts (10 s), `disableFileAccess`/
+`disableUrlAccess`, logger/debug off, cert + hostname validation always
+on (`SMTP_TLS_CA_FILE` adds a private CA only), AUTH never over cleartext,
+and `SMTP_TLS=none` on a non-loopback host in production requires
+`SMTP_ALLOW_PLAINTEXT=1`. `assertMailDeliveryConfigured` is now async.
+Tests commit task-owned LibreSSL CA fixtures + TLS-capable capture
+servers covering STARTTLS/implicit success, untrusted cert, wrong
+hostname, AUTH 535, early disconnect, idle timeout, RCPT 550,
+dot-stuffing, CRLF refusal and non-ASCII folding — 90 focused tests exit 0. Typecheck/lint/format green. No real mail sent.
+
+## 2026-11-03 — P749 EmailLabs rejected; standard SMTP adapter (#156)
+
+Owner reversal (Marcel via Aleksey): the EmailLabs requirement is
+rejected — invitations and account emails must work without that paid
+service. The `emaillabs` adapter, `EMAILLABS_*` env names and vendor
+endpoint are removed; EmailLabs sections of `icm/05-build/reports/
+MAIL-ADAPTER.md` are marked historical. `lib/mail/index.ts` gains a
+zero-dependency `smtp` adapter (node:net/node:tls): `SMTP_TLS` require
+(default, fails closed without STARTTLS) / implicit / none, optional
+AUTH LOGIN when both `SMTP_USER`/`SMTP_PASSWORD` are set, CRLF-injection
+refusal before the wire, dot-stuffing, 10 s timeout, status-only errors.
+Required: `SMTP_HOST` + `MAIL_FROM` (production boot refuses when
+`MAIL_DELIVERY_ADAPTER=smtp` and either is missing or malformed);
+`.env.example` documents names only — the deployment supplies the relay.
+The port shape, `sendMail`, `mailDeliveryConfigured` name-check, the
+dev-file default, invitation delivery (`/invite` link, `delivery_failed` 502) and reset links (`/reset`, `/me/reset`) are unchanged. No repo or
+deployment SMTP/relay config existed to reuse; none was invented.
+
+New `tests/unit/mail-smtp.test.ts` drives a task-owned local SMTP
+capture server (transcript, AUTH LOGIN, 550 rejection, STARTTLS refusal,
+named config faults, CRLF refusal, boot gate) plus the unchanged
+invitation/reset boundary suites — no real mail sent. Gates on this
+commit (worktree `/private/tmp/p156-mail`, Node v26.8.1): focused
+mail-smtp + mail unit 17/17 exit 0; `mail-emaillabs.test.ts` removed.
+
+## 2026-11-03 — P723 forward-merge onto current Beta (#156)
+
+Merged `828adba1` (Vari8-Beta post-#251/#252) into `beta/mail-adapter`;
+merge commit `3692e08f`, tree `9b7f6a02`, parents `809066ce` + `828adba1`.
+Zero file-level conflicts — the branch delta (.env.example,
+instrumentation.ts, lib/mail, mail-emaillabs tests, SYMBOLS.md, icm
+records) intersects none of the paths Beta changed; `npm run index`
+regenerated indexes with no drift. Accepted EmailLabs behavior and
+current Beta's auth/media/logging/voice/dependency/fixture state
+preserved unchanged.
+
+Gates on the merge head (`/private/tmp/p156-mail`, `npm ci` root +
+`tools/parity/reference`, disposable `app_p723`/`app_p723i`,
+mocked/dev-file transport only — no real EmailLabs delivery):
+
+- Node v22.21.1 (CI): focused mail/me-look unit 21/21; `npm test`
+  154 files / 1844; `test:integration` 91 files / 1137; `npm run build`
+  exit 0; full `test:e2e` (`MAIL_DELIVERY_ADAPTER=dev-file
+MEDIA_STORAGE_ADAPTER=local`) 23 passed / 2 skipped;
+  `format:check`/`typecheck`/`lint` 0 errors (316 warnings),
+  `index:check` OK, `git diff --check` 0. No retries, skips or failures
+  beyond the two delivery-gated-off skips.
+- Node v24.22.1 (affected): focused mail/reset/invite/email unit
+  49/49; `checkin-recurrence-i1` + `me-look-fixture-db` 22/22;
+  `auth-card` + `me-auth-look` `--workers=2` 7/7.
+
 ## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
 
 Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;

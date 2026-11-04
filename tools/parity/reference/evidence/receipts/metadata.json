@@ -5,7 +5,7 @@
     "id": "visual-reference-comparer-v2",
     "manifest": {
       "path": "tools/parity/reference/evidence/comparer.json",
-      "sha256": "56946e8bfb6812fb25986833599ae8a8cdcc114491ceb6e08c74f663bb705c97"
+      "sha256": "dc79f07ffa6664ba03c7b841f8d9df4680c24537c46f52cd5f059dd41c182744"
     },
     "components": {
       "reference": {
@@ -76,7 +76,7 @@
     "locks": {
       "root": {
         "path": "package-lock.json",
-        "sha256": "636caa666f752bce7f58fafad378201b67670d60176148880dd1c54940670df9"
+        "sha256": "2dfc090e7106a7f24246aed4afd436e17eb579f667969495d8522f9a74d68272"
       },
       "reference": {
         "path": "tools/parity/reference/package-lock.json",
@@ -115,7 +115,7 @@
     "candidateManifestSha256": "b79c1954152d83197d14e1009dff9780e0dc946d21ba82d2b17b16fdb3e8c7d9",
     "candidateProvenanceSha256": "6526a6938d4415b2a576250c75bc64ae9915c0d56061c9304391c8f3dc9d1cee",
     "artifactIndexSha256": "f79ac2f3c87cb3f8e20e1b54da6fa9484867fdaaff8933e3d8f3756ceb706c13",
-    "shotIndexSha256": "9aaa2ec4baa53743a65da454998a0f0f529922a99ec6e0c5a9b9a4121dc18d95"
+    "shotIndexSha256": "a46190786eaaa1c901e8a958f966f156343aacfefefbf087ad1b67febe92f3fa"
   },
   "packageCounts": {
     "reference": 245,
