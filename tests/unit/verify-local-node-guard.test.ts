@@ -57,18 +57,28 @@ function makeLane() {
   return { dir, base };
 }
 
-function stubNode(dir: string, version: string) {
+function stubBin(dir: string, version: string) {
+  // Every infrastructure-capable command the script can reach is replaced by a
+  // marker stub that never delegates to the real binary: `docker` would
+  // drop/create the lane database, `npm`/`npx` would install and run real
+  // toolchain steps — the guard contract under test is earlier than any of
+  // them. The marker text proves interception in captured output.
   const bin = path.join(dir, "stubbin");
   mkdirSync(bin, { recursive: true });
   const nodePath = path.join(bin, "node");
   writeFileSync(nodePath, `#!/bin/sh\necho '${version}'\n`);
   chmodSync(nodePath, 0o755);
+  for (const name of ["docker", "npm", "npx"]) {
+    const stub = path.join(bin, name);
+    writeFileSync(stub, `#!/bin/sh\necho 'STUB ${name}' \"$@\"\n`);
+    chmodSync(stub, 0o755);
+  }
   return bin;
 }
 
 function runGuard(version: string, extraEnv: Record<string, string> = {}) {
   const { dir, base } = makeLane();
-  const bin = stubNode(dir, version);
+  const bin = stubBin(dir, version);
   const result = spawnSync("bash", [SCRIPT], {
     cwd: dir,
     encoding: "utf8",
@@ -117,18 +127,24 @@ describe("verify-local Node floor guard (26.12.1, O18)", () => {
 
   it("keeps the optional-mode contract: malformed input warns and continues", () => {
     // Optional mode never hard-fails on the node check: the WARN lands in the
-    // deferred SUMMARY (printed at finish). On this host the lane dies later
-    // at the docker step, so the observable contract is: no `FAIL node` and
-    // the gate proceeds into the steps that follow the node check.
+    // deferred SUMMARY (printed at finish). With infrastructure stubbed the
+    // lane continues deterministically to finish — the stub markers prove the
+    // script reached (and was stopped at) the stubbed boundary, not a host.
     const out = runGuard("vgarbage");
     expect(out).not.toMatch(/FAIL node/);
+    expect(out).toMatch(/WARN node: target 26\.12\.1/);
     expect(out).toMatch(/== schema guard/);
+    expect(out).toMatch(/STUB docker exec vari8-db-1 createdb -U app/);
+    expect(out).toContain("VERIFY-LOCAL PASS");
   });
 
   it("keeps the optional-mode contract: below-floor warns and continues", () => {
     const out = runGuard("v26.12.0");
     expect(out).not.toMatch(/FAIL node/);
+    expect(out).toMatch(/WARN node: target 26\.12\.1/);
     expect(out).toMatch(/== schema guard/);
+    expect(out).toMatch(/STUB docker exec vari8-db-1 createdb -U app/);
+    expect(out).toContain("VERIFY-LOCAL PASS");
   });
 
   it("keeps the REQUIRE_NODE24 migration error", () => {
