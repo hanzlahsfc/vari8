@@ -1,8 +1,8 @@
 import {
+  allTrackerParameters,
   configuredDecimals,
   displayedValue,
   formatValue,
-  parameters,
   type TrackerConfig,
   type TrackerEntry,
   type TrackerParameter,
@@ -50,7 +50,7 @@ export function metricGroups(
   labels: Record<string, string> = {},
 ): MetricGroup[] {
   const catalog = new Map(
-    parameters.map((parameter) => [parameter.id, parameter]),
+    allTrackerParameters().map((parameter) => [parameter.id, parameter]),
   );
   for (const parameter of config.parameterDefinitions ?? [])
     catalog.set(parameter.id, parameter);

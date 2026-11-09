@@ -1,13 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Flag, StickyNote } from "lucide-react";
+import {
+  type CSSProperties,
+  Fragment,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { type CoachClient, formatDate, uid } from "../../coach/model";
-import { applicablePlan } from "../../coach/plans/domain";
+import { trainingPlanAt } from "../../coach/plans/domain";
+import {
+  adjustmentBannerText,
+  planForDisplayWeek,
+} from "../../coach/plans/training/adjustments";
+import {
+  cellNotesFor,
+  exerciseNotesFor,
+} from "../../coach/plans/training/logbook-model";
+import { adjustmentForWeek, exerciseInfoFields } from "../../coach/plans/types";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
 import {
-  DEFAULT_LOG_FIELDS,
+  displayWeek,
+  effectiveLogFields,
   findLog,
   finishLog,
   notDoneCount,
@@ -34,7 +51,7 @@ export function MobileLogbook({
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const configuration = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
@@ -47,6 +64,7 @@ export function MobileLogbook({
   const [exIdx, setExIdx] = useState(0);
   const [confirm, setConfirm] = useState(false);
   const [restLeft, setRestLeft] = useState<number | null>(null);
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
   useEffect(() => {
     const t = setInterval(() => setTick((v) => v + 1), 1000);
     return () => clearInterval(t);
@@ -67,7 +85,7 @@ export function MobileLogbook({
       clientId: client.id,
       plan,
       item,
-      logFields: configuration.training.logFields ?? DEFAULT_LOG_FIELDS,
+      logFields: effectiveLogFields(configuration.training),
       loadUnit: configuration.training.loadUnit ?? "kg",
       now: new Date().toISOString(),
     });
@@ -96,6 +114,10 @@ export function MobileLogbook({
       ],
     }));
   const ex = log.exercises[exIdx];
+  const itemWeek = plan ? displayWeek(plan, item.date) : 1;
+  const adjustment = plan
+    ? adjustmentForWeek(planForDisplayWeek(plan, itemWeek), itemWeek)
+    : undefined;
   const curSet = ex.sets.findIndex((s) => !s.done);
   const elapsed = Date.now() - Date.parse(log.startedAt);
   const allDone = log.exercises.every((e) => e.sets.every((s) => s.done));
@@ -104,9 +126,41 @@ export function MobileLogbook({
     const m = /(\d+)\s*(?:min|s)?/.exec(r);
     return m ? Number(m[1]) * (r.includes("min") ? 60 : 1) : 90;
   })();
+  const infoChips = exerciseInfoFields(configuration?.training)
+    .filter((f) => f !== "cues")
+    .map((f) =>
+      f === "equipment"
+        ? ex.prescription.equipment
+        : f === "movementPattern"
+          ? ex.prescription.movementPattern
+          : f === "position"
+            ? ex.prescription.position
+            : undefined,
+    )
+    .filter(Boolean) as string[];
   const hasRir = log.logFields.includes("rir");
   const hasRpe = log.logFields.includes("rpe");
   const hasNote = log.logFields.includes("note");
+  const hasWeight = log.logFields.includes("weight");
+  const hasReps = log.logFields.includes("reps");
+  // set-row grid: set# + one column per logged field + note icon + tick
+  const setGridCols = `24px${hasWeight ? " minmax(0,1fr)" : ""}${hasReps ? " minmax(0,1fr)" : ""}${hasRir || hasRpe ? " minmax(0,1fr)" : ""}${hasNote ? " 32px" : ""} 32px`;
+  const cellNotes = cellNotesFor(state.trainingNotes ?? [], {
+    sessionId: item.session.id,
+    exerciseKey: ex.exerciseKey,
+    week: plan ? displayWeek(plan, item.date) : 0,
+    setCount: ex.prescription.sets.length,
+  });
+  const exNotes = exerciseNotesFor(state.trainingNotes ?? [], {
+    sessionId: item.session.id,
+    exerciseKey: ex.exerciseKey,
+    week: plan ? displayWeek(plan, item.date) : 0,
+  });
+  // notes attached to set index i ("${i}:field" keys) → small muted lines
+  const setNotesAt = (i: number) =>
+    Object.entries(cellNotes)
+      .filter(([k]) => k.startsWith(`${i}:`))
+      .flatMap(([, list]) => list);
   const prev = previousPerformance(logs, {
     clientId: client.id,
     sessionId: item.session.id,
@@ -114,7 +168,8 @@ export function MobileLogbook({
     plan,
     date: item.date,
   });
-  const targetSet = ex.prescription.sets[Math.min(curSet, ex.sets.length - 1)];
+  const targetSet =
+    ex.prescription.sets[curSet < 0 ? 0 : Math.min(curSet, ex.sets.length - 1)];
   const finish = () => {
     if (!allDone) {
       setConfirm(true);
@@ -123,46 +178,67 @@ export function MobileLogbook({
     writeLog(finishLog(log, new Date().toISOString()));
     onDone();
   };
+  const numField = (
+    set: (typeof ex.sets)[number],
+    field: "weight" | "reps" | "rir" | "rpe",
+    label: string,
+    placeholder: string,
+  ) => (
+    <input
+      className="cm-lb-input"
+      inputMode="decimal"
+      placeholder={placeholder}
+      defaultValue={set[field] ?? ""}
+      key={`${field}-${set.setId}-${exIdx}`}
+      onBlur={(e) => {
+        const raw = e.target.value.trim();
+        const v = raw === "" ? null : Number(raw.replace(/,/g, "."));
+        if (v !== null && !Number.isFinite(v)) {
+          e.target.value = String(set[field] ?? "");
+          return;
+        }
+        writeLog(updateSet(log, ex.exerciseId, set.setId, { [field]: v }));
+      }}
+      onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+      aria-label={label}
+    />
+  );
+  const intensityField = hasRir ? "rir" : "rpe";
+  const prescriptionLine = [
+    `${ex.prescription.sets.length} × ${targetSet?.reps ?? ""}${targetSet?.repsMax ? `–${targetSet.repsMax}` : ""}`,
+    hasRir && targetSet?.rir !== undefined
+      ? `RIR ${targetSet.rir}`
+      : hasRpe && targetSet?.rpe !== undefined
+        ? `RPE ${targetSet.rpe}`
+        : "",
+  ]
+    .filter(Boolean)
+    .join(" · ");
   return (
     <>
-      <div
-        className="cm-row"
-        style={{ justifyContent: "space-between", marginBottom: 8 }}
-      >
+      <div className="cm-lb-top">
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 600 }}>
-            {log.sessionName}
-          </div>
-          <div className="cm-mut" style={{ fontSize: 11.5 }}>
-            Exercise {exIdx + 1} of {log.exercises.length}
+          <div className="cm-lb-session">{log.sessionName}</div>
+          <div className="cm-mut cm-lb-progress">
+            Exercise {exIdx + 1} of {log.exercises.length} · {mmss(elapsed)}
           </div>
         </div>
-        <div className="cm-row" style={{ gap: 8 }}>
-          <span
-            className="cm-mut"
-            style={{ fontSize: 13, fontVariantNumeric: "tabular-nums" }}
-          >
-            {mmss(elapsed)}
-          </span>
-          <button
-            type="button"
-            className="cm-btn cm-btnA"
-            style={{ padding: "6px 14px", fontSize: 13 }}
-            onClick={finish}
-          >
-            Finish
-          </button>
-        </div>
+        <button type="button" className="cm-btn cm-btnA" onClick={finish}>
+          Finish
+        </button>
       </div>
-      <div
-        className="cm-row"
-        style={{
-          gap: 6,
-          marginBottom: 12,
-          overflowX: "auto",
-          paddingBottom: 2,
-        }}
-      >
+      {adjustment && (
+        <div className="cm-adjustment-banner" role="status">
+          <strong>
+            {adjustmentBannerText(
+              adjustment,
+              configuration?.training.intensity,
+            )}
+          </strong>
+          {adjustment.note && <span>{adjustment.note}</span>}
+        </div>
+      )}
+      <div className="cm-lb-chips">
         {log.exercises.map((e, i) => {
           const done = e.sets.filter((s) => s.done).length;
           return (
@@ -170,217 +246,171 @@ export function MobileLogbook({
               key={e.exerciseId}
               type="button"
               className={`cm-chip${i === exIdx ? " cm-chipA" : ""}`}
-              style={{ flexShrink: 0, fontSize: 11.5 }}
+              title={e.prescription.name}
               onClick={() => setExIdx(i)}
             >
-              {e.prescription.name.split(" ")[0]} · {done}/{e.sets.length}
+              <span className="cm-lb-chipname">{e.prescription.name}</span>
+              <span>
+                {done}/{e.sets.length}
+              </span>
             </button>
           );
         })}
       </div>
-      <div
-        className="cm-row"
-        style={{ justifyContent: "space-between", marginBottom: 2 }}
-      >
-        <span
-          style={{ fontSize: 17, fontWeight: 600, color: "var(--cd-accent)" }}
-        >
-          {ex.prescription.name}
-        </span>
-        <button
-          type="button"
-          className="cm-mut"
-          style={{
-            background: "none",
-            border: 0,
-            fontSize: 18,
-            cursor: "pointer",
-          }}
-          aria-label="Exercise options"
-        >
-          ⋯
-        </button>
-      </div>
-      <div className="cm-mut" style={{ fontSize: 12, marginBottom: 10 }}>
-        {ex.prescription.sets.length} × {targetSet?.reps}
-        {targetSet?.repsMax ? `–${targetSet.repsMax}` : ""}
-        {hasRir && targetSet ? " · RIR" : ""}
-        {hasNote && ex.prescription.instructions
-          ? ` · ${ex.prescription.instructions}`
-          : ""}
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `24px 1fr 1fr${hasRir || hasRpe ? " 1fr" : ""} 40px`,
-          gap: 6,
-          marginBottom: 4,
-        }}
-      >
-        <span
-          className="cm-mut"
-          style={{ fontSize: 10, textTransform: "uppercase" }}
-        >
-          #
-        </span>
-        <span
-          className="cm-mut"
-          style={{ fontSize: 10, textTransform: "uppercase" }}
-        >
-          {log.loadUnit.toUpperCase()}
-        </span>
-        <span
-          className="cm-mut"
-          style={{ fontSize: 10, textTransform: "uppercase" }}
-        >
-          Reps
-        </span>
-        {hasRir && (
-          <span
-            className="cm-mut"
-            style={{ fontSize: 10, textTransform: "uppercase" }}
-          >
-            RIR
-          </span>
+      <div className="cm-lb-title">
+        <h2>{ex.prescription.name}</h2>
+        <p className="cm-lb-rx">{prescriptionLine}</p>
+        {infoChips.length > 0 && (
+          <p className="cm-mut cm-lb-info">{infoChips.join(" · ")}</p>
         )}
-        {hasRpe && (
-          <span
-            className="cm-mut"
-            style={{ fontSize: 10, textTransform: "uppercase" }}
-          >
-            RPE
-          </span>
+        {hasNote && ex.prescription.instructions && (
+          <p className="cm-mut cm-lb-cue">{ex.prescription.instructions}</p>
         )}
-        <span />
       </div>
-      {ex.sets.map((set, i) => {
-        const pres = ex.prescription.sets[i];
-        const isCur = i === curSet;
-        const prevSet = prev?.exercise.sets[i];
-        return (
-          <div
-            key={set.setId}
-            style={{
-              display: "grid",
-              gridTemplateColumns: `24px 1fr 1fr${hasRir || hasRpe ? " 1fr" : ""} 40px`,
-              gap: 6,
-              marginBottom: 6,
-              background: isCur ? "var(--cm-soft)" : "transparent",
-              borderRadius: 10,
-              padding: "4px 0",
-            }}
-          >
-            <span
-              className="cm-mut"
-              style={{ fontSize: 13, alignSelf: "center", textAlign: "center" }}
-            >
-              {i + 1}
-            </span>
-            <input
-              className="cm-num cm-lb-pill"
-              inputMode="decimal"
-              placeholder={
-                isCur
-                  ? prevSet?.weight != null
-                    ? String(prevSet.weight)
-                    : ""
-                  : ""
-              }
-              defaultValue={set.weight ?? ""}
-              key={`w-${set.setId}-${exIdx}`}
-              onBlur={(e) => {
-                const v =
-                  e.target.value.trim() === ""
-                    ? null
-                    : Number(e.target.value.replace(/,/g, ""));
-                if (v !== null && !Number.isFinite(v)) {
-                  e.target.value = String(set.weight ?? "");
-                  return;
-                }
-                writeLog(
-                  updateSet(log, ex.exerciseId, set.setId, { weight: v }),
-                );
-              }}
-              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-              aria-label={`Weight set ${i + 1}`}
-            />
-            <input
-              className="cm-num cm-lb-pill"
-              inputMode="decimal"
-              placeholder={
-                isCur ? String(pres?.repsMax ?? pres?.reps ?? "") : ""
-              }
-              defaultValue={set.reps ?? ""}
-              key={`r-${set.setId}-${exIdx}`}
-              onBlur={(e) => {
-                const v =
-                  e.target.value.trim() === ""
-                    ? null
-                    : Number(e.target.value.replace(/,/g, ""));
-                if (v !== null && !Number.isFinite(v)) {
-                  e.target.value = String(set.reps ?? "");
-                  return;
-                }
-                writeLog(updateSet(log, ex.exerciseId, set.setId, { reps: v }));
-              }}
-              onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-              aria-label={`Reps set ${i + 1}`}
-            />
-            {(hasRir || hasRpe) && (
-              <input
-                className="cm-num cm-lb-pill"
-                inputMode="decimal"
-                defaultValue={hasRir ? (set.rir ?? "") : (set.rpe ?? "")}
-                key={`x-${set.setId}-${exIdx}`}
-                onBlur={(e) => {
-                  const v =
-                    e.target.value.trim() === ""
-                      ? null
-                      : Number(e.target.value.replace(/,/g, ""));
-                  if (v !== null && !Number.isFinite(v)) {
-                    e.target.value = String(
-                      hasRir ? (set.rir ?? "") : (set.rpe ?? ""),
-                    );
-                    return;
-                  }
-                  writeLog(
-                    updateSet(
-                      log,
-                      ex.exerciseId,
-                      set.setId,
-                      hasRir ? { rir: v } : { rpe: v },
-                    ),
-                  );
-                }}
-                onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-                aria-label={hasRir ? `RIR set ${i + 1}` : `RPE set ${i + 1}`}
-              />
-            )}
-            <button
-              type="button"
-              className={`cm-tick${set.done ? " on" : ""}`}
-              onClick={() =>
-                writeLog(
-                  updateSet(log, ex.exerciseId, set.setId, { done: !set.done }),
-                )
-              }
-              aria-label={`Set ${i + 1} done`}
-            >
-              <svg
-                aria-hidden="true"
-                width="11"
-                height="11"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
+      {exNotes.map((n) => (
+        <div key={n.id} className="cm-lb-coach">
+          <b className="cm-lb-coach-label">Coach</b>
+          <span>{n.text}</span>
+        </div>
+      ))}
+      <div
+        className="cm-card cm-lb-sets"
+        style={{ "--lb-cols": setGridCols } as CSSProperties}
+      >
+        <div className="cm-lb-row cm-lb-head" aria-hidden="true">
+          <span>Set</span>
+          {hasWeight && <span>{log.loadUnit}</span>}
+          {hasReps && <span>Reps</span>}
+          {(hasRir || hasRpe) && <span>{hasRir ? "RIR" : "RPE"}</span>}
+          {hasNote && <span />}
+          <span />
+        </div>
+        {ex.sets.map((set, i) => {
+          const pres = ex.prescription.sets[i];
+          const prevSet = prev?.exercise.sets[i];
+          const rowSetNotes = setNotesAt(i);
+          const noteOpen =
+            openNotes[set.setId] ?? Boolean(set.note || set.flagged);
+          const target = hasRir ? pres?.rir : pres?.rpe;
+          return (
+            <Fragment key={set.setId}>
+              <div
+                className="cm-lb-row"
+                data-current={i === curSet || undefined}
+                data-done={set.done || undefined}
               >
-                <path d="M20 6 9 17l-5-5" />
-              </svg>
-            </button>
-          </div>
-        );
-      })}
+                <span className="cm-lb-index">{i + 1}</span>
+                {hasWeight &&
+                  numField(
+                    set,
+                    "weight",
+                    `Weight set ${i + 1}`,
+                    prevSet?.weight != null ? String(prevSet.weight) : "",
+                  )}
+                {hasReps &&
+                  numField(
+                    set,
+                    "reps",
+                    `Reps set ${i + 1}`,
+                    String(pres?.repsMax ?? pres?.reps ?? ""),
+                  )}
+                {(hasRir || hasRpe) &&
+                  numField(
+                    set,
+                    intensityField,
+                    `${hasRir ? "RIR" : "RPE"} set ${i + 1}`,
+                    target !== undefined ? String(target) : "",
+                  )}
+                {hasNote && (
+                  <button
+                    type="button"
+                    className="cm-lb-icon"
+                    data-active={set.flagged || undefined}
+                    data-has-note={(set.note && !set.flagged) || undefined}
+                    onClick={() =>
+                      setOpenNotes((o) => ({ ...o, [set.setId]: !noteOpen }))
+                    }
+                    aria-label={`Note for set ${i + 1}`}
+                    aria-expanded={noteOpen}
+                  >
+                    {set.flagged ? (
+                      <Flag size={15} aria-hidden="true" />
+                    ) : (
+                      <StickyNote size={15} aria-hidden="true" />
+                    )}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`cm-tick cm-lb-tick${set.done ? " on" : ""}`}
+                  onClick={() =>
+                    writeLog(
+                      updateSet(log, ex.exerciseId, set.setId, {
+                        done: !set.done,
+                      }),
+                    )
+                  }
+                  aria-label={`Set ${i + 1} done`}
+                  aria-pressed={set.done}
+                >
+                  <svg
+                    aria-hidden="true"
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+              </div>
+              {hasNote && noteOpen && (
+                <div className="cm-lb-noterow">
+                  <input
+                    className="cm-lb-input cm-lb-noteinput"
+                    placeholder="Note for your coach"
+                    defaultValue={set.note}
+                    key={`n-${set.setId}-${exIdx}`}
+                    onBlur={(e) =>
+                      writeLog(
+                        updateSet(log, ex.exerciseId, set.setId, {
+                          note: e.target.value.trim(),
+                        }),
+                      )
+                    }
+                    onKeyDown={(e) =>
+                      e.key === "Enter" && e.currentTarget.blur()
+                    }
+                    aria-label={`Set ${i + 1} note for coach`}
+                  />
+                  <button
+                    type="button"
+                    className="cm-lb-flag"
+                    aria-pressed={set.flagged}
+                    aria-label="Flag for coach"
+                    onClick={() =>
+                      writeLog(
+                        updateSet(log, ex.exerciseId, set.setId, {
+                          flagged: !set.flagged,
+                        }),
+                      )
+                    }
+                  >
+                    <Flag size={13} aria-hidden="true" /> Flag
+                  </button>
+                </div>
+              )}
+              {rowSetNotes.map((n) => (
+                <p key={n.id} className="cm-lb-setnote">
+                  Coach: {n.text}
+                </p>
+              ))}
+            </Fragment>
+          );
+        })}
+      </div>
       {prev && (
         <div
           className="cm-card"
@@ -401,32 +431,18 @@ export function MobileLogbook({
           ))}
         </div>
       )}
-      <div
-        className="cm-row"
-        style={{
-          justifyContent: "space-between",
-          marginTop: 12,
-          paddingBottom: 8,
-        }}
-      >
+      <div className="cm-lb-footer">
         <button
           type="button"
-          className="cm-cbtn"
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 600,
-          }}
+          className="cm-cbtn cm-lb-rest"
           onClick={() => setRestLeft(rest)}
+          aria-label="Start rest timer"
         >
           {restLeft != null ? mmss(restLeft * 1000) : mmss(rest * 1000)}
         </button>
         <button
           type="button"
           className="cm-btn cm-btnG"
-          style={{ fontSize: 13 }}
           onClick={() =>
             setExIdx(Math.min(exIdx + 1, log.exercises.length - 1))
           }

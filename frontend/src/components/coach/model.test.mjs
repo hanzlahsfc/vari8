@@ -459,3 +459,187 @@ test("activity summary resolves prescriptions at the requested as-of date", () =
   );
   assert.equal(activityFree.target, "No target defined");
 });
+test("seedState carries the current demo revisions and the prep-week window", () => {
+  const a = m.seedState("2026-11-02");
+  assert.equal(m.isCoachState(a), true);
+  assert.equal(a.demoSeeds?.athleteDataDemo, 23);
+  assert.equal(a.demoSeeds?.trainingLogDemo, 9);
+  const amara = a.clients.find((client) => client.id === "client-007");
+  const tracked = new Set(amara.tracking.entries.map((entry) => entry.date));
+  for (const date of [
+    "2026-10-26",
+    "2026-10-27",
+    "2026-10-28",
+    "2026-10-29",
+    "2026-10-30",
+    "2026-10-31",
+    "2026-11-01",
+    "2026-11-02",
+  ])
+    assert.ok(tracked.has(date), `${date} is tracked`);
+  assert.ok(![...tracked].some((date) => date > "2026-11-02"));
+  // The revision guards reject retired and unknown values.
+  assert.equal(
+    m.isCoachState({
+      ...a,
+      demoSeeds: { ...a.demoSeeds, athleteDataDemo: 24 },
+    }),
+    false,
+  );
+  assert.equal(
+    m.isCoachState({
+      ...a,
+      demoSeeds: { ...a.demoSeeds, trainingLogDemo: 10 },
+    }),
+    false,
+  );
+});
+test("workspace custom parameters validate, persist and drive the registry", () => {
+  const a = m.seedState();
+  const p = m.customParameter({
+    name: "Squat volume",
+    type: "number",
+    group: "Body",
+    unit: "kg",
+    decimals: 0,
+    summary: "sum",
+  });
+  assert.match(p.id, /^custom-/);
+  assert.equal(p.custom, true);
+  assert.equal(p.kind, "number");
+  assert.deepEqual(p.units, ["kg"]);
+  assert.equal(p.decimals, 0);
+  assert.equal(p.summary, "sum");
+  const rating = m.customParameter({
+    name: "Mood",
+    type: "rating",
+    group: "Recovery",
+    scale: 5,
+  });
+  assert.deepEqual(rating.units, ["1–5"]);
+  assert.equal(rating.summary, "avg");
+  const yesNo = m.customParameter({
+    name: "Sore?",
+    type: "yes-no",
+    group: "Recovery",
+  });
+  assert.equal(yesNo.inputType, "context");
+  assert.deepEqual(yesNo.options, ["No", "Yes"]);
+  const choice = m.customParameter({
+    name: "Surface",
+    type: "choice",
+    group: "Body",
+    options: ["Road", "Trail", "Track"],
+  });
+  assert.equal(choice.inputType, "choice");
+  assert.deepEqual(choice.options, ["Road", "Trail", "Track"]);
+  assert.equal(choice.summary, "none");
+  const text = m.customParameter({
+    name: "Notes",
+    type: "text",
+    group: "Notes",
+  });
+  assert.equal(text.inputType, "text");
+  const time = m.customParameter({
+    name: "Weigh time",
+    type: "time",
+    group: "Body",
+  });
+  assert.equal(time.inputType, "time");
+
+  assert.equal(
+    m.customParameterDraftError({ name: "", type: "number", group: "Body" }),
+    "Add a name.",
+  );
+  assert.equal(
+    m.customParameterDraftError({
+      name: "X",
+      type: "choice",
+      group: "Body",
+      options: ["Only"],
+    }),
+    "Add at least two choices.",
+  );
+  assert.equal(
+    m.customParameterDraftError({
+      name: "X",
+      type: "choice",
+      group: "Body",
+      options: ["A", "A"],
+    }),
+    "Choice labels must be unique.",
+  );
+
+  const withParam = { ...a, customParameters: [p] };
+  assert.equal(m.isCoachState(withParam), true);
+  const round = JSON.parse(JSON.stringify(withParam));
+  assert.equal(m.isCoachState(round), true);
+  assert.deepEqual(round.customParameters, [p]);
+  for (const bad of [
+    { ...p, id: "not-custom" },
+    { ...p, custom: undefined },
+    { ...p, kind: "date" },
+    { ...p, decimals: 3 },
+  ]) {
+    assert.equal(
+      m.isCoachState({ ...a, customParameters: [bad] }),
+      false,
+      JSON.stringify(bad),
+    );
+  }
+
+  const template = withParam.templates[0];
+  const variant = template.variants[0];
+  const used = {
+    ...withParam,
+    templates: [
+      {
+        ...template,
+        variants: [
+          { ...variant, fields: [...variant.fields, { id: p.id, unit: "kg" }] },
+        ],
+      },
+    ],
+  };
+  assert.equal(m.isCoachState(used), true);
+  assert.equal(m.customParameterUsage(used, p.id).templates, 1);
+  assert.equal(m.customParameterUsage(used, p.id).total, 1);
+  assert.equal(m.deleteCustomParameter(used, p.id), used);
+  const archived = m.archiveCustomParameter(used, p.id);
+  assert.equal(archived.customParameters[0].archived, true);
+  assert.equal(m.isCoachState(archived), true);
+  assert.equal(
+    m.deleteCustomParameter(withParam, p.id).customParameters,
+    undefined,
+  );
+
+  m.registerCustomParameters([p]);
+  assert.equal(m.getParameter(p.id)?.name, "Squat volume");
+  assert.equal(m.allParameters().at(-1).id, p.id);
+  m.registerCustomParameters([]);
+  assert.equal(m.getParameter(p.id), undefined);
+});
+test("template assignment never copies photo poses into a client snapshot", () => {
+  const a = m.seedState();
+  const template = m.clone(a.templates[0]);
+  template.variants[0].questions.push({
+    id: "q-photo",
+    label: "Progress photos",
+    type: "Visual upload",
+    required: false,
+    options: "Front relaxed, Side relaxed",
+  });
+  const withTemplate = { ...a, templates: [...a.templates, template] };
+  const assigned = m.assignTemplate(
+    withTemplate,
+    a.clients[0].id,
+    template,
+    template.defaultVariant,
+  );
+  const question =
+    assigned.clients[0].assignment.snapshot.variants[0].questions.find(
+      (item) => item.id === "q-photo",
+    );
+  assert.equal(question.options, "");
+  assert.equal(m.isCoachState(JSON.parse(JSON.stringify(assigned))), true);
+});

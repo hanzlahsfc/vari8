@@ -1,15 +1,27 @@
+/* The standalone client app uses the coach frame: one centred content column,
+   2400px maximum plus the shared gutter. Every tab's header, tabs and page
+   content share these left/right edges; extra width goes into rails/grids. */
 .cd-client-desktop {
+  --cd-client-gutter: clamp(24px, 2vw, 40px);
   width: 100%;
-  max-width: 1680px;
+  max-width: calc(2400px + 2 * var(--cd-client-gutter));
   margin: 0 auto;
-  padding: 20px 32px 40px;
+  padding: 20px var(--cd-client-gutter) 40px;
 }
 .cd-client-main {
   margin-top: 8px;
 }
+/* Keep form fields readable when the frame is wide. */
+.coach-root .cd-client-desktop .v8-field {
+  max-width: 480px;
+}
+.coach-root .cd-client-desktop .v8-field:has(.v8-textarea) {
+  max-width: 880px;
+}
 .cd-messages-wrap {
-  max-width: 760px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   height: calc(100vh - 240px);
   min-height: 480px;
   border: 1px solid var(--cd-line);
@@ -20,19 +32,107 @@
 }
 .cd-plans-grid {
   display: grid;
-  grid-template-columns: 320px minmax(0, 860px);
+  grid-template-columns: clamp(280px, 22%, 360px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
 .cd-plans-detail {
-  max-width: 860px;
+  max-width: none;
+  min-width: 0;
 }
-.cd-client-desktop .cm-card.cm-sel {
-  border-color: var(--cd-accent);
+/* On wide frames the training detail spends the extra width on a session
+   grid instead of stretching one card across the whole column. */
+@media (min-width: 1500px) {
+  .coach-root .cd-client-desktop .cd-plans-detail[data-detail="training"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-content: start;
+  }
+  .coach-root
+    .cd-client-desktop
+    .cd-plans-detail[data-detail="training"]
+    > .cm-weekrow {
+    grid-column: 1 / -1;
+  }
+  .coach-root
+    .cd-client-desktop
+    .cd-plans-detail[data-detail="training"]
+    > .cm-navcard {
+    margin-top: 0;
+  }
+}
+/* Nutrition: the day/option header and macro summary span the full row, and
+   the meals read as cards in a responsive grid instead of one stretched
+   column of very wide cards. */
+.coach-root .cd-client-desktop .cd-plans-detail[data-detail="mealplan"] {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+.coach-root
+  .cd-client-desktop
+  .cd-plans-detail[data-detail="mealplan"]
+  > :is(.cm-mealplan-head, button) {
+  grid-column: 1 / -1;
+}
+.coach-root
+  .cd-client-desktop
+  .cd-plans-detail[data-detail="mealplan"]
+  > .cm-meal-card {
+  margin-top: 0;
+}
+/* Supplements stay grouped by timing; each group's items become a responsive
+   card grid so the wide frame does not turn them into single-line rows. */
+.coach-root
+  .cd-client-desktop
+  .cd-plans-detail[data-detail="supplements"]
+  .cm-supp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.coach-root
+  .cd-client-desktop
+  .cd-plans-detail[data-detail="supplements"]
+  .cm-supp-item {
+  border-top: 0;
+  border-radius: var(--v8-radius-control, 12px);
+  padding: 10px 12px;
+  background: var(--cd-wash);
+}
+/* The client app plans rail uses the same current-item tone as the coach. */
+.cd-client-desktop .cd-plans-side .cm-navcard {
+  border: 0;
+  border-radius: var(--v8-radius-control);
+  background: transparent;
+  box-shadow: none;
+}
+.cd-client-desktop .cd-plans-side .cm-navcard + .cm-navcard {
+  margin-top: 0;
+}
+.cd-client-desktop .cd-plans-side .cm-navcard:hover {
+  background: var(--v8-surface-interactive);
+}
+.cd-client-desktop .cd-plans-side .cm-navcard.cm-sel,
+.cd-client-desktop .cd-plans-side .cm-navcard.cm-sel:hover {
+  background: var(--v8-surface-selected);
+}
+.cd-client-desktop .cd-plans-side .cm-navtitle {
+  color: var(--cd-text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.cd-client-desktop .cd-plans-side .cm-navline {
+  font-size: 12px;
+  line-height: 18px;
 }
 .cd-checkins {
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) clamp(320px, 24%, 360px);
   gap: 16px;
   align-items: start;
 }
@@ -43,8 +143,23 @@
   min-height: 0;
   width: auto;
 }
+/* Check-ins keeps its two-column layout despite the generic .cm-app reset. */
+.coach-root .cd-client-desktop .cd-checkins.cm-app {
+  display: grid;
+}
+/* Messages keeps the desktop thread height instead of shrinking to content. */
+.coach-root .cd-client-desktop .cd-messages-wrap.cm-app {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 240px);
+  min-height: 480px;
+}
 .coach-root .cd-client-desktop .cm-app .cm-tabs {
   display: none;
+}
+/* Client-app message bubbles use the same readable cap as the coach thread. */
+.coach-root .cd-client-desktop .cm-msg {
+  max-width: min(82%, 720px);
 }
 /* coach profile spacing between tabs and content */
 .coach-root .cd-client-desktop .cd-profile-tabs {

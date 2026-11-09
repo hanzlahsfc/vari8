@@ -42,6 +42,24 @@ export async function resolve(specifier, context, nextResolve) {
     };
   }
   if (
+    specifier === "./library" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../library.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./library-demo" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../library-demo.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
     specifier === "./athlete-profile-demo" &&
     context.parentURL?.startsWith("data:text/javascript")
   ) {
@@ -92,6 +110,24 @@ export async function resolve(specifier, context, nextResolve) {
   ) {
     return {
       url: new URL("./training/amara-example.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./athlete/timeline-config" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/timeline-config.ts", import.meta.url).href,
+      shortCircuit: true,
+    };
+  }
+  if (
+    specifier === "./athlete/tracker-layout" &&
+    context.parentURL?.startsWith("data:text/javascript")
+  ) {
+    return {
+      url: new URL("../athlete/tracker-layout.ts", import.meta.url).href,
       shortCircuit: true,
     };
   }

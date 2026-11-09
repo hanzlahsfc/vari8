@@ -123,6 +123,25 @@
   color: var(--v8-on-accent);
 }
 
+/* Dashed add affordance: one dashed, pill-shaped, small control used by
+   setup boards and the check-in calendar. */
+.v8-theme :where(.v8-add-button) {
+  background: transparent;
+  border: 1px dashed var(--v8-border-control);
+  box-shadow: none;
+  color: var(--v8-text-secondary);
+}
+
+.v8-theme
+  :where(
+    .v8-add-button:hover:not(:disabled),
+    [data-preview-state="hover"] .v8-add-button:not(:disabled)
+  ) {
+  background: var(--v8-accent-subtle);
+  border-color: var(--v8-accent-border);
+  color: var(--v8-text);
+}
+
 .v8-theme :where(.v8-button[aria-pressed="true"]) {
   background: var(--v8-accent-subtle);
   border-color: var(--v8-accent-border);
@@ -147,6 +166,8 @@
 .v8-theme :where([data-preview-state="focus"] .v8-input),
 .v8-theme :where(.v8-select:focus-visible),
 .v8-theme :where([data-preview-state="focus"] .v8-select),
+.v8-theme :where(.v8-textarea:focus-visible),
+.v8-theme :where([data-preview-state="focus"] .v8-textarea),
 .v8-theme :where(.v8-tabs__tab:focus-visible),
 .v8-theme :where(.v8-segmented__option:focus-visible),
 .v8-theme :where(.v8-navigation__item:focus-visible),
@@ -223,6 +244,11 @@
   transition: transform 100ms var(--v8-motion-ease-standard);
 }
 
+.v8-theme :where(.v8-icon-button[aria-pressed="true"]) {
+  background: var(--v8-accent-subtle);
+  color: var(--v8-accent-text);
+}
+
 .v8-theme
   :where(
     .v8-button svg,
@@ -280,8 +306,18 @@
 
 .v8-theme :where(.v8-field__label) {
   color: var(--v8-text);
-  font-size: var(--v8-font-size-control);
+  font-size: var(--v8-font-size-label);
   font-weight: var(--v8-font-weight-medium, 500);
+  line-height: var(--v8-line-height-label);
+}
+
+.v8-theme :where(.v8-overline) {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-overline);
+  font-weight: var(--v8-font-weight-overline);
+  letter-spacing: var(--v8-letter-spacing-overline);
+  line-height: var(--v8-line-height-overline);
+  text-transform: uppercase;
 }
 
 .v8-theme :where(.v8-input, .v8-select) {
@@ -414,23 +450,27 @@
 }
 
 .v8-theme :where(.v8-segmented) {
+  align-items: center;
   background: var(--v8-field);
-  border: 1px solid transparent;
+  border: 0;
   border-radius: var(--v8-radius-pill);
   display: inline-flex;
   gap: var(--v8-space-1);
   max-width: 100%;
   padding: var(--v8-space-1);
+  width: fit-content;
 }
 
 .v8-theme :where(.v8-segmented__option) {
   align-items: center;
+  align-self: center;
   background: transparent;
   border: 1px solid transparent;
   border-radius: var(--v8-radius-pill);
   color: var(--v8-text-secondary);
   cursor: pointer;
   display: inline-flex;
+  flex: 0 0 auto;
   font-size: var(--v8-font-size-sm);
   gap: var(--v8-space-2);
   min-height: var(--v8-control-height-sm);
@@ -476,7 +516,9 @@
   align-items: center;
   cursor: pointer;
   display: flex;
+  font-size: var(--v8-font-size-control);
   gap: var(--v8-space-3);
+  line-height: var(--v8-line-height-control);
   min-height: var(--v8-size-touch-min);
 }
 
@@ -489,7 +531,8 @@
 
 .v8-theme :where(.v8-choice__label) {
   color: var(--v8-text);
-  font-size: var(--v8-font-size-sm);
+  font-size: var(--v8-font-size-control);
+  line-height: var(--v8-line-height-control);
 }
 
 .v8-theme :where(.v8-choice__description) {
@@ -537,8 +580,7 @@
   transform: translateX(1rem);
 }
 
-.v8-theme :where(.v8-toggle__input:focus-visible + .v8-toggle__track),
-.v8-theme :where(.v8-checkbox__input:focus-visible) {
+.v8-theme :where(.v8-toggle__input:focus-visible + .v8-toggle__track) {
   outline: 2px solid var(--v8-focus);
   outline-offset: 2px;
 }
@@ -552,17 +594,178 @@
   opacity: 0.55;
 }
 
-.v8-theme :where(.v8-checkbox__input) {
-  accent-color: var(--v8-accent-primary);
-  height: 1.125rem;
-  margin: 0;
-  width: 1.125rem;
+/* Checkbox: 18px box with an inline check glyph. The native input stays in the
+   DOM, visually hidden but focusable, so label association, keyboard order,
+   forms and assistive technology keep working; the label keeps the 44px hit
+   area while the box itself stays 18px. */
+.v8-theme :where(.v8-checkbox) {
+  --v8-checkbox-size: 1.125rem;
+  --v8-checkbox-fill: var(--cd-accent, var(--v8-accent-primary));
+  /* Unchecked boxes keep the shared control border, which is contrast-checked
+     at >= 3:1 against every theme surface (WCAG 1.4.11). Using --cd-line here
+     dropped the boundary to the decorative hairline and made it nearly
+     invisible in dark mode. */
+  --v8-checkbox-line: var(--v8-border-control);
+  --v8-checkbox-glyph: var(--cd-check-glyph, var(--v8-on-accent, #ffffff));
+  --v8-checkbox-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  position: relative;
 }
 
-.v8-theme :where(.v8-checkbox__input:not(:checked)) {
-  border-radius: 4px;
-  outline: 1.5px solid var(--v8-border-control);
-  outline-offset: -1.5px;
+.v8-theme :where(.v8-checkbox__input) {
+  block-size: var(--v8-checkbox-size);
+  inline-size: var(--v8-checkbox-size);
+  inset-block-start: 50%;
+  inset-inline-start: 0;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  translate: 0 -50%;
+}
+
+.v8-theme :where(.v8-checkbox__box) {
+  block-size: var(--v8-checkbox-size);
+  border: 1.5px solid var(--v8-checkbox-line);
+  border-radius: 5px;
+  box-sizing: border-box;
+  display: grid;
+  flex: 0 0 var(--v8-checkbox-size);
+  inline-size: var(--v8-checkbox-size);
+  place-items: center;
+  position: relative;
+  transition:
+    border-color var(--v8-motion-fast) var(--v8-checkbox-ease),
+    transform 100ms var(--v8-checkbox-ease);
+}
+
+/* The fill grows out of the box centre. It only runs on a state change, so a
+   checked box renders filled on first paint without animating. */
+.v8-theme :where(.v8-checkbox__box)::before {
+  background: var(--v8-checkbox-fill);
+  border-radius: 5px;
+  content: "";
+  inset: -1.5px;
+  opacity: 0;
+  position: absolute;
+  scale: 0.4;
+  transition:
+    opacity var(--v8-motion-fast) var(--v8-checkbox-ease),
+    scale var(--v8-motion-fast) var(--v8-checkbox-ease);
+}
+
+.v8-theme :where(.v8-checkbox__input:checked ~ .v8-checkbox__box)::before,
+.v8-theme
+  :where(.v8-checkbox__input:indeterminate ~ .v8-checkbox__box)::before {
+  opacity: 1;
+  scale: 1;
+}
+
+.v8-theme :where(.v8-checkbox__check) {
+  block-size: var(--v8-checkbox-size);
+  color: var(--v8-checkbox-glyph);
+  grid-area: 1 / 1;
+  inline-size: var(--v8-checkbox-size);
+  position: relative;
+  transition: opacity var(--v8-motion-fast) var(--v8-checkbox-ease);
+  z-index: 1;
+}
+
+/* Drawn as a path: the dash offset unwinds over ~160ms when checked. */
+.v8-theme :where(.v8-checkbox__check polyline) {
+  fill: none;
+  stroke: currentColor;
+  stroke-dasharray: 15;
+  stroke-dashoffset: 15;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: stroke-dashoffset 160ms var(--v8-checkbox-ease);
+}
+
+.v8-theme
+  :where(.v8-checkbox__input:checked ~ .v8-checkbox__box .v8-checkbox__check)
+  polyline {
+  stroke-dashoffset: 0;
+}
+
+.v8-theme :where(.v8-checkbox__dash) {
+  background: var(--v8-checkbox-glyph);
+  block-size: 2px;
+  border-radius: 1px;
+  grid-area: 1 / 1;
+  inline-size: 9px;
+  opacity: 0;
+  position: relative;
+  transition: opacity var(--v8-motion-fast) var(--v8-checkbox-ease);
+  z-index: 1;
+}
+
+.v8-theme
+  :where(
+    .v8-checkbox__input:indeterminate ~ .v8-checkbox__box .v8-checkbox__dash
+  ) {
+  opacity: 1;
+}
+
+.v8-theme
+  :where(
+    .v8-checkbox__input:indeterminate ~ .v8-checkbox__box .v8-checkbox__check
+  ) {
+  opacity: 0;
+}
+
+@media (hover: hover) {
+  .v8-theme
+    :where(
+      .v8-checkbox:not(:has(.v8-checkbox__input:disabled)):hover
+        .v8-checkbox__box
+    ) {
+    border-color: color-mix(
+      in srgb,
+      var(--v8-checkbox-line) 45%,
+      var(--cd-text, var(--v8-text))
+    );
+  }
+}
+
+.v8-theme
+  :where(
+    .v8-checkbox:active:not(:has(.v8-checkbox__input:disabled))
+      .v8-checkbox__box
+  ) {
+  transform: scale(0.92);
+}
+
+.v8-theme
+  :where(
+    .v8-checkbox:has(.v8-checkbox__input:focus-visible) .v8-checkbox__box
+  ) {
+  outline: 2px solid var(--v8-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v8-theme :where(.v8-checkbox__box) {
+    transition: none;
+  }
+  .v8-theme :where(.v8-checkbox__box)::before {
+    scale: 1;
+    transition: opacity 80ms linear;
+  }
+  .v8-theme :where(.v8-checkbox__check),
+  .v8-theme :where(.v8-checkbox__dash) {
+    transition: opacity 80ms linear;
+  }
+  .v8-theme :where(.v8-checkbox__check polyline) {
+    transition: none;
+  }
+  .v8-theme
+    :where(
+      .v8-checkbox:active:not(:has(.v8-checkbox__input:disabled))
+        .v8-checkbox__box
+    ) {
+    transform: none;
+  }
 }
 
 .v8-theme :where(.v8-modal) {
@@ -605,6 +808,16 @@
   max-height: calc(100dvh - 2rem);
   max-width: calc(100vw - 2rem);
   width: calc(100vw - 2rem);
+}
+
+.v8-theme :where(.v8-modal[data-size="viewport"]) {
+  border: 0;
+  border-radius: 0;
+  height: 100dvh;
+  margin: 0;
+  max-height: 100dvh;
+  max-width: 100vw;
+  width: 100vw;
 }
 
 .v8-theme dialog.v8-modal[data-motion] {
@@ -670,6 +883,13 @@
   border-bottom: 1px solid var(--v8-border);
 }
 
+.v8-theme :where(.v8-modal__header-actions) {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--v8-space-3);
+}
+
 .v8-theme :where(.v8-modal__header h2) {
   color: var(--v8-text);
   font-size: var(--v8-font-size-lg);
@@ -688,6 +908,10 @@
   min-height: 0;
   overflow: auto;
   padding: var(--v8-space-5);
+}
+
+.v8-theme :where(.v8-modal__body--flush) {
+  padding: 0;
 }
 
 .v8-theme :where(.v8-modal__footer) {
@@ -919,20 +1143,37 @@
   z-index: var(--v8-z-popover);
 }
 
+.v8-theme :where(.v8-dropdown__menu--end) {
+  left: auto;
+  right: 0;
+}
+
 .v8-theme :where(.v8-dropdown__menu[hidden]) {
   display: none;
 }
 
 .v8-theme :where(.v8-dropdown__item) {
+  align-items: center;
   background: transparent;
   border: 0;
   border-radius: var(--v8-radius-compact);
   color: var(--v8-text);
   cursor: pointer;
+  display: flex;
   font: inherit;
+  gap: var(--v8-space-2);
   min-height: var(--v8-control-height-md);
   padding-inline: var(--v8-space-3);
   text-align: left;
+}
+
+.v8-theme :where(.v8-dropdown__check) {
+  flex: 0 0 auto;
+  opacity: 0;
+}
+
+.v8-theme :where(.v8-dropdown__item[data-current] .v8-dropdown__check) {
+  opacity: 1;
 }
 
 .v8-theme :where(.v8-dropdown__item:hover:not(:disabled)) {

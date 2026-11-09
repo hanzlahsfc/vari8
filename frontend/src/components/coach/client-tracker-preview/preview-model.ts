@@ -6,7 +6,12 @@ import {
   parameters as originalParameters,
   type TrackerEntry,
 } from "@/components/ethereal/client-tracker/model";
-import { ALL_PARAMETERS, PARAMETERS, type Parameter } from "../model";
+import {
+  ALL_PARAMETERS,
+  allParameters,
+  PARAMETERS,
+  type Parameter,
+} from "../model";
 
 export type TrackerParameter = OriginalTrackerParameter & {
   inputType?: Parameter["inputType"];
@@ -50,7 +55,7 @@ function asTrackerParameter(parameter: Parameter): TrackerParameter {
     summary: parameter.inputType ? "latest" : "average",
     decimals: defaultDecimals(parameter),
     min: isRating ? 1 : 0,
-    max: isRating ? 10 : 100000,
+    max: isRating ? (parameter.units.includes("1–5") ? 5 : 10) : 100000,
   };
   return {
     ...(original ?? fallback),
@@ -66,6 +71,7 @@ function asTrackerParameter(parameter: Parameter): TrackerParameter {
 const ratingUnits = new Set(["1–10", "1–5", "Word labels"]);
 
 export function defaultDecimals(parameter: Parameter): 0 | 1 | 2 {
+  if (parameter.decimals != null) return parameter.decimals;
   if (parameter.id === "basal-body-temperature") return 2;
   if (parameter.id === "salt-intake" || parameter.id === "sodium-intake")
     return 1;
@@ -90,6 +96,7 @@ export function defaultDecimals(parameter: Parameter): 0 | 1 | 2 {
 export function defaultSummary(
   parameter: Parameter,
 ): "avg" | "sum" | "count" | "none" {
+  if (parameter.summary) return parameter.summary;
   if (parameter.inputType === "text") return "count";
   if (
     parameter.inputType &&
@@ -108,12 +115,34 @@ export function defaultSummary(
   return "avg";
 }
 
+/** Timeline column default, including the steps/cardio sum convention. */
+export function defaultTimelineAggregation(
+  parameter: Parameter,
+  summary?: "avg" | "sum" | "count" | "none",
+): "avg" | "sum" | "min" | "max" | "last" | "count" {
+  const effective =
+    summary ??
+    (["steps", "cardio-duration", "cardio-sessions", "active-minutes"].includes(
+      parameter.id,
+    )
+      ? "sum"
+      : defaultSummary(parameter));
+  if (effective === "sum") return "sum";
+  if (effective === "count") return "count";
+  if (effective === "none") return "last";
+  return "avg";
+}
+
 // Legacy fields remain available to render persisted templates and dashboards. The
 // coach-facing option picker uses PARAMETERS, which contains only the visible catalog.
+/** Built-in catalog snapshot for callers/tests that expect an array. */
 export const parameters: TrackerParameter[] =
   ALL_PARAMETERS.map(asTrackerParameter);
 export const visibleParameters: TrackerParameter[] =
   PARAMETERS.map(asTrackerParameter);
+/** Registry-aware catalog; use this when workspace parameters may exist. */
+export const allTrackerParameters = (): TrackerParameter[] =>
+  allParameters().map(asTrackerParameter);
 
 export type { TrackerEntry };
 export type TrackerConfig = OriginalTrackerConfig & {

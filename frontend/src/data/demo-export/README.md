@@ -68,6 +68,7 @@ map to `frontend/public/demo/…` — prepend `/` to use them as URLs in the app
 - `workspace.json` — every `CoachState` field except `clients`: `version`,
   `demoSeeds` (which demo enrichers ran), `templates`, `exerciseLibrary`,
   `extras` (additional check-in requests), `submissions`, `trainingLogs`,
+  `trainingNotes` (coach logbook notes) when present,
   `messages`, `drafts`, `reviewDrafts`, `editorDrafts`, `preferences`,
   `coachNotes`/`coachTodos`/`timelineViews`/`timelineOrder` when present.
 - `clients/client-NNN.json` — the full `CoachClient` object plus a `related`
@@ -112,6 +113,7 @@ enrichers.
 | `related.messages` | Coach↔athlete conversation | Coach messages section, client app chat | core |
 | `related.extras` | Additional (non-recurring) check-in requests | Check-in calendar | core |
 | `related.trainingLogs` | Finished/in-progress session logs (`scheduledDate`, `startedAt`, `finishedAt`, per-set entries) | Client training logbook, coach timeline | core |
+| `trainingNotes` | Coach logbook notes per exercise/week (`sessionId`, `exerciseKey`, `fromWeek`, `untilWeek` for "only", optional `setIndex`) | Coach logbook, client session overview + logbook | core when present |
 | `related.coachTodos` | Coach to-dos linked to this client | Coach notes/todos surfaces | core when present |
 | `related.reviewDrafts`, `related.draft` | Unsent feedback/message drafts | Browser-only composer state | browser-only — a backend may store or drop |
 
@@ -122,7 +124,7 @@ enrichers.
 | `version` | State schema version (1) | store migration | core |
 | `demoSeeds` | Which demo enrichers ran (revision flags) | store hydration | seed bookkeeping — keep or drop |
 | `templates` | Check-in template library (variants, fields, questions, widgets, roadmaps) | Coach templates section, assignment flow | core |
-| `exerciseLibrary` | Exercise catalogue | Training plan builder, logbook | core |
+| `exerciseLibrary` | Exercise database (546 entries; `id`, `name`, `muscle`, `secondaryMuscles`, `notes` = "Default cues", optional `equipment`/`movementPattern`/`position`/`primaryTarget`/`additionalTargets`) | Training plan builder, logbook, exercise-info display | core |
 | `submissions`, `messages`, `extras`, `trainingLogs` | State-level collections also sliced per client under `related` | Check-ins, messages, calendar, logbook | core |
 | `coachNotes`, `coachTodos` | Coach-wide notes/to-dos | Coach notes section | core when present |
 | `drafts`, `reviewDrafts`, `editorDrafts` | Unsent message/reply drafts and template-editor drafts | Browser composers | browser-only scratch state (empty in this snapshot) |

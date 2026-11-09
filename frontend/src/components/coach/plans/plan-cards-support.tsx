@@ -10,7 +10,7 @@ import {
   type VariantSchedule,
 } from "../../ethereal/mealplan/model";
 import { Input, Select } from "../../vari8/components";
-import { ALL_PARAMETERS, type CoachClient, uid } from "../model";
+import { allParameters, type CoachClient, uid } from "../model";
 import { useCoach } from "../store";
 import { templateSetup } from "../template-setup";
 import { Button, Dialog } from "../ui";
@@ -128,7 +128,7 @@ function otherTargetFields(
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
   return (setup?.fields ?? []).flatMap((field) => {
-    const parameter = ALL_PARAMETERS.find((p) => p.id === field.id);
+    const parameter = allParameters().find((p) => p.id === field.id);
     if (
       !parameter ||
       typeof parameter.sample !== "number" ||
@@ -152,7 +152,7 @@ const fieldUnit = (client: CoachClient, fieldId: string): string => {
     : undefined;
   const configured = setup?.fields.find((f) => f.id === fieldId)?.unit?.trim();
   return (
-    configured || ALL_PARAMETERS.find((p) => p.id === fieldId)?.units[0] || ""
+    configured || allParameters().find((p) => p.id === fieldId)?.units[0] || ""
   );
 };
 
@@ -168,7 +168,8 @@ export function otherTargetLabel(
   target: ClientOtherTarget,
 ): string {
   const name =
-    ALL_PARAMETERS.find((p) => p.id === target.fieldId)?.name ?? target.fieldId;
+    allParameters().find((p) => p.id === target.fieldId)?.name ??
+    target.fieldId;
   const unit = fieldUnit(client, target.fieldId);
   const suffix = unit ? ` ${unit}` : "";
   switch (target.kind) {

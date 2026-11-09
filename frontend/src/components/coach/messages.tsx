@@ -122,6 +122,39 @@ export function MessagesWorkspace() {
       setNewMessages(false);
     } else setNewMessages(true);
   }, [selectedId, messages.length]);
+  // Grow the desktop composer from one line up to ~160px; mobile keeps its
+  // existing two-row field. The cap leaves room for the thread above.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when the draft or conversation changes
+  useEffect(() => {
+    const el = composer.current;
+    if (!el) return;
+    const desktop = window.matchMedia("(min-width: 761px)");
+    const apply = () => {
+      if (!desktop.matches) {
+        el.rows = 2;
+        el.style.height = "";
+        el.style.minHeight = "";
+        el.style.maxHeight = "";
+        el.style.resize = "";
+        el.style.overflowY = "";
+        return;
+      }
+      // One line on desktop, growing to the 160px cap. Sizing lives here so
+      // the shared TextArea styling is not forked in CSS.
+      el.rows = 1;
+      el.style.minHeight = "40px";
+      el.style.maxHeight = "160px";
+      el.style.resize = "none";
+      el.style.overflowY = "auto";
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+    };
+    apply();
+    desktop.addEventListener("change", apply);
+    return () => {
+      desktop.removeEventListener("change", apply);
+    };
+  }, [draft.text, selectedId]);
   const setDraft = (patch: Partial<{ text: string; attachments: Media[] }>) => {
     if (!selectedId) return;
     setState((s) => ({
@@ -171,16 +204,12 @@ export function MessagesWorkspace() {
   };
   return (
     <div className="cd-messages-page">
-      <div className="cd-messages-title">
-        <h1>Messages</h1>
-        <span className="cd-caption">{state.preferences.availability}</span>
-      </div>
       <div
         className={`cd-messenger ${client ? "has-conversation" : ""} ${context ? "has-context" : ""}`}
       >
         <div className="cd-conversations">
           <header>
-            <h2>Conversations</h2>
+            <h1>Messages</h1>
             <span className="cd-muted">{unreadCount(state)} unread</span>
           </header>
           <SearchBox
@@ -635,6 +664,7 @@ export function MessagesWorkspace() {
                   </div>
                   <TextArea
                     label={`Message ${client.name}`}
+                    labelClassName="cd-composer-label"
                     className="cd-composer-textarea"
                     size="sm"
                     ref={composer}

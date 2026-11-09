@@ -11,6 +11,7 @@ import {
   migrateCoachState,
   plansOwnedBy,
   scheduledOption,
+  trainingVersionAt,
   validateIndividualPlan,
 } from "./domain.ts";
 import { adoptAmaraTrainingExample } from "./training/amara-example.ts";
@@ -566,4 +567,83 @@ test("Amara training example adoption preserves a saved supplement plan", () => 
   const adopted = adoptAmaraTrainingExample(state);
   assert.deepEqual(adopted.clients[0].plans.supplements, supplements);
   assert.equal(isClientPlans(adopted.clients[0].plans), true);
+});
+
+test("trainingVersionAt applies a mid-plan activation only from its date (same startDate)", () => {
+  const life = {
+    active: {
+      id: "v2",
+      content: plan("2026-10-13", "New"),
+      activatedAt: "2026-11-02T08:00:00Z",
+    },
+    history: [
+      {
+        id: "v1",
+        content: plan("2026-10-13", "Old"),
+        activatedAt: "2026-10-13T08:00:00Z",
+        archivedOn: "2026-11-02",
+      },
+    ],
+  };
+  // before the activation: the previous version still applies even though the
+  // new one shares the startDate
+  assert.equal(trainingVersionAt(life, "2026-10-20").id, "v1");
+  assert.equal(trainingVersionAt(life, "2026-10-26").id, "v1");
+  // from the activation day onward the new version applies
+  assert.equal(trainingVersionAt(life, "2026-11-02").id, "v2");
+  assert.equal(trainingVersionAt(life, "2026-11-09").id, "v2");
+});
+
+test("trainingVersionAt does not apply a version before its content startDate", () => {
+  const life = {
+    active: {
+      id: "future",
+      content: plan("2026-12-01", "Future"),
+      activatedAt: "2026-10-20T08:00:00Z",
+    },
+    history: [
+      {
+        id: "v1",
+        content: plan("2026-10-13", "Old"),
+        activatedAt: "2026-10-13T08:00:00Z",
+        archivedOn: "2026-12-01",
+      },
+    ],
+  };
+  // the future-start version was activated early but its plan only begins Dec 1
+  assert.equal(trainingVersionAt(life, "2026-11-15").id, "v1");
+  assert.equal(trainingVersionAt(life, "2026-12-02").id, "future");
+});
+
+test("trainingVersionAt falls back to the earliest version before any activation", () => {
+  const life = {
+    active: {
+      id: "v1",
+      content: plan("2026-10-13", "Old"),
+      activatedAt: "2026-10-20T08:00:00Z",
+    },
+    history: [],
+  };
+  // the plan started but the version's activation stamp is later than the date
+  assert.equal(trainingVersionAt(life, "2026-10-15").id, "v1");
+});
+
+test("trainingVersionAt respects archivedOn", () => {
+  const life = {
+    active: {
+      id: "v2",
+      content: plan("2026-10-13", "New"),
+      activatedAt: "2026-10-20T08:00:00Z",
+    },
+    history: [
+      {
+        id: "v1",
+        content: plan("2026-10-13", "Old"),
+        activatedAt: "2026-10-13T08:00:00Z",
+        archivedOn: "2026-10-20",
+      },
+    ],
+  };
+  assert.equal(trainingVersionAt(life, "2026-10-19").id, "v1");
+  assert.equal(trainingVersionAt(life, "2026-10-20").id, "v2");
 });

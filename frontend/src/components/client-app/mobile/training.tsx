@@ -2,9 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { type CoachClient, formatDate } from "../../coach/model";
-import { applicablePlan } from "../../coach/plans/domain";
+import { trainingPlanAt } from "../../coach/plans/domain";
+import {
+  adjustmentBannerText,
+  planForDisplayWeek,
+} from "../../coach/plans/training/adjustments";
+import {
+  cellNotesFor,
+  cellNotesList,
+  exerciseNotesFor,
+} from "../../coach/plans/training/logbook-model";
+import type { TrainingCoachNote } from "../../coach/plans/types";
+import { adjustmentForWeek, exerciseInfoFields } from "../../coach/plans/types";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
+import { templateSetup } from "../../coach/template-setup";
 import type { ScheduledSession } from "../training-log/model";
 import {
   displayWeek,
@@ -13,6 +25,7 @@ import {
   previousPerformance,
   scheduledSessions,
   sessionStatus,
+  weekRange,
 } from "../training-log/model";
 
 export function MobileTraining({
@@ -29,20 +42,39 @@ export function MobileTraining({
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const currentWeek = plan ? Math.min(displayWeek(plan, today), plan.weeks) : 1;
   const [weekSel, setWeekSel] = useState<number | null>(null);
   const week = weekSel ?? currentWeek;
   const logs = state.trainingLogs ?? [];
+  const configuration = client.assignment
+    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
+    : undefined;
+  // the selected week's own plan version — a mid-plan activation changes the
+  // prescription for its week and onward
+  const weekPlan = useMemo(() => {
+    if (!client.plans || !plan) return plan;
+    return (
+      trainingPlanAt(client.plans.training, weekRange(plan, week).start) ?? plan
+    );
+  }, [client.plans, plan, week]);
+  const displayPlan = weekPlan ? planForDisplayWeek(weekPlan, week) : undefined;
+  const adjustment = displayPlan
+    ? adjustmentForWeek(displayPlan, week)
+    : undefined;
   const items = useMemo(
-    () => (plan ? scheduledSessions(plan, week) : []),
-    [plan, week],
+    () => (displayPlan ? scheduledSessions(displayPlan, week) : []),
+    [displayPlan, week],
   );
   if (!plan) return <div className="cm-note">No training plan.</div>;
   const doneWeeks = new Set<number>();
   for (let w = 1; w <= plan.weeks; w++) {
-    const wk = scheduledSessions(plan, w);
+    const wp = client.plans
+      ? (trainingPlanAt(client.plans.training, weekRange(plan, w).start) ??
+        plan)
+      : plan;
+    const wk = scheduledSessions(wp, w);
     if (wk.length && wk.every((i) => sessionStatus(i, logs, today) === "done"))
       doneWeeks.add(w);
   }
@@ -87,6 +119,17 @@ export function MobileTraining({
           </button>
         ))}
       </div>
+      {adjustment && (
+        <div className="cm-adjustment-banner" role="status">
+          <strong>
+            {adjustmentBannerText(
+              adjustment,
+              configuration?.training.intensity,
+            )}
+          </strong>
+          {adjustment.note && <span>{adjustment.note}</span>}
+        </div>
+      )}
       {items.map((item) => {
         const st = sessionStatus(item, logs, today);
         const log = findLog(logs, plan.id, item.date, item.occurrenceKey);
@@ -214,8 +257,12 @@ export function MobileSessionOverview({
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
+  const configuration = client.assignment
+    ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
+    : undefined;
+  const tcfg = configuration?.training;
   const logs = state.trainingLogs ?? [];
   const log = plan
     ? findLog(logs, plan.id, item.date, item.occurrenceKey)
@@ -226,11 +273,26 @@ export function MobileSessionOverview({
   );
   const est = Math.ceil((totalSets * 2.5) / 5) * 5;
   const done = log?.status === "finished";
+  const itemWeek = plan ? displayWeek(plan, item.date) : 1;
+  const adjustment = plan
+    ? adjustmentForWeek(planForDisplayWeek(plan, itemWeek), itemWeek)
+    : undefined;
   return (
     <>
       <div className="cm-h1" style={{ fontSize: 22, marginBottom: 4 }}>
         {item.session.name}
       </div>
+      {adjustment && (
+        <div className="cm-adjustment-banner" role="status">
+          <strong>
+            {adjustmentBannerText(
+              adjustment,
+              configuration?.training.intensity,
+            )}
+          </strong>
+          {adjustment.note && <span>{adjustment.note}</span>}
+        </div>
+      )}
       <div className="cm-row" style={{ gap: 6, marginBottom: 12 }}>
         <span className="cm-chip cm-chipF">
           {item.session.exercises.length} exercises
@@ -238,16 +300,6 @@ export function MobileSessionOverview({
         <span className="cm-chip cm-chipF">~{est} min</span>
         <span className="cm-chip cm-chipF">{totalSets} sets</span>
       </div>
-      {item.session.exercises.some((e) => e.instructions) && (
-        <div className="cm-card" style={{ marginBottom: 10 }}>
-          <div
-            className="cm-mut"
-            style={{ fontSize: 12.5, fontStyle: "italic" }}
-          >
-            "Control the eccentric, 2 reps in reserve" — Liliana
-          </div>
-        </div>
-      )}
       {item.session.exercises.map((ex, i) => {
         const prev = plan
           ? previousPerformance(logs, {
@@ -258,6 +310,39 @@ export function MobileSessionOverview({
               date: item.date,
             })
           : undefined;
+        const exNotes = plan
+          ? [
+              ...exerciseNotesFor(state.trainingNotes ?? [], {
+                sessionId: item.session.id,
+                exerciseKey: exerciseKey(ex),
+                week: displayWeek(plan, item.date),
+              }),
+              ...cellNotesList(
+                cellNotesFor(state.trainingNotes ?? [], {
+                  sessionId: item.session.id,
+                  exerciseKey: exerciseKey(ex),
+                  week: displayWeek(plan, item.date),
+                  setCount: ex.sets.length,
+                }),
+              ),
+            ]
+          : [];
+        const intensity =
+          tcfg?.intensity === "rir" || tcfg?.intensity === "rpe"
+            ? tcfg.intensity
+            : undefined;
+        const exInfo = exerciseInfoFields(tcfg)
+          .filter((f) => f !== "cues")
+          .map((f) =>
+            f === "equipment"
+              ? ex.equipment
+              : f === "movementPattern"
+                ? ex.movementPattern
+                : f === "position"
+                  ? ex.position
+                  : undefined,
+          )
+          .filter(Boolean);
         const setsText = ex.sets
           .map((s) => `${s.reps}${s.repsMax ? `–${s.repsMax}` : ""}`)
           .join(", ");
@@ -271,10 +356,63 @@ export function MobileSessionOverview({
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{ex.name}</div>
                 <div className="cm-mut" style={{ fontSize: 12 }}>
                   {ex.sets.length} × {setsText}
+                  {intensity === "rir" && ex.sets[0]?.rir !== undefined
+                    ? ` · RIR ${ex.sets[0].rir}`
+                    : intensity === "rpe" && ex.sets[0]?.rpe !== undefined
+                      ? ` · RPE ${ex.sets[0].rpe}`
+                      : ""}
                   {ex.sets[0]?.rest ? ` · Rest ${ex.sets[0].rest}` : ""}
                 </div>
+                {exInfo.map((chip) => (
+                  <div key={chip} className="cm-mut" style={{ fontSize: 11 }}>
+                    {chip}
+                  </div>
+                ))}
               </div>
             </div>
+            {exNotes.map((n: TrainingCoachNote) => (
+              <div
+                key={n.id}
+                className="cm-cnote"
+                style={{
+                  display: "flex",
+                  gap: 7,
+                  alignItems: "flex-start",
+                  background: "var(--cm-field, rgba(255,255,255,.05))",
+                  borderRadius: 10,
+                  padding: "8px 10px",
+                  margin: "8px 0 0 26px",
+                  fontSize: 11.5,
+                  lineHeight: 1.45,
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  style={{
+                    marginTop: 1,
+                    flex: "none",
+                    color: "var(--cm-muted)",
+                  }}
+                >
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>
+                  <b style={{ fontWeight: 600 }}>
+                    {n.setIndex === undefined
+                      ? "Coach"
+                      : `Set ${n.setIndex + 1}`}
+                    :
+                  </b>{" "}
+                  {n.text}
+                </span>
+              </div>
+            ))}
             {prev && (
               <div
                 className="cm-mut"

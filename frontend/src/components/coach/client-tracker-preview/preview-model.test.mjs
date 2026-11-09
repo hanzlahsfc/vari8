@@ -22,6 +22,8 @@ const coachModel = moduleUrl(`
     parameter("stress", "Stress", "Recovery", ["1–10", "1–5", "Word labels"], 4),
   ];
   export const ALL_PARAMETERS = PARAMETERS;
+  export const allParameters = () => [...PARAMETERS];
+  export const getParameter = (id) => PARAMETERS.find((item) => item.id === id);
 `);
 const source = stripTypeScriptTypes(
   await readFile(new URL("./preview-model.ts", import.meta.url), "utf8"),
@@ -101,4 +103,66 @@ test("existing weight conversions remain delegated to the original tracker helpe
     Math.abs(m.weeklyAverage(weight, values, pounds) - 69.5 * 2.20462) < 0.001,
   );
   assert.equal(m.weeklyAverage(weight, [], pounds), null);
+});
+
+test("timeline parameter defaults sum steps and cardio, average ratings", () => {
+  assert.equal(
+    m.defaultTimelineAggregation({
+      id: "steps",
+      units: ["steps"],
+      sample: 0,
+      calculations: [],
+      name: "Steps",
+      group: "Movement",
+    }),
+    "sum",
+  );
+  assert.equal(
+    m.defaultTimelineAggregation({
+      id: "cardio-duration",
+      units: ["minutes"],
+      sample: 0,
+      calculations: [],
+      name: "Cardio",
+      group: "Movement",
+    }),
+    "sum",
+  );
+  assert.equal(
+    m.defaultTimelineAggregation({
+      id: "stress",
+      units: ["1–10"],
+      sample: 0,
+      calculations: [],
+      name: "Stress",
+      group: "Recovery",
+    }),
+    "avg",
+  );
+  assert.equal(
+    m.defaultTimelineAggregation({
+      id: "custom-1",
+      units: ["kg"],
+      sample: 0,
+      calculations: [],
+      name: "Volume",
+      group: "Body",
+      custom: true,
+      summary: "sum",
+    }),
+    "sum",
+  );
+  assert.equal(
+    m.defaultTimelineAggregation({
+      id: "custom-2",
+      units: [],
+      sample: 0,
+      calculations: [],
+      name: "Note",
+      group: "Body",
+      custom: true,
+      summary: "none",
+    }),
+    "last",
+  );
 });

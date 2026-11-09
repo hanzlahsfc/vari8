@@ -1,47 +1,45 @@
-/* Athlete profile → Timeline tab */
+/* Athlete profile → Timeline: dense flat week rows across every group. */
 
 .apt {
+  /* Mirrors the tracker's --trk-* row tokens, scoped to the timeline rows. */
+  --apt-gap: 6px;
+  --apt-row: 44px;
+  --apt-today: color-mix(in srgb, var(--cd-accent) 8%, var(--cd-surface));
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.apt i,
+.apt em {
+  font-style: normal;
+}
+.apt-sub {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.8125rem);
 }
 
-.apt-bar {
+/* Toolbar: one inline row of tracker-style controls. */
+.apt-toolbar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
+  min-height: 36px;
   flex-wrap: wrap;
 }
-.apt-bar-mid {
-  display: contents;
+.apt-range {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.8125rem);
 }
-@media (min-width: 1280px) {
-  .apt-bar {
-    flex-wrap: nowrap;
-    min-width: 0;
-  }
-  .apt-bar .v8-segmented {
-    flex-shrink: 1;
-    min-width: 0;
-  }
-}
-@media (max-width: 1279px) {
-  .apt-bar-mid {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-}
-.apt-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-inline-start: auto;
+.apt-sp {
+  flex: 1 1 20px;
 }
 .apt-compare {
   display: inline-flex;
   align-items: center;
+}
+.apt-compare .v8-checkbox {
+  min-height: 0;
 }
 
 .apt-earlier {
@@ -62,131 +60,222 @@
   text-decoration: underline;
 }
 
-/* Horizontally scrollable row canvas; week/dates columns stick left,
-   the header row sticks top. container-type enables cqw for pinned panels. */
-.apt-scroller {
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  container-type: inline-size;
-  scrollbar-width: thin;
+/* Bounded, pan-able scrollport. */
+.apt-scroll {
+  position: relative;
+  overflow: auto;
+  overscroll-behavior: contain;
   cursor: grab;
+  scrollbar-width: thin;
 }
-.apt-scroller[data-panning] {
+.apt-scroll[data-panning] {
   cursor: grabbing;
   user-select: none;
 }
-.apt-scroller[data-fade] {
-  mask-image: linear-gradient(to right, black calc(100% - 56px), transparent);
+.apt-scroll[data-fade="1"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent);
 }
 .apt-canvas {
   width: max-content;
-  min-width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding-bottom: 24px;
 }
 
-/* Sticky column header, same grid template as the rows. Three rows:
-   group band → variant sub-band → column labels, placed explicitly. */
-.apt-colhead {
+/* Floating group headers. */
+.apt-head {
   position: sticky;
   top: 0;
-  z-index: 5;
-  display: grid;
-  align-items: end;
-  gap: 0 12px;
-  padding: 6px 8px 6px 18px;
-  margin-bottom: -6px;
+  z-index: 7;
+  display: flex;
+  gap: var(--apt-gap);
+  /* Matches the phase card's border + inline padding so group headers sit
+     directly over their cells in the card below. */
+  padding: 4px 11px 10px;
   background: var(--cd-bg);
 }
-.apt-colhead-band {
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: var(--cd-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.apt-colhead-sub {
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: var(--cd-accent);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-  block-size: 14px;
-  line-height: 14px;
-}
-.apt-colhead-cell {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--cd-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  contain: inline-size;
-}
-.apt-colhead .apt-sticky-1,
-.apt-colhead .apt-sticky-2 {
-  z-index: 6;
-  background: var(--cd-bg);
-}
-
-/* Sticky left columns inside each row/header */
-/* biome-ignore lint/style/noDescendingSpecificity: sticky offsets */
-.apt-sticky-1 {
+.apt-corner {
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 8;
+  flex: 0 0 auto;
+  margin-right: calc(-1 * var(--apt-gap));
+  align-self: stretch;
+  background: var(--cd-bg);
 }
-/* biome-ignore lint/style/noDescendingSpecificity: sticky offsets */
-.apt-sticky-2 {
-  position: sticky;
-  left: 34px;
-  z-index: 2;
+.apt-hg {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.apt-hg[data-collapsed] {
+  display: flex;
+  min-height: 64px;
+}
+/* Only collapse/expand animates the column widths; ordinary re-measures
+   (compare toggle, upcoming weeks) settle in one frame. */
+.apt[data-width-anim] .apt-hg {
+  transition: width 220ms var(--cd-ease-out);
+}
+.apt[data-width-anim] .apt-hg[data-collapsed] {
+  transition-duration: 180ms;
+}
+/* Expanded header content stays mounted for the width transition, then
+   unmounts; the vertical strip fades in over it. */
+.apt-hg-full {
+  flex: 0 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.apt-hg-full[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.apt-hg-title {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 5px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--cd-line);
+}
+.apt-hg-actions {
+  position: absolute;
+  right: 0;
+  top: -3px;
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.apt-hg:hover .apt-hg-actions,
+.apt-hg-actions:focus-within,
+.apt .apt-hg-actions button[data-on] {
+  opacity: 1;
+}
+.apt .apt-hg-actions button {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--cd-muted);
+  cursor: pointer;
+}
+.apt .apt-hg-actions button:hover,
+.apt .apt-hg-actions button[data-on] {
+  background: var(--cd-wash);
+  color: var(--cd-text);
+}
+.apt-hg-labels {
+  display: grid;
+}
+.apt-clab {
+  padding: 0 6px 4px;
+  color: var(--v8-text-secondary);
+  font-size: 12px;
+  font-weight: var(--v8-font-weight-medium);
+  line-height: 16px;
+  text-align: center;
+  white-space: nowrap;
+}
+.apt-clab.apt-txt {
+  text-align: left;
+}
+.apt-subtle {
+  color: var(--v8-text-tertiary);
+  font-weight: var(--v8-font-weight-regular);
+}
+.apt .apt-hg-strip {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  min-height: 40px;
+  white-space: nowrap;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  rotate: 180deg;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.apt .apt-hg-strip[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.apt .apt-hg-strip:hover {
+  background: var(--cd-wash);
+  color: var(--cd-text);
 }
 
-/* Phase group card */
+/* Phase group: old flat card + sticky header bar with the collapse control. */
 .apt-phase {
+  display: flex;
+  flex-direction: column;
+  /* 11px matches the column header's inset now that the phase card has no
+     border, so group headers stay aligned with their week cells. */
+  padding: 4px 11px 10px;
+  border: 0;
+  border-radius: var(--v8-radius-card);
   background: var(--cd-surface);
-  border: 1px solid var(--cd-line);
-  border-radius: 14px;
-  padding: 4px 10px 10px;
+  box-shadow: var(--v8-shadow-card);
 }
-.apt-phase[data-collapsed] {
-  padding-block-end: 0;
+.apt-phase + .apt-phase {
+  margin-top: 12px;
 }
 .apt-phase-head {
   position: sticky;
   inset-inline-start: 0;
   z-index: 4;
-  inline-size: calc(100cqw - 22px);
+  /* Match the week rows' box edges: the phase content width when the table
+     fits, otherwise the visible scrollport (the row is clipped there). */
+  inline-size: min(100%, calc(var(--apt-vw, 100%) - 11px));
+  box-sizing: border-box;
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 10px 4px 16px 14px;
+  /* Equal vertical breathing room above and below the head content; the
+     progress bar sits inside the lower 12px without touching the text. */
+  padding: 12px 4px 12px 14px;
   margin-bottom: 4px;
   border: 0;
+  border-radius: 12px;
   background: var(--cd-surface);
   color: var(--cd-text);
   font: inherit;
   font-size: var(--v8-font-size-supporting, 0.8125rem);
   text-align: left;
   cursor: pointer;
-  border-radius: 12px;
 }
 .apt-phase-head:hover {
   background: var(--cd-wash);
 }
-.apt-phase-head b {
+.apt-phase-name {
   font-size: 0.9375rem;
+  font-weight: 700;
+}
+.apt-phase[data-current] .apt-phase-name {
+  color: var(--cd-accent);
 }
 .apt-phase-chev {
   align-self: center;
+  flex: 0 0 auto;
   color: var(--cd-muted);
   transition: rotate 0.15s;
 }
@@ -206,18 +295,15 @@
 .apt-phase[data-current] .apt-phase-strip {
   background: var(--cd-accent);
 }
-.apt-sub {
-  color: var(--cd-muted);
-  font-size: var(--v8-font-size-supporting, 0.8125rem);
-}
 .apt-phase-progress {
+  flex: 0 0 auto;
   color: var(--cd-accent);
   font-size: 0.75rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* Thin accent progress line under the current phase header */
+/* Thin accent progress line under the current phase header. */
 .apt-phase-bar {
   position: absolute;
   inset-inline: 14px;
@@ -235,6 +321,8 @@
 }
 .apt-phase-summary {
   margin-inline-start: auto;
+  min-width: 0;
+  max-inline-size: 520px;
   color: var(--cd-muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
@@ -242,49 +330,92 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-/* Compact week row: fixed height, every cell reserves value + sub lines */
-.apt-week + .apt-week {
-  margin-top: 2px;
+/* A collapsed phase contains only its head, so remove the expanded rows'
+   trailing margin and keep the 4px card inset on both sides. */
+.apt-phase[data-collapsed] {
+  padding-block: 4px;
 }
+.apt-phase[data-collapsed] .apt-phase-head {
+  margin-bottom: 0;
+}
+
+/* Dense flat week rows: one surface per week across every column group. */
+.apt-week {
+  display: block;
+}
+.apt-week + .apt-week {
+  border-top: 1px solid var(--cd-line);
+}
+/* Row tints are always opaque: the sticky week cell, the pinned group segment
+   and its fade edge repaint --row-bg over scrolled content, so a translucent
+   hover would composite differently in each layer and show a seam. */
 .apt-row {
   --row-bg: var(--cd-surface);
-  display: grid;
-  align-items: start;
-  gap: 0 12px;
-  width: 100%;
-  block-size: 44px;
-  padding: 6px 8px 6px 4px;
+  --row-hover: color-mix(in srgb, var(--cd-text) 6%, var(--cd-surface));
+  display: flex;
+  align-items: center;
+  gap: var(--apt-gap);
+  width: max-content;
+  min-width: 100%;
+  height: var(--apt-row);
+  padding: 0;
   border: 0;
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--row-bg);
   color: var(--cd-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
-.apt-row:hover {
-  --row-bg: var(--cd-wash);
-}
 .apt-week[data-current] .apt-row {
-  --row-bg: color-mix(in srgb, var(--cd-accent) 8%, var(--cd-surface));
+  --row-bg: var(--apt-today);
+  --row-hover: color-mix(in srgb, var(--cd-text) 6%, var(--apt-today));
 }
 .apt-week[data-open] .apt-row {
   --row-bg: var(--cd-wash);
+  --row-hover: color-mix(in srgb, var(--cd-text) 6%, var(--cd-wash));
 }
-.apt-row .apt-sticky-1,
-.apt-row .apt-sticky-2 {
-  background: var(--row-bg);
+/* Scoped to the week so it outranks the current/open row tints; the hover
+   colour still derives from that row's own state tint. */
+.apt-week .apt-row:hover {
+  --row-bg: var(--row-hover);
+}
+@keyframes apt-flash {
+  from {
+    background: color-mix(in srgb, var(--cd-accent) 38%, transparent);
+  }
+}
+.apt-row.apt-flash {
+  animation: apt-flash 1.4s ease-out;
+}
+.apt-row[data-future] {
+  opacity: 0.55;
 }
 
+/* Sticky week label cell inside the row: number bubble + stacked dates. */
+.apt-weekcell {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 0 8px 0 4px;
+  background: var(--row-bg);
+}
 .apt-weeknum {
   display: grid;
   place-items: center;
-  margin-top: -5px;
+  flex: 0 0 auto;
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--cd-wash);
+  /* Derives from the row tint so the bubble keeps its chip contrast on the
+     normal, hover and open rows instead of carrying a separate tint. */
+  background: color-mix(in srgb, var(--cd-text) 7%, var(--row-bg));
   color: var(--cd-muted);
   font-size: 0.75rem;
   font-weight: 600;
@@ -294,18 +425,18 @@
   background: var(--cd-accent);
   color: var(--cd-accent-contrast);
 }
-
 .apt-dates {
-  font-size: var(--v8-font-size-supporting, 0.8125rem);
-  color: var(--cd-muted);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
   min-width: 0;
+  color: var(--cd-muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .apt-dates > span:first-child {
-  white-space: nowrap;
   block-size: 16px;
   line-height: 16px;
 }
@@ -316,22 +447,176 @@
 .apt-tagline {
   display: block;
   block-size: 16px;
+  line-height: 16px;
 }
 .apt-this {
-  font-style: normal;
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--cd-accent-soft);
+  color: var(--cd-accent);
   font-size: 0.6875rem;
   font-weight: 600;
-  color: var(--cd-accent);
-  background: var(--cd-accent-soft);
-  border-radius: 99px;
-  padding: 1px 7px;
+  line-height: 14px;
+}
+.apt-chev {
+  flex: 0 0 auto;
+  margin-inline-start: 2px;
+  color: var(--cd-muted);
+  transition: rotate 0.15s;
+}
+.apt-week[data-open] .apt-chev {
+  rotate: 90deg;
+}
+.apt-scroll[data-panning] .apt-row {
+  cursor: grabbing;
 }
 
+/* Column-group segment: plain cells in the shared row grid. */
+.apt-grp {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  display: block;
+  height: 100%;
+  min-width: 0;
+}
+.apt-grp[data-collapsed] {
+  background: transparent;
+}
+.apt[data-width-anim] .apt-grp {
+  transition: width 220ms var(--cd-ease-out);
+}
+.apt[data-width-anim] .apt-grp[data-collapsed] {
+  transition-duration: 180ms;
+}
+.apt-grp-cells {
+  display: grid;
+  align-items: center;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.apt-grp-cells[data-visible] {
+  opacity: 1;
+}
+.apt-grp-pinned {
+  position: sticky;
+  z-index: 4;
+  background: var(--row-bg);
+}
+.apt-grp-pinned[data-last]::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 100%;
+  width: 22px;
+  background: linear-gradient(to right, var(--row-bg), transparent);
+  pointer-events: none;
+}
+
+/* Nutrition segment: hover target for the weekly target breakdown. */
+.apt-nut-positioner {
+  z-index: var(--v8-z-popover, 100);
+  outline: none;
+}
+.apt-nut-pop {
+  box-sizing: border-box;
+  min-width: 250px;
+  max-width: min(340px, calc(100vw - 24px));
+  padding: 12px 14px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--v8-radius-overlay);
+  background: var(--v8-surface-overlay, var(--cd-raised));
+  color: var(--cd-text);
+  box-shadow: var(--v8-shadow-overlay);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.apt-nut-title {
+  margin: 0 0 8px;
+  color: var(--cd-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.apt-nut-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+.apt-nut-table th,
+.apt-nut-table td {
+  padding: 2px 0 2px 8px;
+  font-weight: 400;
+  text-align: right;
+  white-space: nowrap;
+}
+.apt-nut-table th:first-child {
+  padding-inline-start: 0;
+  text-align: left;
+  white-space: normal;
+}
+.apt-nut-table thead th {
+  padding-bottom: 4px;
+  color: var(--cd-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.apt-nut-table b {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.apt-nut-table em {
+  display: block;
+  margin-top: 1px;
+  color: var(--cd-muted);
+  font-size: 0.6875rem;
+  font-style: normal;
+}
+.apt-nut-note {
+  margin: 7px 0 0;
+  color: var(--cd-muted);
+  font-size: 0.6875rem;
+}
+@media (hover: hover) and (pointer: fine) {
+  .apt-nut-pop {
+    transform-origin: var(--transform-origin);
+    transition:
+      opacity var(--v8-motion-fast) var(--cd-ease-out),
+      transform var(--v8-motion-fast) var(--cd-ease-out);
+  }
+  .apt-nut-pop[data-starting-style],
+  .apt-nut-pop[data-ending-style] {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .apt-nut-pop {
+    transform: none;
+    transition: opacity var(--v8-motion-reduced) linear;
+  }
+  .apt-nut-pop[data-starting-style],
+  .apt-nut-pop[data-ending-style] {
+    transform: none;
+  }
+}
+
+/* Cells: value + sub line, plain text in the grid. */
 .apt-cell {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 1px;
   min-width: 0;
+  padding: 0 6px;
   overflow: hidden;
   contain: inline-size;
 }
@@ -360,8 +645,6 @@
 .apt-cell[data-tone="off"] b {
   color: var(--cd-warning);
 }
-.apt-cell[data-muted] b,
-.apt-cell[data-muted] .apt-cell-sub,
 .apt-cell[data-future] b,
 .apt-cell[data-future] .apt-cell-sub {
   color: var(--cd-muted);
@@ -371,40 +654,82 @@
   font-weight: 400;
   color: var(--cd-muted);
 }
-
 .apt-cell-chips {
   margin-top: -2px;
 }
 .apt-chips {
   display: flex;
-  gap: 4px;
+  gap: 2px 4px;
   flex-wrap: wrap;
+  align-content: center;
   max-block-size: 34px;
   overflow: hidden;
 }
 .apt-chips i {
-  font-style: normal;
-  font-size: 0.6875rem;
-  padding: 1px 7px;
+  flex: 0 0 auto;
+  padding: 0 7px;
+  line-height: 16px;
   border-radius: 99px;
   background: var(--cd-accent-soft);
   color: var(--cd-accent);
+  font-size: 0.6875rem;
   white-space: nowrap;
 }
-.apt-chev {
-  color: var(--cd-muted);
-  transition: rotate 0.15s;
+
+/* Sticky week column + pinned groups: page-coloured masks. */
+.apt-mask {
+  position: sticky;
+  left: 0;
+  z-index: 5;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  padding: 0 var(--apt-gap) 16px 0;
+  margin: 0 calc(-1 * var(--apt-gap)) -16px 0;
+  background: var(--cd-bg);
 }
-.apt-week[data-open] .apt-chev {
-  rotate: 90deg;
+.apt-head .apt-mask {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  align-self: stretch;
+}
+.apt-mask::after,
+.apt-corner::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  width: 40px;
+  background: linear-gradient(to right, var(--cd-bg), transparent);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.apt-scroll[data-scrolled="1"] .apt-mask:not(.apt-pinmask)::after,
+.apt-scroll[data-scrolled="1"] .apt-corner::after {
+  opacity: 1;
+}
+.apt-scroll[data-scrolled="1"]:has(.apt-pinmask)
+  .apt-mask:not(.apt-pinmask)::after,
+.apt-scroll[data-scrolled="1"]:has(.apt-pinmask) .apt-corner::after {
+  opacity: 0;
+}
+.apt-scroll[data-scrolled="1"] .apt-pinmask[data-last]::after {
+  opacity: 1;
+}
+.apt-pinmask {
+  z-index: 6;
+}
+.apt-head .apt-pinmask {
+  z-index: 8;
 }
 
-/* Expanded weekly context panel: pinned to the scrollport, single block */
+/* Expanded weekly context panel: pinned to the scrollport. */
 .apt-detail {
   position: sticky;
   inset-inline-start: 0;
   z-index: 3;
-  inline-size: calc(100cqw - 22px);
+  inline-size: min(100%, calc(var(--apt-vw, 100%) - 11px));
   display: block;
   padding: 4px 8px 12px 46px;
   box-sizing: border-box;
@@ -415,25 +740,8 @@
   padding: 10px 12px;
   min-width: 0;
 }
-.apt-block-h,
 .apt-block .v8-field__label {
   margin: 0 0 8px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--cd-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.apt-lines {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-  color: var(--cd-text);
 }
 .apt-detail-actions {
   display: flex;
@@ -447,10 +755,10 @@
 .apt-checkin-row {
   display: block;
   width: 100%;
-  border: 0;
-  background: none;
   padding: 0;
   margin: 0 0 10px;
+  border: 0;
+  background: none;
   color: var(--cd-muted);
   font-size: var(--v8-font-size-supporting, 0.8125rem);
   text-align: left;
@@ -462,111 +770,129 @@
 .apt-detail .apt-sub {
   margin: 0 0 10px;
 }
+.apt-adjustment {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  margin: 0 0 10px;
+  border-radius: 10px;
+  background: var(--cd-surface);
+  border: 1px solid var(--cd-line);
+}
+.apt-adjustment-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: var(--v8-font-size-supporting, 0.8125rem);
+  color: var(--cd-muted);
+}
+.apt-adjustment-copy strong {
+  color: var(--cd-text);
+  font-size: 0.8125rem;
+}
+.apt-adjustment-note {
+  color: var(--cd-text);
+}
+.apt-adjustment-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.apt-adjust {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 4px;
+}
+.apt-adjust-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.apt-adjust-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.apt-adjust-snapped,
+.apt-adjust-hint {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting, 0.8125rem);
+}
+.apt-adjust-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--cd-surface-subtle, var(--cd-surface));
+}
+.apt-adjust-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+}
+.apt-adjust-stepper-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.apt-adjust-preview {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+.apt-adjust-error {
+  margin: 0;
+  color: var(--cd-danger, var(--cd-text));
+  font-size: var(--v8-font-size-supporting, 0.8125rem);
+}
+@media (max-width: 640px) {
+  .apt-adjust-dates {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 
-/* Customize view dialog: two panes */
-.apt-customize,
+/* Empty + narrow */
+.apt-empty p,
+.apt-narrow-note {
+  color: var(--cd-muted);
+}
+.apt-narrow {
+  display: flex;
+  flex-direction: column;
+}
+.apt-narrow-day {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--cd-line);
+  font-size: 0.8125rem;
+}
+.apt-narrow-vals {
+  color: var(--cd-muted);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Phase editor dialog */
 .apt-phases {
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding-top: 4px;
 }
-.apt-cz-top {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.apt-cz-top .v8-field {
-  flex: 1;
-  min-width: 180px;
-}
-.apt-cz-panes {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
-}
-.apt-cz-pane {
-  border: 1px solid var(--cd-line);
-  border-radius: 10px;
-  padding: 10px 12px;
-  min-width: 0;
-}
-.apt-cz-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-block-size: 320px;
-  overflow-y: auto;
-}
-.apt-cz-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border: 1px solid var(--cd-line);
-  border-radius: 8px;
-  background: var(--cd-surface);
-  font-size: 0.8125rem;
-}
-.apt-cz-grip {
-  border: 0;
-  background: none;
-  padding: 2px;
-  color: var(--cd-muted);
-  cursor: grab;
-  touch-action: none;
-}
-.apt-cz-item-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.apt-cz-remove {
-  margin-inline-start: auto;
-}
-.apt-cz-cat {
-  margin-top: 10px;
-}
-.apt-cz-cat-h {
-  margin: 0 0 6px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--cd-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.apt-cz-avail {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.apt-cz-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px dashed var(--cd-line);
-  border-radius: 99px;
-  background: transparent;
-  color: var(--cd-text);
-  font: inherit;
-  font-size: 0.75rem;
-  cursor: pointer;
-}
-.apt-cz-add:hover {
-  border-color: var(--cd-accent);
-  color: var(--cd-accent);
-}
-.apt-cz-add small {
-  color: var(--cd-muted);
-  font-size: 0.6875rem;
-}
-.apt-customize-actions {
+.apt-dialog-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
@@ -614,50 +940,47 @@
   margin-top: 19px;
 }
 
-/* Phone */
-@media (max-width: 760px) {
-  .apt-bar {
-    flex-direction: column;
-    align-items: stretch;
-    min-width: 0;
+/* Timeline detail notes stay readable on the wide frame. */
+.coach-root .apt-detail .apt-block .v8-field {
+  max-width: 880px;
+}
+
+@media (max-width: 900px) {
+  .apt-range {
+    flex-basis: 100%;
   }
-  .apt-bar .v8-segmented {
-    max-width: 100%;
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-  }
-  .apt-bar-actions {
-    margin-inline-start: 0;
-    flex-wrap: wrap;
-  }
-  .apt-row {
-    gap: 0 8px;
-  }
-  /* Compact row on phone: week, dates, two cells, chevron */
-  .apt-colhead {
+  .apt-sp {
     display: none;
-  }
-  .apt-row {
-    /* biome-ignore lint/complexity/noImportantStyles: must beat the inline grid template */
-    grid-template-columns: 30px minmax(0, 1fr) 56px 56px 14px !important;
-  }
-  .apt-gap {
-    display: none;
-  }
-  .apt-cell:not([data-mobile]) {
-    display: none;
-  }
-  .apt-dates {
-    font-size: 0.75rem;
   }
   .apt-phase-summary {
     display: none;
   }
-  .apt-detail {
-    grid-template-columns: 1fr;
-    padding: 4px 8px 12px;
+}
+
+@media (max-width: 760px) {
+  .apt-narrow-day {
+    flex-direction: column;
+    gap: 4px;
   }
-  .apt-cz-panes {
-    grid-template-columns: 1fr;
+  .apt-narrow-vals {
+    text-align: left;
+  }
+  .apt-phase-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .apt-phase-item > .v8-icon-button {
+    margin-top: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .apt[data-width-anim] .apt-hg,
+  .apt[data-width-anim] .apt-grp {
+    transition: none;
+  }
+  .apt-hg-full,
+  .apt .apt-hg-strip,
+  .apt-grp-cells {
+    transition: opacity 100ms linear;
   }
 }

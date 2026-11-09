@@ -1,4 +1,4 @@
-import { ALL_PARAMETERS, PARAMETERS } from "../model";
+import { allParameters } from "../model";
 import type {
   TrackerConfig,
   TrackerEntry,
@@ -7,12 +7,6 @@ import type {
 import { metricGroups } from "./view-model";
 
 const DAY = 86_400_000;
-const catalog = new Map(
-  [...PARAMETERS, ...ALL_PARAMETERS].map((parameter) => [
-    parameter.id,
-    parameter,
-  ]),
-);
 
 const roundTo = (value: number, decimals: number) => {
   const scale = 10 ** Math.max(0, decimals);
@@ -28,7 +22,7 @@ const optionsFor = (parameter: TrackerParameter, config: TrackerConfig) =>
   config.fieldOptions?.[parameter.id] ?? parameter.options ?? [];
 
 function numericValue(parameter: TrackerParameter, index: number): number {
-  const source = catalog.get(parameter.id);
+  const source = allParameters().find((item) => item.id === parameter.id);
   const sample = typeof source?.sample === "number" ? source.sample : undefined;
   const min = parameter.min;
   const max = parameter.max;

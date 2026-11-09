@@ -3,6 +3,9 @@
   gap: 20px;
   min-width: 0;
 }
+.coach-root .at-editor .v8-field {
+  max-width: 480px;
+}
 .coach-root .at-intro {
   margin: 0;
   color: var(--cd-muted);

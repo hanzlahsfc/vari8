@@ -1,0 +1,42 @@
+.coach-root .cd-library-tabs {
+  margin-top: 8px;
+}
+.coach-root .cd-library-panel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+.coach-root .cd-library-panel-head h2 {
+  margin: 0;
+  font-size: var(--v8-font-size-section-title);
+  line-height: var(--v8-line-height-section-title);
+  font-weight: var(--v8-font-weight-section-title);
+  letter-spacing: -0.01em;
+}
+.coach-root .cd-library-panel-head p {
+  margin: var(--v8-space-1) 0 0;
+  max-width: 620px;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-body);
+  line-height: var(--v8-line-height-body);
+}
+.coach-root .cd-picker-row-disabled {
+  opacity: 0.55;
+}
+.coach-root .cd-picker-row .v8-button {
+  margin-left: auto;
+}
+.coach-root .cd-library-tooltip-target {
+  display: inline-flex;
+}
+/* The library's template editor is the client's plan page: it keeps the
+   `cp-workspace` column (capped and centred in plans/workspace.css) and only
+   adds the editor-specific left alignment of its header block. */
+.coach-root .cd-library-editor .v8-editor-header {
+  margin-bottom: 4px;
+}
+.coach-root .cd-library-editor .cp-footer {
+  margin-top: 32px;
+}

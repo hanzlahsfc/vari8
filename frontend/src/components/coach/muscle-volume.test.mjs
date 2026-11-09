@@ -11,68 +11,89 @@ const code = stripTypeScriptTypes(source, { mode: "strip" });
 const { weeklyMuscleVolume } = await import(
   `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
 );
+const row = (targets, id) => targets.find((t) => t.id === id);
+
 const sample = [
   {
     week: 6,
     exercises: [
-      { id: "deadlift", sets: 4 },
-      { id: "split-squat", sets: 3 },
+      { primaryTarget: "Hamstrings", sets: 4 },
+      { primaryTarget: "Gluteus Maximus", sets: 3 },
     ],
   },
   {
     week: 6,
     exercises: [
-      { id: "bench", sets: 4 },
-      { id: "row", sets: 3 },
+      { primaryTarget: "Chest", sets: 4 },
+      { primaryTarget: "Latissimus", sets: 3 },
     ],
   },
 ];
 
-test("the existing sample schedule counts working sets by primary muscle per week", () => {
+test("counts working sets as direct sets on each primary target", () => {
   const before = structuredClone(sample);
   const result = weeklyMuscleVolume(sample, 6);
   assert.equal(result.totalSets, 14);
   assert.equal(result.unassignedSets, 0);
-  const groups = Object.fromEntries(
-    result.groups.map((group) => [group.id, group]),
-  );
-  assert.equal(groups.hamstrings.sets, 4);
-  assert.equal(groups.glutes.sets, 3);
-  assert.equal(groups.chest.sets, 4);
-  assert.equal(groups.back.sets, 3);
-  assert.equal(groups.quadriceps.sets, 0);
-  assert.equal(groups.glutes.intensity, 0.75);
-  assert.equal(groups.chest.intensity, 1);
+  assert.equal(row(result.targets, "hamstrings").direct, 4);
+  assert.equal(row(result.targets, "gluteus-maximus").direct, 3);
+  assert.equal(row(result.targets, "chest").direct, 4);
+  assert.equal(row(result.targets, "latissimus").direct, 3);
+  assert.equal(row(result.targets, "quadriceps").direct, 0);
+  // heaviest target normalises to 1; the 3-set targets are 0.75
+  assert.equal(row(result.targets, "gluteus-maximus").intensity, 0.75);
+  assert.equal(row(result.targets, "chest").intensity, 1);
   assert.deepEqual(sample, before);
 });
 
-test("different weeks and scheduled sessions remain isolated, with empty intensity safe", () => {
-  const workouts = [
-    ...sample,
-    { week: 7, exercises: [{ id: "hip-thrust", sets: 5 }] },
-  ];
-  assert.equal(weeklyMuscleVolume(workouts, 6).totalSets, 14);
-  assert.equal(
-    weeklyMuscleVolume(workouts, 7).groups.find(
-      (group) => group.id === "glutes",
-    ).sets,
-    5,
-  );
-  const empty = weeklyMuscleVolume(workouts, 8);
-  assert.equal(empty.totalSets, 0);
-  assert.ok(empty.groups.every((group) => group.intensity === 0));
-});
-
-test("unmapped sets are reported rather than assigned a fabricated muscle or silently lost", () => {
+test("additional targets count as indirect sets, never merged into direct", () => {
   const result = weeklyMuscleVolume(
     [
       {
         week: 1,
         exercises: [
-          { id: "unknown", sets: 3 },
-          { id: "bench", sets: 2 },
-          { id: "bench", sets: -1 },
-          { id: "bench", sets: 2.5 },
+          {
+            primaryTarget: "Gluteus Maximus",
+            additionalTargets: ["Quadriceps", "Hamstrings"],
+            sets: 4,
+          },
+        ],
+      },
+    ],
+    1,
+  );
+  assert.equal(row(result.targets, "gluteus-maximus").direct, 4);
+  assert.equal(row(result.targets, "gluteus-maximus").indirect, 0);
+  assert.equal(row(result.targets, "quadriceps").direct, 0);
+  assert.equal(row(result.targets, "quadriceps").indirect, 4);
+  assert.equal(row(result.targets, "hamstrings").indirect, 4);
+});
+
+test("different weeks and sessions remain isolated; empty intensity is safe", () => {
+  const workouts = [
+    ...sample,
+    { week: 7, exercises: [{ primaryTarget: "Gluteus Maximus", sets: 5 }] },
+  ];
+  assert.equal(weeklyMuscleVolume(workouts, 6).totalSets, 14);
+  assert.equal(
+    row(weeklyMuscleVolume(workouts, 7).targets, "gluteus-maximus").direct,
+    5,
+  );
+  const empty = weeklyMuscleVolume(workouts, 8);
+  assert.equal(empty.totalSets, 0);
+  assert.ok(empty.targets.every((t) => t.intensity === 0));
+});
+
+test("unmapped sets are reported rather than fabricating a target", () => {
+  const result = weeklyMuscleVolume(
+    [
+      {
+        week: 1,
+        exercises: [
+          { sets: 3 }, // no target or muscle
+          { primaryTarget: "Chest", sets: 2 },
+          { primaryTarget: "Chest", sets: -1 },
+          { primaryTarget: "Chest", sets: 2.5 },
         ],
       },
     ],
@@ -80,5 +101,20 @@ test("unmapped sets are reported rather than assigned a fabricated muscle or sil
   );
   assert.equal(result.totalSets, 5);
   assert.equal(result.unassignedSets, 3);
-  assert.equal(result.groups.find((group) => group.id === "chest").sets, 2);
+  assert.equal(row(result.targets, "chest").direct, 2);
+});
+
+test("an exercise without a primaryTarget falls back to its muscle label", () => {
+  const result = weeklyMuscleVolume(
+    [{ week: 1, exercises: [{ muscle: "glutes", sets: 3 }] }],
+    1,
+  );
+  assert.equal(row(result.targets, "glutes").direct, 3);
+  assert.equal(result.unassignedSets, 0);
+  // an unrecognised muscle id stays unassigned
+  const bogus = weeklyMuscleVolume(
+    [{ week: 1, exercises: [{ muscle: "not-a-muscle", sets: 2 }] }],
+    1,
+  );
+  assert.equal(bogus.unassignedSets, 2);
 });

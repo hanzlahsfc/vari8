@@ -1,9 +1,9 @@
-import { ALL_PARAMETERS, type Variant } from "./model";
+import { allParameters, type Variant } from "./model";
 
 /** Shared defaults keep the editor's overview and the athlete's tracker in agreement. */
 export function trackerOverviewIds(configuration: Variant): string[] {
   const active = configuration.fields.flatMap((field) => {
-    const parameter = ALL_PARAMETERS.find((item) => item.id === field.id);
+    const parameter = allParameters().find((item) => item.id === field.id);
     return parameter &&
       !parameter.inputType &&
       !(

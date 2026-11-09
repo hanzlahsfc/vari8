@@ -81,10 +81,6 @@
 .coach-root .ct-tracking .ct-trends-picker-toggle:focus-visible,
 .coach-root .ct-tracking .ct-trends-range button:focus-visible,
 .coach-root .ct-tracking .ct-trends-tag button:focus-visible,
-.coach-root
-  .ct-tracking
-  .ct-trends-options
-  input[type="checkbox"]:focus-visible,
 .coach-root .ct-tracking .ct-trends-options label:focus-within,
 .coach-root .ct-tracking .ct-trends-day:focus-visible,
 .coach-root .ct-tracking .ct-trends-plot-wrap:focus-visible,

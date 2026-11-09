@@ -19,6 +19,7 @@ import { FormGrid, Toolbar } from "../vari8/layouts";
 import { AthleteOverview, AthleteProfileHeader } from "./athlete/overview";
 import { AthleteTimelineTab } from "./athlete/timeline-tab";
 import { AthleteTrackerTab } from "./athlete/tracker-tab";
+import { clientSetupCustomized } from "./client-setup";
 import {
   addDays,
   assignTemplate,
@@ -100,7 +101,7 @@ export function ClientsWorkspace() {
   if (route.client) {
     const c = state.clients.find((c) => c.id === route.client);
     return c ? (
-      <ClientProfile client={c} />
+      <ClientProfileSurface client={c} />
     ) : (
       <Empty
         title="Athlete not found"
@@ -291,9 +292,17 @@ export function ClientsWorkspace() {
     </>
   );
 }
-function ClientProfile({ client: c }: { client: CoachClient }) {
+export function ClientProfileSurface({
+  client: c,
+  initialTab,
+}: {
+  client: CoachClient;
+  /** Preview mode: keep tab selection local instead of changing the route. */
+  initialTab?: string;
+}) {
   const { state, setState, navigate, route } = useCoach();
-  const tab = route.tab ?? "Overview";
+  const [localTab, setLocalTab] = useState(initialTab ?? "Overview");
+  const tab = initialTab === undefined ? (route.tab ?? "Overview") : localTab;
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
   const [noteText, setNoteText] = useState("");
@@ -314,7 +323,9 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
     .filter((s) => s.clientId === c.id)
     .sort((a, b) => b.date.localeCompare(a.date));
   const profilePanel = (
-    <>
+    <div
+      className={`cd-profile-content${tab === "Timeline" || tab === "Tracker" ? " cd-profile-content-wide" : ""}`}
+    >
       {tab === "Overview" && <AthleteOverview client={c} />}
       {tab === "Timeline" && <AthleteTimelineTab client={c} />}
       {tab === "Tracker" && <AthleteTrackerTab client={c} />}
@@ -359,12 +370,14 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               Scheduled dates will appear in the shared calendar.
             </Empty>
           )}
-          <Button
-            onClick={() => navigate({ section: "check-ins", client: c.id })}
-          >
-            <CalendarDays size={14} />
-            Open calendar
-          </Button>
+          <div className="cd-card-actions">
+            <Button
+              onClick={() => navigate({ section: "check-ins", client: c.id })}
+            >
+              <CalendarDays size={14} />
+              Open calendar
+            </Button>
+          </div>
         </Surface>
       )}
       {tab === "Notes & tasks" && (
@@ -383,27 +396,29 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               checked={notePinned}
               onChange={setNotePinned}
             />
-            <Button
-              primary
-              disabled={!noteText.trim()}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  internalNotes: [
-                    ...c.internalNotes,
-                    {
-                      id: uid("note"),
-                      text: noteText.trim(),
-                      ...(notePinned ? { pinned: true } : {}),
-                    },
-                  ],
-                }));
-                setNoteText("");
-                setNotePinned(false);
-              }}
-            >
-              Add note
-            </Button>
+            <div className="cd-card-actions">
+              <Button
+                primary
+                disabled={!noteText.trim()}
+                onClick={() => {
+                  update((c) => ({
+                    ...c,
+                    internalNotes: [
+                      ...c.internalNotes,
+                      {
+                        id: uid("note"),
+                        text: noteText.trim(),
+                        ...(notePinned ? { pinned: true } : {}),
+                      },
+                    ],
+                  }));
+                  setNoteText("");
+                  setNotePinned(false);
+                }}
+              >
+                Add note
+              </Button>
+            </div>
             <div className="cd-nt-list">
               {[...c.internalNotes]
                 .sort(
@@ -473,28 +488,30 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               value={todoDue}
               onChange={setTodoDue}
             />
-            <Button
-              primary
-              disabled={!todoText.trim()}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  coachTasks: [
-                    ...c.coachTasks,
-                    {
-                      id: uid("task"),
-                      title: todoText.trim(),
-                      complete: false,
-                      ...(todoDue ? { deadline: todoDue } : {}),
-                    },
-                  ],
-                }));
-                setTodoText("");
-                setTodoDue("");
-              }}
-            >
-              Add to-do
-            </Button>
+            <div className="cd-card-actions">
+              <Button
+                primary
+                disabled={!todoText.trim()}
+                onClick={() => {
+                  update((c) => ({
+                    ...c,
+                    coachTasks: [
+                      ...c.coachTasks,
+                      {
+                        id: uid("task"),
+                        title: todoText.trim(),
+                        complete: false,
+                        ...(todoDue ? { deadline: todoDue } : {}),
+                      },
+                    ],
+                  }));
+                  setTodoText("");
+                  setTodoDue("");
+                }}
+              >
+                Add to-do
+              </Button>
+            </div>
             <div className="cd-nt-list">
               {c.coachTasks.map((t) => (
                 <div className="cd-nt-row" key={t.id}>
@@ -525,27 +542,29 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
               onChange={(e) => setTaskText(e.target.value)}
             />
             <DateField label="Deadline" value={taskDue} onChange={setTaskDue} />
-            <Button
-              primary
-              disabled={!taskText.trim() || !taskDue}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  clientTasks: [
-                    ...c.clientTasks,
-                    {
-                      id: uid("task"),
-                      title: taskText.trim(),
-                      dueDate: taskDue,
-                      status: "open",
-                    },
-                  ],
-                }));
-                setTaskText("");
-              }}
-            >
-              Assign task
-            </Button>
+            <div className="cd-card-actions">
+              <Button
+                primary
+                disabled={!taskText.trim() || !taskDue}
+                onClick={() => {
+                  update((c) => ({
+                    ...c,
+                    clientTasks: [
+                      ...c.clientTasks,
+                      {
+                        id: uid("task"),
+                        title: taskText.trim(),
+                        dueDate: taskDue,
+                        status: "open",
+                      },
+                    ],
+                  }));
+                  setTaskText("");
+                }}
+              >
+                Assign task
+              </Button>
+            </div>
             <div className="cd-nt-list">
               {c.clientTasks.map((t) => {
                 const status =
@@ -568,7 +587,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
           </Surface>
         </div>
       )}
-    </>
+    </div>
   );
   return (
     <>
@@ -581,14 +600,18 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       <Tabs
         label="Client profile"
         value={tab}
-        onValueChange={(value) =>
+        onValueChange={(value) => {
+          if (initialTab !== undefined) {
+            setLocalTab(value);
+            return;
+          }
           navigate({
             ...route,
             section: "clients",
             client: c.id,
             tab: value === "Overview" ? undefined : value,
-          })
-        }
+          });
+        }}
         className="cd-profile-tabs"
         items={[
           "Overview",
@@ -670,9 +693,23 @@ function AssignmentInline({
   onClose: () => void;
 }) {
   const { state, setState, toast, navigate, route } = useCoach();
+  const [confirmReplace, setConfirmReplace] = useState(false);
   const t = state.templates.find((t) => t.id === templateId);
   if (!t) return null;
   const configuration = templateSetup(t, t.defaultVariant);
+  const customized = clientSetupCustomized(client, state.templates);
+  const assign = () => {
+    setState((s) => assignTemplate(s, client.id, t, t.defaultVariant));
+    toast("Template assigned; client plans and history retained");
+    onClose();
+    navigate({
+      ...route,
+      section: "clients",
+      client: client.id,
+      plan: "setup",
+      tab: "Plans",
+    });
+  };
   return (
     <div className="cd-assignment-review">
       <h3>{t.name}</h3>
@@ -705,25 +742,23 @@ function AssignmentInline({
         <strong>Habits</strong>
         <span>{configuration.habits ? "Enabled" : "Not enabled"}</span>
       </div>
+      {customized && (
+        <p className="cd-assignment-warning" role="alert">
+          This replaces {client.name}’s customized setup. Plans and history
+          stay.
+        </p>
+      )}
       <div className="cd-dialog-actions">
         <Button onClick={onClose}>Cancel</Button>
-        <Button
-          primary
-          onClick={() => {
-            setState((s) => assignTemplate(s, client.id, t, t.defaultVariant));
-            toast("Template assigned; client plans and history retained");
-            onClose();
-            navigate({
-              ...route,
-              section: "clients",
-              client: client.id,
-              plan: "setup",
-              tab: "Plans",
-            });
-          }}
-        >
-          Assign & personalize
-        </Button>
+        {customized && !confirmReplace ? (
+          <Button primary onClick={() => setConfirmReplace(true)}>
+            Continue
+          </Button>
+        ) : (
+          <Button primary onClick={assign}>
+            {customized ? "Replace & assign" : "Assign & personalize"}
+          </Button>
+        )}
       </div>
     </div>
   );

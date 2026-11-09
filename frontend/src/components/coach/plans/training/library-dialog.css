@@ -15,12 +15,34 @@
 }
 
 .coach-root .tr-library-toolbar {
-  justify-content: space-between;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .coach-root .tr-library-toolbar > .cd-search {
-  flex: 1 1 260px;
-  min-width: 180px;
+  flex: 1 1 320px;
+  min-width: 220px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.coach-root .tr-library-toolbar > .tr-library-filter {
+  flex: 0 0 144px;
+  width: 144px;
+  height: 40px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .coach-root .tr-library-toolbar > .cd-search {
+    flex: 1 1 100%;
+  }
+  .coach-root .tr-library-toolbar > .tr-library-filter {
+    flex: 1 1 calc(50% - 5px);
+    width: auto;
+  }
 }
 
 .coach-root .tr-library-manage-toolbar > p {
@@ -28,6 +50,17 @@
   color: var(--cd-muted);
   font-size: 14px;
   line-height: 1.5;
+}
+
+/* The manage view keeps its back control above/left of the content, in the
+   same accent text-link style as the editor headers. */
+.coach-root .tr-library-manage-toolbar > .tr-library-back {
+  flex: 0 0 auto;
+  margin-inline-end: 4px;
+}
+
+.coach-root .tr-library-manage-toolbar > .tr-library-toolbar-actions {
+  margin-inline-start: auto;
 }
 
 .coach-root .tr-library-results,
@@ -40,28 +73,32 @@
 }
 
 .coach-root .tr-library-result {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
-  min-height: 64px;
-  padding: 12px 14px;
-  border: 1px solid var(--cd-line);
-  border-radius: 999px;
-  background: var(--cd-surface);
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--cd-line) 60%, transparent);
+  border-radius: 0;
+  background: transparent;
   color: var(--cd-text);
   text-align: left;
   font: inherit;
   cursor: pointer;
-  transition:
-    background 150ms ease,
-    border-color 150ms ease;
+  transition: background 150ms ease;
+}
+.coach-root .tr-library-group + .tr-library-result {
+  border-top: 0;
+}
+.coach-root .tr-library-results > .tr-library-result:first-child {
+  border-top: 0;
 }
 
 .coach-root .tr-library-result:hover {
   background: var(--cd-wash);
-  border-color: var(--cd-accent-ring);
 }
 
 .coach-root .tr-library-result:focus-visible,
@@ -91,19 +128,29 @@
   line-height: 1.4;
 }
 
-.coach-root .tr-library-pill {
+.coach-root .tr-library-tag {
+  justify-self: end;
+  font-size: 11px;
+  color: var(--cd-muted);
+  text-align: right;
+  min-width: 56px;
+}
+.coach-root .tr-library-add {
   display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  min-width: 54px;
-  min-height: 36px;
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: var(--cd-action-bg);
-  color: var(--cd-action-text);
-  font-size: 13px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--cd-line);
+  color: var(--cd-text);
+  font-size: 12px;
   font-weight: 550;
+}
+.coach-root .tr-library-result:hover .tr-library-add,
+.coach-root .tr-library-result:focus-visible .tr-library-add {
+  border-color: var(--cd-accent-ring);
+  color: var(--cd-accent);
 }
 
 .coach-root .tr-library-empty {
@@ -242,4 +289,24 @@
   .coach-root .tr-library-result {
     transition: none;
   }
+}
+
+.coach-root .tr-library-targets {
+  display: grid;
+  gap: 12px;
+}
+.coach-root .tr-library-field {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.coach-root .tr-library-field > span,
+.coach-root .tr-library-field legend {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--cd-muted);
+  padding: 0;
 }

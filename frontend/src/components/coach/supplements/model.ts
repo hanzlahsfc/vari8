@@ -129,7 +129,7 @@ export function isSupplementProduct(
   );
 }
 
-function isSupplementItem(value: unknown): value is SupplementItem {
+export function isSupplementItem(value: unknown): value is SupplementItem {
   if (!record(value)) return false;
   if (!nonempty(value.id) || !isSupplementProduct(value.product)) return false;
   if (!positiveFinite(value.quantity)) return false;

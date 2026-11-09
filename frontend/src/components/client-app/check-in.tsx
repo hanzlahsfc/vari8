@@ -99,8 +99,13 @@ export function CheckInForm({
   const questionPhotos = (q: Question) => photos[q.id] ?? {};
   const questionValid = (q: Question) => {
     if (!q.required) return true;
-    if (q.type === "Visual upload")
-      return questionPoses(q).every((pose) => questionPhotos(q)[pose]);
+    if (q.type === "Visual upload") {
+      const poses = questionPoses(q);
+      const uploaded = Object.keys(questionPhotos(q)).length;
+      return poses.length
+        ? poses.every((pose) => questionPhotos(q)[pose])
+        : uploaded > 0;
+    }
     return (answers[q.id] ?? "").trim().length > 0;
   };
   const missing = (q: Question) => attempted && !questionValid(q);
@@ -120,9 +125,9 @@ export function CheckInForm({
     const photoList = configuration.questions
       .filter((q) => q.type === "Visual upload")
       .flatMap((q) =>
-        questionPoses(q)
-          .map((pose) => ({ pose, src: questionPhotos(q)[pose] }))
-          .filter((p): p is { pose: string; src: string } => Boolean(p.src)),
+        Object.entries(questionPhotos(q))
+          .filter(([, src]) => Boolean(src))
+          .map(([pose, src]) => ({ pose, src, question: q.id })),
       );
     const answersList = configuration.questions
       .map((q) => ({
@@ -209,34 +214,57 @@ export function CheckInForm({
                   {q.required ? " *" : " · optional"}
                 </span>
                 <div className="ca-photo-grid">
-                  {questionPoses(q).map((pose) => {
-                    const src = questionPhotos(q)[pose];
-                    return (
-                      <div className="ca-photo-tile" key={pose}>
-                        <label className="ca-photo-pick">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            hidden
-                            onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              e.target.value = "";
-                              if (file)
-                                setPhoto(q, pose, await downscaleImage(file));
-                            }}
-                          />
-                          {src ? (
-                            // biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs
+                  {questionPoses(q).length
+                    ? questionPoses(q).map((pose) => {
+                        const src = questionPhotos(q)[pose];
+                        return (
+                          <div className="ca-photo-tile" key={pose}>
+                            <label className="ca-photo-pick">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                capture="environment"
+                                hidden
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  e.target.value = "";
+                                  if (file)
+                                    setPhoto(
+                                      q,
+                                      pose,
+                                      await downscaleImage(file),
+                                    );
+                                }}
+                              />
+                              {src ? (
+                                // biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs
+                                <img src={src} alt={pose} />
+                              ) : (
+                                <span className="ca-photo-empty">
+                                  <Camera size={20} aria-hidden="true" />
+                                  <b>{pose}</b>
+                                </span>
+                              )}
+                            </label>
+                            {src ? (
+                              <button
+                                type="button"
+                                className="ca-photo-remove"
+                                aria-label={`Remove ${pose} photo`}
+                                onClick={() => setPhoto(q, pose, null)}
+                              >
+                                <X size={14} aria-hidden="true" />
+                              </button>
+                            ) : null}
+                          </div>
+                        );
+                      })
+                    : Object.entries(questionPhotos(q)).map(([pose, src]) => (
+                        <div className="ca-photo-tile" key={pose}>
+                          <div className="ca-photo-pick">
+                            {/* biome-ignore lint/performance/noImgElement: demo photo previews are dynamic data srcs */}
                             <img src={src} alt={pose} />
-                          ) : (
-                            <span className="ca-photo-empty">
-                              <Camera size={20} aria-hidden="true" />
-                              <b>{pose}</b>
-                            </span>
-                          )}
-                        </label>
-                        {src ? (
+                          </div>
                           <button
                             type="button"
                             className="ca-photo-remove"
@@ -245,14 +273,44 @@ export function CheckInForm({
                           >
                             <X size={14} aria-hidden="true" />
                           </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
+                        </div>
+                      ))}
+                  {!questionPoses(q).length && (
+                    <label className="ca-photo-pick ca-photo-add">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        multiple
+                        hidden
+                        onChange={async (e) => {
+                          const files = [...(e.target.files ?? [])];
+                          e.target.value = "";
+                          const next = { ...questionPhotos(q) };
+                          let index = Object.keys(next).length;
+                          for (const file of files) {
+                            index += 1;
+                            next[`Photo ${index}`] = await downscaleImage(file);
+                          }
+                          setPhotos((current) => ({
+                            ...current,
+                            [q.id]: next,
+                          }));
+                        }}
+                      />
+                      <span className="ca-photo-empty">
+                        <Camera size={20} aria-hidden="true" />
+                        <b>Add photos</b>
+                        <small>Upload one or more images</small>
+                      </span>
+                    </label>
+                  )}
                 </div>
                 {missing(q) && (
                   <span className="ca-photo-error">
-                    Required — add each pose
+                    {questionPoses(q).length
+                      ? "Required — add each pose"
+                      : "Required — add at least one photo"}
                   </span>
                 )}
               </div>

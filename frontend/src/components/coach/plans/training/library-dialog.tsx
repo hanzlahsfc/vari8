@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, Fragment, useState } from "react";
 import {
   Input as SharedInput,
   Select as ThemedSelect,
@@ -10,7 +10,7 @@ import {
   TextArea as SharedTextArea,
 } from "@/components/vari8/inputs";
 import { FormGrid } from "@/components/vari8/layouts";
-import { MUSCLE_GROUPS } from "../../muscle-volume";
+import { LIBRARY_MUSCLE_GROUPS, VOLUME_TARGETS } from "../../muscle-volume";
 import { Button, Dialog, SearchBox } from "../../ui";
 import type { ExerciseDefinition } from "../types";
 import { makeId } from "./training-model";
@@ -47,14 +47,44 @@ export function ExerciseLibraryDialog({
   const [muscle, setMuscle] = useState("");
   const [secondaryMuscles, setSecondaryMuscles] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
+  const [equipment, setEquipment] = useState("");
+  const [movementPattern, setMovementPattern] = useState("");
+  const [position, setPosition] = useState("");
+  const [primaryTarget, setPrimaryTarget] = useState("");
+  const [additionalTargets, setAdditionalTargets] = useState<string[]>([]);
   const [muscleMissing, setMuscleMissing] = useState(false);
+  const [muscleFilter, setMuscleFilter] = useState("all");
+  const [equipmentFilter, setEquipmentFilter] = useState("all");
+  const [shown, setShown] = useState(60);
 
   const normalizedQuery = query.trim().toLocaleLowerCase();
-  const matches = library.filter((item) =>
-    `${item.name} ${item.muscle} ${item.secondaryMuscles.join(" ")} ${item.notes}`
-      .toLocaleLowerCase()
-      .includes(normalizedQuery),
-  );
+  const equipmentOptions = Object.entries(
+    library.reduce<Record<string, number>>((acc, item) => {
+      if (item.equipment) acc[item.equipment] = (acc[item.equipment] ?? 0) + 1;
+      return acc;
+    }, {}),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .map(([eq]) => eq);
+  const patternOptions = [
+    ...new Set(library.map((i) => i.movementPattern).filter(Boolean)),
+  ] as string[];
+  const positionOptions = [
+    ...new Set(library.map((i) => i.position).filter(Boolean)),
+  ] as string[];
+  const matches = library.filter((item) => {
+    const haystack =
+      `${item.name} ${item.muscle} ${item.secondaryMuscles.join(" ")} ` +
+      `${item.equipment ?? ""} ${item.movementPattern ?? ""} ` +
+      `${item.position ?? ""} ${item.primaryTarget ?? ""} ${item.notes}`;
+    const qok =
+      !normalizedQuery ||
+      haystack.toLocaleLowerCase().includes(normalizedQuery);
+    const mok = muscleFilter === "all" || item.muscle === muscleFilter;
+    const eok = equipmentFilter === "all" || item.equipment === equipmentFilter;
+    return qok && mok && eok;
+  });
+  const visible = matches.slice(0, shown);
 
   const resetForm = () => {
     setEditing(null);
@@ -63,6 +93,9 @@ export function ExerciseLibraryDialog({
     setMuscle("");
     setSecondaryMuscles([]);
     setNotes("");
+    setEquipment("");
+    setMovementPattern("");
+    setPosition("");
     setMuscleMissing(false);
   };
 
@@ -72,6 +105,11 @@ export function ExerciseLibraryDialog({
     setMuscle(item?.muscle ?? "");
     setSecondaryMuscles(item?.secondaryMuscles ?? []);
     setNotes(item?.notes ?? "");
+    setEquipment(item?.equipment ?? "");
+    setMovementPattern(item?.movementPattern ?? "");
+    setPosition(item?.position ?? "");
+    setPrimaryTarget(item?.primaryTarget ?? "");
+    setAdditionalTargets(item?.additionalTargets ?? []);
     setFormOpen(true);
   };
 
@@ -91,6 +129,12 @@ export function ExerciseLibraryDialog({
       muscle,
       secondaryMuscles: secondaryMuscles.filter((group) => group !== muscle),
       notes: notes.trim(),
+      equipment: equipment.trim() || undefined,
+      movementPattern: movementPattern.trim() || undefined,
+      position: position.trim() || undefined,
+      primaryTarget: primaryTarget.trim() || undefined,
+      additionalTargets:
+        additionalTargets.length > 0 ? additionalTargets : undefined,
     };
 
     onChange(
@@ -112,31 +156,98 @@ export function ExerciseLibraryDialog({
             <div className="tr-library-toolbar">
               <SearchBox
                 value={query}
-                onChange={setQuery}
-                placeholder="Search exercises or muscle groups"
+                onChange={(v) => {
+                  setQuery(v);
+                  setShown(60);
+                }}
+                placeholder="Search exercises"
                 label="Search exercise library"
               />
+              <select
+                className="v8-input tr-library-filter"
+                aria-label="Muscle group"
+                value={muscleFilter}
+                onChange={(e) => {
+                  setMuscleFilter(e.currentTarget.value);
+                  setShown(60);
+                }}
+              >
+                <option value="all">All muscles</option>
+                {LIBRARY_MUSCLE_GROUPS.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="v8-input tr-library-filter"
+                aria-label="Equipment"
+                value={equipmentFilter}
+                onChange={(e) => {
+                  setEquipmentFilter(e.currentTarget.value);
+                  setShown(60);
+                }}
+              >
+                <option value="all">All equipment</option>
+                {equipmentOptions.map((eq) => (
+                  <option key={eq} value={eq}>
+                    {eq}
+                  </option>
+                ))}
+              </select>
               <Button type="button" onClick={() => setView("manage")}>
-                Manage library
+                Manage
               </Button>
             </div>
             <div className="tr-library-results">
-              {matches.map((item) => (
+              {visible.map((item, at) => {
+                const flat = query.trim() !== "" || muscleFilter !== "all";
+                const prev = at > 0 ? visible[at - 1] : undefined;
+                const showHeader =
+                  !flat && (!prev || prev.muscle !== item.muscle);
+                return (
+                  <Fragment key={item.id}>
+                    {showHeader && (
+                      <span className="tr-library-group">
+                        {LIBRARY_MUSCLE_GROUPS.find((g) => g.id === item.muscle)
+                          ?.label ?? item.muscle}{" "}
+                        ·{" "}
+                        {visible.filter((x) => x.muscle === item.muscle).length}
+                      </span>
+                    )}
+                    <button
+                      className="tr-library-result"
+                      type="button"
+                      onClick={() => onPick(item)}
+                    >
+                      <span className="tr-library-item-copy">
+                        <strong>{item.name}</strong>
+                        <small>
+                          {[item.equipment, item.movementPattern]
+                            .filter(Boolean)
+                            .join(" · ") || muscleSummary(item)}
+                        </small>
+                      </span>
+                      <span className="tr-library-tag" aria-hidden="true">
+                        {LIBRARY_MUSCLE_GROUPS.find((g) => g.id === item.muscle)
+                          ?.label ?? item.muscle}
+                      </span>
+                      <span className="tr-library-add" aria-hidden="true">
+                        + {pickActionLabel}
+                      </span>
+                    </button>
+                  </Fragment>
+                );
+              })}
+              {matches.length > visible.length && (
                 <button
-                  className="tr-library-result"
-                  key={item.id}
                   type="button"
-                  onClick={() => onPick(item)}
+                  className="tr-library-more"
+                  onClick={() => setShown((n) => n + 60)}
                 >
-                  <span className="tr-library-item-copy">
-                    <strong>{item.name}</strong>
-                    <small>{muscleSummary(item)}</small>
-                  </span>
-                  <span className="tr-library-pill" aria-hidden="true">
-                    {pickActionLabel}
-                  </span>
+                  Show 60 more ({matches.length - visible.length} left)
                 </button>
-              ))}
+              )}
               {matches.length === 0 && (
                 <p className="tr-library-empty">
                   {library.length === 0
@@ -149,15 +260,19 @@ export function ExerciseLibraryDialog({
         ) : (
           <>
             <div className="tr-library-toolbar tr-library-manage-toolbar">
+              {mode === "pick" && (
+                <button
+                  type="button"
+                  className="v8-editor-header__back tr-library-back"
+                  onClick={() => setView("pick")}
+                >
+                  Back to exercises
+                </button>
+              )}
               <p>
                 Keep reusable exercises and their shared coaching notes here.
               </p>
               <div className="tr-library-toolbar-actions">
-                {mode === "pick" && (
-                  <Button type="button" onClick={() => setView("pick")}>
-                    Back to exercises
-                  </Button>
-                )}
                 {!formOpen && (
                   <Button primary type="button" onClick={() => beginEdit()}>
                     Add exercise
@@ -189,7 +304,7 @@ export function ExerciseLibraryDialog({
                     }}
                     options={[
                       { value: CHOOSE_MUSCLE, label: "Choose a muscle group" },
-                      ...MUSCLE_GROUPS.map(({ id, label }) => ({
+                      ...LIBRARY_MUSCLE_GROUPS.map(({ id, label }) => ({
                         value: id,
                         label,
                       })),
@@ -204,14 +319,81 @@ export function ExerciseLibraryDialog({
                   <MultiSelect
                     label="Secondary muscles"
                     value={secondaryMuscles}
-                    options={MUSCLE_GROUPS.filter(
+                    options={LIBRARY_MUSCLE_GROUPS.filter(
                       (group) => group.id !== muscle,
                     ).map(({ id, label }) => ({ value: id, label }))}
                     onValueChange={setSecondaryMuscles}
                   />
                 </FormGrid>
+                <div className="tr-library-info-grid">
+                  <SharedInput
+                    label="Equipment"
+                    value={equipment}
+                    onChange={(e) => setEquipment(e.target.value)}
+                    list="lib-equip"
+                    placeholder="e.g. Dumbbell"
+                    size="md"
+                  />
+                  <SharedInput
+                    label="Movement pattern"
+                    value={movementPattern}
+                    onChange={(e) => setMovementPattern(e.target.value)}
+                    list="lib-pattern"
+                    placeholder="e.g. Hinge"
+                    size="md"
+                  />
+                  <SharedInput
+                    label="Position / setup"
+                    value={position}
+                    onChange={(e) => setPosition(e.target.value)}
+                    list="lib-position"
+                    placeholder="e.g. Seated"
+                    size="md"
+                  />
+                </div>
+                <div className="tr-library-targets">
+                  <label className="tr-library-field">
+                    <span>Primary target</span>
+                    <select
+                      className="v8-input"
+                      value={primaryTarget}
+                      onChange={(e) => setPrimaryTarget(e.currentTarget.value)}
+                      aria-label="Primary target"
+                    >
+                      <option value="">None</option>
+                      {VOLUME_TARGETS.map((t) => (
+                        <option key={t.id} value={t.label}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <MultiSelect
+                    label="Additional target(s)"
+                    value={additionalTargets}
+                    onValueChange={setAdditionalTargets}
+                    options={VOLUME_TARGETS.filter(
+                      (t) => t.label !== primaryTarget,
+                    ).map((t) => ({ value: t.label, label: t.label }))}
+                  />
+                </div>
+                <datalist id="lib-equip">
+                  {equipmentOptions.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+                <datalist id="lib-pattern">
+                  {patternOptions.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
+                <datalist id="lib-position">
+                  {positionOptions.map((v) => (
+                    <option key={v} value={v} />
+                  ))}
+                </datalist>
                 <SharedTextArea
-                  label="Coaching notes"
+                  label="Default cues"
                   rows={3}
                   maxLength={1000}
                   value={notes}
@@ -270,10 +452,13 @@ export function ExerciseLibraryDialog({
 
 function muscleSummary(item: ExerciseDefinition): string {
   const primary =
-    MUSCLE_GROUPS.find((group) => group.id === item.muscle)?.label ??
+    LIBRARY_MUSCLE_GROUPS.find((group) => group.id === item.muscle)?.label ??
     (item.muscle || "Unassigned");
   const secondary = item.secondaryMuscles
-    .map((id) => MUSCLE_GROUPS.find((group) => group.id === id)?.label ?? id)
+    .map(
+      (id) =>
+        LIBRARY_MUSCLE_GROUPS.find((group) => group.id === id)?.label ?? id,
+    )
     .join(", ");
   return secondary ? `${primary} · ${secondary}` : primary;
 }

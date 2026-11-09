@@ -77,6 +77,42 @@
       "selector": ".coach-root .v8-field:has(.cb-dw-chart-range) > .v8-field__label",
       "property": "padding",
       "reason": "Widget headers already identify the chart; keeps the required Select label available to assistive technology while visually hiding it in the cramped widget controls row. Remove when the field supports a shared visually-hidden label option."
+    },
+    {
+      "file": "src/components/coach/athlete/timeline-tab.css",
+      "selector": ".apt-compare .v8-checkbox",
+      "property": "min-height",
+      "reason": "Drops the touch-target minimum so the inline checkbox sits on the same toolbar baseline as the adjacent sm buttons. Reassess if Checkbox gains a dense size variant."
+    },
+    {
+      "file": "src/components/coach/setup-preview.css",
+      "selector": ".coach-root .cd-preview-dialog .v8-modal__header",
+      "property": "min-height",
+      "reason": "The setup preview is intentionally a full-bleed viewport dialog with a slim bar so it matches the real profile page; this header/body chrome exception is scoped to .cd-preview-dialog and should be reassessed if Modal gains a chrome-less viewport variant."
+    },
+    {
+      "file": "src/components/coach/setup-preview.css",
+      "selector": ".coach-root .cd-preview-dialog .v8-modal__header",
+      "property": "border-bottom",
+      "reason": "The setup preview is intentionally a full-bleed viewport dialog with a slim bar so it matches the real profile page; this header/body chrome exception is scoped to .cd-preview-dialog and should be reassessed if Modal gains a chrome-less viewport variant."
+    },
+    {
+      "file": "src/components/coach/setup-preview.css",
+      "selector": ".coach-root .cd-preview-dialog .v8-modal__header",
+      "property": "padding",
+      "reason": "The setup preview is intentionally a full-bleed viewport dialog with a slim bar so it matches the real profile page; this header/body chrome exception is scoped to .cd-preview-dialog and should be reassessed if Modal gains a chrome-less viewport variant."
+    },
+    {
+      "file": "src/components/coach/setup-preview.css",
+      "selector": ".coach-root .cd-preview-dialog .v8-modal__header",
+      "property": "background",
+      "reason": "The setup preview is intentionally a full-bleed viewport dialog with a slim bar so it matches the real profile page; this header/body chrome exception is scoped to .cd-preview-dialog and should be reassessed if Modal gains a chrome-less viewport variant."
+    },
+    {
+      "file": "src/components/coach/setup-preview.css",
+      "selector": ".coach-root .cd-preview-dialog .v8-modal__body",
+      "property": "background",
+      "reason": "The setup preview is intentionally a full-bleed viewport dialog with a slim bar so it matches the real profile page; this header/body chrome exception is scoped to .cd-preview-dialog and should be reassessed if Modal gains a chrome-less viewport variant."
     }
   ]
 }

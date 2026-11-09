@@ -46,7 +46,6 @@
 }
 .trk-canvas {
   width: max-content;
-  min-width: 100%;
   padding-bottom: 24px;
 }
 
@@ -70,8 +69,22 @@
   background: var(--cd-bg);
 }
 .trk-hg {
+  position: relative;
   flex: 0 0 auto;
   min-width: 0;
+  overflow: hidden;
+}
+/* Expanded header content stays mounted for the width transition, then
+   unmounts; the vertical strip fades in over it. */
+.trk-hg-full {
+  flex: 0 0 auto;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.trk-hg-full[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
 }
 .trk-hg-title {
   position: relative;
@@ -81,11 +94,6 @@
   padding-bottom: 5px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--cd-line);
-  color: var(--cd-muted);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
 }
 .trk-hg-actions {
   position: absolute;
@@ -124,11 +132,13 @@
 }
 .trk-clab {
   padding: 0 12px;
-  color: var(--cd-muted);
-  font-size: 0.6875rem;
-  font-weight: 600;
+  color: var(--v8-text-secondary);
+  font-size: 12px;
+  font-weight: var(--v8-font-weight-medium);
+  line-height: 16px;
   text-align: center;
   white-space: nowrap;
+  position: relative;
 }
 .trk-subtle {
   display: inline;
@@ -136,18 +146,65 @@
   white-space: nowrap;
 }
 .trk-clab .trk-subtle {
-  font-weight: 500;
-  opacity: 0.75;
+  color: var(--v8-text-tertiary);
+  font-size: inherit;
+  font-weight: var(--v8-font-weight-regular);
+  opacity: 1;
 }
 .trk-clab.trk-txt {
   text-align: left;
 }
+.trk-clab-info {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--cd-muted);
+  cursor: pointer;
+  opacity: 0.6;
+  transform: translateY(-50%);
+  transition:
+    color 120ms var(--cd-ease-out),
+    opacity 120ms var(--cd-ease-out);
+}
+.trk-clab-info:hover,
+.trk-clab-info:focus-visible {
+  color: var(--cd-text);
+  opacity: 1;
+}
+.trk-clab-info:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: 1px;
+}
+.trk-hg[data-collapsed] {
+  display: flex;
+  min-height: 64px;
+}
+/* Only collapse/expand animates the column widths; ordinary re-measures
+   (week collapse, data changes) settle immediately. */
+.trk[data-width-anim] .trk-hg {
+  transition: width 220ms var(--cd-ease-out);
+}
+.trk[data-width-anim] .trk-hg[data-collapsed] {
+  transition-duration: 180ms;
+}
 .coach-root .trk .trk-hg-strip {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
   display: grid;
   place-items: center;
   width: 30px;
-  height: 100%;
   min-height: 40px;
+  white-space: nowrap;
   padding: 4px 0;
   border: 0;
   border-radius: 8px;
@@ -160,7 +217,14 @@
   text-transform: uppercase;
   writing-mode: vertical-rl;
   rotate: 180deg;
+  opacity: 0;
+  pointer-events: none;
   cursor: pointer;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.coach-root .trk .trk-hg-strip[data-visible] {
+  opacity: 1;
+  pointer-events: auto;
 }
 .coach-root .trk .trk-hg-strip:hover {
   background: var(--cd-wash);
@@ -172,15 +236,31 @@
   display: flex;
   gap: var(--trk-gap);
   width: max-content;
-  min-width: 100%;
   margin-bottom: 16px;
 }
 .trk-tile {
   flex: 0 0 auto;
   overflow: hidden;
-  border: 1px solid var(--cd-line);
-  border-radius: 12px;
+  border: 0;
+  border-radius: var(--v8-radius-control);
   background: var(--cd-surface);
+  box-shadow: var(--v8-shadow-card);
+}
+.trk[data-width-anim] .trk-tile {
+  transition: width 220ms var(--cd-ease-out);
+}
+.trk[data-width-anim] .trk-tile[data-collapsed] {
+  transition-duration: 180ms;
+}
+.trk-grouprows {
+  min-width: 0;
+}
+.trk-grouprows-fade {
+  opacity: 0;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.trk-grouprows-fade[data-visible] {
+  opacity: 1;
 }
 .trk-row {
   display: grid;
@@ -203,6 +283,13 @@
 }
 .trk-collapsed-fill {
   height: calc(var(--trk-row) * 7 + 6px);
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--trk-row) - 1px),
+    var(--cd-line) calc(var(--trk-row) - 1px),
+    var(--cd-line) var(--trk-row)
+  );
 }
 
 .coach-root .trk .trk-c {
@@ -297,7 +384,7 @@
   display: inline-block;
   max-width: 100%;
   padding: 1px 7px;
-  border-radius: 6px;
+  border-radius: var(--v8-radius-pill);
   background: color-mix(in srgb, var(--cd-text) 9%, transparent);
   color: color-mix(in srgb, var(--cd-text) 78%, transparent);
   font-size: 0.6875rem;
@@ -324,6 +411,7 @@
   display: grid;
   align-items: center;
   height: 34px;
+  overflow: hidden;
   border-top: 1px solid var(--cd-line);
   background: var(--trk-band-bg);
 }
@@ -338,6 +426,11 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 100ms var(--cd-ease-out);
+}
+.trk-band[data-visible] .trk-sum {
+  opacity: 1;
 }
 .trk-sum .trk-subtle {
   color: var(--cd-muted);
@@ -503,7 +596,8 @@
   opacity: 0.8;
 }
 .trk-phase-line {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 60px;
   border-top: 1px solid var(--cd-line);
 }
 
@@ -702,4 +796,61 @@
 .trk-plan-on {
   color: var(--cd-accent);
   font-weight: 600;
+}
+
+/* Day-type tooltip: portaled into .coach-root, so it sits outside the
+   scroller's overflow clip while keeping the coach theme variables. */
+.coach-root .trk-tip-pos {
+  z-index: 80;
+}
+.coach-root .trk-tip {
+  display: grid;
+  gap: 3px;
+  max-width: min(320px, calc(100vw - 24px));
+  padding: 7px 10px;
+  border: 1px solid var(--cd-line);
+  border-radius: 8px;
+  background: var(--cd-raised);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+  color: var(--cd-text);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  pointer-events: none;
+  transform: scale(1);
+  transform-origin: var(--transform-origin);
+  transition:
+    opacity 140ms var(--cd-ease-out),
+    transform 140ms var(--cd-ease-out);
+}
+.coach-root .trk-tip[data-starting-style],
+.coach-root .trk-tip[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.97);
+}
+.coach-root .trk-tip-line {
+  font-weight: 550;
+}
+.coach-root .trk-tip-detail {
+  color: var(--cd-muted);
+  font-size: 0.6875rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trk[data-width-anim] .trk-hg,
+  .trk[data-width-anim] .trk-tile {
+    transition: none;
+  }
+  .trk-hg-full,
+  .coach-root .trk .trk-hg-strip,
+  .trk-grouprows-fade,
+  .trk-sum {
+    transition: opacity 100ms linear;
+  }
+  .coach-root .trk-tip {
+    transition: none;
+  }
+  .coach-root .trk-tip[data-starting-style],
+  .coach-root .trk-tip[data-ending-style] {
+    transform: none;
+  }
 }

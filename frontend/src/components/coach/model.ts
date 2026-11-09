@@ -3,6 +3,7 @@ import {
   createInitialClients,
   type WorkspaceClient,
 } from "../ethereal/clients/model";
+import type { MealPlan } from "../ethereal/mealplan/model";
 import {
   type AthleteOverviewSetting,
   isAthleteOverviewSetting,
@@ -16,6 +17,8 @@ import {
   isValidDashboardDraft,
 } from "./builder/schema";
 import { adoptClientAppDemo } from "./client-app-demo";
+import { isPlanLibraryValue } from "./library";
+import { adoptLibraryDemo } from "./library-demo";
 import { isClientPlans, plansOwnedBy, planTargets } from "./plans/domain";
 import { type ClientPhase, isClientPhase } from "./plans/phase-planning";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
@@ -26,9 +29,13 @@ import type {
 import type {
   ClientPlans,
   ExerciseDefinition,
+  ExerciseInfoField,
   LogField,
+  TrainingCoachNote,
+  TrainingPlan,
   TrainingSessionLog,
 } from "./plans/types";
+import type { SupplementPlan } from "./supplements/model";
 import {
   type ActivityMetric,
   formatActivityTarget,
@@ -70,7 +77,16 @@ export type Route = {
   plan?: string;
   module?: string;
   tab?: string;
+  /** Training editor week to open (plan week number). */
+  week?: string;
 };
+export type CustomParameterType =
+  | "number"
+  | "rating"
+  | "yes-no"
+  | "choice"
+  | "text"
+  | "time";
 export type Parameter = {
   id: string;
   name: string;
@@ -89,6 +105,16 @@ export type Parameter = {
     | "period-start"
     | "cycle-day";
   options?: string[];
+  /** Present on workspace-defined parameters only. */
+  custom?: boolean;
+  /** Authoring type; built-ins infer theirs from `inputType` and `units`. */
+  kind?: CustomParameterType;
+  /** Numeric display precision chosen when the parameter was created. */
+  decimals?: 0 | 1 | 2;
+  /** Weekly summary default chosen when the parameter was created. */
+  summary?: "avg" | "sum" | "none";
+  /** Archived definitions stay in saved snapshots but leave the Add search. */
+  archived?: boolean;
 };
 const avgTrend = ["Weekly average", "Trend"];
 const ratingUnits = ["1–10", "1–5", "Word labels"];
@@ -583,9 +609,33 @@ export const PARAMETERS: Parameter[] = [
 
 // Keep the legacy extension point for saved templates; nutrition fields are now selectable.
 export const LEGACY_PARAMETERS: Parameter[] = [];
+
+let customParameterRegistry: Parameter[] = [];
+
+/**
+ * Workspace-defined parameters live in saved state. Consumers read through
+ * `allParameters()` / `getParameter()` so a registry refresh reaches every
+ * lookup without rebuilding static catalogs.
+ */
+export function registerCustomParameters(
+  list: readonly Parameter[] | undefined,
+) {
+  customParameterRegistry = Array.isArray(list)
+    ? list.filter((item) => !!item?.custom && item.id.startsWith("custom-"))
+    : [];
+  return customParameterRegistry;
+}
+
+export function allParameters(): Parameter[] {
+  return [...PARAMETERS, ...LEGACY_PARAMETERS, ...customParameterRegistry];
+}
+
+export function getParameter(id: string) {
+  return allParameters().find((item) => item.id === id);
+}
+
+/** Static built-in catalog alias retained for checks; prefer `allParameters()`. */
 export const ALL_PARAMETERS = [...PARAMETERS, ...LEGACY_PARAMETERS];
-export const getParameter = (id: string) =>
-  ALL_PARAMETERS.find((item) => item.id === id);
 export const TRAINING_FIELDS = [
   "Sets",
   "Fixed reps",
@@ -603,6 +653,41 @@ export type FieldConfig = {
   decimals?: 0 | 1 | 2;
   summary?: "avg" | "sum" | "count" | "none";
 };
+/** Per-column timeline overrides; a plain string id remains valid. */
+export type TimelineColumnSetting = {
+  id: string;
+  label?: string;
+  agg?: "avg" | "sum" | "min" | "max" | "last" | "count";
+  decimals?: 0 | 1 | 2;
+};
+/** One configured timeline column group. `columns` are registry or `param:` ids. */
+export type TimelineGroupSetting = {
+  id: string;
+  label: string;
+  columns: (string | TimelineColumnSetting)[];
+  collapsed?: boolean;
+  pinned?: boolean;
+};
+/** Per-variant timeline presentation. Absent fields fall back to defaults. */
+export type TimelineSetup = {
+  groups: TimelineGroupSetting[];
+  showPhases?: boolean;
+  compare?: boolean;
+  order?: "oldest" | "newest";
+};
+/** One configured tracker group. `fieldIds` are variant field ids. */
+export type TrackerLayoutGroup = {
+  id: string;
+  label: string;
+  fieldIds: string[];
+  collapsed?: boolean;
+  pinned?: boolean;
+};
+/** Per-variant tracker presentation. Absent means automatic grouping. */
+export type TrackerLayout = {
+  groups: TrackerLayoutGroup[];
+};
+
 export type Widget = {
   id: string;
   name: string;
@@ -643,12 +728,20 @@ export type Variant = {
   phaseOptions?: string[];
   /** Coach-selected activity planning columns for the weekly timeline. */
   roadmapActivityTargets?: ActivityMetric[];
+  /** Timeline group/column layout; absent falls back to TIMELINE_GROUP_DEFAULTS. */
+  timeline?: TimelineSetup;
+  /** Tracker group/field layout; absent keeps the automatic grouping. */
+  trackerLayout?: TrackerLayout;
   training: {
     options?: TrainingOptions;
     defaults?: Record<TrainingOptionKey, string>;
     fields: string[];
     logFields?: LogField[];
     loadUnit?: "kg" | "lb";
+    /** which exercise-library fields are shown in the plan */
+    exerciseInfo?: ExerciseInfoField[];
+    /** whether sets carry an RIR or RPE intensity target */
+    intensity?: "off" | "rir" | "rpe";
     volume: boolean;
     breakdown: string;
     presentation: string;
@@ -751,7 +844,7 @@ export type Submission = {
   answers: { question: string; answer: string }[];
   metrics: string[];
   visuals: string[];
-  photos?: { pose: string; src: string }[];
+  photos?: { pose: string; src: string; question?: string }[];
   note: string;
   flags: { exercise: string; set: number; date: string; text: string }[];
   response?: { text: string; video?: Media; changes: string[]; date: string };
@@ -771,14 +864,55 @@ export type ReviewDraft = {
     after: string | number;
   }[];
 };
+export type PlanLibrary = {
+  training: LibraryEntry<TrainingPlan>[];
+  nutrition: LibraryEntry<MealPlan>[];
+  supplements: LibraryEntry<SupplementPlan>[];
+};
+export type LibraryKind = keyof PlanLibrary;
+export type LibraryEntry<T> = {
+  id: string;
+  name: string;
+  description: string;
+  updatedAt: string;
+  /** Client the entry was first saved from, for replace-in-place prompts. */
+  sourceClientId?: string;
+  /** Detached content: no client id, start date, history or adjustments. */
+  content: T;
+};
 export type CoachState = {
   version: 1;
   demoSeeds?: {
-    amaraTraining?: 1;
+    amaraTraining?: 1 | 2 | 3 | 4 | 5;
     clientAppDemo?: 1;
-    trainingLogDemo?: 1;
+    libraryDemo?: 1 | 2 | 3;
+    trainingLogDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+    exerciseLibrary?: 1;
     athleteProfileDemo?: 1;
-    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+    athleteDataDemo?:
+      | 1
+      | 2
+      | 3
+      | 4
+      | 5
+      | 6
+      | 7
+      | 8
+      | 9
+      | 10
+      | 11
+      | 12
+      | 13
+      | 14
+      | 15
+      | 16
+      | 17
+      | 18
+      | 19
+      | 20
+      | 21
+      | 22
+      | 23;
   };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
@@ -793,12 +927,17 @@ export type CoachState = {
     clientId?: string;
   }[];
   templates: Template[];
+  /** Coach-wide reusable plan library. Content is detached from clients. */
+  library?: PlanLibrary;
+  /** Workspace-defined tracker parameters shared by every template/client. */
+  customParameters?: Parameter[];
   clients: CoachClient[];
   extras: Extra[];
   submissions: Submission[];
   trainingLogs?: TrainingSessionLog[];
-  /** Coach-wide timeline-tab views (column lists); built-ins are
-   *  reorderable but not deletable. */
+  trainingNotes?: TrainingCoachNote[];
+  /** @deprecated Timeline-tab views were replaced by the single all-column
+   *  table; kept so previously persisted state still loads. */
   timelineViews?: {
     id: string;
     name: string;
@@ -808,6 +947,8 @@ export type CoachState = {
   }[];
   /** Coach-wide week ordering on the timeline tab. */
   timelineOrder?: "newest" | "oldest";
+  /** Coach-wide "compare with logged" toggle on the timeline tab. */
+  timelineCompare?: boolean;
   messages: Message[];
   drafts: Record<
     string,
@@ -815,6 +956,8 @@ export type CoachState = {
   >;
   reviewDrafts: Record<string, ReviewDraft>;
   editorDrafts: Record<string, Template>;
+  /** Unsaved per-client setup drafts, keyed by client id. */
+  clientSetupDrafts: Record<string, Template>;
   preferences: {
     mode: "dark" | "light";
     accent: string;
@@ -841,6 +984,260 @@ export function clone<T>(value: T): T {
 export function uid(prefix = "id") {
   return `${prefix}-${crypto.randomUUID()}`;
 }
+export const CUSTOM_PARAMETER_PREFIX = "custom-";
+
+export type CustomParameterDraft = {
+  name: string;
+  type: CustomParameterType;
+  group: string;
+  unit?: string;
+  scale?: 5 | 10;
+  options?: string[];
+  decimals?: 0 | 1 | 2;
+  summary?: "avg" | "sum" | "none";
+};
+
+/** Validate the authoring fields before creating or editing a definition. */
+export function customParameterDraftError(
+  draft: CustomParameterDraft,
+): string | undefined {
+  const name = draft.name.trim();
+  if (!name) return "Add a name.";
+  if (name.length > 60) return "Keep the name under 60 characters.";
+  if (!draft.group.trim()) return "Choose a group.";
+  if (draft.type === "choice") {
+    const options = (draft.options ?? [])
+      .map((option) => option.trim())
+      .filter(Boolean);
+    if (options.length < 2) return "Add at least two choices.";
+    if (new Set(options).size !== options.length)
+      return "Choice labels must be unique.";
+  }
+  if (draft.type === "number" && draft.unit && draft.unit.trim().length > 12)
+    return "Keep the unit under 12 characters.";
+  return undefined;
+}
+
+/** Build the Parameter shape every existing consumer already understands. */
+export function customParameter(
+  draft: CustomParameterDraft,
+  id = uid(CUSTOM_PARAMETER_PREFIX.slice(0, -1)),
+): Parameter {
+  const name = draft.name.trim();
+  const group = draft.group.trim();
+  const common = {
+    id,
+    name,
+    group,
+    sample: 0,
+    calculations: [] as string[],
+    custom: true,
+    kind: draft.type,
+  };
+  switch (draft.type) {
+    case "rating": {
+      const scale = draft.scale === 5 ? "1–5" : "1–10";
+      return {
+        ...common,
+        units: [scale],
+        sample: draft.scale === 5 ? 3 : 7,
+        summary: draft.summary ?? "avg",
+      };
+    }
+    case "yes-no":
+      return {
+        ...common,
+        units: ["yes/no"],
+        sample: "No",
+        inputType: "context",
+        options: ["No", "Yes"],
+        summary: "none",
+      };
+    case "choice": {
+      const options = [
+        ...new Set(
+          (draft.options ?? []).map((option) => option.trim()).filter(Boolean),
+        ),
+      ];
+      return {
+        ...common,
+        units: ["choice"],
+        sample: options[0] ?? "",
+        inputType: "choice",
+        options,
+        summary: "none",
+      };
+    }
+    case "text":
+      return {
+        ...common,
+        units: [],
+        sample: "",
+        inputType: "text",
+        summary: "none",
+      };
+    case "time":
+      return {
+        ...common,
+        units: ["time"],
+        sample: "07:00",
+        inputType: "time",
+        summary: "none",
+      };
+    default:
+      return {
+        ...common,
+        units: draft.unit?.trim() ? [draft.unit.trim()] : [],
+        sample: 0,
+        decimals: draft.decimals ?? 1,
+        summary: draft.summary ?? "avg",
+      };
+  }
+}
+
+/** Where a definition is referenced, so destructive actions can offer Archive. */
+export function customParameterUsage(state: CoachState, id: string) {
+  const variants = [
+    ...state.templates.flatMap((template) => template.variants),
+    ...state.clients.flatMap((client) =>
+      client.assignment ? client.assignment.snapshot.variants : [],
+    ),
+    ...Object.values(state.editorDrafts).flatMap(
+      (template) => template.variants,
+    ),
+    ...Object.values(state.clientSetupDrafts ?? {}).flatMap(
+      (template) => template.variants,
+    ),
+  ];
+  let templates = 0;
+  let clients = 0;
+  for (const template of state.templates) {
+    const draft = state.editorDrafts[template.id];
+    if (
+      [...template.variants, ...(draft?.variants ?? [])].some((variant) =>
+        variant.fields.some((field) => field.id === id),
+      )
+    )
+      templates += 1;
+  }
+  for (const client of state.clients) {
+    const draft = state.clientSetupDrafts?.[client.id];
+    if (
+      [
+        ...(client.assignment ? client.assignment.snapshot.variants : []),
+        ...(draft?.variants ?? []),
+      ].some((variant) => variant.fields.some((field) => field.id === id))
+    )
+      clients += 1;
+  }
+  return {
+    templates,
+    clients,
+    total: variants.reduce(
+      (count, variant) =>
+        count + variant.fields.filter((field) => field.id === id).length,
+      0,
+    ),
+  };
+}
+
+export function setCustomParameters(
+  state: CoachState,
+  list: Parameter[],
+): CoachState {
+  return { ...state, customParameters: list.length ? list : undefined };
+}
+
+/**
+ * Edit a definition and mirror unit/options onto every stored field so the
+ * "applies to every client using it" promise also covers saved snapshots.
+ */
+export function updateCustomParameterDefinition(
+  state: CoachState,
+  next: Parameter,
+): CoachState {
+  const current = state.customParameters ?? [];
+  if (!current.some((item) => item.id === next.id)) return state;
+  const syncVariant = (variant: Variant): Variant => ({
+    ...variant,
+    fields: variant.fields.map((field) =>
+      field.id !== next.id
+        ? field
+        : {
+            ...field,
+            unit: next.units[0] ?? "",
+            ...(next.options ? { options: [...next.options] } : {}),
+          },
+    ),
+  });
+  const templates = state.templates.map((template) => ({
+    ...template,
+    variants: template.variants.map(syncVariant),
+  }));
+  const clients = state.clients.map((client) =>
+    client.assignment
+      ? {
+          ...client,
+          assignment: {
+            ...client.assignment,
+            snapshot: {
+              ...client.assignment.snapshot,
+              variants: client.assignment.snapshot.variants.map(syncVariant),
+            },
+          },
+        }
+      : client,
+  );
+  return {
+    ...state,
+    customParameters: current.map((item) =>
+      item.id === next.id ? next : item,
+    ),
+    templates,
+    clients,
+    editorDrafts: Object.fromEntries(
+      Object.entries(state.editorDrafts).map(([id, template]) => [
+        id,
+        { ...template, variants: template.variants.map(syncVariant) },
+      ]),
+    ),
+    ...(state.clientSetupDrafts
+      ? {
+          clientSetupDrafts: Object.fromEntries(
+            Object.entries(state.clientSetupDrafts).map(([id, template]) => [
+              id,
+              { ...template, variants: template.variants.map(syncVariant) },
+            ]),
+          ),
+        }
+      : {}),
+  };
+}
+
+export function archiveCustomParameter(
+  state: CoachState,
+  id: string,
+): CoachState {
+  return {
+    ...state,
+    customParameters: (state.customParameters ?? []).map((item) =>
+      item.id === id ? { ...item, archived: true } : item,
+    ),
+  };
+}
+
+/** Delete only when nothing references it; callers offer Archive otherwise. */
+export function deleteCustomParameter(
+  state: CoachState,
+  id: string,
+): CoachState {
+  if (customParameterUsage(state, id).total > 0) return state;
+  return setCustomParameters(
+    state,
+    (state.customParameters ?? []).filter((item) => item.id !== id),
+  );
+}
+
 export function addDays(date: string, n: number) {
   const d = new Date(`${date}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() + n);
@@ -1105,11 +1502,33 @@ export function assignTemplate(
             assignment: {
               templateId: template.id,
               variantId,
-              snapshot: clone(template),
+              // Template photo questions intentionally carry no poses; each
+              // client owns their pose list inside the snapshot.
+              snapshot: withClientPhotoPoses(clone(template), {}),
             },
           }
         : c,
     ),
+  };
+}
+/** Clear or replace per-question photo poses on a template snapshot. */
+function withClientPhotoPoses(
+  template: Template,
+  posesByQuestion: Record<string, string[]>,
+): Template {
+  return {
+    ...template,
+    variants: template.variants.map((variant) => ({
+      ...variant,
+      questions: variant.questions.map((question) =>
+        question.type === "Visual upload"
+          ? {
+              ...question,
+              options: (posesByQuestion[question.id] ?? []).join(", "),
+            }
+          : question,
+      ),
+    })),
   };
 }
 export function switchVariant(
@@ -1493,6 +1912,7 @@ export function seedState(today: string = localToday()): CoachState {
     drafts: {},
     reviewDrafts: {},
     editorDrafts: {},
+    clientSetupDrafts: {},
     preferences: {
       mode: "dark",
       accent: "#EB91B8",
@@ -1501,15 +1921,17 @@ export function seedState(today: string = localToday()): CoachState {
       priorityNotifications: true,
     },
   };
-  return adoptAthleteDataDemo(
-    adoptAthleteProfileDemo(
-      adoptTrainingLogDemo(
-        adoptClientAppDemo(adoptAmaraTrainingExample(seeded), today),
+  return adoptLibraryDemo(
+    adoptTrainingLogDemo(
+      adoptAthleteDataDemo(
+        adoptAthleteProfileDemo(
+          adoptClientAppDemo(adoptAmaraTrainingExample(seeded), today),
+          today,
+        ),
         today,
       ),
       today,
     ),
-    today,
   );
 }
 
@@ -1536,6 +1958,8 @@ const obj =
     Object.entries(shape).every(([k, g]) =>
       g((v as Record<string, unknown>)[k]),
     );
+/** Any non-array object. New layout settings are normalised after loading. */
+const record: Guard = (v) => !!v && typeof v === "object" && !Array.isArray(v);
 const opt =
   (g: Guard): Guard =>
   (v) =>
@@ -1571,6 +1995,42 @@ const mediaGuard = obj({
   size: num,
   demo: opt(one(["voice", "video"])),
 });
+const builtInParameterIds = new Set(ALL_PARAMETERS.map((p) => p.id));
+const parameterIdGuard: Guard = (v) =>
+  typeof v === "string" &&
+  (builtInParameterIds.has(v) || /^custom-[0-9a-f-]{8,}$/i.test(v));
+const parameterGuard: Guard = (v) =>
+  obj({
+    id: (value) =>
+      typeof value === "string" && /^custom-[0-9a-f-]{8,}$/i.test(value),
+    name: (value) =>
+      typeof value === "string" &&
+      value.trim().length > 0 &&
+      value.length <= 60,
+    group: (value) => typeof value === "string" && value.trim().length > 0,
+    units: arr(str),
+    sample: (value) => typeof value === "string" || typeof value === "number",
+    calculations: arr(str),
+    inputType: opt(
+      one([
+        "time",
+        "blood-pressure",
+        "text",
+        "choice",
+        "multi-choice",
+        "location-rating",
+        "context",
+        "period-start",
+        "cycle-day",
+      ]),
+    ),
+    options: opt(arr(str)),
+    custom: one([true]),
+    kind: opt(one(["number", "rating", "yes-no", "choice", "text", "time"])),
+    decimals: opt(one([0, 1, 2])),
+    summary: opt(one(["avg", "sum", "none"])),
+    archived: opt(bool),
+  })(v);
 const variantGuard = obj({
   id: str,
   name: str,
@@ -1592,7 +2052,7 @@ const variantGuard = obj({
   ),
   fields: arr(
     obj({
-      id: one(ALL_PARAMETERS.map((p) => p.id)),
+      id: parameterIdGuard,
       unit: str,
       options: opt(arr(str)),
       decimals: opt(one([0, 1, 2])),
@@ -1601,7 +2061,7 @@ const variantGuard = obj({
   ),
   roadmap: arr(
     obj({
-      source: one(ALL_PARAMETERS.map((p) => p.id)),
+      source: parameterIdGuard,
       calculation: str,
       comparison: bool,
     }),
@@ -1609,6 +2069,10 @@ const variantGuard = obj({
   roadmapPhases: opt(bool),
   phaseOptions: opt(arr(str)),
   roadmapActivityTargets: opt(arr(one(["steps", "cardio"]))),
+  // Tolerant on purpose: normaliseTimelineSetup / normaliseTrackerLayout clean
+  // malformed group data on load instead of rejecting the whole workspace.
+  timeline: opt(record),
+  trackerLayout: opt(record),
   training: obj({
     options: opt(
       obj({
@@ -1624,6 +2088,10 @@ const variantGuard = obj({
     fields: arr(one(TRAINING_FIELDS)),
     logFields: opt(arr(one(["weight", "reps", "rpe", "rir", "note"]))),
     loadUnit: opt(one(["kg", "lb"])),
+    exerciseInfo: opt(
+      arr(one(["equipment", "movementPattern", "position", "cues"])),
+    ),
+    intensity: opt(one(["off", "rir", "rpe"])),
     volume: bool,
     breakdown: str,
     presentation: str,
@@ -1791,11 +2259,18 @@ export function isCoachState(v: unknown): v is CoachState {
       version: one([1]),
       demoSeeds: opt(
         obj({
-          amaraTraining: opt(one([1])),
+          amaraTraining: opt(one([1, 2, 3, 4, 5])),
           clientAppDemo: opt(one([1])),
-          trainingLogDemo: opt(one([1])),
+          libraryDemo: opt(one([1, 2, 3])),
+          trainingLogDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9])),
+          exerciseLibrary: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
-          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])),
+          athleteDataDemo: opt(
+            one([
+              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+              20, 21, 22, 23,
+            ]),
+          ),
         }),
       ),
       exerciseLibrary: opt(
@@ -1806,6 +2281,11 @@ export function isCoachState(v: unknown): v is CoachState {
             muscle: str,
             secondaryMuscles: arr(str),
             notes: str,
+            equipment: opt(str),
+            movementPattern: opt(str),
+            position: opt(str),
+            primaryTarget: opt(str),
+            additionalTargets: opt(arr(str)),
           }),
         ),
       ),
@@ -1822,6 +2302,7 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
       ),
       timelineOrder: opt(one(["newest", "oldest"])),
+      timelineCompare: opt(bool),
       coachTodos: opt(
         arr(
           obj({
@@ -1837,6 +2318,8 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
       ),
       templates: arr(templateGuard),
+      customParameters: opt(arr(parameterGuard)),
+      library: opt(isPlanLibraryValue),
       clients: arr(clientGuard),
       extras: arr(
         obj({
@@ -1905,6 +2388,23 @@ export function isCoachState(v: unknown): v is CoachState {
           }),
         ),
       ),
+      trainingNotes: opt(
+        arr(
+          obj({
+            id: str,
+            clientId: str,
+            sessionId: str,
+            exerciseKey: str,
+            setIndex: opt(num),
+            field: opt(str),
+            fromWeek: num,
+            untilWeek: opt(num),
+            text: str,
+            createdAt: str,
+            updatedAt: opt(str),
+          }),
+        ),
+      ),
       submissions: arr(
         obj({
           id: str,
@@ -1915,7 +2415,7 @@ export function isCoachState(v: unknown): v is CoachState {
           answers: arr(obj({ question: str, answer: str })),
           metrics: arr(str),
           visuals: arr(str),
-          photos: opt(arr(obj({ pose: str, src: str }))),
+          photos: opt(arr(obj({ pose: str, src: str, question: opt(str) }))),
           note: str,
           flags: arr(obj({ exercise: str, set: num, date, text: str })),
           response: opt(
@@ -1952,6 +2452,7 @@ export function isCoachState(v: unknown): v is CoachState {
       ),
       reviewDrafts: dict(reviewGuard),
       editorDrafts: dict(templateGuard),
+      clientSetupDrafts: opt(dict(templateGuard)),
       preferences: obj({
         mode: one(["dark", "light"]),
         accent: (v) => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v),

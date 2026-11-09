@@ -1,0 +1,79 @@
+/* Full-bleed setup preview: a slim bar over the real page column. */
+
+.coach-root .cd-preview-dialog {
+  border: 0;
+  border-radius: 0;
+  background: var(--cd-bg);
+  box-shadow: none;
+}
+
+.coach-root .cd-preview-dialog::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.coach-root .cd-preview-dialog .v8-modal__header {
+  min-height: 46px;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--cd-line) 65%, transparent);
+  padding: 0 14px 0 18px;
+  background: var(--cd-bg);
+}
+
+.coach-root .cd-preview-dialog .v8-modal__header h2 {
+  color: var(--cd-text);
+  font-size: 12.5px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+}
+
+.coach-root .cd-preview-dialog .v8-modal__header .v8-modal__header-actions {
+  gap: 12px;
+}
+
+.coach-root .cd-preview-dialog .v8-modal__body {
+  background: var(--cd-bg);
+  overflow: auto;
+  /* The real page reserves one document scrollbar gutter. The dialog already
+     inherits that gutter; hiding its inner scrollbar keeps the workspace
+     width identical instead of subtracting a second scrollbar. */
+  scrollbar-width: none;
+}
+
+.coach-root .cd-preview-dialog .v8-modal__body::-webkit-scrollbar {
+  display: none;
+}
+
+/* The real workspace starts after the fixed sidebar. Inside the dialog the
+   sidebar is not rendered, so reserve the same token width and let the
+   .cd-main column centre exactly as it does on the profile page. */
+.coach-root .cd-preview-workspace {
+  width: calc(100% - var(--cd-sidebar-width));
+  min-height: 100%;
+  margin-left: var(--cd-sidebar-width);
+}
+
+@media (max-width: 760px) {
+  .coach-root .cd-preview-workspace {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.coach-root .cd-main.cd-preview-main {
+  max-width: 1680px;
+  min-height: 100%;
+}
+
+.coach-root .cd-preview-client-app {
+  min-width: 0;
+}
+
+.coach-root .cd-setup-preview-error {
+  margin: 0;
+  padding: 14px;
+  border-radius: var(--v8-radius-field);
+  background: var(--cd-wash);
+  color: var(--cd-muted);
+  font-size: 13px;
+}

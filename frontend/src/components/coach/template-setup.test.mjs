@@ -51,7 +51,10 @@ test("one active configuration retains legacy configurations without mutating th
   assert.equal(result.defaultVariant, "meal-plan");
   assert.deepEqual(result.variants[0].views, ["Dashboard", "Nutrition"]);
   assert.equal(result.variants[0].roadmapPhases, true);
-  assert.equal(result.variants[0].training.breakdown, "Muscle groups / week");
+  assert.equal(
+    result.variants[0].training.breakdown,
+    "Primary / additional targets per week",
+  );
   assert.deepEqual(result.legacyConfigurations, [before.variants[1]]);
   assert.deepEqual(singleTemplateSetup(result), result);
 });

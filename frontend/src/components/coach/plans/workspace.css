@@ -2,10 +2,21 @@
 .coach-root .cp-workspace {
   min-width: 0;
 }
-.coach-root .cp-workspace:has(> .cn-editor) {
+/* Plan editors use the full client-profile frame. Width is spent on editor
+   columns and rails; long-form fields keep a readable maximum. */
+.coach-root .cp-workspace {
   width: 100%;
-  max-width: 1320px;
-  margin-inline: auto;
+  max-width: none;
+  margin-inline: 0;
+}
+.coach-root .cp-workspace .v8-field {
+  max-width: 480px;
+}
+.coach-root .cp-workspace .v8-field:has(.v8-textarea) {
+  max-width: 880px;
+}
+.coach-root .cp-workspace.cp-workspace-wide {
+  max-width: none;
 }
 .coach-root .cp-footer,
 .coach-root .cp-schedule-link {
@@ -49,7 +60,7 @@
 .coach-root .cp-footer {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid var(--cd-line);
+  border-top: 0;
 }
 .coach-root .cp-preview-label {
   margin-bottom: 24px;

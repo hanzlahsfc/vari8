@@ -6,7 +6,11 @@ import {
 } from "../../client-app/training-log/model";
 import type { MealPlan } from "../../ethereal/mealplan/model";
 import { type CoachClient, type CoachState, formatDate } from "../model";
-import { applicablePlan, scheduledOption } from "../plans/domain";
+import {
+  applicablePlan,
+  scheduledOption,
+  trainingPlanAt,
+} from "../plans/domain";
 import { type ClientPhase, phaseRanges } from "../plans/phase-planning";
 import { temporaryNutritionForDate } from "../plans/temporary-nutrition";
 import type { IifymPlan, TemporaryNutrition } from "../plans/types";
@@ -14,7 +18,7 @@ import { addLocalDays, isLocalCalendarDate, mondayOf } from "../targets/model";
 import { templateSetup } from "../template-setup";
 import { clientTracking } from "../tracking/data";
 
-export type TimelineEventKind = "deload" | "diet-break" | "refeed";
+export type TimelineEventKind = "deload" | "intro" | "diet-break" | "refeed";
 export type TimelineEvent = {
   id: string;
   kind: TimelineEventKind;
@@ -23,10 +27,13 @@ export type TimelineEvent = {
   /** ISO date, >= startDate; refeed defaults to one day */
   endDate: string;
   note: string;
+  /** Links a deload/intro event to the training-plan adjustment it mirrors. */
+  adjustmentId?: string;
 };
 
 export const TIMELINE_KIND_LABELS: Record<TimelineEventKind, string> = {
   deload: "Deload",
+  intro: "Intro week",
   "diet-break": "Diet break",
   refeed: "Refeed day",
 };
@@ -54,13 +61,16 @@ export function isTimelineEvent(value: unknown): value is TimelineEvent {
   const event = value as Record<string, unknown>;
   if (
     typeof event.id !== "string" ||
-    !["deload", "diet-break", "refeed"].includes(event.kind as string) ||
+    !["deload", "intro", "diet-break", "refeed"].includes(
+      event.kind as string,
+    ) ||
     typeof event.startDate !== "string" ||
     !isLocalCalendarDate(event.startDate) ||
     typeof event.endDate !== "string" ||
     !isLocalCalendarDate(event.endDate) ||
     event.endDate < event.startDate ||
-    typeof event.note !== "string"
+    typeof event.note !== "string" ||
+    (event.adjustmentId !== undefined && typeof event.adjustmentId !== "string")
   )
     return false;
   // Stored events may still carry a legacy `nutritionOverride`; it is stripped
@@ -246,7 +256,7 @@ export function attentionItems(
         });
       });
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   if (plan) {
     const week = displayWeek(plan, today);
@@ -283,7 +293,7 @@ export function weekTrainingSummary(
   today: string,
 ): { scheduled: number; done: number; inProgress: number; flagged: number } {
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const logs = (state.trainingLogs ?? []).filter(
     (log) => log.clientId === client.id,

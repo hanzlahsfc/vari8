@@ -14,6 +14,7 @@ import type {
   TrainingPlan,
   TrainingSessionLog,
 } from "../../coach/plans/types";
+import { exerciseInfoFields } from "../../coach/plans/types";
 import {
   Button,
   Card,
@@ -25,7 +26,7 @@ import {
 } from "../../vari8/components";
 import { DateTimePicker } from "../../vari8/inputs";
 import {
-  DEFAULT_LOG_FIELDS,
+  effectiveLogFields,
   findLog,
   finishLog,
   notDoneCount,
@@ -135,8 +136,7 @@ export function SessionLogger({
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
 
-  const fields =
-    log?.logFields ?? configuration.training.logFields ?? DEFAULT_LOG_FIELDS;
+  const fields = log?.logFields ?? effectiveLogFields(configuration.training);
   const unit = log?.loadUnit ?? configuration.training.loadUnit ?? "kg";
   const numericFields = NUMERIC_FIELDS.filter((field) =>
     fields.includes(field.id),
@@ -267,17 +267,30 @@ export function SessionLogger({
             date: item.date,
           });
           const prescription = exercise.prescription;
-          const cues = hasField(configuration, "Detailed instructions")
+          const info = exerciseInfoFields(configuration.training);
+          const cues = info.includes("cues")
             ? [
                 ...new Set(
                   [
                     prescription.instructions,
                     prescription.generalNotes,
                     ...prescription.sets.map((set) => set.instructions),
-                  ].filter((cue) => cue?.trim()),
+                  ].filter((cue): cue is string => Boolean(cue)),
                 ),
               ]
             : [];
+          const infoChips = info
+            .filter((f) => f !== "cues")
+            .map((f) =>
+              f === "equipment"
+                ? prescription.equipment
+                : f === "movementPattern"
+                  ? prescription.movementPattern
+                  : f === "position"
+                    ? prescription.position
+                    : undefined,
+            )
+            .filter((v): v is string => Boolean(v));
           const progression =
             hasField(configuration, "Progression notes") &&
             prescription.progression
@@ -290,6 +303,15 @@ export function SessionLogger({
                 <p className="ctl-exercise-rx">
                   {prescriptionText(prescription, configuration)}
                 </p>
+                {infoChips.length > 0 && (
+                  <div className="ctl-info-chips">
+                    {infoChips.map((chip) => (
+                      <span key={chip} className="ctl-info-chip">
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 {progression && (
                   <p className="ctl-exercise-note">{progression}</p>
                 )}
@@ -356,6 +378,22 @@ export function SessionLogger({
                                     } as Partial<Omit<LoggedSet, "setId">>)
                                   }
                                 />
+                                {field.id === "rir" || field.id === "rpe"
+                                  ? (() => {
+                                      const tgt =
+                                        field.id === "rir"
+                                          ? prescribed?.rir
+                                          : prescribed?.rpe;
+                                      return tgt !== undefined ? (
+                                        <span
+                                          className="ctl-set-unit ctl-set-target"
+                                          aria-hidden="true"
+                                        >
+                                          Tgt {tgt}
+                                        </span>
+                                      ) : null;
+                                    })()
+                                  : null}
                                 {field.id === "weight" && (
                                   <span
                                     className="ctl-set-unit"

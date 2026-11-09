@@ -24,9 +24,11 @@
   --v8-font-size-card-heading: 0.9375rem;
   --v8-font-size-label: 0.8125rem;
   --v8-font-size-table: 0.875rem;
+  --v8-font-size-overline: 0.6875rem;
   --v8-line-height-card-heading: 1.25rem;
   --v8-line-height-label: 1.125rem;
   --v8-line-height-table: 1.25rem;
+  --v8-line-height-overline: 1rem;
   --v8-font-size-metric: 2rem;
   --v8-font-size-metric-large: 2.5rem;
   --v8-line-height-page-title: 2.25rem;
@@ -46,10 +48,13 @@
   --v8-font-weight-semibold: 600;
   --v8-font-weight-page-title: 600;
   --v8-font-weight-section-title: 600;
+  --v8-font-weight-card-heading: 600;
+  --v8-font-weight-overline: 600;
   --v8-font-weight-metric: 600;
   --v8-letter-spacing-tight: -0.02em;
   --v8-letter-spacing-metric: -0.025em;
   --v8-letter-spacing-ui: -0.01em;
+  --v8-letter-spacing-overline: 0.06em;
 
   --v8-space-1: 0.25rem;
   --v8-space-2: 0.5rem;

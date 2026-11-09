@@ -1,5 +1,12 @@
 import assert from "node:assert/strict";
-import { MUSCLE_GROUPS } from "../../muscle-volume.ts";
+import { readFileSync } from "node:fs";
+import {
+  LIBRARY_MUSCLE_GROUPS,
+  MUSCLE_GROUPS,
+  targetIdFor,
+  weeklyMuscleVolume,
+} from "../../muscle-volume.ts";
+import { migrateCoachState } from "../domain.ts";
 import { defaultExerciseLibrary } from "./library-model.ts";
 import {
   cloneExercise,
@@ -14,17 +21,12 @@ import {
   prescribedTrainingVolume,
   resizeExerciseSets,
   trainingRotationSchedule,
-  volumeExerciseId,
   writeTrainingWeek,
 } from "./training-model.ts";
 
 const seededLibrary = defaultExerciseLibrary();
 const seededLibraryAgain = defaultExerciseLibrary();
-assert.equal(
-  seededLibrary.length,
-  10,
-  "the starter library is intentionally small",
-);
+assert.equal(seededLibrary.length, 546, "the library is the exercise database");
 assert.equal(
   new Set(seededLibrary.map((item) => item.id)).size,
   seededLibrary.length,
@@ -37,9 +39,9 @@ assert.deepEqual(
 );
 assert.ok(
   seededLibrary.every((item) =>
-    MUSCLE_GROUPS.some((group) => group.id === item.muscle),
+    LIBRARY_MUSCLE_GROUPS.some((group) => group.id === item.muscle),
   ),
-  "each starter uses a supported primary muscle group",
+  "each library entry uses a supported primary muscle group",
 );
 const configuredDefaults = {
   setType: "Top set",
@@ -169,6 +171,23 @@ assert.deepEqual(
   [2, 1],
   "a set with a different tempo remains visibly separate",
 );
+const rirSets = structuredClone(variedSets).map((set) => ({
+  ...set,
+  tempo: "Controlled",
+  rir: 2,
+}));
+rirSets[2].rir = 1;
+assert.deepEqual(
+  groupConsecutiveSetPrescriptions(rirSets).map((group) => [
+    group.count,
+    group.prescription.rir,
+  ]),
+  [
+    [2, 2],
+    [1, 1],
+  ],
+  "sets with different RIR targets stay separate and carry their RIR",
+);
 const interveningSet = { ...variedSets[0], id: "set-intervening", reps: 6 };
 assert.deepEqual(
   groupConsecutiveSetPrescriptions([
@@ -272,11 +291,6 @@ assert.notEqual(
   plan.overrides["1"][0].exercises[0].sets[0].id,
 );
 for (const group of MUSCLE_GROUPS) {
-  assert.notEqual(
-    volumeExerciseId("custom-exercise", group.id),
-    "custom-exercise",
-    `${group.id} maps to a supported exercise id`,
-  );
   const volume = prescribedMuscleVolume(
     [
       {
@@ -296,10 +310,11 @@ for (const group of MUSCLE_GROUPS) {
     ],
     1,
   );
+  const t = volume.targets.find((item) => item.id === group.id);
   assert.equal(
-    volume.groups.find((item) => item.id === group.id)?.sets,
+    t?.direct,
     3,
-    `${group.id} receives explicitly allocated sets`,
+    `${group.id} receives explicitly allocated sets as its label row`,
   );
   assert.equal(volume.unassignedSets, 0);
 }
@@ -397,10 +412,7 @@ assert.deepEqual(
   "weekly assignment exposes each scheduled occurrence",
 );
 const repeatedVolume = prescribedTrainingVolume(rotationPlan, 1);
-assert.equal(
-  repeatedVolume.groups.find((group) => group.id === "chest")?.sets,
-  6,
-);
+assert.equal(repeatedVolume.targets.find((t) => t.id === "chest")?.direct, 6);
 assert.equal(repeatedVolume.totalSets, 8);
 assert.equal(repeatedVolume.unassignedSets, 2);
 assert.equal(repeatedVolume.periodLabel, "This week");
@@ -514,3 +526,185 @@ assert.deepEqual(
 );
 assert.equal(prescribedTrainingVolume(legacyPlan, 1).totalSets, 3);
 console.log("training model checks passed");
+
+// ── volume-by-target (weeklyMuscleVolume) ──
+const wv = (exercises, week = 1) =>
+  weeklyMuscleVolume([{ week, exercises }], week);
+const t = (targets, id) => targets.find((x) => x.id === id);
+
+{
+  // primary target → direct sets
+  const r = wv([{ primaryTarget: "Gluteus Maximus", sets: 4 }]);
+  assert.equal(t(r.targets, "gluteus-maximus").direct, 4);
+  // additional target → indirect sets (counts never halved)
+  const r2 = wv([
+    {
+      primaryTarget: "Gluteus Maximus",
+      additionalTargets: ["Quadriceps"],
+      sets: 4,
+    },
+  ]);
+  assert.equal(t(r2.targets, "quadriceps").indirect, 4);
+  assert.equal(t(r2.targets, "quadriceps").direct, 0);
+  // canonical ordering: chest before glutes
+  const ids = r2.targets.map((x) => x.id);
+  assert.ok(ids.indexOf("chest") < ids.indexOf("gluteus-maximus"));
+  // intensity: indirect counts half for colour only
+  const r3 = wv([
+    { primaryTarget: "Gluteus Maximus", sets: 4 },
+    {
+      primaryTarget: "Latissimus",
+      additionalTargets: ["Gluteus Maximus"],
+      sets: 4,
+    },
+  ]);
+  const g = t(r3.targets, "gluteus-maximus");
+  assert.equal(g.direct, 4);
+  assert.equal(g.indirect, 4);
+  // weighted 6 = the max, so it normalises to 1.0
+  assert.equal(g.intensity, 1);
+  const lat = t(r3.targets, "latissimus");
+  assert.equal(lat.direct, 4);
+  assert.equal(
+    Math.round(lat.intensity * 100) / 100,
+    Math.round((4 / 6) * 100) / 100,
+  );
+  // no primaryTarget → falls back to the muscle label row
+  const r4 = wv([{ muscle: "quadriceps", sets: 3 }]);
+  assert.equal(t(r4.targets, "quadriceps").direct, 3);
+  // neither → unassigned
+  const r5 = wv([{ sets: 2 }]);
+  assert.equal(r5.unassignedSets, 2);
+  // other week ignored
+  const r6 = weeklyMuscleVolume(
+    [{ week: 2, exercises: [{ primaryTarget: "Gluteus Maximus", sets: 4 }] }],
+    1,
+  );
+  assert.equal(r6.totalSets, 0);
+}
+
+// migration: fills snapshot fields from the library, doesn't override
+{
+  const seeded = migrateCoachState({
+    clients: [
+      {
+        id: "c",
+        plans: {
+          training: {
+            draft: {
+              overrides: {
+                1: [
+                  {
+                    id: "s",
+                    name: "S",
+                    exercises: [
+                      {
+                        id: "e",
+                        libraryId: "exdb-barbell-hip-thrust",
+                        sets: [],
+                      },
+                      {
+                        id: "e2",
+                        libraryId: "exdb-barbell-hip-thrust",
+                        equipment: "Custom eq",
+                        sets: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    ],
+    exerciseLibrary: undefined,
+    demoSeeds: {},
+  });
+  const ex = seeded.clients[0].plans.training.draft.overrides["1"][0].exercises;
+  assert.equal(ex[0].equipment, "Barbell");
+  assert.equal(ex[0].primaryTarget, "Gluteus Maximus");
+  assert.equal(ex[1].equipment, "Custom eq"); // coach-set not overridden
+}
+
+// DB-wide coverage: every primary/additional label resolves to a target
+{
+  const db = JSON.parse(
+    readFileSync(
+      new URL("../../../../data/exercise-database.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const labels = new Set();
+  for (const e of db) {
+    if (e.primaryTarget) labels.add(e.primaryTarget);
+    for (const a of e.additionalTargets ?? []) labels.add(a);
+  }
+  const missing = [...labels].filter((l) => targetIdFor(l) === undefined);
+  assert.deepEqual(
+    missing,
+    [],
+    `targets must cover every database label: ${missing}`,
+  );
+}
+
+// flat targets: a trained row shows label·direct only
+{
+  const r = weeklyMuscleVolume(
+    [{ week: 1, exercises: [{ primaryTarget: "Mid/Lower Chest", sets: 3 }] }],
+    1,
+  );
+  assert.equal(r.targets.find((t) => t.id === "mid-lower-chest").direct, 3);
+  assert.equal(
+    r.targets.find((t) => t.id === "mid-lower-chest").label,
+    "Mid/Lower Chest",
+  );
+}
+
+// libraryId / name fallback fills the missing snapshot
+{
+  const lib = [
+    {
+      id: "exdb-x",
+      name: "Hip Thrust",
+      primaryTarget: "Gluteus Maximus",
+      additionalTargets: ["Hamstrings"],
+    },
+  ];
+  const r = prescribedMuscleVolume(
+    [
+      {
+        exercises: [
+          {
+            id: "e",
+            name: "Hip Thrust",
+            libraryId: "exdb-x",
+            sets: [{ type: "Working" }, { type: "Working" }],
+          },
+        ],
+      },
+    ],
+    1,
+    lib,
+  );
+  assert.equal(r.targets.find((t) => t.id === "gluteus-maximus").direct, 2);
+  assert.equal(r.targets.find((t) => t.id === "hamstrings").indirect, 2);
+  // by name when the libraryId is unknown
+  const r2 = prescribedMuscleVolume(
+    [
+      {
+        exercises: [
+          {
+            id: "e2",
+            name: "hip thrust",
+            libraryId: "old-id",
+            sets: [{ type: "Working" }],
+          },
+        ],
+      },
+    ],
+    1,
+    lib,
+  );
+  assert.equal(r2.targets.find((t) => t.id === "gluteus-maximus").direct, 1);
+}

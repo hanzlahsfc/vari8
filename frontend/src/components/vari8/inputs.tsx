@@ -38,6 +38,8 @@ import "./inputs.css";
 
 type SharedFieldProps = {
   label: string;
+  /** Visually hide the label while keeping it for assistive tech. */
+  hideLabel?: boolean;
   value: string;
   onValueChange: (value: string) => void;
   hint?: string;
@@ -56,6 +58,7 @@ export type TextAreaProps = {
   error?: string;
   id?: string;
   size?: ControlSize;
+  labelClassName?: string;
   ref?: Ref<HTMLTextAreaElement>;
 } & React.TextareaHTMLAttributes<HTMLTextAreaElement>;
 
@@ -65,6 +68,7 @@ export function TextArea({
   error,
   id,
   className,
+  labelClassName,
   size = "md",
   ref,
   ...props
@@ -73,7 +77,12 @@ export function TextArea({
   const controlId = id ?? generatedId;
   return (
     <div className="v8-field">
-      <label className="v8-field__label" htmlFor={controlId}>
+      <label
+        className={["v8-field__label", labelClassName]
+          .filter(Boolean)
+          .join(" ")}
+        htmlFor={controlId}
+      >
         {label}
       </label>
       {hint && (
@@ -383,6 +392,7 @@ function usePortalContainer() {
 
 export function DatePicker({
   label,
+  hideLabel,
   value,
   onValueChange,
   hint,
@@ -501,7 +511,7 @@ export function DatePicker({
   return (
     <div className="v8-field v8-picker" ref={setRoot}>
       <label
-        className="v8-field__label"
+        className={hideLabel ? "v8-field__label v8-sr-only" : "v8-field__label"}
         id={`${fieldId}-label`}
         htmlFor={fieldId}
       >
@@ -702,6 +712,7 @@ export function DatePicker({
 
 export function TimePicker({
   label,
+  hideLabel,
   value,
   onValueChange,
   hint,
@@ -813,7 +824,7 @@ export function TimePicker({
   return (
     <div className="v8-field v8-picker" ref={setRoot}>
       <label
-        className="v8-field__label"
+        className={hideLabel ? "v8-field__label v8-sr-only" : "v8-field__label"}
         id={`${fieldId}-label`}
         htmlFor={fieldId}
       >
