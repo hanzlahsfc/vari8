@@ -3,12 +3,17 @@ import {
   defaultSummary,
 } from "../client-tracker-preview/preview-model";
 import {
-  ALL_PARAMETERS,
+  allParameters,
   type CoachClient,
-  type CoachState,
   type FieldConfig,
   type Parameter,
+  type TrackerLayout,
 } from "../model";
+import { assignedVariant } from "../template-setup";
+import {
+  AUTO_TRACKER_GROUPS as GROUPS,
+  autoTrackerGroup as groupOf,
+} from "./tracker-layout";
 
 export type Summary = "avg" | "sum" | "count" | "none";
 export type Kind =
@@ -35,41 +40,14 @@ export type Col = {
   lowerBetter: boolean;
   countWord?: [string, string];
 };
-export type Group = { id: string; label: string; cols: Col[] };
-
-export const GROUPS: [string, string[]][] = [
-  ["Body", ["Weight basics"]],
-  ["Health", ["Health readings"]],
-  ["Cycle", ["Cycle tracking"]],
-  [
-    "Nutrition",
-    [
-      "Nutrition",
-      "Fluids",
-      "Salt & sodium",
-      "Caffeine & alcohol",
-      "Fruit & vegetables",
-      "Hunger & appetite",
-      "Digestion",
-    ],
-  ],
-  [
-    "Recovery",
-    [
-      "Sleep",
-      "Energy and readiness",
-      "Stress, mood and focus",
-      "Soreness & discomfort",
-      "Recovery context note",
-    ],
-  ],
-  ["Training", ["How training feels"]],
-  ["Activity", ["Movement and cardio", "Activity context note"]],
-  ["Notes", ["Day context", "Notes"]],
-];
-const groupOf = (parameterGroup: string) =>
-  GROUPS.find(([, sources]) => sources.includes(parameterGroup))?.[0] ??
-  "Notes";
+export type Group = {
+  id: string;
+  label: string;
+  cols: Col[];
+  /** Initial layout state from the client's configured tracker layout. */
+  collapsed?: boolean;
+  pinned?: boolean;
+};
 
 const RATING_UNITS = new Set(["1–10", "1–5", "Word labels"]);
 const LOWER_BETTER = new Set([
@@ -164,33 +142,86 @@ export function colFor(field: FieldConfig, parameter: Parameter): Col {
   };
 }
 
-/** Template tracker fields: snapshot order, live template settings win. */
-export function trackerFields(
-  state: CoachState,
-  client: CoachClient,
-): FieldConfig[] {
-  const assignment = client.assignment;
-  if (!assignment) return [];
-  const live = state.templates
-    .find((template) => template.id === assignment.templateId)
-    ?.variants.find((variant) => variant.id === assignment.variantId);
-  const snapshot =
-    assignment.snapshot.variants.find((v) => v.id === assignment.variantId) ??
-    assignment.snapshot.variants[0];
-  const liveById = new Map((live?.fields ?? []).map((f) => [f.id, f]));
-  const out = (snapshot?.fields ?? []).map((f) => ({
-    ...f,
-    ...liveById.get(f.id),
-  }));
-  for (const field of live?.fields ?? [])
-    if (!out.some((f) => f.id === field.id)) out.push(field);
-  return out;
+/**
+ * Tracker fields for an assigned client: the assignment snapshot is the single
+ * source of truth. Live library template edits never flow into an assigned
+ * client.
+ */
+export function trackerFields(client: CoachClient): FieldConfig[] {
+  return assignedVariant(client)?.fields ?? [];
 }
 
-export function buildGroups(state: CoachState, client: CoachClient): Group[] {
+/** Place the derived plan/session/coach columns into a layout group. */
+function withDerived(
+  layout: TrackerLayout,
+  byGroup: Map<string, Col[]>,
+): Group[] {
+  const autoCols = new Map<string, Col>();
+  for (const cols of byGroup.values())
+    for (const col of cols) autoCols.set(col.key, col);
+  const leading = new Map<string, string[]>([
+    ["Nutrition", ["@day", "@plan"]],
+    ["Training", ["@session"]],
+  ]);
+  const trailing = new Map<string, string[]>([["Notes", ["@coach"]]]);
+  const placed = new Set<string>();
+  const take = (keys: readonly string[]) => {
+    const out: Col[] = [];
+    for (const key of keys) {
+      const col = autoCols.get(key);
+      if (!col || placed.has(key)) continue;
+      placed.add(key);
+      out.push(col);
+    }
+    return out;
+  };
+  const groups: Group[] = layout.groups.map((group) => ({
+    id: group.id,
+    label: group.label,
+    collapsed: group.collapsed,
+    pinned: group.pinned,
+    cols: [
+      ...take(leading.get(group.id) ?? []),
+      ...take(group.fieldIds),
+      ...take(trailing.get(group.id) ?? []),
+    ],
+  }));
+  // A derived column whose automatic group was removed keeps its place.
+  for (const [id, keys] of leading) {
+    const remaining = keys.filter(
+      (key) => autoCols.has(key) && !placed.has(key),
+    );
+    if (!remaining.length) continue;
+    const group = groups.find((candidate) => candidate.id === id) ?? {
+      id,
+      label: id,
+      cols: [],
+    };
+    if (!groups.includes(group)) groups.push(group);
+    group.cols = [...take(remaining), ...group.cols];
+  }
+  for (const [id, keys] of trailing) {
+    const remaining = keys.filter(
+      (key) => autoCols.has(key) && !placed.has(key),
+    );
+    if (!remaining.length) continue;
+    const group = groups.find((candidate) => candidate.id === id) ?? {
+      id,
+      label: id,
+      cols: [],
+    };
+    if (!groups.includes(group)) groups.push(group);
+    group.cols = [...group.cols, ...take(remaining)];
+  }
+  return groups.filter((group) => group.cols.length > 0);
+}
+
+export function buildGroups(client: CoachClient): Group[] {
+  const setup = assignedVariant(client);
+  if (!setup) return [];
   const byGroup = new Map<string, Col[]>();
-  for (const field of trackerFields(state, client)) {
-    const parameter = ALL_PARAMETERS.find((p) => p.id === field.id);
+  for (const field of setup.fields) {
+    const parameter = allParameters().find((p) => p.id === field.id);
     if (!parameter || SKIP_TYPES.has(parameter.inputType ?? "")) continue;
     if (parameter.id === "cycle-day") continue;
     const group = groupOf(parameter.group);
@@ -241,6 +272,7 @@ export function buildGroups(state: CoachState, client: CoachClient): Group[] {
     ...(byGroup.get("Notes") ?? []),
     derived("@coach", "Coach", "coach"),
   ]);
+  if (setup.trackerLayout) return withDerived(setup.trackerLayout, byGroup);
   return GROUPS.map(([id]) => ({
     id,
     label: id,

@@ -3,6 +3,52 @@
   flex-direction: column;
   gap: 12px;
 }
+.coach-root .supp-editor > .v8-field {
+  max-width: 480px;
+}
+.coach-root .supp-group {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.coach-root .supp-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--v8-border);
+}
+/* The group action belongs to the heading, not the far edge of the frame. */
+.coach-root .supp-group-head h2 {
+  flex: 0 0 auto;
+}
+.coach-root .supp-group-head > .v8-button {
+  flex: 0 0 auto;
+}
+.coach-root .supp-group-head h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--v8-font-size-section-title);
+  line-height: var(--v8-line-height-section-title);
+  font-weight: var(--v8-font-weight-section-title);
+}
+.coach-root .supp-group-head h2 span {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+/* Cards keep a readable width and fill the wide frame instead of stretching
+   one card across it: 3 per row at 2560, 2 at 1920, 1 at 1440. */
+.coach-root .supp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 620px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
 .coach-root .supp-row {
   container-type: inline-size;
   display: flex;
@@ -32,12 +78,18 @@
   align-items: end;
 }
 .coach-root .supp-main-row {
-  grid-template-columns: 140px minmax(220px, 1fr) 72px 100px 80px 32px;
+  /* Proportional tracks fill the card: brand and product lead, quantity,
+     dosage and unit stay compact, and the product link ends the row. */
+  grid-template-columns:
+    minmax(110px, 1fr) minmax(150px, 1.5fr) minmax(56px, 0.5fr)
+    minmax(64px, 0.55fr) minmax(56px, 0.5fr) auto;
   grid-template-areas: "brand product qty dose unit link";
 }
 .coach-root .supp-secondary-row {
   margin-top: 6px;
-  grid-template-columns: 180px 150px minmax(0, 1fr);
+  grid-template-columns:
+    minmax(140px, 1.2fr) minmax(120px, 1fr)
+    minmax(160px, 1.6fr);
   grid-template-areas: "timing status notes";
 }
 .coach-root .supp-brand {
@@ -95,7 +147,9 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-@container (max-width: 760px) {
+/* Cards are 620px or wider in the grid; the horizontal rows fit there and
+   only collapse when a card itself is genuinely narrow. */
+@container (max-width: 600px) {
   .coach-root .supp-main-row {
     grid-template-columns: minmax(56px, 1fr) minmax(64px, 1fr) minmax(64px, 1fr) auto;
     grid-template-areas:
@@ -123,6 +177,26 @@
 .coach-root .supp-view-head small,
 .coach-root .supp-empty {
   color: var(--v8-text-secondary);
+}
+.coach-root .supp-view-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.coach-root .supp-view-group h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: var(--v8-font-size-card-heading);
+  line-height: var(--v8-line-height-card-heading);
+  font-weight: var(--v8-font-weight-medium, 500);
+}
+.coach-root .supp-view-group h3 span {
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
 }
 .coach-root .supp-empty {
   margin: 0;

@@ -150,7 +150,6 @@
   z-index: 3;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--cd-line);
   background: var(--v8-surface-navigation);
   padding: 34px 18px 18px;
 }
@@ -201,9 +200,6 @@
   left: 12px;
 }
 .coach-root .cd-workspace-label {
-  font-size: 12px;
-  letter-spacing: 0.15em;
-  color: var(--cd-muted);
   padding: 0 13px 16px;
 }
 .coach-root .cd-sidebar nav {
@@ -216,32 +212,39 @@
   gap: 13px;
   align-items: center;
   width: 100%;
-  padding: 13px 14px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  color: var(--cd-muted);
+  height: 40px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--v8-radius-control);
+  color: var(--v8-text-secondary);
   background: transparent;
+  font-size: var(--v8-font-size-control);
+  font-weight: var(--v8-font-weight-regular);
+  line-height: var(--v8-line-height-control);
   text-align: left;
 }
 .coach-root .cd-sidebar nav button:hover {
-  color: var(--cd-text);
-  background: var(--cd-wash);
+  color: var(--v8-text);
+  background: var(--v8-surface-interactive);
 }
 .coach-root .cd-sidebar nav button[aria-current] {
-  color: var(--cd-text);
-  border-color: color-mix(in srgb, var(--cd-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--cd-accent) 8%, var(--cd-bg));
-  box-shadow: inset 0 1px var(--cd-highlight);
+  color: var(--v8-text);
+  background: var(--v8-surface-selected);
+  box-shadow: none;
+  font-weight: var(--v8-font-weight-medium);
 }
-.coach-root .cd-sidebar nav button[aria-current] svg,
+.coach-root .cd-sidebar nav button[aria-current] svg {
+  color: var(--v8-accent-text);
+}
 .coach-root .cd-sidebar nav button[aria-current] b,
 .coach-root .cd-sidebar nav button[aria-current] .cd-nav-label {
-  color: var(--cd-text);
+  color: var(--v8-text);
 }
 .coach-root .cd-sidebar nav button b {
   font-size: 11px;
   font-weight: 500;
-  color: var(--cd-muted);
+  color: var(--v8-text-secondary);
   margin-left: auto;
   min-width: 18px;
   height: 18px;
@@ -257,7 +260,6 @@
   gap: 10px;
   padding: 15px 4px 0;
   border: 0;
-  border-top: 1px solid var(--cd-line);
   background: transparent;
   width: 100%;
   text-align: left;
@@ -321,21 +323,17 @@
   margin-right: 7px;
 }
 .coach-root .cd-main {
+  --cd-main-gutter: clamp(24px, 2vw, 40px);
   width: 100%;
-  max-width: 1280px;
+  max-width: calc(2400px + 2 * var(--cd-main-gutter));
   margin-inline: auto;
-  padding: 32px 24px 40px;
+  padding: 32px var(--cd-main-gutter) 40px;
   min-width: 0;
 }
-.coach-root .cd-main.cd-main-wide {
-  max-width: 1760px;
-}
-.coach-root .cd-main.cd-main-clients {
-  max-width: 1680px;
-}
-/* The tracker uses the full width of wide monitors. */
-.coach-root .cd-main.cd-main-clients:has(.trk) {
-  max-width: none;
+/* Every section shares the frame, so reserve the page scrollbar once for the
+   whole workspace instead of per tab. */
+html:has(.coach-root) {
+  scrollbar-gutter: stable;
 }
 .coach-root .cd-main:focus {
   outline: none;
@@ -346,6 +344,18 @@
 .coach-root .cd-page-heading {
   margin-bottom: 24px;
 }
+/* PageTitle's back control uses the same accent text link as EditorHeader,
+   placed above the title at the frame's left edge. */
+.coach-root .cd-page-back {
+  margin-bottom: 4px;
+}
+/* Coach pages share the full frame. Shared PageHeader defaults to a centred
+   1280/1760 column, which reads as an inner cap on the trial frame. */
+.coach-root .cd-page-heading.v8-page-header.v8-page-header--standard,
+.coach-root .cd-page-heading.v8-page-header.v8-page-header--wide {
+  max-width: none;
+  margin-inline: 0;
+}
 .coach-root .cd-actions {
   display: flex;
   gap: 8px;
@@ -353,6 +363,15 @@
 }
 .coach-root .cd-wrap {
   flex-wrap: wrap;
+}
+/* Card-level action rows sit clear of the content or divider above them.
+   Pages opt in with this shared class instead of per-page top margins. */
+.coach-root .cd-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
 }
 @media (prefers-reduced-motion: no-preference) {
   .coach-root .cd-habit-toggle:not(:disabled) {
@@ -375,6 +394,10 @@
   color: var(--cd-muted);
   font-size: var(--v8-font-size-body);
   line-height: var(--v8-line-height-body);
+}
+.coach-root .cd-core > h2 + .cd-muted {
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
 }
 .coach-root .cd-caption {
   color: var(--cd-muted);
@@ -546,8 +569,9 @@
     justify-content: center;
     gap: 0;
     width: 48px;
-    min-height: 44px;
-    padding: 10px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0;
     margin-inline: auto;
   }
   .coach-root[data-sidebar-collapsed="true"]
@@ -650,8 +674,8 @@
 .coach-root .cd-template-desc {
   margin: 0;
   color: var(--cd-muted);
-  font-size: var(--v8-font-size-body);
-  line-height: var(--v8-line-height-body);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
 }
 .coach-root .cd-template-tags {
   display: flex;
@@ -672,7 +696,8 @@
   align-items: center;
   gap: 8px 16px;
   color: var(--cd-muted);
-  font-size: 13px;
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
   flex-wrap: wrap;
 }
 .coach-root .cd-template-meta > span {
@@ -685,7 +710,7 @@
   flex-wrap: wrap;
   gap: 8px;
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 16px;
   border-top: 1px solid var(--cd-line);
 }
 .coach-root .cd-menu-positioner {
@@ -1039,12 +1064,14 @@
   border-collapse: collapse;
   font-size: 14px;
   text-align: left;
+  table-layout: auto;
 }
 .coach-root .cd-table th {
   padding: 12px 14px;
-  color: var(--cd-muted);
+  color: var(--v8-text-secondary);
   font-size: 12px;
-  font-weight: 450;
+  font-weight: var(--v8-font-weight-medium);
+  line-height: 16px;
   white-space: nowrap;
   border-bottom: 1px solid var(--cd-line);
 }
@@ -1064,34 +1091,57 @@
 .coach-root .cd-table tbody tr:hover {
   background: var(--cd-wash);
 }
-.coach-root .cd-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  padding: 3px 6px;
-  border: 1px solid transparent;
-  border-radius: var(--v8-radius-pill);
-  background: var(--v8-surface-selected);
-  color: var(--cd-muted);
-  white-space: normal;
-}
-.coach-root .cd-status[data-status="Awaiting feedback"] {
-  color: var(--cd-accent-text);
-  background: color-mix(in srgb, var(--cd-accent) 14%, var(--cd-surface));
-}
-.coach-root .cd-status[data-status="Overdue"] {
-  color: var(--v8-warning-text);
-  background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
-}
-.coach-root .cd-template-editor-header {
+.coach-root .cd-template-editor-header,
+.coach-root .cd-client-setup-header {
   margin-bottom: 26px;
   position: sticky;
   top: 0;
   z-index: 2;
   background: color-mix(in srgb, var(--cd-bg) 90%, transparent);
   backdrop-filter: blur(18px);
+  border-bottom: 0;
   padding: 8px 0 15px;
+}
+/* Setup editors put the save state and page actions on the title row,
+   right-aligned, instead of a separate action band below the name. */
+.coach-root .v8-editor-header.cd-template-editor-header,
+.coach-root .v8-editor-header.cd-client-setup-header {
+  grid-template-areas:
+    "back back back"
+    "main status actions";
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+.coach-root .cd-template-editor-header .v8-editor-header__status,
+.coach-root .cd-client-setup-header .v8-editor-header__status,
+.coach-root .cd-template-editor-header .v8-editor-header__actions,
+.coach-root .cd-client-setup-header .v8-editor-header__actions {
+  align-self: center;
+}
+.coach-root .cd-template-editor-header .cd-save-state,
+.coach-root .cd-client-setup-header .cd-save-state {
+  margin-top: 0;
+}
+@media (max-width: 760px) {
+  .coach-root .v8-editor-header.cd-template-editor-header,
+  .coach-root .v8-editor-header.cd-client-setup-header {
+    grid-template-areas:
+      "back back"
+      "main status"
+      "actions actions";
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+@media (max-width: 480px) {
+  .coach-root .v8-editor-header.cd-template-editor-header,
+  .coach-root .v8-editor-header.cd-client-setup-header {
+    grid-template-areas:
+      "back"
+      "main"
+      "status"
+      "actions";
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .coach-root .cd-template-editor-actions {
   align-items: end;
@@ -1135,34 +1185,40 @@
   gap: 5px;
 }
 .coach-root .cd-editor-nav nav button {
-  min-height: 44px;
+  height: 40px;
+  min-height: 40px;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 9px;
+  padding: 0 10px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 0;
   text-align: left;
-  border-radius: 9px;
-  font-size: 14px;
-  color: var(--cd-muted);
+  border-radius: var(--v8-radius-control);
+  font-size: var(--v8-font-size-control);
+  font-weight: var(--v8-font-weight-regular);
+  line-height: var(--v8-line-height-control);
+  color: var(--v8-text-secondary);
 }
-.coach-root .cd-editor-nav nav button span {
+.coach-root .cd-editor-nav nav button > span:first-child {
   font-size: 12px;
-  opacity: 0.6;
+  color: var(--v8-text-tertiary);
 }
 .coach-root .cd-editor-nav nav button.active {
-  border-color: color-mix(in srgb, var(--cd-accent) 18%, transparent);
-  background: color-mix(in srgb, var(--cd-accent) 7%, var(--cd-bg));
-  color: var(--cd-text);
+  background: var(--v8-surface-selected);
+  color: var(--v8-text);
+  font-weight: var(--v8-font-weight-medium);
+}
+.coach-root .cd-editor-nav nav button.active > span:first-child {
+  color: var(--v8-accent-text);
 }
 .coach-root .cd-editor-nav nav button:hover {
-  background: var(--cd-wash);
+  background: var(--v8-surface-interactive);
+  color: var(--v8-text);
 }
 .coach-root .cd-editor-nav nav button.active:hover {
-  border-color: color-mix(in srgb, var(--cd-accent) 24%, transparent);
-  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cd-bg));
-  color: var(--cd-text);
+  background: var(--v8-surface-selected);
+  color: var(--v8-text);
 }
 .coach-root .cd-editor-nav-bottom {
   display: flex;
@@ -1306,6 +1362,17 @@
   grid-column: 2;
   margin-top: -4px;
 }
+/* Reassigning over a personalized client setup needs an explicit second step. */
+.coach-root .cd-assignment-warning {
+  margin: 4px 0 0;
+  padding: 10px 14px;
+  border-left: 2px solid var(--cd-accent);
+  border-radius: 0 var(--v8-radius-field) var(--v8-radius-field) 0;
+  background: var(--cd-wash);
+  color: var(--cd-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
 .coach-root .cd-info-line {
   border-left: 2px solid var(--cd-accent);
   padding: 10px 14px;
@@ -1387,7 +1454,6 @@
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 12px;
 }
 .coach-root .cd-logbook {
   border: 1px solid transparent;
@@ -1490,8 +1556,32 @@
   flex: 0 0 auto;
   margin-left: auto;
 }
+/* Wide frames keep the roster controls compact and grouped beside search,
+   with every control's bottom edge on the same line. */
+@media (min-width: 1081px) {
+  .coach-root .cd-roster-toolbar {
+    align-items: flex-end;
+  }
+  .coach-root .cd-roster-toolbar .cd-search {
+    flex: 0 1 480px;
+    max-width: 480px;
+  }
+  .coach-root .cd-roster-toolbar > .v8-field {
+    flex: 0 1 240px;
+    min-width: 200px;
+    max-width: 260px;
+  }
+}
 .coach-root .cd-roster-table {
   min-width: 780px;
+}
+.coach-root .cd-roster-table th:last-child {
+  width: 64px;
+}
+.coach-root .cd-roster-table th:last-child,
+.coach-root .cd-roster-table td:last-child {
+  padding-inline: 0 14px;
+  text-align: right;
 }
 .coach-root .cd-person-button {
   display: flex;
@@ -1522,7 +1612,7 @@
 }
 .coach-root .cd-roster-cards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
   gap: 17px;
 }
 .coach-root .cd-roster-card {
@@ -1539,8 +1629,8 @@
 }
 .coach-root .cd-roster-card p,
 .coach-root .cd-roster-card > span:last-child {
-  font-size: var(--v8-font-size-body);
-  line-height: var(--v8-line-height-body);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
   color: var(--cd-muted);
 }
 .coach-root .cd-roster-card .cd-stat-row {
@@ -1573,6 +1663,17 @@
 }
 .coach-root .cd-profile-tabs .v8-tabs__list {
   max-width: 100%;
+}
+/* The profile header, tab bar and every tab panel use the full frame. Width is
+   spent on layout (grids, rails, columns), never on a centred inner column. */
+.coach-root .cd-profile-content {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  container-type: inline-size;
+}
+.coach-root .cd-profile-content.cd-profile-content-wide {
+  max-width: none;
 }
 .coach-root .cd-profile-grid {
   display: grid;
@@ -1679,7 +1780,9 @@
   margin: 26px 0;
 }
 .coach-root .cd-calendar-toolbar h2 {
-  font-size: 16px;
+  font-size: var(--v8-font-size-section-title);
+  font-weight: var(--v8-font-weight-section-title);
+  line-height: var(--v8-line-height-section-title);
   margin: 0 12px 0 4px;
   white-space: nowrap;
 }
@@ -1707,8 +1810,40 @@
 .coach-root .cd-pending > span {
   color: var(--cd-accent-text);
 }
+.coach-root .cd-checkins-workspace {
+  min-width: 0;
+}
 .coach-root .cd-calendar-stage {
   position: relative;
+}
+.coach-root .cd-calendar-stage[data-details="true"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 360px);
+  align-items: start;
+  gap: 24px;
+}
+.coach-root .cd-calendar-rail {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+  padding: 20px 22px;
+}
+.coach-root .cd-calendar-rail .cd-subheading {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+.coach-root .cd-calendar-rail h2 {
+  margin: 16px 0 6px;
+}
+.coach-root .cd-calendar-rail p {
+  margin: 12px 0;
+  color: var(--cd-muted);
+  font-size: 14px;
+}
+.coach-root .cd-calendar-rail > .v8-button {
+  width: 100%;
+  margin-top: 12px;
 }
 .coach-root .cd-calendar.cd-core {
   padding: 0;
@@ -1721,11 +1856,7 @@
 }
 .coach-root .cd-calendar-day {
   min-width: 0;
-  border-right: 1px solid var(--cd-line);
   padding: 0 8px 10px;
-}
-.coach-root .cd-calendar-day:last-child {
-  border-right: 0;
 }
 .coach-root .cd-calendar-day > header {
   display: flex;
@@ -1738,8 +1869,10 @@
   justify-content: center;
 }
 .coach-root .cd-calendar-day > header > span {
-  color: var(--cd-muted);
-  font-size: 12px;
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-supporting);
+  font-weight: var(--v8-font-weight-medium);
+  line-height: var(--v8-line-height-supporting);
 }
 .coach-root .cd-calendar-day > header > strong {
   font-size: 16px;
@@ -1796,10 +1929,8 @@
   font-size: 12px;
   color: var(--cd-muted);
 }
-.coach-root .cd-calendar-event .cd-status {
-  font-size: 12px;
+.coach-root .cd-calendar-event .v8-status {
   align-self: flex-start;
-  padding: 2px 4px;
 }
 .coach-root .cd-day-empty {
   display: block;
@@ -1811,14 +1942,7 @@
 }
 .coach-root .cd-day-add {
   width: 100%;
-  background: transparent;
-  border: 1px dashed var(--cd-line);
-  margin-top: 3px;
-  min-height: 44px;
-  opacity: 0.55;
-}
-.coach-root .cd-day-add:hover {
-  opacity: 1;
+  margin-top: 8px;
 }
 .coach-root .cd-event-positioner {
   z-index: 4;
@@ -1876,8 +2000,10 @@
 }
 .coach-root .cd-month-weekday {
   padding: 16px 10px;
-  color: var(--cd-muted);
+  color: var(--v8-text-secondary);
   font-size: 12px;
+  font-weight: var(--v8-font-weight-medium);
+  line-height: 16px;
   text-align: center;
   border-bottom: 1px solid var(--cd-line);
 }
@@ -1938,10 +2064,36 @@
   gap: 24px;
 }
 .coach-root .cd-review-main {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 23px;
   min-width: 0;
+}
+.coach-root .cd-review-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 23px;
+}
+.coach-root .cd-review-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+  min-width: 0;
+}
+@container (min-width: 900px) {
+  .coach-root .cd-review-columns {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+.coach-root .cd-review-answers .cd-answer p,
+.coach-root .cd-review-answers .cd-answer h3 {
+  max-width: 880px;
+}
+.coach-root .cd-feedback-panel .cd-feedback-text,
+.coach-root .cd-feedback-panel .v8-textarea {
+  max-width: 880px;
 }
 .coach-root .cd-review-athlete {
   display: flex;
@@ -2080,7 +2232,13 @@
   color: var(--cd-accent-text);
   font-size: 12px;
 }
+/* Messages is the one deliberate frame exception (owner decision, Run C):
+   the conversation rail starts flush against the sidebar and the thread runs
+   to the viewport edge, like a messaging app. Documented in
+   docs/superpowers/specs/2026-11-04-wide-frame-design.md. */
 .coach-root .cd-main.cd-main-messages {
+  max-width: none;
+  margin-inline: 0;
   padding: 0;
   height: calc(100dvh - 74px);
   min-height: 0;
@@ -2102,9 +2260,15 @@
   justify-content: space-between;
   gap: 15px;
   margin: 0;
-  padding: 22px 30px;
+  padding: 32px 0 22px;
   border-bottom: 1px solid var(--cd-line);
   flex-shrink: 0;
+}
+.coach-root .cd-messages-title h1 {
+  font-size: var(--v8-font-size-page-title);
+  font-weight: var(--v8-font-weight-page-title);
+  letter-spacing: var(--v8-letter-spacing-tight);
+  line-height: var(--v8-line-height-page-title);
 }
 .coach-root .cd-messages-title > span {
   margin: 0;
@@ -2118,23 +2282,27 @@
   background: transparent;
 }
 .coach-root .cd-conversations {
-  width: 305px;
+  /* Wide frames get a readable preview rail; narrower frames keep the
+     compact 260px / full-width behaviour below. */
+  width: clamp(320px, 22%, 400px);
   min-width: 260px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--cd-line);
   background: var(--cd-surface);
 }
 .coach-root .cd-conversations > header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 23px 20px 18px;
+  gap: 12px;
+  padding: 24px 20px 18px;
 }
-.coach-root .cd-conversations > header h2 {
+.coach-root .cd-conversations > header h1 {
   font-size: var(--v8-font-size-section-title);
   line-height: var(--v8-line-height-section-title);
+  font-weight: var(--v8-font-weight-section-title);
+  letter-spacing: -0.01em;
 }
 .coach-root .cd-conversations > header > span {
   font-size: 12px;
@@ -2237,7 +2405,6 @@
   align-items: center;
   gap: 12px;
   padding: 17px 22px;
-  border-bottom: 1px solid var(--cd-line);
   background: var(--cd-surface);
   flex-shrink: 0;
 }
@@ -2297,7 +2464,7 @@
   justify-content: flex-end;
 }
 .coach-root .cd-bubble {
-  max-width: 82%;
+  max-width: min(82%, 720px);
   padding: 13px 15px 7px;
   border: 1px solid transparent;
   border-radius: 15px 15px 15px 3px;
@@ -2371,7 +2538,6 @@
   white-space: nowrap;
 }
 .coach-root .cd-composer-area {
-  border-top: 1px solid var(--cd-line);
   padding: 15px 16px 9px;
   position: relative;
   background: var(--cd-surface);
@@ -2380,6 +2546,26 @@
   display: flex;
   align-items: center;
   gap: 5px;
+}
+/* Desktop: the message field takes the remaining row width between the tool
+   icons and the mic/send actions. The visible label is replaced by the
+   accessible name; mobile keeps the existing stacked composer. */
+@media (min-width: 761px) {
+  .coach-root .cd-composer .v8-field {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .coach-root .cd-composer .cd-composer-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 .coach-root .cd-composer-tools {
   display: flex;
@@ -2576,9 +2762,6 @@
   .coach-root .cd-brand {
     font-size: 25px;
   }
-  .coach-root .cd-main {
-    padding-inline: 32px;
-  }
   .coach-root .cd-editor-layout {
     grid-template-columns: 170px minmax(0, 1fr);
     gap: 15px;
@@ -2597,9 +2780,6 @@
   }
 }
 @media (max-width: 1080px) {
-  .coach-root .cd-main {
-    padding-inline: 24px;
-  }
   .coach-root .cd-editor-layout {
     grid-template-columns: 155px minmax(0, 1fr);
   }
@@ -2631,7 +2811,7 @@
     width: 260px;
   }
   .coach-root .cd-bubble {
-    max-width: 95%;
+    max-width: min(95%, 720px);
   }
   .coach-root .cd-composer-tools {
     flex-direction: column;
@@ -2669,6 +2849,8 @@
   .coach-root .cd-sidebar nav button {
     flex: 1;
     flex-direction: column;
+    height: auto;
+    min-height: 44px;
     padding: 7px 3px;
     gap: 4px;
     position: relative;
@@ -2716,7 +2898,8 @@
     gap: 3px;
   }
   .coach-root .cd-main {
-    padding: 32px 16px 100px;
+    --cd-main-gutter: 16px;
+    padding: 32px var(--cd-main-gutter) 100px;
   }
   .coach-root .cd-library-toolbar {
     margin-bottom: 18px;
@@ -2736,7 +2919,8 @@
     font-size: 12px;
     gap: 6px 12px;
   }
-  .coach-root .cd-template-editor-header {
+  .coach-root .cd-template-editor-header,
+  .coach-root .cd-client-setup-header {
     position: static;
     padding: 8px 0 15px;
     backdrop-filter: none;
@@ -2789,9 +2973,6 @@
   .coach-root .cd-check-grid {
     gap: 11px 7px;
   }
-  .coach-root .cd-check-grid label {
-    font-size: 12px;
-  }
   .coach-root .cd-gallery {
     grid-template-columns: 1fr;
   }
@@ -2800,7 +2981,8 @@
     margin: 20px 0;
   }
   .coach-root .cd-calendar-toolbar h2 {
-    font-size: 16px;
+    font-size: var(--v8-font-size-section-title);
+    line-height: var(--v8-line-height-section-title);
     margin: 0 4px;
   }
   .coach-root .cd-calendar-toolbar .cd-actions {
@@ -2849,9 +3031,6 @@
   }
   .coach-root .cd-calendar-event {
     padding: 13px;
-  }
-  .coach-root .cd-calendar-event .cd-status {
-    font-size: 12px;
   }
   .coach-root .cd-day-empty {
     padding: 8px 0 15px;
@@ -2922,7 +3101,9 @@
   }
   .coach-root .cd-main.cd-main-messages {
     padding: 0;
-    height: calc(100dvh - 59px - 73px);
+    /* The Messages title now lives in the conversation rail, so the old
+       page-title reserve (73px) is no longer needed. */
+    height: calc(100dvh - 59px);
   }
   .coach-root .cd-messages-title {
     padding: 16px;
@@ -3018,12 +3199,56 @@
     transform: none;
   }
 }
+/* Shared row collapse: grid track 0fr ↔ 1fr so height is content-sized. */
+.cd-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 180ms var(--cd-ease-out);
+}
+.cd-collapse[data-open] {
+  grid-template-rows: 1fr;
+  transition-duration: 220ms;
+}
+.cd-collapse > .cd-collapse-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 180ms var(--cd-ease-out);
+}
+/* `clip` avoids creating a scroll container, so horizontal sticky descendants
+   keep tracking the outer scroller instead of this wrapper. */
+@supports (overflow: clip) {
+  .cd-collapse > .cd-collapse-inner {
+    overflow: clip;
+  }
+}
+.cd-collapse[data-open] > .cd-collapse-inner {
+  opacity: 1;
+  transition-duration: 220ms;
+}
+.cd-collapse[data-instant] {
+  transition: none;
+}
+.cd-collapse[data-instant] > .cd-collapse-inner {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cd-collapse,
+  .cd-collapse[data-open] {
+    transition: none;
+  }
+  .cd-collapse > .cd-collapse-inner,
+  .cd-collapse[data-open] > .cd-collapse-inner {
+    transition: opacity 100ms linear;
+  }
+}
 @media (prefers-reduced-transparency: reduce) {
   .coach-root .cd-sidebar {
     background: var(--v8-surface-navigation);
     backdrop-filter: none;
   }
-  .coach-root .cd-template-editor-header {
+  .coach-root .cd-template-editor-header,
+  .coach-root .cd-client-setup-header {
     background: var(--cd-bg);
     backdrop-filter: none;
   }
@@ -3041,7 +3266,8 @@
     background: var(--v8-surface-navigation);
     backdrop-filter: none;
   }
-  .coach-root .cd-template-editor-header {
+  .coach-root .cd-template-editor-header,
+  .coach-root .cd-client-setup-header {
     background: var(--cd-bg);
     backdrop-filter: none;
   }

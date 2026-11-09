@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { nutritionForDate } from "../../coach/athlete/timeline";
 import { type CoachClient, formatDate } from "../../coach/model";
-import { applicablePlan } from "../../coach/plans/domain";
+import { trainingPlanAt } from "../../coach/plans/domain";
 import type { IifymPlan } from "../../coach/plans/types";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
@@ -143,7 +143,7 @@ function PlansHome({
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const week = plan ? displayWeek(plan, today) : 0;
   const items = plan ? scheduledSessions(plan, week) : [];

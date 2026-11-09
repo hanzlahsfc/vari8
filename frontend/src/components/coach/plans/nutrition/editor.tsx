@@ -7,6 +7,8 @@ import {
   ArrowUp,
   BookOpen,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   GripVertical,
   Plus,
@@ -16,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { Reorder, useDragControls } from "motion/react";
-import { useMemo, useRef, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   Input as SharedInput,
   Select as ThemedSelect,
@@ -46,8 +48,9 @@ import {
 } from "../../../ethereal/mealplan/model";
 import { macroEnergyShares } from "../../../ethereal/mealplan/overview-model";
 import { ClientPlanPreview } from "../../client-plan-preview";
-import { Toggle } from "../../ui";
+import { IconButton, Toggle } from "../../ui";
 import type { IifymOption, IifymPlan } from "../types";
+import { mealWindowStart } from "./meal-window";
 import {
   addFoodAlternative,
   alternativeQuantity,
@@ -85,6 +88,13 @@ const weekdays = [
   "Saturday",
   "Sunday",
 ] as const;
+/** Meal-plan variant columns: minimum comfortable column and gutter.
+ *  Measured in Chrome: a food row and meal header stay on one line with no
+ *  horizontal overflow at 802px; 830 leaves ~16px slack over the rounded
+ *  810px threshold. */
+const COLUMN_MIN = 830;
+const COLUMN_GAP = 24;
+const MAX_COLUMNS = 3;
 
 function FoodPicker({ onAdd }: { onAdd: (foods: Food[]) => void }) {
   const [open, setOpen] = useState(false);
@@ -139,7 +149,8 @@ function FoodPicker({ onAdd }: { onAdd: (foods: Food[]) => void }) {
                 <span>Select several foods, then add them together.</span>
               </div>
               <Popover.Close
-                className="cn-remove"
+                className="cn-remove v8-icon-button"
+                data-size="sm"
                 aria-label="Close food picker"
                 type="button"
               >
@@ -299,7 +310,8 @@ function FoodChoicePicker({
                 </span>
               </div>
               <Popover.Close
-                className="cn-remove"
+                className="cn-remove v8-icon-button"
+                data-size="sm"
                 aria-label="Close food picker"
                 type="button"
               >
@@ -401,6 +413,7 @@ function TimePicker({
     <div className="cn-time">
       <SharedTimePicker
         label={label}
+        hideLabel
         value={value}
         onValueChange={onChange}
         size="md"
@@ -508,7 +521,7 @@ function Schedule({
         </div>
       ) : (
         <div
-          className="cn-option-tabs cn-schedule-modes"
+          className="cn-option-tabs cn-schedule-modes v8-tabs__list"
           role="tablist"
           aria-label="Meal plan schedule type"
         >
@@ -517,6 +530,7 @@ function Schedule({
               key={mode}
               id={`nutrition-schedule-${mode}`}
               type="button"
+              className="v8-tabs__tab"
               role="tab"
               aria-selected={schedule.mode === mode}
               aria-controls="nutrition-schedule-configuration"
@@ -858,6 +872,7 @@ function MealEditor({
         </span>
         <SharedInput
           label="Meal name"
+          hideLabel
           value={meal.label}
           onChange={(e) => onChange({ ...meal, label: e.target.value })}
         />
@@ -868,48 +883,48 @@ function MealEditor({
           onChange={(time) => onChange({ ...meal, time })}
         />
         <div className="cn-actions">
-          <button
-            type="button"
+          <IconButton
+            label={`Move ${meal.label} up`}
             title="Move meal up"
-            aria-label={`Move ${meal.label} up`}
+            size="sm"
             disabled={index === 0}
             onClick={() => onMove(-1)}
           >
             <ArrowUp size={14} />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            label={`Move ${meal.label} down`}
             title="Move meal down"
-            aria-label={`Move ${meal.label} down`}
+            size="sm"
             disabled={index === count - 1}
             onClick={() => onMove(1)}
           >
             <ArrowDown size={14} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            label={`Save ${meal.label} to saved meals`}
             title="Save meal"
-            aria-label={`Save ${meal.label} to saved meals`}
-            type="button"
+            size="sm"
             onClick={onSave}
           >
             <Archive size={15} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            label={`Duplicate ${meal.label}`}
             title="Duplicate meal"
-            aria-label={`Duplicate ${meal.label}`}
-            type="button"
+            size="sm"
             onClick={onDuplicate}
           >
             <Copy size={15} />
-          </button>
-          <button
+          </IconButton>
+          <IconButton
+            label={`Delete ${meal.label}`}
             title="Delete meal"
-            aria-label={`Delete ${meal.label}`}
-            type="button"
+            size="sm"
             onClick={onRemove}
           >
             <Trash2 size={15} />
-          </button>
+          </IconButton>
         </div>
       </header>
       <div className="cn-foods">
@@ -977,10 +992,10 @@ function MealEditor({
                   }
                 />
               </div>
-              <button
+              <IconButton
                 className="cn-remove"
-                type="button"
-                aria-label={`Remove ${food.name}`}
+                label={`Remove ${food.name}`}
+                size="sm"
                 onClick={() =>
                   onChange({
                     ...meal,
@@ -989,7 +1004,7 @@ function MealEditor({
                 }
               >
                 <X size={14} />
-              </button>
+              </IconButton>
               {portion.swaps?.map((swap, j) => {
                 const alt = foodMap.get(swap.foodId);
                 if (!alt) return null;
@@ -1029,10 +1044,10 @@ function MealEditor({
                       <span>C {n(st.carbs)} g</span>
                       <span>F {n(st.fat)} g</span>
                     </small>
-                    <button
+                    <IconButton
                       className="cn-remove"
-                      type="button"
-                      aria-label={`Remove ${alt.name} alternative`}
+                      label={`Remove ${alt.name} alternative`}
+                      size="sm"
                       onClick={() =>
                         patchPortion(i, {
                           swaps: portion.swaps?.filter((_, k) => k !== j),
@@ -1040,7 +1055,7 @@ function MealEditor({
                       }
                     >
                       <X size={13} />
-                    </button>
+                    </IconButton>
                   </div>
                 );
               })}
@@ -1128,9 +1143,50 @@ export function NutritionEditor({
     meal: ReusableMeal;
     index: number;
   } | null>(null);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const [editorWidth, setEditorWidth] = useState(0);
+  /** First option index shown by the side-by-side sliding window. */
+  const [windowStart, setWindowStart] = useState(0);
+  const columnCapacity = Math.max(
+    1,
+    Math.min(
+      MAX_COLUMNS,
+      Math.floor((editorWidth + COLUMN_GAP) / (COLUMN_MIN + COLUMN_GAP)),
+    ),
+  );
+  const columnCount = singleVariant
+    ? 1
+    : Math.max(1, Math.min(MAX_COLUMNS, value.variants.length, columnCapacity));
+  const multi = !singleVariant && columnCount > 1;
+
+  useLayoutEffect(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    const update = () => setEditorWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const active =
     value.variants.find((v) => v.id === value.activeVariantId) ??
     value.variants[0];
+  const start = mealWindowStart(
+    windowStart,
+    value.variants.length,
+    columnCount,
+  );
+  const maxWindowStart = Math.max(0, value.variants.length - columnCount);
+  const displayed = useMemo(
+    () =>
+      multi
+        ? value.variants
+            .slice(start, start + columnCount)
+            .map((variant) => variant.id)
+        : [],
+    [columnCount, multi, start, value.variants],
+  );
   if (!active)
     return (
       <div className="cn-editor">
@@ -1167,9 +1223,67 @@ export function NutritionEditor({
       ...value,
       variants: value.variants.map((v) => (v.id === id ? { ...v, label } : v)),
     });
-  const removeOption = (id: string) => onChange(removeMealOption(value, id));
-  const duplicateOption = () => {
-    onChange(duplicateMealOption(value, active.id));
+  const columnCountFor = (variantCount: number) =>
+    Math.max(1, Math.min(MAX_COLUMNS, variantCount, columnCapacity));
+  const removeOption = (id: string) => {
+    const next = removeMealOption(value, id);
+    onChange(next);
+    const activeIndex = next.variants.findIndex(
+      (variant) => variant.id === next.activeVariantId,
+    );
+    setWindowStart((prev) =>
+      mealWindowStart(
+        prev,
+        next.variants.length,
+        columnCountFor(next.variants.length),
+        activeIndex >= 0 ? activeIndex : undefined,
+      ),
+    );
+  };
+  const activateOption = (variantId: string, focusIndex: number) => {
+    setWindowStart((prev) =>
+      mealWindowStart(prev, value.variants.length, columnCount, focusIndex),
+    );
+    if (variantId !== active.id)
+      onChange({ ...value, activeVariantId: variantId });
+  };
+  const moveWindow = (nextStart: number) =>
+    setWindowStart(
+      mealWindowStart(nextStart, value.variants.length, columnCount),
+    );
+  const onOptionKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    let target: number | undefined;
+    if (event.key === "ArrowRight")
+      target = (index + 1) % value.variants.length;
+    else if (event.key === "ArrowLeft")
+      target = (index - 1 + value.variants.length) % value.variants.length;
+    else if (event.key === "Home") target = 0;
+    else if (event.key === "End") target = value.variants.length - 1;
+    if (target === undefined) return;
+    event.preventDefault();
+    activateOption(value.variants[target].id, target);
+    const buttons =
+      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+        "[role=tab]",
+      );
+    buttons?.[target]?.focus();
+  };
+  const duplicateOption = (id = active.id) => {
+    const next = duplicateMealOption(value, id);
+    onChange(next);
+    if (!multi) return;
+    const nextColumns = columnCountFor(next.variants.length);
+    setWindowStart((prev) =>
+      mealWindowStart(
+        prev,
+        next.variants.length,
+        nextColumns,
+        next.variants.length - 1,
+      ),
+    );
   };
   const addOption = () => {
     const v: MealPlanVariant = {
@@ -1177,11 +1291,18 @@ export function NutritionEditor({
       label: `Option ${value.variants.length + 1}`,
       meals: [],
     };
-    onChange({
-      ...value,
-      variants: [...value.variants, v],
-      activeVariantId: v.id,
-    });
+    const next = { ...value, variants: [...value.variants, v] };
+    onChange({ ...next, activeVariantId: v.id });
+    if (!multi) return;
+    const nextColumns = columnCountFor(next.variants.length);
+    setWindowStart((prev) =>
+      mealWindowStart(
+        prev,
+        next.variants.length,
+        nextColumns,
+        next.variants.length - 1,
+      ),
+    );
   };
   const saveMeal = (meal: Meal) => {
     onChange({
@@ -1247,7 +1368,12 @@ export function NutritionEditor({
     setDeletedSaved(null);
   };
   return (
-    <div className="cn-editor">
+    <div
+      className="cn-editor"
+      data-cols={columnCount}
+      data-columns={multi ? "" : undefined}
+      ref={editorRef}
+    >
       <Overview variants={value.variants} />
       {!singleVariant && (
         <Schedule
@@ -1258,79 +1384,88 @@ export function NutritionEditor({
           onChange={(schedule) => onChange({ ...value, schedule })}
         />
       )}
-      <div className="cn-options">
-        {!singleVariant && (
-          <div
-            className="cn-option-tabs"
-            role="tablist"
-            aria-label="Nutrition options"
-          >
-            {value.variants.map((v) => (
-              <button
-                role="tab"
-                tabIndex={v.id === active.id ? 0 : -1}
-                onKeyDown={(event) => {
-                  const delta =
-                    event.key === "ArrowRight"
-                      ? 1
-                      : event.key === "ArrowLeft"
-                        ? -1
-                        : 0;
-                  const at = value.variants.findIndex(
-                    (item) => item.id === v.id,
-                  );
-                  const target =
-                    event.key === "Home"
-                      ? 0
-                      : event.key === "End"
-                        ? value.variants.length - 1
-                        : delta
-                          ? (at + delta + value.variants.length) %
-                            value.variants.length
-                          : undefined;
-                  if (target === undefined) return;
-                  event.preventDefault();
-                  onChange({
-                    ...value,
-                    activeVariantId: value.variants[target].id,
-                  });
-                  const buttons =
-                    event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
-                      "[role=tab]",
+      {!multi && (
+        <div className="cn-options">
+          {!singleVariant && (
+            <div
+              className="cn-option-tabs v8-tabs__list"
+              role="tablist"
+              aria-label="Nutrition options"
+            >
+              {value.variants.map((v) => (
+                <button
+                  className="v8-tabs__tab"
+                  role="tab"
+                  tabIndex={v.id === active.id ? 0 : -1}
+                  onKeyDown={(event) => {
+                    const delta =
+                      event.key === "ArrowRight"
+                        ? 1
+                        : event.key === "ArrowLeft"
+                          ? -1
+                          : 0;
+                    const at = value.variants.findIndex(
+                      (item) => item.id === v.id,
                     );
-                  buttons?.[target]?.focus();
-                }}
-                aria-selected={v.id === active.id}
-                key={v.id}
+                    const target =
+                      event.key === "Home"
+                        ? 0
+                        : event.key === "End"
+                          ? value.variants.length - 1
+                          : delta
+                            ? (at + delta + value.variants.length) %
+                              value.variants.length
+                            : undefined;
+                    if (target === undefined) return;
+                    event.preventDefault();
+                    onChange({
+                      ...value,
+                      activeVariantId: value.variants[target].id,
+                    });
+                    const buttons =
+                      event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                        "[role=tab]",
+                      );
+                    buttons?.[target]?.focus();
+                  }}
+                  aria-selected={v.id === active.id}
+                  key={v.id}
+                  type="button"
+                  onClick={() => onChange({ ...value, activeVariantId: v.id })}
+                >
+                  {v.label || "Untitled"}
+                </button>
+              ))}
+              <button
                 type="button"
-                onClick={() => onChange({ ...value, activeVariantId: v.id })}
+                className="v8-button"
+                data-variant="ghost"
+                data-size="sm"
+                onClick={addOption}
               >
-                {v.label || "Untitled"}
+                <Plus size={14} /> Add option
               </button>
-            ))}
-            <button type="button" onClick={addOption}>
-              <Plus size={14} /> Add option
+            </div>
+          )}
+          <div className="cn-option-tools" hidden={singleVariant}>
+            <SharedInput
+              label="Option label"
+              value={active.label}
+              onChange={(e) => renameOption(active.id, e.target.value)}
+            />
+            <button type="button" onClick={() => duplicateOption()}>
+              <Copy size={14} /> Duplicate option
+            </button>
+            <button
+              type="button"
+              disabled={value.variants.length <= 1}
+              onClick={() => removeOption(active.id)}
+            >
+              <Trash2 size={14} /> Delete option
             </button>
           </div>
-        )}
-        <div className="cn-option-tools" hidden={singleVariant}>
-          <SharedInput
-            label="Option label"
-            value={active.label}
-            onChange={(e) => renameOption(active.id, e.target.value)}
-          />
-          <button type="button" onClick={duplicateOption}>
-            <Copy size={14} /> Duplicate option
-          </button>
-          <button
-            type="button"
-            disabled={value.variants.length <= 1}
-            onClick={() => removeOption(active.id)}
-          >
-            <Trash2 size={14} /> Delete option
-          </button>
         </div>
-      </div>
+      )}
       <section className="cn-library">
         <div className="cn-library-head">
           <button
@@ -1444,65 +1579,200 @@ export function NutritionEditor({
           </div>
         )}
       </section>
-      <Reorder.Group
-        axis="y"
-        className="cn-meal-list"
-        values={active.meals.map((item) => item.id)}
-        onReorder={(ids) =>
-          updateVariant(active.id, (v) => ({
-            ...v,
-            meals: ids.map(
-              (id) => v.meals.find((x) => x.id === id) as (typeof v.meals)[0],
-            ),
-          }))
-        }
-      >
-        {active.meals.map((meal, index) => (
-          <MealEditor
-            key={meal.id}
-            meal={meal}
-            index={index}
-            count={active.meals.length}
-            reusable={value.reusableMeals}
-            onChange={(m) =>
-              updateVariant(active.id, (v) => ({
-                ...v,
-                meals: v.meals.map((x) => (x.id === meal.id ? m : x)),
-              }))
-            }
-            onRemove={() =>
-              updateVariant(active.id, (v) => ({
-                ...v,
-                meals: v.meals.filter((x) => x.id !== meal.id),
-              }))
-            }
-            onSave={() => saveMeal(meal)}
-            onDuplicate={() =>
-              updateVariant(active.id, (v) => ({
-                ...v,
-                meals: [
-                  ...v.meals.slice(0, index + 1),
-                  cloneMeal(meal),
-                  ...v.meals.slice(index + 1),
-                ],
-              }))
-            }
-            onMove={(direction) =>
-              updateVariant(active.id, (v) =>
-                moveMeal(v, meal.id, index + direction),
-              )
-            }
-          />
-        ))}
-        <button
-          className="cn-add-meal"
-          type="button"
-          onClick={() => updateVariant(active.id, (v) => addMealToVariant(v))}
+      {multi && (
+        <div className="cn-options cn-options-window">
+          <div
+            className="cn-option-tabs cn-option-strip v8-tabs__list"
+            role="tablist"
+            aria-label="Nutrition options"
+          >
+            <IconButton
+              label="Show previous option"
+              size="sm"
+              disabled={start <= 0}
+              onClick={() => moveWindow(start - 1)}
+            >
+              <ChevronLeft size={15} />
+            </IconButton>
+            {value.variants.map((variant, index) => {
+              const visible = index >= start && index < start + columnCount;
+              return (
+                <button
+                  className="v8-tabs__tab"
+                  role="tab"
+                  tabIndex={variant.id === active.id ? 0 : -1}
+                  aria-selected={variant.id === active.id}
+                  data-visible={visible ? "true" : undefined}
+                  key={variant.id}
+                  type="button"
+                  onKeyDown={(event) => onOptionKeyDown(event, index)}
+                  onClick={() => activateOption(variant.id, index)}
+                >
+                  {variant.label || "Untitled"}
+                </button>
+              );
+            })}
+            <IconButton
+              label="Show next option"
+              size="sm"
+              disabled={start >= maxWindowStart}
+              onClick={() => moveWindow(start + 1)}
+            >
+              <ChevronRight size={15} />
+            </IconButton>
+            <button
+              type="button"
+              className="v8-button"
+              data-variant="ghost"
+              data-size="sm"
+              onClick={addOption}
+            >
+              <Plus size={14} /> Add option
+            </button>
+          </div>
+        </div>
+      )}
+      {multi ? (
+        <div
+          className="cn-columns"
+          style={{
+            gridTemplateColumns: `repeat(${String(columnCount)}, minmax(0, 1fr))`,
+          }}
         >
-          <Plus size={16} /> Add meal
-        </button>
-      </Reorder.Group>
+          {displayed.map((id, index) => {
+            const variant = value.variants.find((item) => item.id === id);
+            if (!variant) return null;
+            return (
+              <section
+                className="cn-column"
+                key={variant.id}
+                aria-label={`${variant.label || "Untitled"} option`}
+                data-active={variant.id === active.id ? "true" : undefined}
+                onFocusCapture={() => activateOption(variant.id, start + index)}
+              >
+                <header className="cn-column-head">
+                  <SharedInput
+                    label="Option label"
+                    hideLabel
+                    size="sm"
+                    className="cn-column-label"
+                    value={variant.label}
+                    onChange={(event) =>
+                      renameOption(variant.id, event.target.value)
+                    }
+                  />
+                  <div className="cn-column-tools">
+                    <IconButton
+                      label={`Duplicate ${variant.label || "option"}`}
+                      size="sm"
+                      onClick={() => duplicateOption(variant.id)}
+                    >
+                      <Copy size={14} />
+                    </IconButton>
+                    <IconButton
+                      label={`Delete ${variant.label || "option"}`}
+                      size="sm"
+                      disabled={value.variants.length <= 1}
+                      onClick={() => removeOption(variant.id)}
+                    >
+                      <Trash2 size={14} />
+                    </IconButton>
+                  </div>
+                </header>
+                <VariantMeals
+                  variant={variant}
+                  reusable={value.reusableMeals}
+                  onUpdate={(updater) => updateVariant(variant.id, updater)}
+                  onSaveMeal={saveMeal}
+                />
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <VariantMeals
+          variant={active}
+          reusable={value.reusableMeals}
+          onUpdate={(updater) => updateVariant(active.id, updater)}
+          onSaveMeal={saveMeal}
+        />
+      )}
     </div>
+  );
+}
+
+/** One variant's reorderable meal list. Shared by the single-column editor and
+ *  each side-by-side column so reorder, undo, add and save behave identically. */
+function VariantMeals({
+  variant,
+  reusable,
+  onUpdate,
+  onSaveMeal,
+}: {
+  variant: MealPlanVariant;
+  reusable: MealPlan["reusableMeals"];
+  onUpdate: (updater: (variant: MealPlanVariant) => MealPlanVariant) => void;
+  onSaveMeal: (meal: Meal) => void;
+}) {
+  return (
+    <Reorder.Group
+      axis="y"
+      className="cn-meal-list"
+      values={variant.meals.map((item) => item.id)}
+      onReorder={(ids) =>
+        onUpdate((current) => ({
+          ...current,
+          meals: ids.map(
+            (id) => current.meals.find((meal) => meal.id === id) as Meal,
+          ),
+        }))
+      }
+    >
+      {variant.meals.map((meal, index) => (
+        <MealEditor
+          key={meal.id}
+          meal={meal}
+          index={index}
+          count={variant.meals.length}
+          reusable={reusable}
+          onChange={(next) =>
+            onUpdate((current) => ({
+              ...current,
+              meals: current.meals.map((item) =>
+                item.id === meal.id ? next : item,
+              ),
+            }))
+          }
+          onRemove={() =>
+            onUpdate((current) => ({
+              ...current,
+              meals: current.meals.filter((item) => item.id !== meal.id),
+            }))
+          }
+          onSave={() => onSaveMeal(meal)}
+          onDuplicate={() =>
+            onUpdate((current) => ({
+              ...current,
+              meals: [
+                ...current.meals.slice(0, index + 1),
+                cloneMeal(meal),
+                ...current.meals.slice(index + 1),
+              ],
+            }))
+          }
+          onMove={(direction) =>
+            onUpdate((current) => moveMeal(current, meal.id, index + direction))
+          }
+        />
+      ))}
+      <button
+        className="cn-add-meal"
+        type="button"
+        onClick={() => onUpdate((current) => addMealToVariant(current))}
+      >
+        <Plus size={16} /> Add meal
+      </button>
+    </Reorder.Group>
   );
 }
 

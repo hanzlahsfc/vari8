@@ -429,6 +429,14 @@
   font-size: 0.8rem;
   font-weight: 550;
 }
+.coach-root .ca-photo-empty small {
+  color: var(--cd-muted);
+  font-size: 0.72rem;
+}
+.coach-root .ca-photo-pick.ca-photo-add {
+  min-height: 120px;
+  background: transparent;
+}
 .coach-root .ca-photo-remove {
   position: absolute;
   top: 6px;

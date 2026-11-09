@@ -10,6 +10,7 @@ import {
   validateMealPlan,
   validateTargets,
 } from "../../ethereal/mealplan/model";
+import { cleanPlanLibrary } from "../library";
 import type { CoachClient, CoachState } from "../model";
 import { isSupplementPlan } from "../supplements/model";
 import { isActivityTargetVersion } from "../targets/model";
@@ -20,13 +21,21 @@ import {
   normalizePhases,
 } from "./phase-planning";
 import { normalizeTemporaryNutrition } from "./temporary-nutrition";
-import { defaultExerciseLibrary } from "./training/library-model";
+import {
+  defaultExerciseLibrary,
+  EXERCISE_LIBRARY_REVISION,
+  isCustomExerciseId,
+} from "./training/library-model";
 import {
   type ClientPlans,
+  cleanTrainingAdjustments,
   emptyClientPlans,
   type IifymPlan,
+  isTrainingAdjustment,
+  isTrainingSessionValue,
   type ModuleKind,
   type PlanLifecycle,
+  type PlanVersion,
   resolveTrainingWeek,
   type TrainingPlan,
 } from "./types";
@@ -71,6 +80,40 @@ export function applicablePlan<T extends { startDate: string }>(
         b.activatedAt.localeCompare(a.activatedAt),
     )[0]?.content;
 }
+/**
+ * The training-plan version in effect on `date`. Unlike `applicablePlan` (which
+ * picks by `content.startDate` alone), training versions can be activated
+ * mid-plan while sharing the plan's startDate, so the selection is driven by
+ * `activatedAt`: among the candidates whose `content.startDate <= date` and
+ * that aren't yet archived, the latest activation on or before `date` wins; if
+ * none was activated yet (a date before any activation), the earliest-activated
+ * candidate applies. `content.startDate <= date` still gates a version whose
+ * plan only begins later.
+ */
+export function trainingVersionAt<T extends { startDate: string }>(
+  life: PlanLifecycle<T>,
+  date: string,
+): PlanVersion<T> | undefined {
+  if (!validDate(date)) return undefined;
+  const candidates = [...life.history, ...(life.active ? [life.active] : [])]
+    .filter(
+      (v) =>
+        v.content.startDate <= date && (!v.archivedOn || date < v.archivedOn),
+    )
+    .sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  const activated = candidates.filter(
+    (v) => v.activatedAt.slice(0, 10) <= date,
+  );
+  return activated[activated.length - 1] ?? candidates[0];
+}
+
+/** The training plan content in effect on `date` (see `trainingVersionAt`). */
+export function trainingPlanAt<T extends { startDate: string }>(
+  life: PlanLifecycle<T>,
+  date: string,
+): T | undefined {
+  return trainingVersionAt(life, date)?.content;
+}
 export function activateLifecycle<T>(
   life: PlanLifecycle<T>,
   content: T,
@@ -108,6 +151,73 @@ export function archiveLifecycle<T>(
         : []),
     ],
   };
+}
+
+/** A distinct earlier plan (one or more activated revisions of it). */
+export type PreviousTrainingPlan = {
+  plan: TrainingPlan;
+  versions: number;
+  startedOn: string;
+  endedOn?: string;
+};
+
+/**
+ * Earlier training plans, newest first. History also holds mid-plan revisions
+ * of the active plan (same `content.id`), so versions are grouped by plan id
+ * and the group matching the active plan is excluded.
+ */
+export function previousTrainingPlans(
+  life: PlanLifecycle<TrainingPlan>,
+): PreviousTrainingPlan[] {
+  const activeId = life.active?.content.id;
+  const groups = new Map<string, PlanVersion<TrainingPlan>[]>();
+  for (const version of life.history) {
+    const id = version.content.id;
+    if (id === activeId) continue;
+    const group = groups.get(id);
+    if (group) group.push(version);
+    else groups.set(id, [version]);
+  }
+  const rows = [...groups.values()].map((versions) => {
+    const sorted = [...versions].sort((a, b) =>
+      a.activatedAt.localeCompare(b.activatedAt),
+    );
+    const latest = sorted[sorted.length - 1];
+    return {
+      plan: latest.content,
+      versions: sorted.length,
+      startedOn: sorted.reduce(
+        (min, v) => (v.content.startDate < min ? v.content.startDate : min),
+        latest.content.startDate,
+      ),
+      endedOn: latest.archivedOn?.slice(0, 10),
+      replacedAt: latest.activatedAt,
+    };
+  });
+  const successors = [
+    ...life.history.map((v) => ({
+      id: v.content.id,
+      activatedAt: v.activatedAt,
+    })),
+    ...(life.active
+      ? [{ id: life.active.content.id, activatedAt: life.active.activatedAt }]
+      : []),
+  ].sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
+  for (const row of rows) {
+    if (row.endedOn) continue;
+    const next = successors.find(
+      (s) => s.id !== row.plan.id && s.activatedAt > row.replacedAt,
+    );
+    row.endedOn = next?.activatedAt.slice(0, 10);
+  }
+  return rows
+    .sort((a, b) => b.replacedAt.localeCompare(a.replacedAt))
+    .map(({ plan, versions, startedOn, endedOn }) => ({
+      plan,
+      versions,
+      startedOn,
+      endedOn,
+    }));
 }
 export function emptyMealPlan(clientId: string, date: string): MealPlan {
   const option = id("option");
@@ -278,21 +388,7 @@ export function temporaryKcal(t: {
     ? calculateVariantNutrients(variant, planFoodMap).calories
     : undefined;
 }
-export function trainingWeek(plan: TrainingPlan, date: string): number {
-  return plan.program === "Evergreen"
-    ? 1
-    : Math.max(
-        1,
-        Math.min(
-          plan.weeks,
-          Math.floor(
-            (Date.parse(`${date}T12:00:00Z`) -
-              Date.parse(`${plan.startDate}T12:00:00Z`)) /
-              604800000,
-          ) + 1,
-        ),
-      );
-}
+export { trainingWeek } from "./types";
 export function validateIndividualPlan(
   kind: ModuleKind,
   value: MealPlan | IifymPlan | TrainingPlan,
@@ -399,8 +495,66 @@ function flexibleScheduleIfNeeded(
 export function migrateCoachState(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   const state = structuredClone(value) as CoachState;
-  if (state.exerciseLibrary === undefined)
-    state.exerciseLibrary = defaultExerciseLibrary();
+  // A malformed library entry must never reject the workspace: drop it and
+  // keep every other entry. Detached content is normalised on the way in.
+  if (state.library !== undefined)
+    state.library = cleanPlanLibrary(state.library);
+  // Re-seed the exercise library once per database revision: the database
+  // replaces every non-custom entry, custom (library-exercise-*) entries kept.
+  if (state.demoSeeds?.exerciseLibrary !== EXERCISE_LIBRARY_REVISION) {
+    const custom = (state.exerciseLibrary ?? []).filter((e) =>
+      isCustomExerciseId(e.id),
+    );
+    state.exerciseLibrary = [...defaultExerciseLibrary(), ...custom];
+    state.demoSeeds = {
+      ...state.demoSeeds,
+      exerciseLibrary: EXERCISE_LIBRARY_REVISION,
+    };
+  }
+  // Backfill library snapshot fields on training exercises that lack them.
+  const libById = new Map((state.exerciseLibrary ?? []).map((e) => [e.id, e]));
+  const fill = (
+    exercises?: {
+      libraryId?: string;
+      equipment?: string;
+      movementPattern?: string;
+      position?: string;
+      primaryTarget?: string;
+      additionalTargets?: string[];
+      [k: string]: unknown;
+    }[],
+  ) => {
+    for (const ex of exercises ?? []) {
+      const def = ex.libraryId ? libById.get(ex.libraryId) : undefined;
+      if (!def) continue;
+      if (ex.equipment === undefined) ex.equipment = def.equipment;
+      if (ex.movementPattern === undefined)
+        ex.movementPattern = def.movementPattern;
+      if (ex.position === undefined) ex.position = def.position;
+      if (ex.primaryTarget === undefined) ex.primaryTarget = def.primaryTarget;
+      if (ex.additionalTargets === undefined)
+        ex.additionalTargets = def.additionalTargets;
+    }
+  };
+  for (const client of state.clients ?? []) {
+    const life = client.plans?.training;
+    if (!life) continue;
+    for (const content of [
+      life.draft,
+      life.active?.content,
+      ...(life.history ?? []).map((h) => h.content),
+    ]) {
+      if (!content) continue;
+      for (const sessions of Object.values(content.overrides ?? {}))
+        for (const session of sessions ?? []) fill(session.exercises);
+      // Stored adjustments may carry manual copies; backfill those too and
+      // drop any malformed entry so one bad value cannot reject the workspace.
+      content.adjustments = cleanTrainingAdjustments(content.adjustments);
+      for (const adjustment of content.adjustments ?? [])
+        for (const sessions of Object.values(adjustment.manual ?? {}))
+          for (const session of sessions ?? []) fill(session.exercises);
+    }
+  }
   if (!Array.isArray(state.clients)) return state;
   state.clients = state.clients.map((client) => {
     const base = emptyClientPlans();
@@ -421,10 +575,13 @@ export function migrateCoachState(value: unknown): unknown {
       // Drop legacy event-level nutrition overrides; temporary plans replaced
       // them and the event type no longer carries the field.
       timelineEvents: (
-        client.timelineEvents as { nutritionOverride?: unknown }[] | undefined
-      )?.map(
-        ({ nutritionOverride: _dropped, ...event }) => event,
-      ) as CoachClient["timelineEvents"],
+        client.timelineEvents as
+          | { nutritionOverride?: unknown; adjustmentId?: unknown }[]
+          | undefined
+      )?.map(({ nutritionOverride: _dropped, adjustmentId, ...event }) => ({
+        ...event,
+        ...(typeof adjustmentId === "string" ? { adjustmentId } : {}),
+      })) as CoachClient["timelineEvents"],
       plans: old
         ? {
             ...base,
@@ -549,42 +706,11 @@ const training = (v: unknown) =>
   number(v.weeks) &&
   (v.focus === undefined || string(v.focus)) &&
   (v.rotation === undefined || trainingRotation(v.rotation)) &&
+  (v.adjustments === undefined || array(v.adjustments, isTrainingAdjustment)) &&
   record(v.overrides) &&
   Object.entries(v.overrides).every(
     ([k, sessions]) =>
-      /^[1-9]\d*$/.test(k) &&
-      array(
-        sessions,
-        (s) =>
-          record(s) &&
-          string(s.id) &&
-          string(s.name) &&
-          array(
-            s.exercises,
-            (e) =>
-              record(e) &&
-              string(e.id) &&
-              string(e.name) &&
-              (e.muscle === undefined || string(e.muscle)) &&
-              (e.secondaryMuscles === undefined ||
-                array(e.secondaryMuscles, string)) &&
-              (e.libraryId === undefined || string(e.libraryId)) &&
-              (e.generalNotes === undefined || string(e.generalNotes)) &&
-              string(e.instructions) &&
-              string(e.progression) &&
-              array(
-                e.sets,
-                (t) =>
-                  record(t) &&
-                  string(t.id) &&
-                  number(t.reps) &&
-                  (t.repsMax === undefined || number(t.repsMax)) &&
-                  ["tempo", "type", "rest", "instructions"].every((k) =>
-                    string(t[k]),
-                  ),
-              ),
-          ),
-      ),
+      /^[1-9]\d*$/.test(k) && array(sessions, isTrainingSessionValue),
   );
 const temporaryNutrition = (v: unknown) =>
   record(v) &&

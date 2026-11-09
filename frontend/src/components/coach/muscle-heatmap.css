@@ -1,79 +1,33 @@
 .coach-root .muscle-heatmap {
-  display: grid;
-  grid-template-columns: minmax(130px, 0.8fr) minmax(150px, 1fr);
-  align-items: center;
-  gap: 14px;
-}
-.coach-root .muscle-heatmap svg {
-  width: 100%;
-  max-height: 245px;
-  overflow: visible;
-}
-.coach-root .muscle-heatmap .mh-silhouette {
-  fill: var(--cd-highlight);
-  stroke: var(--cd-line);
-  stroke-width: 1;
-  stroke-linejoin: round;
-}
-.coach-root .muscle-heatmap .mh-neck {
-  fill: none;
-  stroke: var(--cd-line);
-  stroke-width: 1;
-}
-.coach-root .muscle-heatmap .mh-muscle {
-  fill: color-mix(
-    in srgb,
-    var(--cd-accent) calc(var(--mh-intensity, 0) * 78%),
-    var(--cd-surface)
-  );
-  stroke: var(--cd-surface);
-  stroke-width: 1.2;
-}
-.coach-root .muscle-heatmap .mh-muscle[data-active="false"] {
-  fill: color-mix(in srgb, var(--cd-muted) 14%, var(--cd-surface));
-}
-.coach-root .muscle-heatmap svg text,
-.coach-root .muscle-heatmap .mh-silhouette text {
-  fill: var(--cd-muted);
-  font: 8px var(--cd-font, inherit);
-  letter-spacing: 0.12em;
-  stroke: none;
-}
-.coach-root .muscle-heatmap ul {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.coach-root .muscle-heatmap li {
   display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 5px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--cd-line) 60%, transparent);
-  color: var(--cd-text);
-  font-size: 11px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 16px;
+  max-width: 100%;
 }
-.coach-root .muscle-heatmap li[data-active="false"] {
+.coach-root .muscle-heatmap .mh-figure {
+  flex: 0 1 140px;
+  width: 140px;
+  max-width: 46%;
+  min-width: 0;
+  text-align: center;
+}
+.coach-root .muscle-heatmap .mh-caption {
+  display: block;
+  margin-top: 2px;
   color: var(--cd-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
 }
-.coach-root .muscle-heatmap li b {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
+.coach-root .muscle-heatmap .rbh {
+  display: block;
+  height: auto;
 }
-.coach-root .muscle-heatmap > p {
-  grid-column: 1 / -1;
-  margin: 0;
-  color: var(--cd-muted);
-  font-size: 11px;
-}
-@media (max-width: 560px) {
-  .coach-root .muscle-heatmap {
-    grid-template-columns: 1fr;
-  }
-  .coach-root .muscle-heatmap svg {
-    max-height: 200px;
-  }
+.coach-root .muscle-heatmap .rbh polygon {
+  /* biome-ignore lint/complexity/noImportantStyles: library sets cursor inline. */
+  cursor: default !important;
+  stroke: var(--cd-surface);
+  stroke-width: 1.5;
 }

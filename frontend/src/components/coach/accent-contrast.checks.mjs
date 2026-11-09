@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { accentControlColors, contrastRatio } from "./accent-contrast.ts";
+import {
+  accentControlColors,
+  accentForeground,
+  contrastRatio,
+} from "./accent-contrast.ts";
 
 test("accent action foreground remains readable for pale and saturated accents", () => {
   for (const accent of ["#EB91B8", "#F6E05E", "#7C3AED", "#16A34A"]) {
@@ -19,6 +23,17 @@ test("accent action foreground remains readable for pale and saturated accents",
 test("accent is normalized and malformed values fall back safely", () => {
   assert.equal(accentControlColors("#abc").background, "#AABBCC");
   assert.ok(accentControlColors("not-a-color").background.startsWith("#"));
+});
+
+test("checkbox glyph picks the readable pole of the accent fill", () => {
+  assert.equal(accentForeground("#EB91B8"), "#000000");
+  assert.equal(accentForeground("#1D1935"), "#FFFFFF");
+  assert.equal(accentForeground("#D93A7F"), "#000000");
+  for (const accent of ["#EB91B8", "#1D1935", "#D93A7F", "#777777", "#0B5FFF"])
+    assert.ok(
+      contrastRatio(accentForeground(accent), accent) >= 4.5,
+      `${accent} glyph contrast was ${contrastRatio(accentForeground(accent), accent)}`,
+    );
 });
 
 test("action fills and labels stay distinct and readable on light and dark surfaces", () => {

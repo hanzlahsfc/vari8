@@ -1,5 +1,5 @@
 "use client";
-import { ArrowLeft, Check, Search } from "lucide-react";
+import { Check, Search } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import {
   type ButtonHTMLAttributes,
@@ -10,19 +10,21 @@ import {
 import {
   type ButtonVariant,
   type ControlSize,
+  type StatusTone,
   Button as Vari8Button,
   Card as Vari8Card,
   IconButton as Vari8IconButton,
   Input as Vari8Input,
   Modal as Vari8Modal,
   Select as Vari8Select,
+  Status as Vari8Status,
   Toggle as Vari8Toggle,
 } from "../vari8/components";
 import { DatePicker, TimePicker } from "../vari8/inputs";
 import { PageHeader } from "../vari8/layouts";
 import { CoachDashboardPreview } from "./builder/coach-dashboard";
 import {
-  ALL_PARAMETERS,
+  allParameters,
   type CoachClient,
   type FieldConfig,
   sampleValue,
@@ -252,12 +254,20 @@ export function Dialog({
   onClose,
   wide = false,
   full = false,
+  viewport = false,
+  flushBody = false,
+  headerAction,
+  className,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   full?: boolean;
+  viewport?: boolean;
+  flushBody?: boolean;
+  headerAction?: ReactNode;
+  className?: string;
 }) {
   return (
     <Vari8Modal
@@ -266,7 +276,10 @@ export function Dialog({
         if (!open) onClose();
       }}
       title={title}
-      size={full ? "full" : wide ? "wide" : "standard"}
+      headerAction={headerAction}
+      flushBody={flushBody}
+      className={className}
+      size={viewport ? "viewport" : full ? "full" : wide ? "wide" : "standard"}
     >
       {children}
     </Vari8Modal>
@@ -284,22 +297,23 @@ export function PageTitle({
   back?: () => void;
 }) {
   return (
-    <PageHeader
-      className="cd-page-heading"
-      title={title}
-      description={description}
-      actions={
-        <>
-          {back && (
-            <Button variant="ghost" className="cd-back" onClick={back}>
-              <ArrowLeft size={15} />
-              Back
-            </Button>
-          )}
-          {actions}
-        </>
-      }
-    />
+    <>
+      {back && (
+        <button
+          type="button"
+          className="v8-editor-header__back cd-page-back"
+          onClick={back}
+        >
+          Back
+        </button>
+      )}
+      <PageHeader
+        className="cd-page-heading"
+        title={title}
+        description={description}
+        actions={actions}
+      />
+    </>
   );
 }
 export function Surface({
@@ -333,12 +347,24 @@ export function Transition({ children }: { children: ReactNode }) {
     </motion.div>
   );
 }
+const STATUS_TONES: Record<string, StatusTone> = {
+  "Awaiting feedback": "warning",
+  Overdue: "danger",
+  "Feedback sent": "positive",
+  Active: "positive",
+  Done: "positive",
+  Complete: "positive",
+  "Active with draft changes": "warning",
+  "Draft changes": "warning",
+  Draft: "info",
+};
+
 export function Status({ text }: { text: string }) {
   return (
-    <span className="cd-status" data-status={text}>
+    <Vari8Status tone={STATUS_TONES[text] ?? "neutral"}>
       {text === "Feedback sent" && <Check size={12} />}
       {text}
-    </span>
+    </Vari8Status>
   );
 }
 export function ParameterValue({
@@ -350,7 +376,7 @@ export function ParameterValue({
 }) {
   return (
     <div className="cd-stat-row">
-      <span>{ALL_PARAMETERS.find((p) => p.id === field.id)?.name}</span>
+      <span>{allParameters().find((p) => p.id === field.id)?.name}</span>
       <strong>{sampleValue(field, client)}</strong>
     </div>
   );

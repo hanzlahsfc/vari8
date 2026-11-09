@@ -114,45 +114,48 @@ export function MobileMealPlan({
           {title ?? "Meal plan"}
         </div>
       )}
-      {(variants.length > 1 || options.length > 1 || temp) && (
-        <div className="cm-segwrap" style={{ marginBottom: 10 }}>
-          {(isMeal ? variants : options).map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              className={`cm-segopt${(selected ?? resolved.optionId) === v.id || (!selected && !resolved.optionId && (isMeal ? variants[0]?.id === v.id : options[0]?.id === v.id)) ? " on" : ""}`}
-              onClick={() => setSelected(v.id)}
-            >
-              {v.label}
-            </button>
-          ))}
-          {temp && (
-            <button
-              type="button"
-              className={`cm-segopt${selected === "__temp__" ? " on" : ""}`}
-              onClick={() => setSelected("__temp__")}
-            >
-              {temp.label ?? "Temporary plan"}
-            </button>
-          )}
-        </div>
-      )}
-      {selected === "__temp__" && temp && (
-        <div className="cm-mut" style={{ fontSize: 12, marginBottom: 10 }}>
-          Temporary plan ·{" "}
-          {formatDate(temp.startDate, {
-            weekday: "short",
-            day: "numeric",
-            month: "short",
-          })}
-          {temp.endDate
-            ? ` – ${formatDate(temp.endDate, { weekday: "short", day: "numeric", month: "short" })}`
-            : ""}
-        </div>
-      )}
-      {isMeal && nutrients && (
-        <>
-          <div className="cm-card" style={{ marginBottom: 10 }}>
+      <div className="cm-mealplan-head">
+        {(variants.length > 1 || options.length > 1 || temp) && (
+          <div className="cm-segwrap" style={{ marginBottom: 10 }}>
+            {(isMeal ? variants : options).map((v) => (
+              <button
+                key={v.id}
+                type="button"
+                className={`cm-segopt${(selected ?? resolved.optionId) === v.id || (!selected && !resolved.optionId && (isMeal ? variants[0]?.id === v.id : options[0]?.id === v.id)) ? " on" : ""}`}
+                onClick={() => setSelected(v.id)}
+              >
+                {v.label}
+              </button>
+            ))}
+            {temp && (
+              <button
+                type="button"
+                className={`cm-segopt${selected === "__temp__" ? " on" : ""}`}
+                onClick={() => setSelected("__temp__")}
+              >
+                {temp.label ?? "Temporary plan"}
+              </button>
+            )}
+          </div>
+        )}
+        {selected === "__temp__" && temp && (
+          <div className="cm-mut" style={{ fontSize: 12, marginBottom: 10 }}>
+            Temporary plan ·{" "}
+            {formatDate(temp.startDate, {
+              weekday: "short",
+              day: "numeric",
+              month: "short",
+            })}
+            {temp.endDate
+              ? ` – ${formatDate(temp.endDate, { weekday: "short", day: "numeric", month: "short" })}`
+              : ""}
+          </div>
+        )}
+        {isMeal && nutrients && (
+          <div
+            className="cm-card cm-mealplan-summary"
+            style={{ marginBottom: 10 }}
+          >
             <div className="cm-mut" style={{ fontSize: 11.5, marginBottom: 8 }}>
               {activeVariant?.meals.length ?? 0} meals
             </div>
@@ -162,64 +165,63 @@ export function MobileMealPlan({
               total={macroTotal}
             />
           </div>
-          {activeVariant?.meals.map((meal: Meal) => {
-            const n = calculateMealNutrients(meal, planFoodMap);
-            return (
+        )}
+      </div>
+      {isMeal &&
+        nutrients &&
+        activeVariant?.meals.map((meal: Meal) => {
+          const n = calculateMealNutrients(meal, planFoodMap);
+          return (
+            <div
+              key={meal.id}
+              className="cm-card cm-meal-card"
+              style={{ padding: "10px 14px" }}
+            >
               <div
-                key={meal.id}
-                className="cm-card"
-                style={{ padding: "10px 14px" }}
+                className="cm-row"
+                style={{ justifyContent: "space-between", marginBottom: 4 }}
               >
-                <div
-                  className="cm-row"
-                  style={{ justifyContent: "space-between", marginBottom: 4 }}
-                >
-                  <div style={{ fontSize: 14, fontWeight: 600 }}>
-                    {meal.label}
-                    {meal.time ? (
-                      <span className="cm-mut" style={{ fontWeight: 400 }}>
-                        {" "}
-                        · {meal.time}
-                      </span>
-                    ) : null}
-                  </div>
-                  <span className="cm-mut" style={{ fontSize: 12 }}>
-                    {NUM.format(n.calories)} kcal
-                  </span>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  {meal.label}
+                  {meal.time ? (
+                    <span className="cm-mut" style={{ fontWeight: 400 }}>
+                      {" "}
+                      · {meal.time}
+                    </span>
+                  ) : null}
                 </div>
-                {meal.portions.map((p) => {
-                  const food = planFoodMap.get(p.foodId);
-                  return (
-                    <div
-                      key={p.foodId}
-                      className="cm-row"
-                      style={{
-                        justifyContent: "space-between",
-                        fontSize: 12.5,
-                        padding: "2px 0",
-                      }}
-                    >
-                      <span>{food?.name ?? p.foodId}</span>
-                      <span className="cm-mut">
-                        {QTY(p.quantity)} {food?.unit ?? ""}
-                      </span>
-                    </div>
-                  );
-                })}
-                <div
-                  className="cm-mut"
-                  style={{ fontSize: 11.5, marginTop: 4 }}
-                >
-                  P {NUM.format(n.protein)} · C {NUM.format(n.carbs)} · F{" "}
-                  {NUM.format(n.fat)}
-                </div>
+                <span className="cm-mut" style={{ fontSize: 12 }}>
+                  {NUM.format(n.calories)} kcal
+                </span>
               </div>
-            );
-          })}
-        </>
-      )}
+              {meal.portions.map((p) => {
+                const food = planFoodMap.get(p.foodId);
+                return (
+                  <div
+                    key={p.foodId}
+                    className="cm-row"
+                    style={{
+                      justifyContent: "space-between",
+                      fontSize: 12.5,
+                      padding: "2px 0",
+                    }}
+                  >
+                    <span>{food?.name ?? p.foodId}</span>
+                    <span className="cm-mut">
+                      {QTY(p.quantity)} {food?.unit ?? ""}
+                    </span>
+                  </div>
+                );
+              })}
+              <div className="cm-mut" style={{ fontSize: 11.5, marginTop: 4 }}>
+                P {NUM.format(n.protein)} · C {NUM.format(n.carbs)} · F{" "}
+                {NUM.format(n.fat)}
+              </div>
+            </div>
+          );
+        })}
       {!isMeal && iifymOption && (
-        <div className="cm-card">
+        <div className="cm-card cm-mealplan-iifym">
           <div
             className="cm-row"
             style={{ justifyContent: "space-between", marginBottom: 8 }}

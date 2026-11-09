@@ -24,6 +24,7 @@ import { MuscleHeatmap } from "../../muscle-heatmap";
 import { MUSCLE_GROUPS } from "../../muscle-volume";
 import { useCoach } from "../../store";
 import { Button, Dialog, IconButton } from "../../ui";
+import { VolumeList } from "../../volume-list";
 import {
   DEFAULT_TRAINING_DEFAULTS,
   DEFAULT_TRAINING_OPTIONS,
@@ -36,6 +37,8 @@ import type {
   TrainingSession,
   TrainingSet,
 } from "../types";
+import { adjustmentForWeek, exerciseInfoFields } from "../types";
+import { adjustmentBannerText } from "./adjustments";
 import { ExerciseLibraryDialog } from "./library-dialog";
 import { defaultExerciseLibrary } from "./library-model";
 import {
@@ -156,8 +159,10 @@ function Volume({
   week: number;
   configuration: Variant;
 }) {
+  const { state } = useCoach();
+  const library = state.exerciseLibrary ?? defaultExerciseLibrary();
   if (!configuration.training.volume) return null;
-  const result = prescribedTrainingVolume(plan, week);
+  const result = prescribedTrainingVolume(plan, week, library);
   return (
     <section
       className="tr-volume"
@@ -176,25 +181,21 @@ function Volume({
         </span>
       </div>
       {configuration.training.presentation === "Heatmap" ? (
-        <MuscleHeatmap
-          muscles={result.groups}
+        <div className="tr-volume-heatmap">
+          <MuscleHeatmap
+            targets={result.targets}
+            unassignedSets={result.unassignedSets}
+          />
+          <VolumeList
+            targets={result.targets}
+            unassignedSets={result.unassignedSets}
+          />
+        </div>
+      ) : (
+        <VolumeList
+          targets={result.targets}
           unassignedSets={result.unassignedSets}
         />
-      ) : (
-        <div className="tr-volume-list">
-          {result.groups.map((group) => (
-            <div key={group.id}>
-              <span>{group.label}</span>
-              <span className="tr-volume-bar" aria-hidden="true">
-                <i style={{ transform: `scaleX(${group.intensity})` }} />
-              </span>
-              <b>{group.sets}</b>
-            </div>
-          ))}
-          {result.unassignedSets > 0 && (
-            <p>{result.unassignedSets} unassigned sets</p>
-          )}
-        </div>
       )}
     </section>
   );
@@ -330,6 +331,47 @@ function SetFields({
           (repsMax) => setPatch({ repsMax }),
           999,
         )}
+      {(configuration.training.intensity === "rir" ||
+        configuration.training.intensity === "rpe") && (
+        <OptionSelect
+          id={`${set.id}-${configuration.training.intensity}`}
+          value={
+            configuration.training.intensity === "rir"
+              ? set.rir === undefined
+                ? ""
+                : String(set.rir)
+              : set.rpe === undefined
+                ? ""
+                : String(set.rpe)
+          }
+          options={
+            configuration.training.intensity === "rir"
+              ? ["0", "1", "2", "3", "4", "5"]
+              : [
+                  "5",
+                  "5.5",
+                  "6",
+                  "6.5",
+                  "7",
+                  "7.5",
+                  "8",
+                  "8.5",
+                  "9",
+                  "9.5",
+                  "10",
+                ]
+          }
+          label={configuration.training.intensity === "rir" ? "RIR" : "RPE"}
+          context={scope}
+          onChange={(v) =>
+            setPatch(
+              configuration.training.intensity === "rir"
+                ? { rir: v === "" ? undefined : Number(v) }
+                : { rpe: v === "" ? undefined : Number(v) },
+            )
+          }
+        />
+      )}
       {hasField(configuration, "Tempo") && (
         <OptionSelect
           id={`${set.id}-tempo`}
@@ -792,6 +834,11 @@ function SessionEditor({
       libraryId: item.id,
       secondaryMuscles: [...item.secondaryMuscles],
       generalNotes: item.notes,
+      equipment: item.equipment,
+      movementPattern: item.movementPattern,
+      position: item.position,
+      primaryTarget: item.primaryTarget,
+      additionalTargets: item.additionalTargets,
     };
     patch({ exercises: [...session.exercises, added] });
     setExerciseDraft(added);
@@ -834,9 +881,13 @@ function SessionEditor({
       <div className="tr-exercise-head" aria-hidden="true">
         <span></span>
         <span>Exercise</span>
-        <span className="tr-prescription-head">
+        <span
+          className={`tr-prescription-head${configuration.training.intensity ? " tr-prescription-group--intensity" : ""}`}
+        >
           <i>Sets</i>
           <i>Reps</i>
+          {configuration.training.intensity === "rir" && <i>RIR</i>}
+          {configuration.training.intensity === "rpe" && <i>RPE</i>}
           <i>Tempo</i>
           <i>Details</i>
         </span>
@@ -851,8 +902,27 @@ function SessionEditor({
             </span>
             <div className="tr-exercise-copy">
               <strong className="tr-exercise-name">{exercise.name}</strong>
+              {(() => {
+                const chips = exerciseInfoFields(configuration.training)
+                  .filter((f) => f !== "cues")
+                  .map((f) =>
+                    f === "equipment"
+                      ? exercise.equipment
+                      : f === "movementPattern"
+                        ? exercise.movementPattern
+                        : f === "position"
+                          ? exercise.position
+                          : undefined,
+                  )
+                  .filter((v): v is string => Boolean(v));
+                return chips.length > 0 ? (
+                  <small className="tr-exercise-info">
+                    {chips.join(" · ")}
+                  </small>
+                ) : null;
+              })()}
               {exerciseCues(exercise, configuration).map((cue) => (
-                <small className="tr-exercise-cue" key={cue}>
+                <small className="tr-exercise-cue" key={cue} title={cue}>
                   {cue}
                 </small>
               ))}
@@ -1000,9 +1070,18 @@ function ExerciseSummary({
                   : prescription.reps
               } reps`
             : "—";
+        const intensity = configuration.training.intensity;
+        const intensityLabel =
+          intensity === "rir" ? "RIR" : intensity === "rpe" ? "RPE" : "";
+        const intensityValue =
+          intensity === "rir"
+            ? prescription.rir
+            : intensity === "rpe"
+              ? prescription.rpe
+              : undefined;
         return (
           <div
-            className="tr-prescription-group"
+            className={`tr-prescription-group${intensityLabel ? " tr-prescription-group--intensity" : ""}`}
             key={`${exercise.id}-${firstSetId}`}
           >
             <span
@@ -1025,6 +1104,17 @@ function ExerciseSummary({
               <span className="tr-prescription-label">Reps</span>
               <span className="tr-prescription-value">{reps}</span>
             </span>
+            {intensityLabel && (
+              <span
+                className="tr-prescription-cell tr-prescription-intensity"
+                data-label={intensityLabel}
+              >
+                <span className="tr-prescription-label">{intensityLabel}</span>
+                <span className="tr-prescription-value">
+                  {intensityValue !== undefined ? intensityValue : "—"}
+                </span>
+              </span>
+            )}
             <span
               className="tr-prescription-cell tr-prescription-tempo"
               data-label="Tempo"
@@ -1054,7 +1144,7 @@ function ExerciseSummary({
 }
 
 function exerciseCues(exercise: TrainingExercise, configuration: Variant) {
-  if (!hasField(configuration, "Detailed instructions")) return [];
+  if (!exerciseInfoFields(configuration.training).includes("cues")) return [];
   return Array.from(
     new Set(
       [
@@ -1203,14 +1293,23 @@ export function TrainingEditor({
   onChange,
   configuration,
   onWeekChange,
+  initialWeek,
 }: {
   value: TrainingPlan;
   onChange: (value: TrainingPlan) => void;
   configuration: Variant;
   onWeekChange?: (week: number) => void;
+  initialWeek?: number;
 }) {
-  const { state, setState } = useCoach();
-  const [week, setWeek] = useState(1);
+  const { state, setState, route, navigate } = useCoach();
+  const [week, setWeek] = useState(() => {
+    const max = value.program === "Evergreen" ? 1 : Math.max(1, value.weeks);
+    const requested =
+      typeof initialWeek === "number" && Number.isFinite(initialWeek)
+        ? Math.trunc(initialWeek)
+        : 1;
+    return Math.min(Math.max(1, requested), max);
+  });
   const [selectedSessionId, setSelectedSessionId] = useState("");
   const library = state.exerciseLibrary ?? defaultExerciseLibrary();
   const defaults = configuredDefaults(configuration);
@@ -1221,6 +1320,10 @@ export function TrainingEditor({
       ? 1
       : Math.min(Math.max(1, week), Math.max(1, value.weeks));
   const sessions = effectiveSessions(value, currentWeek);
+  const schedule = trainingRotationSchedule(value, currentWeek);
+  const adjustment = adjustmentForWeek(value, currentWeek);
+  const intensity = configuration.training.intensity;
+  const sessionsReadOnly = !!adjustment && adjustment.mode !== "manual";
   const selectedSession =
     sessions.find((session) => session.id === selectedSessionId) ?? sessions[0];
   const rotation = value.rotation ?? {
@@ -1328,6 +1431,29 @@ export function TrainingEditor({
           ))}
         </nav>
       )}
+      {adjustment && (
+        <div className="tr-adjustment-banner" role="status">
+          <div className="tr-adjustment-banner-copy">
+            <strong>{adjustmentBannerText(adjustment, intensity)}</strong>
+            {adjustment.note && <span>{adjustment.note}</span>}
+          </div>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              navigate({
+                ...route,
+                section: "clients",
+                client: value.clientId,
+                plan: undefined,
+                tab: "Timeline",
+                week: undefined,
+              })
+            }
+          >
+            Edit {adjustment.kind === "intro" ? "intro" : "deload"}
+          </Button>
+        </div>
+      )}
       <div className="tr-secondary-controls">
         <section
           className="tr-rotation"
@@ -1345,7 +1471,7 @@ export function TrainingEditor({
             </h3>
             <div className="tr-rotation-modes">
               <div
-                className="tr-mode-tabs"
+                className="tr-mode-tabs v8-tabs__list"
                 role="tablist"
                 aria-label="Training schedule type"
               >
@@ -1353,6 +1479,7 @@ export function TrainingEditor({
                   <button
                     key={mode}
                     type="button"
+                    className="v8-tabs__tab"
                     role="tab"
                     aria-selected={rotation.mode === mode}
                     tabIndex={rotation.mode === mode ? 0 : -1}
@@ -1378,7 +1505,21 @@ export function TrainingEditor({
               </div>
             </div>
           </div>
-          {rotation.mode === "weekly" ? (
+          {sessionsReadOnly ? (
+            <div className="tr-rotation-readonly">
+              {schedule.entries.length ? (
+                schedule.entries.map((entry) => (
+                  <span key={entry.key}>
+                    {entry.kind === "session"
+                      ? `${entry.label} · ${entry.session.name}`
+                      : `${entry.label} · Off`}
+                  </span>
+                ))
+              ) : (
+                <span>No training this week.</span>
+              )}
+            </div>
+          ) : rotation.mode === "weekly" ? (
             <div className="tr-weekday-grid">
               {WEEKDAYS.map((day) => (
                 <ThemedSelect
@@ -1530,110 +1671,140 @@ export function TrainingEditor({
               <p>Select a session to edit or add another.</p>
             </div>
           </header>
-          <div className="tr-session-toolbar">
-            <div
-              className="cn-option-tabs tr-session-tabs"
-              role="tablist"
-              aria-label="Training sessions"
-            >
-              {sessions.map((session, index) => (
-                <button
-                  id={`training-session-tab-${session.id}`}
-                  key={session.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={session.id === selectedSession?.id}
-                  aria-controls="training-session-panel"
-                  tabIndex={session.id === selectedSession?.id ? 0 : -1}
-                  onClick={() => setSelectedSessionId(session.id)}
-                  onKeyDown={(event) => {
-                    const delta =
-                      event.key === "ArrowRight"
-                        ? 1
-                        : event.key === "ArrowLeft"
-                          ? -1
-                          : 0;
-                    const current = sessions.findIndex(
-                      (item) => item.id === session.id,
-                    );
-                    const target =
-                      event.key === "Home"
-                        ? 0
-                        : event.key === "End"
-                          ? sessions.length - 1
-                          : delta
-                            ? (current + delta + sessions.length) %
-                              sessions.length
-                            : -1;
-                    if (target < 0) return;
-                    event.preventDefault();
-                    const next = sessions[target];
-                    if (!next) return;
-                    setSelectedSessionId(next.id);
-                    event.currentTarget.parentElement
-                      ?.querySelector<HTMLButtonElement>(
-                        `#training-session-tab-${next.id}`,
-                      )
-                      ?.focus();
-                  }}
-                >
-                  {session.name || `Session ${index + 1}`}
-                </button>
-              ))}
-              <Button
-                onClick={() => {
-                  const next = freshSession(sessions.length);
-                  write([...sessions, next]);
-                  setSelectedSessionId(next.id);
-                }}
-              >
-                <Plus size={15} /> Add session
-              </Button>
-            </div>
-          </div>
-          {selectedSession ? (
-            <SessionEditor
-              key={selectedSession.id}
-              session={selectedSession}
-              tabId={`training-session-tab-${selectedSession.id}`}
-              index={sessions.findIndex(
-                (item) => item.id === selectedSession.id,
+          {sessionsReadOnly ? (
+            <div className="tr-readonly-sessions">
+              {sessions.length ? (
+                sessions.map((session) => (
+                  <section key={session.id} className="tr-readonly-session">
+                    <h3>{session.name}</h3>
+                    {session.exercises.map((exercise) => (
+                      <div key={exercise.id} className="tr-readonly-row">
+                        <strong>{exercise.name}</strong>
+                        <span>
+                          {exercise.sets.length}{" "}
+                          {exercise.sets.length === 1 ? "set" : "sets"}
+                        </span>
+                      </div>
+                    ))}
+                  </section>
+                ))
+              ) : (
+                <div className="tr-empty">No training this week.</div>
               )}
-              count={sessions.length}
-              configuration={configuration}
-              library={library}
-              onLibraryChange={changeLibrary}
-              defaults={defaults}
-              onChange={(next) => updateSession(selectedSession.id, next)}
-              onRemove={() => {
-                onChange(
-                  deleteTrainingSession(value, currentWeek, selectedSession.id),
-                );
-                setSelectedSessionId("");
-              }}
-              onDuplicate={() => {
-                const next = cloneSession(selectedSession);
-                write([...sessions, next]);
-                setSelectedSessionId(next.id);
-              }}
-              onMove={(direction) =>
-                write(
-                  reorder(
-                    sessions,
-                    sessions.findIndex(
-                      (item) => item.id === selectedSession.id,
-                    ),
-                    sessions.findIndex(
-                      (item) => item.id === selectedSession.id,
-                    ) + direction,
-                  ),
-                )
-              }
-            />
-          ) : (
-            <div className="tr-empty">
-              No sessions yet. Add one to start building this week.
             </div>
+          ) : (
+            <>
+              <div className="tr-session-toolbar">
+                <div
+                  className="cn-option-tabs tr-session-tabs v8-tabs__list"
+                  role="tablist"
+                  aria-label="Training sessions"
+                >
+                  {sessions.map((session, index) => (
+                    <button
+                      id={`training-session-tab-${session.id}`}
+                      key={session.id}
+                      type="button"
+                      className="v8-tabs__tab"
+                      role="tab"
+                      aria-selected={session.id === selectedSession?.id}
+                      aria-controls="training-session-panel"
+                      tabIndex={session.id === selectedSession?.id ? 0 : -1}
+                      onClick={() => setSelectedSessionId(session.id)}
+                      onKeyDown={(event) => {
+                        const delta =
+                          event.key === "ArrowRight"
+                            ? 1
+                            : event.key === "ArrowLeft"
+                              ? -1
+                              : 0;
+                        const current = sessions.findIndex(
+                          (item) => item.id === session.id,
+                        );
+                        const target =
+                          event.key === "Home"
+                            ? 0
+                            : event.key === "End"
+                              ? sessions.length - 1
+                              : delta
+                                ? (current + delta + sessions.length) %
+                                  sessions.length
+                                : -1;
+                        if (target < 0) return;
+                        event.preventDefault();
+                        const next = sessions[target];
+                        if (!next) return;
+                        setSelectedSessionId(next.id);
+                        event.currentTarget.parentElement
+                          ?.querySelector<HTMLButtonElement>(
+                            `#training-session-tab-${next.id}`,
+                          )
+                          ?.focus();
+                      }}
+                    >
+                      {session.name || `Session ${index + 1}`}
+                    </button>
+                  ))}
+                  <Button
+                    onClick={() => {
+                      const next = freshSession(sessions.length);
+                      write([...sessions, next]);
+                      setSelectedSessionId(next.id);
+                    }}
+                  >
+                    <Plus size={15} /> Add session
+                  </Button>
+                </div>
+              </div>
+              {selectedSession ? (
+                <SessionEditor
+                  key={selectedSession.id}
+                  session={selectedSession}
+                  tabId={`training-session-tab-${selectedSession.id}`}
+                  index={sessions.findIndex(
+                    (item) => item.id === selectedSession.id,
+                  )}
+                  count={sessions.length}
+                  configuration={configuration}
+                  library={library}
+                  onLibraryChange={changeLibrary}
+                  defaults={defaults}
+                  onChange={(next) => updateSession(selectedSession.id, next)}
+                  onRemove={() => {
+                    onChange(
+                      deleteTrainingSession(
+                        value,
+                        currentWeek,
+                        selectedSession.id,
+                      ),
+                    );
+                    setSelectedSessionId("");
+                  }}
+                  onDuplicate={() => {
+                    const next = cloneSession(selectedSession);
+                    write([...sessions, next]);
+                    setSelectedSessionId(next.id);
+                  }}
+                  onMove={(direction) =>
+                    write(
+                      reorder(
+                        sessions,
+                        sessions.findIndex(
+                          (item) => item.id === selectedSession.id,
+                        ),
+                        sessions.findIndex(
+                          (item) => item.id === selectedSession.id,
+                        ) + direction,
+                      ),
+                    )
+                  }
+                />
+              ) : (
+                <div className="tr-empty">
+                  No sessions yet. Add one to start building this week.
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

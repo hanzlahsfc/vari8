@@ -439,3 +439,82 @@ test("isCoachState accepts a stored state with trainingLogs and logging settings
     "malformed log rows are rejected",
   );
 });
+
+import { migrateCoachState } from "../../coach/plans/domain.ts";
+import { exerciseInfoFields } from "../../coach/plans/types.ts";
+import { effectiveLogFields } from "./model.ts";
+
+test("effectiveLogFields: all four intensity cases", () => {
+  // undefined → logFields as-is (legacy)
+  assert.deepEqual(
+    effectiveLogFields({ logFields: ["weight", "reps", "note"] }),
+    ["weight", "reps", "note"],
+  );
+  // off → rir/rpe stripped
+  assert.deepEqual(
+    effectiveLogFields({
+      logFields: ["weight", "reps", "rpe", "note"],
+      intensity: "off",
+    }),
+    ["weight", "reps", "note"],
+  );
+  // rir → rir kept/inserted after reps, rpe removed
+  assert.deepEqual(
+    effectiveLogFields({
+      logFields: ["weight", "reps", "rpe", "note"],
+      intensity: "rir",
+    }),
+    ["weight", "reps", "rir", "note"],
+  );
+  // rpe → rpe kept/inserted after reps, rir removed
+  assert.deepEqual(
+    effectiveLogFields({
+      logFields: ["weight", "reps", "rir", "note"],
+      intensity: "rpe",
+    }),
+    ["weight", "reps", "rpe", "note"],
+  );
+});
+
+test("exerciseInfoFields: default is cues-only, explicit list honoured", () => {
+  assert.deepEqual(exerciseInfoFields(undefined), ["cues"]);
+  assert.deepEqual(exerciseInfoFields({}), ["cues"]);
+  assert.deepEqual(
+    exerciseInfoFields({ exerciseInfo: ["equipment", "position"] }),
+    ["equipment", "position"],
+  );
+});
+
+test("exercise library migration: DB replaces non-custom, custom kept", () => {
+  const seeded = migrateCoachState({
+    clients: [],
+    exerciseLibrary: [
+      {
+        id: "library-back-squat",
+        name: "Back squat",
+        muscle: "quadriceps",
+        secondaryMuscles: [],
+        notes: "",
+      },
+      {
+        id: "library-exercise-mine",
+        name: "My move",
+        muscle: "glutes",
+        secondaryMuscles: [],
+        notes: "",
+      },
+    ],
+    demoSeeds: {},
+  });
+  const lib = seeded.exerciseLibrary;
+  assert.equal(lib.length > 500, true); // the database landed
+  assert.equal(
+    lib.some((e) => e.id === "library-exercise-mine"),
+    true,
+  ); // custom kept
+  assert.equal(
+    lib.some((e) => e.id === "library-back-squat"),
+    false,
+  ); // old default gone
+  assert.equal(seeded.demoSeeds.exerciseLibrary, 1);
+});

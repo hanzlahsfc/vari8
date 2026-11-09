@@ -1,15 +1,17 @@
 "use client";
 
-import { type CSSProperties, useMemo, useRef, useState } from "react";
+import { type CSSProperties, Fragment, useMemo, useRef, useState } from "react";
 import { buildGroups, type Col } from "../../coach/athlete/tracker-columns";
 import {
-  ALL_PARAMETERS,
+  allParameters,
   type CoachClient,
   formatDate,
+  type HabitFrequency,
 } from "../../coach/model";
 import { useCoach } from "../../coach/store";
 import { addLocalDays } from "../../coach/targets/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
+import { clientHabitsEnabled } from "../../coach/template-setup";
 import {
   clientTracking,
   clientTrackingText,
@@ -25,6 +27,7 @@ import {
   withDayType,
   withPlanFollowed,
 } from "../../coach/tracking/nutrition-day";
+import { Checkbox } from "../../vari8/components";
 
 const MACRO_KEYS = new Set(["calories", "protein", "carbs", "fat"]);
 const WDAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -124,16 +127,115 @@ function RatingSlider({
   );
 }
 
+function GroupCard({
+  id,
+  title,
+  count,
+  total,
+  summary,
+  expanded,
+  onToggle,
+  children,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  total: number;
+  summary: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="cm-card cm-gcard" key={id}>
+      <button
+        type="button"
+        className="cm-ghead"
+        onClick={onToggle}
+        aria-expanded={expanded}
+      >
+        <span className="cm-ghead-l">
+          <span className="cm-gtitle">{title}</span>
+          <span className="cm-gsum">{summary || "Not logged yet"}</span>
+        </span>
+        <span className="cm-ghead-r">
+          <span className="cm-mut cm-gcount">
+            {count} of {total}
+          </span>
+          <span
+            className={`cm-gchev${expanded ? " on" : ""}`}
+            aria-hidden="true"
+          >
+            ›
+          </span>
+        </span>
+      </button>
+      <div className={`cm-gbody${expanded ? "" : " closed"}`}>
+        <div className="cm-gbody-in">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export function MobileTracker({ client }: { client: CoachClient }) {
-  const { state, setState } = useCoach();
+  const { setState } = useCoach();
   const today = useLocalToday();
   const [date, setDate] = useState(today);
   const [saved, setSaved] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(null);
-  const groups = useMemo(() => buildGroups(state, client), [state, client]);
+  const groups = useMemo(() => buildGroups(client), [client]);
   const tracking = useMemo(() => clientTracking(client), [client]);
   const texts = useMemo(() => clientTrackingText(client), [client]);
   const entry = tracking.find((e) => e.date === date);
+  const dayLogged = loggedDayType(client, date);
+  const dayPrescribed = prescribedDayType(client, date);
+  const isColLogged = (c: Col) => {
+    if (c.kind === "num" || c.kind === "rating")
+      return entry?.values?.[c.key] != null;
+    const t = texts?.[`${date}:${c.key}`];
+    return typeof t === "string" && t.trim().length > 0;
+  };
+  const groupFields = (gCols: Col[]) =>
+    gCols.filter((c) => !c.key.startsWith("@"));
+  const [open, setOpen] = useState<Record<string, boolean>>(() => {
+    const firstEmpty = groups.find((g) =>
+      groupFields(g.cols).every((c) => !isColLogged(c)),
+    );
+    return firstEmpty ? { [firstEmpty.id]: true } : {};
+  });
+  const toggleGroup = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
+  const SHORT: Record<string, string> = {
+    calories: "",
+    protein: "P",
+    carbs: "C",
+    fat: "F",
+  };
+  const summaryFor = (id: string, fields: Col[]) => {
+    const parts: string[] = [];
+    if (id === "Nutrition" && (dayLogged ?? dayPrescribed))
+      parts.push(dayLogged ?? dayPrescribed ?? "");
+    for (const c of fields) {
+      if (!isColLogged(c)) continue;
+      if (c.kind === "num") {
+        const v = entry?.values?.[c.key];
+        if (v == null) continue;
+        const unit = c.unit ? ` ${c.unit}` : "";
+        const short = id === "Nutrition" && c.key in SHORT ? SHORT[c.key] : "";
+        parts.push(
+          short
+            ? `${short} ${fmtNum(v, c.decimals)}`
+            : `${fmtNum(v, c.decimals)}${unit}`,
+        );
+      } else if (c.kind === "rating") {
+        const v = entry?.values?.[c.key];
+        if (v != null) parts.push(`${c.label} ${fmtNum(v, c.decimals)}`);
+      } else {
+        const t = (texts?.[`${date}:${c.key}`] ?? "").trim();
+        if (t) parts.push(t.length <= 20 ? t : `${t.slice(0, 20)}…`);
+      }
+    }
+    return parts.join(" · ");
+  };
   const hasLogged = (dstr: string) => {
     const e = tracking.find((x) => x.date === dstr);
     return cols.some((c) => {
@@ -175,7 +277,7 @@ export function MobileTracker({ client }: { client: CoachClient }) {
   const writeText = (col: Col, value: string) =>
     write(withTrackingText(client, date, col.key, value));
   const textFor = (col: Col) => texts?.[`${date}:${col.key}`] ?? "";
-  const paramFor = (col: Col) => ALL_PARAMETERS.find((p) => p.id === col.key);
+  const paramFor = (col: Col) => allParameters().find((p) => p.id === col.key);
 
   const numField = (col: Col) => {
     const cur = entry?.values?.[col.key];
@@ -212,7 +314,7 @@ export function MobileTracker({ client }: { client: CoachClient }) {
     }
     const param = paramFor(col);
     const inputType = param?.inputType ?? "";
-    if (col.kind === "flow" || inputType === "choice") {
+    if (inputType === "choice" || inputType === "context") {
       const cur = textFor(col);
       return (
         <div key={col.key} style={{ padding: "5px 0" }}>
@@ -350,7 +452,7 @@ export function MobileTracker({ client }: { client: CoachClient }) {
     );
   };
 
-  const renderGroup = (id: string, cols: Col[]) => {
+  const renderGroup = (id: string, label: string, cols: Col[]) => {
     const fields = cols.filter((c) => !c.key.startsWith("@"));
     if (!fields.length) return null;
     if (id === "Nutrition") {
@@ -362,15 +464,18 @@ export function MobileTracker({ client }: { client: CoachClient }) {
         (c) => !MACRO_KEYS.has(c.key) && c.kind !== "num",
       );
       const dayOptions = dayTypeOptions(client, date);
-      const dayPrescribed = prescribedDayType(client, date);
-      const dayLogged = loggedDayType(client, date);
       const followed = planFollowed(client, date);
       const followedNutrients = dayTypeNutrients(client, date, dayLogged ?? "");
       return (
-        <div className="cm-card" key={id}>
-          <div className="cm-sh" style={{ marginBottom: 5 }}>
-            {id}
-          </div>
+        <GroupCard
+          id={id}
+          title={label}
+          count={fields.filter(isColLogged).length}
+          total={fields.length}
+          summary={summaryFor(id, fields)}
+          expanded={!!open[id]}
+          onToggle={() => toggleGroup(id)}
+        >
           {dayOptions.length > 0 && (
             <div style={{ marginBottom: 10 }}>
               <div
@@ -400,29 +505,18 @@ export function MobileTracker({ client }: { client: CoachClient }) {
                   </span>
                 )}
               </div>
-              <label className="cm-follow">
-                <input
-                  type="checkbox"
-                  checked={followed}
-                  onChange={(e) =>
-                    write(withPlanFollowed(client, date, e.target.checked))
-                  }
-                />
-                <span>
-                  Followed my plan
-                  {followedNutrients && (
-                    <span
-                      className="cm-mut"
-                      style={{ fontSize: 11.5, display: "block" }}
-                    >
-                      Fills in {fmtNum(followedNutrients.kcal, 0)} kcal · P{" "}
-                      {fmtNum(followedNutrients.protein, 0)} · C{" "}
-                      {fmtNum(followedNutrients.carbs, 0)} · F{" "}
-                      {fmtNum(followedNutrients.fat, 0)} from {dayLogged}
-                    </span>
-                  )}
-                </span>
-              </label>
+              <Checkbox
+                label="Followed my plan"
+                description={
+                  followedNutrients
+                    ? `Fills in ${fmtNum(followedNutrients.kcal, 0)} kcal · P ${fmtNum(followedNutrients.protein, 0)} · C ${fmtNum(followedNutrients.carbs, 0)} · F ${fmtNum(followedNutrients.fat, 0)} from ${dayLogged ?? ""}`
+                    : undefined
+                }
+                checked={followed}
+                onCheckedChange={(checked) =>
+                  write(withPlanFollowed(client, date, checked))
+                }
+              />
             </div>
           )}
           {macros.length > 0 && (
@@ -469,18 +563,143 @@ export function MobileTracker({ client }: { client: CoachClient }) {
             </div>
           )}
           {rest.map(renderCol)}
-        </div>
+        </GroupCard>
       );
     }
     return (
-      <div className="cm-card" key={id}>
-        <div className="cm-sh" style={{ marginBottom: 5 }}>
-          {id}
-        </div>
+      <GroupCard
+        id={id}
+        title={label}
+        count={fields.filter(isColLogged).length}
+        total={fields.length}
+        summary={summaryFor(id, fields)}
+        expanded={!!open[id]}
+        onToggle={() => toggleGroup(id)}
+      >
         {fields.map(renderCol)}
-      </div>
+      </GroupCard>
     );
   };
+
+  const habitsOn =
+    clientHabitsEnabled(client) && (client.habits?.length ?? 0) > 0;
+  const weekRange = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) =>
+        addLocalDays(mondayOf(date), i),
+      ).filter((d) => d <= today),
+    [date, today],
+  );
+  const habitWeekCount = (hid: string) =>
+    weekRange.filter((d) => (client.habitLog?.[d] ?? []).includes(hid)).length;
+  const habitDue = (h: NonNullable<CoachClient["habits"]>[number]) => {
+    const f = h.frequency;
+    if (typeof f === "string") return { due: true, line: h.goal };
+    if (f.kind === "daily") return { due: true, line: h.goal };
+    if (f.kind === "per-week")
+      return {
+        due: true,
+        line: `${h.goal} · ${habitWeekCount(h.id)} of ${f.count} this week`,
+      };
+    if (f.kind === "weekdays") {
+      const wd = (new Date(`${date}T00:00:00`).getDay() + 6) % 7; // 0=Mon
+      return {
+        due: f.days.includes(wd),
+        line: `${h.goal} · Not today`,
+      };
+    }
+    if (f.kind === "every-n-days")
+      return { due: true, line: `${h.goal} · every ${f.n} days` };
+    return { due: true, line: h.goal };
+  };
+  const habitList = habitsOn
+    ? (client.habits ?? [])
+        .map((h) => ({ h, d: habitDue(h) }))
+        .filter((x) => x.d.due)
+    : [];
+  const toggleHabit = (hid: string) => {
+    const cur = new Set(client.habitLog?.[date] ?? []);
+    if (cur.has(hid)) cur.delete(hid);
+    else cur.add(hid);
+    write({ ...client, habitLog: { ...client.habitLog, [date]: [...cur] } });
+  };
+  const habitsLogged = (client.habitLog?.[date] ?? []).length;
+  const habitsSummary = habitList
+    .filter((x) => (client.habitLog?.[date] ?? []).includes(x.h.id))
+    .map((x) => x.h.name)
+    .join(" · ");
+  const habitsCard = habitList.length ? (
+    <div className="cm-card cm-gcard" key="Habits">
+      <button
+        type="button"
+        className="cm-ghead"
+        onClick={() => toggleGroup("Habits")}
+        aria-expanded={!!open.Habits}
+      >
+        <span className="cm-ghead-l">
+          <span className="cm-gtitle">Habits</span>
+          <span className="cm-gsum">{habitsSummary || "Not logged yet"}</span>
+        </span>
+        <span className="cm-ghead-r">
+          <span className="cm-mut cm-gcount">
+            {habitsLogged} of {habitList.length} today
+          </span>
+          <span
+            className={`cm-gchev${open.Habits ? " on" : ""}`}
+            aria-hidden="true"
+          >
+            ›
+          </span>
+        </span>
+      </button>
+      <div className={`cm-gbody${open.Habits ? "" : " closed"}`}>
+        <div className="cm-gbody-in" style={{ paddingTop: 4 }}>
+          {habitList.map(({ h, d }) => {
+            const done = (client.habitLog?.[date] ?? []).includes(h.id);
+            const freq = h.frequency as HabitFrequency;
+            const perWeek =
+              typeof freq === "object" && freq.kind === "per-week";
+            const segCount = perWeek ? freq.count : 0;
+            const segDone = perWeek ? habitWeekCount(h.id) : 0;
+            return (
+              <button
+                key={h.id}
+                type="button"
+                className="cm-hrow"
+                disabled={date > today}
+                onClick={() => toggleHabit(h.id)}
+                aria-pressed={done}
+              >
+                <span
+                  className={`cm-htick${done ? " on" : ""}`}
+                  aria-hidden="true"
+                >
+                  {done ? "✓" : ""}
+                </span>
+                <span className="cm-hname">
+                  {h.name}
+                  <span className="cm-mut cm-hgoal">{d.line}</span>
+                </span>
+                {perWeek && (
+                  <span className="cm-hdots" aria-hidden="true">
+                    {Array.from({ length: segCount }, (_, i) => (
+                      <span
+                        // biome-ignore lint/suspicious/noArrayIndexKey: positional segment markers
+                        key={`seg-${i}`}
+                        className={`cm-hdot${i < segDone ? " on" : ""}`}
+                      />
+                    ))}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  ) : null;
+  const habitAfterIdx = groups.findIndex((g) => g.id === "Activity");
+  const habitBeforeIdx = groups.findIndex((g) => g.id === "Note");
 
   const isToday = date === today;
   const future = date > today;
@@ -624,7 +843,14 @@ export function MobileTracker({ client }: { client: CoachClient }) {
           }}
         />
       </div>
-      {groups.map((g) => renderGroup(g.id, g.cols))}
+      {groups.map((g) => (
+        <Fragment key={g.id}>
+          {habitAfterIdx < 0 && g.id === "Note" ? habitsCard : null}
+          {renderGroup(g.id, g.label, g.cols)}
+          {g.id === "Activity" ? habitsCard : null}
+        </Fragment>
+      ))}
+      {habitAfterIdx < 0 && habitBeforeIdx < 0 ? habitsCard : null}
       {future && null}
     </>
   );

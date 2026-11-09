@@ -161,12 +161,16 @@
   border-radius: var(--v8-radius-control, 12px);
   color: var(--v8-text);
   font: inherit;
-  font-size: 16px;
+  font-size: var(--v8-font-size-control);
   line-height: 1.45;
   min-height: 84px;
   padding: 10px 12px;
   resize: vertical;
   width: 100%;
+}
+
+.v8-theme .v8-textarea:hover:not(:disabled, [readonly]) {
+  background: var(--v8-surface-interactive);
 }
 
 .v8-theme .v8-textarea[data-size="sm"] {
@@ -185,8 +189,10 @@
   .v8-theme {
     --v8-field-height: var(--v8-size-touch-min);
   }
+  .v8-theme .v8-textarea {
+    font-size: var(--v8-font-size-body-mobile);
+  }
 }
-.v8-theme .v8-textarea:focus-visible,
 .v8-theme .v8-searchable-input:focus-visible {
   border-color: var(--v8-focus);
   outline: 2px solid var(--v8-focus);

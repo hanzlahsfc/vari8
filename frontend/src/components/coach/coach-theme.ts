@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { themeVariables } from "@/lib/ethereal-appearance";
 import { vari8Theme } from "@/lib/vari8-theme";
-import { accentControlColors } from "./accent-contrast";
+import { accentControlColors, accentForeground } from "./accent-contrast";
 import type { CoachState } from "./model";
 
 export function coachThemeStyle(
@@ -29,6 +29,7 @@ export function coachThemeStyle(
     "--cd-accent-link": theme["--accent-ink"],
     "--cd-accent-contrast": theme["--accent-contrast"],
     "--cd-accent-ring": theme["--accent-ring"],
+    "--cd-check-glyph": accentForeground(theme["--accent"]),
     "--cd-chart-line": theme["--chart-line"],
     "--nutrition-macro-protein": theme["--nutrition-macro-protein"],
     "--nutrition-macro-carbs": theme["--nutrition-macro-carbs"],

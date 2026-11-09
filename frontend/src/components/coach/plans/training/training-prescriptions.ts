@@ -13,6 +13,8 @@ export function hasUniformSetPrescriptions(sets: TrainingSet[]): boolean {
     (set) =>
       set.reps === first.reps &&
       set.repsMax === first.repsMax &&
+      set.rir === first.rir &&
+      set.rpe === first.rpe &&
       set.tempo === first.tempo &&
       set.type === first.type &&
       set.rest === first.rest &&
@@ -49,6 +51,12 @@ export function applySharedSetPrescription(
     ...(prescription.repsMax === undefined
       ? { repsMax: undefined }
       : { repsMax: prescription.repsMax }),
+    ...(prescription.rir === undefined
+      ? { rir: undefined }
+      : { rir: prescription.rir }),
+    ...(prescription.rpe === undefined
+      ? { rpe: undefined }
+      : { rpe: prescription.rpe }),
     tempo: prescription.tempo,
     type: prescription.type,
     rest: prescription.rest,
@@ -67,5 +75,10 @@ export function replaceTrainingExerciseDefinition(
     libraryId: definition.id,
     muscle: definition.muscle,
     secondaryMuscles: [...definition.secondaryMuscles],
+    equipment: definition.equipment,
+    movementPattern: definition.movementPattern,
+    position: definition.position,
+    primaryTarget: definition.primaryTarget,
+    additionalTargets: definition.additionalTargets,
   };
 }

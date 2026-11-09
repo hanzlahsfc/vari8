@@ -2,13 +2,14 @@
 "use client";
 
 import { Select as BaseSelect } from "@base-ui/react/select";
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import {
   type ButtonHTMLAttributes,
   cloneElement,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type ReactElement,
+  type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type Ref,
   type TableHTMLAttributes,
@@ -262,6 +263,7 @@ export type SelectProps = FieldMessages & {
 
 export function Select({
   label,
+  hideLabel,
   hint,
   error,
   id,
@@ -293,7 +295,13 @@ export function Select({
           );
       }}
     >
-      <FieldMessagesView label={label} hint={hint} error={error} {...ids} />
+      <FieldMessagesView
+        label={label}
+        hideLabel={hideLabel}
+        hint={hint}
+        error={error}
+        {...ids}
+      />
       <BaseSelect.Root
         name={name}
         required={required}
@@ -604,6 +612,17 @@ export function Checkbox({
         aria-describedby={descriptionId}
         onChange={(event) => onCheckedChange(event.currentTarget.checked)}
       />
+      <span className="v8-checkbox__box" aria-hidden="true">
+        <svg
+          className="v8-checkbox__check"
+          viewBox="0 0 18 18"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <polyline points="4 9.5 7.5 13 14 5.5" />
+        </svg>
+        <span className="v8-checkbox__dash" />
+      </span>
       <span className="v8-choice__copy">
         <span className="v8-choice__label">{label}</span>
         {description && (
@@ -623,8 +642,10 @@ export type ModalProps = {
   description?: string;
   children: ReactNode;
   footer?: ReactNode;
+  headerAction?: ReactNode;
+  flushBody?: boolean;
   className?: string;
-  size?: "compact" | "standard" | "wide" | "full";
+  size?: "compact" | "standard" | "wide" | "full" | "viewport";
   maxWidth?: number;
 };
 
@@ -635,6 +656,8 @@ export function Modal({
   description,
   children,
   footer,
+  headerAction,
+  flushBody = false,
   className,
   size = "standard",
   maxWidth,
@@ -746,11 +769,21 @@ export function Modal({
           <h2 id={titleId}>{title}</h2>
           {description && <p id={descriptionId}>{description}</p>}
         </div>
-        <IconButton label="Close dialog" onClick={() => onOpenChange(false)}>
-          <span aria-hidden="true">×</span>
-        </IconButton>
+        <div className="v8-modal__header-actions">
+          {headerAction}
+          <IconButton label="Close dialog" onClick={() => onOpenChange(false)}>
+            <span aria-hidden="true">×</span>
+          </IconButton>
+        </div>
       </header>
-      <div className="v8-modal__body">{children}</div>
+      <div
+        className={joinClasses(
+          "v8-modal__body",
+          flushBody && "v8-modal__body--flush",
+        )}
+      >
+        {children}
+      </div>
       {footer && <footer className="v8-modal__footer">{footer}</footer>}
     </dialog>
   );
@@ -922,9 +955,25 @@ export type DropdownMenuProps = {
   label: string;
   items: DropdownMenuItem[];
   className?: string;
+  /** Use an icon-only trigger in compact toolbars. */
+  triggerIcon?: ReactNode;
+  /** Accessible name and tooltip for the icon-only trigger. */
+  triggerLabel?: string;
+  /** Marks the current item with a checkmark and radio-menu semantics. */
+  selectedId?: string;
+  /** Open the menu toward the inline end of the trigger. */
+  align?: "start" | "end";
 };
 
-export function DropdownMenu({ label, items, className }: DropdownMenuProps) {
+export function DropdownMenu({
+  label,
+  items,
+  className,
+  triggerIcon,
+  triggerLabel,
+  selectedId,
+  align = "start",
+}: DropdownMenuProps) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -941,7 +990,7 @@ export function DropdownMenu({ label, items, className }: DropdownMenuProps) {
     if (!open) return;
     const menuItems = [
       ...(menuRef.current?.querySelectorAll<HTMLButtonElement>(
-        "[role='menuitem']:not(:disabled)",
+        "[role='menuitem']:not(:disabled), [role='menuitemradio']:not(:disabled)",
       ) ?? []),
     ];
     const target =
@@ -983,35 +1032,53 @@ export function DropdownMenu({ label, items, className }: DropdownMenuProps) {
         ?.focus();
   };
 
+  const onTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (event.key === "Escape" && open) {
+      event.preventDefault();
+      close();
+    } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      initialFocus.current = event.key === "ArrowUp" ? "last" : "first";
+      setOpen(true);
+    }
+  };
+  const triggerProps = {
+    "aria-haspopup": "menu" as const,
+    "aria-expanded": open,
+    "aria-controls": `${id}-menu`,
+    onClick: () => setOpen((current) => !current),
+    onKeyDown: onTriggerKeyDown,
+  };
   return (
     <div ref={rootRef} className={joinClasses("v8-dropdown", className)}>
-      <Button
-        ref={triggerRef}
-        className="v8-dropdown__trigger"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={`${id}-menu`}
-        onClick={() => setOpen((current) => !current)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && open) {
-            event.preventDefault();
-            close();
-          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-            event.preventDefault();
-            initialFocus.current = event.key === "ArrowUp" ? "last" : "first";
-            setOpen(true);
-          }
-        }}
-      >
-        {label}
-        <ChevronDown size={14} aria-hidden="true" />
-      </Button>
+      {triggerIcon ? (
+        <IconButton
+          ref={triggerRef}
+          className="v8-dropdown__trigger"
+          label={triggerLabel ?? label}
+          {...triggerProps}
+        >
+          {triggerIcon}
+        </IconButton>
+      ) : (
+        <Button
+          ref={triggerRef}
+          className="v8-dropdown__trigger"
+          {...triggerProps}
+        >
+          {label}
+          <ChevronDown size={14} aria-hidden="true" />
+        </Button>
+      )}
       <div
         ref={menuRef}
         id={`${id}-menu`}
-        className="v8-dropdown__menu"
+        className={joinClasses(
+          "v8-dropdown__menu",
+          align === "end" && "v8-dropdown__menu--end",
+        )}
         role="menu"
-        aria-label={`${label} options`}
+        aria-label={label}
         hidden={!open}
         onKeyDown={(event) => {
           if (event.key === "Tab") {
@@ -1039,22 +1106,35 @@ export function DropdownMenu({ label, items, className }: DropdownMenuProps) {
           }
         }}
       >
-        {items.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            role="menuitem"
-            data-v8-menu-index={index}
-            className="v8-dropdown__item"
-            disabled={item.disabled}
-            onClick={() => {
-              item.onSelect?.();
-              close();
-            }}
-          >
-            {item.label}
-          </button>
-        ))}
+        {items.map((item, index) => {
+          const current = selectedId !== undefined && item.id === selectedId;
+          return (
+            // biome-ignore lint/a11y/useAriaPropsSupportedByRole: the role is menuitemradio for choice lists (aria-checked valid) and menuitem otherwise.
+            <button
+              key={item.id}
+              type="button"
+              role={selectedId === undefined ? "menuitem" : "menuitemradio"}
+              aria-checked={selectedId === undefined ? undefined : current}
+              data-v8-menu-index={index}
+              data-current={current ? "" : undefined}
+              className="v8-dropdown__item"
+              disabled={item.disabled}
+              onClick={() => {
+                item.onSelect?.();
+                close();
+              }}
+            >
+              {selectedId !== undefined && (
+                <Check
+                  size={14}
+                  className="v8-dropdown__check"
+                  aria-hidden="true"
+                />
+              )}
+              {item.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

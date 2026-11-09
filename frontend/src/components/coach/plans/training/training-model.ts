@@ -1,4 +1,5 @@
-import { type MuscleGroup, weeklyMuscleVolume } from "../../muscle-volume";
+import { weeklyMuscleVolume } from "../../muscle-volume";
+import type { ExerciseDefinition } from "../types";
 import {
   resolveTrainingWeek,
   setTrainingWeek,
@@ -8,39 +9,42 @@ import {
   type TrainingSet,
 } from "../types";
 
-const VOLUME_EXERCISE_ID: Record<MuscleGroup, string> = {
-  chest: "bench",
-  back: "row",
-  shoulders: "shoulder-press",
-  biceps: "biceps-curl",
-  triceps: "triceps-extension",
-  core: "plank",
-  glutes: "hip-thrust",
-  quadriceps: "leg-extension",
-  hamstrings: "hamstring-curl",
-  calves: "calf-raise",
-};
-
-export function volumeExerciseId(id: string, muscle?: string): string {
-  return muscle && muscle in VOLUME_EXERCISE_ID
-    ? VOLUME_EXERCISE_ID[muscle as MuscleGroup]
-    : id;
-}
-
 export function prescribedMuscleVolume(
   sessions: TrainingSession[],
   week: number,
+  library: readonly ExerciseDefinition[] = [],
 ) {
+  const byId = new Map(library.map((e) => [e.id, e]));
+  const byName = new Map(
+    library.map((e) => [e.name.trim().toLocaleLowerCase(), e]),
+  );
   return weeklyMuscleVolume(
     [
       {
         week,
         exercises: sessions.flatMap((session) =>
-          session.exercises.map((exercise) => ({
-            id: volumeExerciseId(exercise.id, exercise.muscle),
-            sets: exercise.sets.filter((set) => !/warm[ -]?up/i.test(set.type))
-              .length,
-          })),
+          session.exercises.map((exercise) => {
+            // Resolve missing target snapshots from the library (by id, then
+            // name) before falling back to the muscle-label row.
+            const def = exercise.libraryId
+              ? byId.get(exercise.libraryId)
+              : undefined;
+            const fallback =
+              def ??
+              (exercise.name
+                ? byName.get(exercise.name.trim().toLocaleLowerCase())
+                : undefined);
+            return {
+              id: exercise.id,
+              muscle: exercise.muscle ?? fallback?.muscle,
+              primaryTarget: exercise.primaryTarget ?? fallback?.primaryTarget,
+              additionalTargets:
+                exercise.additionalTargets ?? fallback?.additionalTargets,
+              sets: exercise.sets.filter(
+                (set) => !/warm[ -]?up/i.test(set.type),
+              ).length,
+            };
+          }),
         ),
       },
     ],
@@ -158,7 +162,11 @@ export function trainingRotationSchedule(
   };
 }
 
-export function prescribedTrainingVolume(plan: TrainingPlan, week: number) {
+export function prescribedTrainingVolume(
+  plan: TrainingPlan,
+  week: number,
+  library: readonly ExerciseDefinition[] = [],
+) {
   const schedule = trainingRotationSchedule(plan, week);
   return {
     ...prescribedMuscleVolume(
@@ -166,6 +174,7 @@ export function prescribedTrainingVolume(plan: TrainingPlan, week: number) {
         entry.kind === "session" ? [entry.session] : [],
       ),
       week,
+      library,
     ),
     mode: schedule.mode,
     periodLabel: schedule.periodLabel,
@@ -181,11 +190,16 @@ export function deleteTrainingSession(
     (session) => session.id !== sessionId,
   );
   const nextPlan = writeTrainingWeek(plan, week, remainingWeek);
-  const remainingIds = new Set(
-    Object.values(nextPlan.overrides).flatMap((sessions) =>
+  const remainingIds = new Set([
+    ...Object.values(nextPlan.overrides).flatMap((sessions) =>
       sessions.map((session) => session.id),
     ),
-  );
+    ...(nextPlan.adjustments ?? []).flatMap((adjustment) =>
+      Object.values(adjustment.manual ?? {}).flatMap((sessions) =>
+        sessions.map((session) => session.id),
+      ),
+    ),
+  ]);
   const rotation =
     nextPlan.rotation?.mode === "weekly"
       ? {
@@ -283,6 +297,8 @@ export function groupConsecutiveSetPrescriptions(
     const prescription = {
       reps: set.reps,
       ...(set.repsMax === undefined ? {} : { repsMax: set.repsMax }),
+      ...(set.rir === undefined ? {} : { rir: set.rir }),
+      ...(set.rpe === undefined ? {} : { rpe: set.rpe }),
       tempo: set.tempo,
       type: set.type,
       rest: set.rest,
@@ -293,6 +309,8 @@ export function groupConsecutiveSetPrescriptions(
       previous &&
       previous.prescription.reps === prescription.reps &&
       previous.prescription.repsMax === prescription.repsMax &&
+      previous.prescription.rir === prescription.rir &&
+      previous.prescription.rpe === prescription.rpe &&
       previous.prescription.tempo === prescription.tempo &&
       previous.prescription.type === prescription.type &&
       previous.prescription.rest === prescription.rest &&

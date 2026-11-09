@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { CoachClient } from "../../coach/model";
-import { applicablePlan } from "../../coach/plans/domain";
+import { trainingPlanAt } from "../../coach/plans/domain";
 import type { IifymPlan } from "../../coach/plans/types";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import type { MealPlan } from "../../ethereal/mealplan/model";
@@ -64,7 +64,7 @@ export function DesktopPlans({
 }) {
   const today = useLocalToday();
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const targets = useMemo(() => todayTargets(client, today), [client, today]);
   const temp = useMemo(() => upcomingTemporary(client, today), [client, today]);
@@ -72,7 +72,12 @@ export function DesktopPlans({
   const steps = useMemo(() => stepsTarget(client, today), [client, today]);
   const cardio = useMemo(() => cardioWeek(client, today), [client, today]);
   const [sub, setSub] = useState<Detail | null>(null);
-  const sel = (detail as Detail["kind"]) ?? "training";
+  // The athlete desktop has no editable temporary-plan screen; a tracker
+  // marker for a temporary plan opens the nutrition detail, which surfaces
+  // the active temporary plan.
+  const sel = detail?.startsWith("temporary:")
+    ? "mealplan"
+    : ((detail as Detail["kind"]) ?? "training");
   const list = [
     plan && { key: "training", title: "Training", line: plan.name },
     targets && {
@@ -101,17 +106,16 @@ export function DesktopPlans({
             key={l.key}
             type="button"
             className={`cm-card cm-navcard${sel === l.key ? " cm-sel" : ""}`}
+            aria-current={sel === l.key ? "true" : undefined}
             onClick={() => {
               onDetail(l.key);
               setSub(null);
             }}
           >
             <div className="cm-row" style={{ justifyContent: "space-between" }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>{l.title}</div>
-                <div className="cm-mut" style={{ fontSize: 12 }}>
-                  {l.line}
-                </div>
+              <div className="cm-navcopy">
+                <div className="cm-navtitle">{l.title}</div>
+                <div className="cm-mut cm-navline">{l.line}</div>
               </div>
               <svg
                 aria-hidden="true"
@@ -128,7 +132,7 @@ export function DesktopPlans({
           </button>
         ))}
       </aside>
-      <div className="cd-plans-detail cm-app">
+      <div className="cd-plans-detail cm-app" data-detail={top.kind}>
         {backLabel && (
           <button
             type="button"

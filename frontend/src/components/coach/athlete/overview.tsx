@@ -24,6 +24,11 @@ import {
 } from "../../ethereal/mealplan/model";
 import { SegmentedControl, Status } from "../../vari8/components";
 import {
+  clientPoses,
+  comparisonPoses,
+  photosForPose,
+} from "../check-ins/photos";
+import {
   addDays,
   type CoachClient,
   type CoachState,
@@ -38,6 +43,7 @@ import {
   planFoodMap,
   scheduledOption,
   targetNumber,
+  trainingPlanAt,
   trainingWeek,
 } from "../plans/domain";
 import { phaseRanges } from "../plans/phase-planning";
@@ -199,15 +205,32 @@ function ClientSettingsDialog({
               </span>
             )}
           </div>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              onClose();
-              onAssign();
-            }}
-          >
-            Change
-          </Button>
+          <div className="cd-actions cd-wrap">
+            {client.assignment && (
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  onClose();
+                  navigate({
+                    section: "clients",
+                    client: client.id,
+                    tab: "Setup",
+                  });
+                }}
+              >
+                Customize setup
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              onClick={() => {
+                onClose();
+                onAssign();
+              }}
+            >
+              Change
+            </Button>
+          </div>
         </div>
         <h4>Recurring check-in</h4>
         <p className="ap-sub">Recurring check-ins · Europe/Vienna</p>
@@ -530,7 +553,7 @@ function PhaseProgressCard({
   const phase = currentPhase(client.phases, today);
   const next = ranges.find((r) => r.startDate > today);
   return (
-    <Surface className="ap-card ap-w-s6">
+    <Surface className="ap-card ap-w-phase ap-w-s6">
       <CardLink title="Phase progress" onOpen={onOpen} />
       {ranges.length ? (
         <>
@@ -1387,16 +1410,26 @@ function PhysiqueCard({
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id && s.photos?.length)
     .sort((a, b) => a.date.localeCompare(b.date));
-  const poses = [
-    ...new Set(submissions.flatMap((s) => (s.photos ?? []).map((p) => p.pose))),
-  ];
+  const comparison = comparisonPoses(client, submissions);
+  const poses = comparison.poses;
   const [pose, setPose] = useState(poses[0] ?? "");
+  const activePose = poses.includes(pose) ? pose : (poses[0] ?? "");
   const [leftId, setLeftId] = useState(submissions[0]?.id ?? "");
   const [rightId, setRightId] = useState(submissions.at(-1)?.id ?? "");
   const left = submissions.find((s) => s.id === leftId) ?? submissions[0];
   const right = submissions.find((s) => s.id === rightId) ?? submissions.at(-1);
-  const shot = (submission: (typeof submissions)[number] | undefined) =>
-    submission?.photos?.find((p) => p.pose === pose) ?? submission?.photos?.[0];
+  const shot = (submission: (typeof submissions)[number] | undefined) => {
+    if (!submission) return undefined;
+    if (activePose === "Other") {
+      const known = new Set(clientPoses(client));
+      return (
+        submission.photos?.find((photo) => !known.has(photo.pose)) ??
+        submission.photos?.[0]
+      );
+    }
+    const photos = photosForPose(submission, pose);
+    return photos.find((photo) => photo.pose === activePose) ?? photos[0];
+  };
   const options = submissions.map((s) => ({
     value: s.id,
     label: formatDate(s.date, { weekday: "short" }),
@@ -1439,7 +1472,7 @@ function PhysiqueCard({
           <div className="ap-phys-controls">
             <Select
               label="Pose"
-              value={pose}
+              value={activePose}
               onChange={setPose}
               options={poses}
             />
@@ -1487,7 +1520,7 @@ function TrainingCard({
   onOpen: () => void;
 }) {
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const week = plan ? displayWeek(plan, today) : undefined;
   const sessions =

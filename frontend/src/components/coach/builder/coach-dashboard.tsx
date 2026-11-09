@@ -8,7 +8,7 @@ import {
   TODAY,
   type Variant,
 } from "../model";
-import { applicablePlan, planTargets, trainingWeek } from "../plans/domain";
+import { planTargets, trainingPlanAt, trainingWeek } from "../plans/domain";
 import { resolveTrainingWeek } from "../plans/types";
 import { useCoach } from "../store";
 import { DashboardBuilder } from "./dashboard-builder";
@@ -101,7 +101,7 @@ export function recordsForCoach(
     r.prescriptions = [];
     r.workoutSchedule = [];
     const program = client.plans
-      ? applicablePlan(client.plans.training, TODAY)
+      ? trainingPlanAt(client.plans.training, TODAY)
       : undefined;
     if (program && variant.views.includes("Training Program")) {
       const week = trainingWeek(program, TODAY);

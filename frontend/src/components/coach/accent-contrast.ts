@@ -31,6 +31,17 @@ export function contrastRatio(first: string, second: string) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
+/**
+ * Readable glyph/check colour for content drawn on a filled accent control.
+ * Picks whichever pole has more contrast against the accent fill.
+ */
+export function accentForeground(value: string) {
+  const accent = normalizeColor(value);
+  return contrastRatio(accent, WHITE) >= contrastRatio(accent, BLACK)
+    ? WHITE
+    : BLACK;
+}
+
 function mix(color: string, destination: string, amount: number) {
   const target = channels(destination);
   return `#${channels(color)

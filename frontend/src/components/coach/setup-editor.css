@@ -1,0 +1,198 @@
+/*
+ * Setup editor: shared configuration surface.
+ *
+ * Group/field layout styles live in structure-board.css. New classes only;
+ * shared control styling stays in the VARI8 primitives.
+ */
+
+.coach-root .cd-setup-editor {
+  min-width: 0;
+}
+
+/*
+ * `plans/setup-ui.css` caps the plan-section editors sharing the generic
+ * `cd-setup-editor` class at 1100px. The full workspace uses the page column.
+ */
+.coach-root .cd-setup-editor.cd-setup-workspace {
+  max-width: none;
+}
+
+.coach-root .cd-editor-draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -10px 0 18px;
+}
+
+.coach-root .cd-setup-eyebrow {
+  margin: 0 0 10px;
+  padding: 0 9px;
+}
+
+.coach-root .cd-setup-section-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--cd-muted);
+}
+
+.coach-root .cd-setup-diff-label {
+  color: var(--cd-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.coach-root .cd-editor-nav nav button .cd-setup-nav-dot {
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  flex: none;
+  border-radius: var(--v8-radius-pill);
+  background: var(--cd-accent);
+  font-size: 0;
+  opacity: 1;
+}
+
+/*
+ * The setup page now shares the profile frame. Its header stays full width;
+ * the section rail and panel keep their previous reading width centred.
+ */
+.coach-root .cd-setup-workspace > .cd-editor-layout {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+}
+
+/* Long setup forms keep their fields readable on a wide frame: the form grid
+   may span, individual inputs and textareas do not. */
+.coach-root .cd-setup-workspace .cd-config-surface .v8-field {
+  max-width: 480px;
+}
+.coach-root .cd-setup-workspace .cd-config-surface .v8-field:has(.v8-textarea) {
+  max-width: 880px;
+}
+
+.coach-root .cd-setup-layout-section {
+  margin-top: 22px;
+}
+
+/*
+ * Option grids use equal 240–280px cells with the switch/checkbox aligned to
+ * the cell's right edge. Every setup section (Tabs, Tracker, Timeline,
+ * Nutrition, Training, Check-In, Habits) shares this pattern, so columns line
+ * up instead of following label lengths. Genuinely wide work areas (the
+ * structure boards and the questionnaire builder) opt out by not using these
+ * classes.
+ */
+.coach-root .cd-setup-workspace .cd-config-surface .cd-view-settings,
+.coach-root .cd-setup-workspace .cd-config-surface .cd-setup-rows,
+.coach-root .cd-setup-workspace .cd-config-surface .cd-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 280px));
+  gap: 6px 28px;
+  justify-content: start;
+  align-items: start;
+}
+.coach-root
+  .cd-setup-workspace
+  .cd-config-surface
+  :is(.cd-view-settings, .cd-setup-rows, .cd-check-grid)
+  > .cd-toggle-row {
+  max-width: none;
+}
+/* Push the switch control to the far edge of its equal-width cell. Checkboxes
+   keep the standard reading order — box first, then label — so they stay
+   left-aligned in the cell instead of mirroring to the toggle column. */
+.coach-root
+  .cd-setup-workspace
+  .cd-config-surface
+  :is(.cd-view-settings, .cd-setup-rows, .cd-check-grid)
+  .v8-choice__copy {
+  flex: 1 1 auto;
+}
+.coach-root .cd-setup-workspace .cd-config-surface .cd-setting-row {
+  max-width: 560px;
+}
+.coach-root .cd-setup-workspace .cd-config-surface .cd-subheading {
+  max-width: 560px;
+}
+.coach-root .cd-setup-workspace .cd-config-surface .cd-habit-preview,
+.coach-root .cd-setup-workspace .cd-config-surface .cd-custom-param-list {
+  max-width: 560px;
+}
+.coach-root .cd-setup-workspace .cd-training-option-compact-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 520px));
+  justify-content: start;
+}
+
+/* Client setup header: basis line, customized chip and template drift note. */
+.coach-root .cd-client-setup-basis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: -12px 0 12px;
+  color: var(--cd-muted);
+  font-size: 13px;
+}
+
+.coach-root .cd-client-setup-basis strong {
+  color: var(--cd-text);
+  font-weight: 600;
+}
+
+.coach-root .cd-customized-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--v8-radius-pill);
+  background: var(--cd-wash);
+}
+
+.coach-root .cd-setup-missing-template {
+  color: var(--cd-muted);
+  font-size: 12px;
+}
+
+.coach-root .cd-setup-template-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 10px 14px;
+  border-left: 2px solid var(--cd-accent);
+  border-radius: 0 var(--v8-radius-field) var(--v8-radius-field) 0;
+  background: var(--cd-wash);
+  color: var(--cd-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.coach-root .cd-setup-review-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.coach-root .cd-setup-review-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cd-line);
+}
+
+.coach-root .cd-setup-review-list li > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.coach-root .cd-setup-review-list small {
+  color: var(--cd-muted);
+}

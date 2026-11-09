@@ -24,7 +24,7 @@ assert.deepEqual(plan.rotation.weekdays.Thursday, [sessions[2].id]);
 assert.deepEqual(plan.rotation.weekdays.Saturday, [sessions[3].id]);
 assert.equal(
   sessions.reduce((sum, session) => sum + session.exercises.length, 0),
-  21,
+  20,
 );
 assert.ok(
   sessions.every((session) =>
@@ -74,14 +74,20 @@ assert.equal(
 );
 assert.equal(adoptedAmara.plans.training.active.id, "amara-active-preserved");
 assert.equal(
-  adoptedAmara.plans.training.history[0].id,
-  "amara-history-preserved",
+  adoptedAmara.plans.training.active.content.name,
+  "Amara · Bikini training example",
+  "the active version switches to the current example too",
+);
+assert.deepEqual(
+  adoptedAmara.plans.training.history,
+  [],
+  "older demo versions (with retired exercises) are dropped",
 );
 assert.deepEqual(
   adopted.clients.find((client) => client.id === siblingBefore.id),
   siblingBefore,
 );
-assert.equal(adopted.demoSeeds.amaraTraining, 1);
+assert.equal(adopted.demoSeeds.amaraTraining, 5);
 const editedAfterAdoption = JSON.parse(JSON.stringify(adopted));
 editedAfterAdoption.clients.find(
   (client) => client.id === AMARA_EXAMPLE_CLIENT_ID,

@@ -18,8 +18,8 @@ import { TextArea } from "../vari8/inputs";
 import { ExtraDateDialog } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import {
-  ALL_PARAMETERS,
   addDays,
+  allParameters,
   type CoachClient,
   DAYS,
   type Event,
@@ -57,7 +57,18 @@ export function CheckInsWorkspace() {
   const [extraDate, setExtraDate] = useState<string>();
   const [edit, setEdit] = useState<Extra | null>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const el = workspaceRef.current;
+    if (!el) return;
+    const update = () => setWide(el.clientWidth >= 1500);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 760px)");
     const update = () => setIsMobile(mq.matches);
@@ -178,9 +189,36 @@ export function CheckInsWorkspace() {
       )}
     </>
   );
+  const eventBody = (e: Event, c: CoachClient) => (
+    <>
+      <span className="cd-event-athlete">
+        <Avatar client={c} small />
+        <strong>{c.name}</strong>
+      </span>
+      <span className="cd-event-type">
+        {e.origin} · {e.type}
+      </span>
+      <Status text={e.status} />
+    </>
+  );
   const renderEvent = (e: Event) => {
     const c = state.clients.find((c) => c.id === e.clientId);
     if (!c) return null;
+    if (wide)
+      return (
+        <button
+          key={e.id}
+          type="button"
+          className={`cd-calendar-event ${selected?.id === e.id ? "is-selected" : ""}`}
+          data-status={e.status}
+          aria-pressed={selected?.id === e.id}
+          onClick={() =>
+            setSelected((current) => (current?.id === e.id ? null : e))
+          }
+        >
+          {eventBody(e, c)}
+        </button>
+      );
     return (
       <Popover.Root
         key={e.id}
@@ -201,14 +239,7 @@ export function CheckInsWorkspace() {
             />
           }
         >
-          <span className="cd-event-athlete">
-            <Avatar client={c} small />
-            <strong>{c.name}</strong>
-          </span>
-          <span className="cd-event-type">
-            {e.origin} · {e.type}
-          </span>
-          <Status text={e.status} />
+          {eventBody(e, c)}
         </Popover.Trigger>
         <Popover.Portal container={stage}>
           <Popover.Positioner
@@ -249,177 +280,196 @@ export function CheckInsWorkspace() {
         ((new Date(`${start}T12:00:00Z`).getUTCDay() + 6) % 7)) /
         7,
     ) * 7;
+  const selectedEvent = selected
+    ? events.find((event) => event.id === selected.id)
+    : undefined;
+  const selectedClient = selectedEvent
+    ? state.clients.find((client) => client.id === selectedEvent.clientId)
+    : undefined;
   return (
     <>
-      <PageTitle
-        title="Check-ins"
-        description="A little context. A better conversation."
-        actions={
-          <Button primary onClick={() => setAdd(true)}>
-            <Plus size={16} />
-            Add extra date
-          </Button>
-        }
-      />
-      <div className="cd-calendar-toolbar">
-        <div className="cd-actions">
-          <IconButton label="Previous period" onClick={() => move(-1)}>
-            <ChevronLeft size={18} />
-          </IconButton>
-          <IconButton label="Next period" onClick={() => move(1)}>
-            <ChevronRight size={18} />
-          </IconButton>
-          <h2>
-            {formatDate(start)} – {formatDate(end, { year: "numeric" })}
-          </h2>
-          <Button
-            onClick={() => {
-              setAnchor(TODAY);
+      <div className="cd-checkins-workspace" ref={workspaceRef}>
+        <PageTitle
+          title="Check-ins"
+          description="A little context. A better conversation."
+          actions={
+            <Button primary onClick={() => setAdd(true)}>
+              <Plus size={16} />
+              Add extra date
+            </Button>
+          }
+        />
+        <div className="cd-calendar-toolbar">
+          <div className="cd-actions">
+            <IconButton label="Previous period" onClick={() => move(-1)}>
+              <ChevronLeft size={18} />
+            </IconButton>
+            <IconButton label="Next period" onClick={() => move(1)}>
+              <ChevronRight size={18} />
+            </IconButton>
+            <h2>
+              {formatDate(start)} – {formatDate(end, { year: "numeric" })}
+            </h2>
+            <Button
+              onClick={() => {
+                setAnchor(TODAY);
+                setSelected(null);
+              }}
+            >
+              Today
+            </Button>
+          </div>
+          <SegmentedControl
+            label="Calendar view"
+            value={mode}
+            className="cd-calendar-view-control"
+            onValueChange={(value) => {
+              setMode(value);
               setSelected(null);
             }}
-          >
-            Today
-          </Button>
+            options={["Week", "Month", "Agenda"].map((value) => ({
+              value,
+              label: value,
+            }))}
+          />
         </div>
-        <SegmentedControl
-          label="Calendar view"
-          value={mode}
-          className="cd-calendar-view-control"
-          onValueChange={(value) => {
-            setMode(value);
-            setSelected(null);
-          }}
-          options={["Week", "Month", "Agenda"].map((value) => ({
-            value,
-            label: value,
-          }))}
-        />
-      </div>
-      <div className="cd-calendar-filters">
-        <Select
-          label="Athlete"
-          value={client}
-          onChange={(v) => {
-            setClient(v);
-            setSelected(null);
-          }}
-          options={[
-            { value: "all", label: "All athletes" },
-            ...state.clients.map((c) => ({ value: c.id, label: c.name })),
-          ]}
-        />
-        <Select
-          label="Status"
-          value={status}
-          onChange={(v) => {
-            setStatus(v);
-            setSelected(null);
-          }}
-          options={[
-            "All statuses",
-            "Scheduled",
-            "Overdue",
-            "Awaiting feedback",
-            "Feedback sent",
-          ]}
-        />
-        <span className="cd-pending">
-          <span>{pending}</span> awaiting feedback
-        </span>
-        <span className="cd-caption">Europe/Vienna · Monday first</span>
-      </div>
-      <div className="cd-calendar-stage" ref={stage}>
-        <Surface className={`cd-calendar cd-calendar-${mode.toLowerCase()}`}>
-          {mode === "Week" && (
-            <div className="cd-week-board">
-              {Array.from({ length: 7 }, (_, i) => {
-                const date = addDays(start, i);
-                const dayEvents = events.filter((e) => e.date === date);
-                return (
-                  <section
-                    className="cd-calendar-day"
-                    key={date}
-                    data-today={date === TODAY}
-                  >
-                    <header>
-                      <span>{DAYS[i].slice(0, 3)}</span>
-                      <strong>{Number(date.slice(8))}</strong>
-                      {date === TODAY && <small>Today</small>}
-                    </header>
-                    <div>
-                      {dayEvents.map(renderEvent)}
-                      {dayEvents.length === 0 && (
-                        <span className="cd-day-empty">No check-ins</span>
-                      )}
-                    </div>
-                    <Button
-                      className="cd-day-add"
-                      aria-label={`Add date ${date}`}
-                      onClick={() => {
-                        setExtraDate(date);
-                        setAdd(true);
-                      }}
+        <div className="cd-calendar-filters">
+          <Select
+            label="Athlete"
+            value={client}
+            onChange={(v) => {
+              setClient(v);
+              setSelected(null);
+            }}
+            options={[
+              { value: "all", label: "All athletes" },
+              ...state.clients.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+          <Select
+            label="Status"
+            value={status}
+            onChange={(v) => {
+              setStatus(v);
+              setSelected(null);
+            }}
+            options={[
+              "All statuses",
+              "Scheduled",
+              "Overdue",
+              "Awaiting feedback",
+              "Feedback sent",
+            ]}
+          />
+          <span className="cd-pending">
+            <span>{pending}</span> awaiting feedback
+          </span>
+          <span className="cd-caption">Europe/Vienna · Monday first</span>
+        </div>
+        <div
+          className="cd-calendar-stage"
+          ref={stage}
+          data-details={wide && selectedEvent ? "true" : undefined}
+        >
+          <Surface className={`cd-calendar cd-calendar-${mode.toLowerCase()}`}>
+            {mode === "Week" && (
+              <div className="cd-week-board">
+                {Array.from({ length: 7 }, (_, i) => {
+                  const date = addDays(start, i);
+                  const dayEvents = events.filter((e) => e.date === date);
+                  return (
+                    <section
+                      className="cd-calendar-day"
+                      key={date}
+                      data-today={date === TODAY}
                     >
-                      <Plus size={14} />
-                    </Button>
-                  </section>
-                );
-              })}
-            </div>
-          )}
-          {mode === "Month" && (
-            <div className="cd-month-board">
-              {DAYS.map((d) => (
-                <div className="cd-month-weekday" key={d}>
-                  {d.slice(0, 3)}
-                </div>
-              ))}
-              {Array.from({ length: monthDays }, (_, i) => {
-                const date = addDays(monthGridStart, i);
-                return (
-                  <section
-                    key={date}
-                    data-today={date === TODAY}
-                    className={`cd-month-day ${date.slice(0, 7) !== start.slice(0, 7) ? "cd-outside-month" : ""}`}
-                  >
-                    <strong>{Number(date.slice(8))}</strong>
-                    {events.filter((e) => e.date === date).map(renderEvent)}
-                  </section>
-                );
-              })}
-            </div>
-          )}
-          {mode === "Agenda" && (
-            <div className="cd-agenda">
-              {[...new Set(events.map((e) => e.date))].map((date) => (
-                <section key={date}>
-                  <h3>{formatDate(date, { weekday: "long" })}</h3>
-                  <div>
-                    {events.filter((e) => e.date === date).map(renderEvent)}
+                      <header>
+                        <span>{DAYS[i].slice(0, 3)}</span>
+                        <strong>{Number(date.slice(8))}</strong>
+                        {date === TODAY && <small>Today</small>}
+                      </header>
+                      <div>
+                        {dayEvents.map(renderEvent)}
+                        {dayEvents.length === 0 && (
+                          <span className="cd-day-empty">No check-ins</span>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="cd-day-add v8-add-button"
+                        aria-label={`Add date ${date}`}
+                        onClick={() => {
+                          setExtraDate(date);
+                          setAdd(true);
+                        }}
+                      >
+                        <Plus size={14} />
+                      </Button>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+            {mode === "Month" && (
+              <div className="cd-month-board">
+                {DAYS.map((d) => (
+                  <div className="cd-month-weekday" key={d}>
+                    {d.slice(0, 3)}
                   </div>
-                </section>
-              ))}
-            </div>
+                ))}
+                {Array.from({ length: monthDays }, (_, i) => {
+                  const date = addDays(monthGridStart, i);
+                  return (
+                    <section
+                      key={date}
+                      data-today={date === TODAY}
+                      className={`cd-month-day ${date.slice(0, 7) !== start.slice(0, 7) ? "cd-outside-month" : ""}`}
+                    >
+                      <strong>{Number(date.slice(8))}</strong>
+                      {events.filter((e) => e.date === date).map(renderEvent)}
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+            {mode === "Agenda" && (
+              <div className="cd-agenda">
+                {[...new Set(events.map((e) => e.date))].map((date) => (
+                  <section key={date}>
+                    <h3>{formatDate(date, { weekday: "long" })}</h3>
+                    <div>
+                      {events.filter((e) => e.date === date).map(renderEvent)}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
+            {events.length === 0 && (
+              <Empty
+                title="A quiet period"
+                action={
+                  <Button
+                    onClick={() => {
+                      setStatus("All statuses");
+                      setClient("all");
+                      setSelected(null);
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                }
+              >
+                No check-ins match these dates and filters.
+              </Empty>
+            )}
+          </Surface>
+          {wide && selectedEvent && selectedClient && (
+            <Surface className="cd-calendar-rail">
+              {renderDetails(selectedEvent, selectedClient)}
+            </Surface>
           )}
-          {events.length === 0 && (
-            <Empty
-              title="A quiet period"
-              action={
-                <Button
-                  onClick={() => {
-                    setStatus("All statuses");
-                    setClient("all");
-                    setSelected(null);
-                  }}
-                >
-                  Clear filters
-                </Button>
-              }
-            >
-              No check-ins match these dates and filters.
-            </Empty>
-          )}
-        </Surface>
+        </div>
       </div>
       {add && (
         <ExtraDateDialog
@@ -466,7 +516,7 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
   const unit = (id: string) =>
     variant?.fields.find((f) => f.id === id) ?? {
       id,
-      unit: ALL_PARAMETERS.find((p) => p.id === id)?.units[0] ?? "",
+      unit: allParameters().find((p) => p.id === id)?.units[0] ?? "",
     };
   return (
     <>
@@ -490,90 +540,100 @@ function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
       />
       <div className="cd-review-layout">
         <div className="cd-review-main">
-          <Surface>
-            <div className="cd-review-athlete">
-              <Avatar client={c} />
-              <div>
-                <h2>In {c.name.split(" ")[0]}’s words</h2>
-                <small>{sub.type} questionnaire</small>
-              </div>
-            </div>
-            {sub.answers.map((a) => (
-              <div className="cd-answer" key={a.question}>
-                <h3>{a.question}</h3>
-                <p>{a.answer}</p>
-              </div>
-            ))}
-            {sub.note && (
-              <div className="cd-answer">
-                <h3>Athlete note</h3>
-                <p>{sub.note}</p>
-              </div>
-            )}
-            {sub.visuals.length > 0 && (
-              <>
-                <h3>Submitted visuals</h3>
-                <div className="cd-progress-visuals">
-                  {sub.visuals.map((v) => (
-                    <button type="button" key={v} onClick={() => setVisual(v)}>
-                      <ProgressVisual />
-                      <span>{v}</span>
-                      <small>Illustrative demo visual</small>
-                    </button>
-                  ))}
+          <div className="cd-review-columns">
+            <Surface className="cd-review-answers">
+              <div className="cd-review-athlete">
+                <Avatar client={c} />
+                <div>
+                  <h2>In {c.name.split(" ")[0]}’s words</h2>
+                  <small>{sub.type} questionnaire</small>
                 </div>
-              </>
-            )}
-          </Surface>
-          <Surface>
-            <div className="cd-subheading">
-              <h2>Tracker & progress</h2>
-              <Button
-                onClick={() => navigate({ section: "clients", client: c.id })}
-              >
-                Open profile
-                <ArrowUpRight size={14} />
-              </Button>
-            </div>
-            {sub.metrics
-              .filter((id) => id !== "habits")
-              .map((id) => (
-                <ParameterValue key={id} field={unit(id)} client={c} />
-              ))}
-            {sub.metrics.includes("habits") && (
-              <div className="cd-stat-row">
-                <span>Habit consistency</span>
-                <strong>{c.habits[0]?.completed ?? 0} / 7 days</strong>
               </div>
-            )}
-            <div className="cd-table-scroll">
-              <table className="cd-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Bodyweight</th>
-                    <th>Sleep</th>
-                    <th>Activity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {c.entries.map((e) => (
-                    <tr key={e.date}>
-                      <td>{formatDate(e.date)}</td>
-                      <td>
-                        {unit("weight").unit === "lb"
-                          ? (e.weight * 2.20462).toFixed(1)
-                          : e.weight}{" "}
-                        {unit("weight").unit}
-                      </td>
-                      <td>{e.sleep} h</td>
-                      <td>{e.steps.toLocaleString()} steps</td>
-                    </tr>
+              {sub.answers.map((a) => (
+                <div className="cd-answer" key={a.question}>
+                  <h3>{a.question}</h3>
+                  <p>{a.answer}</p>
+                </div>
+              ))}
+              {sub.note && (
+                <div className="cd-answer">
+                  <h3>Athlete note</h3>
+                  <p>{sub.note}</p>
+                </div>
+              )}
+            </Surface>
+            <div className="cd-review-evidence">
+              {sub.visuals.length > 0 && (
+                <Surface>
+                  <h2>Submitted visuals</h2>
+                  <div className="cd-progress-visuals">
+                    {sub.visuals.map((v) => (
+                      <button
+                        type="button"
+                        key={v}
+                        onClick={() => setVisual(v)}
+                      >
+                        <ProgressVisual />
+                        <span>{v}</span>
+                        <small>Illustrative demo visual</small>
+                      </button>
+                    ))}
+                  </div>
+                </Surface>
+              )}
+              <Surface>
+                <div className="cd-subheading">
+                  <h2>Tracker & progress</h2>
+                  <Button
+                    onClick={() =>
+                      navigate({ section: "clients", client: c.id })
+                    }
+                  >
+                    Open profile
+                    <ArrowUpRight size={14} />
+                  </Button>
+                </div>
+                {sub.metrics
+                  .filter((id) => id !== "habits")
+                  .map((id) => (
+                    <ParameterValue key={id} field={unit(id)} client={c} />
                   ))}
-                </tbody>
-              </table>
+                {sub.metrics.includes("habits") && (
+                  <div className="cd-stat-row">
+                    <span>Habit consistency</span>
+                    <strong>{c.habits[0]?.completed ?? 0} / 7 days</strong>
+                  </div>
+                )}
+                <div className="cd-table-scroll">
+                  <table className="cd-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Bodyweight</th>
+                        <th>Sleep</th>
+                        <th>Activity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {c.entries.map((e) => (
+                        <tr key={e.date}>
+                          <td>{formatDate(e.date)}</td>
+                          <td>
+                            {unit("weight").unit === "lb"
+                              ? (e.weight * 2.20462).toFixed(1)
+                              : e.weight}{" "}
+                            {unit("weight").unit}
+                          </td>
+                          <td>{e.sleep} h</td>
+                          <td>{e.steps.toLocaleString()} steps</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Surface>
             </div>
-          </Surface>
+          </div>
           <Surface>
             <h2>
               <Flag size={17} />

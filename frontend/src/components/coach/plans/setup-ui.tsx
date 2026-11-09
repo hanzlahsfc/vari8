@@ -1,11 +1,13 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, SlidersHorizontal, Trash2 } from "lucide-react";
 import { type ReactNode, useMemo, useState } from "react";
 import {
+  DropdownMenu,
   SegmentedControl,
   Input as SharedInput,
   Select as SharedSelect,
+  Tooltip,
 } from "@/components/vari8/components";
 import {
   DatePicker as SharedDatePicker,
@@ -25,16 +27,29 @@ import {
   type MealPlan,
 } from "../../ethereal/mealplan/model";
 import {
-  ALL_PARAMETERS,
+  applyPlanToClient,
+  draftNeedsReplace,
+  instantiateFromLibrary,
+  planRouteForKind,
+} from "../library";
+import {
+  type LibraryPlanEntry,
+  SaveAsTemplateDialog,
+  TemplatePickerDialog,
+} from "../library-ui";
+import {
+  allParameters,
   type CoachClient,
   type FieldConfig,
   formatDate,
   type HabitFrequency,
+  type LibraryKind,
   type Template,
   TODAY,
   uid,
 } from "../model";
 import { useCoach } from "../store";
+import type { SupplementPlan } from "../supplements/model";
 import {
   type ActivityMetric,
   type ActivityTargetVersion,
@@ -44,12 +59,17 @@ import {
 } from "../targets/model";
 import { useLocalToday } from "../targets/use-local-today";
 import { templateSetup } from "../template-setup";
-import { Button, Empty, IconButton, Status, Surface } from "../ui";
+import { Button, Dialog, Empty, IconButton, Status, Surface } from "../ui";
 import {
   applicablePlan,
+  emptyIifymPlan,
+  emptyMealPlan,
+  emptyTrainingPlan,
   lifecycleStatus,
   planTargets,
+  previousTrainingPlans,
   scheduledOption,
+  trainingPlanAt,
   trainingWeek,
 } from "./domain";
 import {
@@ -65,6 +85,8 @@ import {
   phaseRanges,
 } from "./phase-planning";
 import { OtherTargetDialog, otherTargetLabel } from "./plan-cards-support";
+import { TrainingPrescription } from "./training/editor";
+import { TrainingLogbook } from "./training/logbook";
 import "../../client-app/mobile/mobile.css";
 import { planFoodMap } from "./domain";
 import {
@@ -78,6 +100,7 @@ import {
   type IifymPlan,
   type PlanLifecycle,
   resolveTrainingWeek,
+  type TrainingPlan,
 } from "./types";
 import "./setup-ui.css";
 
@@ -360,7 +383,7 @@ export function ClientPlansSummary({
   expanded?: boolean;
   onAssign?: () => void;
 }) {
-  const { navigate, route, setState } = useCoach();
+  const { state, navigate, route, setState, toast } = useCoach();
   const activityDate = useLocalToday();
   const [prevOpen, setPrevOpen] = useState(false);
   const [previewPlan, setPreviewPlan] = useState<
@@ -400,7 +423,7 @@ export function ClientPlansSummary({
     .filter(Boolean)
     .join(" · ");
   const trainingContent =
-    applicablePlan(plans.training, TODAY) ??
+    trainingPlanAt(plans.training, TODAY) ??
     plans.training.draft ??
     plans.training.active?.content;
   const currentTrainingSessions = trainingContent
@@ -472,6 +495,24 @@ export function ClientPlansSummary({
       (k !== "habits" || setup?.habits),
   );
   const [session, setSession] = useState<ScheduledSession | null>(null);
+  const [showLogbook, setShowLogbook] = useState(false);
+  const [trPrevOpen, setTrPrevOpen] = useState(false);
+  const [trPreview, setTrPreview] = useState<{
+    plan: TrainingPlan;
+    title: string;
+  }>();
+  const [newPlanConfirm, setNewPlanConfirm] = useState(false);
+  const [pickerKind, setPickerKind] = useState<LibraryKind | null>(null);
+  const [saveTemplate, setSaveTemplate] = useState<{
+    kind: LibraryKind;
+    plan: MealPlan | TrainingPlan | SupplementPlan;
+    name: string;
+  } | null>(null);
+  const [pendingTemplate, setPendingTemplate] = useState<{
+    kind: LibraryKind;
+    entry: LibraryPlanEntry;
+  } | null>(null);
+  const [pendingBlank, setPendingBlank] = useState<LibraryKind | null>(null);
   const [sel, setSel] = useState(() => {
     const want = route.module ?? route.plan;
     return want && available.includes(want)
@@ -550,6 +591,27 @@ export function ClientPlansSummary({
             <span className="cd-plan-summary-meta">Enabled</span>
           </div>
         )}
+        {client.assignment && (
+          <div className="cd-plan-summary-row">
+            <span>
+              <strong>Client setup</strong>
+              <small>Tracker, timeline, check-ins and training options</small>
+            </span>
+            <Button
+              size="sm"
+              onClick={() =>
+                navigate({
+                  section: "clients",
+                  client: client.id,
+                  tab: "Setup",
+                })
+              }
+            >
+              <SlidersHorizontal size={14} />
+              Customize setup
+            </Button>
+          </div>
+        )}
       </section>
     );
 
@@ -567,6 +629,88 @@ export function ClientPlansSummary({
   const hasActiveTemporary = shownTemporary.some(
     (t) => t.startDate <= activityDate && activityDate <= t.endDate,
   );
+  const previousPlans = previousTrainingPlans(plans.training);
+  const newPlanNeedsConfirm =
+    plans.training.draft !== undefined &&
+    JSON.stringify(plans.training.draft) !==
+      JSON.stringify(plans.training.active?.content);
+  const startNewPlan = () => {
+    updatePlan((current) => ({
+      ...current,
+      training: {
+        ...current.training,
+        draft: emptyTrainingPlan(client.id, TODAY),
+      },
+    }));
+    openPlan("training");
+  };
+  const startBlank = (kind: LibraryKind) => {
+    if (kind === "training") {
+      updatePlan((current) => ({
+        ...current,
+        training: {
+          ...current.training,
+          draft: emptyTrainingPlan(client.id, TODAY),
+        },
+      }));
+    } else if (kind === "nutrition") {
+      updatePlan((current) => ({
+        ...current,
+        nutrition: {
+          ...current.nutrition,
+          ...(setup?.nutrition === "IIFYM"
+            ? {
+                iifym: {
+                  ...current.nutrition.iifym,
+                  draft: emptyIifymPlan(client.id, TODAY),
+                },
+              }
+            : {
+                mealPlan: {
+                  ...current.nutrition.mealPlan,
+                  draft: emptyMealPlan(client.id, TODAY),
+                },
+              }),
+        },
+      }));
+    } else {
+      updatePlan((current) => ({ ...current, supplements: undefined }));
+    }
+    setPickerKind(null);
+    openPlan(planRouteForKind(kind));
+  };
+  const requestBlank = (kind: LibraryKind) => {
+    if (kind === "nutrition" && setup?.nutrition === "IIFYM") {
+      const life = plans.nutrition.iifym;
+      if (
+        life.draft !== undefined &&
+        JSON.stringify(life.draft) !== JSON.stringify(life.active?.content)
+      )
+        setPendingBlank(kind);
+      else startBlank(kind);
+      return;
+    }
+    if (draftNeedsReplace(state, client.id, kind)) setPendingBlank(kind);
+    else startBlank(kind);
+  };
+  const applyTemplateChoice = (kind: LibraryKind, entry: LibraryPlanEntry) => {
+    if (draftNeedsReplace(state, client.id, kind)) {
+      setPickerKind(null);
+      setPendingTemplate({ kind, entry });
+    } else applyTemplateEntry(kind, entry);
+  };
+  const applyTemplateEntry = (kind: LibraryKind, entry: LibraryPlanEntry) => {
+    const content = instantiateFromLibrary(entry, client.id, TODAY);
+    setState((current) => applyPlanToClient(current, client.id, kind, content));
+    setPendingTemplate(null);
+    setPickerKind(null);
+    openPlan(planRouteForKind(kind));
+    toast(
+      kind === "supplements"
+        ? `Supplement plan created from “${entry.name}”.`
+        : `Draft created from “${entry.name}”.`,
+    );
+  };
 
   const openPlan = (plan: string) =>
     navigate({
@@ -668,6 +812,23 @@ export function ClientPlansSummary({
           ? `Configured from ${client.assignment.snapshot.name}.`
           : "No setup assigned."
       }
+      actions={
+        client.assignment ? (
+          <Button
+            size="sm"
+            onClick={() =>
+              navigate({
+                section: "clients",
+                client: client.id,
+                tab: "Setup",
+              })
+            }
+          >
+            <SlidersHorizontal size={14} />
+            Customize setup
+          </Button>
+        ) : undefined
+      }
     >
       {!setup ? (
         <Surface>
@@ -686,13 +847,16 @@ export function ClientPlansSummary({
           </Empty>
         </Surface>
       ) : (
-        <div className="cp-split">
+        <div
+          className={`cp-split${sel === "training" && showLogbook ? " lb-open" : ""}`}
+        >
           <aside className="cp-side">
             {moduleItems.map((m) => (
               <button
                 key={m.key}
                 type="button"
                 className={`cm-card cm-navcard${sel === m.key ? " cm-sel" : ""}`}
+                aria-current={sel === m.key ? "true" : undefined}
                 onClick={() => {
                   setSel(m.key);
                   setSession(null);
@@ -703,13 +867,9 @@ export function ClientPlansSummary({
                   className="cm-row"
                   style={{ justifyContent: "space-between" }}
                 >
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 600 }}>
-                      {m.title}
-                    </div>
-                    <div className="cm-mut" style={{ fontSize: 12 }}>
-                      {m.line}
-                    </div>
+                  <div className="cm-navcopy">
+                    <div className="cm-navtitle">{m.title}</div>
+                    <div className="cm-mut cm-navline">{m.line}</div>
                   </div>
                   {m.chip}
                 </div>
@@ -726,8 +886,55 @@ export function ClientPlansSummary({
                   </div>
                   <div className="cp-card-actions">
                     <Button onClick={() => openPlan("nutrition")}>
-                      Edit plan
+                      {nutritionLifecycle.active || nutritionLifecycle.draft
+                        ? "Edit plan"
+                        : "Set up plan"}
                     </Button>
+                    <DropdownMenu
+                      label="New plan"
+                      items={[
+                        {
+                          id: "blank",
+                          label: "Blank plan",
+                          onSelect: () => requestBlank("nutrition"),
+                        },
+                        {
+                          id: "template",
+                          label: "From template…",
+                          onSelect: () => setPickerKind("nutrition"),
+                          disabled: setup?.nutrition === "IIFYM",
+                        },
+                      ]}
+                    />
+                    {setup?.nutrition === "IIFYM" && (
+                      <Tooltip label="This client uses IIFYM targets, so multi-variant meal-plan templates are hidden.">
+                        <span className="cd-library-tooltip-target">
+                          <Button
+                            variant="ghost"
+                            aria-disabled="true"
+                            onClick={() => {}}
+                          >
+                            From template
+                          </Button>
+                        </span>
+                      </Tooltip>
+                    )}
+                    {nutritionContent &&
+                      "variants" in nutritionContent &&
+                      setup?.nutrition !== "IIFYM" && (
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            setSaveTemplate({
+                              kind: "nutrition",
+                              plan: nutritionContent as MealPlan,
+                              name: nutritionContent.name,
+                            })
+                          }
+                        >
+                          Save as template
+                        </Button>
+                      )}
                     <Button
                       variant="ghost"
                       onClick={() => openPlan("temporary:new")}
@@ -740,19 +947,11 @@ export function ClientPlansSummary({
                   <>
                     <button
                       type="button"
-                      className="cm-mut"
-                      style={{
-                        display: "block",
-                        background: "none",
-                        border: 0,
-                        padding: 0,
-                        marginBottom: 10,
-                        fontSize: 12.5,
-                        cursor: "pointer",
-                      }}
+                      className="v8-editor-header__back"
+                      style={{ marginBottom: 10 }}
                       onClick={() => setPreviewPlan(undefined)}
                     >
-                      ‹ All nutrition plans
+                      Back to nutrition plans
                     </button>
                     <div
                       className="cp-detail-head"
@@ -787,97 +986,110 @@ export function ClientPlansSummary({
                     />
                   </>
                 ) : (
-                  <>
-                    <Surface>
-                      <div className="cp-nut-card">
-                        <div className="cp-nut-head">
-                          <div>
-                            <div className="cm-row" style={{ gap: 8 }}>
-                              <h3 style={{ margin: 0, fontSize: 14 }}>
-                                Active plan
-                              </h3>
-                              {statusChip(
-                                nutritionStatus === "Active with draft changes"
-                                  ? "Active · draft changes"
-                                  : "Active",
-                              )}
-                            </div>
-                            <div
-                              className="cm-mut"
-                              style={{ fontSize: 12.5, marginTop: 2 }}
-                            >
-                              {nutritionContent?.name}
-                              {nutritionLifecycle.active &&
-                                ` · Since ${formatDate(nutritionLifecycle.active.activatedAt.slice(0, 10), { month: "short", day: "numeric" })}`}
-                            </div>
-                          </div>
-                          <div className="cp-card-actions">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                nutritionContent &&
-                                setPreviewPlan({
-                                  plan: nutritionContent as
-                                    | MealPlan
-                                    | IifymPlan,
-                                  title: nutritionContent.name ?? "Meal plan",
-                                  chip:
+                  <div className="cp-plan-flow">
+                    <div className="cp-plan-pair">
+                      <Surface className="cp-plan-panel cp-plan-active">
+                        <div className="cp-nut-card">
+                          {nutritionContent ? (
+                            <div className="cp-nut-head">
+                              <div>
+                                <div className="cm-row" style={{ gap: 8 }}>
+                                  <h3 className="cp-active-plan-title">
+                                    Active plan
+                                  </h3>
+                                  {statusChip(
                                     nutritionStatus ===
-                                    "Active with draft changes"
+                                      "Active with draft changes"
                                       ? "Active · draft changes"
                                       : "Active",
-                                  editPlan: "nutrition",
-                                })
-                              }
-                            >
-                              View
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => openPlan("nutrition")}
-                            >
-                              Edit
-                            </Button>
-                          </div>
-                        </div>
-                        {nutritionContent && "variants" in nutritionContent && (
-                          <div className="cp-macro-table">
-                            <div className="cp-macro-row cp-macro-head">
-                              <span>Day type</span>
-                              <span>kcal</span>
-                              <span>P</span>
-                              <span>C</span>
-                              <span>F</span>
-                            </div>
-                            {nutritionContent.variants.map((v) => {
-                              const n = calculateVariantNutrients(
-                                v,
-                                planFoodMap,
-                              );
-                              return (
-                                <div className="cp-macro-row" key={v.id}>
-                                  <span>{v.label}</span>
-                                  <span>
-                                    {integer.format(Math.round(n.calories))}
-                                  </span>
-                                  <span>
-                                    {integer.format(Math.round(n.protein))}
-                                  </span>
-                                  <span>
-                                    {integer.format(Math.round(n.carbs))}
-                                  </span>
-                                  <span>
-                                    {integer.format(Math.round(n.fat))}
-                                  </span>
+                                  )}
                                 </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        {shownTemporary.length > 0 && (
-                          <>
-                            <div className="cp-nut-sub">
+                                <div
+                                  className="cm-mut"
+                                  style={{ fontSize: 12.5, marginTop: 2 }}
+                                >
+                                  {nutritionContent?.name}
+                                  {nutritionLifecycle.active &&
+                                    ` · Since ${formatDate(nutritionLifecycle.active.activatedAt.slice(0, 10), { month: "short", day: "numeric" })}`}
+                                </div>
+                              </div>
+                              <div className="cp-card-actions">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    nutritionContent &&
+                                    setPreviewPlan({
+                                      plan: nutritionContent as
+                                        | MealPlan
+                                        | IifymPlan,
+                                      title:
+                                        nutritionContent.name ?? "Meal plan",
+                                      chip:
+                                        nutritionStatus ===
+                                        "Active with draft changes"
+                                          ? "Active · draft changes"
+                                          : "Active",
+                                      editPlan: "nutrition",
+                                    })
+                                  }
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => openPlan("nutrition")}
+                                >
+                                  Edit
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="cp-sub" style={{ margin: 0 }}>
+                              No plan saved
+                            </p>
+                          )}
+                          {nutritionContent &&
+                            "variants" in nutritionContent && (
+                              <div className="cp-macro-table">
+                                <div className="cp-macro-row cp-macro-head">
+                                  <span>Day type</span>
+                                  <span>kcal</span>
+                                  <span>P</span>
+                                  <span>C</span>
+                                  <span>F</span>
+                                </div>
+                                {nutritionContent.variants.map((v) => {
+                                  const n = calculateVariantNutrients(
+                                    v,
+                                    planFoodMap,
+                                  );
+                                  return (
+                                    <div className="cp-macro-row" key={v.id}>
+                                      <span>{v.label}</span>
+                                      <span>
+                                        {integer.format(Math.round(n.calories))}
+                                      </span>
+                                      <span>
+                                        {integer.format(Math.round(n.protein))}
+                                      </span>
+                                      <span>
+                                        {integer.format(Math.round(n.carbs))}
+                                      </span>
+                                      <span>
+                                        {integer.format(Math.round(n.fat))}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                        </div>
+                      </Surface>
+                      {shownTemporary.length > 0 && (
+                        <Surface className="cp-plan-panel cp-plan-temporary">
+                          <div className="cp-nut-card">
+                            <div className="cp-nut-sub v8-overline">
                               {hasActiveTemporary
                                 ? "Temporary plans"
                                 : "Upcoming temporary plans"}
@@ -1003,12 +1215,12 @@ export function ClientPlansSummary({
                                 </div>
                               );
                             })}
-                          </>
-                        )}
-                      </div>
-                    </Surface>
+                          </div>
+                        </Surface>
+                      )}
+                    </div>
                     {nutritionLifecycle.history.length > 0 && (
-                      <Surface className="cp-nut-prev-card">
+                      <Surface className="cp-plan-panel cp-plan-previous cp-nut-prev-card">
                         <button
                           type="button"
                           className="cp-nut-collapse"
@@ -1190,94 +1402,263 @@ export function ClientPlansSummary({
                             )}
                       </Surface>
                     )}
-                  </>
+                  </div>
                 )}
               </>
             )}
-            {sel === "training" && (
-              <>
-                <div className="cp-detail-head">
-                  <div className="cp-card-head">
-                    <h3>Training</h3>
-                    {lifecycleChip(lifecycleStatus(plans.training))}
+            {sel === "training" &&
+              (showLogbook ? (
+                <TrainingLogbook
+                  client={client}
+                  sessionId={session?.session.id}
+                  onBack={() => setShowLogbook(false)}
+                />
+              ) : trPreview ? (
+                <>
+                  <button
+                    type="button"
+                    className="v8-editor-header__back"
+                    style={{ marginBottom: 10 }}
+                    onClick={() => setTrPreview(undefined)}
+                  >
+                    Back to training plans
+                  </button>
+                  <div className="cp-detail-head" style={{ marginBottom: 12 }}>
+                    <div className="cp-card-head">
+                      <h3>{trPreview.title}</h3>
+                      {statusChip("Previous")}
+                    </div>
                   </div>
-                  <div className="cp-card-actions">
-                    <Button onClick={() => openPlan("training")}>
-                      {plans.training.active || plans.training.draft
-                        ? "Edit plan"
-                        : "Set up plan"}
-                    </Button>
-                  </div>
-                </div>
-                <div className="cp-meta">
-                  {trainingContent?.name && (
-                    <p className="cp-card-name">{trainingContent.name}</p>
-                  )}
-                  <p className="cp-sub">
-                    {[
-                      trainingRotationText,
-                      trainingContent && trainingContent.program !== "Evergreen"
-                        ? `Plan week ${trainingWeek(trainingContent, activityDate)}`
-                        : undefined,
-                      !trainingContent ? "No plan saved" : undefined,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                  {trainingContent && (
-                    <SharedInput
-                      label="Focus"
-                      value={trainingContent.focus ?? ""}
-                      placeholder="e.g. Hypertrophy · lower-body priority"
-                      size="md"
-                      onChange={(event) =>
-                        updatePlan((current) => ({
-                          ...current,
-                          training: {
-                            ...current.training,
-                            ...(current.training.active
-                              ? {
-                                  active: {
-                                    ...current.training.active,
-                                    content: {
-                                      ...current.training.active.content,
-                                      focus: event.target.value,
-                                    },
-                                  },
-                                }
-                              : {}),
-                          },
-                        }))
-                      }
-                    />
-                  )}
-                </div>
-                {session ? (
-                  <>
-                    <button
-                      type="button"
-                      className="cm-back"
-                      onClick={() => setSession(null)}
-                    >
-                      Training
-                    </button>
-                    <MobileSessionOverview
-                      client={client}
-                      item={session}
-                      onStart={() => {}}
-                      readOnly
-                    />
-                  </>
-                ) : (
-                  <MobileTraining
-                    client={client}
-                    readOnly
-                    embedded
-                    onOpenSession={(item) => setSession(item)}
+                  <TrainingPrescription
+                    value={trPreview.plan}
+                    configuration={setup}
                   />
-                )}
-              </>
-            )}
+                </>
+              ) : (
+                <>
+                  <div className="cp-detail-head">
+                    <div className="cp-card-head">
+                      <h3>Training</h3>
+                      {lifecycleChip(lifecycleStatus(plans.training))}
+                    </div>
+                    <div className="cp-card-actions">
+                      <Button onClick={() => openPlan("training")}>
+                        {plans.training.active || plans.training.draft
+                          ? "Edit plan"
+                          : "Set up plan"}
+                      </Button>
+                      <DropdownMenu
+                        label="New plan"
+                        items={[
+                          {
+                            id: "blank",
+                            label: "Blank plan",
+                            onSelect: () =>
+                              newPlanNeedsConfirm
+                                ? setNewPlanConfirm(true)
+                                : startNewPlan(),
+                          },
+                          {
+                            id: "template",
+                            label: "From template…",
+                            onSelect: () => setPickerKind("training"),
+                          },
+                        ]}
+                      />
+                      {trainingContent && (
+                        <Button
+                          variant="ghost"
+                          onClick={() =>
+                            setSaveTemplate({
+                              kind: "training",
+                              plan: trainingContent,
+                              name: trainingContent.name,
+                            })
+                          }
+                        >
+                          Save as template
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        onClick={() => setShowLogbook(true)}
+                        disabled={!trainingContent}
+                      >
+                        Show logbook
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="cp-meta">
+                    {trainingContent?.name && (
+                      <p className="cp-card-name">{trainingContent.name}</p>
+                    )}
+                    <p className="cp-sub">
+                      {[
+                        trainingRotationText,
+                        trainingContent &&
+                        trainingContent.program !== "Evergreen"
+                          ? `Plan week ${trainingWeek(trainingContent, activityDate)}`
+                          : undefined,
+                        !trainingContent ? "No plan saved" : undefined,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                    {trainingContent && (
+                      <SharedInput
+                        label="Focus"
+                        value={trainingContent.focus ?? ""}
+                        placeholder="e.g. Hypertrophy · lower-body priority"
+                        size="md"
+                        onChange={(event) =>
+                          updatePlan((current) => ({
+                            ...current,
+                            training: {
+                              ...current.training,
+                              ...(current.training.active
+                                ? {
+                                    active: {
+                                      ...current.training.active,
+                                      content: {
+                                        ...current.training.active.content,
+                                        focus: event.target.value,
+                                      },
+                                    },
+                                  }
+                                : {}),
+                            },
+                          }))
+                        }
+                      />
+                    )}
+                  </div>
+                  {session ? (
+                    <>
+                      <button
+                        type="button"
+                        className="cm-back"
+                        onClick={() => setSession(null)}
+                      >
+                        Training
+                      </button>
+                      <MobileSessionOverview
+                        client={client}
+                        item={session}
+                        onStart={() => {}}
+                        readOnly
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <MobileTraining
+                        client={client}
+                        readOnly
+                        embedded
+                        onOpenSession={(item) => setSession(item)}
+                      />
+                      {previousPlans.length > 0 && (
+                        <Surface className="cp-nut-prev-card">
+                          <button
+                            type="button"
+                            className="cp-nut-collapse"
+                            aria-expanded={trPrevOpen}
+                            onClick={() => setTrPrevOpen((o) => !o)}
+                          >
+                            <span>Previous plans · {previousPlans.length}</span>
+                            <svg
+                              aria-hidden="true"
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.75"
+                              style={{
+                                transform: trPrevOpen
+                                  ? "rotate(180deg)"
+                                  : "rotate(0deg)",
+                                transition: "transform 0.15s",
+                              }}
+                            >
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                          {trPrevOpen &&
+                            previousPlans.slice(0, 5).map((row) => (
+                              <div className="cp-nut-prev" key={row.plan.id}>
+                                <div className="cm-row" style={{ gap: 8 }}>
+                                  <b style={{ fontSize: 13 }}>
+                                    {row.plan.name}
+                                  </b>
+                                </div>
+                                <div
+                                  className="cm-mut"
+                                  style={{ fontSize: 12 }}
+                                >
+                                  {[
+                                    `Started ${formatDate(row.startedOn, { day: "numeric", month: "short" })}`,
+                                    row.endedOn &&
+                                      `Ended ${formatDate(row.endedOn, { day: "numeric", month: "short" })}`,
+                                    `${resolveTrainingWeek(row.plan, 1).length} sessions`,
+                                    row.versions > 1 &&
+                                      `${row.versions} revisions`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </div>
+                                <div
+                                  className="cp-temp-actions"
+                                  style={{ marginTop: 4 }}
+                                >
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      setTrPreview({
+                                        plan: row.plan,
+                                        title: row.plan.name,
+                                      })
+                                    }
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                        </Surface>
+                      )}
+                    </>
+                  )}
+                  {newPlanConfirm && (
+                    <Dialog
+                      title="Start a new plan?"
+                      onClose={() => setNewPlanConfirm(false)}
+                    >
+                      <p className="cd-muted">
+                        Your saved draft will be replaced. The active plan stays
+                        in place until you activate the new one.
+                      </p>
+                      <div
+                        className="cp-card-actions"
+                        style={{ marginTop: 16, justifyContent: "flex-end" }}
+                      >
+                        <Button onClick={() => setNewPlanConfirm(false)}>
+                          Cancel
+                        </Button>
+                        <Button
+                          primary
+                          onClick={() => {
+                            setNewPlanConfirm(false);
+                            startNewPlan();
+                          }}
+                        >
+                          Start new plan
+                        </Button>
+                      </div>
+                    </Dialog>
+                  )}
+                </>
+              ))}
             {sel === "activity-targets" && (
               <>
                 <div className="cp-detail-head">
@@ -1308,6 +1689,35 @@ export function ClientPlansSummary({
                     <Button onClick={() => openPlan("supplements")}>
                       {supplements ? "Edit plan" : "Set up plan"}
                     </Button>
+                    <DropdownMenu
+                      label="New plan"
+                      items={[
+                        {
+                          id: "blank",
+                          label: "Blank plan",
+                          onSelect: () => requestBlank("supplements"),
+                        },
+                        {
+                          id: "template",
+                          label: "From template…",
+                          onSelect: () => setPickerKind("supplements"),
+                        },
+                      ]}
+                    />
+                    {supplements && (
+                      <Button
+                        variant="ghost"
+                        onClick={() =>
+                          setSaveTemplate({
+                            kind: "supplements",
+                            plan: supplements,
+                            name: supplements.name,
+                          })
+                        }
+                      >
+                        Save as template
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <div className="cp-meta">
@@ -1406,6 +1816,79 @@ export function ClientPlansSummary({
         </div>
       )}
 
+      {saveTemplate && (
+        <SaveAsTemplateDialog
+          kind={saveTemplate.kind}
+          plan={saveTemplate.plan}
+          clientId={client.id}
+          defaultName={saveTemplate.name}
+          open
+          onClose={() => setSaveTemplate(null)}
+        />
+      )}
+      {pickerKind && (
+        <TemplatePickerDialog
+          kind={pickerKind}
+          open
+          onClose={() => setPickerKind(null)}
+          onUse={(entry) => applyTemplateChoice(pickerKind, entry)}
+        />
+      )}
+      {pendingTemplate && (
+        <Dialog
+          title="Replace the current draft?"
+          onClose={() => setPendingTemplate(null)}
+        >
+          <p className="cd-muted">
+            {pendingTemplate.kind === "supplements"
+              ? `“${pendingTemplate.entry.name}” will replace ${client.name}’s saved supplement plan.`
+              : `“${pendingTemplate.entry.name}” will replace ${client.name}’s saved draft. The active plan stays in place until you activate the new one.`}
+          </p>
+          <div
+            className="cp-card-actions"
+            style={{ marginTop: 16, justifyContent: "flex-end" }}
+          >
+            <Button onClick={() => setPendingTemplate(null)}>Cancel</Button>
+            <Button
+              primary
+              onClick={() =>
+                applyTemplateEntry(pendingTemplate.kind, pendingTemplate.entry)
+              }
+            >
+              Use template
+            </Button>
+          </div>
+        </Dialog>
+      )}
+      {pendingBlank && (
+        <Dialog
+          title="Start a blank plan?"
+          onClose={() => setPendingBlank(null)}
+        >
+          <p className="cd-muted">
+            {pendingBlank === "supplements"
+              ? `The saved supplement plan will be replaced.`
+              : "Your saved draft will be replaced. The active plan stays in place until you activate the new one."}
+          </p>
+          <div
+            className="cp-card-actions"
+            style={{ marginTop: 16, justifyContent: "flex-end" }}
+          >
+            <Button onClick={() => setPendingBlank(null)}>Cancel</Button>
+            <Button
+              primary
+              onClick={() => {
+                const kind = pendingBlank;
+                setPendingBlank(null);
+                startBlank(kind);
+              }}
+            >
+              Start blank plan
+            </Button>
+          </div>
+        </Dialog>
+      )}
+
       {targetDialog && (
         <OtherTargetDialog
           client={client}
@@ -1428,7 +1911,7 @@ function configuredGoalFields(
   if (!template) return [];
   const setup = templateSetup(template);
   return setup.fields.flatMap((field) => {
-    const parameter = ALL_PARAMETERS.find((item) => item.id === field.id);
+    const parameter = allParameters().find((item) => item.id === field.id);
     if (
       !parameter ||
       typeof parameter.sample !== "number" ||
@@ -1622,7 +2105,7 @@ export function ClientGoalsEditor({ client }: { client: CoachClient }) {
               <div className="cd-goal-row" key={goal.id}>
                 <span>
                   <strong>
-                    {ALL_PARAMETERS.find(
+                    {allParameters().find(
                       (parameter) => parameter.id === goal.fieldId,
                     )?.name ?? goal.fieldId}
                   </strong>

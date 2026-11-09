@@ -51,12 +51,18 @@
 
 .coach-root .cd-nt-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 22px;
   align-items: start;
 }
 .coach-root .cd-nt-grid > * {
   min-width: 0;
+}
+.coach-root .cd-nt-grid .v8-field {
+  max-width: 480px;
+}
+.coach-root .cd-nt-grid .v8-field:has(.v8-textarea) {
+  max-width: 880px;
 }
 .coach-root .cd-nt-list {
   display: flex;
@@ -102,7 +108,7 @@
   cursor: pointer;
   font-size: 0.85rem;
 }
-@media (max-width: 1100px) {
+@media (max-width: 760px) {
   .coach-root .cd-nt-grid {
     grid-template-columns: 1fr;
   }

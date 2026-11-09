@@ -62,10 +62,11 @@
   padding: 0 4px;
 }
 .cm-card {
-  background: var(--cd-surface);
-  border: 1px solid var(--cd-line);
-  border-radius: 14px;
-  padding: 12px 16px;
+  background: var(--v8-surface, var(--cd-surface));
+  border: 0;
+  border-radius: var(--v8-radius-card);
+  padding: var(--v8-card-padding-sm);
+  box-shadow: var(--v8-shadow-card);
 }
 .cm-card + .cm-card {
   margin-top: 9px;
@@ -83,6 +84,11 @@
 .cm-row {
   display: flex;
   align-items: center;
+}
+.cm-supp-item {
+  justify-content: space-between;
+  padding: 7px 0;
+  border-top: 1px solid var(--cd-line);
 }
 .coach-root .cm-app .cm-btn {
   display: inline-flex;
@@ -189,6 +195,24 @@
   font-size: 12.5px;
   color: var(--cd-muted);
 }
+.coach-root .cm-app .cm-adjustment-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  margin-block-end: 12px;
+  border-radius: 14px;
+  background: var(--v8-accent-soft);
+  border: 1px solid var(--v8-accent-border);
+}
+.coach-root .cm-app .cm-adjustment-banner strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+.coach-root .cm-app .cm-adjustment-banner span {
+  font-size: 12px;
+  color: var(--cd-muted);
+}
 .coach-root .cm-app .cm-banner {
   display: flex;
   align-items: center;
@@ -208,6 +232,32 @@
   font-weight: 500;
   margin-bottom: 9px;
 }
+/* coach-scope .cm-back (inside the coach Plans detail's .cm-app preview) */
+.coach-root .cp-detail button.cm-back,
+.coach-root .cp-detail .cm-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px 0 9px;
+  border: 1px solid var(--cd-line, #2c2c30);
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--cd-text, #f4f4f5);
+  background: var(--cd-surface, #161618);
+  transition: background 0.15s;
+}
+.coach-root .cp-detail .cm-back::before {
+  content: "‹";
+  font-size: 15px;
+  line-height: 1;
+  color: var(--cd-muted, #afafb5);
+}
+.coach-root .cp-detail .cm-back:hover {
+  background: var(--cd-surface-2, var(--cd-field, #1c1c1f));
+}
+
 .coach-root .cm-app .cm-back {
   display: inline-flex;
   align-items: center;
@@ -637,21 +687,6 @@ input[type="time"].cm-field {
   opacity: 0.35;
   cursor: default;
 }
-.cm-follow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  cursor: pointer;
-  font-size: 13px;
-}
-.cm-follow input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--cd-accent);
-  flex: none;
-}
-
 /* rating slider (replaces number-button rows on phone) */
 .coach-root .cm-app .cm-slider {
   -webkit-appearance: none;
@@ -745,4 +780,362 @@ input[type="time"].cm-field {
   margin-top: 4px;
   font-size: 11px;
   color: var(--cd-muted);
+}
+
+/* collapsible group cards */
+.coach-root .cm-app .cm-gcard {
+  padding: 0;
+  overflow: hidden;
+}
+.coach-root .cm-app .cm-ghead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 13px 15px;
+  text-align: left;
+}
+.coach-root .cm-app .cm-ghead-l {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cm-app .cm-gtitle {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--cd-text);
+}
+.coach-root .cm-app .cm-gsum {
+  font-size: 11.5px;
+  color: var(--cd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 300px;
+}
+.coach-root .cm-app .cm-ghead-r {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+.coach-root .cm-app .cm-gcount {
+  font-size: 11px;
+}
+.coach-root .cm-app .cm-gchev {
+  font-size: 16px;
+  color: var(--cd-muted);
+  transition: transform 0.2s ease-out;
+  display: inline-block;
+}
+.coach-root .cm-app .cm-gchev.on {
+  transform: rotate(90deg);
+}
+.coach-root .cm-app .cm-gbody {
+  overflow: hidden;
+  max-height: 2400px;
+  transition: max-height 0.2s ease-out;
+}
+.coach-root .cm-app .cm-gbody.closed {
+  max-height: 0;
+}
+.coach-root .cm-app .cm-gbody-in {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 15px 14px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-root .cm-app .cm-gbody {
+    transition: none;
+  }
+  .coach-root .cm-app .cm-gchev {
+    transition: none;
+  }
+}
+
+/* habits rows */
+.coach-root .cm-app .cm-hrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 6px 0;
+  border-top: 1px solid var(--cd-line);
+  width: 100%;
+  text-align: left;
+}
+.coach-root .cm-app .cm-hrow:first-child {
+  border-top: 0;
+}
+.coach-root .cm-app .cm-htick {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cd-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--v8-on-accent, #000);
+  font-size: 12px;
+  font-weight: 700;
+}
+.coach-root .cm-app .cm-htick.on {
+  background: var(--v8-accent-primary);
+  border-color: var(--v8-accent-primary);
+}
+.coach-root .cm-app .cm-hname {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cd-text);
+}
+.coach-root .cm-app .cm-hgoal {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--cd-muted);
+}
+.coach-root .cm-app .cm-hdots {
+  display: flex;
+  gap: 5px;
+  margin-left: auto;
+}
+.coach-root .cm-app .cm-hdot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cd-line);
+}
+.coach-root .cm-app .cm-hdot.on {
+  background: var(--v8-accent-primary);
+}
+
+/* Phone session logger */
+.coach-root .cm-app .cm-lb-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.coach-root .cm-app .cm-lb-session {
+  font-size: 14px;
+  font-weight: 600;
+}
+.coach-root .cm-app .cm-lb-progress {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cm-app .cm-lb-top .cm-btn {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+.coach-root .cm-app .cm-lb-chips {
+  display: flex;
+  gap: 6px;
+  margin: 0 -2px 16px;
+  padding: 0 2px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.coach-root .cm-app .cm-lb-chips .cm-chip {
+  flex-shrink: 0;
+  min-height: 32px;
+}
+.coach-root .cm-app .cm-lb-chipname {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cm-app .cm-lb-title {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+.coach-root .cm-app .cm-lb-title h2 {
+  margin: 0 0 1px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--cd-text);
+}
+.coach-root .cm-app .cm-lb-title p {
+  margin: 0;
+}
+.coach-root .cm-app .cm-lb-rx {
+  font-size: 12.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cm-app .cm-lb-info {
+  font-size: 12px;
+}
+.coach-root .cm-app .cm-lb-cue {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.coach-root .cm-app .cm-lb-coach {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 10px;
+  padding: 9px 12px;
+  background: var(--cm-soft);
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.coach-root .cm-app .cm-lb-coach-label {
+  color: var(--cd-accent-text);
+  font-size: 11px;
+  font-weight: 600;
+}
+.coach-root .cm-app .cm-lb-sets {
+  display: grid;
+  gap: 2px;
+  padding: 6px 6px 8px;
+}
+.coach-root .cm-app .cm-lb-row {
+  display: grid;
+  grid-template-columns: var(--lb-cols);
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 3px 4px;
+  border-radius: 9px;
+}
+.coach-root .cm-app .cm-lb-row[data-current] {
+  background: var(--cm-soft);
+}
+.coach-root .cm-app .cm-lb-head {
+  min-height: 20px;
+  padding-block: 0;
+  color: var(--cd-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-align: center;
+}
+.coach-root .cm-app .cm-lb-index {
+  color: var(--cd-muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cm-app .cm-lb-input {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+  padding: 0 6px;
+  color: var(--cd-text);
+  background: var(--cd-field);
+  border: 1px solid var(--cd-line);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.coach-root .cm-app .cm-lb-input::placeholder {
+  color: var(--cd-muted);
+  opacity: 0.6;
+}
+.coach-root .cm-app .cm-lb-input:focus-visible {
+  outline: 2px solid var(--cd-accent);
+  outline-offset: 1px;
+}
+.coach-root .cm-app .cm-lb-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  justify-self: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--cd-muted);
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-lb-icon[data-active] {
+  color: var(--cd-accent);
+}
+.coach-root .cm-app .cm-lb-icon[data-has-note]::after {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  background: var(--cd-accent);
+  border-radius: 999px;
+  content: "";
+}
+.coach-root .cm-app .cm-lb-tick {
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+}
+.coach-root .cm-app .cm-lb-noterow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 4px 36px;
+}
+.coach-root .cm-app .cm-lb-noteinput {
+  flex: 1;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+.coach-root .cm-app .cm-lb-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 11px;
+  color: var(--cd-muted);
+  background: none;
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.coach-root .cm-app .cm-lb-flag[aria-pressed="true"] {
+  color: var(--cd-accent-text);
+  background: var(--cm-soft);
+  border-color: transparent;
+}
+.coach-root .cm-app .cm-lb-setnote {
+  margin: -2px 4px 6px 40px;
+  color: var(--cd-muted);
+  font-size: 11.5px;
+}
+.coach-root .cm-app .cm-lb-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-bottom: 8px;
+}
+.coach-root .cm-app .cm-lb-rest {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }

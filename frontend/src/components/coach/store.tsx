@@ -14,11 +14,13 @@ import {
 import { adoptAthleteDataDemo } from "./athlete-data-demo";
 import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
 import { adoptClientAppDemo } from "./client-app-demo";
+import { adoptLibraryDemo } from "./library-demo";
 import {
   type CoachState,
   isCoachState,
   type Media,
   type Route,
+  registerCustomParameters,
   STORAGE_KEY,
   seedState,
 } from "./model";
@@ -28,7 +30,7 @@ import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
 import { adoptTrainingLogDemo } from "./training-log-demo";
 
-type Store = {
+export type CoachStore = {
   state: CoachState;
   setState: Dispatch<SetStateAction<CoachState>>;
   hydrated: boolean;
@@ -42,9 +44,13 @@ type Store = {
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
 };
-const Context = createContext<Store | null>(null);
+/**
+ * Exported so read-only surfaces (the setup preview) can supply the same
+ * `useCoach()` contract without forking the store logic.
+ */
+export const CoachContext = createContext<CoachStore | null>(null);
 export function useCoach() {
-  const value = useContext(Context);
+  const value = useContext(CoachContext);
   if (!value) throw new Error("Coach provider required");
   return value;
 }
@@ -57,6 +63,7 @@ export function routeUrl(route: Route) {
     "plan",
     "module",
     "tab",
+    "week",
   ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
@@ -69,7 +76,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
   );
   const [hydrated, setHydrated] = useState(false);
   const [storageOk, setStorageOk] = useState(true);
-  const [notice, setNotice] = useState<Store["notice"]>(null);
+  const [notice, setNotice] = useState<CoachStore["notice"]>(null);
   const [media, setMedia] = useState<Record<string, string>>({});
   const preserveRaw = useRef(false);
   const urls = useRef(new Set<string>());
@@ -89,6 +96,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     plan: params.get("plan") ?? undefined,
     module: params.get("module") ?? undefined,
     tab: params.get("tab") ?? undefined,
+    week: params.get("week") ?? undefined,
   };
   useEffect(() => {
     try {
@@ -97,19 +105,21 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         const parsed: unknown = migrateCoachState(JSON.parse(raw));
         if (isCoachState(parsed))
           setState(
-            normalizeTemplateSetups(
-              adoptAthleteDataDemo(
-                adoptAthleteProfileDemo(
-                  adoptTrainingLogDemo(
-                    adoptClientAppDemo(
-                      adoptAmaraTrainingExample(parsed),
+            adoptLibraryDemo(
+              normalizeTemplateSetups(
+                adoptTrainingLogDemo(
+                  adoptAthleteDataDemo(
+                    adoptAthleteProfileDemo(
+                      adoptClientAppDemo(
+                        adoptAmaraTrainingExample(parsed),
+                        localToday(),
+                      ),
                       localToday(),
                     ),
                     localToday(),
                   ),
                   localToday(),
                 ),
-                localToday(),
               ),
             ),
           );
@@ -167,8 +177,11 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       return { ...old, [item.id]: url };
     });
   }, []);
+  // Keep the workspace-scoped parameter registry aligned with saved state
+  // before children render, so newly created fields resolve in the same pass.
+  registerCustomParameters(state.customParameters);
   return (
-    <Context.Provider
+    <CoachContext.Provider
       value={{
         state,
         setState,
@@ -185,6 +198,6 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-    </Context.Provider>
+    </CoachContext.Provider>
   );
 }

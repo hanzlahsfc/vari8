@@ -79,14 +79,14 @@
   border-left: 1px solid var(--cd-line);
 }
 .coach-root .cd-setup-editor {
-  max-width: 1100px;
+  max-width: none;
 }
 .coach-root .cd-goal-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) minmax(110px, 0.7fr) minmax(
-      110px,
-      0.7fr
-    ) minmax(150px, 0.9fr) auto;
+  grid-template-columns:
+    minmax(220px, 480px) minmax(120px, 200px) minmax(120px, 200px)
+    minmax(160px, 260px) max-content;
+  justify-content: start;
   align-items: end;
   gap: 12px;
   padding: 16px 0 20px;
@@ -498,7 +498,7 @@
 }
 .coach-root .cp-card-actions {
   margin-top: auto;
-  padding-top: 14px;
+  padding-top: 16px;
 }
 .coach-root .cp-chip-sub {
   font-size: 0.75rem;
@@ -511,17 +511,41 @@
 /* two-column plans layout (matches client desktop plans) */
 .cp-split {
   display: grid;
-  grid-template-columns: 320px minmax(0, 860px);
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
   gap: 16px;
   align-items: start;
 }
+
 .cp-side {
   display: flex;
   flex-direction: column;
   gap: 9px;
 }
 .cp-detail {
-  max-width: 860px;
+  max-width: none;
+  min-width: 0;
+}
+/* Nutrition detail sections: the rail and the detail share the frame edge;
+   cards flow in as many ~560px columns as the detail can hold. */
+.coach-root .cp-plan-flow {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+/* Active plan and upcoming temporary plans share the detail width. Previous
+   plans stay a full-width card below them. */
+.coach-root .cp-plan-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr));
+  gap: 16px;
+  align-items: start;
+  min-width: 0;
+}
+.coach-root .cp-plan-panel {
+  min-width: 0;
+}
+.coach-root .cp-plan-previous {
+  grid-column: 1 / -1;
 }
 /* mobile screens reused inside the coach detail: strip the phone shell */
 .coach-root .cp-detail.cm-app {
@@ -530,8 +554,44 @@
   min-height: 0;
   width: auto;
 }
-.coach-root .cm-card.cm-sel {
-  border-color: var(--cd-accent);
+/* full-width coach logbook: hide the module list, free the detail column */
+.cp-split.lb-open {
+  grid-template-columns: minmax(0, 1fr);
+}
+.cp-split.lb-open .cp-side {
+  display: none;
+}
+.cp-split.lb-open .cp-detail {
+  max-width: none;
+  width: 100%;
+}
+/* Plans rail uses the shared current-item treatment: tone fill, no border,
+   text-primary medium label. Unselected rows stay transparent. */
+.coach-root .cp-side .cm-navcard {
+  border: 0;
+  border-radius: var(--v8-radius-control);
+  background: transparent;
+  box-shadow: none;
+}
+.coach-root .cp-side .cm-navcard + .cm-navcard {
+  margin-top: 0;
+}
+.coach-root .cp-side .cm-navcard:hover {
+  background: var(--v8-surface-interactive);
+}
+.coach-root .cp-side .cm-navcard.cm-sel,
+.coach-root .cp-side .cm-navcard.cm-sel:hover {
+  background: var(--v8-surface-selected);
+}
+.coach-root .cp-side .cm-navtitle {
+  color: var(--cd-text);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+.coach-root .cp-side .cm-navline {
+  font-size: 12px;
+  line-height: 18px;
 }
 .cp-detail-head {
   display: flex;
@@ -572,7 +632,7 @@
 }
 
 /* left list: keep status chips on one line; the key line wraps instead */
-.coach-root .cp-side .cm-navcard .cd-status {
+.coach-root .cp-side .cm-navcard .v8-status {
   flex: 0 0 auto;
   white-space: nowrap;
 }
@@ -608,12 +668,11 @@
   margin-bottom: 10px;
 }
 .cp-nut-sub {
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--cd-muted);
   margin: 14px 0 6px;
+}
+
+.coach-root .cp-active-plan-title {
+  margin: 0;
 }
 .cp-nut-temp {
   padding: 8px 0;
@@ -621,24 +680,41 @@
 }
 .cp-macro-table {
   display: grid;
-  gap: 2px;
+  grid-template-columns: minmax(110px, max-content) repeat(
+      4,
+      minmax(46px, max-content)
+    );
+  justify-content: start;
+  column-gap: 20px;
 }
 .cp-macro-row {
   display: grid;
-  grid-template-columns: 1fr repeat(4, minmax(0, auto));
-  gap: 8px 14px;
+  grid-template-columns: minmax(110px, max-content) repeat(
+      4,
+      minmax(46px, max-content)
+    );
+  justify-content: start;
+  gap: 0;
+  column-gap: 20px;
   align-items: baseline;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
   padding: 5px 0;
   border-bottom: 1px solid var(--cd-line);
 }
+/* Rows inside the macro table share one set of compact tracks, so labels and
+   figures stay aligned without a flexible label column pushing them apart. */
+.coach-root .cp-macro-table > .cp-macro-row {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+}
 .cp-macro-row:last-child {
   border-bottom: 0;
 }
 .cp-macro-row > span:not(:first-child) {
   text-align: right;
-  min-width: 38px;
+  justify-self: end;
+  min-width: 0;
 }
 .cp-macro-row.cp-macro-head {
   font-size: 10.5px;
@@ -674,4 +750,7 @@
 
 .cp-nut-prev-card {
   margin-top: 16px;
+}
+.coach-root .cp-plan-flow .cp-nut-prev-card {
+  margin-top: 0;
 }

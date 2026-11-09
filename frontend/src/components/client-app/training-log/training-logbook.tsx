@@ -9,7 +9,7 @@ import {
   uid,
   type Variant,
 } from "../../coach/model";
-import { applicablePlan } from "../../coach/plans/domain";
+import { trainingPlanAt } from "../../coach/plans/domain";
 import type { TrainingPlan, TrainingSessionLog } from "../../coach/plans/types";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
@@ -21,8 +21,8 @@ import {
   type StatusTone,
 } from "../../vari8/components";
 import {
-  DEFAULT_LOG_FIELDS,
   displayWeek,
+  effectiveLogFields,
   findLog,
   nextSession,
   type ScheduledSession,
@@ -54,7 +54,7 @@ export function TrainingLogbook({
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const plan: TrainingPlan | undefined = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   const currentWeek = plan ? displayWeek(plan, today) : 1;
   const [navWeek, setNavWeek] = useState<number | undefined>(undefined);
@@ -91,7 +91,7 @@ export function TrainingLogbook({
           clientId: client.id,
           plan,
           item,
-          logFields: configuration.training.logFields ?? DEFAULT_LOG_FIELDS,
+          logFields: effectiveLogFields(configuration.training),
           loadUnit: configuration.training.loadUnit ?? "kg",
           now: new Date().toISOString(),
         }),

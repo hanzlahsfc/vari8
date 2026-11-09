@@ -9,6 +9,7 @@ import {
   calculateVariantNutrients,
   type Food,
 } from "../../ethereal/mealplan/model";
+import { SaveAsTemplateDialog } from "../library-ui";
 import { type CoachClient, type CoachState, type Route, TODAY } from "../model";
 import { useCoach } from "../store";
 import { SupplementEditor } from "../supplements/editor";
@@ -33,6 +34,7 @@ import {
   emptyTrainingPlan,
   lifecycleStatus,
   scheduledOption,
+  trainingPlanAt,
   trainingWeek,
   validateIndividualPlan,
 } from "./domain";
@@ -262,14 +264,14 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
     );
   if (plan === "supplements")
     return (
-      <>
+      <div className="cp-workspace">
         <PageTitle
           title={`${client.name} · Supplements`}
           description="Catalogue products, prescribed quantities, timing and status."
           back={back}
         />
         <SupplementEditor key={client.id} client={client} />
-      </>
+      </div>
     );
   if (plan === "goals" || plan === "habits")
     return (
@@ -323,10 +325,11 @@ export function IndividualPlanWorkspace({ client }: { client: CoachClient }) {
         : "mealPlan";
   return (
     <PlanEditor
-      key={`${client.id}-${kind}`}
+      key={`${client.id}-${kind}-${route.week ?? ""}`}
       client={client}
       kind={kind}
       back={back}
+      initialWeek={route.week ? Number(route.week) : undefined}
     />
   );
 }
@@ -334,10 +337,12 @@ function PlanEditor({
   client,
   kind,
   back,
+  initialWeek,
 }: {
   client: CoachClient;
   kind: ModuleKind;
   back: () => void;
+  initialWeek?: number;
 }) {
   const { setState, route, navigate, storageOk, guard, toast } = useCoach();
   const life = lifeFor(client, kind);
@@ -368,6 +373,7 @@ function PlanEditor({
   const [errors, setErrors] = useState<string[]>([]);
   const [leaving, setLeaving] = useState<Route | null>(null);
   const [saveState, setSaveState] = useState("");
+  const [saveTemplate, setSaveTemplate] = useState(false);
   const dirty = JSON.stringify(value) !== saved;
   const activationUnchanged =
     JSON.stringify(value) === JSON.stringify(life.active?.content);
@@ -470,7 +476,9 @@ function PlanEditor({
     setPreview(true);
   };
   return (
-    <div className="cp-workspace">
+    <div
+      className={`cp-workspace${kind === "mealPlan" ? " cp-workspace-wide" : ""}`}
+    >
       <EditorHeader
         onBack={back}
         backLabel={route.review ? "Back to check-in" : `Back to ${client.name}`}
@@ -485,6 +493,17 @@ function PlanEditor({
         status={<Status text={lifecycleStatus(life)} />}
         actions={
           <>
+            <Button
+              onClick={() => setSaveTemplate(true)}
+              disabled={kind === "iifym"}
+              title={
+                kind === "iifym"
+                  ? "Nutrition templates cover meal plans. IIFYM targets are not supported."
+                  : undefined
+              }
+            >
+              Save as template
+            </Button>
             <Button onClick={() => setHistory(true)}>
               History ({life.history.length})
             </Button>
@@ -549,6 +568,7 @@ function PlanEditor({
           onChange={setValue}
           onWeekChange={setDraftWeek}
           configuration={setup}
+          initialWeek={initialWeek}
         />
       ) : kind === "iifym" ? (
         <IifymEditor value={value as IifymPlan} onChange={setValue} />
@@ -762,6 +782,16 @@ function PlanEditor({
           </div>
         </Dialog>
       )}
+      {saveTemplate && kind !== "iifym" && (
+        <SaveAsTemplateDialog
+          kind={kind === "training" ? "training" : "nutrition"}
+          plan={value as MealPlan | TrainingPlan}
+          clientId={client.id}
+          defaultName={value.name}
+          open
+          onClose={() => setSaveTemplate(false)}
+        />
+      )}
       {leaving && (
         <Dialog
           title="Save this draft before leaving?"
@@ -910,7 +940,7 @@ export function ActiveClientTraining({
 }) {
   const [selectedDate, setDate] = useState(date);
   const plan = client.plans
-    ? applicablePlan(client.plans.training, selectedDate)
+    ? trainingPlanAt(client.plans.training, selectedDate)
     : undefined;
   const setup = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)

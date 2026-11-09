@@ -6,10 +6,10 @@ import {
   eventsBetween,
 } from "../../coach/model";
 import {
-  applicablePlan,
   planFoodMap,
   planTargets,
   targetNumber,
+  trainingPlanAt,
 } from "../../coach/plans/domain";
 import {
   addLocalDays,
@@ -192,7 +192,7 @@ export function todaySession(
   today: string,
 ): TodaySession | undefined {
   const plan = client.plans
-    ? applicablePlan(client.plans.training, today)
+    ? trainingPlanAt(client.plans.training, today)
     : undefined;
   if (!plan) return undefined;
   const week = displayWeek(plan, today);

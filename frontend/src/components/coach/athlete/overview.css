@@ -26,9 +26,10 @@
 }
 .coach-root .ap-header-text h1 {
   margin: 0;
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: var(--v8-font-size-page-title);
+  font-weight: var(--v8-font-weight-page-title);
+  letter-spacing: var(--v8-letter-spacing-tight);
+  line-height: var(--v8-line-height-page-title);
 }
 .coach-root .ap-header-text p {
   margin: 3px 0 0;
@@ -136,8 +137,9 @@
 }
 .coach-root .ap-card-link h3 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 650;
+  font-size: var(--v8-font-size-card-heading);
+  font-weight: var(--v8-font-weight-card-heading);
+  line-height: var(--v8-line-height-card-heading);
 }
 .coach-root .ap-card-link p {
   margin: 3px 0 0;
@@ -598,6 +600,31 @@
   flex-direction: column;
   gap: 2px;
   min-inline-size: 0;
+}
+
+/* Wide frame: the card grid gains a wider column set instead of stretching the
+   text cards. Small cards stay ~1/5 of the frame; the chart cards take the
+   remainder. The text-heavy cards (Check-in, Pinned notes) are capped by their
+   track, never by centring their content. */
+@container (min-width: 2000px) {
+  .coach-root .ap-grid {
+    grid-template-columns: repeat(16, minmax(0, 1fr));
+  }
+  .coach-root .ap-w-s3 {
+    grid-column: span 3;
+  }
+  .coach-root .ap-w-s4 {
+    grid-column: span 7;
+  }
+  .coach-root .ap-w-s6 {
+    grid-column: span 8;
+  }
+  .coach-root .ap-w-s8 {
+    grid-column: span 9;
+  }
+  .coach-root .ap-w-phase {
+    grid-column: span 10;
+  }
 }
 
 /* ── Breakpoints ─────────────────────────────────────────── */

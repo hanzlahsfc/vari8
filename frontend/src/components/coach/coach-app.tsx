@@ -18,14 +18,16 @@ import { useEffect, useRef, useState } from "react";
 import { Input as Vari8Input } from "../vari8/components";
 import { AppearanceControls } from "./appearance-controls";
 import { CheckInsWorkspace } from "./check-ins";
+import { ClientSetupPage } from "./client-setup-page";
 import { ClientsWorkspace } from "./clients";
 import { coachThemeStyle } from "./coach-theme";
+import { TemplatesPage } from "./library-ui";
 import { MessagesWorkspace } from "./messages";
 import { type Section, seedState, unreadCount } from "./model";
 import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
 import { CoachProvider, useCoach } from "./store";
-import { TemplateEditor, TemplateLibrary } from "./templates";
+import { TemplateEditor } from "./templates";
 import { Button, Dialog, IconButton, Toggle, Transition } from "./ui";
 import "./coach.css";
 
@@ -158,7 +160,7 @@ function Workspace() {
             </>
           )}
         </div>
-        <div className="cd-workspace-label">COACH WORKSPACE</div>
+        <div className="cd-workspace-label v8-overline">COACH WORKSPACE</div>
         <nav id="coach-navigation" aria-label="Coach workspace">
           {NAV.map(({ id, label, Icon }) => (
             <button
@@ -264,16 +266,18 @@ function Workspace() {
             </div>
           ) : (
             <Transition
-              key={`${route.section}-${route.editor ?? ""}-${route.review ?? ""}-${route.section === "clients" || route.section === "check-ins" ? (route.client ?? "") : ""}`}
+              key={`${route.section}-${route.editor ?? ""}-${route.review ?? ""}-${route.section === "clients" || route.section === "check-ins" ? (route.client ?? "") : ""}-${route.section === "clients" && route.tab === "Setup" ? "setup" : ""}-${route.week ?? ""}`}
             >
               {route.section === "templates" ? (
                 route.editor ? (
                   <TemplateEditor id={route.editor} />
                 ) : (
-                  <TemplateLibrary />
+                  <TemplatesPage />
                 )
               ) : route.section === "clients" ? (
-                route.plan && route.client && selectedClient ? (
+                route.client && route.tab === "Setup" && selectedClient ? (
+                  <ClientSetupPage client={selectedClient} />
+                ) : route.plan && route.client && selectedClient ? (
                   <IndividualPlanWorkspace client={selectedClient} />
                 ) : (
                   <ClientsWorkspace />

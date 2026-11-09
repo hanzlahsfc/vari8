@@ -3,16 +3,19 @@
 /**
  * Athlete profile → Tracker tab: every day the client logged, chronological
  * downwards, grouped into week rows of separate column-group tiles (the
- * sheet layout). Columns come from the client's template tracker fields.
+ * sheet layout). Columns come from the client's snapshot tracker fields and
+ * configured tracker layout (falling back to automatic grouping).
  * Coaches read values and add notes; check-ins, plan changes and training
  * sessions link out from the date and session columns.
  */
 
+import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import {
   ChevronRight,
   ClipboardCheck,
   Crosshair,
   Flag,
+  Info,
   Pin,
   PinOff,
   Repeat,
@@ -21,8 +24,10 @@ import {
 import {
   type CSSProperties,
   Fragment,
+  type ReactElement,
   type ReactNode,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -33,13 +38,13 @@ import {
   scheduledSessions,
 } from "../../client-app/training-log/model";
 import {
-  ALL_PARAMETERS,
+  allParameters,
   type CoachClient,
   type CoachState,
   formatDate,
   type Route,
 } from "../model";
-import { applicablePlan } from "../plans/domain";
+import { trainingPlanAt } from "../plans/domain";
 import { phaseRanges } from "../plans/phase-planning";
 import type { TrainingSessionLog } from "../plans/types";
 import { useCoach } from "../store";
@@ -59,8 +64,15 @@ import {
   withPlanFollowed,
 } from "../tracking/nutrition-day";
 import { Button, Dialog } from "../ui";
+import {
+  COLLAPSE_EXPAND_MS,
+  Collapsible,
+  useFadePresence,
+} from "./collapsible";
+import { fillColumns } from "./fill-columns";
 import { enumerateWeeks } from "./timeline-tab";
 import { buildGroups, type Col, type Group } from "./tracker-columns";
+import { temporaryPlanRoute, temporaryPlanTargets } from "./tracker-temporary";
 import "./tracker-tab.css";
 
 // ─── Column model ───────────────────────────────────────────────────
@@ -110,6 +122,8 @@ type Marker = {
   short: string;
   label: string;
   route: Route;
+  /** Set on a temporary nutrition plan marker so its tooltip can resolve targets. */
+  temporaryId?: string;
 };
 
 type Data = {
@@ -125,7 +139,7 @@ function sessionMap(state: CoachState, client: CoachClient, mondays: string[]) {
   const plans = client.plans;
   if (plans)
     for (const monday of mondays) {
-      const plan = applicablePlan(plans.training, monday);
+      const plan = trainingPlanAt(plans.training, monday);
       if (!plan) continue;
       for (const item of scheduledSessions(plan, displayWeek(plan, monday)))
         out.set(item.date, { name: item.session.name });
@@ -206,8 +220,12 @@ function markerMap(state: CoachState, client: CoachClient) {
         id: `tmp-${temp.id}`,
         icon: <Flag size={12} strokeWidth={2} />,
         short: temp.label,
-        label: `${temp.label} starts · open plan`,
-        route: clientRoute({ tab: "Plans", plan: "nutrition" }),
+        label: `${temp.label} (${temp.startDate} – ${temp.endDate}) · open temporary plan`,
+        route: clientRoute({
+          tab: "Plans",
+          plan: temporaryPlanRoute(temp),
+        }),
+        temporaryId: temp.id,
       });
   }
   for (const event of client.timelineEvents ?? [])
@@ -219,8 +237,10 @@ function markerMap(state: CoachState, client: CoachClient) {
           ? "Diet break"
           : event.kind === "deload"
             ? "Deload"
-            : "Refeed",
-      label: `${event.kind === "diet-break" ? "Diet break" : event.kind === "deload" ? "Deload" : "Refeed"} starts · open timeline`,
+            : event.kind === "intro"
+              ? "Intro"
+              : "Refeed",
+      label: `${event.kind === "diet-break" ? "Diet break" : event.kind === "deload" ? "Deload" : event.kind === "intro" ? "Intro week" : "Refeed"} starts · open timeline`,
       route: clientRoute({ tab: "Timeline" }),
     });
   for (const [date, list] of out)
@@ -351,11 +371,11 @@ function colWidth(
   client: CoachClient,
 ) {
   const label = `${col.label}${col.unit && col.unit !== col.label ? ` ${col.unit}` : ""}`;
-  let width = textWidth(label, "600 11px");
+  let width = textWidth(label, "500 12px");
   if (col.kind === "rating") width = Math.max(width, 22);
   if (col.kind === "flow") width = Math.max(width, 34);
   const freeText = col.kind === "text" || col.kind === "coach";
-  if (freeText) width = Math.max(width, 80);
+  if (freeText) width = Math.max(width, 134);
   for (const d of days) {
     const c = cellValue(col, d, data, client);
     if (!c.empty) {
@@ -371,6 +391,95 @@ function colWidth(
     if (w > width) width = w;
   }
   return Math.ceil(width + 26 + (col.kind === "session" ? 12 : 0));
+}
+
+// ─── Tooltip ────────────────────────────────────────────────────────
+
+const TIP_DELAY_MS = 300;
+
+/**
+ * Tracker tooltip on the Base UI primitive. Hover opens after the shared
+ * delay and keyboard focus opens immediately; the popup renders in a portal
+ * outside `.trk-scroll` so the scroller cannot clip it. Scrolling or panning
+ * closes it, and a pointer press suppresses it until release so drag-to-pan
+ * never leaves a bubble hanging over the grid.
+ */
+function TrackerTooltip({
+  trigger,
+  children,
+  delay = TIP_DELAY_MS,
+}: {
+  trigger: ReactElement;
+  children: ReactNode;
+  delay?: number;
+}) {
+  const id = useId();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const pointerDown = useRef(false);
+  // `.coach-root` carries the theme variables; it also sits outside the
+  // tracker scroller, so the portal escapes the clip without losing tokens.
+  const container = anchor?.closest<HTMLElement>(".coach-root") ?? undefined;
+
+  useEffect(() => {
+    if (!anchor) return;
+    const scroller = anchor.closest<HTMLElement>(".trk-scroll");
+    if (!scroller) return;
+    const close = () => setOpen(false);
+    const press = () => {
+      pointerDown.current = true;
+      setOpen(false);
+    };
+    const release = () => {
+      pointerDown.current = false;
+    };
+    scroller.addEventListener("scroll", close, { passive: true });
+    window.addEventListener("scroll", close, { passive: true });
+    scroller.addEventListener("pointerdown", press);
+    window.addEventListener("pointerup", release);
+    window.addEventListener("pointercancel", release);
+    return () => {
+      scroller.removeEventListener("scroll", close);
+      window.removeEventListener("scroll", close);
+      scroller.removeEventListener("pointerdown", press);
+      window.removeEventListener("pointerup", release);
+      window.removeEventListener("pointercancel", release);
+    };
+  }, [anchor]);
+
+  return (
+    <TooltipPrimitive.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setOpen(false);
+          return;
+        }
+        const scroller = anchor?.closest<HTMLElement>(".trk-scroll");
+        if (pointerDown.current || scroller?.dataset.panning) return;
+        setOpen(true);
+      }}
+    >
+      <TooltipPrimitive.Trigger
+        ref={setAnchor}
+        delay={delay}
+        aria-describedby={id}
+        render={trigger}
+      />
+      <TooltipPrimitive.Portal container={container}>
+        <TooltipPrimitive.Positioner
+          className="trk-tip-pos"
+          side="top"
+          align="center"
+          sideOffset={8}
+        >
+          <TooltipPrimitive.Popup id={id} role="tooltip" className="trk-tip">
+            {children}
+          </TooltipPrimitive.Popup>
+        </TooltipPrimitive.Positioner>
+      </TooltipPrimitive.Portal>
+    </TooltipPrimitive.Root>
+  );
 }
 
 // ─── Component ──────────────────────────────────────────────────────
@@ -396,13 +505,13 @@ export function AthleteTrackerTab({
   const { state, setState, navigate } = useCoach();
   const today = localToday();
   const groups = useMemo(() => {
-    const all = buildGroups(state, client);
+    const all = buildGroups(client);
     if (viewer === "client")
       return all
         .map((g) => ({ ...g, cols: g.cols.filter((c) => c.kind !== "coach") }))
         .filter((g) => g.cols.length > 0);
     return all;
-  }, [state, client, viewer]);
+  }, [client, viewer]);
   const ranges = useMemo(() => phaseRanges(client.phases), [client.phases]);
   const weeks = useMemo(
     () =>
@@ -428,10 +537,42 @@ export function AthleteTrackerTab({
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(
     () => new Set(weeks.slice(0, -2).map((w) => w.monday)),
   );
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
-    () => new Set(),
+  /** Configured defaults seed the layout until the coach toggles it. */
+  const configuredCollapsed = useMemo(
+    () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
+    [groups],
   );
-  const [pinned, setPinned] = useState<string[]>([]);
+  const configuredPinned = useMemo(
+    () => groups.filter((g) => g.pinned).map((g) => g.id),
+    [groups],
+  );
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    () => new Set(groups.filter((g) => g.collapsed).map((g) => g.id)),
+  );
+  const [pinned, setPinned] = useState<string[]>(() =>
+    groups.filter((g) => g.pinned).map((g) => g.id),
+  );
+  // Re-seed when the configured layout actually changes (a snapshot edit or a
+  // live template edit), without discarding the coach's manual layout on
+  // unrelated renders.
+  const configuredLayoutKey = useMemo(
+    () =>
+      JSON.stringify(
+        groups.map((group) => [
+          group.id,
+          group.collapsed === true,
+          group.pinned === true,
+        ]),
+      ),
+    [groups],
+  );
+  const seededLayoutKey = useRef(configuredLayoutKey);
+  useEffect(() => {
+    if (seededLayoutKey.current === configuredLayoutKey) return;
+    seededLayoutKey.current = configuredLayoutKey;
+    setCollapsedGroups(new Set(configuredCollapsed));
+    setPinned([...configuredPinned]);
+  }, [configuredLayoutKey, configuredCollapsed, configuredPinned]);
   const [note, setNote] = useState<NoteTarget | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [edit, setEdit] = useState<NoteTarget | null>(null);
@@ -441,6 +582,20 @@ export function AthleteTrackerTab({
   const [editMulti, setEditMulti] = useState<string[]>([]);
   const [session, setSession] = useState<string | null>(null);
   const [narrow, setNarrow] = useState(false);
+  /** Bulk week actions settle instantly instead of animating every row. */
+  const [instant, setInstant] = useState(false);
+  const instantTimerRef = useRef<number | undefined>(undefined);
+  const widthAnimTimerRef = useRef<number | undefined>(undefined);
+  /** Width of the scroll frame; the table fills it without ever measuring the canvas. */
+  const [frameWidth, setFrameWidth] = useState(0);
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(instantTimerRef.current);
+      window.clearTimeout(widthAnimTimerRef.current);
+    },
+    [],
+  );
 
   const widths = useMemo(() => {
     const visibleDays = weeks
@@ -452,14 +607,6 @@ export function AthleteTrackerTab({
         map.set(col.key, colWidth(col, weeks, visibleDays, data, client));
     return map;
   }, [groups, weeks, collapsedWeeks, data, client]);
-  const groupWidth = (group: Group) => {
-    if (collapsedGroups.has(group.id)) return 30;
-    const cols = group.cols.reduce((a, c) => a + (widths.get(c.key) ?? 60), 0);
-    return Math.max(
-      cols,
-      textWidth(group.label.toUpperCase(), "700 10px") + 60,
-    );
-  };
   const dateWidth = useMemo(() => {
     const day = textWidth("Wed", "600 12px") + 20;
     const date = textWidth("24 Sept", "500 12px") + 12;
@@ -473,6 +620,74 @@ export function AthleteTrackerTab({
     const band = textWidth("Week 10 · 28 Sept – 4 Oct", "600 12px") + 52;
     return Math.ceil(Math.max(day + date + markers + 16, band));
   }, [data.markers]);
+
+  /**
+   * Natural column widths with spare frame width shared across the data
+   * columns of expanded groups. The date column, inter-group gaps and
+   * collapsed strips are fixed; a group's label minimum is folded into its
+   * last column so every tile can grow to meet the frame without dead space.
+   */
+  const layout = useMemo(() => {
+    const expandedWidths = new Map<string, number>();
+    const groupWidths = new Map<string, number>();
+    const grids = new Map<string, string>();
+    const columnsPerGroup = new Map<string, number[]>();
+    const stretchable: {
+      group: Group;
+      column: number;
+      natural: number;
+    }[] = [];
+    let fixed = dateWidth + groups.length * 20;
+    for (const group of groups) {
+      const columns = group.cols.map((col) => widths.get(col.key) ?? 60);
+      const columnTotal = columns.reduce((sum, width) => sum + width, 0);
+      const labelWidth = Math.ceil(
+        textWidth(group.label.toUpperCase(), "600 11px") + 60,
+      );
+      if (collapsedGroups.has(group.id)) {
+        groupWidths.set(group.id, 30);
+        expandedWidths.set(group.id, Math.max(columnTotal, labelWidth));
+        fixed += 30;
+        continue;
+      }
+      if (labelWidth > columnTotal)
+        columns[columns.length - 1] += labelWidth - columnTotal;
+      columnsPerGroup.set(group.id, columns);
+      for (let index = 0; index < columns.length; index += 1)
+        stretchable.push({
+          group,
+          column: index,
+          natural: columns[index],
+        });
+    }
+    const filled = fillColumns(
+      stretchable.map((entry) => entry.natural),
+      frameWidth - fixed,
+    );
+    for (let index = 0; index < stretchable.length; index += 1) {
+      const entry = stretchable[index];
+      const columns = columnsPerGroup.get(entry.group.id) ?? [];
+      columns[entry.column] = filled[index];
+    }
+    for (const group of groups) {
+      const columns = columnsPerGroup.get(group.id);
+      if (!columns) continue;
+      const total = columns.reduce((sum, width) => sum + width, 0);
+      expandedWidths.set(group.id, total);
+      groupWidths.set(group.id, total);
+      grids.set(
+        group.id,
+        columns.map((width) => `${String(width)}px`).join(" "),
+      );
+    }
+    return { expandedWidths, groupWidths, grids };
+  }, [dateWidth, frameWidth, groups, widths, collapsedGroups]);
+  const groupFullWidth = (group: Group) =>
+    layout.expandedWidths.get(group.id) ?? 0;
+  const groupWidth = (group: Group) =>
+    layout.groupWidths.get(group.id) ??
+    (collapsedGroups.has(group.id) ? 30 : groupFullWidth(group));
+  const gridOf = (group: Group) => layout.grids.get(group.id) ?? "";
 
   const ordered = [
     ...pinned
@@ -494,9 +709,27 @@ export function AthleteTrackerTab({
     .at(-1);
 
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const hoverStyleRef = useRef<HTMLStyleElement | null>(null);
   const [height, setHeight] = useState<number>();
+
+  // Measure the scroll frame, never the canvas: the canvas is sized from this
+  // width, so observing it would feed its own output back into the measurement.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reattach when the desktop scroller mounts.
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const update = () => setFrameWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [narrow]);
 
   useLayoutEffect(() => {
     const update = () => {
@@ -714,7 +947,7 @@ export function AthleteTrackerTab({
   };
   const closeEdit = () => setEdit(null);
   const editParam = edit
-    ? ALL_PARAMETERS.find((param) => param.id === edit.col.key)
+    ? allParameters().find((param) => param.id === edit.col.key)
     : undefined;
   const commitEdit = (value: string) => {
     saveEdit(value);
@@ -804,7 +1037,7 @@ export function AthleteTrackerTab({
     }
   };
   const inlineEditor = (col: Col, date: string, initial: string) => {
-    const param = ALL_PARAMETERS.find((p) => p.id === col.key);
+    const param = allParameters().find((p) => p.id === col.key);
     if (col.kind === "day") {
       const options = dayTypeOptions(client, date);
       const prescribed = prescribedDayType(client, date);
@@ -830,7 +1063,11 @@ export function AthleteTrackerTab({
         </select>
       );
     }
-    if (col.kind === "flow" || param?.inputType === "choice") {
+    if (
+      col.kind === "flow" ||
+      param?.inputType === "choice" ||
+      param?.inputType === "context"
+    ) {
       return (
         <select
           // biome-ignore lint/a11y/noAutofocus: cell enters edit mode on click.
@@ -875,25 +1112,69 @@ export function AthleteTrackerTab({
     );
   };
 
-  const layoutChanged = pinned.length > 0 || collapsedGroups.size > 0;
-  const toggleGroup = (id: string) =>
+  const sameSet = (a: Set<string>, b: Set<string>) =>
+    a.size === b.size && [...a].every((id) => b.has(id));
+  const sameList = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((id, index) => id === b[index]);
+  const layoutChanged =
+    !sameSet(collapsedGroups, configuredCollapsed) ||
+    !sameList(pinned, configuredPinned);
+  /** Opt group widths into the existing transition for this toggle only. */
+  const markWidthAnimating = () => {
+    const section = sectionRef.current;
+    if (!section) return;
+    section.dataset.widthAnim = "1";
+    window.clearTimeout(widthAnimTimerRef.current);
+    widthAnimTimerRef.current = window.setTimeout(() => {
+      if (sectionRef.current === section) delete section.dataset.widthAnim;
+    }, COLLAPSE_EXPAND_MS + 80);
+  };
+  const resetLayout = () => {
+    if (!sameSet(collapsedGroups, configuredCollapsed)) markWidthAnimating();
+    setPinned([...configuredPinned]);
+    setCollapsedGroups(new Set(configuredCollapsed));
+  };
+  const toggleGroup = (id: string) => {
+    markWidthAnimating();
     setCollapsedGroups((s) => {
       const next = new Set(s);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
+  };
   const togglePin = (id: string) =>
     setPinned((list) =>
       list.includes(id) ? list.filter((p) => p !== id) : [...list, id],
     );
-  const toggleWeek = (monday: string) =>
+  const toggleWeek = (monday: string) => {
+    // Column widths recompute from the post-toggle state immediately so the
+    // table never waits for the row height animation.
     setCollapsedWeeks((s) => {
       const next = new Set(s);
       if (next.has(monday)) next.delete(monday);
       else next.add(monday);
       return next;
     });
+  };
+  /** Expand/Collapse all: only animate when a handful of weeks change. */
+  const setAllWeeks = (next: Set<string>) => {
+    const changed = weeks.reduce(
+      (count, week) =>
+        count +
+        (collapsedWeeks.has(week.monday) !== next.has(week.monday) ? 1 : 0),
+      0,
+    );
+    if (changed > 12) {
+      setInstant(true);
+      window.clearTimeout(instantTimerRef.current);
+      instantTimerRef.current = window.setTimeout(() => {
+        instantTimerRef.current = undefined;
+        setInstant(false);
+      }, 50);
+    }
+    setCollapsedWeeks(next);
+  };
 
   if (!groups.length || !weeks.length)
     return (
@@ -944,6 +1225,7 @@ export function AthleteTrackerTab({
       !!data.text[`${date}:note:${col.key}`] ||
       (col.kind === "coach" && !c.empty);
     const future = date > today;
+    let dayType: { logged: string; prescribed: string } | undefined;
     const editableCell =
       viewer === "client" &&
       !future &&
@@ -974,11 +1256,9 @@ export function AthleteTrackerTab({
     if (!c.empty && col.kind === "day") {
       const prescribed = prescribedDayType(client, date);
       const overridden = !!prescribed && c.text !== prescribed;
+      if (overridden) dayType = { logged: c.text, prescribed };
       content = (
-        <span
-          className={`trk-chip${overridden ? " trk-chip-alt" : ""}`}
-          title={overridden ? `Prescribed: ${prescribed}` : undefined}
-        >
+        <span className={`trk-chip${overridden ? " trk-chip-alt" : ""}`}>
           {c.text}
         </span>
       );
@@ -1053,7 +1333,7 @@ export function AthleteTrackerTab({
         </span>
       );
     }
-    return (
+    const cell = (
       <button
         type="button"
         key={col.key}
@@ -1075,31 +1355,90 @@ export function AthleteTrackerTab({
         )}
       </button>
     );
+    const targets =
+      col.kind === "day" ? temporaryPlanTargets(client, date) : undefined;
+    if (!dayType && !targets) return cell;
+    return (
+      <TrackerTooltip key={col.key} trigger={cell}>
+        {dayType && (
+          <span className="trk-tip-line">
+            Logged: {dayType.logged} · Plan: {dayType.prescribed}
+          </span>
+        )}
+        {dayType && (
+          <span className="trk-tip-detail">
+            Athlete logged a different day type than the plan schedules
+          </span>
+        )}
+        {targets && (
+          <span className="trk-tip-line">
+            {targets.label} · {fmt(targets.kcal, 0)} kcal
+          </span>
+        )}
+        {targets && (
+          <span className="trk-tip-detail">
+            {targets.optionLabel !== targets.label
+              ? `${targets.optionLabel} · `
+              : ""}
+            P {fmt(targets.protein, 0)} · C {fmt(targets.carbs, 0)} · F{" "}
+            {fmt(targets.fat, 0)} g
+          </span>
+        )}
+      </TrackerTooltip>
+    );
   };
 
-  // The last unpinned, expanded group absorbs spare width on wide screens.
-  const growId = ordered
-    .filter((g) => !pinned.includes(g.id) && !collapsedGroups.has(g.id))
-    .at(-1)?.id;
-  const gridOf = (group: Group) => {
-    const grow = group.id === growId;
-    const flexible = group.cols.some(
-      (c) => c.kind === "text" || c.kind === "coach",
+  const sizeOf = (group: Group): CSSProperties => ({
+    width: groupWidth(group),
+  });
+
+  const renderMarker = (m: Marker, date: string) => {
+    const targets = m.temporaryId
+      ? temporaryPlanTargets(client, date)
+      : undefined;
+    const trigger = (
+      <button
+        type="button"
+        key={targets ? undefined : m.id}
+        className="trk-marker"
+        // Temporary/refeed markers already have a TrackerTooltip; a native
+        // title would stack a second browser tooltip on top of it.
+        title={targets ? undefined : m.label}
+        onClick={() =>
+          onOpen
+            ? onOpen(
+                m.route.tab === "Plans"
+                  ? "Plans"
+                  : m.route.tab === "Timeline"
+                    ? "Timeline"
+                    : m.route.section === "check-ins"
+                      ? "Check-ins"
+                      : (m.route.tab ?? "Overview"),
+                m.route.plan,
+              )
+            : navigate(m.route)
+        }
+      >
+        {m.icon}
+        {m.short}
+      </button>
     );
-    return group.cols
-      .map((c, i) => {
-        const w = `${widths.get(c.key) ?? 60}px`;
-        const stretch = flexible
-          ? c.kind === "text" || c.kind === "coach"
-          : i === group.cols.length - 1;
-        return grow && stretch ? `minmax(${w}, 1fr)` : w;
-      })
-      .join(" ");
+    if (!targets) return trigger;
+    return (
+      <TrackerTooltip key={m.id} trigger={trigger}>
+        <span className="trk-tip-line">
+          {targets.label} · {fmt(targets.kcal, 0)} kcal
+        </span>
+        <span className="trk-tip-detail">
+          {targets.optionLabel !== targets.label
+            ? `${targets.optionLabel} · `
+            : ""}
+          P {fmt(targets.protein, 0)} · C {fmt(targets.carbs, 0)} · F{" "}
+          {fmt(targets.fat, 0)} g
+        </span>
+      </TrackerTooltip>
+    );
   };
-  const sizeOf = (group: Group): CSSProperties =>
-    group.id === growId
-      ? { minWidth: groupWidth(group), flex: "1 0 auto" }
-      : { width: groupWidth(group) };
 
   const renderWeek = (week: Week, phaseLabel: ReactNode) => {
     const collapsed = collapsedWeeks.has(week.monday);
@@ -1110,51 +1449,34 @@ export function AthleteTrackerTab({
         <div className="trk-week" data-collapsed={collapsed ? "" : undefined}>
           <div className="trk-mask" style={{ width: dateWidth + 20 }}>
             <div className="trk-tile trk-date" style={{ width: dateWidth }}>
-              {!collapsed &&
-                week.days.map((d) => {
-                  const markers = data.markers.get(d) ?? [];
-                  return (
-                    <div
-                      key={d}
-                      className="trk-row"
-                      data-date={d}
-                      data-today={d === today ? "" : undefined}
-                      data-future={d > today ? "" : undefined}
-                    >
-                      <span className="trk-day">{weekday(d)}</span>
-                      <span className="trk-dd">
-                        {formatDate(d, { day: "numeric", month: "short" })}
-                      </span>
-                      <span className="trk-markers">
-                        {markers.slice(0, 2).map((m) => (
-                          <button
-                            type="button"
-                            key={m.id}
-                            className="trk-marker"
-                            title={m.label}
-                            onClick={() =>
-                              onOpen
-                                ? onOpen(
-                                    m.route.tab === "Plans"
-                                      ? "Plans"
-                                      : m.route.tab === "Timeline"
-                                        ? "Timeline"
-                                        : m.route.section === "check-ins"
-                                          ? "Check-ins"
-                                          : (m.route.tab ?? "Overview"),
-                                    m.route.plan,
-                                  )
-                                : navigate(m.route)
-                            }
-                          >
-                            {m.icon}
-                            {m.short}
-                          </button>
-                        ))}
-                      </span>
-                    </div>
-                  );
-                })}
+              <Collapsible
+                open={!collapsed}
+                instant={instant}
+                className="trk-week-rows"
+              >
+                {() =>
+                  week.days.map((d) => {
+                    const markers = data.markers.get(d) ?? [];
+                    return (
+                      <div
+                        key={d}
+                        className="trk-row"
+                        data-date={d}
+                        data-today={d === today ? "" : undefined}
+                        data-future={d > today ? "" : undefined}
+                      >
+                        <span className="trk-day">{weekday(d)}</span>
+                        <span className="trk-dd">
+                          {formatDate(d, { day: "numeric", month: "short" })}
+                        </span>
+                        <span className="trk-markers">
+                          {markers.slice(0, 2).map((m) => renderMarker(m, d))}
+                        </span>
+                      </div>
+                    );
+                  })
+                }
+              </Collapsible>
               <button
                 type="button"
                 className="trk-band trk-weeklabel"
@@ -1176,32 +1498,30 @@ export function AthleteTrackerTab({
                 className="trk-tile"
                 style={sizeOf(group)}
                 data-group={group.id}
+                data-collapsed={isCollapsed ? "" : undefined}
               >
-                {!isCollapsed &&
-                  !collapsed &&
-                  week.days.map((d) => (
-                    <div
-                      key={d}
-                      className="trk-row"
-                      data-date={d}
-                      data-today={d === today ? "" : undefined}
-                      style={{ gridTemplateColumns: gridOf(group) }}
-                    >
-                      {group.cols.map((col) => renderCell(col, d))}
-                    </div>
-                  ))}
-                {isCollapsed && !collapsed && (
-                  <div className="trk-collapsed-fill" />
-                )}
-                <div
-                  className="trk-band"
-                  style={
-                    isCollapsed
-                      ? undefined
-                      : { gridTemplateColumns: gridOf(group) }
-                  }
+                <Collapsible
+                  open={!collapsed}
+                  instant={instant}
+                  className="trk-week-rows"
                 >
-                  {!isCollapsed &&
+                  {() => (
+                    <TrackerGroupRows
+                      group={group}
+                      days={week.days}
+                      grid={gridOf(group)}
+                      width={groupFullWidth(group)}
+                      isCollapsed={isCollapsed}
+                      today={today}
+                      renderCell={renderCell}
+                    />
+                  )}
+                </Collapsible>
+                <TrackerSummaryBand
+                  isCollapsed={isCollapsed}
+                  grid={gridOf(group)}
+                >
+                  {() =>
                     group.cols.map((col) => (
                       <span
                         key={col.key}
@@ -1209,8 +1529,9 @@ export function AthleteTrackerTab({
                       >
                         {summaryText(col, week.days, data, client)}
                       </span>
-                    ))}
-                </div>
+                    ))
+                  }
+                </TrackerSummaryBand>
               </div>
             );
             return isPinned ? (
@@ -1236,34 +1557,27 @@ export function AthleteTrackerTab({
 
   let lastPhase: string | undefined;
   return (
-    <section className="trk">
+    <section className="trk" ref={sectionRef}>
       <style ref={hoverStyleRef} />
       <div className="trk-toolbar">
         <span className="trk-range">{rangeLabel}</span>
         <span className="trk-sp" />
         {layoutChanged && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setPinned([]);
-              setCollapsedGroups(new Set());
-            }}
-          >
+          <Button variant="ghost" size="sm" onClick={resetLayout}>
             Reset layout
           </Button>
         )}
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setCollapsedWeeks(new Set())}
+          onClick={() => setAllWeeks(new Set())}
         >
           Expand all
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setCollapsedWeeks(new Set(weeks.map((w) => w.monday)))}
+          onClick={() => setAllWeeks(new Set(weeks.map((w) => w.monday)))}
         >
           Collapse all
         </Button>
@@ -1294,68 +1608,17 @@ export function AthleteTrackerTab({
               const isPinned = pinned.includes(group.id);
               const isCollapsed = collapsedGroups.has(group.id);
               const head = (
-                <div
+                <TrackerGroupHead
                   key={group.id}
-                  className="trk-hg"
-                  style={sizeOf(group)}
-                  data-collapsed={isCollapsed ? "" : undefined}
-                >
-                  {isCollapsed ? (
-                    <button
-                      type="button"
-                      className="trk-hg-strip"
-                      onClick={() => toggleGroup(group.id)}
-                      title={`Expand ${group.label}`}
-                    >
-                      {group.label}
-                    </button>
-                  ) : (
-                    <>
-                      <div className="trk-hg-title">
-                        <span>{group.label}</span>
-                        <span className="trk-hg-actions">
-                          <button
-                            type="button"
-                            onClick={() => togglePin(group.id)}
-                            aria-label={`${isPinned ? "Unpin" : "Pin"} ${group.label}`}
-                            title={isPinned ? "Unpin" : "Pin next to dates"}
-                            data-on={isPinned ? "" : undefined}
-                          >
-                            {isPinned ? (
-                              <PinOff size={12} />
-                            ) : (
-                              <Pin size={12} />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => toggleGroup(group.id)}
-                            aria-label={`Collapse ${group.label}`}
-                            title="Collapse"
-                          >
-                            <Shrink size={12} />
-                          </button>
-                        </span>
-                      </div>
-                      <div
-                        className="trk-hg-labels"
-                        style={{ gridTemplateColumns: gridOf(group) }}
-                      >
-                        {group.cols.map((col) => (
-                          <span
-                            key={col.key}
-                            className={`trk-clab ${col.kind === "text" || col.kind === "coach" || col.kind === "session" || col.kind === "day" ? "trk-txt" : ""}`}
-                          >
-                            {col.label}
-                            {col.unit && col.unit !== col.label && (
-                              <span className="trk-subtle"> {col.unit}</span>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                  group={group}
+                  isPinned={isPinned}
+                  isCollapsed={isCollapsed}
+                  width={groupWidth(group)}
+                  fullWidth={groupFullWidth(group)}
+                  grid={gridOf(group)}
+                  onTogglePin={() => togglePin(group.id)}
+                  onToggleGroup={() => toggleGroup(group.id)}
+                />
               );
               return isPinned ? (
                 <div
@@ -1549,6 +1812,187 @@ export function AthleteTrackerTab({
   );
 }
 
+function TrackerGroupHead({
+  group,
+  isPinned,
+  isCollapsed,
+  width,
+  fullWidth,
+  grid,
+  onTogglePin,
+  onToggleGroup,
+}: {
+  group: Group;
+  isPinned: boolean;
+  isCollapsed: boolean;
+  width: number;
+  fullWidth: number;
+  grid: string;
+  onTogglePin: () => void;
+  onToggleGroup: () => void;
+}) {
+  const full = useFadePresence(!isCollapsed);
+  const strip = useFadePresence(isCollapsed);
+
+  return (
+    <div
+      className="trk-hg"
+      style={{ width }}
+      data-group={group.id}
+      data-collapsed={isCollapsed ? "" : undefined}
+    >
+      {full.mounted && (
+        <div
+          className="trk-hg-full"
+          style={{ width: fullWidth }}
+          data-visible={full.visible ? "" : undefined}
+          aria-hidden={!full.visible || undefined}
+          inert={!full.visible || undefined}
+        >
+          <div className="trk-hg-title v8-overline">
+            <span>{group.label}</span>
+            <span className="trk-hg-actions">
+              <button
+                type="button"
+                onClick={onTogglePin}
+                aria-label={`${isPinned ? "Unpin" : "Pin"} ${group.label}`}
+                title={isPinned ? "Unpin" : "Pin next to dates"}
+                data-on={isPinned ? "" : undefined}
+              >
+                {isPinned ? <PinOff size={12} /> : <Pin size={12} />}
+              </button>
+              <button
+                type="button"
+                onClick={onToggleGroup}
+                aria-label={`Collapse ${group.label}`}
+                title="Collapse"
+              >
+                <Shrink size={12} />
+              </button>
+            </span>
+          </div>
+          <div className="trk-hg-labels" style={{ gridTemplateColumns: grid }}>
+            {group.cols.map((col) => (
+              <span
+                key={col.key}
+                className={`trk-clab ${col.kind === "text" || col.kind === "coach" || col.kind === "session" || col.kind === "day" ? "trk-txt" : ""}`}
+              >
+                {col.label}
+                {col.unit && col.unit !== col.label && (
+                  <span className="trk-subtle"> {col.unit}</span>
+                )}
+                {col.kind === "day" && (
+                  <TrackerTooltip
+                    trigger={
+                      <button
+                        type="button"
+                        className="trk-clab-info"
+                        aria-label="About the Day column"
+                      >
+                        <Info size={10} strokeWidth={2.2} aria-hidden="true" />
+                      </button>
+                    }
+                  >
+                    <span className="trk-tip-line">
+                      Pink border: logged day type differs from the plan
+                    </span>
+                  </TrackerTooltip>
+                )}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {strip.mounted && (
+        <button
+          type="button"
+          className="trk-hg-strip"
+          data-visible={strip.visible ? "" : undefined}
+          onClick={onToggleGroup}
+          title={`Expand ${group.label}`}
+          aria-label={`Expand ${group.label}`}
+          aria-expanded={false}
+          aria-hidden={!strip.visible || undefined}
+          tabIndex={strip.visible ? undefined : -1}
+        >
+          {group.label}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TrackerGroupRows({
+  group,
+  days,
+  grid,
+  width,
+  isCollapsed,
+  today,
+  renderCell,
+}: {
+  group: Group;
+  days: string[];
+  grid: string;
+  width: number;
+  isCollapsed: boolean;
+  today: string;
+  renderCell: (col: Col, date: string) => ReactNode;
+}) {
+  const cells = useFadePresence(!isCollapsed);
+
+  return (
+    <div className="trk-grouprows" style={{ width }}>
+      {cells.mounted ? (
+        <div
+          className="trk-grouprows-fade"
+          data-visible={cells.visible ? "" : undefined}
+        >
+          {days.map((d) => (
+            <div
+              key={d}
+              className="trk-row"
+              data-date={d}
+              data-today={d === today ? "" : undefined}
+              style={{ gridTemplateColumns: grid }}
+            >
+              {group.cols.map((col) => renderCell(col, d))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="trk-collapsed-fill" />
+      )}
+    </div>
+  );
+}
+
+function TrackerSummaryBand({
+  isCollapsed,
+  grid,
+  children,
+}: {
+  isCollapsed: boolean;
+  grid: string;
+  children: ReactNode | (() => ReactNode);
+}) {
+  const summary = useFadePresence(!isCollapsed);
+
+  return (
+    <div
+      className="trk-band"
+      data-visible={summary.visible ? "" : undefined}
+      style={summary.mounted ? { gridTemplateColumns: grid } : undefined}
+    >
+      {summary.mounted
+        ? typeof children === "function"
+          ? children()
+          : children
+        : null}
+    </div>
+  );
+}
+
 function SessionDetail({
   log,
   client,
@@ -1561,7 +2005,7 @@ function SessionDetail({
   onOpenPlan: () => void;
 }) {
   const plan = client.plans
-    ? applicablePlan(client.plans.training, date)
+    ? trainingPlanAt(client.plans.training, date)
     : undefined;
   const scheduled = plan
     ? scheduledSessions(plan, displayWeek(plan, date)).find(

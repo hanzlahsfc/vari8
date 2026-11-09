@@ -8,97 +8,22 @@ import type {
 } from "../types";
 import { defaultExerciseLibrary } from "./library-model";
 
-export const AMARA_EXAMPLE_REVISION = 1 as const;
+export const AMARA_EXAMPLE_REVISION = 5 as const;
 export const AMARA_EXAMPLE_CLIENT_ID = "client-007";
 export const AMARA_EXAMPLE_START_DATE = "2026-10-13";
 
-const exampleLibrary: ExerciseDefinition[] = [
-  {
-    id: "library-romanian-deadlift",
-    name: "Romanian deadlift",
-    muscle: "hamstrings",
-    secondaryMuscles: ["glutes", "back"],
-    notes:
-      "Keep the bar close and stop the hinge before the back position changes.",
-  },
-  {
-    id: "library-cable-kickback",
-    name: "Cable glute kickback",
-    muscle: "glutes",
-    secondaryMuscles: [],
-    notes: "Move from the hip and keep the pelvis steady.",
-  },
-  {
-    id: "library-hip-abduction",
-    name: "Seated hip abduction",
-    muscle: "glutes",
-    secondaryMuscles: [],
-    notes: "Use a controlled range and pause briefly at the open position.",
-  },
-  {
-    id: "library-lateral-raise",
-    name: "Dumbbell lateral raise",
-    muscle: "shoulders",
-    secondaryMuscles: [],
-    notes: "Raise with a soft elbow and keep the torso quiet.",
-  },
-  {
-    id: "library-rear-delt-fly",
-    name: "Cable rear-delt fly",
-    muscle: "shoulders",
-    secondaryMuscles: ["back"],
-    notes: "Sweep the arms wide without shrugging.",
-  },
-  {
-    id: "library-split-squat",
-    name: "Dumbbell split squat",
-    muscle: "glutes",
-    secondaryMuscles: ["quadriceps"],
-    notes: "Use a steady stance and a comfortable depth.",
-  },
-  {
-    id: "library-glute-bridge",
-    name: "Barbell glute bridge",
-    muscle: "glutes",
-    secondaryMuscles: ["hamstrings"],
-    notes: "Finish with the hips while keeping the ribs stacked.",
-  },
-  {
-    id: "library-seated-leg-curl",
-    name: "Seated leg curl",
-    muscle: "hamstrings",
-    secondaryMuscles: [],
-    notes: "Control the return and keep the hips settled.",
-  },
-  {
-    id: "library-cable-lateral-raise",
-    name: "Cable lateral raise",
-    muscle: "shoulders",
-    secondaryMuscles: [],
-    notes: "Keep tension through the lower half of the range.",
-  },
-  {
-    id: "library-cable-triceps-extension",
-    name: "Rope triceps pressdown",
-    muscle: "triceps",
-    secondaryMuscles: [],
-    notes: "Keep the upper arms still as the elbows extend.",
-  },
-  {
-    id: "library-dumbbell-curl",
-    name: "Dumbbell curl",
-    muscle: "biceps",
-    secondaryMuscles: [],
-    notes: "Keep the shoulder relaxed and lower under control.",
-  },
-];
+const MAIN_LIFTS = new Set([
+  "amara-lower-a-hip-thrust",
+  "amara-lower-a-squat",
+  "amara-lower-b-rdl",
+  "amara-lower-b-lunge",
+  "amara-upper-a-press",
+  "amara-upper-b-press",
+]);
 
 type ExerciseSpec = {
   id: string;
   libraryId: string;
-  name: string;
-  muscle: string;
-  secondaryMuscles: string[];
   sets: number;
   reps: number;
   repsMax: number;
@@ -111,6 +36,7 @@ function exercise(
   library: ExerciseDefinition[],
 ): TrainingExercise {
   const definition = library.find((item) => item.id === spec.libraryId);
+  // RIR target: 2 on most working sets, 1 on the last set of the main lifts.
   const sets: TrainingSet[] = Array.from({ length: spec.sets }, (_, index) => ({
     id: `${spec.id}-set-${index + 1}`,
     reps: spec.reps,
@@ -119,14 +45,20 @@ function exercise(
     type: "Working",
     rest: spec.rest,
     instructions: "",
+    rir: index === spec.sets - 1 && MAIN_LIFTS.has(spec.id) ? 1 : 2,
   }));
   return {
     id: spec.id,
     libraryId: spec.libraryId,
-    name: spec.name,
-    muscle: spec.muscle,
-    secondaryMuscles: spec.secondaryMuscles,
+    name: definition?.name ?? spec.libraryId,
+    muscle: definition?.muscle,
+    secondaryMuscles: definition?.secondaryMuscles ?? [],
     generalNotes: definition?.notes ?? "",
+    equipment: definition?.equipment,
+    movementPattern: definition?.movementPattern,
+    position: definition?.position,
+    primaryTarget: definition?.primaryTarget,
+    additionalTargets: definition?.additionalTargets,
     instructions: spec.cue,
     progression: "Double progression",
     sets,
@@ -146,7 +78,7 @@ export function createAmaraTrainingPlan(
   clientId: string,
   startDate = AMARA_EXAMPLE_START_DATE,
 ): TrainingPlan {
-  const library = [...defaultExerciseLibrary(), ...exampleLibrary];
+  const library = defaultExerciseLibrary();
   const sessions: TrainingSession[] = [
     session(
       "amara-lower-a",
@@ -154,63 +86,48 @@ export function createAmaraTrainingPlan(
       [
         {
           id: "amara-lower-a-hip-thrust",
-          libraryId: "library-hip-thrust",
-          name: "Hip thrust",
-          muscle: "glutes",
-          secondaryMuscles: ["hamstrings"],
+          libraryId: "exdb-hip-thrust-machine",
           sets: 3,
           reps: 8,
           repsMax: 12,
           rest: "2 min",
-          cue: "Pause briefly at the top; keep the ribs stacked.",
+          cue: "Pause for a second at the top; keep the ribs stacked.",
         },
         {
           id: "amara-lower-a-squat",
-          libraryId: "library-back-squat",
-          name: "Back squat",
-          muscle: "quadriceps",
-          secondaryMuscles: ["glutes", "core"],
+          libraryId: "exdb-hack-squat",
           sets: 3,
-          reps: 8,
-          repsMax: 10,
+          reps: 6,
+          repsMax: 8,
           rest: "2 min",
-          cue: "Brace before each rep and keep the whole foot grounded.",
+          cue: "Feet mid-platform; sit deep while keeping the lower back on the pad.",
         },
         {
           id: "amara-lower-a-rdl",
-          libraryId: "library-romanian-deadlift",
-          name: "Romanian deadlift",
-          muscle: "hamstrings",
-          secondaryMuscles: ["glutes", "back"],
+          libraryId: "exdb-b-stance-dumbbell-romanian-deadlift",
           sets: 3,
-          reps: 8,
+          reps: 10,
           repsMax: 12,
-          rest: "2 min",
-          cue: "Keep the weights close and use a controlled hip hinge.",
+          rest: "90 sec",
+          cue: "Most of the weight on the front leg; hinge until you feel the stretch.",
         },
         {
           id: "amara-lower-a-kickback",
-          libraryId: "library-cable-kickback",
-          name: "Cable glute kickback",
-          muscle: "glutes",
-          secondaryMuscles: [],
+          libraryId: "exdb-glute-kickback-machine",
           sets: 2,
           reps: 12,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Move from the hip without rotating the pelvis.",
+          cue: "Drive through the heel without arching the lower back.",
         },
         {
           id: "amara-lower-a-abduction",
-          libraryId: "library-hip-abduction",
-          name: "Seated hip abduction",
-          muscle: "glutes",
-          secondaryMuscles: [],
+          libraryId: "exdb-cable-hip-abduction",
           sets: 2,
           reps: 15,
           repsMax: 20,
           rest: "60 sec",
-          cue: "Use a smooth range and pause briefly at the open position.",
+          cue: "Lean slightly into the cable and move only at the hip.",
         },
       ],
       library,
@@ -221,61 +138,46 @@ export function createAmaraTrainingPlan(
       [
         {
           id: "amara-upper-a-lateral-raise",
-          libraryId: "library-lateral-raise",
-          name: "Dumbbell lateral raise",
-          muscle: "shoulders",
-          secondaryMuscles: [],
+          libraryId: "exdb-lean-away-cable-lateral-raise",
           sets: 3,
           reps: 12,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Keep a soft elbow and a quiet torso.",
+          cue: "Lead with the elbow and stop just above shoulder height.",
         },
         {
           id: "amara-upper-a-press",
-          libraryId: "library-shoulder-press",
-          name: "Dumbbell shoulder press",
-          muscle: "shoulders",
-          secondaryMuscles: ["triceps"],
+          libraryId: "exdb-shoulder-press-machine",
           sets: 3,
           reps: 8,
           repsMax: 12,
           rest: "2 min",
-          cue: "Press in a comfortable range without arching the lower back.",
+          cue: "Press in a comfortable range without flaring the ribs.",
         },
         {
           id: "amara-upper-a-pulldown",
-          libraryId: "library-lat-pulldown",
-          name: "Lat pulldown",
-          muscle: "back",
-          secondaryMuscles: ["biceps"],
+          libraryId: "exdb-neutral-grip-lat-pulldown",
           sets: 3,
-          reps: 8,
-          repsMax: 12,
-          rest: "90 sec",
-          cue: "Lead with the elbows and keep the torso steady.",
-        },
-        {
-          id: "amara-upper-a-row",
-          libraryId: "library-row",
-          name: "Chest-supported row",
-          muscle: "back",
-          secondaryMuscles: ["biceps"],
-          sets: 2,
           reps: 10,
           repsMax: 12,
           rest: "90 sec",
-          cue: "Pause briefly with the shoulder blades drawn back.",
+          cue: "Pull the elbows towards the hips and keep the chest tall.",
+        },
+        {
+          id: "amara-upper-a-row",
+          libraryId: "exdb-low-row-machine",
+          sets: 3,
+          reps: 10,
+          repsMax: 12,
+          rest: "90 sec",
+          cue: "Pause with the shoulder blades drawn back.",
         },
         {
           id: "amara-upper-a-rear-delt",
-          libraryId: "library-rear-delt-fly",
-          name: "Cable rear-delt fly",
-          muscle: "shoulders",
-          secondaryMuscles: ["back"],
+          libraryId: "exdb-reverse-fly-machine",
           sets: 2,
-          reps: 12,
-          repsMax: 15,
+          reps: 15,
+          repsMax: 20,
           rest: "60 sec",
           cue: "Sweep the arms wide without shrugging.",
         },
@@ -288,63 +190,48 @@ export function createAmaraTrainingPlan(
       [
         {
           id: "amara-lower-b-rdl",
-          libraryId: "library-romanian-deadlift",
-          name: "Romanian deadlift",
-          muscle: "hamstrings",
-          secondaryMuscles: ["glutes", "back"],
+          libraryId: "exdb-smith-machine-romanian-deadlift",
           sets: 3,
           reps: 8,
-          repsMax: 12,
+          repsMax: 10,
           rest: "2 min",
-          cue: "Keep the weights close and use a controlled hip hinge.",
+          cue: "Push the hips back and keep the bar close to the legs.",
         },
         {
-          id: "amara-lower-b-split-squat",
-          libraryId: "library-split-squat",
-          name: "Dumbbell split squat",
-          muscle: "glutes",
-          secondaryMuscles: ["quadriceps"],
-          sets: 3,
-          reps: 8,
-          repsMax: 12,
-          rest: "90 sec",
-          cue: "Use a steady stance and a comfortable depth on each side.",
-        },
-        {
-          id: "amara-lower-b-bridge",
-          libraryId: "library-glute-bridge",
-          name: "Barbell glute bridge",
-          muscle: "glutes",
-          secondaryMuscles: ["hamstrings"],
+          id: "amara-lower-b-lunge",
+          libraryId: "exdb-dumbbell-lunge",
           sets: 3,
           reps: 10,
           repsMax: 12,
-          rest: "2 min",
-          cue: "Finish with the hips while keeping the ribs stacked.",
+          rest: "90 sec",
+          cue: "Long stride, slight forward lean, drive through the front heel.",
+        },
+        {
+          id: "amara-lower-b-hip-extension",
+          libraryId: "exdb-45-degree-hip-extension",
+          sets: 3,
+          reps: 12,
+          repsMax: 15,
+          rest: "90 sec",
+          cue: "Round the upper back slightly and squeeze the glutes at the top.",
         },
         {
           id: "amara-lower-b-curl",
-          libraryId: "library-seated-leg-curl",
-          name: "Seated leg curl",
-          muscle: "hamstrings",
-          secondaryMuscles: [],
+          libraryId: "exdb-lying-leg-curl",
           sets: 3,
           reps: 10,
-          repsMax: 15,
+          repsMax: 12,
           rest: "90 sec",
-          cue: "Control the return and keep the hips settled.",
+          cue: "Keep the hips pressed into the pad and control the return.",
         },
         {
-          id: "amara-lower-b-abduction",
-          libraryId: "library-hip-abduction",
-          name: "Seated hip abduction",
-          muscle: "glutes",
-          secondaryMuscles: [],
+          id: "amara-lower-b-adduction",
+          libraryId: "exdb-hip-adduction-machine",
           sets: 2,
-          reps: 15,
-          repsMax: 20,
+          reps: 12,
+          repsMax: 15,
           rest: "60 sec",
-          cue: "Use a smooth range and pause briefly at the open position.",
+          cue: "Use a smooth range and pause briefly when the pads meet.",
         },
       ],
       library,
@@ -355,75 +242,57 @@ export function createAmaraTrainingPlan(
       [
         {
           id: "amara-upper-b-lateral-raise",
-          libraryId: "library-cable-lateral-raise",
-          name: "Cable lateral raise",
-          muscle: "shoulders",
-          secondaryMuscles: [],
+          libraryId: "exdb-seated-lateral-raise-machine",
           sets: 3,
           reps: 12,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Keep tension through the lower half of the range.",
+          cue: "Keep tension at the bottom; no swinging.",
         },
         {
           id: "amara-upper-b-press",
-          libraryId: "library-shoulder-press",
-          name: "Dumbbell shoulder press",
-          muscle: "shoulders",
-          secondaryMuscles: ["triceps"],
-          sets: 2,
+          libraryId: "exdb-high-incline-smith-machine-press",
+          sets: 3,
           reps: 8,
-          repsMax: 12,
+          repsMax: 10,
           rest: "2 min",
-          cue: "Press in a comfortable range without arching the lower back.",
+          cue: "Bench at a high incline; lower the bar to the upper chest.",
         },
         {
           id: "amara-upper-b-rear-delt",
-          libraryId: "library-rear-delt-fly",
-          name: "Cable rear-delt fly",
-          muscle: "shoulders",
-          secondaryMuscles: ["back"],
+          libraryId: "exdb-face-pull",
           sets: 3,
           reps: 12,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Sweep the arms wide without shrugging.",
+          cue: "Pull towards the forehead and rotate the hands back.",
         },
         {
           id: "amara-upper-b-pulldown",
-          libraryId: "library-lat-pulldown",
-          name: "Lat pulldown",
-          muscle: "back",
-          secondaryMuscles: ["biceps"],
+          libraryId: "exdb-single-arm-cable-lat-pulldown",
           sets: 2,
-          reps: 8,
+          reps: 10,
           repsMax: 12,
           rest: "90 sec",
-          cue: "Lead with the elbows and keep the torso steady.",
+          cue: "Reach long at the top and pull the elbow to the hip.",
         },
         {
           id: "amara-upper-b-triceps",
-          libraryId: "library-cable-triceps-extension",
-          name: "Rope triceps pressdown",
-          muscle: "triceps",
-          secondaryMuscles: [],
+          libraryId: "exdb-rope-overhead-cable-triceps-extension",
           sets: 2,
           reps: 10,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Keep the upper arms still as the elbows extend.",
+          cue: "Keep the elbows high and still as the arms extend.",
         },
         {
           id: "amara-upper-b-biceps",
-          libraryId: "library-dumbbell-curl",
-          name: "Dumbbell curl",
-          muscle: "biceps",
-          secondaryMuscles: [],
+          libraryId: "exdb-bayesian-cable-curl",
           sets: 2,
           reps: 10,
           repsMax: 15,
           rest: "60 sec",
-          cue: "Keep the shoulder relaxed and lower under control.",
+          cue: "Let the arm stretch behind the body before each curl.",
         },
       ],
       library,
@@ -452,7 +321,11 @@ export function createAmaraTrainingPlan(
   };
 }
 
-/** Apply the user-requested draft once to old browser saves, without changing active/history records. */
+/**
+ * Replace Amara's demo training lifecycle once per revision in old browser
+ * saves: draft, active content and history all switch to the current example
+ * so no exercise from an earlier demo survives.
+ */
 export function adoptAmaraTrainingExample(state: CoachState): CoachState {
   if (state.demoSeeds?.amaraTraining === AMARA_EXAMPLE_REVISION) return state;
 
@@ -477,21 +350,25 @@ export function adoptAmaraTrainingExample(state: CoachState): CoachState {
       activityTargets: client.plans?.activityTargets,
       supplements: client.plans?.supplements,
       training: {
-        ...lifecycle,
         draft: createAmaraTrainingPlan(client.id),
+        active: {
+          id: lifecycle.active?.id ?? "amara-training-active",
+          activatedAt:
+            lifecycle.active?.activatedAt ??
+            `${AMARA_EXAMPLE_START_DATE}T08:00:00Z`,
+          content: createAmaraTrainingPlan(client.id),
+        },
+        history: [],
       },
     },
   };
 
   const library = state.exerciseLibrary ?? defaultExerciseLibrary();
-  const knownIds = new Set(library.map((item) => item.id));
+  const _knownIds = new Set(library.map((item) => item.id));
   return {
     ...state,
     clients,
-    exerciseLibrary: [
-      ...library,
-      ...exampleLibrary.filter((item) => !knownIds.has(item.id)),
-    ],
+    exerciseLibrary: [...library],
     demoSeeds: { ...state.demoSeeds, amaraTraining: AMARA_EXAMPLE_REVISION },
   };
 }

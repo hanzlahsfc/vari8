@@ -1,3 +1,6 @@
+.coach-root .cd-notes-workspace {
+  min-width: 0;
+}
 .coach-root .cd-notes-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
@@ -11,7 +14,7 @@
 }
 .coach-root .cd-notes-columns {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: start;
   gap: 24px;
 }
@@ -25,9 +28,11 @@
 }
 .coach-root .cd-notes-item-footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
+  color: var(--cd-muted);
+  font-size: 12px;
 }
 .coach-root .cd-notes-section .v8-section__actions {
   color: var(--cd-muted);
@@ -42,17 +47,33 @@
   margin: 0;
 }
 .coach-root .cd-notes-list > li {
-  padding: 18px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 14px 0;
   border-bottom: 1px solid var(--cd-line);
 }
 .coach-root .cd-notes-list > li:last-child {
   border-bottom: 0;
   padding-bottom: 0;
 }
+.coach-root .cd-notes-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.coach-root .cd-notes-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  align-self: center;
+}
 .coach-root .cd-notes-text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  margin: 0 0 10px;
+  margin: 0;
 }
 .coach-root .cd-notes-owner {
   display: inline-flex;
@@ -71,26 +92,32 @@
   text-underline-offset: 3px;
 }
 .coach-root .cd-notes-todo-checkbox {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  overflow-wrap: anywhere;
+  /* The visible title lives in the main column, so the shared checkbox keeps
+     only its box and the full-height touch target. */
+  align-self: start;
+  margin-top: calc((1lh - var(--v8-size-touch-min)) / 2);
 }
-.coach-root .cd-notes-todo-checkbox.is-complete {
+.coach-root .cd-notes-todo-checkbox .v8-choice__copy {
+  display: none;
+}
+.coach-root .cd-notes-text.is-complete {
   text-decoration: line-through;
 }
-.coach-root .cd-notes-todo .cd-notes-item-footer {
-  padding-left: 30px;
-  margin-top: 8px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  color: var(--cd-muted);
-  font-size: 12px;
+/* The checkbox column, title/meta column and actions column share the note
+   row's gap, so the title starts at the same 30px the old label did. */
+.coach-root .cd-notes-list > li.cd-notes-todo {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
 }
 .coach-root .cd-notes-todo .cd-notes-item-footer > span:not(.cd-todo-priority) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.coach-root .cd-notes-todo .cd-todo-notes {
+  margin: 0;
+  color: var(--cd-muted);
+  font-size: 13px;
 }
 .coach-root .cd-todo-priority {
   text-transform: capitalize;

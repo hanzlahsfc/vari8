@@ -17,6 +17,28 @@ import { mondayOf } from "../../coach/targets/model";
 
 export const DEFAULT_LOG_FIELDS: LogField[] = ["weight", "reps", "note"];
 
+/**
+ * The fields a set row logs, resolved from the template's `logFields` plus its
+ * `intensity` choice. `intensity === undefined` is legacy → `logFields` as-is.
+ * "off" strips rir/rpe; "rir"/"rpe" keep only that kind, inserted after reps.
+ */
+export function effectiveLogFields(training?: {
+  logFields?: LogField[];
+  intensity?: "off" | "rir" | "rpe";
+}): LogField[] {
+  const base = [...(training?.logFields ?? DEFAULT_LOG_FIELDS)];
+  const intensity = training?.intensity;
+  if (intensity === undefined) return base;
+  const without: LogField[] = base.filter((f) => f !== "rir" && f !== "rpe");
+  if (intensity === "off") return without;
+  const field: LogField = intensity === "rir" ? "rir" : "rpe";
+  const repsIdx = without.indexOf("reps");
+  const insertAt = repsIdx >= 0 ? repsIdx + 1 : without.indexOf("note");
+  const out: LogField[] = [...without];
+  out.splice(insertAt >= 0 ? insertAt : out.length, 0, field);
+  return out;
+}
+
 /** Identity for "previous performance": the shared library exercise, never the name. */
 export function exerciseKey(exercise: TrainingExercise): string {
   return exercise.libraryId ?? exercise.id;

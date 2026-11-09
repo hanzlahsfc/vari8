@@ -17,14 +17,12 @@ import type { SourceRecords } from "../coach/builder/model";
 import { createDashboardDraft } from "../coach/builder/schema";
 import { ClientPlanPreview } from "../coach/client-plan-preview";
 import { createExampleHistory } from "../coach/client-tracker-preview/example-history";
-import type { TrackerConfig } from "../coach/client-tracker-preview/preview-model";
 import { TrackingView } from "../coach/client-tracker-preview/tracking-view";
 import {
-  ALL_PARAMETERS,
+  allParameters,
   type CoachClient,
   formatDate,
   monday,
-  PARAMETERS,
   TODAY,
   type Variant,
 } from "../coach/model";
@@ -43,7 +41,6 @@ import {
 } from "../coach/targets/model";
 import { TargetSummary } from "../coach/targets/target-summary";
 import { useLocalToday } from "../coach/targets/use-local-today";
-import { trackerOverviewIds } from "../coach/tracker-setup";
 import {
   clientTracking,
   clientTrackingText,
@@ -61,71 +58,13 @@ const foodMap = new Map<string, Food>(
   ]),
 );
 
-export function trackerConfig(configuration: Variant): TrackerConfig {
-  const cycleTrackingEnabled =
-    configuration.cycleTrackingEnabled ??
-    configuration.fields.some(
-      (field) =>
-        PARAMETERS.find((parameter) => parameter.id === field.id)?.group ===
-        "Cycle tracking",
-    );
-  return {
-    summaryParameterIds: trackerOverviewIds(configuration),
-    parameterIds: configuration.fields
-      .filter((field) =>
-        ALL_PARAMETERS.some(
-          (parameter) =>
-            parameter.id === field.id &&
-            (cycleTrackingEnabled || parameter.group !== "Cycle tracking"),
-        ),
-      )
-      .map((field) => field.id),
-    cycleTrackingEnabled,
-    fieldUnits: Object.fromEntries(
-      configuration.fields.map((field) => [field.id, field.unit]),
-    ),
-    fieldOptions: Object.fromEntries(
-      configuration.fields
-        .filter((field) => field.options)
-        .map((field) => [field.id, field.options ?? []]),
-    ),
-    weightUnit:
-      configuration.fields.find((field) => field.id === "weight")?.unit === "lb"
-        ? "lb"
-        : "kg",
-    lengthUnit:
-      configuration.fields.find((field) => field.id === "waist")?.unit === "in"
-        ? "in"
-        : "cm",
-    waterUnit:
-      configuration.fields.find((field) => field.id === "water")?.unit ===
-      "fl oz"
-        ? "fl oz"
-        : "L",
-    ratingScale: "1-10",
-    energyUnit:
-      configuration.fields.find((field) => field.id === "calories")?.unit ===
-      "kJ"
-        ? "kJ"
-        : "kcal",
-    ratingScales: Object.fromEntries(
-      configuration.fields
-        .filter((field) => ["1–10", "1–5", "Word labels"].includes(field.unit))
-        .map((field) => [
-          field.id,
-          field.unit === "1–5"
-            ? ("1-5" as const)
-            : field.unit === "Word labels"
-              ? ("words" as const)
-              : ("1-10" as const),
-        ]),
-    ),
-  };
-}
+import { trackerConfig } from "./tracker-config";
+
+export { trackerConfig };
 
 function parameterGroups() {
   const groups: Record<string, string> = {};
-  for (const parameter of ALL_PARAMETERS)
+  for (const parameter of allParameters())
     groups[parameter.id] = parameter.group;
   return groups;
 }
@@ -331,7 +270,10 @@ export function RoadmapTab({
                   <th>Week</th>
                   {configuration.roadmap.map((metric) => (
                     <th key={metric.source}>
-                      {ALL_PARAMETERS.find((p) => p.id === metric.source)?.name}
+                      {
+                        allParameters().find((p) => p.id === metric.source)
+                          ?.name
+                      }
                       <small>{metric.calculation}</small>
                     </th>
                   ))}

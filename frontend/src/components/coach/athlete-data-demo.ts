@@ -3,6 +3,7 @@
 // focus on the demo client. Fills only missing data and runs once via
 // demoSeeds.athleteDataDemo. Deterministic — no Math.random, no clock reads.
 
+import { displayWeek } from "../client-app/training-log/model";
 import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
   calculatePortionNutrients,
@@ -33,6 +34,10 @@ import {
   createTemporaryNutrition,
   upsertTemporaryNutrition,
 } from "./plans/temporary-nutrition";
+import {
+  logbookDemoNotes,
+  shapeLogbookTraining,
+} from "./plans/training/logbook-demo";
 import type { IifymPlan } from "./plans/types";
 import {
   type ActivityTargetVersion,
@@ -41,12 +46,19 @@ import {
   resolveActivityTarget,
   type StepsTarget,
 } from "./targets/model";
+import {
+  dayTypeNutrients,
+  dayTypeOptions,
+  prescribedDayType,
+} from "./tracking/nutrition-day";
 
-export const ATHLETE_DATA_DEMO_REVISION = 11;
+export const ATHLETE_DATA_DEMO_REVISION = 23;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
-const MISSING_INDEXES = new Set([8, 23, 37, 55, 63]);
+// Keep the previous demo week (offsets 63–69) gap-free: the missing day now
+// sits on the Sunday before it so the prep week reads as a complete log.
+const MISSING_INDEXES = new Set([8, 23, 37, 55, 62]);
 const NO_FAT_INDEX = 61;
 // Mon/Wed/Sat — matches her 3×20 min cardio target.
 const CARDIO_WEEKDAYS = new Set([1, 3, 6]);
@@ -233,6 +245,22 @@ export function demoMacroTotals(
   return variant ? calculateVariantNutrients(variant, planFoodMap) : undefined;
 }
 
+/** Planned macros for the day type Amara logged instead of the scheduled one. */
+function demoLoggedMacroTotals(
+  client: CoachClient,
+  date: string,
+  label: string,
+): Nutrients | undefined {
+  const nutrients = dayTypeNutrients(client, date, label);
+  if (!nutrients) return demoMacroTotals(client, date);
+  return {
+    calories: nutrients.kcal,
+    protein: nutrients.protein,
+    carbs: nutrients.carbs,
+    fat: nutrients.fat,
+  };
+}
+
 function stepsCenter(
   versions: ActivityTargetVersion[] | undefined,
   date: string,
@@ -248,10 +276,11 @@ function stepsCenter(
 }
 
 /**
- * ~10 weeks of tracker history ending yesterday: bodyweight trending down
- * ~0.5 %/week, macros tracking the scheduled option at ~90–105 % adherence,
+ * ~10 weeks of tracker history plus today: bodyweight trending down
+ * ~0.5 %/week, macros tracking the scheduled option at ~88–107 % adherence,
  * steps around the activity target, cardio on Mon/Wed/Sat, sleep 6.5–8.2 h,
- * water 3.5–5 L. Five days missing, one day missing fat.
+ * water 3.5–5 L. Five days missing, one day missing fat, and today's entry is
+ * the only one after yesterday (future days are never fabricated).
  */
 export function demoTrackingEntries(
   client: CoachClient,
@@ -259,12 +288,23 @@ export function demoTrackingEntries(
 ): TrackerEntry[] {
   const rand = mulberry32(0xa1e7a);
   const entries: TrackerEntry[] = [];
-  for (let i = 0; i < TRACKING_DAYS; i += 1) {
-    if (MISSING_INDEXES.has(i)) continue;
+  const dayTypeOverrides = demoDayTypeReplacements(client, today);
+  for (let i = 0; i <= TRACKING_DAYS; i += 1) {
+    if (i < TRACKING_DAYS && MISSING_INDEXES.has(i)) continue;
     const date = addLocalDays(today, i - TRACKING_DAYS);
     const weight = +(75 * 0.995 ** (i / 7) + (rand() - 0.5) * 0.5).toFixed(1);
-    const totals = demoMacroTotals(client, date);
-    const adherence = i % 9 === 0 ? 0.84 + rand() * 0.28 : 0.9 + rand() * 0.15;
+    const loggedLabel = dayTypeOverrides.get(date);
+    const totals = loggedLabel
+      ? demoLoggedMacroTotals(client, date, loggedLabel)
+      : demoMacroTotals(client, date);
+    // Keep the block's random walk stable, then override the prep week and
+    // today with an explicit, realistic adherence plan.
+    const base = i % 9 === 0 ? 0.84 + rand() * 0.28 : 0.9 + rand() * 0.15;
+    const factors = DEMO_WEEK_ADHERENCE[i - TRACKING_DAYS] ?? {
+      protein: base,
+      carbs: base,
+      fat: base,
+    };
     const center = stepsCenter(client.plans?.activityTargets, date);
     const dow = weekday(date); // 0=Sun
     const cyclePos = (((i - CYCLE_ANCHOR) % 28) + 28) % 28;
@@ -292,10 +332,16 @@ export function demoTrackingEntries(
     if (CARDIO_WEEKDAYS.has(weekday(date)))
       values["cardio-duration"] = Math.round(18 + rand() * 14);
     if (totals) {
-      values.calories = Math.round((totals.calories * adherence) / 10) * 10;
-      values.protein = Math.round(totals.protein * adherence);
-      values.carbs = Math.round(totals.carbs * adherence);
-      if (i !== NO_FAT_INDEX) values.fat = Math.round(totals.fat * adherence);
+      const protein = Math.round(totals.protein * factors.protein);
+      const carbs = Math.round(totals.carbs * factors.carbs);
+      const fat = Math.round(totals.fat * factors.fat);
+      values.protein = protein;
+      values.carbs = carbs;
+      if (i !== NO_FAT_INDEX) values.fat = fat;
+      // Logged energy follows the logged macros, so the row stays internally
+      // consistent when one macro misses more than the others.
+      values.calories =
+        Math.round((protein * 4 + carbs * 4 + fat * 9) / 10) * 10;
     }
     entries.push({ date, values });
   }
@@ -323,6 +369,39 @@ const DAILY_NOTES = [
   "Energy dipped mid-afternoon, short nap helped.",
   "Best posing practice so far — lines looked sharp.",
 ];
+/**
+ * Previous week + current Monday (offsets -7…0). The macros deliberately
+ * sit a little either side of the scheduled variant: mostly on target, with
+ * two realistic misses (a low-carb day and a low-protein day) so the
+ * compare-with-logged view has on, neutral and off tones to show.
+ */
+const DEMO_WEEK_ADHERENCE: Record<
+  number,
+  { protein: number; carbs: number; fat: number }
+> = {
+  [-7]: { protein: 1.01, carbs: 1.03, fat: 0.99 },
+  [-6]: { protein: 0.97, carbs: 0.95, fat: 1.02 },
+  [-5]: { protein: 0.94, carbs: 0.88, fat: 1.01 },
+  [-4]: { protein: 1.02, carbs: 0.99, fat: 1.03 },
+  [-3]: { protein: 0.93, carbs: 0.91, fat: 0.98 },
+  [-2]: { protein: 1.0, carbs: 0.97, fat: 1.01 },
+  [-1]: { protein: 1.04, carbs: 1.05, fat: 1.06 },
+  0: { protein: 1.01, carbs: 1.02, fat: 0.99 },
+};
+const PREV_WEEK_DAILY_NOTES = [
+  "Started the week well — lower session moved fast.",
+  "Busy day at work, but meals were prepped and hit.",
+  "Low day felt easier than expected; cardio was steady.",
+  "Strong lower session, added a little load on the squat.",
+  "Appetite up tonight; kept the planned portions.",
+  "Upper session felt good, shoulders were responsive.",
+  "Quiet Sunday — steps easy, ready for the new week.",
+];
+const CURRENT_WEEK_DAILY_NOTE =
+  "Monday lower session logged; energy good and appetite steady.";
+const DEMO_CURRENT_WEEK_NOTE =
+  "Strong Monday session — hold the carb cycle and check in on Sunday.";
+const DEMO_CURRENT_WEEK_TASK_ID = "demo-task-review-checkin";
 const COACH_NOTES = [
   "Check in on digestion before adjusting macros.",
   "Sleep quality holding — keep the evening routine.",
@@ -330,12 +409,59 @@ const COACH_NOTES = [
 ];
 const BLEEDING = ["Light", "Medium", "Heavy", "Medium", "Light"];
 
+/**
+ * Logged days in the demo window where Amara swapped the prescribed day type:
+ * the Tuesday and Saturday long sessions ran on High instead of Medium, and
+ * the Wednesday hard session took Medium in place of Low. Labels come from
+ * the staged plan's own options, never hardcoded.
+ */
+const DEMO_DAY_TYPE_OFFSETS = [-6, -5, -2] as const;
+
+/** One step up the plan's own option order (High → Medium → Low), so the
+ *  logged label always differs from the prescribed one; the top option steps
+ *  down instead. Refeed/date-less days are skipped. */
+function demoDayTypeReplacements(
+  client: CoachClient,
+  today: string,
+): Map<string, string> {
+  const replacements = new Map<string, string>();
+  for (const offset of DEMO_DAY_TYPE_OFFSETS) {
+    const date = addLocalDays(today, offset);
+    if (nutritionForDate(client, date).temporary) continue;
+    const prescribed = prescribedDayType(client, date);
+    if (!prescribed) continue;
+    const labels = dayTypeOptions(client, date).map((option) => option.label);
+    const index = labels.indexOf(prescribed);
+    if (index < 0) continue;
+    const logged = index > 0 ? labels[index - 1] : labels[1];
+    if (logged && logged !== prescribed) replacements.set(date, logged);
+  }
+  return replacements;
+}
+
+/** Demo-owned logged day-type overrides, keyed as tracker text. */
+export function demoDayTypeOverrides(
+  client: CoachClient,
+  today: string,
+): Record<string, string> {
+  return Object.fromEntries(
+    [...demoDayTypeReplacements(client, today)].map(([date, label]) => [
+      `${date}:day-type`,
+      label,
+    ]),
+  );
+}
+
 /** Deterministic tracker text/choice values for the demo window. */
-export function demoTrackingText(today: string): Record<string, string> {
+export function demoTrackingText(
+  client: CoachClient,
+  today: string,
+): Record<string, string> {
   const text: Record<string, string> = {};
-  for (let i = 0; i < TRACKING_DAYS; i += 1) {
-    if (MISSING_INDEXES.has(i)) continue;
+  for (let i = 0; i <= TRACKING_DAYS; i += 1) {
+    if (i < TRACKING_DAYS && MISSING_INDEXES.has(i)) continue;
     const date = addLocalDays(today, i - TRACKING_DAYS);
+    const weekOffset = i - TRACKING_DAYS;
     const cyclePos = (((i - CYCLE_ANCHOR) % 28) + 28) % 28;
     if (HEALTH_WEEKDAYS.has(weekday(date)))
       text[`${date}:bp`] = `${116 + ((i * 3) % 6)} / ${74 + ((i * 2) % 5)}`;
@@ -345,11 +471,17 @@ export function demoTrackingText(today: string): Record<string, string> {
         PMS_OPTIONS[i % PMS_OPTIONS.length],
         PMS_OPTIONS[(i + 2) % PMS_OPTIONS.length],
       ].join(", ");
-    if (i % 5 === 2)
+    if (weekOffset >= -7 && weekOffset < 0)
+      text[`${date}:daily-note`] =
+        PREV_WEEK_DAILY_NOTES[weekOffset + 7] ?? DAILY_NOTES[i % 5];
+    else if (weekOffset === 0)
+      text[`${date}:daily-note`] = CURRENT_WEEK_DAILY_NOTE;
+    else if (i % 5 === 2)
       text[`${date}:daily-note`] = DAILY_NOTES[i % DAILY_NOTES.length];
     if (i % 24 === 7)
       text[`${date}:coach-note`] = COACH_NOTES[i % COACH_NOTES.length];
   }
+  text[`${today}:coach-note`] = DEMO_CURRENT_WEEK_NOTE;
   for (let back = 2; back < 9; back += 1) {
     const date = addLocalDays(today, -back);
     if (weekday(date) === 4) {
@@ -357,13 +489,14 @@ export function demoTrackingText(today: string): Record<string, string> {
       break;
     }
   }
+  Object.assign(text, demoDayTypeOverrides(client, today));
   return text;
 }
 
 function demoTrackingDates(today: string): Set<string> {
   const dates = new Set<string>();
-  for (let i = 0; i < TRACKING_DAYS; i += 1) {
-    if (MISSING_INDEXES.has(i)) continue;
+  for (let i = 0; i <= TRACKING_DAYS; i += 1) {
+    if (i < TRACKING_DAYS && MISSING_INDEXES.has(i)) continue;
     dates.add(addLocalDays(today, i - TRACKING_DAYS));
   }
   return dates;
@@ -649,6 +782,35 @@ function answerFor(question: Question, date: string): string {
   }
 }
 
+/**
+ * The client's check-in schedule around today: the most recent due date before
+ * today (previous week for a Monday) and the next due date on/after today.
+ * Falls back to the previous/this Saturday when a client has no schedule.
+ */
+function scheduledCheckInDates(
+  client: CoachClient,
+  today: string,
+): { prior?: string; previous?: string; upcoming?: string } {
+  const monday = mondayOf(today);
+  const schedule = [...client.schedules]
+    .sort((a, b) => b.effective.localeCompare(a.effective))
+    .find((entry) => entry.effective <= today);
+  const weekdays = schedule?.weekdays ?? [5];
+  const dates = Array.from({ length: 21 }, (_, i) =>
+    addLocalDays(monday, i - 14),
+  ).filter((date) =>
+    weekdays.includes((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7),
+  );
+  const previous = dates.filter((date) => date < today).at(-1);
+  return {
+    prior: previous
+      ? dates.filter((date) => date < previous).at(-1)
+      : undefined,
+    previous,
+    upcoming: dates.find((date) => date >= today),
+  };
+}
+
 function demoSubmission(
   clientId: string,
   id: string,
@@ -725,6 +887,9 @@ export function adoptAthleteDataDemo(
       });
     else if (!photoQuestion.options.trim())
       photoQuestion.options = DEMO_POSES.join(", ");
+    // Amara prescribes RIR and shows equipment, movement pattern and cues.
+    variant.training.intensity = "rir";
+    variant.training.exerciseInfo = ["equipment", "movementPattern", "cues"];
   }
 
   // --- Plans: temporary refeed + training focus ---
@@ -738,12 +903,13 @@ export function adoptAthleteDataDemo(
       const content = lifecycle.active?.content;
       if (lifecycle.active && content?.name === DEMO_MEAL_PLAN_NAME) {
         // Rebuild the demo plan as a High/Medium/Low carb-cycled prep plan.
+        const rebuilt = {
+          ...buildDemoMealPlanContent(content, DEMO_VERSION_TARGETS.active),
+          name: "Contest prep · Block 2",
+        };
         lifecycle.active = {
           ...lifecycle.active,
-          content: {
-            ...buildDemoMealPlanContent(content, DEMO_VERSION_TARGETS.active),
-            name: "Contest prep · Block 2",
-          },
+          content: rebuilt,
         };
         // Demo plan history: earlier versions step the targets down over
         // the prep so past weeks show what the plan said then. Same
@@ -794,6 +960,19 @@ export function adoptAthleteDataDemo(
           ].sort((a, b) => a.activatedAt.localeCompare(b.activatedAt));
         }
       }
+      // Earlier seeds activated the starter plan with one "TD" variant, and
+      // activateLifecycle copied that starter into the draft. The editor opens
+      // the draft, so replace only that demo-owned starter with the active
+      // plan. A coach-edited draft is left untouched. This also repairs
+      // browsers whose active demo plan was rebuilt by an earlier revision.
+      const demoDraft = lifecycle.draft;
+      if (
+        demoDraft?.name === DEMO_MEAL_PLAN_NAME &&
+        demoDraft.variants.length === 1 &&
+        demoDraft.variants[0]?.label === "TD" &&
+        lifecycle.active?.content.variants.length
+      )
+        lifecycle.draft = structuredClone(lifecycle.active.content);
     }
     // Earlier activity targets so past weeks carry the prior prescription.
     const targets = plans.activityTargets ?? [];
@@ -816,24 +995,28 @@ export function adoptAthleteDataDemo(
       target: { sessionsPerWeek: 2, minutesPerSession: 20 },
     });
     plans = { ...plans, activityTargets: targets };
+    // Keep the refeed out of the current week so both the previous and current
+    // weeks keep the clean 2/2/3 High/Medium/Low cycle.
+    const refeedStart = addLocalDays(today, 9);
+    const refeedEnd = addLocalDays(today, 10);
     const active =
       source === "mealPlan"
-        ? (applicablePlan(plans.nutrition.mealPlan, addLocalDays(today, 2)) ??
+        ? (applicablePlan(plans.nutrition.mealPlan, refeedStart) ??
           plans.nutrition.mealPlan.active?.content)
-        : (applicablePlan(plans.nutrition.iifym, addLocalDays(today, 2)) ??
+        : (applicablePlan(plans.nutrition.iifym, refeedStart) ??
           plans.nutrition.iifym.active?.content);
-    if (
-      active &&
-      !(plans.nutrition.temporary ?? []).some((t) => t.id === DEMO_TEMP_ID)
-    ) {
+    const existingTemp = (plans.nutrition.temporary ?? []).find(
+      (temporary) => temporary.id === DEMO_TEMP_ID,
+    );
+    if (active && !existingTemp) {
       const temporary = createTemporaryNutrition(
         active,
         source,
         {
           kind: "refeed",
           label: "Refeed",
-          startDate: addLocalDays(today, 2),
-          endDate: addLocalDays(today, 3),
+          startDate: refeedStart,
+          endDate: refeedEnd,
         },
         `${today}T08:00:00Z`,
       );
@@ -850,6 +1033,19 @@ export function adoptAthleteDataDemo(
         };
       }
       plans = upsertTemporaryNutrition(plans, temporary);
+    } else if (
+      existingTemp &&
+      (existingTemp.startDate !== refeedStart ||
+        existingTemp.endDate !== refeedEnd)
+    ) {
+      // Demo-owned temporary plan from an earlier revision: shift it forward
+      // instead of leaving a stale refeed inside the current week.
+      plans = upsertTemporaryNutrition(plans, {
+        ...existingTemp,
+        startDate: refeedStart,
+        endDate: refeedEnd,
+        createdAt: `${today}T08:00:00Z`,
+      });
     }
     const training = plans.training.active;
     if (training && !training.content.focus) {
@@ -858,6 +1054,10 @@ export function adoptAthleteDataDemo(
         focus: DEMO_TRAINING_FOCUS,
       };
     }
+    // The demo logbook story: a W3 +1-set override, then a new plan version on
+    // the Monday of W4 (squat reps tighten, kickback out, hip abduction in).
+    plans.training =
+      shapeLogbookTraining(plans.training, today) ?? plans.training;
     if (!plans.otherTargets?.length)
       plans = {
         ...plans,
@@ -930,6 +1130,26 @@ export function adoptAthleteDataDemo(
       client.habits.map((habit) => [habit.id, demoHabitLog(today)]),
     );
 
+  // --- Current week: one coach note + the Saturday check-in follow-up ---
+  const checkInDates = scheduledCheckInDates(client, today);
+  const currentWeekStart = mondayOf(today);
+  const weekNotes = { ...(client.weekNotes ?? {}) };
+  if (weekNotes[currentWeekStart] === undefined)
+    weekNotes[currentWeekStart] = DEMO_CURRENT_WEEK_NOTE;
+  const coachTasks = client.coachTasks.some(
+    (task) => task.id === DEMO_CURRENT_WEEK_TASK_ID,
+  )
+    ? client.coachTasks
+    : [
+        ...client.coachTasks,
+        {
+          id: DEMO_CURRENT_WEEK_TASK_ID,
+          title: "Review Amara's Sunday check-in and photos",
+          complete: false,
+          deadline: checkInDates.upcoming,
+        },
+      ];
+
   const staged: CoachClient = {
     ...client,
     assignment: { ...client.assignment, snapshot },
@@ -938,16 +1158,22 @@ export function adoptAthleteDataDemo(
     timelineEvents,
     habits,
     habitLog,
+    weekNotes,
+    coachTasks,
   };
 
   // --- Persisted tracking history (never overwrite a real log). On a
   //  revision bump only entries on demo-owned dates are re-derived;
   //  anything the coach logged on other dates stays. ---
   const demoDates = demoTrackingDates(today);
+  const demoTrackingTextValues = {
+    ...demoTrackingText(staged, today),
+    ...(client.tracking?.text ?? {}),
+  };
   const tracking = !client.tracking?.entries.length
     ? {
         entries: demoTrackingEntries(staged, today),
-        text: { ...demoTrackingText(today), ...(client.tracking?.text ?? {}) },
+        text: demoTrackingTextValues,
       }
     : client.tracking.entries.some((entry) => demoDates.has(entry.date))
       ? {
@@ -958,6 +1184,9 @@ export function adoptAthleteDataDemo(
             ),
             ...demoTrackingEntries(staged, today),
           ].sort((a, b) => a.date.localeCompare(b.date)),
+          // New demo-owned keys (e.g. the current week's notes) land without
+          // overwriting any text the coach already wrote.
+          text: demoTrackingTextValues,
         }
       : client.tracking;
 
@@ -984,16 +1213,72 @@ export function adoptAthleteDataDemo(
   const clients = [...state.clients];
   clients[index] = nextClient;
 
-  // --- Check-ins: photos on the two existing demo submissions + two more ---
+  // --- Check-ins: the previous week's weekly check-in is submitted on the
+  //  scheduled day, reviewed and photographed; the current week's due date
+  //  stays a scheduled event (no future submission is invented). ---
   const questions = variant?.questions ?? [];
-  const submissions = state.submissions.map((submission) =>
-    submission.clientId === client.id &&
-    (submission.id === "demo-submission-week" ||
-      submission.id === "demo-submission-latest") &&
-    !submission.photos?.length
-      ? { ...submission, photos: photoSet(2) }
-      : submission,
-  );
+  const previousCheckInDate = checkInDates.previous;
+  const submissions = state.submissions.flatMap((submission) => {
+    if (submission.clientId !== client.id) return [submission];
+    if (submission.id === "demo-submission-week") {
+      const date = previousCheckInDate ?? submission.date;
+      return [
+        {
+          ...submission,
+          date,
+          eventId: `recurring:${client.id}:${date}`,
+          answers: submission.answers.map((answer) =>
+            /photo/i.test(answer.question)
+              ? {
+                  ...answer,
+                  answer: `Uploaded front and side photos for ${date}`,
+                }
+              : answer,
+          ),
+          photos: submission.photos?.length ? submission.photos : photoSet(2),
+          response: submission.response ?? {
+            text: "Strong prep week — macros tracked and the step target held. Keep the same carb cycle and check in on Sunday.",
+            changes: [],
+            date: `${date}T18:30:00Z`,
+          },
+        },
+      ];
+    }
+    if (submission.id === "demo-submission-latest") {
+      // The old "latest" seed was a pending check-in on the previous Sunday.
+      // Move it one week earlier as the prior reviewed check-in so the weekly
+      // cadence is complete and nothing pending leaks into the current week.
+      const date = checkInDates.prior ?? submission.date;
+      return [
+        {
+          ...submission,
+          date,
+          eventId: `recurring:${client.id}:${date}`,
+          answers: submission.answers.map((answer) =>
+            /photo/i.test(answer.question)
+              ? {
+                  ...answer,
+                  answer: `Uploaded front and side photos for ${date}`,
+                }
+              : answer,
+          ),
+          photos: submission.photos?.length ? submission.photos : photoSet(2),
+          response: submission.response ?? {
+            text: "Photos look steady and condition is holding. Keep the same plan.",
+            changes: [],
+            date: `${date}T18:30:00Z`,
+          },
+        },
+      ];
+    }
+    if (
+      (submission.id === "demo-submission-first" ||
+        submission.id === "demo-submission-mid") &&
+      !submission.photos?.length
+    )
+      return [{ ...submission, photos: photoSet(2) }];
+    return [submission];
+  });
   const submissionIds = new Set(submissions.map((s) => s.id));
   if (!submissionIds.has("demo-submission-first"))
     submissions.push(
@@ -1022,6 +1307,23 @@ export function adoptAthleteDataDemo(
     ...state,
     clients,
     submissions,
+    trainingNotes: [
+      ...(state.trainingNotes ?? []).filter(
+        (n) => !n.id.startsWith("demo-note-"),
+      ),
+      ...logbookDemoNotes(
+        client.id,
+        "amara-lower-a",
+        "exdb-barbell-hip-thrust",
+        today,
+        Math.max(
+          2,
+          plans?.training.active
+            ? displayWeek(plans.training.active.content, today)
+            : 1,
+        ),
+      ),
+    ],
     demoSeeds: {
       ...state.demoSeeds,
       athleteDataDemo: ATHLETE_DATA_DEMO_REVISION,

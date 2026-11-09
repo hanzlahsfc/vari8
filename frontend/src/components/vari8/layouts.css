@@ -89,6 +89,13 @@
   min-width: min(160px, 100%);
 }
 
+/* A segmented control hugs its options instead of inheriting the toolbar's
+   flexible field width; its own track padding owns the inset. */
+.v8-theme .v8-toolbar > .v8-segmented {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
 .v8-theme .v8-form-grid-container {
   container-type: inline-size;
   min-width: 0;
@@ -170,6 +177,7 @@
   display: inline-flex;
   flex: 0 0 auto;
   grid-area: back;
+  justify-self: start;
   font: inherit;
   min-height: 44px;
   padding: 0 8px 0 0;
@@ -183,6 +191,7 @@
 
 .v8-theme .v8-editor-header__context {
   font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
   margin: 0 0 4px;
 }
 
