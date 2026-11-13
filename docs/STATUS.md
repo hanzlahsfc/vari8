@@ -1,3 +1,48 @@
+## 2026-11-14 — P801 Tasks Phase 1a editor lock during pending move (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P800 O1 finding on
+`beta/p787-tasks-phase-1a` at head `0f3879d9`. The P799 lock covered only
+the athlete select and dialog Save — other draft-mutating controls stayed
+editable while a move committed. Now:
+
+- The whole wide-panel editor locks while the request commits: every
+  draft control (`Input`, `SearchableSelect`, `DatePicker`, all repeat
+  `Select`s, `Toggle`s, `DateTimePicker`, Snooze, `TextArea`) renders
+  `disabled`, and the mutation handlers themselves are guarded —
+  `patch()`, `setAthlete()` and `snooze()` return early on
+  `pendingLock.current || movePending`, so an event arriving before
+  React renders the lock cannot mutate the submitted draft. A
+  "Moving task…" state shows while locked.
+- The lock survives the keyed remount on success: `moveLocksEntry`
+  (tasks-model) matches the pending request's source OR destination
+  scope for the same task id — the remounted editor at the new scope is
+  locked until the outcome is consumed, while a same-id record at an
+  unrelated scope is never locked.
+- `pendingLock` (synchronous ref) closes the submit→render gap;
+  `moving` (state) renders the pending state; `movePending` (prop)
+  covers the committed window. On rejection the lock clears, the draft
+  and current scope stay, the real reason surfaces via toast, and the
+  debounce re-arms so autosave resumes. Debounce cleanup still cannot
+  replay the submitted patch at the old scope — consumed keys are
+  cleared on success.
+- Narrow Save/Cancel and row-dialog behavior verified unchanged —
+  only the shared lock plumbing touches those paths.
+
+Regression evidence (`tasks-model.test.mjs`, model-level): new test
+`the editor lock covers source and destination scopes through the keyed
+remount` exercises the production `moveLocksEntry` used at both detail
+call sites — source scope locked, destination scope locked post-remount,
+same-id unrelated scope and different task unlocked, null unlocked.
+Disabled controls, handler guards and the pending indicator are
+React-side and remain source-inspected — no DOM harness exists in this
+repo, so the lock's rendered behavior is pending browser verification.
+
+Gates: `npm run check` exit 0 (381/381 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged; no CSS touched); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
 ## 2026-11-14 — P799 Tasks Phase 1a move+outcome atomic commit (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P798 O1 finding on

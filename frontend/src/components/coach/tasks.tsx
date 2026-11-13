@@ -50,6 +50,7 @@ import {
   localDateTime,
   localDayOf,
   matchAthletes,
+  moveLocksEntry,
   occurrenceOnOrAfter,
   overdueLabel,
   parseQuickAdd,
@@ -163,6 +164,7 @@ export function AthleteTasksPanel({ client }: { client: CoachClient }) {
 type PendingMove = {
   id: number;
   entry: TaskEntry;
+  clientId: string | undefined;
 };
 
 function TasksView({
@@ -368,7 +370,7 @@ function TasksView({
     pendingMoveRef.current = true;
     const id = ++moveSeq.current;
     moveOutcomes.current.set(id, onDone);
-    setPendingMove({ id, entry });
+    setPendingMove({ id, entry, clientId });
     requestMove({ id, ref: entry, clientId, fields });
     return true;
   };
@@ -667,10 +669,7 @@ function TasksView({
             athletes={athletes}
             today={today}
             instant
-            movePending={
-              pendingMove !== null &&
-              taskKey(pendingMove.entry) === taskKey(selected)
-            }
+            movePending={moveLocksEntry(pendingMove, selected)}
             onClose={() => onSelect(null)}
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
@@ -695,10 +694,7 @@ function TasksView({
             athletes={athletes}
             today={today}
             instant={false}
-            movePending={
-              pendingMove !== null &&
-              taskKey(pendingMove.entry) === taskKey(selected)
-            }
+            movePending={moveLocksEntry(pendingMove, selected)}
             onClose={() => onSelect(null)}
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
@@ -1390,9 +1386,10 @@ function TaskDetail({
   today: string;
   /** Panel mode saves field edits as they happen; dialog mode keeps a draft. */
   instant: boolean;
-  /** A move request for THIS task is committing — the scope controls are
-   * locked until the committed outcome arrives; field edits made meanwhile
-   * are carried to the new scope on success. */
+  /** A move request for THIS task is committing — all draft-mutating
+   * controls are locked until the committed outcome is consumed. The
+   * parent derives it from the request's source AND destination scopes
+   * so it survives the keyed remount on a successful move. */
   movePending?: boolean;
   /** Applies `fields` to the task at `ref`'s scope — never creates,
    * never moves, never writes fields the caller did not edit. */
@@ -1431,6 +1428,13 @@ function TaskDetail({
   taskIdRef.current = task.id;
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  // The lock: `movePending` (parent) covers the committed window incl.
+  // the post-move remount; `moving` renders the pending state from
+  // submit; `pendingLock` guards handlers synchronously in the gap
+  // between the submit event and the render that delivers the lock.
+  const [moving, setMoving] = useState(false);
+  const pendingLock = useRef(false);
+  const locked = !!movePending || moving || pendingLock.current;
 
   const ref = () => ({
     id: taskIdRef.current,
@@ -1472,6 +1476,9 @@ function TaskDetail({
   };
 
   const patch = (partial: Partial<TaskFields>, debounce = false) => {
+    // Guard the handler itself — an event that arrives before React
+    // renders the lock must not mutate the submitted draft.
+    if (pendingLock.current || movePending) return;
     setDraft((d) => ({ ...d, ...partial }));
     if (!instant) return;
     if (debounce) {
@@ -1483,6 +1490,7 @@ function TaskDetail({
   };
 
   const setAthlete = (value: string) => {
+    if (pendingLock.current || movePending) return;
     const clientId = value === "general" ? undefined : value;
     if (!instant) {
       setClientSel(clientId);
@@ -1490,12 +1498,16 @@ function TaskDetail({
     }
     window.clearTimeout(saveTimer.current);
     // The pending patch travels WITH the request — the outcome arrives
-    // committed with the write. Only a successful move consumes the
-    // fields it submitted; edits made while it was pending are carried
-    // to the NEW scope so nothing is lost or replayed at the old one. A
-    // rejection leaves draft, athlete and panel as-is.
+    // committed with the write. The editor locks synchronously at submit
+    // and stays locked until this exact outcome is consumed: only a
+    // successful move consumes the fields it submitted; a rejection
+    // keeps the draft, the current scope and resumes autosave.
     const submitted = { ...editedRef.current };
-    onMove(clientId, submitted, (moved) => {
+    pendingLock.current = true;
+    setMoving(true);
+    const accepted = onMove(clientId, submitted, (moved) => {
+      pendingLock.current = false;
+      setMoving(false);
       if (!moved) {
         // The draft must keep flushing — a rejection delays, never drops.
         scheduleSave();
@@ -1509,6 +1521,10 @@ function TaskDetail({
       if (Object.keys(rest).length)
         onSaveRef.current({ id: taskIdRef.current, clientId }, rest);
     });
+    if (!accepted) {
+      pendingLock.current = false;
+      setMoving(false);
+    }
   };
 
   const applyRepeat = (value: string) => {
@@ -1573,6 +1589,7 @@ function TaskDetail({
   // Dialog mode snoozes the draft so the coach still saves explicitly;
   // panel mode writes straight through the shared reminder lifecycle.
   const snooze = () => {
+    if (pendingLock.current || movePending) return;
     const until = new Date(Date.now() + 60 * 60 * 1000);
     if (instant) {
       onSnooze();
@@ -1585,12 +1602,13 @@ function TaskDetail({
     <>
       <Input
         label="Title"
+        disabled={locked}
         value={draft.title}
         onChange={(event) => patch({ title: event.currentTarget.value }, true)}
       />
       <SearchableSelect
         label="Athlete"
-        disabled={movePending}
+        disabled={locked}
         value={clientSel ?? "general"}
         onValueChange={setAthlete}
         options={[
@@ -1607,14 +1625,17 @@ function TaskDetail({
             : []),
         ]}
       />
+      {locked && <p className="cd-task-correction">Moving task…</p>}
       <DatePicker
         label="Date"
+        disabled={locked}
         value={draft.deadline ?? ""}
         onValueChange={onDateChange}
       />
       {correction && <p className="cd-task-correction">{correction}</p>}
       <Select
         label="Repeat"
+        disabled={locked}
         value={repeatValue}
         onChange={applyRepeat}
         options={[
@@ -1633,6 +1654,7 @@ function TaskDetail({
         <div className="cd-task-detail-custom">
           <Select
             label="Every"
+            disabled={locked}
             value={String(repeat.interval ?? 1)}
             onChange={(value) =>
               patch({ repeat: { ...repeat, interval: Number(value) } })
@@ -1645,6 +1667,7 @@ function TaskDetail({
           />
           <Select
             label="Unit"
+            disabled={locked}
             value={repeat.unit}
             onChange={(value) =>
               patch({
@@ -1672,6 +1695,7 @@ function TaskDetail({
           {repeat.unit === "week" && (
             <Select
               label="On"
+              disabled={locked}
               value={String(repeat.weekdays?.[0] ?? 1)}
               onChange={(value) =>
                 patch({
@@ -1689,6 +1713,7 @@ function TaskDetail({
       {repeat && (
         <Toggle
           label="Repeat from completion date"
+          disabled={locked}
           checked={!!repeat.fromCompletion}
           onChange={(checked) =>
             patch({
@@ -1699,6 +1724,7 @@ function TaskDetail({
       )}
       <DateTimePicker
         label="Reminder"
+        disabled={locked}
         hint="Shown in this workspace when the time arrives"
         date={draft.reminderAt?.slice(0, 10) ?? ""}
         time={draft.reminderAt?.slice(11, 16) ?? ""}
@@ -1713,12 +1739,13 @@ function TaskDetail({
         }
       />
       {draft.reminderAt && (
-        <Button variant="ghost" size="sm" onClick={snooze}>
+        <Button variant="ghost" size="sm" disabled={locked} onClick={snooze}>
           <Bell size={13} /> Snooze 1 hour
         </Button>
       )}
       <Toggle
         label="High priority"
+        disabled={locked}
         checked={draft.priority === "high"}
         onChange={(checked) =>
           patch(checked ? { priority: "high" } : { priority: undefined })
@@ -1726,6 +1753,7 @@ function TaskDetail({
       />
       <TextArea
         label="Notes"
+        disabled={locked}
         value={draft.notes ?? ""}
         onChange={(event) =>
           patch({ notes: event.currentTarget.value || undefined }, true)
@@ -1765,7 +1793,7 @@ function TaskDetail({
         </Button>
         <Button
           primary
-          disabled={movePending}
+          disabled={locked}
           onClick={() => {
             if (draft.repeat && !draft.deadline) {
               setCorrection(
@@ -1776,9 +1804,14 @@ function TaskDetail({
             if (clientSel !== entry.clientId) {
               // The move carries the draft in one committed transition so
               // the edits land at the new owner, never the old scope. The
-              // committed outcome closes the dialog on success; a rejected
-              // move keeps the dialog open and the draft intact.
+              // editor locks synchronously at submit; the committed
+              // outcome closes the dialog on success, a rejected move
+              // unlocks, keeps the draft and shows why.
+              pendingLock.current = true;
+              setMoving(true);
               const accepted = onMove(clientSel, draft, (moved, reason) => {
+                pendingLock.current = false;
+                setMoving(false);
                 if (moved) {
                   // Carry only edits made while the request committed —
                   // never replay the submitted draft over newer fields.
@@ -1804,8 +1837,11 @@ function TaskDetail({
                       : "The task is no longer there — your changes were kept.",
                 );
               });
-              if (!accepted)
+              if (!accepted) {
+                pendingLock.current = false;
+                setMoving(false);
                 setCorrection("Still finishing the previous move — try again.");
+              }
             } else {
               onSave({ id: entry.task.id, clientId: clientSel }, draft);
               onClose();

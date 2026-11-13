@@ -396,6 +396,23 @@ export type MoveOutcome = {
   reason?: "source-gone" | "no-destination" | "id-conflict";
 };
 
+/** Whether an in-flight move request locks the editor showing `entry`.
+ * The lock follows the task itself — it holds at the source scope
+ * (pre-move, and while a same-id record there is still selected) AND at
+ * the destination scope (post-move remount) — so the keyed remount on a
+ * successful move never briefly unlocks the new editor. A same-id
+ * record at an unrelated scope is not locked. */
+export function moveLocksEntry(
+  pending: { entry: TaskEntry; clientId: string | undefined } | null,
+  entry: TaskEntry,
+): boolean {
+  if (!pending || pending.entry.task.id !== entry.task.id) return false;
+  return (
+    entry.clientId === pending.entry.clientId ||
+    entry.clientId === pending.clientId
+  );
+}
+
 /** The authoritative move transition: the validated write AND its outcome
  * are computed on the current workspace in one pure pass, so the commit
  * always pairs the state change with the result that produced it — never

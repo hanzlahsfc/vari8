@@ -8,6 +8,7 @@ import {
   findTask,
   listTasks,
   markRemindersShown,
+  moveLocksEntry,
   moveTask,
   moveTransition,
   nextOccurrence,
@@ -1785,4 +1786,43 @@ test("replaying the committed transition is idempotent — no duplicate record, 
     findTask(replay.state, { id: "t1", clientId: "client-007" }).task.title,
     "applied once",
   );
+});
+
+// --- P801 closure: the editor lock follows the task through the commit ----
+// The lock derivation is production logic (`moveLocksEntry` drives the
+// `movePending` prop at both detail call sites). The disabled controls,
+// handler guards and pending text are React-side and remain
+// source-inspected — no DOM harness exists in this repo.
+
+test("the editor lock covers source and destination scopes through the keyed remount", () => {
+  const entry = listTasks(
+    workspaceState({
+      clients: [
+        client("client-001", [{ id: "t1", title: "t", complete: false }]),
+      ],
+    }),
+  ).find((e) => e.task.id === "t1");
+  const pending = { entry, clientId: "client-007" };
+  // The record still shown at its source scope (pre-move render).
+  assert.equal(moveLocksEntry(pending, entry), true);
+  // The same record re-derived at the destination scope — the post-move
+  // render mounts a NEW keyed editor and the lock must already hold.
+  assert.equal(
+    moveLocksEntry(pending, { ...entry, clientId: "client-007" }),
+    true,
+  );
+  // A same-id record at an unrelated scope is a different task.
+  assert.equal(
+    moveLocksEntry(pending, { ...entry, clientId: "client-999" }),
+    false,
+  );
+  // A different task at the same scope is not locked.
+  assert.equal(
+    moveLocksEntry(pending, {
+      ...entry,
+      task: { ...entry.task, id: "t2" },
+    }),
+    false,
+  );
+  assert.equal(moveLocksEntry(null, entry), false);
 });
