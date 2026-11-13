@@ -1,3 +1,56 @@
+## 2026-11-14 — P793 Tasks Phase 1a data-integrity repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P792 findings (O1, O2,
+O5) on `beta/p787-tasks-phase-1a` at head `626c5e20`. Dispositions:
+
+- O1 pending edits during an athlete move — `onMove` now carries pending
+  `fields` and applies move + `updateTask` in ONE `setState` transition
+  against the current source record; the new owner gets the edit and no
+  delayed write touches the old scope. `TaskDetail.setAthlete` consumes
+  `editedRef` and cancels the debounce before calling `onMove`, so the
+  keyed-remount cleanup cannot replay the patch at the former scope. If
+  the record could not move, the same transition falls back to writing the
+  draft at the scope where the record still lives (a deleted record keeps
+  no-resurrection semantics). Narrow dialog Save/Cancel contract preserved
+  — explicit Save passes the draft through `onMove` atomically.
+- O2 undo bound to the operation — `toggleTask` stamps a unique `undoToken`
+  (`taskId()`-generated) on the record in every completion path; the token
+  travels with the record through moves and survives field edits, but is
+  never inherited by a replacement record and is overwritten by any
+  superseding toggle. `undoToggle` removes the operation-owned completed
+  copy by its unique `copyId` and restores toggle-touched fields only on a
+  token match — a deleted original stays deleted and a same-id lookalike
+  stays untouched. `undoToken` is an optional field (`taskOptionalGuards`),
+  written lazily at toggle and cleared on undo — no load-time rewrite of
+  saved workspaces.
+- O5 non-interactive ghosts — ghost rows now render display-only markup:
+  no Checkbox, button, link or menu exists in the DOM for a second
+  activation to reach (`aria-hidden`, static spans, distinct
+  `.cd-task-ghost-*` classes that are also unreachable by the arrow-key
+  `.cd-task-main` selector). Undo removes the ghost and cancels its
+  per-key timeout immediately — no duplicate row lingers for 600 ms.
+  Completion stays immediate, counts come from real records, ghosts never
+  enter storage.
+
+Regressions added in `tasks-model.test.mjs` (model-level; no DOM harness —
+ghost interactivity and debounce timing are marked interaction-pending,
+the tests exercise the exact `moveTask`+`updateTask`/`undoToggle`
+transitions the UI runs): `athlete move applies pending edits in one
+transition; old scope stays untouched`, `undo binds to the operation token
+across a move and a rename`, `undo never touches a same-id lookalike
+occupying the old slot`, `undo does nothing when the toggled record was
+deleted`, `a superseded operation cannot undo — the newer toggle owns the
+record`, `undo leaves exactly one live record — the ghost snapshot carries
+no second copy`. The previous signature-refusal test was rewritten as
+`undo resolves same-id lookalikes by op token, not by signature` (the
+token now succeeds where the heuristic refused).
+
+Gates: `npm run check` exit 0 (367/367 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — 21 unapproved violations, all in
+pre-existing baseline files (identical set to base; zero in tasks.css);
+`git diff --check` exit 0. Browser checks outstanding — preview kept
+stopped (not authorized).
+
 ## 2026-11-14 — P791 Tasks Phase 1a closure repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P790 findings on

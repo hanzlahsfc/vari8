@@ -187,6 +187,27 @@
 .coach-root .cd-task-row.is-completing {
   pointer-events: none;
 }
+/* Ghost rows are pure markup — no checkbox, button or link — so the strike
+   through can never be activated twice; these styles only mirror the live
+   row's look for the ~600 ms the snapshot is visible. */
+.coach-root .cd-task-ghost-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--v8-on-accent);
+  background: var(--v8-accent-primary);
+}
+.coach-root .cd-task-ghost-main {
+  display: block;
+  width: 100%;
+  color: var(--cd-text);
+  font: inherit;
+  text-align: left;
+}
 .coach-root .cd-task-preview {
   display: block;
   margin-top: 2px;

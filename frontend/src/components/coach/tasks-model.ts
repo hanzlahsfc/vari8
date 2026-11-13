@@ -438,6 +438,11 @@ export type ToggleInverse = {
   ref: TaskRef;
   previous: TaskFields;
   copyId?: string;
+  /** Unique token stamped on the record by this toggle (`undoToken`). It
+   * travels with the record through moves and survives edits, but a
+   * different record in the same slot never inherits it — undo binds to
+   * this operation's task, nothing else. */
+  op: string;
 };
 
 /** Flip a task's completion in a single state transition. The record is
@@ -455,14 +460,16 @@ export function toggleTask(
   if (!at) return { state };
   const task = at.task;
   const clientId = at.clientId;
+  const op = taskId();
   if (task.complete) {
     const previous = { ...task };
     return {
       state: updateTask(state, ref, {
         complete: false,
         completedAt: undefined,
+        undoToken: op,
       }),
-      inverse: { ref: { id: task.id, clientId }, previous },
+      inverse: { ref: { id: task.id, clientId }, previous, op },
       completed: false,
     };
   }
@@ -480,6 +487,7 @@ export function toggleTask(
     delete completedCopy.repeat;
     delete completedCopy.reminderAt;
     delete completedCopy.reminderShownAt;
+    delete completedCopy.undoToken;
     const advanced: TaskFields = { ...task, deadline: next };
     if (task.reminderAt) {
       advanced.reminderAt = shiftDays(
@@ -492,6 +500,7 @@ export function toggleTask(
       deadline: next,
       reminderAt: advanced.reminderAt,
       reminderShownAt: undefined,
+      undoToken: op,
     });
     const relocated = locateRecord(withAdvanced, { id: task.id, clientId });
     const copy = { ...completedCopy };
@@ -526,6 +535,7 @@ export function toggleTask(
         ref: { id: task.id, clientId },
         previous,
         copyId: completedCopy.id,
+        op,
       },
       completed: true,
     };
@@ -534,41 +544,53 @@ export function toggleTask(
     state: updateTask(state, ref, {
       complete: true,
       completedAt: now,
+      undoToken: op,
     }),
-    inverse: { ref: { id: task.id, clientId }, previous },
+    inverse: { ref: { id: task.id, clientId }, previous, op },
     completed: true,
   };
 }
 
-/** When the scoped ref no longer resolves (the task moved since the
- * toggle), find the record by id plus an identity signature — createdAt
- * and title — so a same-id task in another scope can never be mistaken
- * for the toggled one. Ambiguous or absent matches refuse the write. */
-function locateBySignature(
+/** Find the record stamped with this operation's `undoToken`. The token
+ * is written by `toggleTask`, travels with the record through moves and
+ * survives edits, and is never inherited by another record — a same-id
+ * replacement in the old slot or a superseding toggle leaves no match. */
+function locateByToken(
   state: CoachState,
-  ref: TaskRef,
-  signature: TaskFields,
+  id: string,
+  token: string,
 ): Located | null {
-  const direct = locateRecord(state, ref);
-  if (direct) return direct;
-  const candidates = listTasks(state, { includeArchived: true }).filter(
-    (entry) =>
-      entry.task.id === ref.id &&
-      entry.task.createdAt === signature.createdAt &&
-      entry.task.title === signature.title,
+  const todos = state.coachTodos ?? [];
+  const todosIndex = todos.findIndex(
+    (t) => t.id === id && t.undoToken === token,
   );
-  if (candidates.length !== 1) return null;
-  return locateRecord(state, {
-    id: ref.id,
-    clientId: candidates[0].clientId,
-  });
+  if (todosIndex >= 0)
+    return {
+      where: "todos",
+      clientId: todos[todosIndex].clientId,
+      index: todosIndex,
+      task: todos[todosIndex],
+    };
+  for (const client of state.clients) {
+    const tasks = client.coachTasks as TaskFields[];
+    const index = tasks.findIndex((t) => t.id === id && t.undoToken === token);
+    if (index >= 0)
+      return {
+        where: "client",
+        clientId: client.id,
+        index,
+        task: client.coachTasks[index],
+      };
+  }
+  return null;
 }
 
-/** Reverse a toggle: drop the recurring completed copy and re-apply only
- * the fields the toggle changed (completion state, deadline, reminder) to
- * the CURRENT record. Edits made after the toggle — and a move to another
- * athlete — survive the undo; if the task was deleted in the meantime the
- * undo is a no-op rather than a resurrection. */
+/** Reverse a toggle: drop the recurring completed copy (addressed by its
+ * unique id — operation-owned, never collides with another task) and
+ * re-apply only the fields the toggle changed to the CURRENT record, found
+ * by the operation's `undoToken`. Edits after the toggle — and a move to
+ * another athlete — survive; a deleted record stays deleted, a same-id
+ * replacement stays untouched, and a superseded operation is a no-op. */
 export function undoToggle(
   state: CoachState,
   inverse: ToggleInverse,
@@ -576,7 +598,7 @@ export function undoToggle(
   const withoutCopy = inverse.copyId
     ? removeTaskRecord(state, inverse.copyId)
     : state;
-  const current = locateBySignature(withoutCopy, inverse.ref, inverse.previous);
+  const current = locateByToken(withoutCopy, inverse.ref.id, inverse.op);
   if (!current) return withoutCopy;
   const stored: StoredTask = {
     ...current.task,
@@ -592,6 +614,7 @@ export function undoToggle(
   if (inverse.previous.reminderShownAt)
     stored.reminderShownAt = inverse.previous.reminderShownAt;
   else delete stored.reminderShownAt;
+  delete stored.undoToken;
   return writeLocated(withoutCopy, current, stored);
 }
 

@@ -5,6 +5,7 @@ import {
   AtSign,
   Bell,
   CalendarDays,
+  Check,
   Flag,
   Pencil,
   Plus,
@@ -186,6 +187,9 @@ function TasksView({
   const [completing, setCompleting] = useState<ReadonlyMap<string, TaskEntry>>(
     new Map(),
   );
+  // One timeout per ghost so undo (or delete) can cancel it immediately
+  // instead of leaving a stale snapshot until the 600 ms expires.
+  const completingTimers = useRef(new Map<string, number>());
   const [dayAdd, setDayAdd] = useState<string | null>(null);
   const [moveEntry, setMoveEntry] = useState<TaskEntry | null>(null);
   const quickRef = useRef<HTMLInputElement>(null);
@@ -268,13 +272,17 @@ function TasksView({
     };
   }, [activePool, visible, today]);
 
-  const clearCompleting = (key: string) =>
+  const clearCompleting = (key: string) => {
+    const timer = completingTimers.current.get(key);
+    if (timer !== undefined) window.clearTimeout(timer);
+    completingTimers.current.delete(key);
     setCompleting((s) => {
       if (!s.has(key)) return s;
       const next = new Map(s);
       next.delete(key);
       return next;
     });
+  };
 
   /** Single state transition resolved by scope+id at write time. The write
    * happens immediately — the ~600 ms strike-through is display only — so a
@@ -283,6 +291,7 @@ function TasksView({
    * nor revert its owner. */
   const applyToggle = (entry: TaskEntry) => {
     const ref = { id: entry.task.id, clientId: entry.clientId };
+    const key = taskKey(entry);
     const result: { inverse?: ToggleInverse; completed?: boolean } = {};
     setState((s) => {
       const r = toggleTask(s, ref, today);
@@ -295,6 +304,9 @@ function TasksView({
     // reopens instead of double-completing.
     if (result.completed)
       toast("Task completed.", () => {
+        // Undo removes the strike-through ghost and cancels its timer
+        // immediately — no duplicate row lingers for 600 ms.
+        clearCompleting(key);
         if (result.inverse)
           setState((s) => undoToggle(s, result.inverse as ToggleInverse));
       });
@@ -309,7 +321,10 @@ function TasksView({
     applyToggle(entry);
     if (reduced) return;
     setCompleting((s) => new Map(s).set(key, { ...entry, ghost: true }));
-    window.setTimeout(() => clearCompleting(key), 600);
+    completingTimers.current.set(
+      key,
+      window.setTimeout(() => clearCompleting(key), 600),
+    );
   };
 
   const add = (task: TaskFields) => {
@@ -586,8 +601,25 @@ function TasksView({
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
             }
-            onMove={(clientId) =>
-              setState((s) => moveTask(s, selected, clientId))
+            onMove={(clientId, fields) =>
+              setState((s) => {
+                const moved = moveTask(s, selected, clientId);
+                if (!fields || !Object.keys(fields).length) return moved;
+                // Pending edits travel with the record in one transition —
+                // the new owner gets them; nothing writes the old scope.
+                const atNew = updateTask(
+                  moved,
+                  { id: selected.task.id, clientId },
+                  fields,
+                );
+                if (atNew !== moved || moved !== s) return atNew;
+                // The record could not move — keep the draft where it lives.
+                return updateTask(
+                  s,
+                  { id: selected.task.id, clientId: selected.clientId },
+                  fields,
+                );
+              })
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -610,8 +642,22 @@ function TasksView({
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
             }
-            onMove={(clientId) =>
-              setState((s) => moveTask(s, selected, clientId))
+            onMove={(clientId, fields) =>
+              setState((s) => {
+                const moved = moveTask(s, selected, clientId);
+                if (!fields || !Object.keys(fields).length) return moved;
+                const atNew = updateTask(
+                  moved,
+                  { id: selected.task.id, clientId },
+                  fields,
+                );
+                if (atNew !== moved || moved !== s) return atNew;
+                return updateTask(
+                  s,
+                  { id: selected.task.id, clientId: selected.clientId },
+                  fields,
+                );
+              })
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -705,10 +751,58 @@ function TaskRow({
   onOpenAthlete?: (entry: TaskEntry) => void;
 }) {
   const { task } = entry;
-  // Ghost rows render the pre-toggle snapshot: struck-through and inert —
-  // they can never complete a second time or reach the store.
+  // Ghost rows render the pre-toggle snapshot for the ~600 ms strike-through:
+  // display-only content with no interactive descendants at all — no checkbox,
+  // button, link or menu exists for a second activation to reach, and nothing
+  // ghost-owned can write to the store.
   const isGhost = !!entry.ghost;
   const overdue = !task.complete && !!task.deadline && task.deadline < today;
+
+  if (isGhost)
+    return (
+      <li className="cd-task-row is-completing" aria-hidden="true">
+        <span className="cd-task-ghost-check">
+          <Check size={12} />
+        </span>
+        <div className="cd-task-body">
+          <div className="cd-task-ghost-main">
+            <span className="cd-task-title">
+              {task.title}
+              {task.priority === "high" && (
+                <Flag size={13} className="cd-task-flag" aria-hidden="true" />
+              )}
+            </span>
+            {task.notes && (
+              <span className="cd-task-preview">{task.notes}</span>
+            )}
+          </div>
+          <div className="cd-task-meta">
+            {entry.client && !fixedClientId && (
+              <span className="cd-task-owner">{entry.client.name}</span>
+            )}
+            {task.deadline && (
+              <span className={overdue ? "cd-task-overdue" : undefined}>
+                {overdue
+                  ? overdueLabel(task.deadline, today)
+                  : relativeDay(task.deadline, today)}
+              </span>
+            )}
+            {task.repeat && (
+              <span className="cd-task-repeat">
+                <Repeat size={11} aria-hidden="true" />
+                {repeatLabel(task.repeat)}
+              </span>
+            )}
+            {task.reminderAt && (
+              <span className="cd-task-reminder">
+                <Bell size={11} aria-hidden="true" />
+                {task.reminderAt.slice(11, 16)}
+              </span>
+            )}
+          </div>
+        </div>
+      </li>
+    );
 
   const rowKey = (event: KeyboardEvent<HTMLElement>) => {
     if (isGhost) return;
@@ -1246,7 +1340,9 @@ function TaskDetail({
   /** Applies `fields` to the task at `ref`'s scope — never creates,
    * never moves, never writes fields the caller did not edit. */
   onSave: (ref: TaskRef, fields: Partial<TaskFields>) => void;
-  onMove: (clientId?: string) => void;
+  /** Relocates the task — `fields` carries any pending edited fields so a
+   * debounced save and the move apply in one state transition. */
+  onMove: (clientId: string | undefined, fields?: Partial<TaskFields>) => void;
   onSnooze: () => void;
   onClose: () => void;
 }) {
@@ -1324,7 +1420,13 @@ function TaskDetail({
   const setAthlete = (value: string) => {
     const clientId = value === "general" ? undefined : value;
     setClientSel(clientId);
-    if (instant) onMove(clientId);
+    if (!instant) return;
+    // Consume the pending debounced edit so the unmount cleanup cannot
+    // replay it at the old scope — the move applies it atomically.
+    window.clearTimeout(saveTimer.current);
+    const fields = editedRef.current;
+    editedRef.current = {};
+    onMove(clientId, fields);
   };
 
   const applyRepeat = (value: string) => {
@@ -1587,9 +1689,13 @@ function TaskDetail({
               );
               return;
             }
-            if (clientSel !== entry.clientId) onMove(clientSel);
-            // Move first, then the scoped update lands at the new owner.
-            onSave({ id: entry.task.id, clientId: clientSel }, draft);
+            if (clientSel !== entry.clientId) {
+              // The move carries the draft in one state transition so the
+              // edits land at the new owner, never the old scope.
+              onMove(clientSel, draft);
+            } else {
+              onSave({ id: entry.task.id, clientId: clientSel }, draft);
+            }
             onClose();
           }}
         >

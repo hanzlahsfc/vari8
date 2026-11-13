@@ -717,6 +717,10 @@ export type TaskFields = {
   repeat?: TaskRepeat;
   /** Set when the in-app reminder toast fired; survives reloads. */
   reminderShownAt?: string;
+  /** Transient token written by `toggleTask` so undo can bind to the exact
+   * record even after a move or rename; cleared when the undo runs. Never
+   * part of the visible model and never set on legacy records at load. */
+  undoToken?: string;
   link?: {
     kind: "check-in" | "message" | "timeline" | "note" | "set-note";
     id: string;
@@ -1731,6 +1735,7 @@ const taskOptionalGuards: Record<string, Guard> = {
   createdAt: opt(str),
   completedAt: opt(str),
   reminderShownAt: opt(str),
+  undoToken: opt(str),
   repeat: opt(taskRepeatGuard),
   link: opt(
     obj({

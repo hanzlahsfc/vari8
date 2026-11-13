@@ -1121,9 +1121,10 @@ test("undo after a move targets the moved record via signature, not bare id", ()
   assert.equal(general.title, "lookalike");
 });
 
-test("undo refuses ambiguous same-id lookalikes rather than corrupting", () => {
-  // Two same-id records with identical signatures: after a move the undo
-  // cannot prove which occurrence it belongs to, so it no-ops.
+test("undo resolves same-id lookalikes by op token, not by signature", () => {
+  // Two same-id records with identical content: the op token stamped at
+  // toggle still identifies the exact record after a move — the lookalike
+  // in the old slot is never touched.
   const record = (title) => ({
     id: "dup",
     title,
@@ -1146,14 +1147,19 @@ test("undo refuses ambiguous same-id lookalikes rather than corrupting", () => {
     "client-007",
   );
   const undone = undoToggle(moved, toggled.inverse);
-  // Both records remain in their toggled/moved state — nothing rewritten.
+  // The toggled record is restored where it now lives; the untouched
+  // lookalike stays exactly as it was.
   assert.equal(
     findTask(undone, { id: "dup", clientId: "client-007" }).task.complete,
-    true,
+    false,
   );
   assert.equal(
     findTask(undone, { id: "dup", clientId: undefined }).task.complete,
     false,
+  );
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: undefined }).task.undoToken,
+    undefined,
   );
 });
 
@@ -1220,4 +1226,167 @@ test("ghosts render the struck-through snapshot while the live record moves on",
   const plainViews = taskViews(plainEntries, TODAY, { ghosts: plainGhost });
   const plainToday = plainViews.today.groups.flatMap((g) => g.items);
   assert.equal(plainToday.find((e) => e.task.id === "t2").ghost, true);
+});
+
+// --- P793 closure: O1 atomic move+edit, O2 token-bound undo, O5 ghosts ---
+// Model-level evidence: these run the exact transitions the UI performs —
+// moveTask + updateTask at the new scope (detail-panel athlete change with
+// a pending debounce), and toggleTask/undoToggle token binding. Ghost row
+// interactivity is markup in tasks.tsx — interaction coverage pending.
+
+test("athlete move applies pending edits in one transition; old scope stays untouched", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        {
+          id: "t1",
+          title: "draft",
+          complete: false,
+          notes: "original notes",
+          deadline: TODAY,
+        },
+      ]),
+      client("client-007"),
+    ],
+  });
+  // The exact transition the detail panel runs: move, then field-scoped
+  // update at the new scope.
+  const moved = moveTask(
+    base,
+    { id: "t1", clientId: "client-001" },
+    "client-007",
+  );
+  const next = updateTask(
+    moved,
+    { id: "t1", clientId: "client-007" },
+    { title: "edited before move" },
+  );
+  const task = findTask(next, { id: "t1", clientId: "client-007" }).task;
+  assert.equal(task.title, "edited before move");
+  assert.equal(task.notes, "original notes"); // unedited fields preserved
+  assert.equal(findTask(next, { id: "t1", clientId: "client-001" }), undefined);
+  // A late replay of the consumed debounce at the old scope is a no-op.
+  const replay = updateTask(
+    next,
+    { id: "t1", clientId: "client-001" },
+    { title: "stale replay" },
+  );
+  assert.equal(replay, next);
+});
+
+test("undo binds to the operation token across a move and a rename", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        {
+          id: "t1",
+          title: "check photos",
+          complete: false,
+          deadline: TODAY,
+          createdAt: "2026-11-01T09:00",
+        },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1", clientId: "client-001" }, TODAY);
+  const moved = moveTask(
+    toggled.state,
+    { id: "t1", clientId: "client-001" },
+    "client-007",
+  );
+  const renamed = updateTask(
+    moved,
+    { id: "t1", clientId: "client-007" },
+    { title: "check stage photos" },
+  );
+  const undone = undoToggle(renamed, toggled.inverse);
+  const task = findTask(undone, { id: "t1", clientId: "client-007" }).task;
+  assert.equal(task.complete, false);
+  assert.equal(task.completedAt, undefined);
+  assert.equal(task.title, "check stage photos"); // rename survives undo
+  assert.equal(task.undoToken, undefined); // token consumed
+});
+
+test("undo never touches a same-id lookalike occupying the old slot", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "slot",
+        title: "same title",
+        complete: false,
+        deadline: TODAY,
+        createdAt: "2026-11-01T09:00",
+      },
+    ],
+  });
+  const toggled = toggleTask(base, { id: "slot" }, TODAY);
+  const deleted = deleteTask(toggled.state, { id: "slot" });
+  // A replacement record reuses the exact id, title and createdAt — the
+  // signature heuristic could not tell it apart; the op token can.
+  const replaced = saveTask(
+    deleted.state,
+    {
+      id: "slot",
+      title: "same title",
+      complete: false,
+      deadline: TODAY,
+      createdAt: "2026-11-01T09:00",
+      notes: "replacement",
+    },
+    undefined,
+  );
+  const undone = undoToggle(replaced, toggled.inverse);
+  const slot = findTask(undone, { id: "slot" }).task;
+  assert.equal(slot.notes, "replacement");
+  assert.equal(slot.complete, false);
+  assert.equal(tasksById(undone, "slot").length, 1);
+});
+
+test("undo does nothing when the toggled record was deleted", () => {
+  const base = workspaceState({
+    coachTodos: [
+      { id: "t1", title: "gone", complete: false, deadline: TODAY },
+      { id: "t2", title: "keep", complete: false, deadline: TODAY },
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  const deleted = deleteTask(toggled.state, { id: "t1" });
+  const undone = undoToggle(deleted.state, toggled.inverse);
+  assert.equal(findTask(undone, { id: "t1" }), undefined);
+  assert.equal(findTask(undone, { id: "t2" }).task.title, "keep");
+});
+
+test("a superseded operation cannot undo — the newer toggle owns the record", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "flip", complete: false, deadline: TODAY }],
+  });
+  const first = toggleTask(base, { id: "t1" }, TODAY); // completes, op1
+  const second = toggleTask(first.state, { id: "t1" }, TODAY); // reopens, op2
+  const staleUndo = undoToggle(second.state, first.inverse);
+  assert.equal(findTask(staleUndo, { id: "t1" }).task.complete, false);
+  // The live op still undoes normally afterwards.
+  const liveUndo = undoToggle(second.state, second.inverse);
+  const task = findTask(liveUndo, { id: "t1" }).task;
+  assert.equal(task.complete, true);
+  assert.equal(task.undoToken, undefined);
+});
+
+test("undo leaves exactly one live record — the ghost snapshot carries no second copy", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  const undone = undoToggle(toggled.state, toggled.inverse);
+  const all = tasksById(undone, "t1");
+  assert.equal(all.length, 1);
+  assert.equal(all[0].task.complete, false);
 });
