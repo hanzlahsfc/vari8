@@ -63,6 +63,7 @@ import {
   searchTasks,
   snoozeReminder,
   type TaskEntry,
+  type TaskRef,
   type TaskViewId,
   type ToggleInverse,
   taskKey,
@@ -70,6 +71,7 @@ import {
   taskViews,
   toggleTask,
   undoToggle,
+  updateTask,
 } from "./tasks-model";
 import {
   Button,
@@ -179,7 +181,11 @@ function TasksView({
   const today = localToday();
   const reduced = useReducedMotion();
   const [search, setSearch] = useState("");
-  const [completing, setCompleting] = useState<ReadonlySet<string>>(new Set());
+  // Pre-toggle snapshots kept for the ~600 ms strike-through. Display
+  // only — ghost rows are inert and never write to the store.
+  const [completing, setCompleting] = useState<ReadonlyMap<string, TaskEntry>>(
+    new Map(),
+  );
   const [dayAdd, setDayAdd] = useState<string | null>(null);
   const [moveEntry, setMoveEntry] = useState<TaskEntry | null>(null);
   const quickRef = useRef<HTMLInputElement>(null);
@@ -245,13 +251,12 @@ function TasksView({
       ),
     [visible, activeIds, filter],
   );
-  const views = useMemo(
-    () =>
-      view === "today" || view === "upcoming"
-        ? taskViews(activePool, today, { keepIds: completing })
-        : taskViews(visible, today, { keepIds: completing }),
-    [view, activePool, visible, today, completing],
-  );
+  const views = useMemo(() => {
+    const ghosts = [...completing.values()];
+    return view === "today" || view === "upcoming"
+      ? taskViews(activePool, today, { ghosts })
+      : taskViews(visible, today, { ghosts });
+  }, [view, activePool, visible, today, completing]);
   const counts = useMemo(() => {
     const active = taskViews(activePool, today);
     const all = taskViews(visible, today);
@@ -263,13 +268,10 @@ function TasksView({
     };
   }, [activePool, visible, today]);
 
-  // Animation markers are keyed by scope+id: duplicate ids across owners
-  // must not cross-trigger the strike-through.
-  const completingKey = (entry: TaskEntry) => taskKey(entry);
   const clearCompleting = (key: string) =>
     setCompleting((s) => {
       if (!s.has(key)) return s;
-      const next = new Set(s);
+      const next = new Map(s);
       next.delete(key);
       return next;
     });
@@ -299,11 +301,14 @@ function TasksView({
   };
 
   const complete = (entry: TaskEntry) => {
-    const key = completingKey(entry);
+    // Ghost rows are display-only: a second activation on the snapshot must
+    // not reach the store.
+    if (entry.ghost) return;
+    const key = taskKey(entry);
     if (entry.task.complete || completing.has(key)) return applyToggle(entry);
     applyToggle(entry);
     if (reduced) return;
-    setCompleting((s) => new Set(s).add(key));
+    setCompleting((s) => new Map(s).set(key, { ...entry, ghost: true }));
     window.setTimeout(() => clearCompleting(key), 600);
   };
 
@@ -312,7 +317,7 @@ function TasksView({
   };
 
   const remove = (entry: TaskEntry) => {
-    clearCompleting(completingKey(entry));
+    clearCompleting(taskKey(entry));
     const result: { removed?: RemovedTask } = {};
     setState((s) => {
       const r = deleteTask(s, {
@@ -361,16 +366,11 @@ function TasksView({
         `Moved ${moved.length} ${moved.length === 1 ? "task" : "tasks"} to today.`,
         () =>
           setState((s) =>
-            moved.reduce((next, m) => {
-              const current = findTask(next, m.ref);
-              return current
-                ? saveTask(
-                    next,
-                    { ...current.task, deadline: m.previousDeadline },
-                    current.clientId,
-                  )
-                : next;
-            }, s),
+            moved.reduce(
+              (next, m) =>
+                updateTask(next, m.ref, { deadline: m.previousDeadline }),
+              s,
+            ),
           ),
       );
   };
@@ -386,7 +386,6 @@ function TasksView({
   const listProps = {
     today,
     fixedClientId,
-    completing,
     onToggle: complete,
     onOpen: (entry: TaskEntry) => onSelect(taskParam(entry, entries)),
     onDuplicate: duplicate,
@@ -578,13 +577,14 @@ function TasksView({
       {selected && detailWide && (
         <aside className="cd-task-detail" aria-label="Task details">
           <TaskDetail
+            key={taskKey(selected)}
             entry={selected}
             athletes={athletes}
             today={today}
             instant
             onClose={() => onSelect(null)}
-            onSave={(task, clientId) =>
-              setState((s) => saveTask(s, task, clientId ?? selected.clientId))
+            onSave={(ref, fields) =>
+              setState((s) => updateTask(s, ref, fields))
             }
             onMove={(clientId) =>
               setState((s) => moveTask(s, selected, clientId))
@@ -601,13 +601,14 @@ function TasksView({
       {selected && !detailWide && (
         <Dialog title="Task details" onClose={() => onSelect(null)} wide>
           <TaskDetail
+            key={taskKey(selected)}
             entry={selected}
             athletes={athletes}
             today={today}
             instant={false}
             onClose={() => onSelect(null)}
-            onSave={(task, clientId) =>
-              setState((s) => saveTask(s, task, clientId))
+            onSave={(ref, fields) =>
+              setState((s) => updateTask(s, ref, fields))
             }
             onMove={(clientId) =>
               setState((s) => moveTask(s, selected, clientId))
@@ -669,7 +670,11 @@ function TaskGroup({
       )}
       <ul className="cd-task-list">
         {entries.map((entry) => (
-          <TaskRow key={entry.task.id} entry={entry} {...rowProps} />
+          <TaskRow
+            key={`${entry.ghost ? "ghost:" : ""}${taskKey(entry)}`}
+            entry={entry}
+            {...rowProps}
+          />
         ))}
       </ul>
     </section>
@@ -680,7 +685,6 @@ function TaskRow({
   entry,
   today,
   fixedClientId,
-  completing,
   showCompletedAt,
   onToggle,
   onOpen,
@@ -692,7 +696,6 @@ function TaskRow({
   entry: TaskEntry;
   today: string;
   fixedClientId?: string;
-  completing: ReadonlySet<string>;
   showCompletedAt?: boolean;
   onToggle: (entry: TaskEntry) => void;
   onOpen: (entry: TaskEntry) => void;
@@ -702,11 +705,13 @@ function TaskRow({
   onOpenAthlete?: (entry: TaskEntry) => void;
 }) {
   const { task } = entry;
-  const isCompleting = completing.has(taskKey(entry));
+  // Ghost rows render the pre-toggle snapshot: struck-through and inert —
+  // they can never complete a second time or reach the store.
+  const isGhost = !!entry.ghost;
   const overdue = !task.complete && !!task.deadline && task.deadline < today;
 
   const rowKey = (event: KeyboardEvent<HTMLElement>) => {
-    if (isCompleting) return;
+    if (isGhost) return;
     const root = event.currentTarget.closest(".cd-tasks");
     const mains = root
       ? Array.from(
@@ -732,15 +737,15 @@ function TaskRow({
 
   return (
     <li
-      className={`cd-task-row${task.complete ? " is-done" : ""}${isCompleting ? " is-completing" : ""}`}
+      className={`cd-task-row${task.complete ? " is-done" : ""}${isGhost ? " is-completing" : ""}`}
     >
       <Checkbox
         label=""
         ariaLabel={`${task.complete ? "Reopen" : "Complete"} ${task.title}`}
-        checked={task.complete || isCompleting}
-        disabled={isCompleting}
+        checked={task.complete || isGhost}
+        disabled={isGhost}
         onCheckedChange={() => {
-          if (!isCompleting) onToggle(entry);
+          if (!isGhost) onToggle(entry);
         }}
       />
       <div className="cd-task-body">
@@ -1238,7 +1243,9 @@ function TaskDetail({
   today: string;
   /** Panel mode saves field edits as they happen; dialog mode keeps a draft. */
   instant: boolean;
-  onSave: (task: TaskFields, clientId?: string) => void;
+  /** Applies `fields` to the task at `ref`'s scope — never creates,
+   * never moves, never writes fields the caller did not edit. */
+  onSave: (ref: TaskRef, fields: Partial<TaskFields>) => void;
   onMove: (clientId?: string) => void;
   onSnooze: () => void;
   onClose: () => void;
@@ -1250,20 +1257,34 @@ function TaskDetail({
   );
   const [correction, setCorrection] = useState<string | undefined>(undefined);
   const saveTimer = useRef<number | undefined>(undefined);
-  // Latest values for the debounced + unmount flush: a pending save always
-  // commits the newest draft to the newest scope, never a stale snapshot.
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
+  // Pending saves bind the task's id, the scope it lives at NOW (moves
+  // update clientSel), and only the fields the coach actually edited —
+  // a flush can never write a stale draft over newer fields, create a
+  // deleted record, or drag the task back to a former athlete.
+  const editedRef = useRef<Partial<TaskFields>>({});
   const clientSelRef = useRef(clientSel);
   clientSelRef.current = clientSel;
   const instantRef = useRef(instant);
   instantRef.current = instant;
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
-  const pendingSave = useRef(false);
+  const taskIdRef = useRef(task.id);
+  taskIdRef.current = task.id;
+
+  const ref = () => ({
+    id: taskIdRef.current,
+    clientId: clientSelRef.current,
+  });
+  const flush = () => {
+    const fields = editedRef.current;
+    editedRef.current = {};
+    if (instantRef.current && Object.keys(fields).length)
+      onSaveRef.current(ref(), fields);
+  };
 
   useEffect(() => {
-    setDraft(task);
+    // Keep the coach's pending (unsaved) edits visible across the reset.
+    setDraft({ ...task, ...editedRef.current });
   }, [task]);
   useEffect(() => {
     setClientSel(entry.clientId);
@@ -1271,29 +1292,32 @@ function TaskDetail({
   useEffect(
     () => () => {
       window.clearTimeout(saveTimer.current);
-      // Closing the panel commits the pending save instead of dropping it.
-      if (instantRef.current && pendingSave.current)
-        onSaveRef.current(draftRef.current, clientSelRef.current);
+      // Unmount (close, task switch, athlete move) commits the pending
+      // field-scoped save instead of dropping it.
+      const fields = editedRef.current;
+      editedRef.current = {};
+      if (instantRef.current && Object.keys(fields).length)
+        onSaveRef.current(
+          { id: taskIdRef.current, clientId: clientSelRef.current },
+          fields,
+        );
     },
     [],
   );
 
   const scheduleSave = () => {
-    if (!instant) return;
-    pendingSave.current = true;
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => {
-      pendingSave.current = false;
-      onSave(draftRef.current, clientSelRef.current);
-    }, 400);
+    saveTimer.current = window.setTimeout(flush, 400);
   };
 
   const patch = (partial: Partial<TaskFields>, debounce = false) => {
-    const next = { ...draft, ...partial };
-    setDraft(next);
-    if (instant) {
-      if (debounce) scheduleSave();
-      else onSave(next, clientSelRef.current);
+    setDraft((d) => ({ ...d, ...partial }));
+    if (!instant) return;
+    if (debounce) {
+      editedRef.current = { ...editedRef.current, ...partial };
+      scheduleSave();
+    } else {
+      onSaveRef.current(ref(), partial);
     }
   };
 
@@ -1306,9 +1330,7 @@ function TaskDetail({
   const applyRepeat = (value: string) => {
     const option = value as RepeatOption;
     if (option === "none") {
-      const next = { ...draft };
-      delete next.repeat;
-      patch(next);
+      patch({ repeat: undefined });
       return;
     }
     const base = draft.deadline ?? today;
@@ -1330,14 +1352,14 @@ function TaskDetail({
             : option === "monthly"
               ? { unit: "month", interval: 1 }
               : { unit: "day", interval: 2 };
-    const next = { ...draft, repeat };
-    if (!next.deadline) {
+    const partial: Partial<TaskFields> = { repeat };
+    if (!draft.deadline) {
       // A repeat rule needs a date to advance from — start it at the next
       // occurrence and say so rather than saving a silent one-shot.
-      next.deadline = occurrenceOnOrAfter(today, repeat);
+      partial.deadline = occurrenceOnOrAfter(today, repeat);
       setCorrection("Date set to the next occurrence — repeats need a date.");
     } else setCorrection(undefined);
-    patch(next);
+    patch(partial);
   };
 
   const onDateChange = (value: string) => {
@@ -1346,25 +1368,22 @@ function TaskDetail({
       patch({ deadline: value });
       return;
     }
-    const next = { ...draft };
-    delete next.deadline;
-    if (next.repeat) {
-      delete next.repeat;
+    const partial: Partial<TaskFields> = { deadline: undefined };
+    if (draft.repeat) {
+      partial.repeat = undefined;
       setCorrection("Repeat removed — repeating tasks need a date.");
     } else setCorrection(undefined);
-    patch(next);
+    patch(partial);
   };
 
   const repeat = draft.repeat;
   const repeatValue = repeatOption(repeat);
   const patchReminder = (date: string, time: string) => {
-    const next = { ...draft };
-    if (date) next.reminderAt = `${date}T${time || "09:00"}`;
-    else delete next.reminderAt;
-    if (!next.reminderAt) delete next.reminderShownAt;
-    else if (next.reminderAt !== task.reminderAt) delete next.reminderShownAt;
-    setDraft(next);
-    if (instant) onSave(next, clientSelRef.current);
+    // The model owns the shown marker: a changed reminder re-arms it,
+    // an unchanged one keeps it.
+    patch({
+      reminderAt: date ? `${date}T${time || "09:00"}` : undefined,
+    });
   };
 
   // Dialog mode snoozes the draft so the coach still saves explicitly;
@@ -1375,9 +1394,7 @@ function TaskDetail({
       onSnooze();
       return;
     }
-    const next = { ...draft, reminderAt: localDateTime(until) };
-    delete next.reminderShownAt;
-    setDraft(next);
+    setDraft((d) => ({ ...d, reminderAt: localDateTime(until) }));
   };
 
   const fields = (
@@ -1571,7 +1588,8 @@ function TaskDetail({
               return;
             }
             if (clientSel !== entry.clientId) onMove(clientSel);
-            onSave(draft, clientSel);
+            // Move first, then the scoped update lands at the new owner.
+            onSave({ id: entry.task.id, clientId: clientSel }, draft);
             onClose();
           }}
         >

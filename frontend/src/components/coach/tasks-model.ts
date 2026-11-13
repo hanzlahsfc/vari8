@@ -18,6 +18,9 @@ export type TaskEntry = {
   clientId?: string;
   client?: CoachClient;
   task: TaskFields;
+  /** Display-only snapshot of a task mid complete-out animation. Ghosts
+   * render the struck-through pre-toggle row; they never write to state. */
+  ghost?: boolean;
 };
 
 export type TaskRef = { id: string; clientId?: string };
@@ -161,53 +164,96 @@ function insertAt<T>(list: T[], index: number, item: T): T[] {
   ];
 }
 
+type StoredTask = { clientId?: string } & TaskFields;
+
+/** Normalize a would-be stored record to its location: ownership follows
+ * where the record lives (saves never move), and the reminder shown-marker
+ * resets only when the reminder time itself changes. */
+function normalizeWrite(at: Located, stored: StoredTask): StoredTask {
+  if (at.where === "todos") {
+    if (at.clientId) stored.clientId = at.clientId;
+    else delete stored.clientId;
+  } else {
+    delete stored.clientId;
+  }
+  if ((at.task.reminderAt ?? "") !== (stored.reminderAt ?? "")) {
+    // Rescheduled reminder may fire again; snoozes set a new time.
+    delete stored.reminderShownAt;
+  } else if (stored.reminderShownAt === undefined) {
+    // Unrelated edits that never touched the marker keep the stored one —
+    // an explicit write (markRemindersShown) or reschedule still works.
+    stored.reminderShownAt = at.task.reminderShownAt;
+  }
+  return stored;
+}
+
+/** Merge a field-scoped patch onto the current record; undefined-valued
+ * keys delete the field. */
+function applyEdits(at: Located, fields: Partial<TaskFields>): StoredTask {
+  const stored: StoredTask = { ...at.task };
+  for (const [key, value] of Object.entries(fields) as [
+    keyof TaskFields,
+    unknown,
+  ][]) {
+    if (value === undefined) delete stored[key];
+    else (stored as Record<string, unknown>)[key] = value;
+  }
+  return normalizeWrite(at, stored);
+}
+
+function writeLocated(
+  state: CoachState,
+  at: Located,
+  stored: StoredTask,
+): CoachState {
+  if (at.where === "todos")
+    return {
+      ...state,
+      coachTodos: (state.coachTodos ?? []).map((t, i) =>
+        i === at.index ? stored : t,
+      ),
+    };
+  return {
+    ...state,
+    clients: state.clients.map((c) =>
+      c.id === at.clientId
+        ? {
+            ...c,
+            coachTasks: c.coachTasks.map((t, i) =>
+              i === at.index ? stored : t,
+            ),
+          }
+        : c,
+    ),
+  };
+}
+
+/** Update an existing record addressed by an exact scoped ref, merging only
+ * `fields` (undefined-valued keys delete). Never creates, never moves, and
+ * never searches beyond the ref's scope — a late write for a deleted or
+ * moved-away task is a no-op, and only the edited fields can overwrite. */
+export function updateTask(
+  state: CoachState,
+  ref: TaskRef,
+  fields: Partial<TaskFields>,
+): CoachState {
+  const at = locateRecord(state, ref);
+  if (!at) return state;
+  return writeLocated(state, at, applyEdits(at, fields));
+}
+
 /** Write a task into `clientId`'s scope (undefined = General) for NEW tasks.
  * Existing records update in place wherever they live — ownership is never
  * silently changed by a save, only by `moveTask`. Rescheduling a reminder
- * clears its shown marker; unrelated edits keep it. */
+ * clears its shown marker; unrelated edits keep it. Prefer `updateTask`
+ * for edits to an existing record: it never creates and stays scoped. */
 export function saveTask(
   state: CoachState,
   task: TaskFields,
   clientId: string | undefined,
 ): CoachState {
   const at = locateById(state, task.id, clientId);
-  if (at) {
-    const stored = { ...task };
-    if (at.where === "todos") {
-      if (at.clientId) stored.clientId = at.clientId;
-      else delete stored.clientId;
-    } else {
-      delete stored.clientId;
-    }
-    if ((at.task.reminderAt ?? "") !== (stored.reminderAt ?? "")) {
-      // Rescheduled reminder may fire again; snoozes set a new time.
-      delete stored.reminderShownAt;
-    } else if (stored.reminderShownAt === undefined) {
-      // Unrelated edits that never touched the marker keep the stored one —
-      // an explicit write (markRemindersShown) or reschedule still works.
-      stored.reminderShownAt = at.task.reminderShownAt;
-    }
-    if (at.where === "todos")
-      return {
-        ...state,
-        coachTodos: (state.coachTodos ?? []).map((t, i) =>
-          i === at.index ? stored : t,
-        ),
-      };
-    return {
-      ...state,
-      clients: state.clients.map((c) =>
-        c.id === at.clientId
-          ? {
-              ...c,
-              coachTasks: c.coachTasks.map((t, i) =>
-                i === at.index ? stored : t,
-              ),
-            }
-          : c,
-      ),
-    };
-  }
+  if (at) return writeLocated(state, at, normalizeWrite(at, { ...task }));
   const fresh = { ...task };
   if (clientId) fresh.clientId = clientId;
   else delete fresh.clientId;
@@ -411,10 +457,11 @@ export function toggleTask(
   const clientId = at.clientId;
   if (task.complete) {
     const previous = { ...task };
-    const restored = { ...task, complete: false };
-    delete restored.completedAt;
     return {
-      state: saveTask(state, restored, clientId),
+      state: updateTask(state, ref, {
+        complete: false,
+        completedAt: undefined,
+      }),
       inverse: { ref: { id: task.id, clientId }, previous },
       completed: false,
     };
@@ -441,7 +488,11 @@ export function toggleTask(
       );
       delete advanced.reminderShownAt;
     }
-    const withAdvanced = saveTask(state, advanced, clientId);
+    const withAdvanced = updateTask(state, ref, {
+      deadline: next,
+      reminderAt: advanced.reminderAt,
+      reminderShownAt: undefined,
+    });
     const relocated = locateRecord(withAdvanced, { id: task.id, clientId });
     const copy = { ...completedCopy };
     let withCopy: CoachState;
@@ -480,14 +531,37 @@ export function toggleTask(
     };
   }
   return {
-    state: saveTask(
-      state,
-      { ...task, complete: true, completedAt: now },
-      clientId,
-    ),
+    state: updateTask(state, ref, {
+      complete: true,
+      completedAt: now,
+    }),
     inverse: { ref: { id: task.id, clientId }, previous },
     completed: true,
   };
+}
+
+/** When the scoped ref no longer resolves (the task moved since the
+ * toggle), find the record by id plus an identity signature — createdAt
+ * and title — so a same-id task in another scope can never be mistaken
+ * for the toggled one. Ambiguous or absent matches refuse the write. */
+function locateBySignature(
+  state: CoachState,
+  ref: TaskRef,
+  signature: TaskFields,
+): Located | null {
+  const direct = locateRecord(state, ref);
+  if (direct) return direct;
+  const candidates = listTasks(state, { includeArchived: true }).filter(
+    (entry) =>
+      entry.task.id === ref.id &&
+      entry.task.createdAt === signature.createdAt &&
+      entry.task.title === signature.title,
+  );
+  if (candidates.length !== 1) return null;
+  return locateRecord(state, {
+    id: ref.id,
+    clientId: candidates[0].clientId,
+  });
 }
 
 /** Reverse a toggle: drop the recurring completed copy and re-apply only
@@ -502,23 +576,23 @@ export function undoToggle(
   const withoutCopy = inverse.copyId
     ? removeTaskRecord(state, inverse.copyId)
     : state;
-  const current = locateById(withoutCopy, inverse.ref.id);
+  const current = locateBySignature(withoutCopy, inverse.ref, inverse.previous);
   if (!current) return withoutCopy;
-  const restored = {
+  const stored: StoredTask = {
     ...current.task,
     complete: inverse.previous.complete,
     deadline: inverse.previous.deadline,
   };
   if (inverse.previous.completedAt)
-    restored.completedAt = inverse.previous.completedAt;
-  else delete restored.completedAt;
+    stored.completedAt = inverse.previous.completedAt;
+  else delete stored.completedAt;
   if (inverse.previous.reminderAt)
-    restored.reminderAt = inverse.previous.reminderAt;
-  else delete restored.reminderAt;
+    stored.reminderAt = inverse.previous.reminderAt;
+  else delete stored.reminderAt;
   if (inverse.previous.reminderShownAt)
-    restored.reminderShownAt = inverse.previous.reminderShownAt;
-  else delete restored.reminderShownAt;
-  return saveTask(withoutCopy, restored, current.clientId);
+    stored.reminderShownAt = inverse.previous.reminderShownAt;
+  else delete stored.reminderShownAt;
+  return writeLocated(withoutCopy, current, stored);
 }
 
 /** Set every listed overdue open task's deadline to today. Refs resolve to
@@ -546,7 +620,7 @@ export function rescheduleOverdue(
       ref: { id: task.id, clientId },
       previousDeadline: task.deadline,
     });
-    next = saveTask(next, { ...task, deadline: today }, clientId);
+    next = updateTask(next, ref, { deadline: today });
   }
   return { state: next, moved };
 }
@@ -632,13 +706,15 @@ export function repeatLabel(repeat: TaskRepeat): string {
 export function taskViews(
   entries: TaskEntry[],
   today: string,
-  options: { keepIds?: ReadonlySet<string> } = {},
+  options: { ghosts?: TaskEntry[] } = {},
 ): TaskViews {
-  const indexed = entries.map((entry, index) => ({ entry, index }));
-  // Tasks finishing their complete-out animation still count as open for
-  // grouping so the strike-through row stays put for its ~600 ms.
-  const isOpen = (entry: TaskEntry) =>
-    !entry.task.complete || !!options.keepIds?.has(taskKey(entry));
+  // Ghosts are pre-toggle snapshots kept for the ~600 ms strike-through.
+  // They group by their own (old) deadline like any open entry — the live
+  // record meanwhile lands wherever its current fields put it — and they
+  // can never complete again because the row renders them inert.
+  const pool = [...entries, ...(options.ghosts ?? [])];
+  const indexed = pool.map((entry, index) => ({ entry, index }));
+  const isOpen = (entry: TaskEntry) => !entry.task.complete || !!entry.ghost;
   const overdue = indexed
     .filter(
       ({ entry }) =>
@@ -812,13 +888,9 @@ export function markRemindersShown(
 ): CoachState {
   let next = state;
   for (const input of entries) {
-    const at = locateRecord(next, refOf(input));
-    if (!at) continue;
-    next = saveTask(
-      next,
-      { ...at.task, reminderShownAt: shownAt },
-      at.clientId,
-    );
+    const ref = refOf(input);
+    if (!locateRecord(next, ref)) continue;
+    next = updateTask(next, ref, { reminderShownAt: shownAt });
   }
   return next;
 }
@@ -830,11 +902,12 @@ export function snoozeReminder(
   input: TaskRefish,
   until: Date,
 ): CoachState {
-  const at = locateRecord(state, refOf(input));
-  if (!at) return state;
-  const task = { ...at.task, reminderAt: localDateTime(until) };
-  delete task.reminderShownAt;
-  return saveTask(state, task, at.clientId);
+  const ref = refOf(input);
+  if (!locateRecord(state, ref)) return state;
+  return updateTask(state, ref, {
+    reminderAt: localDateTime(until),
+    reminderShownAt: undefined,
+  });
 }
 
 // --- Quick add -------------------------------------------------------------

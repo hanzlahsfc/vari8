@@ -21,6 +21,7 @@ import {
   taskViews,
   toggleTask,
   undoToggle,
+  updateTask,
 } from "./tasks-model.ts";
 
 const TODAY = "2026-11-13"; // Friday
@@ -896,4 +897,327 @@ test("quick add @token binds only unique matches; ambiguous stays literal", () =
   const unique = parseQuickAdd("check @em", athletes, TODAY);
   assert.equal(unique.clientId, "client-001");
   assert.equal(unique.title, "check");
+});
+
+// --- P791 closure: O1 pending saves, O2/O4 scoped undo, O5 ghosts ---------
+// These exercise the exact model calls the detail panel's debounce flush
+// and unmount cleanup make: updateTask(ref, fields). The ref-and-fields
+// binding lives in TaskDetail; there is no DOM harness in this repo, so the
+// switch/delete/move/Snooze paths below are model-level evidence.
+
+test("updateTask merges only edited fields on the exact scoped record", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "dup",
+        title: "general",
+        complete: false,
+        notes: "g-notes",
+        deadline: TODAY,
+      },
+    ],
+    clients: [
+      client("client-001", [
+        {
+          id: "dup",
+          title: "athlete",
+          complete: false,
+          notes: "a-notes",
+          deadline: TODAY,
+        },
+      ]),
+    ],
+  });
+  const next = updateTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    { title: "renamed" },
+  );
+  const athlete = findTask(next, { id: "dup", clientId: "client-001" }).task;
+  const general = findTask(next, { id: "dup", clientId: undefined }).task;
+  assert.equal(athlete.title, "renamed");
+  assert.equal(athlete.notes, "a-notes"); // unedited field untouched
+  assert.equal(general.title, "general"); // same-id record untouched
+});
+
+test("updateTask never creates and never moves — late writes are no-ops", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007"),
+    ],
+  });
+  // Deleted record: a late debounced save must not resurrect or create.
+  const deleted = deleteTask(base, { id: "t1", clientId: "client-001" });
+  const late = updateTask(
+    deleted.state,
+    { id: "t1", clientId: "client-001" },
+    {
+      title: "stale",
+    },
+  );
+  assert.equal(late, deleted.state);
+  assert.equal(tasksById(late, "t1").length, 0);
+  // Moved-away record: a save bound to the old scope is a no-op, not a
+  // write-back to the former athlete.
+  const moved = moveTask(
+    base,
+    { id: "t1", clientId: "client-001" },
+    "client-007",
+  );
+  const staleScope = updateTask(
+    moved,
+    { id: "t1", clientId: "client-001" },
+    {
+      title: "stale",
+    },
+  );
+  assert.equal(staleScope, moved);
+  // The same save bound to the CURRENT scope preserves the edit.
+  const currentScope = updateTask(
+    moved,
+    { id: "t1", clientId: "client-007" },
+    { title: "kept" },
+  );
+  assert.equal(
+    findTask(currentScope, { id: "t1", clientId: "client-007" }).task.title,
+    "kept",
+  );
+});
+
+test("pending field saves cannot overwrite fields they did not edit", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "original",
+        complete: false,
+        notes: "keep me",
+        deadline: TODAY,
+        reminderAt: `${TODAY}T09:00`,
+        reminderShownAt: `${TODAY}T09:00`,
+      },
+    ],
+  });
+  // An external write lands "during the debounce window": reminder marked.
+  let next = saveTask(
+    base,
+    {
+      ...findTask(base, { id: "t1" }).task,
+      notes: "external change",
+    },
+    undefined,
+  );
+  // The pending flush carries only the edited title.
+  next = updateTask(next, { id: "t1" }, { title: "debounced title" });
+  const task = findTask(next, { id: "t1" }).task;
+  assert.equal(task.title, "debounced title");
+  assert.equal(task.notes, "external change"); // not rolled back
+  assert.equal(task.reminderShownAt, `${TODAY}T09:00`); // marker kept
+});
+
+test("task-switch: A's flush writes A; B's draft never lands on A", () => {
+  const base = workspaceState({
+    coachTodos: [
+      { id: "a", title: "A", complete: false, notes: "a" },
+      { id: "b", title: "B", complete: false, notes: "b" },
+    ],
+  });
+  // The unmount cleanup for A's detail instance flushes A's edited fields
+  // at A's scope — even if selection already moved to B.
+  let next = updateTask(base, { id: "a" }, { title: "A edited" });
+  next = updateTask(next, { id: "b" }, { notes: "B edited" });
+  assert.equal(findTask(next, { id: "a" }).task.title, "A edited");
+  assert.equal(findTask(next, { id: "a" }).task.notes, "a");
+  assert.equal(findTask(next, { id: "b" }).task.notes, "B edited");
+  assert.equal(findTask(next, { id: "b" }).task.title, "B");
+});
+
+test("undo hits the exact occurrence when ids collide across scopes", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "dup",
+        title: "general copy",
+        complete: false,
+        deadline: TODAY,
+        createdAt: "2026-11-01T08:00",
+      },
+    ],
+    clients: [
+      client("client-001", [
+        {
+          id: "dup",
+          title: "athlete copy",
+          complete: false,
+          deadline: TODAY,
+          createdAt: "2026-11-02T08:00",
+        },
+      ]),
+    ],
+  });
+  const toggled = toggleTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    TODAY,
+  );
+  const undone = undoToggle(toggled.state, toggled.inverse);
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: "client-001" }).task.complete,
+    false,
+  );
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: undefined }).task.complete,
+    false,
+  );
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: undefined }).task.completedAt,
+    undefined,
+  );
+});
+
+test("undo after a move targets the moved record via signature, not bare id", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "dup",
+        title: "lookalike",
+        complete: false,
+        deadline: TODAY,
+        createdAt: "2026-11-01T08:00",
+      },
+    ],
+    clients: [
+      client("client-001", [
+        {
+          id: "dup",
+          title: "distinct",
+          complete: false,
+          deadline: TODAY,
+          createdAt: "2026-11-02T08:00",
+        },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const toggled = toggleTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    TODAY,
+  );
+  const moved = moveTask(
+    toggled.state,
+    { id: "dup", clientId: "client-001" },
+    "client-007",
+  );
+  const undone = undoToggle(moved, toggled.inverse);
+  // The toggled record is restored where it now lives; the lookalike
+  // same-id record in General is never touched.
+  const atB = findTask(undone, { id: "dup", clientId: "client-007" }).task;
+  assert.equal(atB.complete, false);
+  assert.equal(atB.title, "distinct");
+  const general = findTask(undone, { id: "dup", clientId: undefined }).task;
+  assert.equal(general.complete, false);
+  assert.equal(general.title, "lookalike");
+});
+
+test("undo refuses ambiguous same-id lookalikes rather than corrupting", () => {
+  // Two same-id records with identical signatures: after a move the undo
+  // cannot prove which occurrence it belongs to, so it no-ops.
+  const record = (title) => ({
+    id: "dup",
+    title,
+    complete: false,
+    deadline: TODAY,
+    createdAt: "2026-11-01T08:00",
+  });
+  const base = workspaceState({
+    coachTodos: [record("same")],
+    clients: [client("client-001", [record("same")]), client("client-007")],
+  });
+  const toggled = toggleTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    TODAY,
+  );
+  const moved = moveTask(
+    toggled.state,
+    { id: "dup", clientId: "client-001" },
+    "client-007",
+  );
+  const undone = undoToggle(moved, toggled.inverse);
+  // Both records remain in their toggled/moved state — nothing rewritten.
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: "client-007" }).task.complete,
+    true,
+  );
+  assert.equal(
+    findTask(undone, { id: "dup", clientId: undefined }).task.complete,
+    false,
+  );
+});
+
+test("ghosts render the struck-through snapshot while the live record moves on", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+      { id: "t2", title: "plain", complete: false, deadline: TODAY },
+    ],
+  });
+  // Weekly completes: live record advances to next week, ghost keeps the
+  // today-bucket row for the animation.
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  const entries = listTasks(toggled.state);
+  const ghost = entries.find((e) => e.task.id === "t1" && !e.task.complete);
+  const ghosts = [
+    {
+      ...ghost,
+      ghost: true,
+      task: { ...ghost.task, deadline: TODAY },
+    },
+  ];
+  const views = taskViews(entries, TODAY, { ghosts });
+  const todayItems = views.today.groups.flatMap((g) => g.items);
+  const ghostRow = todayItems.find((e) => e.ghost);
+  assert.ok(ghostRow);
+  assert.equal(ghostRow.task.deadline, TODAY);
+  // The advanced live record is NOT in Today — it moved to next week.
+  assert.equal(
+    todayItems.some((e) => e.task.id === "t1" && !e.ghost),
+    false,
+  );
+  // And the ghost never lands in Completed — it's open-snapshot data.
+  assert.equal(
+    views.completed.groups.flatMap((g) => g.items).some((e) => e.ghost),
+    false,
+  );
+  // A non-recurring completion leaves only the ghost in the open view —
+  // the ghost row is built from pre-toggle snapshot data, not the live
+  // (now completed) record.
+  const plainToggled = toggleTask(base, { id: "t2" }, TODAY);
+  const plainEntries = listTasks(plainToggled.state);
+  const plainGhost = [
+    {
+      ...plainEntries.find((e) => e.task.id === "t2"),
+      ghost: true,
+      task: {
+        ...plainEntries.find((e) => e.task.id === "t2").task,
+        complete: false,
+        completedAt: undefined,
+      },
+    },
+  ];
+  assert.equal(
+    plainEntries.filter((e) => e.task.id === "t2" && !e.task.complete).length,
+    0,
+  );
+  const plainViews = taskViews(plainEntries, TODAY, { ghosts: plainGhost });
+  const plainToday = plainViews.today.groups.flatMap((g) => g.items);
+  assert.equal(plainToday.find((e) => e.task.id === "t2").ghost, true);
 });

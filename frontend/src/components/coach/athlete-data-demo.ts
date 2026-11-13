@@ -993,7 +993,10 @@ export function adoptAthleteDataDemo(
         title: "Review Amara's Sunday check-in and photos",
         complete: false,
         // Deadline lands on the repeat's weekday so completion advances
-        // cleanly to the following Sunday.
+        // cleanly to the following Sunday. Note: the weekday-aligned seed
+        // applies to workspaces adopted after the correction; workspaces
+        // already on revision 12 intentionally keep their stored tasks —
+        // demo data is never re-seeded over coach-written records.
         deadline: addLocalDays(
           today,
           (7 - new Date(`${today}T12:00:00`).getDay()) % 7,

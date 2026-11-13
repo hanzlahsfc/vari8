@@ -1,3 +1,49 @@
+## 2026-11-14 — P791 Tasks Phase 1a closure repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P790 findings on
+`beta/p787-tasks-phase-1a` at head `14a139b7`. Dispositions:
+
+- O1 pending detail saves — new `updateTask(state, ref, fields)` merges only
+  edited fields on the record at the exact scoped ref: never creates, never
+  moves, never searches beyond the scope. `TaskDetail` remounts on
+  `key={taskKey(selected)}` (task switch or athlete move) and flushes
+  pending edits through `onSave(ref, fields)` — A's edits land on A, a late
+  save for a deleted task is a no-op, and edits survive an explicit move
+  because the ref carries the current scope. The narrow dialog's explicit
+  Save moves first, then applies the draft at the new scope.
+- O2/O4 scoped identity — `undoToggle` resolves the scoped ref first, then
+  falls back to id + createdAt + title signature (not bare id), refusing
+  ambiguous matches; move-aware undo and no-resurrection behavior preserved.
+  React row keys are `ghost?:taskKey` scoped; transient completing state is
+  keyed by `taskKey`.
+- O3 demo seed boundary — comment in `athlete-data-demo.ts` documents that
+  the weekday-aligned weekly seed applies at adoption; rev-12 workspaces
+  keep stored tasks (demo data never overwrites coach data).
+- O5 strike-through snapshot — `taskViews` takes `ghosts` (pre-toggle
+  `TaskEntry` snapshots flagged `ghost: true`) instead of `keepIds`; ghost
+  rows render inert, cannot complete twice, and never write.
+- O6 IconButton — the shared `IconButton` has no `aria-pressed` styling
+  (only `.v8-button` does); quick-add toggles stay on shared `Button` with
+  `aria-pressed`. Reported as a shared-control gap for owner review rather
+  than adding feature overrides.
+
+Regressions added (model-level; no DOM harness exists in this repo — the
+tests call the exact `updateTask`/`undoToggle`/`taskViews` paths the UI
+uses): `updateTask merges only edited fields on the exact scoped record`,
+`updateTask never creates and never moves — late writes are no-ops`,
+`pending field saves cannot overwrite fields they did not edit`,
+`task-switch: A's flush writes A; B's draft never lands on A`,
+`undo hits the exact occurrence when ids collide across scopes`,
+`undo after a move targets the moved record via signature, not bare id`,
+`undo refuses ambiguous same-id lookalikes rather than corrupting`,
+`ghosts render the struck-through snapshot while the live record moves on`.
+
+Gates: `npm run check` exit 0 (361/361 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — 21 unapproved violations, all in
+pre-existing baseline files (identical set to base; zero in tasks.css);
+`git diff --check` exit 0. Browser checks outstanding — preview kept
+stopped (not authorized).
+
 ## 2026-11-14 — P789 Tasks Phase 1a review repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the consolidated OpenCode / DeepSeek V4.1 Flash P788 findings on
