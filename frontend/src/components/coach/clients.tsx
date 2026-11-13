@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Checkbox,
   SegmentedControl,
   Input as SharedInput,
   Tabs,
@@ -31,6 +30,8 @@ import {
 } from "./model";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
+import { localToday } from "./targets/model";
+import { AthleteTasksPanel } from "./tasks";
 import { templateSetup } from "./template-setup";
 import "./workspace-polish.css";
 import {
@@ -66,7 +67,9 @@ export function ClientsWorkspace() {
       state.submissions.filter((s) => s.clientId === c.id && !s.response)
         .length +
       unreadCount(state, c.id) +
-      c.clientTasks.filter((t) => t.status === "overdue").length,
+      c.clientTasks.filter(
+        (t) => t.status !== "complete" && t.dueDate < localToday(),
+      ).length,
     [state],
   );
   const list = useMemo(
@@ -231,9 +234,10 @@ export function ClientsWorkspace() {
                             {unreadCount(state, c.id)} unread
                           </span>
                         )}
-                        {c.clientTasks.some((t) => t.status === "overdue") && (
-                          <span>Overdue task</span>
-                        )}
+                        {c.clientTasks.some(
+                          (t) =>
+                            t.status !== "complete" && t.dueDate < localToday(),
+                        ) && <span>Overdue task</span>}
                         {attention(c) === 0 && (
                           <span className="cd-muted">Up to date</span>
                         )}
@@ -298,10 +302,8 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
   const [noteText, setNoteText] = useState("");
   const [notePinned, setNotePinned] = useState(false);
-  const [todoText, setTodoText] = useState("");
-  const [todoDue, setTodoDue] = useState("");
   const [taskText, setTaskText] = useState("");
-  const [taskDue, setTaskDue] = useState(addDays(TODAY, 7));
+  const [taskDue, setTaskDue] = useState(addDays(localToday(), 7));
   const [extra, setExtra] = useState(false);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
@@ -461,64 +463,15 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             )}
           </Surface>
           <Surface>
-            <h2>Coach to-do</h2>
-            <p className="cd-muted">Your own reminders.</p>
-            <SharedInput
-              label="To-do"
-              value={todoText}
-              onChange={(e) => setTodoText(e.target.value)}
-            />
-            <DateField
-              label="Due (optional)"
-              value={todoDue}
-              onChange={setTodoDue}
-            />
-            <Button
-              primary
-              disabled={!todoText.trim()}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  coachTasks: [
-                    ...c.coachTasks,
-                    {
-                      id: uid("task"),
-                      title: todoText.trim(),
-                      complete: false,
-                      ...(todoDue ? { deadline: todoDue } : {}),
-                    },
-                  ],
-                }));
-                setTodoText("");
-                setTodoDue("");
-              }}
-            >
-              Add to-do
-            </Button>
-            <div className="cd-nt-list">
-              {c.coachTasks.map((t) => (
-                <div className="cd-nt-row" key={t.id}>
-                  <Checkbox
-                    className="cd-task"
-                    label={t.title}
-                    checked={t.complete}
-                    onCheckedChange={(checked) =>
-                      update((c) => ({
-                        ...c,
-                        coachTasks: c.coachTasks.map((x) =>
-                          x.id === t.id ? { ...x, complete: checked } : x,
-                        ),
-                      }))
-                    }
-                  />
-                  {t.deadline && <small>Due {formatDate(t.deadline)}</small>}
-                </div>
-              ))}
-            </div>
+            <h2>Coach tasks</h2>
+            <p className="cd-muted">Private to you.</p>
+            <AthleteTasksPanel client={c} />
           </Surface>
           <Surface>
-            <h2>Client task</h2>
-            <p className="cd-muted">Assigned to the client app.</p>
+            <h2>Athlete tasks</h2>
+            <p className="cd-muted">
+              Visible to athlete — assigned to the client app.
+            </p>
             <SharedInput
               label="Task"
               value={taskText}
@@ -551,7 +504,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
                 const status =
                   t.status === "complete"
                     ? "Done"
-                    : t.dueDate < TODAY
+                    : t.dueDate < localToday()
                       ? "Overdue"
                       : "Open";
                 return (

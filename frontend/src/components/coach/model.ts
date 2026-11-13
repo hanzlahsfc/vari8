@@ -61,6 +61,7 @@ export type Section =
   | "templates"
   | "check-ins"
   | "messages"
+  | "tasks"
   | "notes";
 export type Route = {
   section: Section;
@@ -70,6 +71,7 @@ export type Route = {
   plan?: string;
   module?: string;
   tab?: string;
+  task?: string;
 };
 export type Parameter = {
   id: string;
@@ -687,7 +689,43 @@ export type Plan = {
   program: "Evergreen" | "Week-based";
   weeks: number;
 };
+export type TaskRepeat = {
+  unit: "day" | "week" | "month";
+  /** 1 = every, 2 = every other. */
+  interval: number;
+  /** Weekdays with Sunday = 0 (matches Date#getDay()). */
+  weekdays?: (0 | 1 | 2 | 3 | 4 | 5 | 6)[];
+  /** Repeat from the completion date instead of the scheduled date. */
+  fromCompletion?: boolean;
+};
+/** Coach-owned task. Shared shape for workspace `coachTodos` and per-athlete
+ * `coachTasks`; every field past the legacy set is optional so saved
+ * workspaces keep validating without migration. */
+export type TaskFields = {
+  id: string;
+  title: string;
+  complete: boolean;
+  deadline?: string;
+  reminderAt?: string;
+  notes?: string;
+  priority?: "low" | "normal" | "high";
+  /** Legacy athlete link on workspace todos; athlete-owned tasks live in
+   * `client.coachTasks` without it. */
+  clientId?: string;
+  createdAt?: string;
+  completedAt?: string;
+  repeat?: TaskRepeat;
+  /** Set when the in-app reminder toast fired; survives reloads. */
+  reminderShownAt?: string;
+  link?: {
+    kind: "check-in" | "message" | "timeline" | "note" | "set-note";
+    id: string;
+    label: string;
+  };
+  checklist?: { id: string; text: string; done: boolean }[];
+};
 export type CoachClient = WorkspaceClient & {
+  coachTasks: TaskFields[];
   assignment?: Assignment;
   phases?: ClientPhase[];
   contestDate?: string;
@@ -778,20 +816,11 @@ export type CoachState = {
     clientAppDemo?: 1;
     trainingLogDemo?: 1;
     athleteProfileDemo?: 1;
-    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
   };
   exerciseLibrary?: ExerciseDefinition[];
   coachNotes?: { id: string; text: string }[];
-  coachTodos?: {
-    id: string;
-    title: string;
-    complete: boolean;
-    deadline?: string;
-    reminderAt?: string;
-    notes?: string;
-    priority?: "low" | "normal" | "high";
-    clientId?: string;
-  }[];
+  coachTodos?: TaskFields[];
   templates: Template[];
   clients: CoachClient[];
   extras: Extra[];
@@ -1660,12 +1689,20 @@ const templateGuard: Guard = (v) =>
   (v as Template).variants.length > 0 &&
   (v as Template).variants.some((x) => x.id === (v as Template).defaultVariant);
 const routeGuard = obj({
-  section: one(["clients", "templates", "check-ins", "messages", "notes"]),
+  section: one([
+    "clients",
+    "templates",
+    "check-ins",
+    "messages",
+    "tasks",
+    "notes",
+  ]),
   client: opt(str),
   editor: opt(str),
   review: opt(str),
   plan: opt(str),
   tab: opt(str),
+  task: opt(str),
 });
 const changeGuard = obj({
   field: one([
@@ -1680,6 +1717,30 @@ const changeGuard = obj({
   before: (v) => str(v) || num(v),
   after: (v) => str(v) || num(v),
 });
+const taskRepeatGuard = obj({
+  unit: one(["day", "week", "month"]),
+  interval: num,
+  weekdays: opt(arr(one([0, 1, 2, 3, 4, 5, 6]))),
+  fromCompletion: opt(bool),
+});
+const taskOptionalGuards: Record<string, Guard> = {
+  deadline: opt(str),
+  reminderAt: opt(str),
+  notes: opt(str),
+  priority: opt(one(["low", "normal", "high"])),
+  createdAt: opt(str),
+  completedAt: opt(str),
+  reminderShownAt: opt(str),
+  repeat: opt(taskRepeatGuard),
+  link: opt(
+    obj({
+      kind: one(["check-in", "message", "timeline", "note", "set-note"]),
+      id: str,
+      label: str,
+    }),
+  ),
+  checklist: opt(arr(obj({ id: str, text: str, done: bool }))),
+};
 const reviewGuard = obj({
   activations: opt(
     arr(
@@ -1713,10 +1774,7 @@ const clientGuard = obj({
       id: str,
       title: str,
       complete: bool,
-      deadline: opt(str),
-      reminderAt: opt(str),
-      notes: opt(str),
-      priority: opt(one(["low", "normal", "high"])),
+      ...taskOptionalGuards,
     }),
   ),
   clientTasks: arr(
@@ -1795,7 +1853,7 @@ export function isCoachState(v: unknown): v is CoachState {
           clientAppDemo: opt(one([1])),
           trainingLogDemo: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
-          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])),
+          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])),
         }),
       ),
       exerciseLibrary: opt(
@@ -1828,11 +1886,8 @@ export function isCoachState(v: unknown): v is CoachState {
             id: str,
             title: str,
             complete: bool,
-            deadline: opt(str),
-            reminderAt: opt(str),
-            notes: opt(str),
-            priority: opt(one(["low", "normal", "high"])),
             clientId: opt(str),
+            ...taskOptionalGuards,
           }),
         ),
       ),

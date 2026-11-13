@@ -77,6 +77,24 @@
       "selector": ".coach-root .v8-field:has(.cb-dw-chart-range) > .v8-field__label",
       "property": "padding",
       "reason": "Widget headers already identify the chart; keeps the required Select label available to assistive technology while visually hiding it in the cramped widget controls row. Remove when the field supports a shared visually-hidden label option."
+    },
+    {
+      "file": "src/components/coach/tasks.css",
+      "selector": ".coach-root .cd-quickadd-buttons .cd-icon-button[aria-pressed=\"true\"]",
+      "property": "color",
+      "reason": "Pressed state marks which quick-add picker is open; the shared IconButton has no pressed styling of its own."
+    },
+    {
+      "file": "src/components/coach/tasks.css",
+      "selector": ".coach-root .cd-quickadd-buttons .cd-icon-button[aria-pressed=\"true\"]",
+      "property": "background",
+      "reason": "Pressed state marks which quick-add picker is open; the shared IconButton has no pressed styling of its own."
+    },
+    {
+      "file": "src/components/coach/tasks.css",
+      "selector": ".coach-root .cd-quickadd .v8-input",
+      "property": "font-size",
+      "reason": "Quick-add input stays at 16px on phone widths per the spec narrow-layout rule so mobile browsers do not auto-zoom."
     }
   ]
 }

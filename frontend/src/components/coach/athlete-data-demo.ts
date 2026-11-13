@@ -42,7 +42,7 @@ import {
   type StepsTarget,
 } from "./targets/model";
 
-export const ATHLETE_DATA_DEMO_REVISION = 11;
+export const ATHLETE_DATA_DEMO_REVISION = 12;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
@@ -976,13 +976,86 @@ export function adoptAthleteDataDemo(
     ),
   ];
 
+  // --- Demo tasks (deterministic ids; coach-written tasks are untouched) ---
+  const demoTasks = <T extends { id: string }>(list: T[], add: T[]): T[] => [
+    ...list.filter((task) => !task.id.startsWith("demo-task-")),
+    ...add,
+  ];
+  const ago = (days: number, time = "T09:00:00") =>
+    `${addLocalDays(today, -days)}${time}`;
   const nextClient: CoachClient = {
     ...staged,
     tracking,
     internalNotes,
+    coachTasks: demoTasks(client.coachTasks, [
+      {
+        id: "demo-task-review-checkin",
+        title: "Review Amara's Sunday check-in and photos",
+        complete: false,
+        deadline: today,
+        priority: "high",
+        repeat: { unit: "week", interval: 1, weekdays: [0] },
+        createdAt: ago(6),
+      },
+      {
+        id: "demo-task-refeed",
+        title: "Prepare refeed plan before diet break",
+        complete: false,
+        deadline: addLocalDays(today, 3),
+        createdAt: ago(2),
+      },
+      {
+        id: "demo-task-macros",
+        title: "Send week-8 macro update",
+        complete: true,
+        completedAt: ago(1, "T17:30:00"),
+        createdAt: ago(9),
+      },
+    ]),
   };
   const clients = [...state.clients];
   clients[index] = nextClient;
+  const coachTodos = demoTasks(state.coachTodos ?? [], [
+    {
+      id: "demo-task-posing",
+      title: "Ask Theo for posing video",
+      complete: false,
+      deadline: addLocalDays(today, 1),
+      clientId: "client-014",
+      createdAt: ago(4),
+    },
+    {
+      id: "demo-task-bloodwork",
+      title: "Book bloodwork 12 weeks out",
+      complete: false,
+      deadline: addLocalDays(today, 7),
+      clientId: ATHLETE_DATA_DEMO_CLIENT_ID,
+      createdAt: ago(10),
+    },
+    {
+      id: "demo-task-triage",
+      title: "Morning check-in triage",
+      complete: false,
+      deadline: today,
+      reminderAt: `${today}T08:00:00`,
+      createdAt: ago(1),
+    },
+    {
+      id: "demo-task-hotel",
+      title: "Confirm peak-week hotel booking",
+      complete: false,
+      deadline: addLocalDays(today, -2),
+      createdAt: ago(8),
+    },
+    {
+      id: "demo-task-roundup",
+      title: "Monthly posing check-in roundup",
+      complete: false,
+      deadline: addLocalDays(today, 2),
+      repeat: { unit: "month", interval: 1 },
+      createdAt: ago(20),
+    },
+  ]);
 
   // --- Check-ins: photos on the two existing demo submissions + two more ---
   const questions = variant?.questions ?? [];
@@ -1022,6 +1095,7 @@ export function adoptAthleteDataDemo(
     ...state,
     clients,
     submissions,
+    coachTodos,
     demoSeeds: {
       ...state.demoSeeds,
       athleteDataDemo: ATHLETE_DATA_DEMO_REVISION,

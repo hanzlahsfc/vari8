@@ -1,3 +1,36 @@
+## 2026-11-14 — P787 VARi8 Tasks Phase 1a (committed on `beta/p787-tasks-phase-1a`, awaiting review)
+
+Browser-only `/coach` prototype slice on `beta/p787-tasks-phase-1a` off
+`origin/Vari8-Beta` (`501e1134`). Spec:
+`~/Downloads/notes-and-tasks-handoff.html` sections 5–6 and 10–15.
+
+- New `frontend/src/components/coach/tasks-model.ts` (pure: list/save/move/
+  delete/restore, recurrence + completed-copy, views, quick-add parser,
+  reminder persistence) + `tasks-model.test.mjs` (19 tests, all pass).
+- New `tasks.tsx` + `tasks.css`: Today/Upcoming/Anytime/Completed views,
+  quick add with reversible token chips + mouse buttons, wide detail panel /
+  narrow dialog, keyboard row nav, undo toasts.
+- `coach-app.tsx`: Tasks nav entry + Today badge, reminder effect rewritten
+  to persist `reminderShownAt`, toast actions (Open / Snooze 1 h).
+- `clients.tsx`: profile "Notes & tasks" tab reuses `AthleteTasksPanel`;
+  athlete tasks relabelled "Visible to athlete", status from `localToday()`.
+- `model.ts`/`store.tsx`: `tasks` section, `task` route param, optional
+  task-field guards, toast action labels.
+- `athlete-data-demo.ts`: revision 12, deterministic demo tasks;
+  `npm run export:demo` regenerated fixtures.
+- notes.tsx untouched (Notes rebuild is Phase 1b); `?section=notes` intact.
+
+Gates (Node v26.13.0, `.nvmrc` pins 24): `npm run check` exit 0 (test
+341/341, agent-context, typecheck, lint, build). `npm run ui:check` exit 1 —
+21 pre-existing violations identical to base commit 501e1134; new tasks.css
+rules are exception-registered, net-new violations 0.
+
+Browser checks pending (preview kept stopped per task instruction): both
+modes + pale/dark accents, open pickers/menus, keyboard-only add/complete/
+undo, ≤760px layout, athlete-profile reuse, reminder after reload. Awaiting
+OpenCode / DeepSeek V4.1 Flash independent review and owner UI review.
+No push, no PR.
+
 ## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
 
 Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;

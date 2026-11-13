@@ -39,7 +39,37 @@
       "dueDate": "day -21"
     }
   ],
-  "coachTasks": [],
+  "coachTasks": [
+    {
+      "id": "demo-task-review-checkin",
+      "title": "Review Amara's Sunday check-in and photos",
+      "complete": false,
+      "deadline": "day 0",
+      "priority": "high",
+      "repeat": {
+        "unit": "week",
+        "interval": 1,
+        "weekdays": [
+          0
+        ]
+      },
+      "createdAt": "day -6T09:00:00"
+    },
+    {
+      "id": "demo-task-refeed",
+      "title": "Prepare refeed plan before diet break",
+      "complete": false,
+      "deadline": "day 3",
+      "createdAt": "day -2T09:00:00"
+    },
+    {
+      "id": "demo-task-macros",
+      "title": "Send week-8 macro update",
+      "complete": true,
+      "completedAt": "day -1T17:30:00",
+      "createdAt": "day -9T09:00:00"
+    }
+  ],
   "internalNotes": [
     {
       "id": "amara-note-1",
@@ -8941,7 +8971,16 @@
         "startedAt": "day -1T18:00:00"
       }
     ],
-    "coachTodos": [],
+    "coachTodos": [
+      {
+        "id": "demo-task-bloodwork",
+        "title": "Book bloodwork 12 weeks out",
+        "complete": false,
+        "deadline": "day 7",
+        "clientId": "client-007",
+        "createdAt": "day -10T09:00:00"
+      }
+    ],
     "reviewDrafts": {}
   }
 }

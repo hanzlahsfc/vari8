@@ -36,8 +36,16 @@ type Store = {
   route: Route;
   navigate: (route: Route) => void;
   guard: React.MutableRefObject<((route: Route) => boolean) | null>;
-  toast: (text: string, undo?: () => void) => void;
-  notice: { text: string; undo?: () => void } | null;
+  toast: (
+    text: string,
+    undo?: () => void,
+    actions?: { label: string; run: () => void }[],
+  ) => void;
+  notice: {
+    text: string;
+    undo?: () => void;
+    actions?: { label: string; run: () => void }[];
+  } | null;
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
@@ -57,6 +65,7 @@ export function routeUrl(route: Route) {
     "plan",
     "module",
     "tab",
+    "task",
   ] as const)
     if (route[key]) q.set(key, route[key]);
   return `/coach?${q.toString()}`;
@@ -80,6 +89,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       section === "clients" ||
       section === "check-ins" ||
       section === "messages" ||
+      section === "tasks" ||
       section === "notes"
         ? section
         : "templates",
@@ -89,6 +99,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     plan: params.get("plan") ?? undefined,
     module: params.get("module") ?? undefined,
     tab: params.get("tab") ?? undefined,
+    task: params.get("task") ?? undefined,
   };
   useEffect(() => {
     try {
@@ -153,7 +164,11 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     [router],
   );
   const toast = useCallback(
-    (text: string, undo?: () => void) => setNotice({ text, undo }),
+    (
+      text: string,
+      undo?: () => void,
+      actions?: { label: string; run: () => void }[],
+    ) => setNotice({ text, undo, actions }),
     [],
   );
   const attach = useCallback((item: Media, blob: Blob) => {
