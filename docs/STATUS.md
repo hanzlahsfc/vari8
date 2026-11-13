@@ -1,3 +1,52 @@
+## 2026-11-14 — P797 Tasks Phase 1a move-result commit semantics (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P796 O1 finding on
+`beta/p787-tasks-phase-1a` at head `a55a9407`. `attemptMove` no longer
+reads a result box after `setState` — React may defer or replay the
+updater, so the synchronous boolean could report failure before a valid
+move committed. New design:
+
+- Moves are REQUESTS, resolved AFTER commit. `attemptMove` stores a
+  `MoveRequest` (`{id, entry, clientId, fields}`) in component state and
+  returns `false` only while another request is in flight (duplicate
+  submissions blocked via a synchronous ref flag).
+- A `useEffect` keyed on `[state, pendingMove]` resolves the request by
+  calling `applyMoveRequest(committedState, req)` — the pure validated
+  transition from P795 — so the outcome is always evaluated on the
+  committed base, never a snapshot or a destination id lookup. Nothing
+  mutates external state inside a React updater; the application
+  dispatch re-runs the same validation if the base slipped between the
+  observed commit and the write.
+- All three callers wired to `onDone(moved, reason)`: the wide panel's
+  athlete select consumes ONLY the submitted `editedRef` keys on
+  success (later edits of other fields stay pending) and switches scope;
+  the narrow dialog's Save closes only on a committed move and shows the
+  real reason as a correction on rejection (draft intact); the row move
+  dialog closes and toasts only on success. Rejections toast the actual
+  reason once, centrally.
+- Debounce/remount coordination unchanged: `setAthlete` still clears the
+  debounce before submitting; consumed-on-success means the keyed-remount
+  cleanup cannot replay the patch at the old scope, and a rejected move
+  leaves `editedRef` untouched so nothing is silently lost.
+
+Regression evidence (`tasks-model.test.mjs`, model-level — no DOM
+harness exists; rendered coverage of draft retention, toasts and dialog
+behavior is pending and must not be claimed): four deferred-commit
+scenarios exercise the exact `applyMoveRequest` call the effect runs —
+`a successful move keeps submitted edits and unrelated changes` (an
+intervening committed update survives), `a source deleted before
+commit rejects — nothing writes`, `a collision that appears before
+commit rejects`, `a destination removed before commit rejects — source
+stays`. Inspected wiring: `pendingMove`/`handledMove`/`moveOutcomes`
+request lifecycle, `attemptMove` duplicate gate, all three onDone
+consumers.
+
+Gates: `npm run check` exit 0 (377/377 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; zero in tasks.css); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
 ## 2026-11-14 — P795 Tasks Phase 1a move/undo validation (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P794 findings (O1,

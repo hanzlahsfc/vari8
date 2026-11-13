@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { isCoachState, seedState } from "./model.ts";
 import {
   advanceTaskDeadline,
+  applyMoveRequest,
   deleteTask,
   dueReminders,
   findTask,
@@ -1548,4 +1549,137 @@ test("valid undo after move and rename removes only its own copy", () => {
   // Only op1's copy went away — op2's copy and t2 are untouched.
   assert.equal(tasksById(undone, first.inverse.copyId).length, 0);
   assert.equal(tasksById(undone, second.inverse.copyId).length, 1);
+});
+
+// --- P797 closure: move outcome resolved against committed state ----------
+// The UI submits a MoveRequest, lets state commit, then runs exactly
+// `applyMoveRequest(committedState, req)` in an effect. These scenarios
+// emulate the deferred-base case the synchronous read could never see:
+// the committed state differs from the submit-time snapshot. Rendered
+// interaction coverage (draft retention, toasts, dialog open) is pending
+// — no DOM harness exists in this repo.
+
+test("deferred commit: a successful move keeps submitted edits and unrelated changes", () => {
+  const submittedAt = workspaceState({
+    clients: [
+      client("client-001", [
+        { id: "t1", title: "draft", complete: false, notes: "orig" },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const request = {
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: { title: "edited while pending" },
+  };
+  // Between submit and commit, another update landed on the same record.
+  const committed = updateTask(
+    submittedAt,
+    { id: "t1", clientId: "client-001" },
+    { notes: "intervening edit" },
+  );
+  const result = applyMoveRequest(committed, request);
+  assert.equal(result.moved, true);
+  const task = findTask(result.state, {
+    id: "t1",
+    clientId: "client-007",
+  }).task;
+  assert.equal(task.title, "edited while pending");
+  assert.equal(task.notes, "intervening edit"); // committed update kept
+  assert.equal(
+    findTask(result.state, { id: "t1", clientId: "client-001" }),
+    undefined,
+  );
+});
+
+test("deferred commit: a source deleted before commit rejects — nothing writes", () => {
+  const submittedAt = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007", [{ id: "t1", title: "other", complete: false }]),
+    ],
+  });
+  const request = {
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: { title: "stale draft" },
+  };
+  const committed = deleteTask(submittedAt, {
+    id: "t1",
+    clientId: "client-001",
+  }).state;
+  const result = applyMoveRequest(committed, request);
+  assert.deepEqual(result, {
+    state: committed,
+    moved: false,
+    reason: "source-gone",
+  });
+  // The same-id record at the destination was never touched.
+  assert.equal(
+    findTask(result.state, { id: "t1", clientId: "client-007" }).task.title,
+    "other",
+  );
+});
+
+test("deferred commit: a collision that appears before commit rejects", () => {
+  const submittedAt = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007"),
+    ],
+  });
+  const request = {
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: { title: "draft" },
+  };
+  // At submit time the destination was clear — a same-id record arrived
+  // before the request resolved (injected as loaded data would arrive;
+  // saveTask deliberately never creates a second record with the id).
+  const committed = {
+    ...submittedAt,
+    clients: submittedAt.clients.map((c) =>
+      c.id === "client-007"
+        ? {
+            ...c,
+            coachTasks: [{ id: "t1", title: "arrived first", complete: false }],
+          }
+        : c,
+    ),
+  };
+  const result = applyMoveRequest(committed, request);
+  assert.deepEqual(result, {
+    state: committed,
+    moved: false,
+    reason: "id-conflict",
+  });
+  assert.equal(
+    findTask(result.state, { id: "t1", clientId: "client-001" }).task.title,
+    "task",
+  );
+  assert.equal(
+    findTask(result.state, { id: "t1", clientId: "client-007" }).task.title,
+    "arrived first",
+  );
+});
+
+test("deferred commit: a destination removed before commit rejects — source stays", () => {
+  const submittedAt = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007"),
+    ],
+  });
+  const request = {
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-999",
+  };
+  const result = applyMoveRequest(submittedAt, request);
+  assert.deepEqual(result, {
+    state: submittedAt,
+    moved: false,
+    reason: "no-destination",
+  });
+  assert.ok(findTask(result.state, { id: "t1", clientId: "client-001" }));
 });

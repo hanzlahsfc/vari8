@@ -43,6 +43,7 @@ import {
 import { useCoach } from "./store";
 import { localToday } from "./targets/model";
 import {
+  applyMoveRequest,
   deleteTask,
   filterTasks,
   findTask,
@@ -50,7 +51,6 @@ import {
   localDateTime,
   localDayOf,
   matchAthletes,
-  moveTask,
   occurrenceOnOrAfter,
   overdueLabel,
   parseQuickAdd,
@@ -161,6 +161,13 @@ export function AthleteTasksPanel({ client }: { client: CoachClient }) {
 
 // --- Shared view -----------------------------------------------------------
 
+type MoveRequest = {
+  id: number;
+  entry: TaskEntry;
+  clientId: string | undefined;
+  fields?: Partial<TaskFields>;
+};
+
 function TasksView({
   fixedClientId,
   view,
@@ -190,6 +197,15 @@ function TasksView({
   // One timeout per ghost so undo (or delete) can cancel it immediately
   // instead of leaving a stale snapshot until the 600 ms expires.
   const completingTimers = useRef(new Map<string, number>());
+  // The submitted move request resolved after commit; the refs gate
+  // duplicate submissions and deliver the outcome to the right caller.
+  const [pendingMove, setPendingMove] = useState<MoveRequest | null>(null);
+  const pendingMoveRef = useRef(false);
+  const moveSeq = useRef(0);
+  const handledMove = useRef(-1);
+  const moveOutcomes = useRef(
+    new Map<number, (moved: boolean, reason?: string) => void>(),
+  );
   const [dayAdd, setDayAdd] = useState<string | null>(null);
   const [moveEntry, setMoveEntry] = useState<TaskEntry | null>(null);
   const quickRef = useRef<HTMLInputElement>(null);
@@ -331,32 +347,68 @@ function TasksView({
     setState((s) => saveTask(s, task, task.clientId));
   };
 
-  /** The shared move transition for the wide panel, the narrow dialog's
-   * Save and the row menu: validates source and destination, applies any
-   * pending edits to the verified source, and reports an explicit result.
-   * Returns false on rejection — callers keep the draft and stay open. */
+  /** One shared move request for the wide panel, the narrow dialog's Save
+   * and the row menu. Returns false only when a request is already in
+   * flight — the move itself is resolved after commit (see the effect
+   * below); `onDone` receives the committed outcome, never a guess. */
   const attemptMove = (
     entry: TaskEntry,
     clientId: string | undefined,
-    fields?: Partial<TaskFields>,
+    fields: Partial<TaskFields> | undefined,
+    onDone: (moved: boolean, reason?: string) => void,
   ): boolean => {
-    const result: { moved?: boolean; reason?: string } = {};
-    setState((s) => {
-      const r = moveTask(s, entry, clientId, fields);
-      result.moved = r.moved;
-      if (!r.moved) result.reason = r.reason;
-      return r.state;
-    });
-    if (result.moved) return true;
-    toast(
-      result.reason === "id-conflict"
-        ? "Move blocked — that scope already has a task with this id."
-        : result.reason === "no-destination"
-          ? "Move blocked — that athlete is no longer available."
-          : "Move blocked — the task is no longer there.",
-    );
-    return false;
+    if (pendingMoveRef.current) return false;
+    pendingMoveRef.current = true;
+    const id = ++moveSeq.current;
+    moveOutcomes.current.set(id, onDone);
+    setPendingMove({ id, entry, clientId, fields });
+    return true;
   };
+
+  // Resolve the submitted move against the COMMITTED state. By the time
+  // this effect runs, `state` already holds every update queued before
+  // the request — so validation and the write evaluate the same real
+  // base, and the outcome can only be reported after commit. No result
+  // is ever read out of a state updater.
+  useEffect(() => {
+    const req = pendingMove;
+    if (!req || handledMove.current === req.id) return;
+    handledMove.current = req.id;
+    pendingMoveRef.current = false;
+    setPendingMove(null);
+    const done = moveOutcomes.current.get(req.id);
+    moveOutcomes.current.delete(req.id);
+    const result = applyMoveRequest(state, {
+      ref: req.entry,
+      clientId: req.clientId,
+      fields: req.fields,
+    });
+    if (!result.moved) {
+      toast(
+        result.reason === "id-conflict"
+          ? "Move blocked — that scope already has a task with this id."
+          : result.reason === "no-destination"
+            ? "Move blocked — that athlete is no longer available."
+            : "Move blocked — the task is no longer there.",
+      );
+      done?.(false, result.reason);
+      return;
+    }
+    // Apply on the base the outcome was computed on; if another update
+    // slipped in between, re-run the same validation on it — a rejected
+    // move writes nothing either way.
+    if (result.state !== state)
+      setState((s) =>
+        s === state
+          ? result.state
+          : applyMoveRequest(s, {
+              ref: req.entry,
+              clientId: req.clientId,
+              fields: req.fields,
+            }).state,
+      );
+    done?.(true);
+  }, [state, pendingMove, setState, toast]);
 
   const remove = (entry: TaskEntry) => {
     clearCompleting(taskKey(entry));
@@ -628,8 +680,8 @@ function TasksView({
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
             }
-            onMove={(clientId, fields) =>
-              attemptMove(selected, clientId, fields)
+            onMove={(clientId, fields, onDone) =>
+              attemptMove(selected, clientId, fields, onDone)
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -652,8 +704,8 @@ function TasksView({
             onSave={(ref, fields) =>
               setState((s) => updateTask(s, ref, fields))
             }
-            onMove={(clientId, fields) =>
-              attemptMove(selected, clientId, fields)
+            onMove={(clientId, fields, onDone) =>
+              attemptMove(selected, clientId, fields, onDone)
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -675,11 +727,13 @@ function TasksView({
               const name = clientId
                 ? (athletes.find((a) => a.id === clientId)?.name ?? "athlete")
                 : "General";
-              // Rejected moves keep the dialog open; the rejection toast
-              // inside attemptMove explains why.
-              if (!attemptMove(moveEntry, clientId)) return;
-              setMoveEntry(null);
-              toast(`Task moved to ${name}.`);
+              // The dialog only closes on the committed outcome — a
+              // rejected move keeps it open and the toast explains why.
+              attemptMove(moveEntry, clientId, undefined, (moved) => {
+                if (!moved) return;
+                setMoveEntry(null);
+                toast(`Task moved to ${name}.`);
+              });
             }}
             options={[
               { value: "general", label: "General" },
@@ -1338,13 +1392,14 @@ function TaskDetail({
   /** Applies `fields` to the task at `ref`'s scope — never creates,
    * never moves, never writes fields the caller did not edit. */
   onSave: (ref: TaskRef, fields: Partial<TaskFields>) => void;
-  /** Relocates the task — `fields` carries any pending edited fields so a
-   * debounced save and the move apply in one state transition. Returns
-   * false when the move was rejected: the caller keeps the draft, the
-   * current scope and the editor. */
+  /** Submits a move request — `fields` carries any pending edited fields
+   * so the move and patch apply atomically after commit. Returns false
+   * only when another request is in flight; the committed outcome arrives
+   * via `onDone` — the caller keeps its draft until then. */
   onMove: (
     clientId: string | undefined,
-    fields?: Partial<TaskFields>,
+    fields: Partial<TaskFields> | undefined,
+    onDone: (moved: boolean, reason?: string) => void,
   ) => boolean;
   onSnooze: () => void;
   onClose: () => void;
@@ -1427,13 +1482,19 @@ function TaskDetail({
       return;
     }
     window.clearTimeout(saveTimer.current);
-    const fields = editedRef.current;
-    // The move applies the pending patch atomically; only a successful
-    // move consumes it and switches scope. On rejection the draft, the
-    // current athlete and the panel all stay exactly as they were.
-    if (!onMove(clientId, fields)) return;
-    editedRef.current = {};
-    setClientSel(clientId);
+    // The pending patch travels WITH the request — the outcome arrives
+    // after commit. Only a successful move consumes the fields it
+    // submitted (later edits of other fields stay in the draft) and
+    // switches scope; a rejection leaves draft, athlete and panel as-is.
+    const submitted = { ...editedRef.current };
+    onMove(clientId, submitted, (moved) => {
+      if (!moved) return;
+      const rest = { ...editedRef.current };
+      for (const key of Object.keys(submitted) as (keyof TaskFields)[])
+        if (rest[key] === submitted[key]) delete rest[key];
+      editedRef.current = rest;
+      setClientSel(clientId);
+    });
   };
 
   const applyRepeat = (value: string) => {
@@ -1697,20 +1758,29 @@ function TaskDetail({
               return;
             }
             if (clientSel !== entry.clientId) {
-              // The move carries the draft in one state transition so the
-              // edits land at the new owner, never the old scope. A
-              // rejected move keeps the dialog open and the draft intact;
-              // the rejection toast explains why.
-              if (!onMove(clientSel, draft)) {
+              // The move carries the draft in one committed transition so
+              // the edits land at the new owner, never the old scope. The
+              // committed outcome closes the dialog on success; a rejected
+              // move keeps the dialog open and the draft intact.
+              const accepted = onMove(clientSel, draft, (moved, reason) => {
+                if (moved) {
+                  onClose();
+                  return;
+                }
                 setCorrection(
-                  "Couldn't move this task — your changes were kept.",
+                  reason === "id-conflict"
+                    ? "That athlete already has a task with this id — your changes were kept."
+                    : reason === "no-destination"
+                      ? "That athlete is no longer available — your changes were kept."
+                      : "The task is no longer there — your changes were kept.",
                 );
-                return;
-              }
+              });
+              if (!accepted)
+                setCorrection("Still finishing the previous move — try again.");
             } else {
               onSave({ id: entry.task.id, clientId: clientSel }, draft);
+              onClose();
             }
-            onClose();
           }}
         >
           Save

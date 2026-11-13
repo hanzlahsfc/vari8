@@ -375,6 +375,21 @@ export type RemovedTask = {
   index: number;
 };
 
+/** Resolve a submitted move request against the given (committed) state.
+ * The UI submits a request, lets the state commit, then runs this — the
+ * result is always evaluated on the committed base, never a stale
+ * snapshot or an id lookup at the destination. */
+export function applyMoveRequest(
+  state: CoachState,
+  request: {
+    ref: TaskRefish;
+    clientId: string | undefined;
+    fields?: Partial<TaskFields>;
+  },
+): MoveResult {
+  return moveTask(state, request.ref, request.clientId, request.fields);
+}
+
 export function deleteTask(
   state: CoachState,
   ref: TaskRef,
