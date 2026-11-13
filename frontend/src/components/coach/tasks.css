@@ -30,10 +30,6 @@
   gap: 4px;
   padding-bottom: 4px;
 }
-.coach-root .cd-quickadd-buttons .cd-icon-button[aria-pressed="true"] {
-  color: var(--cd-accent-text);
-  background: color-mix(in srgb, var(--cd-accent) 12%, var(--cd-surface));
-}
 .coach-root .cd-quickadd-suggest {
   list-style: none;
   margin: 4px 0 0;
@@ -188,6 +184,9 @@
   text-decoration: line-through;
   color: var(--cd-muted);
 }
+.coach-root .cd-task-row.is-completing {
+  pointer-events: none;
+}
 .coach-root .cd-task-preview {
   display: block;
   margin-top: 2px;
@@ -279,6 +278,11 @@
   margin: 0;
   font-size: 12px;
   color: var(--cd-muted);
+}
+.coach-root .cd-task-correction {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--v8-danger-text);
 }
 .coach-root .cd-task-detail-actions {
   display: flex;

@@ -44,15 +44,20 @@ import { localToday } from "./targets/model";
 import {
   deleteTask,
   filterTasks,
+  findTask,
   listTasks,
+  localDateTime,
+  localDayOf,
   matchAthletes,
   moveTask,
+  occurrenceOnOrAfter,
   overdueLabel,
   parseQuickAdd,
   type RemovedTask,
   relativeDay,
   repeatLabel,
   rescheduleOverdue,
+  resolveTaskParam,
   restoreTask,
   saveTask,
   searchTasks,
@@ -60,6 +65,8 @@ import {
   type TaskEntry,
   type TaskViewId,
   type ToggleInverse,
+  taskKey,
+  taskParam,
   taskViews,
   toggleTask,
   undoToggle,
@@ -86,7 +93,7 @@ const VIEW_OPTIONS: { id: TaskViewId; label: string }[] = [
 const isTaskView = (value?: string): value is TaskViewId =>
   !!value && VIEW_OPTIONS.some((option) => option.id === value);
 
-const nowIso = () => new Date().toISOString();
+const nowIso = () => localDateTime(new Date());
 
 // --- Workspaces ------------------------------------------------------------
 
@@ -241,9 +248,9 @@ function TasksView({
   const views = useMemo(
     () =>
       view === "today" || view === "upcoming"
-        ? taskViews(activePool, today)
-        : taskViews(visible, today),
-    [view, activePool, visible, today],
+        ? taskViews(activePool, today, { keepIds: completing })
+        : taskViews(visible, today, { keepIds: completing }),
+    [view, activePool, visible, today, completing],
   );
   const counts = useMemo(() => {
     const active = taskViews(activePool, today);
@@ -256,38 +263,48 @@ function TasksView({
     };
   }, [activePool, visible, today]);
 
-  const inverseRef = useRef<ToggleInverse | undefined>(undefined);
-  const removedRef = useRef<RemovedTask | undefined>(undefined);
-  const movedRef = useRef<
-    { ref: { id: string; clientId?: string }; previousDeadline: string }[]
-  >([]);
-
-  const applyToggle = (entry: TaskEntry) => {
-    setState((s) => {
-      const result = toggleTask(s, entry, today);
-      inverseRef.current = result.inverse;
-      return result.state;
+  // Animation markers are keyed by scope+id: duplicate ids across owners
+  // must not cross-trigger the strike-through.
+  const completingKey = (entry: TaskEntry) => taskKey(entry);
+  const clearCompleting = (key: string) =>
+    setCompleting((s) => {
+      if (!s.has(key)) return s;
+      const next = new Set(s);
+      next.delete(key);
+      return next;
     });
-    if (!entry.task.complete)
+
+  /** Single state transition resolved by scope+id at write time. The write
+   * happens immediately — the ~600 ms strike-through is display only — so a
+   * second activation acts on the advanced/restored record, undo is instant,
+   * and a delete or move during the animation can neither resurrect the task
+   * nor revert its owner. */
+  const applyToggle = (entry: TaskEntry) => {
+    const ref = { id: entry.task.id, clientId: entry.clientId };
+    const result: { inverse?: ToggleInverse; completed?: boolean } = {};
+    setState((s) => {
+      const r = toggleTask(s, ref, today);
+      result.inverse = r.inverse;
+      result.completed = r.completed;
+      return r.state;
+    });
+    // The toast follows the transition that actually ran, not the possibly
+    // stale entry that was rendered — a second click during the animation
+    // reopens instead of double-completing.
+    if (result.completed)
       toast("Task completed.", () => {
-        const inverse = inverseRef.current;
-        if (inverse) setState((s) => undoToggle(s, inverse));
+        if (result.inverse)
+          setState((s) => undoToggle(s, result.inverse as ToggleInverse));
       });
   };
 
   const complete = (entry: TaskEntry) => {
-    if (entry.task.complete) return applyToggle(entry);
-    if (reduced) return applyToggle(entry);
-    const id = entry.task.id;
-    setCompleting((s) => new Set(s).add(id));
-    window.setTimeout(() => {
-      applyToggle(entry);
-      setCompleting((s) => {
-        const next = new Set(s);
-        next.delete(id);
-        return next;
-      });
-    }, 600);
+    const key = completingKey(entry);
+    if (entry.task.complete || completing.has(key)) return applyToggle(entry);
+    applyToggle(entry);
+    if (reduced) return;
+    setCompleting((s) => new Set(s).add(key));
+    window.setTimeout(() => clearCompleting(key), 600);
   };
 
   const add = (task: TaskFields) => {
@@ -295,49 +312,62 @@ function TasksView({
   };
 
   const remove = (entry: TaskEntry) => {
+    clearCompleting(completingKey(entry));
+    const result: { removed?: RemovedTask } = {};
     setState((s) => {
-      const result = deleteTask(s, {
+      const r = deleteTask(s, {
         id: entry.task.id,
         clientId: entry.clientId,
       });
-      removedRef.current = result.removed;
-      return result.state;
+      result.removed = r.removed;
+      return r.state;
     });
-    if (selectedId === entry.task.id) onSelect(null);
+    if (selected && taskKey(selected) === taskKey(entry)) onSelect(null);
     toast("Task deleted.", () => {
-      const removed = removedRef.current;
-      if (removed) setState((s) => restoreTask(s, removed));
+      if (result.removed)
+        setState((s) => restoreTask(s, result.removed as RemovedTask));
     });
   };
 
   const duplicate = (entry: TaskEntry) => {
-    setState((s) =>
-      saveTask(s, { ...entry.task, id: uid("task") }, entry.clientId),
-    );
+    setState((s) => {
+      const current = findTask(s, {
+        id: entry.task.id,
+        clientId: entry.clientId,
+      });
+      return current
+        ? saveTask(s, { ...current.task, id: uid("task") }, current.clientId)
+        : s;
+    });
     toast("Task duplicated.");
   };
 
   const moveAllToToday = (items: TaskEntry[]) => {
+    const refs = items.map((entry) => ({
+      id: entry.task.id,
+      clientId: entry.clientId,
+    }));
+    let moved: {
+      ref: { id: string; clientId?: string };
+      previousDeadline: string;
+    }[] = [];
     setState((s) => {
-      const result = rescheduleOverdue(s, items, today);
-      movedRef.current = result.moved;
+      const result = rescheduleOverdue(s, refs, today);
+      moved = result.moved;
       return result.state;
     });
-    const moved = movedRef.current;
     if (moved.length)
       toast(
         `Moved ${moved.length} ${moved.length === 1 ? "task" : "tasks"} to today.`,
         () =>
           setState((s) =>
             moved.reduce((next, m) => {
-              const current = next.coachTodos
-                ?.concat(next.clients.flatMap((c) => c.coachTasks))
-                .find((t) => t.id === m.ref.id);
+              const current = findTask(next, m.ref);
               return current
                 ? saveTask(
                     next,
-                    { ...current, deadline: m.previousDeadline },
-                    m.ref.clientId,
+                    { ...current.task, deadline: m.previousDeadline },
+                    current.clientId,
                   )
                 : next;
             }, s),
@@ -350,9 +380,7 @@ function TasksView({
       navigate({ section: "clients", client: entry.clientId });
   };
 
-  const selected = selectedId
-    ? entries.find((e) => e.task.id === selectedId)
-    : undefined;
+  const selected = resolveTaskParam(entries, selectedId ?? undefined);
   const detailWide = wide && !fixedClientId;
 
   const listProps = {
@@ -360,7 +388,7 @@ function TasksView({
     fixedClientId,
     completing,
     onToggle: complete,
-    onOpen: (entry: TaskEntry) => onSelect(entry.task.id),
+    onOpen: (entry: TaskEntry) => onSelect(taskParam(entry, entries)),
     onDuplicate: duplicate,
     onDelete: remove,
     onMoveRequest: setMoveEntry,
@@ -555,8 +583,8 @@ function TasksView({
             today={today}
             instant
             onClose={() => onSelect(null)}
-            onSave={(task) =>
-              setState((s) => saveTask(s, task, selected.clientId))
+            onSave={(task, clientId) =>
+              setState((s) => saveTask(s, task, clientId ?? selected.clientId))
             }
             onMove={(clientId) =>
               setState((s) => moveTask(s, selected, clientId))
@@ -581,7 +609,9 @@ function TasksView({
             onSave={(task, clientId) =>
               setState((s) => saveTask(s, task, clientId))
             }
-            onMove={() => {}}
+            onMove={(clientId) =>
+              setState((s) => moveTask(s, selected, clientId))
+            }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
               setState((s) => snoozeReminder(s, selected, until));
@@ -672,14 +702,15 @@ function TaskRow({
   onOpenAthlete?: (entry: TaskEntry) => void;
 }) {
   const { task } = entry;
-  const isCompleting = completing.has(task.id);
+  const isCompleting = completing.has(taskKey(entry));
   const overdue = !task.complete && !!task.deadline && task.deadline < today;
 
   const rowKey = (event: KeyboardEvent<HTMLElement>) => {
-    const list = event.currentTarget.closest("ul");
-    const mains = list
+    if (isCompleting) return;
+    const root = event.currentTarget.closest(".cd-tasks");
+    const mains = root
       ? Array.from(
-          list.querySelectorAll<HTMLElement>("li.cd-task-row .cd-task-main"),
+          root.querySelectorAll<HTMLElement>("li.cd-task-row .cd-task-main"),
         )
       : [];
     const index = mains.indexOf(event.currentTarget);
@@ -707,7 +738,10 @@ function TaskRow({
         label=""
         ariaLabel={`${task.complete ? "Reopen" : "Complete"} ${task.title}`}
         checked={task.complete || isCompleting}
-        onCheckedChange={() => onToggle(entry)}
+        disabled={isCompleting}
+        onCheckedChange={() => {
+          if (!isCompleting) onToggle(entry);
+        }}
       />
       <div className="cd-task-body">
         <button
@@ -741,7 +775,7 @@ function TaskRow({
           )}
           {showCompletedAt && task.completedAt ? (
             <span>
-              Completed {relativeDay(task.completedAt.slice(0, 10), today)}
+              Completed {relativeDay(localDayOf(task.completedAt), today)}
             </span>
           ) : (
             task.deadline && (
@@ -825,24 +859,32 @@ function QuickAdd({
   const [text, setText] = useState("");
   const [disabled, setDisabled] = useState<ReadonlySet<string>>(new Set());
   const [picker, setPicker] = useState<"date" | "athlete" | null>(null);
+  /** deadline undefined = untouched, null = explicitly cleared;
+   * clientId undefined = untouched, null = explicitly "No athlete". */
   const [override, setOverride] = useState<{
-    deadline?: string;
-    clientId?: string;
+    deadline?: string | null;
+    clientId?: string | null;
   }>({});
   const [flag, setFlag] = useState<boolean | null>(null);
+  const [correction, setCorrection] = useState<string | undefined>(undefined);
   const [suggestIndex, setSuggestIndex] = useState(0);
+  const [suggestTouched, setSuggestTouched] = useState(false);
   const localRef = useRef<HTMLInputElement>(null);
   const ref = inputRef ?? localRef;
 
   const parsed = parseQuickAdd(text, athletes, today, disabled);
   const athleteToken = parsed.tokens.find((t) => t.kind === "athlete");
+  const priorityTokens = parsed.tokens.filter((t) => t.kind === "priority");
   const clientId =
-    override.clientId !== undefined
-      ? override.clientId
-      : athleteToken
+    override.clientId === undefined
+      ? athleteToken
         ? parsed.clientId
-        : fixedClientId;
-  const deadline = override.deadline ?? parsed.deadline ?? prefillDate;
+        : fixedClientId
+      : (override.clientId ?? undefined);
+  const deadline =
+    override.deadline === undefined
+      ? (parsed.deadline ?? prefillDate)
+      : (override.deadline ?? undefined);
   const high = flag ?? parsed.priority === "high";
 
   const mention = /(^|\s)@([^\s@]*)$/.exec(text);
@@ -855,10 +897,44 @@ function QuickAdd({
 
   const applySuggestion = (athlete: { id: string; name: string }) => {
     if (!mention) return;
+    // An explicit pick binds by id — safer than re-parsing a first name
+    // that could collide with another athlete — and shows as a removable
+    // chip just like the athlete picker's selection.
     const atStart = text.length - mention[0].length;
-    setText(`${text.slice(0, atStart)}@${athlete.name.split(" ")[0]} `);
+    setText(text.slice(0, atStart).replace(/\s+$/, " "));
+    setOverride((o) => ({ ...o, clientId: athlete.id }));
     setSuggestIndex(0);
+    setSuggestTouched(false);
     ref.current?.focus();
+  };
+
+  /** Clearing the date while a repeat token is active would leave the rule
+   * stranded — un-parse it so the words stay literal and say what happened. */
+  const setDateOverride = (value: string | null | undefined) => {
+    if (parsed.repeat && !value) {
+      setDisabled((s) => {
+        const next = new Set(s);
+        for (const token of parsed.tokens)
+          if (token.kind === "repeat") next.add(token.key);
+        return next;
+      });
+      setCorrection("Repeat removed — repeating tasks need a date.");
+    } else setCorrection(undefined);
+    setOverride((o) => ({ ...o, deadline: value }));
+  };
+
+  const toggleFlag = () => {
+    const next = !(flag ?? parsed.priority === "high");
+    setFlag(next);
+    // Turning the flag off un-parses a typed priority token so the literal
+    // `!`/`p1` stays as text; turning it on re-enables the token.
+    setDisabled((s) => {
+      const nextSet = new Set(s);
+      for (const token of priorityTokens)
+        if (next) nextSet.delete(token.key);
+        else nextSet.add(token.key);
+      return nextSet;
+    });
   };
 
   const submit = () => {
@@ -877,7 +953,8 @@ function QuickAdd({
       complete: false,
       createdAt: nowIso(),
       ...(deadline ? { deadline } : {}),
-      ...(parsed.repeat ? { repeat: parsed.repeat } : {}),
+      // A repeat rule needs a date to advance from — never save one without.
+      ...(parsed.repeat && deadline ? { repeat: parsed.repeat } : {}),
       ...(reminderAt ? { reminderAt } : {}),
       ...(high ? { priority: "high" as const } : {}),
       ...(clientId ? { clientId } : {}),
@@ -886,13 +963,20 @@ function QuickAdd({
     setDisabled(new Set());
     setOverride({});
     setFlag(null);
+    setCorrection(undefined);
     setPicker(null);
     ref.current?.focus();
   };
 
+  const overrideAthlete =
+    override.clientId === null
+      ? { id: "", name: "No athlete" }
+      : override.clientId
+        ? athletes.find((a) => a.id === override.clientId)
+        : undefined;
   const fixedAthlete =
-    fixedClientId && !athleteToken
-      ? athletes.find((a) => a.id === (override.clientId ?? fixedClientId))
+    fixedClientId && !athleteToken && override.clientId === undefined
+      ? athletes.find((a) => a.id === fixedClientId)
       : undefined;
 
   return (
@@ -913,6 +997,7 @@ function QuickAdd({
           onChange={(event) => {
             setText(event.currentTarget.value);
             setSuggestIndex(0);
+            setSuggestTouched(false);
           }}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -924,14 +1009,24 @@ function QuickAdd({
               if (event.key === "ArrowDown") {
                 event.preventDefault();
                 setSuggestIndex((i) => Math.min(i + 1, suggestions.length - 1));
+                setSuggestTouched(true);
                 return;
               }
               if (event.key === "ArrowUp") {
                 event.preventDefault();
                 setSuggestIndex((i) => Math.max(i - 1, 0));
+                setSuggestTouched(true);
                 return;
               }
-              if (event.key === "Enter" || event.key === "Tab") {
+              // Tab always accepts the highlighted suggestion; Enter only
+              // picks one the coach deliberately arrowed to, so a partial
+              // @match can't silently bind the first athlete.
+              if (event.key === "Tab") {
+                event.preventDefault();
+                applySuggestion(suggestions[suggestIndex] ?? suggestions[0]);
+                return;
+              }
+              if (event.key === "Enter" && suggestTouched) {
                 event.preventDefault();
                 applySuggestion(suggestions[suggestIndex] ?? suggestions[0]);
                 return;
@@ -944,30 +1039,36 @@ function QuickAdd({
           }}
         />
         <div className="cd-quickadd-buttons">
-          <IconButton
-            label="Set date"
+          <Button
+            variant="ghost"
             size="sm"
+            aria-label="Set date"
+            title="Set date"
             aria-pressed={picker === "date"}
             onClick={() => setPicker(picker === "date" ? null : "date")}
           >
             <CalendarDays size={15} />
-          </IconButton>
-          <IconButton
-            label="Set athlete"
+          </Button>
+          <Button
+            variant="ghost"
             size="sm"
+            aria-label="Set athlete"
+            title="Set athlete"
             aria-pressed={picker === "athlete"}
             onClick={() => setPicker(picker === "athlete" ? null : "athlete")}
           >
             <AtSign size={15} />
-          </IconButton>
-          <IconButton
-            label={high ? "Remove high priority" : "Mark high priority"}
+          </Button>
+          <Button
+            variant="ghost"
             size="sm"
+            aria-label={high ? "Remove high priority" : "Mark high priority"}
+            title={high ? "Remove high priority" : "Mark high priority"}
             aria-pressed={high}
-            onClick={() => setFlag(!(flag ?? parsed.priority === "high"))}
+            onClick={toggleFlag}
           >
             <Flag size={15} />
-          </IconButton>
+          </Button>
         </div>
       </div>
 
@@ -993,10 +1094,19 @@ function QuickAdd({
         </div>
       )}
 
-      {(parsed.tokens.length > 0 || fixedAthlete || override.deadline) && (
+      {(parsed.tokens.length > 0 ||
+        fixedAthlete ||
+        overrideAthlete ||
+        override.deadline ||
+        flag === true) && (
         <div className="cd-quickadd-tokens">
           {fixedAthlete && (
-            <span className="cd-token cd-token-fixed">{fixedAthlete.name}</span>
+            <span
+              className="cd-token cd-token-fixed"
+              title="Athlete for this profile"
+            >
+              Athlete · {fixedAthlete.name}
+            </span>
           )}
           {parsed.tokens.map((token) => (
             <button
@@ -1010,14 +1120,25 @@ function QuickAdd({
               <X size={11} aria-hidden="true" />
             </button>
           ))}
+          {overrideAthlete && (
+            <button
+              type="button"
+              className="cd-token"
+              title="Remove athlete"
+              onClick={() =>
+                setOverride((o) => ({ ...o, clientId: undefined }))
+              }
+            >
+              {overrideAthlete.name}
+              <X size={11} aria-hidden="true" />
+            </button>
+          )}
           {override.deadline && (
             <button
               type="button"
               className="cd-token"
               title="Clear date"
-              onClick={() =>
-                setOverride((o) => ({ ...o, deadline: undefined }))
-              }
+              onClick={() => setDateOverride(null)}
             >
               {relativeDay(override.deadline, today)}
               <X size={11} aria-hidden="true" />
@@ -1036,15 +1157,14 @@ function QuickAdd({
           )}
         </div>
       )}
+      {correction && <p className="cd-task-correction">{correction}</p>}
 
       {picker === "date" && (
         <div className="cd-quickadd-picker">
           <DatePicker
             label="Date"
             value={deadline ?? ""}
-            onValueChange={(value) =>
-              setOverride((o) => ({ ...o, deadline: value || undefined }))
-            }
+            onValueChange={(value) => setDateOverride(value || null)}
           />
         </div>
       )}
@@ -1056,7 +1176,7 @@ function QuickAdd({
             onValueChange={(value) => {
               setOverride((o) => ({
                 ...o,
-                clientId: value === "general" ? undefined : value,
+                clientId: value === "general" ? null : value,
               }));
               setPicker(null);
             }}
@@ -1128,7 +1248,19 @@ function TaskDetail({
   const [clientSel, setClientSel] = useState<string | undefined>(
     entry.clientId,
   );
+  const [correction, setCorrection] = useState<string | undefined>(undefined);
   const saveTimer = useRef<number | undefined>(undefined);
+  // Latest values for the debounced + unmount flush: a pending save always
+  // commits the newest draft to the newest scope, never a stale snapshot.
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const clientSelRef = useRef(clientSel);
+  clientSelRef.current = clientSel;
+  const instantRef = useRef(instant);
+  instantRef.current = instant;
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+  const pendingSave = useRef(false);
 
   useEffect(() => {
     setDraft(task);
@@ -1139,22 +1271,29 @@ function TaskDetail({
   useEffect(
     () => () => {
       window.clearTimeout(saveTimer.current);
+      // Closing the panel commits the pending save instead of dropping it.
+      if (instantRef.current && pendingSave.current)
+        onSaveRef.current(draftRef.current, clientSelRef.current);
     },
     [],
   );
 
-  const scheduleSave = (next: TaskFields) => {
+  const scheduleSave = () => {
     if (!instant) return;
+    pendingSave.current = true;
     window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => onSave(next), 400);
+    saveTimer.current = window.setTimeout(() => {
+      pendingSave.current = false;
+      onSave(draftRef.current, clientSelRef.current);
+    }, 400);
   };
 
   const patch = (partial: Partial<TaskFields>, debounce = false) => {
     const next = { ...draft, ...partial };
     setDraft(next);
     if (instant) {
-      if (debounce) scheduleSave(next);
-      else onSave(next);
+      if (debounce) scheduleSave();
+      else onSave(next, clientSelRef.current);
     }
   };
 
@@ -1191,7 +1330,29 @@ function TaskDetail({
             : option === "monthly"
               ? { unit: "month", interval: 1 }
               : { unit: "day", interval: 2 };
-    patch({ repeat });
+    const next = { ...draft, repeat };
+    if (!next.deadline) {
+      // A repeat rule needs a date to advance from — start it at the next
+      // occurrence and say so rather than saving a silent one-shot.
+      next.deadline = occurrenceOnOrAfter(today, repeat);
+      setCorrection("Date set to the next occurrence — repeats need a date.");
+    } else setCorrection(undefined);
+    patch(next);
+  };
+
+  const onDateChange = (value: string) => {
+    if (value) {
+      setCorrection(undefined);
+      patch({ deadline: value });
+      return;
+    }
+    const next = { ...draft };
+    delete next.deadline;
+    if (next.repeat) {
+      delete next.repeat;
+      setCorrection("Repeat removed — repeating tasks need a date.");
+    } else setCorrection(undefined);
+    patch(next);
   };
 
   const repeat = draft.repeat;
@@ -1201,8 +1362,22 @@ function TaskDetail({
     if (date) next.reminderAt = `${date}T${time || "09:00"}`;
     else delete next.reminderAt;
     if (!next.reminderAt) delete next.reminderShownAt;
+    else if (next.reminderAt !== task.reminderAt) delete next.reminderShownAt;
     setDraft(next);
-    if (instant) onSave(next);
+    if (instant) onSave(next, clientSelRef.current);
+  };
+
+  // Dialog mode snoozes the draft so the coach still saves explicitly;
+  // panel mode writes straight through the shared reminder lifecycle.
+  const snooze = () => {
+    const until = new Date(Date.now() + 60 * 60 * 1000);
+    if (instant) {
+      onSnooze();
+      return;
+    }
+    const next = { ...draft, reminderAt: localDateTime(until) };
+    delete next.reminderShownAt;
+    setDraft(next);
   };
 
   const fields = (
@@ -1233,10 +1408,9 @@ function TaskDetail({
       <DatePicker
         label="Date"
         value={draft.deadline ?? ""}
-        onValueChange={(value) =>
-          patch(value ? { deadline: value } : { deadline: undefined })
-        }
+        onValueChange={onDateChange}
       />
+      {correction && <p className="cd-task-correction">{correction}</p>}
       <Select
         label="Repeat"
         value={repeatValue}
@@ -1337,7 +1511,7 @@ function TaskDetail({
         }
       />
       {draft.reminderAt && (
-        <Button variant="ghost" size="sm" onClick={onSnooze}>
+        <Button variant="ghost" size="sm" onClick={snooze}>
           <Bell size={13} /> Snooze 1 hour
         </Button>
       )}
@@ -1390,6 +1564,12 @@ function TaskDetail({
         <Button
           primary
           onClick={() => {
+            if (draft.repeat && !draft.deadline) {
+              setCorrection(
+                "Repeating tasks need a date — set one or remove the repeat.",
+              );
+              return;
+            }
             if (clientSel !== entry.clientId) onMove(clientSel);
             onSave(draft, clientSel);
             onClose();

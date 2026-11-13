@@ -80,21 +80,11 @@
     },
     {
       "file": "src/components/coach/tasks.css",
-      "selector": ".coach-root .cd-quickadd-buttons .cd-icon-button[aria-pressed=\"true\"]",
-      "property": "color",
-      "reason": "Pressed state marks which quick-add picker is open; the shared IconButton has no pressed styling of its own."
-    },
-    {
-      "file": "src/components/coach/tasks.css",
-      "selector": ".coach-root .cd-quickadd-buttons .cd-icon-button[aria-pressed=\"true\"]",
-      "property": "background",
-      "reason": "Pressed state marks which quick-add picker is open; the shared IconButton has no pressed styling of its own."
-    },
-    {
-      "file": "src/components/coach/tasks.css",
       "selector": ".coach-root .cd-quickadd .v8-input",
       "property": "font-size",
-      "reason": "Quick-add input stays at 16px on phone widths per the spec narrow-layout rule so mobile browsers do not auto-zoom."
+      "reason": "Quick-add input stays at 16px on phone widths per the spec narrow-layout rule so mobile browsers do not auto-zoom.",
+      "owner": "P787 tasks quick add",
+      "removeWhen": "The shared input control enforces the 16px phone-width floor itself or the design system documents a different anti-zoom strategy."
     }
   ]
 }

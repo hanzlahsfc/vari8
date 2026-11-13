@@ -992,7 +992,12 @@ export function adoptAthleteDataDemo(
         id: "demo-task-review-checkin",
         title: "Review Amara's Sunday check-in and photos",
         complete: false,
-        deadline: today,
+        // Deadline lands on the repeat's weekday so completion advances
+        // cleanly to the following Sunday.
+        deadline: addLocalDays(
+          today,
+          (7 - new Date(`${today}T12:00:00`).getDay()) % 7,
+        ),
         priority: "high",
         repeat: { unit: "week", interval: 1, weekdays: [0] },
         createdAt: ago(6),

@@ -70,17 +70,18 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.coach-root .cd-notes-todo-checkbox {
+.coach-root .cd-notes-todo-title {
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: baseline;
+  gap: 6px;
   overflow-wrap: anywhere;
 }
-.coach-root .cd-notes-todo-checkbox.is-complete {
+.coach-root .cd-notes-todo-title.is-complete {
+  color: var(--cd-muted);
   text-decoration: line-through;
 }
 .coach-root .cd-notes-todo .cd-notes-item-footer {
-  padding-left: 30px;
+  padding-left: 19px;
   margin-top: 8px;
   justify-content: flex-start;
   flex-wrap: wrap;

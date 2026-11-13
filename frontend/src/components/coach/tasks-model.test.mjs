@@ -5,15 +5,20 @@ import {
   advanceTaskDeadline,
   deleteTask,
   dueReminders,
+  findTask,
   listTasks,
   markRemindersShown,
   moveTask,
   nextOccurrence,
   parseQuickAdd,
   rescheduleOverdue,
+  resolveTaskParam,
   restoreTask,
   saveTask,
   snoozeReminder,
+  taskParam,
+  tasksById,
+  taskViews,
   toggleTask,
   undoToggle,
 } from "./tasks-model.ts";
@@ -531,4 +536,364 @@ test("new optional fields validate inside both task stores", () => {
     ],
   });
   assert.equal(isCoachState(state), true);
+});
+
+// --- P788/P789 regression coverage ------------------------------------------
+
+test("toggle resolves the current record by scope+id; stale refs are no-ops", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        { id: "dup", title: "A task", complete: false, deadline: TODAY },
+      ]),
+      client("client-007", [
+        { id: "dup", title: "B task", complete: false, deadline: TODAY },
+      ]),
+    ],
+    coachTodos: [
+      { id: "dup", title: "G task", complete: false, deadline: TODAY },
+    ],
+  });
+  // Each scoped ref toggles only its own record.
+  const a = toggleTask(base, { id: "dup", clientId: "client-001" }, TODAY);
+  assert.equal(
+    findTask(a.state, { id: "dup", clientId: "client-001" })?.task.complete,
+    true,
+  );
+  assert.equal(
+    findTask(a.state, { id: "dup", clientId: "client-007" })?.task.complete,
+    false,
+  );
+  assert.equal(
+    findTask(a.state, { id: "dup", clientId: undefined })?.task.complete,
+    false,
+  );
+  // A ref left over from before a move is a no-op, not a stale write.
+  const moved = moveTask(
+    a.state,
+    { id: "dup", clientId: "client-001" },
+    "client-007",
+  );
+  const stale = toggleTask(moved, { id: "dup", clientId: "client-001" }, TODAY);
+  assert.equal(stale.state, moved);
+  assert.equal(stale.inverse, undefined);
+  assert.equal(tasksById(stale.state, "dup").length, 3);
+});
+
+test("immediate undo restores the exact task and preserves unrelated edits", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "original",
+        complete: false,
+        deadline: TODAY,
+        createdAt: "2026-11-01T09:00",
+      },
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  // An unrelated edit lands after the toggle, then the coach hits undo.
+  const edited = saveTask(
+    toggled.state,
+    { ...findTask(toggled.state, { id: "t1" }).task, title: "renamed" },
+    undefined,
+  );
+  const undone = undoToggle(edited, toggled.inverse);
+  const task = findTask(undone, { id: "t1" }).task;
+  assert.equal(task.complete, false);
+  assert.equal(task.completedAt, undefined);
+  assert.equal(task.deadline, TODAY);
+  assert.equal(task.title, "renamed"); // the post-toggle edit survives
+});
+
+test("delete during completion: undo does not resurrect the task", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+        createdAt: "2026-11-01T09:00",
+      },
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  const deleted = deleteTask(toggled.state, { id: "t1" });
+  assert.equal(findTask(deleted.state, { id: "t1" }), undefined);
+  const undone = undoToggle(deleted.state, toggled.inverse);
+  // Gone stays gone — the undo removes the completed copy but cannot
+  // bring back a deleted record.
+  assert.equal(findTask(undone, { id: "t1" }), undefined);
+  assert.equal(tasksById(undone, toggled.inverse.copyId).length, 0);
+});
+
+test("move during completion: undo restores fields at the new owner", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        {
+          id: "t1",
+          title: "weekly",
+          complete: false,
+          deadline: TODAY,
+          repeat: { unit: "week", interval: 1 },
+        },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const toggled = toggleTask(base, { id: "t1", clientId: "client-001" }, TODAY);
+  const moved = moveTask(
+    toggled.state,
+    { id: "t1", clientId: "client-001" },
+    "client-007",
+  );
+  const undone = undoToggle(moved, toggled.inverse);
+  const task = findTask(undone, { id: "t1", clientId: "client-007" })?.task;
+  assert.ok(task);
+  assert.equal(task.complete, false);
+  assert.equal(task.deadline, TODAY); // pre-toggle deadline restored
+  assert.equal(
+    findTask(undone, { id: "t1", clientId: "client-001" }),
+    undefined,
+  );
+  // And the completed copy moved with its owner... it stays where the
+  // toggle wrote it; only the live record is owner-preserved on undo.
+  assert.equal(tasksById(undone, toggled.inverse.copyId).length, 0);
+});
+
+test("double activation: one completion, one copy; un-toggle completes none", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+    ],
+  });
+  const once = toggleTask(base, { id: "t1" }, TODAY);
+  const copies = listTasks(once.state).filter((e) => e.task.complete);
+  assert.equal(copies.length, 1);
+  assert.equal(copies[0].task.id, once.inverse.copyId);
+  // Re-activating the (already-advanced) live record completes the NEXT
+  // occurrence — a distinct history row, never a duplicate of the first.
+  const twice = toggleTask(once.state, { id: "t1" }, TODAY);
+  const laterCopies = listTasks(twice.state).filter((e) => e.task.complete);
+  assert.equal(laterCopies.length, 2);
+  assert.notEqual(laterCopies[0].task.id, laterCopies[1].task.id);
+});
+
+test("recurring completion is lossless: copy keeps createdAt, drops lifecycle", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        createdAt: "2026-10-01T08:00",
+        reminderAt: `${TODAY}T09:00`,
+        reminderShownAt: `${TODAY}T09:00`,
+        repeat: { unit: "week", interval: 1 },
+        checklist: [{ id: "c1", text: "step", done: true }],
+        link: { kind: "check-in", id: "s1", label: "Check-in" },
+      },
+    ],
+  });
+  const { state, inverse } = toggleTask(base, { id: "t1" }, TODAY);
+  const copy = tasksById(state, inverse.copyId)[0].task;
+  assert.equal(copy.createdAt, "2026-10-01T08:00"); // original, not "now"
+  assert.equal(copy.complete, true);
+  assert.ok(copy.completedAt);
+  assert.equal(copy.repeat, undefined);
+  assert.equal(copy.reminderAt, undefined);
+  assert.equal(copy.reminderShownAt, undefined);
+  assert.deepEqual(copy.checklist, [{ id: "c1", text: "step", done: true }]);
+  const live = findTask(state, { id: "t1" }).task;
+  assert.equal(live.complete, false);
+  assert.equal(live.deadline, "2026-11-20");
+  assert.equal(live.reminderAt, "2026-11-20T09:00");
+  assert.equal(live.reminderShownAt, undefined);
+});
+
+test("a save never reverts an owner: pending edit writes at the current scope", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        { id: "t1", title: "old", complete: false, deadline: TODAY },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const moved = moveTask(
+    base,
+    { id: "t1", clientId: "client-001" },
+    "client-007",
+  );
+  // A debounced save that still carries the OLD scope must write the
+  // record where it now lives, not drag it back to client-001.
+  const saved = saveTask(
+    moved,
+    { id: "t1", title: "new", complete: false, deadline: TODAY },
+    "client-001",
+  );
+  assert.equal(
+    findTask(saved, { id: "t1", clientId: "client-007" })?.task.title,
+    "new",
+  );
+  assert.equal(
+    findTask(saved, { id: "t1", clientId: "client-001" }),
+    undefined,
+  );
+});
+
+test("reminder rescheduling clears the marker; unrelated edits keep it", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "check-in",
+        complete: false,
+        deadline: TODAY,
+        reminderAt: `${TODAY}T09:00`,
+        reminderShownAt: `${TODAY}T09:00`,
+      },
+    ],
+  });
+  const entry = findTask(base, { id: "t1" }).task;
+  // Unrelated edit — caller does not even carry the marker field — the
+  // marker survives because the reminder time did not change.
+  const edited = saveTask(
+    base,
+    { ...entry, title: "renamed", reminderShownAt: undefined },
+    undefined,
+  );
+  assert.equal(
+    findTask(edited, { id: "t1" }).task.reminderShownAt,
+    `${TODAY}T09:00`,
+  );
+  assert.equal(dueReminders(edited, Date.now()).length, 0);
+  // Moving the reminder to a new time re-arms it exactly once.
+  const rescheduled = saveTask(
+    edited,
+    { ...entry, reminderAt: `${TODAY}T10:00` },
+    undefined,
+  );
+  assert.equal(
+    findTask(rescheduled, { id: "t1" }).task.reminderShownAt,
+    undefined,
+  );
+  assert.equal(
+    dueReminders(rescheduled, Date.parse(`${TODAY}T10:00`)).length,
+    1,
+  );
+});
+
+test("snooze reschedules and re-arms; shown marker persists across reload", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "remind me",
+        complete: false,
+        deadline: TODAY,
+        reminderAt: `${TODAY}T09:00`,
+      },
+    ],
+  });
+  const due = dueReminders(base, Date.parse(`${TODAY}T09:01`));
+  assert.equal(due.length, 1);
+  const shown = markRemindersShown(base, due, `${TODAY}T09:01`);
+  assert.equal(dueReminders(shown, Date.parse(`${TODAY}T23:00`)).length, 0);
+  // The marker lives on the record — a "reload" re-reading the same
+  // state must not fire again.
+  assert.equal(
+    findTask(shown, { id: "t1" }).task.reminderShownAt,
+    `${TODAY}T09:01`,
+  );
+  const snoozed = snoozeReminder(
+    shown,
+    { id: "t1" },
+    new Date(Date.parse(`${TODAY}T10:00`)),
+  );
+  const task = findTask(snoozed, { id: "t1" }).task;
+  assert.equal(task.reminderAt, `${TODAY}T10:00`);
+  assert.equal(task.reminderShownAt, undefined);
+  assert.equal(dueReminders(snoozed, Date.parse(`${TODAY}T09:30`)).length, 0);
+  assert.equal(dueReminders(snoozed, Date.parse(`${TODAY}T10:05`)).length, 1);
+});
+
+test("completed grouping uses the local day, same basis as Today", () => {
+  const late = {
+    id: "t1",
+    title: "late finish",
+    complete: true,
+    completedAt: `${TODAY}T23:55`,
+  };
+  const early = {
+    id: "t2",
+    title: "next-day finish",
+    complete: true,
+    completedAt: "2026-11-14T00:10",
+  };
+  const state = workspaceState({ coachTodos: [late, early] });
+  const views = taskViews(listTasks(state), TODAY);
+  const lateGroup = views.completed.groups.find((g) =>
+    g.items.some((e) => e.task.id === "t1"),
+  );
+  const earlyGroup = views.completed.groups.find((g) =>
+    g.items.some((e) => e.task.id === "t2"),
+  );
+  assert.equal(lateGroup.id, `done:${TODAY}`);
+  assert.equal(lateGroup.label, "Today");
+  assert.equal(earlyGroup.id, "done:2026-11-14");
+  // The same rows label correctly from the next day's perspective too.
+  const nextViews = taskViews(listTasks(state), "2026-11-14");
+  const lateThen = nextViews.completed.groups.find((g) =>
+    g.items.some((e) => e.task.id === "t1"),
+  );
+  assert.equal(lateThen.label, "Yesterday");
+});
+
+test("task params are scope-aware; bare ids resolve only when unique", () => {
+  const state = workspaceState({
+    coachTodos: [
+      { id: "dup", title: "general", complete: false },
+      { id: "uniq", title: "only one", complete: false },
+    ],
+    clients: [
+      client("client-001", [{ id: "dup", title: "athlete", complete: false }]),
+    ],
+  });
+  const entries = listTasks(state, { includeArchived: true });
+  const general = entries.find((e) => e.task.id === "dup" && !e.clientId);
+  const athlete = entries.find((e) => e.task.id === "dup" && e.clientId);
+  const unique = entries.find((e) => e.task.id === "uniq");
+  assert.equal(taskParam(general, entries), "general:dup");
+  assert.equal(taskParam(athlete, entries), "client-001:dup");
+  assert.equal(taskParam(unique, entries), "uniq"); // unambiguous stays bare
+  assert.equal(resolveTaskParam(entries, "general:dup").task.title, "general");
+  assert.equal(
+    resolveTaskParam(entries, "client-001:dup").task.title,
+    "athlete",
+  );
+  assert.equal(resolveTaskParam(entries, "uniq").task.title, "only one");
+  // A stale bare link to a now-duplicated id opens nothing rather than
+  // the wrong athlete's task.
+  assert.equal(resolveTaskParam(entries, "dup"), undefined);
+});
+
+test("quick add @token binds only unique matches; ambiguous stays literal", () => {
+  const ambiguous = parseQuickAdd("check @a in", athletes, TODAY);
+  assert.equal(ambiguous.clientId, undefined);
+  assert.equal(ambiguous.title, "check @a in");
+  const unique = parseQuickAdd("check @em", athletes, TODAY);
+  assert.equal(unique.clientId, "client-001");
+  assert.equal(unique.title, "check");
 });

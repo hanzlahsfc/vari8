@@ -1,3 +1,53 @@
+## 2026-11-14 — P789 Tasks Phase 1a review repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the consolidated OpenCode / DeepSeek V4.1 Flash P788 findings on
+`beta/p787-tasks-phase-1a` off base `501e1134`. All findings addressed:
+
+1. Completion/undo/stale actions — `toggleTask`/`undoToggle` resolve the
+   record by scope+id inside the transition; the write is immediate and the
+   ~600 ms row animation is display-only (`keepIds`, scoped `taskKey`). Undo
+   re-applies only the toggled fields to the current record, so post-toggle
+   edits and moves survive; deleted records are never resurrected.
+2. Notes lifecycle — `notes.tsx` to-dos are read-only with "Open in Tasks"
+   deep links (`scope:id` params); note editing unchanged; no Notes path
+   mutates task records.
+3. Repeat requires a date — quick add un-parses the repeat token with a
+   visible correction when the date is cleared (explicit `null` override);
+   detail editor blocks repeat-without-date saves and drops the rule with a
+   correction when the date is removed.
+4. Detail edits/snooze — panel close flushes the pending debounced save of
+   the latest draft to the latest scope; narrow dialog keeps explicit
+   Save/Cancel, Snooze edits the draft instead of discarding it, and the
+   dialog athlete change is wired to `moveTask` (was a silent no-op).
+5. Reminder rescheduling — `saveTask` clears `reminderShownAt` only when
+   `reminderAt` changes; the marker is preserved through unrelated edits.
+6. Quick-add parity — `@` tokens bind only unique matches (ambiguous stays
+   literal text); suggestion picks set an explicit removable override chip;
+   fixed-profile athlete shows a distinct non-removable chip; flag toggle
+   keeps typed `!`/`p1` tokens, chips and title consistent.
+7. History/keyboard/links — Completed groups on `localDayOf` (same local-day
+   basis as Today); recurring copies keep `createdAt`; `task` route param is
+   `scope:id`-aware via `taskParam`/`resolveTaskParam` with bare-id fallback
+   for unambiguous links; row arrows already traverse all groups.
+8. Demo/UI-system — seeded weekly task deadline lands on its repeat weekday
+   (fixture output unchanged: export anchor is already a Sunday); the two
+   pressed-state CSS exceptions were removed in favour of shared `Button`
+   `aria-pressed` styling; the remaining 16 px phone-input exception now
+   carries owner + removal condition.
+
+Regression coverage added to `tasks-model.test.mjs` (12 new tests, 31 total):
+scoped-ref toggle + stale no-op, immediate undo preserving unrelated edits,
+delete/move during completion, recurring losslessness, pending-save scope,
+reminder rescheduling/snooze/reload, local-midnight grouping, scope-aware
+params, ambiguous quick-add `@`.
+
+Gates (Node v26.13.0): `npm run check` exit 0 (353/353 tests, agent-context,
+typecheck, lint, build). `npm run ui:check` exit 1 — 21 violations, all in
+pre-existing files, identical set to base; zero findings in tasks.css or
+notes.css. `git diff --check` exit 0. Preview kept stopped; browser checks
+still pending. Awaiting OpenCode / DeepSeek V4.1 Flash closure review.
+No push, no PR.
+
 ## 2026-11-14 — P787 VARi8 Tasks Phase 1a (committed on `beta/p787-tasks-phase-1a`, awaiting review)
 
 Browser-only `/coach` prototype slice on `beta/p787-tasks-phase-1a` off

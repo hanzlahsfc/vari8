@@ -87,7 +87,7 @@ function Workspace() {
                   ? {
                       section: "tasks",
                       client: first.clientId,
-                      task: first.task.id,
+                      task: `${first.clientId ?? "general"}:${first.task.id}`,
                     }
                   : { section: "tasks" },
               ),

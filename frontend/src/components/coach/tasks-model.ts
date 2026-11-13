@@ -22,12 +22,16 @@ export type TaskEntry = {
 
 export type TaskRef = { id: string; clientId?: string };
 
+/** Stable scope+id key — unique even when ids collide across owners. */
+export const taskKey = (ref: TaskRef | TaskEntry) =>
+  `${ref.clientId ?? ""}${"task" in ref ? ref.task.id : ref.id}`;
+
 const pad = (n: number) => String(n).padStart(2, "0");
-const isoNow = () => new Date().toISOString();
-const taskId = () => `task-${crypto.randomUUID()}`;
-/** Local naive datetime used by reminderAt (matches the shared DateTimeField). */
-const localDateTime = (d: Date) =>
+/** Local naive datetime used by task timestamps (matches DateTimeField). */
+export const localDateTime = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const isoNow = () => localDateTime(new Date());
+const taskId = () => `task-${crypto.randomUUID()}`;
 /** JS Date convention: Sunday = 0 … Saturday = 6. */
 const weekdayOf = (date: string): 0 | 1 | 2 | 3 | 4 | 5 | 6 =>
   new Date(`${date}T12:00:00Z`).getUTCDay() as 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -41,6 +45,16 @@ const isDay = (v: string | undefined): v is string =>
   !!v &&
   /^\d{4}-\d{2}-\d{2}$/.test(v) &&
   !Number.isNaN(Date.parse(`${v}T12:00:00Z`));
+/** Local calendar day of a date or datetime value. Day strings return
+ * unchanged; naive datetimes parse as local time; zoned datetimes convert to
+ * the device's local day so Completed groups on the same basis as Today. */
+export function localDayOf(value: string | undefined): string {
+  if (!value) return "";
+  if (isDay(value)) return value;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+}
 /** Shift the date part of a `YYYY-MM-DD[THH:mm…]` value, keeping any time. */
 const shiftDays = (iso: string, days: number) =>
   `${addLocalDays(iso.slice(0, 10), days)}${iso.slice(10)}`;
@@ -64,24 +78,78 @@ export function listTasks(
   return entries;
 }
 
+/** Find a task by scope and id: `ref.clientId` undefined means the General
+ * scope, so an athlete-owned task sharing the id is never matched by
+ * accident. For unscoped lookups use `tasksById`. */
 export function findTask(
   state: CoachState,
   ref: TaskRef,
 ): TaskEntry | undefined {
   return listTasks(state, { includeArchived: true }).find(
-    (entry) =>
-      entry.task.id === ref.id &&
-      (ref.clientId === undefined || entry.clientId === ref.clientId),
+    (entry) => entry.task.id === ref.id && entry.clientId === ref.clientId,
   );
 }
 
-type Location = { where: "todos" } | { where: "client"; clientId: string };
-function locate(state: CoachState, id: string): Location | null {
-  if ((state.coachTodos ?? []).some((t) => t.id === id))
-    return { where: "todos" };
-  for (const client of state.clients)
-    if (client.coachTasks.some((t) => t.id === id))
-      return { where: "client", clientId: client.id };
+/** Every task carrying `id`, regardless of owner. */
+export function tasksById(state: CoachState, id: string): TaskEntry[] {
+  return listTasks(state, { includeArchived: true }).filter(
+    (entry) => entry.task.id === id,
+  );
+}
+
+type TaskRefish = TaskRef | TaskEntry;
+const refOf = (input: TaskRefish): TaskRef => ({
+  id: "task" in input ? input.task.id : input.id,
+  clientId: input.clientId,
+});
+
+type Located = {
+  where: "todos" | "client";
+  /** Owning client of the record's scope; undefined = General. */
+  clientId?: string;
+  index: number;
+  task: TaskFields;
+};
+/** Locate the stored record addressed by an owner-scoped ref. General refs
+ * only match coachTodos entries without a clientId; athlete refs match that
+ * athlete's coachTasks plus legacy coachTodos entries carrying the id. */
+function locateRecord(state: CoachState, ref: TaskRef): Located | null {
+  const todosIndex = (state.coachTodos ?? []).findIndex(
+    (t) => t.id === ref.id && (t.clientId ?? undefined) === ref.clientId,
+  );
+  if (todosIndex >= 0)
+    return {
+      where: "todos",
+      clientId: (state.coachTodos ?? [])[todosIndex].clientId,
+      index: todosIndex,
+      task: (state.coachTodos ?? [])[todosIndex],
+    };
+  if (ref.clientId) {
+    const client = state.clients.find((c) => c.id === ref.clientId);
+    const index = client?.coachTasks.findIndex((t) => t.id === ref.id) ?? -1;
+    if (client && index >= 0)
+      return {
+        where: "client",
+        clientId: client.id,
+        index,
+        task: client.coachTasks[index],
+      };
+  }
+  return null;
+}
+
+/** Locate a stored record by id alone, preferring the `prefer` owner scope.
+ * Used when the current owner is unknown (e.g. a move between scopes). */
+function locateById(
+  state: CoachState,
+  id: string,
+  prefer?: string,
+): Located | null {
+  const preferred = locateRecord(state, { id, clientId: prefer });
+  if (preferred) return preferred;
+  for (const entry of listTasks(state, { includeArchived: true }))
+    if (entry.task.id === id)
+      return locateRecord(state, { id, clientId: entry.clientId });
   return null;
 }
 
@@ -93,45 +161,57 @@ function insertAt<T>(list: T[], index: number, item: T): T[] {
   ];
 }
 
-/** Upsert a task owned by `clientId` (undefined = General). The record stays
- * in its current storage location when it can; only a real owner change
- * moves it. */
+/** Write a task into `clientId`'s scope (undefined = General) for NEW tasks.
+ * Existing records update in place wherever they live — ownership is never
+ * silently changed by a save, only by `moveTask`. Rescheduling a reminder
+ * clears its shown marker; unrelated edits keep it. */
 export function saveTask(
   state: CoachState,
   task: TaskFields,
   clientId: string | undefined,
 ): CoachState {
-  const stored = { ...task };
-  if (clientId) stored.clientId = clientId;
-  else delete stored.clientId;
-  const at = locate(state, task.id);
-  if (at?.where === "todos") {
-    return {
-      ...state,
-      coachTodos: (state.coachTodos ?? []).map((t) =>
-        t.id === task.id ? stored : t,
-      ),
-    };
-  }
-  if (at?.where === "client" && at.clientId === clientId) {
-    const forAthlete = { ...stored };
-    delete forAthlete.clientId;
+  const at = locateById(state, task.id, clientId);
+  if (at) {
+    const stored = { ...task };
+    if (at.where === "todos") {
+      if (at.clientId) stored.clientId = at.clientId;
+      else delete stored.clientId;
+    } else {
+      delete stored.clientId;
+    }
+    if ((at.task.reminderAt ?? "") !== (stored.reminderAt ?? "")) {
+      // Rescheduled reminder may fire again; snoozes set a new time.
+      delete stored.reminderShownAt;
+    } else if (stored.reminderShownAt === undefined) {
+      // Unrelated edits that never touched the marker keep the stored one —
+      // an explicit write (markRemindersShown) or reschedule still works.
+      stored.reminderShownAt = at.task.reminderShownAt;
+    }
+    if (at.where === "todos")
+      return {
+        ...state,
+        coachTodos: (state.coachTodos ?? []).map((t, i) =>
+          i === at.index ? stored : t,
+        ),
+      };
     return {
       ...state,
       clients: state.clients.map((c) =>
-        c.id === clientId
+        c.id === at.clientId
           ? {
               ...c,
-              coachTasks: c.coachTasks.map((t) =>
-                t.id === task.id ? forAthlete : t,
+              coachTasks: c.coachTasks.map((t, i) =>
+                i === at.index ? stored : t,
               ),
             }
           : c,
       ),
     };
   }
-  const removed = removeTaskRecord(state, task.id);
-  return appendTask(removed, stored, clientId);
+  const fresh = { ...task };
+  if (clientId) fresh.clientId = clientId;
+  else delete fresh.clientId;
+  return appendTask(state, fresh, clientId);
 }
 
 function appendTask(
@@ -153,28 +233,53 @@ function appendTask(
   };
 }
 
-function removeTaskRecord(state: CoachState, id: string): CoachState {
-  if ((state.coachTodos ?? []).some((t) => t.id === id))
+function removeLocated(state: CoachState, at: Located): CoachState {
+  if (at.where === "todos")
     return {
       ...state,
-      coachTodos: (state.coachTodos ?? []).filter((t) => t.id !== id),
+      coachTodos: (state.coachTodos ?? []).filter((_, i) => i !== at.index),
     };
   return {
     ...state,
     clients: state.clients.map((c) =>
-      c.coachTasks.some((t) => t.id === id)
-        ? { ...c, coachTasks: c.coachTasks.filter((t) => t.id !== id) }
+      c.id === at.clientId
+        ? {
+            ...c,
+            coachTasks: c.coachTasks.filter((_, i) => i !== at.index),
+          }
         : c,
     ),
   };
 }
 
+function removeTaskRecord(state: CoachState, id: string): CoachState {
+  const at = locateById(state, id);
+  return at ? removeLocated(state, at) : state;
+}
+
+/** Move a task to `clientId`'s scope (undefined = General), resolving the
+ * current record by ref so stale entries can't revert an owner change.
+ * Legacy coachTodos records keep their storage home and re-point their
+ * clientId in place; client-owned records relocate between owners. */
 export function moveTask(
   state: CoachState,
-  entry: TaskEntry,
+  ref: TaskRefish,
   clientId: string | undefined,
 ): CoachState {
-  return saveTask(state, entry.task, clientId);
+  const resolved = refOf(ref);
+  const at = locateRecord(state, resolved);
+  if (!at || (at.clientId ?? undefined) === clientId) return state;
+  const moved = { ...at.task };
+  if (clientId) moved.clientId = clientId;
+  else delete moved.clientId;
+  if (at.where === "todos")
+    return {
+      ...state,
+      coachTodos: (state.coachTodos ?? []).map((t, i) =>
+        i === at.index ? moved : t,
+      ),
+    };
+  return appendTask(removeLocated(state, at), moved, clientId);
 }
 
 export type RemovedTask = {
@@ -188,43 +293,17 @@ export function deleteTask(
   state: CoachState,
   ref: TaskRef,
 ): { state: CoachState; removed?: RemovedTask } {
-  const todosIndex = (state.coachTodos ?? []).findIndex((t) => t.id === ref.id);
-  if (todosIndex >= 0) {
-    const task = (state.coachTodos ?? [])[todosIndex];
-    return {
-      state: {
-        ...state,
-        coachTodos: (state.coachTodos ?? []).filter((t) => t.id !== ref.id),
-      },
-      removed: {
-        task,
-        clientId: task.clientId,
-        where: "todos",
-        index: todosIndex,
-      },
-    };
-  }
-  for (const client of state.clients) {
-    const index = client.coachTasks.findIndex((t) => t.id === ref.id);
-    if (index >= 0) {
-      const task = client.coachTasks[index];
-      return {
-        state: {
-          ...state,
-          clients: state.clients.map((c) =>
-            c.id === client.id
-              ? {
-                  ...c,
-                  coachTasks: c.coachTasks.filter((t) => t.id !== ref.id),
-                }
-              : c,
-          ),
-        },
-        removed: { task, clientId: client.id, where: "client", index },
-      };
-    }
-  }
-  return { state };
+  const at = locateRecord(state, ref);
+  if (!at) return { state };
+  return {
+    state: removeLocated(state, at),
+    removed: {
+      task: at.task,
+      clientId: at.clientId,
+      where: at.where,
+      index: at.index,
+    },
+  };
 }
 
 export function restoreTask(
@@ -315,32 +394,41 @@ export type ToggleInverse = {
   copyId?: string;
 };
 
+/** Flip a task's completion in a single state transition. The record is
+ * resolved inside by scope and id, so the write always applies to the
+ * current task — concurrent edits are preserved and a ref whose record was
+ * moved or deleted in the meantime is a no-op instead of a stale write. */
 export function toggleTask(
   state: CoachState,
-  entry: TaskEntry,
+  input: TaskRefish,
   today: string,
   now: string = isoNow(),
-): { state: CoachState; inverse?: ToggleInverse } {
-  const { task, clientId } = entry;
-  const ref = { id: task.id, clientId };
+): { state: CoachState; inverse?: ToggleInverse; completed?: boolean } {
+  const ref = refOf(input);
+  const at = locateRecord(state, ref);
+  if (!at) return { state };
+  const task = at.task;
+  const clientId = at.clientId;
   if (task.complete) {
     const previous = { ...task };
     const restored = { ...task, complete: false };
     delete restored.completedAt;
     return {
       state: saveTask(state, restored, clientId),
-      inverse: { ref, previous },
+      inverse: { ref: { id: task.id, clientId }, previous },
+      completed: false,
     };
   }
   const previous = { ...task };
   if (task.repeat && task.deadline) {
     const next = advanceTaskDeadline(task.deadline, task.repeat, today);
+    // The completed copy records the occurrence: no repeat, no reminder, and
+    // it keeps the original createdAt rather than inventing a new one.
     const completedCopy: TaskFields = {
       ...task,
       id: taskId(),
       complete: true,
       completedAt: now,
-      createdAt: now,
     };
     delete completedCopy.repeat;
     delete completedCopy.reminderAt;
@@ -353,38 +441,42 @@ export function toggleTask(
       );
       delete advanced.reminderShownAt;
     }
-    const refForInsert = { id: task.id, clientId };
-    const located = locate(state, refForInsert.id);
     const withAdvanced = saveTask(state, advanced, clientId);
+    const relocated = locateRecord(withAdvanced, { id: task.id, clientId });
+    const copy = { ...completedCopy };
     let withCopy: CoachState;
-    if (located?.where === "todos") {
-      const index = (withAdvanced.coachTodos ?? []).findIndex(
-        (t) => t.id === task.id,
-      );
-      const copy = { ...completedCopy };
+    if (relocated?.where === "client" && relocated.clientId) {
+      delete copy.clientId;
+      withCopy = {
+        ...withAdvanced,
+        clients: withAdvanced.clients.map((c) =>
+          c.id === relocated.clientId
+            ? {
+                ...c,
+                coachTasks: insertAt(c.coachTasks, relocated.index + 1, copy),
+              }
+            : c,
+        ),
+      };
+    } else {
       if (clientId) copy.clientId = clientId;
       withCopy = {
         ...withAdvanced,
-        coachTodos: insertAt(withAdvanced.coachTodos ?? [], index + 1, copy),
-      };
-    } else {
-      withCopy = {
-        ...withAdvanced,
-        clients: withAdvanced.clients.map((c) => {
-          if (c.id !== clientId) return c;
-          const index = c.coachTasks.findIndex((t) => t.id === task.id);
-          const copy = { ...completedCopy };
-          delete copy.clientId;
-          return {
-            ...c,
-            coachTasks: insertAt(c.coachTasks, index + 1, copy),
-          };
-        }),
+        coachTodos: insertAt(
+          withAdvanced.coachTodos ?? [],
+          (relocated?.index ?? -1) + 1,
+          copy,
+        ),
       };
     }
     return {
       state: withCopy,
-      inverse: { ref, previous, copyId: completedCopy.id },
+      inverse: {
+        ref: { id: task.id, clientId },
+        previous,
+        copyId: completedCopy.id,
+      },
+      completed: true,
     };
   }
   return {
@@ -393,10 +485,16 @@ export function toggleTask(
       { ...task, complete: true, completedAt: now },
       clientId,
     ),
-    inverse: { ref, previous },
+    inverse: { ref: { id: task.id, clientId }, previous },
+    completed: true,
   };
 }
 
+/** Reverse a toggle: drop the recurring completed copy and re-apply only
+ * the fields the toggle changed (completion state, deadline, reminder) to
+ * the CURRENT record. Edits made after the toggle — and a move to another
+ * athlete — survive the undo; if the task was deleted in the meantime the
+ * undo is a no-op rather than a resurrection. */
 export function undoToggle(
   state: CoachState,
   inverse: ToggleInverse,
@@ -404,14 +502,32 @@ export function undoToggle(
   const withoutCopy = inverse.copyId
     ? removeTaskRecord(state, inverse.copyId)
     : state;
-  return saveTask(withoutCopy, inverse.previous, inverse.ref.clientId);
+  const current = locateById(withoutCopy, inverse.ref.id);
+  if (!current) return withoutCopy;
+  const restored = {
+    ...current.task,
+    complete: inverse.previous.complete,
+    deadline: inverse.previous.deadline,
+  };
+  if (inverse.previous.completedAt)
+    restored.completedAt = inverse.previous.completedAt;
+  else delete restored.completedAt;
+  if (inverse.previous.reminderAt)
+    restored.reminderAt = inverse.previous.reminderAt;
+  else delete restored.reminderAt;
+  if (inverse.previous.reminderShownAt)
+    restored.reminderShownAt = inverse.previous.reminderShownAt;
+  else delete restored.reminderShownAt;
+  return saveTask(withoutCopy, restored, current.clientId);
 }
 
-/** Set every listed overdue open task's deadline to today. Returns the moved
- * entries with their previous deadlines so the change can be undone. */
+/** Set every listed overdue open task's deadline to today. Refs resolve to
+ * the current record inside the update, so tasks that moved or were edited
+ * since the list rendered stay consistent. Returns the moved refs with
+ * their previous deadlines so the change can be undone. */
 export function rescheduleOverdue(
   state: CoachState,
-  entries: TaskEntry[],
+  refs: (TaskRef | TaskEntry)[],
   today: string,
 ): {
   state: CoachState;
@@ -419,9 +535,13 @@ export function rescheduleOverdue(
 } {
   const moved: { ref: TaskRef; previousDeadline: string }[] = [];
   let next = state;
-  for (const entry of entries) {
-    const { task, clientId } = entry;
-    if (task.complete || !task.deadline || task.deadline >= today) continue;
+  for (const input of refs) {
+    const ref = refOf(input);
+    const at = locateRecord(next, ref);
+    const task = at?.task;
+    const clientId = at?.clientId;
+    if (!task || task.complete || !task.deadline || task.deadline >= today)
+      continue;
     moved.push({
       ref: { id: task.id, clientId },
       previousDeadline: task.deadline,
@@ -509,12 +629,20 @@ export function repeatLabel(repeat: TaskRepeat): string {
   return `${interval === 1 ? "Monthly" : `Every ${interval} months`}${suffix}`;
 }
 
-export function taskViews(entries: TaskEntry[], today: string): TaskViews {
+export function taskViews(
+  entries: TaskEntry[],
+  today: string,
+  options: { keepIds?: ReadonlySet<string> } = {},
+): TaskViews {
   const indexed = entries.map((entry, index) => ({ entry, index }));
+  // Tasks finishing their complete-out animation still count as open for
+  // grouping so the strike-through row stays put for its ~600 ms.
+  const isOpen = (entry: TaskEntry) =>
+    !entry.task.complete || !!options.keepIds?.has(taskKey(entry));
   const overdue = indexed
     .filter(
       ({ entry }) =>
-        !entry.task.complete &&
+        isOpen(entry) &&
         isDay(entry.task.deadline) &&
         (entry.task.deadline as string) < today,
     )
@@ -526,9 +654,7 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
     )
     .map(({ entry }) => entry);
   const dueToday = indexed
-    .filter(
-      ({ entry }) => !entry.task.complete && entry.task.deadline === today,
-    )
+    .filter(({ entry }) => isOpen(entry) && entry.task.deadline === today)
     .sort(byOpenOrder)
     .map(({ entry }) => entry);
 
@@ -537,7 +663,7 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
   const dayLimit = addLocalDays(today, 14);
   const upcoming = indexed.filter(
     ({ entry }) =>
-      !entry.task.complete &&
+      isOpen(entry) &&
       isDay(entry.task.deadline) &&
       (entry.task.deadline as string) > today,
   );
@@ -580,7 +706,7 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
       .map(({ entry }) => entry);
 
   const anytime = indexed
-    .filter(({ entry }) => !entry.task.complete && !isDay(entry.task.deadline))
+    .filter(({ entry }) => isOpen(entry) && !isDay(entry.task.deadline))
     .sort(
       (a, b) =>
         Number(b.entry.task.priority === "high") -
@@ -595,8 +721,8 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
   const doneBuckets = new Map<string, TaskEntry[]>();
   const undated: TaskEntry[] = [];
   for (const { entry } of indexed.filter(({ entry }) => entry.task.complete)) {
-    const day = entry.task.completedAt?.slice(0, 10);
-    if (day && isDay(day)) {
+    const day = localDayOf(entry.task.completedAt);
+    if (day) {
       const bucket = doneBuckets.get(day) ?? [];
       bucket.push(entry);
       doneBuckets.set(day, bucket);
@@ -618,7 +744,6 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
       items: undated,
     });
 
-  const openCount = (list: TaskEntry[]) => list.length;
   return {
     today: {
       groups: [
@@ -629,7 +754,7 @@ export function taskViews(entries: TaskEntry[], today: string): TaskViews {
           ? [{ id: "today", label: "Today", items: dueToday }]
           : []),
       ],
-      count: openCount([...overdue, ...dueToday]),
+      count: overdue.length + dueToday.length,
     },
     upcoming: {
       groups: upcomingGroups,
@@ -682,27 +807,34 @@ export function dueReminders(state: CoachState, now: number): TaskEntry[] {
 
 export function markRemindersShown(
   state: CoachState,
-  entries: TaskEntry[],
+  entries: (TaskEntry | TaskRef)[],
   shownAt: string = isoNow(),
 ): CoachState {
   let next = state;
-  for (const entry of entries)
+  for (const input of entries) {
+    const at = locateRecord(next, refOf(input));
+    if (!at) continue;
     next = saveTask(
       next,
-      { ...entry.task, reminderShownAt: shownAt },
-      entry.clientId,
+      { ...at.task, reminderShownAt: shownAt },
+      at.clientId,
     );
+  }
   return next;
 }
 
+/** Snooze a reminder: new reminderAt, shown marker cleared so it fires once
+ * at the new time. Resolves the current record by ref. */
 export function snoozeReminder(
   state: CoachState,
-  entry: TaskEntry,
+  input: TaskRefish,
   until: Date,
 ): CoachState {
-  const task = { ...entry.task, reminderAt: localDateTime(until) };
+  const at = locateRecord(state, refOf(input));
+  if (!at) return state;
+  const task = { ...at.task, reminderAt: localDateTime(until) };
   delete task.reminderShownAt;
-  return saveTask(state, task, entry.clientId);
+  return saveTask(state, task, at.clientId);
 }
 
 // --- Quick add -------------------------------------------------------------
@@ -1017,11 +1149,13 @@ export function parseQuickAdd(
       label: "High priority",
     };
   });
-  // Athletes: @token — only recognised when it matches an athlete; an
-  // unmatched @word stays literal text.
+  // Athletes: @token — binds only when the match is unique; an unmatched or
+  // ambiguous @word stays literal so a partial can never silently pick the
+  // first roster entry. The suggestion list handles choosing among matches.
   push(/@([^\s@]+)/g, (m) => {
-    const athlete = matchAthletes(m[1], athletes)[0];
-    if (!athlete) return null;
+    const matches = matchAthletes(m[1], athletes);
+    if (matches.length !== 1) return null;
+    const athlete = matches[0];
     return {
       key: `athlete:${m.index}`,
       start: m.index,
@@ -1080,4 +1214,37 @@ export function parseQuickAdd(
       label: kind === "reminder" ? `Reminder ${label}` : label,
     })),
   };
+}
+
+// --- URL task params -------------------------------------------------------
+
+/** Serialize a selection for the `task` route param. Bare ids stay readable
+ * and backward-compatible; a `scope:id` prefix is only added when the id is
+ * not unique across owners. */
+export function taskParam(entry: TaskEntry, all: TaskEntry[]): string {
+  const ambiguous = all.some(
+    (other) => other.task.id === entry.task.id && other !== entry,
+  );
+  return ambiguous
+    ? `${entry.clientId ?? "general"}:${entry.task.id}`
+    : entry.task.id;
+}
+
+/** Resolve a `task` route param to an entry. `scope:id` params are exact;
+ * bare ids only resolve when unique so a colliding link cannot open the
+ * wrong athlete's task. */
+export function resolveTaskParam(
+  entries: TaskEntry[],
+  param: string | undefined,
+): TaskEntry | undefined {
+  if (!param) return undefined;
+  const scoped = /^([^:]+):(.+)$/.exec(param);
+  if (scoped) {
+    const clientId = scoped[1] === "general" ? undefined : scoped[1];
+    return entries.find(
+      (entry) => entry.task.id === scoped[2] && entry.clientId === clientId,
+    );
+  }
+  const matches = entries.filter((entry) => entry.task.id === param);
+  return matches.length === 1 ? matches[0] : undefined;
 }
