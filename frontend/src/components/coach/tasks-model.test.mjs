@@ -3,13 +3,13 @@ import { test } from "node:test";
 import { isCoachState, seedState } from "./model.ts";
 import {
   advanceTaskDeadline,
-  applyMoveRequest,
   deleteTask,
   dueReminders,
   findTask,
   listTasks,
   markRemindersShown,
   moveTask,
+  moveTransition,
   nextOccurrence,
   parseQuickAdd,
   rescheduleOverdue,
@@ -1551,15 +1551,15 @@ test("valid undo after move and rename removes only its own copy", () => {
   assert.equal(tasksById(undone, second.inverse.copyId).length, 1);
 });
 
-// --- P797 closure: move outcome resolved against committed state ----------
-// The UI submits a MoveRequest, lets state commit, then runs exactly
-// `applyMoveRequest(committedState, req)` in an effect. These scenarios
-// emulate the deferred-base case the synchronous read could never see:
-// the committed state differs from the submit-time snapshot. Rendered
-// interaction coverage (draft retention, toasts, dialog open) is pending
-// — no DOM harness exists in this repo.
+// --- P799 closure: move and outcome committed together ---------------------
+// The store's reducer runs `moveTransition(workspace, req)` — the pure
+// production transition — so the validated write and the outcome that
+// describes it are one commit, never a prediction resolved later. These
+// scenarios emulate the request-to-commit race the synchronous read
+// could never see. Rendered interaction coverage (draft retention,
+// toasts, dialog open) is pending — no DOM harness exists in this repo.
 
-test("deferred commit: a successful move keeps submitted edits and unrelated changes", () => {
+test("committed move: write and outcome arrive in one transition", () => {
   const submittedAt = workspaceState({
     clients: [
       client("client-001", [
@@ -1569,18 +1569,20 @@ test("deferred commit: a successful move keeps submitted edits and unrelated cha
     ],
   });
   const request = {
+    id: 7,
     ref: { id: "t1", clientId: "client-001" },
     clientId: "client-007",
     fields: { title: "edited while pending" },
   };
-  // Between submit and commit, another update landed on the same record.
+  // Between submit and the reducer's commit, another update landed on
+  // the same record — the transition still sees the real base.
   const committed = updateTask(
     submittedAt,
     { id: "t1", clientId: "client-001" },
     { notes: "intervening edit" },
   );
-  const result = applyMoveRequest(committed, request);
-  assert.equal(result.moved, true);
+  const result = moveTransition(committed, request);
+  assert.deepEqual(result.outcome, { reqId: 7, moved: true });
   const task = findTask(result.state, {
     id: "t1",
     clientId: "client-007",
@@ -1593,7 +1595,7 @@ test("deferred commit: a successful move keeps submitted edits and unrelated cha
   );
 });
 
-test("deferred commit: a source deleted before commit rejects — nothing writes", () => {
+test("committed rejection: a source deleted before commit writes nothing and reports why", () => {
   const submittedAt = workspaceState({
     clients: [
       client("client-001", [{ id: "t1", title: "task", complete: false }]),
@@ -1601,6 +1603,7 @@ test("deferred commit: a source deleted before commit rejects — nothing writes
     ],
   });
   const request = {
+    id: 11,
     ref: { id: "t1", clientId: "client-001" },
     clientId: "client-007",
     fields: { title: "stale draft" },
@@ -1609,12 +1612,13 @@ test("deferred commit: a source deleted before commit rejects — nothing writes
     id: "t1",
     clientId: "client-001",
   }).state;
-  const result = applyMoveRequest(committed, request);
-  assert.deepEqual(result, {
-    state: committed,
+  const result = moveTransition(committed, request);
+  assert.deepEqual(result.outcome, {
+    reqId: 11,
     moved: false,
     reason: "source-gone",
   });
+  assert.equal(result.state, committed); // state untouched by the write
   // The same-id record at the destination was never touched.
   assert.equal(
     findTask(result.state, { id: "t1", clientId: "client-007" }).task.title,
@@ -1622,7 +1626,7 @@ test("deferred commit: a source deleted before commit rejects — nothing writes
   );
 });
 
-test("deferred commit: a collision that appears before commit rejects", () => {
+test("committed rejection: a collision that appears before commit rejects", () => {
   const submittedAt = workspaceState({
     clients: [
       client("client-001", [{ id: "t1", title: "task", complete: false }]),
@@ -1630,12 +1634,13 @@ test("deferred commit: a collision that appears before commit rejects", () => {
     ],
   });
   const request = {
+    id: 13,
     ref: { id: "t1", clientId: "client-001" },
     clientId: "client-007",
     fields: { title: "draft" },
   };
   // At submit time the destination was clear — a same-id record arrived
-  // before the request resolved (injected as loaded data would arrive;
+  // before the reducer ran (injected as loaded data would arrive;
   // saveTask deliberately never creates a second record with the id).
   const committed = {
     ...submittedAt,
@@ -1648,12 +1653,13 @@ test("deferred commit: a collision that appears before commit rejects", () => {
         : c,
     ),
   };
-  const result = applyMoveRequest(committed, request);
-  assert.deepEqual(result, {
-    state: committed,
+  const result = moveTransition(committed, request);
+  assert.deepEqual(result.outcome, {
+    reqId: 13,
     moved: false,
     reason: "id-conflict",
   });
+  assert.equal(result.state, committed);
   assert.equal(
     findTask(result.state, { id: "t1", clientId: "client-001" }).task.title,
     "task",
@@ -1664,7 +1670,7 @@ test("deferred commit: a collision that appears before commit rejects", () => {
   );
 });
 
-test("deferred commit: a destination removed before commit rejects — source stays", () => {
+test("committed rejection: a destination removed before commit rejects — source stays", () => {
   const submittedAt = workspaceState({
     clients: [
       client("client-001", [{ id: "t1", title: "task", complete: false }]),
@@ -1672,14 +1678,111 @@ test("deferred commit: a destination removed before commit rejects — source st
     ],
   });
   const request = {
+    id: 17,
     ref: { id: "t1", clientId: "client-001" },
     clientId: "client-999",
   };
-  const result = applyMoveRequest(submittedAt, request);
-  assert.deepEqual(result, {
-    state: submittedAt,
+  const result = moveTransition(submittedAt, request);
+  assert.deepEqual(result.outcome, {
+    reqId: 17,
     moved: false,
     reason: "no-destination",
   });
+  assert.equal(result.state, submittedAt);
   assert.ok(findTask(result.state, { id: "t1", clientId: "client-001" }));
+});
+
+test("committed success: edits made while pending carry to the new scope", () => {
+  const state = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007"),
+    ],
+  });
+  const request = {
+    id: 19,
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: { title: "submitted title" },
+  };
+  const result = moveTransition(state, request);
+  assert.equal(result.outcome.moved, true);
+  // The coach kept typing while the request committed — the leftover
+  // patch is applied at the NEW scope, where the record now lives.
+  const carried = updateTask(
+    result.state,
+    { id: "t1", clientId: "client-007" },
+    { notes: "typed during the move" },
+  );
+  const task = findTask(carried, { id: "t1", clientId: "client-007" }).task;
+  assert.equal(task.notes, "typed during the move");
+  assert.equal(task.title, "submitted title");
+  // Nothing ever lands back at the old scope.
+  assert.equal(
+    findTask(carried, { id: "t1", clientId: "client-001" }),
+    undefined,
+  );
+});
+
+test("committed outcome ids isolate concurrent requests — a stale result cannot ack the wrong one", () => {
+  const state = workspaceState({
+    clients: [
+      client("client-001", [
+        { id: "t1", title: "first", complete: false },
+        { id: "t2", title: "second", complete: false },
+      ]),
+      client("client-007"),
+    ],
+  });
+  const first = moveTransition(state, {
+    id: 23,
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: undefined,
+  });
+  const second = moveTransition(first.state, {
+    id: 24,
+    ref: { id: "t2", clientId: "client-001" },
+    clientId: "client-007",
+    fields: undefined,
+  });
+  // Each transition stamps its own request id — the UI acknowledges the
+  // outcome whose reqId matches the callback it registered, and a late
+  // or replayed outcome can never satisfy a different request.
+  assert.equal(first.outcome.reqId, 23);
+  assert.equal(second.outcome.reqId, 24);
+  assert.ok(findTask(second.state, { id: "t1", clientId: "client-007" }));
+  assert.ok(findTask(second.state, { id: "t2", clientId: "client-007" }));
+});
+
+test("replaying the committed transition is idempotent — no duplicate record, no false rejection", () => {
+  const state = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "task", complete: false }]),
+      client("client-007"),
+    ],
+  });
+  const request = {
+    id: 29,
+    ref: { id: "t1", clientId: "client-001" },
+    clientId: "client-007",
+    fields: { title: "applied once" },
+  };
+  const first = moveTransition(state, request);
+  assert.equal(first.outcome.moved, true);
+  // An effect replay re-running the same request on the committed result
+  // is a same-scope no-op — the record exists exactly once.
+  const replay = moveTransition(first.state, {
+    ...request,
+    ref: { id: "t1", clientId: "client-007" },
+  });
+  assert.equal(replay.outcome.moved, true);
+  assert.equal(
+    listTasks(replay.state).filter((e) => e.task.id === "t1").length,
+    1,
+  );
+  assert.equal(
+    findTask(replay.state, { id: "t1", clientId: "client-007" }).task.title,
+    "applied once",
+  );
 });

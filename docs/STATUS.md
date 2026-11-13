@@ -1,3 +1,45 @@
+## 2026-11-14 — P799 Tasks Phase 1a move+outcome atomic commit (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P798 O1 finding on
+`beta/p787-tasks-phase-1a` at head `0c4d4007`. The P797 design still
+resolved the outcome in an effect and then scheduled a second write —
+a committed result could still diverge from what the state actually
+became. The move and its outcome now commit together:
+
+- `CoachProvider`'s workspace `useState` is a `useReducer` holding
+  `{workspace, moveOutcome}`. The `move` action runs `moveTransition`
+  (`tasks-model.ts`) — the pure validated write AND its outcome in one
+  pass on the reducer's true current base. `moveOutcome` sits beside the
+  workspace, never inside it: persistence still serializes `state` only.
+- `requestMove`/`ackMove`/`moveOutcome` join the store contract;
+  `setState` keeps its `Dispatch<SetStateAction<CoachState>>` signature
+  via a thin `apply` wrapper — every existing caller is unchanged.
+- `attemptMove` (all three callers: wide athlete select, narrow dialog
+  Save, row move dialog) dispatches the request; a consumption-only
+  `useEffect` acknowledges the outcome that committed WITH the write.
+  `handledMove` + `ackMove` + the once-per-request callback map prevent
+  replay double-acks; `pendingMoveRef` blocks duplicates until the
+  outcome is consumed.
+- Post-submit window: scope controls disable while `movePending`
+  (athlete select in both detail modes, dialog Save, row dialog select).
+  Field edits made during pending carry through — the wide panel applies
+  leftover `editedRef` keys at the NEW scope on success, the narrow
+  dialog applies only keys that differ from the submitted draft; a
+  rejected move re-arms the debounce so nothing is silently delayed.
+
+Regression evidence (`tasks-model.test.mjs`, model-level — no DOM
+harness; rendered coverage of pending-disable, draft retention, toasts
+and dialog behavior remains pending): 7 tests exercise the exact
+`moveTransition` the reducer runs — write+outcome pairing on success,
+all three rejection paths with untouched state, pending-window
+carry-through, per-request outcome isolation, replay idempotence.
+
+Gates: `npm run check` exit 0 (380/380 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; no CSS touched); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
 ## 2026-11-14 — P797 Tasks Phase 1a move-result commit semantics (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P796 O1 finding on

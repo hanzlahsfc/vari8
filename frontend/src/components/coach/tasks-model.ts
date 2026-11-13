@@ -100,7 +100,7 @@ export function tasksById(state: CoachState, id: string): TaskEntry[] {
   );
 }
 
-type TaskRefish = TaskRef | TaskEntry;
+export type TaskRefish = TaskRef | TaskEntry;
 const refOf = (input: TaskRefish): TaskRef => ({
   id: "task" in input ? input.task.id : input.id,
   clientId: input.clientId,
@@ -388,6 +388,35 @@ export function applyMoveRequest(
   },
 ): MoveResult {
   return moveTask(state, request.ref, request.clientId, request.fields);
+}
+
+export type MoveOutcome = {
+  reqId: number;
+  moved: boolean;
+  reason?: "source-gone" | "no-destination" | "id-conflict";
+};
+
+/** The authoritative move transition: the validated write AND its outcome
+ * are computed on the current workspace in one pure pass, so the commit
+ * always pairs the state change with the result that produced it — never
+ * a prediction resolved later. The outcome record is transient: it lives
+ * beside the workspace state, never inside it. */
+export function moveTransition(
+  state: CoachState,
+  request: {
+    id: number;
+    ref: TaskRefish;
+    clientId: string | undefined;
+    fields?: Partial<TaskFields>;
+  },
+): { state: CoachState; outcome: MoveOutcome } {
+  const result = applyMoveRequest(state, request);
+  return {
+    state: result.state,
+    outcome: result.moved
+      ? { reqId: request.id, moved: true }
+      : { reqId: request.id, moved: false, reason: result.reason },
+  };
 }
 
 export function deleteTask(
