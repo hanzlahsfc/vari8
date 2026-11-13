@@ -257,6 +257,9 @@ export function saveTask(
   const fresh = { ...task };
   if (clientId) fresh.clientId = clientId;
   else delete fresh.clientId;
+  // A brand-new record must never carry a pending completion binding —
+  // duplicating a task mid-animation cannot let an old Undo act on it.
+  delete fresh.undoToken;
   return appendTask(state, fresh, clientId);
 }
 
@@ -303,29 +306,66 @@ function removeTaskRecord(state: CoachState, id: string): CoachState {
   return at ? removeLocated(state, at) : state;
 }
 
-/** Move a task to `clientId`'s scope (undefined = General), resolving the
- * current record by ref so stale entries can't revert an owner change.
- * Legacy coachTodos records keep their storage home and re-point their
- * clientId in place; client-owned records relocate between owners. */
+export type MoveResult =
+  | { state: CoachState; moved: true }
+  | {
+      state: CoachState;
+      moved: false;
+      /** Why the move was rejected — the UI reports this and keeps editing. */
+      reason: "source-gone" | "no-destination" | "id-conflict";
+    };
+
+/** Move a task to `clientId`'s scope (undefined = General), applying any
+ * pending field edits to the verified source in the same transition. The
+ * source is resolved by exact scoped ref and the destination validated
+ * BEFORE anything is removed, appended or edited: a missing source is a
+ * no-op (never recreated, never writes another task), a nonexistent
+ * destination rejects without touching the source, and a destination that
+ * already holds a record with the same id rejects instead of overwriting
+ * it or creating a duplicate id inside the scope. Success is explicit —
+ * callers must check `moved`, never infer it from an id lookup. Legacy
+ * coachTodos records keep their storage home and re-point their clientId
+ * in place; client-owned records relocate between owners. */
 export function moveTask(
   state: CoachState,
   ref: TaskRefish,
   clientId: string | undefined,
-): CoachState {
+  fields?: Partial<TaskFields>,
+): MoveResult {
   const resolved = refOf(ref);
   const at = locateRecord(state, resolved);
-  if (!at || (at.clientId ?? undefined) === clientId) return state;
-  const moved = { ...at.task };
+  if (!at) return { state, moved: false, reason: "source-gone" };
+  if (clientId && !state.clients.some((c) => c.id === clientId))
+    return { state, moved: false, reason: "no-destination" };
+  if ((at.clientId ?? undefined) === clientId) {
+    // Same scope is not a move — but pending edits still apply in place.
+    return {
+      state: fields ? writeLocated(state, at, applyEdits(at, fields)) : state,
+      moved: true,
+    };
+  }
+  // Scopes differ, so a record found at the destination scope is always a
+  // DIFFERENT record — collision, not the source.
+  if (locateRecord(state, { id: resolved.id, clientId }))
+    return { state, moved: false, reason: "id-conflict" };
+  const stored = applyEdits(at, fields ?? {});
+  const moved = { ...stored };
   if (clientId) moved.clientId = clientId;
   else delete moved.clientId;
   if (at.where === "todos")
     return {
-      ...state,
-      coachTodos: (state.coachTodos ?? []).map((t, i) =>
-        i === at.index ? moved : t,
-      ),
+      state: {
+        ...state,
+        coachTodos: (state.coachTodos ?? []).map((t, i) =>
+          i === at.index ? moved : t,
+        ),
+      },
+      moved: true,
     };
-  return appendTask(removeLocated(state, at), moved, clientId);
+  return {
+    state: appendTask(removeLocated(state, at), moved, clientId),
+    moved: true,
+  };
 }
 
 export type RemovedTask = {
@@ -363,6 +403,7 @@ export function restoreTask(
   ) {
     const copy = { ...removed.task };
     delete copy.clientId;
+    delete copy.undoToken;
     return {
       ...state,
       clients: state.clients.map((c) =>
@@ -372,11 +413,11 @@ export function restoreTask(
       ),
     };
   }
+  const restored = { ...removed.task };
+  delete restored.undoToken;
   return {
     ...state,
-    coachTodos: insertAt(state.coachTodos ?? [], removed.index, {
-      ...removed.task,
-    }),
+    coachTodos: insertAt(state.coachTodos ?? [], removed.index, restored),
   };
 }
 
@@ -585,16 +626,18 @@ function locateByToken(
   return null;
 }
 
-/** Reverse a toggle: drop the recurring completed copy (addressed by its
- * unique id — operation-owned, never collides with another task) and
- * re-apply only the fields the toggle changed to the CURRENT record, found
- * by the operation's `undoToken`. Edits after the toggle — and a move to
- * another athlete — survive; a deleted record stays deleted, a same-id
- * replacement stays untouched, and a superseded operation is a no-op. */
+/** Reverse a toggle — but only while the live record still owns the exact
+ * completion operation. The `undoToken` is verified BEFORE history or the
+ * record are touched: a stale, superseded or missing operation leaves
+ * both the task and its completed copy unchanged. On a match, the
+ * operation-owned copy (unique id, never collides) is removed and only
+ * the fields the toggle changed are re-applied to the current record —
+ * edits after the toggle, and a move to another athlete, survive. */
 export function undoToggle(
   state: CoachState,
   inverse: ToggleInverse,
 ): CoachState {
+  if (!locateByToken(state, inverse.ref.id, inverse.op)) return state;
   const withoutCopy = inverse.copyId
     ? removeTaskRecord(state, inverse.copyId)
     : state;

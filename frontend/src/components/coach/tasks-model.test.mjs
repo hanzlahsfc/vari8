@@ -53,6 +53,10 @@ const workspaceState = (overrides = {}) => ({
   ...overrides,
 });
 
+// moveTask returns an explicit MoveResult; most call sites only need state.
+const move = (state, ref, clientId, fields) =>
+  moveTask(state, ref, clientId, fields).state;
+
 const client = (id, coachTasks = []) => ({
   id,
   name: athletes.find((a) => a.id === id)?.name ?? id,
@@ -264,7 +268,7 @@ test("moveTask relocates between scopes; legacy todos keep their home", () => {
   });
   const entries = listTasks(state);
   // Athlete-owned task moves to the other athlete.
-  state = moveTask(
+  state = move(
     state,
     entries.find((e) => e.task.id === "owned"),
     "client-010",
@@ -272,7 +276,7 @@ test("moveTask relocates between scopes; legacy todos keep their home", () => {
   assert.equal(state.clients[0].coachTasks.length, 0);
   assert.equal(state.clients[1].coachTasks.length, 1);
   // Moving it to General puts it in coachTodos.
-  state = moveTask(
+  state = move(
     state,
     listTasks(state).find((e) => e.task.id === "owned"),
     undefined,
@@ -282,7 +286,7 @@ test("moveTask relocates between scopes; legacy todos keep their home", () => {
     true,
   );
   // The legacy linked todo stays in coachTodos when re-owned.
-  state = moveTask(
+  state = move(
     state,
     listTasks(state).find((e) => e.task.id === "legacy"),
     "client-010",
@@ -550,6 +554,7 @@ test("toggle resolves the current record by scope+id; stale refs are no-ops", ()
       client("client-007", [
         { id: "dup", title: "B task", complete: false, deadline: TODAY },
       ]),
+      client("client-010"),
     ],
     coachTodos: [
       { id: "dup", title: "G task", complete: false, deadline: TODAY },
@@ -570,10 +575,10 @@ test("toggle resolves the current record by scope+id; stale refs are no-ops", ()
     false,
   );
   // A ref left over from before a move is a no-op, not a stale write.
-  const moved = moveTask(
+  const moved = move(
     a.state,
     { id: "dup", clientId: "client-001" },
-    "client-007",
+    "client-010",
   );
   const stale = toggleTask(moved, { id: "dup", clientId: "client-001" }, TODAY);
   assert.equal(stale.state, moved);
@@ -625,10 +630,10 @@ test("delete during completion: undo does not resurrect the task", () => {
   const deleted = deleteTask(toggled.state, { id: "t1" });
   assert.equal(findTask(deleted.state, { id: "t1" }), undefined);
   const undone = undoToggle(deleted.state, toggled.inverse);
-  // Gone stays gone — the undo removes the completed copy but cannot
-  // bring back a deleted record.
+  // Gone stays gone — the deleted record can never own the operation, so
+  // undo leaves BOTH live state and history untouched.
   assert.equal(findTask(undone, { id: "t1" }), undefined);
-  assert.equal(tasksById(undone, toggled.inverse.copyId).length, 0);
+  assert.equal(tasksById(undone, toggled.inverse.copyId).length, 1);
 });
 
 test("move during completion: undo restores fields at the new owner", () => {
@@ -647,7 +652,7 @@ test("move during completion: undo restores fields at the new owner", () => {
     ],
   });
   const toggled = toggleTask(base, { id: "t1", clientId: "client-001" }, TODAY);
-  const moved = moveTask(
+  const moved = move(
     toggled.state,
     { id: "t1", clientId: "client-001" },
     "client-007",
@@ -732,11 +737,7 @@ test("a save never reverts an owner: pending edit writes at the current scope", 
       client("client-007"),
     ],
   });
-  const moved = moveTask(
-    base,
-    { id: "t1", clientId: "client-001" },
-    "client-007",
-  );
+  const moved = move(base, { id: "t1", clientId: "client-001" }, "client-007");
   // A debounced save that still carries the OLD scope must write the
   // record where it now lives, not drag it back to client-001.
   const saved = saveTask(
@@ -960,11 +961,7 @@ test("updateTask never creates and never moves — late writes are no-ops", () =
   assert.equal(tasksById(late, "t1").length, 0);
   // Moved-away record: a save bound to the old scope is a no-op, not a
   // write-back to the former athlete.
-  const moved = moveTask(
-    base,
-    { id: "t1", clientId: "client-001" },
-    "client-007",
-  );
+  const moved = move(base, { id: "t1", clientId: "client-001" }, "client-007");
   const staleScope = updateTask(
     moved,
     { id: "t1", clientId: "client-001" },
@@ -1105,7 +1102,7 @@ test("undo after a move targets the moved record via signature, not bare id", ()
     { id: "dup", clientId: "client-001" },
     TODAY,
   );
-  const moved = moveTask(
+  const moved = move(
     toggled.state,
     { id: "dup", clientId: "client-001" },
     "client-007",
@@ -1141,7 +1138,7 @@ test("undo resolves same-id lookalikes by op token, not by signature", () => {
     { id: "dup", clientId: "client-001" },
     TODAY,
   );
-  const moved = moveTask(
+  const moved = move(
     toggled.state,
     { id: "dup", clientId: "client-001" },
     "client-007",
@@ -1249,18 +1246,16 @@ test("athlete move applies pending edits in one transition; old scope stays unto
       client("client-007"),
     ],
   });
-  // The exact transition the detail panel runs: move, then field-scoped
-  // update at the new scope.
-  const moved = moveTask(
+  // The exact transition the detail panel runs: moveTask applies the
+  // pending field edits to the verified source atomically.
+  const result = moveTask(
     base,
     { id: "t1", clientId: "client-001" },
     "client-007",
-  );
-  const next = updateTask(
-    moved,
-    { id: "t1", clientId: "client-007" },
     { title: "edited before move" },
   );
+  assert.equal(result.moved, true);
+  const next = result.state;
   const task = findTask(next, { id: "t1", clientId: "client-007" }).task;
   assert.equal(task.title, "edited before move");
   assert.equal(task.notes, "original notes"); // unedited fields preserved
@@ -1290,7 +1285,7 @@ test("undo binds to the operation token across a move and a rename", () => {
     ],
   });
   const toggled = toggleTask(base, { id: "t1", clientId: "client-001" }, TODAY);
-  const moved = moveTask(
+  const moved = move(
     toggled.state,
     { id: "t1", clientId: "client-001" },
     "client-007",
@@ -1389,4 +1384,168 @@ test("undo leaves exactly one live record — the ghost snapshot carries no seco
   const all = tasksById(undone, "t1");
   assert.equal(all.length, 1);
   assert.equal(all[0].task.complete, false);
+});
+
+// --- P795 closure: O1 validated moves, O2 validated undo ------------------
+// Model-level: the exact shared moveTask/undoToggle transitions the UI
+// runs. Draft retention, correction text and editor-open behavior are UI
+// wiring in tasks.tsx — interaction coverage pending browser review.
+
+test("same-id destination collision rejects: both records and the draft untouched", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [
+        { id: "dup", title: "source", complete: false, notes: "A" },
+      ]),
+      client("client-007", [
+        { id: "dup", title: "destination", complete: false, notes: "B" },
+      ]),
+    ],
+  });
+  const result = moveTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    "client-007",
+    { title: "pending edit" },
+  );
+  assert.deepEqual(result, {
+    state: base,
+    moved: false,
+    reason: "id-conflict",
+  });
+  // Nothing moved, nothing edited — the pending patch was NOT applied.
+  const a = findTask(result.state, { id: "dup", clientId: "client-001" }).task;
+  const b = findTask(result.state, { id: "dup", clientId: "client-007" }).task;
+  assert.equal(a.title, "source");
+  assert.equal(b.title, "destination");
+});
+
+test("missing source never writes a same-id destination record", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001"),
+      client("client-007", [
+        { id: "dup", title: "other task", complete: false },
+      ]),
+    ],
+  });
+  const result = moveTask(
+    base,
+    { id: "dup", clientId: "client-001" },
+    "client-007",
+    { title: "stale draft" },
+  );
+  assert.deepEqual(result, {
+    state: base,
+    moved: false,
+    reason: "source-gone",
+  });
+  assert.equal(
+    findTask(result.state, { id: "dup", clientId: "client-007" }).task.title,
+    "other task",
+  );
+});
+
+test("nonexistent destination rejects without removing the source", () => {
+  const base = workspaceState({
+    clients: [
+      client("client-001", [{ id: "t1", title: "stay", complete: false }]),
+    ],
+  });
+  const result = moveTask(
+    base,
+    { id: "t1", clientId: "client-001" },
+    "client-999",
+  );
+  assert.deepEqual(result, {
+    state: base,
+    moved: false,
+    reason: "no-destination",
+  });
+  assert.ok(findTask(result.state, { id: "t1", clientId: "client-001" }));
+});
+
+test("two recurring completions then a stale undo preserve all history", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+    ],
+  });
+  const first = toggleTask(base, { id: "t1" }, TODAY); // copy1, token1
+  const second = toggleTask(first.state, { id: "t1" }, TODAY); // copy2, token2
+  const stale = undoToggle(second.state, first.inverse);
+  // The superseded op matches nothing — state AND both copies untouched.
+  assert.equal(stale, second.state);
+  const undone = undoToggle(second.state, second.inverse);
+  const live = findTask(undone, { id: "t1" }).task;
+  assert.equal(live.complete, false);
+  // Only the live op's own copy was removed; copy1 remains.
+  assert.equal(tasksById(undone, second.inverse.copyId).length, 0);
+  assert.equal(tasksById(undone, first.inverse.copyId).length, 1);
+});
+
+test("duplicating or restoring a record never inherits the completion token", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "task", complete: false, deadline: TODAY }],
+  });
+  const toggled = toggleTask(base, { id: "t1" }, TODAY);
+  const record = findTask(toggled.state, { id: "t1" }).task;
+  assert.ok(record.undoToken); // the op token is on the live record
+  // saveTask's create path strips it — a duplicate is a different task.
+  const duplicated = saveTask(
+    toggled.state,
+    { ...record, id: "copy" },
+    undefined,
+  );
+  assert.equal(findTask(duplicated, { id: "copy" }).task.undoToken, undefined);
+  // Delete + undo-of-delete also strips it.
+  const deleted = deleteTask(toggled.state, { id: "t1" });
+  const restored = restoreTask(deleted.state, deleted.removed);
+  assert.equal(findTask(restored, { id: "t1" }).task.undoToken, undefined);
+  // The original completion op can no longer act on the restored record.
+  const afterUndo = undoToggle(restored, toggled.inverse);
+  assert.equal(findTask(afterUndo, { id: "t1" }).task.complete, true);
+});
+
+test("valid undo after move and rename removes only its own copy", () => {
+  const base = workspaceState({
+    coachTodos: [
+      {
+        id: "t1",
+        title: "weekly A",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+      {
+        id: "t2",
+        title: "weekly B",
+        complete: false,
+        deadline: TODAY,
+        repeat: { unit: "week", interval: 1 },
+      },
+    ],
+    clients: [client("client-007")],
+  });
+  const first = toggleTask(base, { id: "t1" }, TODAY);
+  const second = toggleTask(first.state, { id: "t2" }, TODAY);
+  const moved = move(second.state, { id: "t1" }, "client-007");
+  const renamed = updateTask(
+    moved,
+    { id: "t1", clientId: "client-007" },
+    { title: "weekly A renamed" },
+  );
+  const undone = undoToggle(renamed, first.inverse);
+  const live = findTask(undone, { id: "t1", clientId: "client-007" }).task;
+  assert.equal(live.complete, false);
+  assert.equal(live.title, "weekly A renamed");
+  // Only op1's copy went away — op2's copy and t2 are untouched.
+  assert.equal(tasksById(undone, first.inverse.copyId).length, 0);
+  assert.equal(tasksById(undone, second.inverse.copyId).length, 1);
 });

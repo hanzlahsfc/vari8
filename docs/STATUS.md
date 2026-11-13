@@ -1,3 +1,47 @@
+## 2026-11-14 — P795 Tasks Phase 1a move/undo validation (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P794 findings (O1,
+O2) on `beta/p787-tasks-phase-1a` at head `2c4519dd`. Dispositions:
+
+- O1 validated moves — `moveTask` is now one shared, explicit-result
+  transition (`MoveResult`): it resolves the exact scoped source, checks
+  the destination EXISTS, and rejects a same-id collision at the
+  destination BEFORE removing, appending or editing anything. Pending
+  `fields` are merged into the verified source only inside a successful
+  move; success is never inferred from an id lookup. All UI call sites
+  (wide panel athlete select, narrow-dialog Save, row "Move to athlete"
+  menu) route through the shared `attemptMove` wrapper: `setAthlete`
+  consumes the pending patch and switches scope ONLY on `moved: true`, a
+  rejected dialog Save keeps the editor open and shows a correction, and
+  every rejection toasts the reason. A missing source writes nothing —
+  the draft is never applied to a different record.
+- O2 validated undo — `undoToggle` verifies the live record still owns
+  the operation's `undoToken` BEFORE touching state or history: a stale,
+  superseded or missing op leaves both the record and its completed copy
+  unchanged. `saveTask`'s create path and `restoreTask` strip `undoToken`
+  so a duplicate or a delete-undo restore cannot be acted on by an old
+  completion undo. Optional field only; no load-time rewrite of saved
+  workspaces. Two prior tests updated to the new contracts: the scoped
+  toggle test now uses a collision-free destination, and delete-during-
+  completion asserts history is also preserved when undo can't verify.
+
+Regressions added in `tasks-model.test.mjs` (model-level — draft
+retention, correction text and editor-open behavior are UI wiring marked
+interaction-pending): `same-id destination collision rejects: both
+records and the draft untouched`, `missing source never writes a same-id
+destination record`, `nonexistent destination rejects without removing
+the source`, `two recurring completions then a stale undo preserve all
+history`, `duplicating or restoring a record never inherits the
+completion token`, `valid undo after move and rename removes only its
+own copy`. Existing `athlete move applies pending edits in one
+transition` updated to the atomic `moveTask(..., fields)` signature.
+
+Gates: `npm run check` exit 0 (373/373 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; zero in tasks.css); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
 ## 2026-11-14 — P793 Tasks Phase 1a data-integrity repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P792 findings (O1, O2,

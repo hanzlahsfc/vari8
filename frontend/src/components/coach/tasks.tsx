@@ -331,6 +331,33 @@ function TasksView({
     setState((s) => saveTask(s, task, task.clientId));
   };
 
+  /** The shared move transition for the wide panel, the narrow dialog's
+   * Save and the row menu: validates source and destination, applies any
+   * pending edits to the verified source, and reports an explicit result.
+   * Returns false on rejection — callers keep the draft and stay open. */
+  const attemptMove = (
+    entry: TaskEntry,
+    clientId: string | undefined,
+    fields?: Partial<TaskFields>,
+  ): boolean => {
+    const result: { moved?: boolean; reason?: string } = {};
+    setState((s) => {
+      const r = moveTask(s, entry, clientId, fields);
+      result.moved = r.moved;
+      if (!r.moved) result.reason = r.reason;
+      return r.state;
+    });
+    if (result.moved) return true;
+    toast(
+      result.reason === "id-conflict"
+        ? "Move blocked — that scope already has a task with this id."
+        : result.reason === "no-destination"
+          ? "Move blocked — that athlete is no longer available."
+          : "Move blocked — the task is no longer there.",
+    );
+    return false;
+  };
+
   const remove = (entry: TaskEntry) => {
     clearCompleting(taskKey(entry));
     const result: { removed?: RemovedTask } = {};
@@ -602,24 +629,7 @@ function TasksView({
               setState((s) => updateTask(s, ref, fields))
             }
             onMove={(clientId, fields) =>
-              setState((s) => {
-                const moved = moveTask(s, selected, clientId);
-                if (!fields || !Object.keys(fields).length) return moved;
-                // Pending edits travel with the record in one transition —
-                // the new owner gets them; nothing writes the old scope.
-                const atNew = updateTask(
-                  moved,
-                  { id: selected.task.id, clientId },
-                  fields,
-                );
-                if (atNew !== moved || moved !== s) return atNew;
-                // The record could not move — keep the draft where it lives.
-                return updateTask(
-                  s,
-                  { id: selected.task.id, clientId: selected.clientId },
-                  fields,
-                );
-              })
+              attemptMove(selected, clientId, fields)
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -643,21 +653,7 @@ function TasksView({
               setState((s) => updateTask(s, ref, fields))
             }
             onMove={(clientId, fields) =>
-              setState((s) => {
-                const moved = moveTask(s, selected, clientId);
-                if (!fields || !Object.keys(fields).length) return moved;
-                const atNew = updateTask(
-                  moved,
-                  { id: selected.task.id, clientId },
-                  fields,
-                );
-                if (atNew !== moved || moved !== s) return atNew;
-                return updateTask(
-                  s,
-                  { id: selected.task.id, clientId: selected.clientId },
-                  fields,
-                );
-              })
+              attemptMove(selected, clientId, fields)
             }
             onSnooze={() => {
               const until = new Date(Date.now() + 60 * 60 * 1000);
@@ -679,7 +675,9 @@ function TasksView({
               const name = clientId
                 ? (athletes.find((a) => a.id === clientId)?.name ?? "athlete")
                 : "General";
-              setState((s) => moveTask(s, moveEntry, clientId));
+              // Rejected moves keep the dialog open; the rejection toast
+              // inside attemptMove explains why.
+              if (!attemptMove(moveEntry, clientId)) return;
               setMoveEntry(null);
               toast(`Task moved to ${name}.`);
             }}
@@ -1341,8 +1339,13 @@ function TaskDetail({
    * never moves, never writes fields the caller did not edit. */
   onSave: (ref: TaskRef, fields: Partial<TaskFields>) => void;
   /** Relocates the task — `fields` carries any pending edited fields so a
-   * debounced save and the move apply in one state transition. */
-  onMove: (clientId: string | undefined, fields?: Partial<TaskFields>) => void;
+   * debounced save and the move apply in one state transition. Returns
+   * false when the move was rejected: the caller keeps the draft, the
+   * current scope and the editor. */
+  onMove: (
+    clientId: string | undefined,
+    fields?: Partial<TaskFields>,
+  ) => boolean;
   onSnooze: () => void;
   onClose: () => void;
 }) {
@@ -1419,14 +1422,18 @@ function TaskDetail({
 
   const setAthlete = (value: string) => {
     const clientId = value === "general" ? undefined : value;
-    setClientSel(clientId);
-    if (!instant) return;
-    // Consume the pending debounced edit so the unmount cleanup cannot
-    // replay it at the old scope — the move applies it atomically.
+    if (!instant) {
+      setClientSel(clientId);
+      return;
+    }
     window.clearTimeout(saveTimer.current);
     const fields = editedRef.current;
+    // The move applies the pending patch atomically; only a successful
+    // move consumes it and switches scope. On rejection the draft, the
+    // current athlete and the panel all stay exactly as they were.
+    if (!onMove(clientId, fields)) return;
     editedRef.current = {};
-    onMove(clientId, fields);
+    setClientSel(clientId);
   };
 
   const applyRepeat = (value: string) => {
@@ -1691,8 +1698,15 @@ function TaskDetail({
             }
             if (clientSel !== entry.clientId) {
               // The move carries the draft in one state transition so the
-              // edits land at the new owner, never the old scope.
-              onMove(clientSel, draft);
+              // edits land at the new owner, never the old scope. A
+              // rejected move keeps the dialog open and the draft intact;
+              // the rejection toast explains why.
+              if (!onMove(clientSel, draft)) {
+                setCorrection(
+                  "Couldn't move this task — your changes were kept.",
+                );
+                return;
+              }
             } else {
               onSave({ id: entry.task.id, clientId: clientSel }, draft);
             }
