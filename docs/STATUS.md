@@ -1,3 +1,70 @@
+## 2026-11-14 — P804 Tasks Phase 1a completion toast and Undo restored (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the completion-feedback defect P803 demonstrated on
+`beta/p787-tasks-phase-1a` at head `a0b8cc4a`. `applyToggle` wrote the
+result into a closure box inside a deferred `setState` updater and read
+it immediately, so "Task completed." and its Undo never rendered even
+though the write and ghost were correct. Now:
+
+- `tasks-model.ts` exposes committed transitions for every
+  request-driven operation — `toggleTransition`, `deleteTransition`,
+  `duplicateTransition`, `rescheduleTransition` — each computing the
+  workspace write and its `OpOutcome` in one pure pass on the reducer's
+  current base, the same contract `moveTransition` already honoured.
+  `queueOutcome`/`ackOutcome` give a transient, ordered outcome queue
+  so batched requests can never overwrite an un-acknowledged outcome.
+- `store.tsx` reducer cases commit `{workspace, outcome}` atomically
+  for toggle/delete/duplicate/reschedule; `move` now appends to the
+  same queue. `requestToggle`/`requestDelete`/`requestDuplicate`/
+  `requestReschedule`, `outcomes` and `ackOutcome` join the store
+  contract. No toast, callback or side effect runs inside the reducer.
+- `tasks.tsx` consumes outcomes in one acknowledgement effect:
+  `handledOps` (once-per-request set) plus the per-request callback map
+  make effect replays safe, and each outcome is acked exactly once by
+  request id. `applyToggle` toasts "Task completed." only when the
+  committed outcome says the record completed, with the exact inverse
+  that transition produced — a stale or missing record reports nothing.
+  `remove`, `duplicate` and `moveAllToToday` had the same deferred-read
+  pattern and moved to the same mechanism; duplicate no longer toasts
+  unconditionally on a stale source.
+- Undo stays token-bound (`undoToggle` refuses mismatched tokens) and
+  clears the display-only ghost immediately. Ghost rows remain
+  `aria-hidden`, non-interactive snapshots.
+
+Regression evidence (`tasks-model.test.mjs`, model-level, the exact
+functions the production reducer runs): `committed toggle: write and
+outcome with the exact undo inverse arrive together`, `committed
+toggle: a missing record writes nothing and reports no completion`,
+`committed toggle: reopening reports completed: false, not a success
+toast`, `outcome queue: batched requests keep every committed outcome
+until acked` (in-order consumption, idempotent re-ack), `committed
+delete: removal and its undo payload commit together`, `committed
+delete: a stale delete reports nothing removed`, `committed duplicate:
+the copy and its outcome commit together; missing source reports
+false`, `committed reschedule: moved refs and undo payload commit
+together`. The acknowledgement effect itself is source-inspected — no
+DOM harness exists in this repo — but its browser-visible behaviour is
+verified below.
+
+Browser verification (Chrome 157 CDP, isolated disposable profile,
+1440px, preview on :3000, driver `/tmp/v8-verify/v6-completion.mjs`):
+32/32 checks pass — one-off and recurring completions each show one
+"Task completed." toast with a working Undo; Undo during the ghost
+window removes the ghost immediately, restores the record and recovers
+row counts; recurring Undo restores the original deadline and removes
+the completed snapshot copy; a completed-then-undone renamed
+client-scoped task keeps its new title and owner; delete shows
+"Task deleted." with a working Undo; duplicate shows
+"Task duplicated.". Stale Undo against recurring history is not
+reachable through the UI — the inverse is consumed at click time — and
+remains model-covered (`undoToggle` token refusal tests).
+
+Gates: `npm run check` exit 0 (389/389 tests, agent-context, typecheck,
+lint, build, Node 24.22.3 via `npx node@24`); `npm run ui:check` exit 1
+with the 21 unchanged baseline violations (no CSS touched);
+`git diff --check` clean. Preview and the task's Chrome instance were
+stopped after verification.
+
 ## 2026-11-14 — P801 Tasks Phase 1a editor lock during pending move (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the remaining OpenCode / DeepSeek V4.1 Flash P800 O1 finding on

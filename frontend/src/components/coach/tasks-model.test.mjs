@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { isCoachState, seedState } from "./model.ts";
 import {
+  ackOutcome,
   advanceTaskDeadline,
   deleteTask,
+  deleteTransition,
   dueReminders,
+  duplicateTransition,
   findTask,
   listTasks,
   markRemindersShown,
@@ -13,7 +16,9 @@ import {
   moveTransition,
   nextOccurrence,
   parseQuickAdd,
+  queueOutcome,
   rescheduleOverdue,
+  rescheduleTransition,
   resolveTaskParam,
   restoreTask,
   saveTask,
@@ -22,6 +27,7 @@ import {
   tasksById,
   taskViews,
   toggleTask,
+  toggleTransition,
   undoToggle,
   updateTask,
 } from "./tasks-model.ts";
@@ -1825,4 +1831,159 @@ test("the editor lock covers source and destination scopes through the keyed rem
     false,
   );
   assert.equal(moveLocksEntry(null, entry), false);
+});
+
+test("committed toggle: write and outcome with the exact undo inverse arrive together", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "one-off", complete: false }],
+  });
+  const result = toggleTransition(base, {
+    id: 3,
+    ref: { id: "t1" },
+    today: TODAY,
+    now: "2026-11-13T10:00:00Z",
+  });
+  assert.equal(result.outcome.kind, "toggle");
+  assert.equal(result.outcome.reqId, 3);
+  assert.equal(result.outcome.completed, true);
+  const stored = result.state.coachTodos[0];
+  assert.equal(stored.complete, true);
+  assert.equal(stored.undoToken, result.outcome.inverse.op);
+  // The inverse restores exactly this record.
+  const undone = undoToggle(result.state, result.outcome.inverse);
+  assert.equal(undone.coachTodos[0].complete, false);
+});
+
+test("committed toggle: a missing record writes nothing and reports no completion", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "kept", complete: false }],
+  });
+  const result = toggleTransition(base, {
+    id: 4,
+    ref: { id: "gone" },
+    today: TODAY,
+  });
+  assert.equal(result.state, base);
+  assert.equal(result.outcome.completed, undefined);
+  assert.equal(result.outcome.inverse, undefined);
+});
+
+test("committed toggle: reopening reports completed: false, not a success toast", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "done", complete: true }],
+  });
+  const result = toggleTransition(base, {
+    id: 5,
+    ref: { id: "t1" },
+    today: TODAY,
+  });
+  assert.equal(result.outcome.completed, false);
+  assert.equal(result.state.coachTodos[0].complete, false);
+  assert.ok(result.outcome.inverse); // reopen can itself be undone
+});
+
+test("outcome queue: batched requests keep every committed outcome until acked", () => {
+  const base = workspaceState({
+    coachTodos: [
+      { id: "t1", title: "a", complete: false },
+      { id: "t2", title: "b", complete: false },
+    ],
+  });
+  // Emulate the reducer: each request's transition commits its own outcome.
+  const first = toggleTransition(base, {
+    id: 1,
+    ref: { id: "t1" },
+    today: TODAY,
+  });
+  let core = {
+    state: first.state,
+    outcomes: queueOutcome([], first.outcome),
+  };
+  const second = toggleTransition(core.state, {
+    id: 2,
+    ref: { id: "t2" },
+    today: TODAY,
+  });
+  core = {
+    state: second.state,
+    outcomes: queueOutcome(core.outcomes, second.outcome),
+  };
+  assert.deepEqual(
+    core.outcomes.map((o) => o.reqId),
+    [1, 2],
+  );
+  // Acknowledge the first — the second survives untouched; replay is safe.
+  core.outcomes = ackOutcome(core.outcomes, 1);
+  assert.deepEqual(
+    core.outcomes.map((o) => o.reqId),
+    [2],
+  );
+  core.outcomes = ackOutcome(core.outcomes, 1);
+  assert.equal(core.outcomes.length, 1);
+  assert.equal(core.outcomes[0].completed, true);
+});
+
+test("committed delete: removal and its undo payload commit together", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "gone soon", complete: false }],
+  });
+  const result = deleteTransition(base, { id: 6, ref: { id: "t1" } });
+  assert.equal(result.outcome.kind, "delete");
+  assert.equal(result.outcome.removed.task.id, "t1");
+  assert.equal(result.state.coachTodos.length, 0);
+  const restored = restoreTask(result.state, result.outcome.removed);
+  assert.equal(restored.coachTodos[0].id, "t1");
+});
+
+test("committed delete: a stale delete reports nothing removed", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "kept", complete: false }],
+  });
+  const result = deleteTransition(base, { id: 7, ref: { id: "gone" } });
+  assert.equal(result.state, base);
+  assert.equal(result.outcome.removed, undefined);
+});
+
+test("committed duplicate: the copy and its outcome commit together; missing source reports false", () => {
+  const base = workspaceState({
+    coachTodos: [{ id: "t1", title: "orig", complete: false, notes: "n" }],
+  });
+  const result = duplicateTransition(base, {
+    id: 8,
+    ref: { id: "t1" },
+    newId: "t-copy",
+  });
+  assert.equal(result.outcome.created, true);
+  const copy = findTask(result.state, { id: "t-copy" });
+  assert.equal(copy.task.title, "orig");
+  const missing = duplicateTransition(base, {
+    id: 9,
+    ref: { id: "gone" },
+    newId: "t-copy2",
+  });
+  assert.equal(missing.state, base);
+  assert.equal(missing.outcome.created, false);
+});
+
+test("committed reschedule: moved refs and undo payload commit together", () => {
+  const base = workspaceState({
+    coachTodos: [
+      { id: "t1", title: "late", complete: false, deadline: "2026-11-10" },
+      { id: "t2", title: "fine", complete: false, deadline: "2026-11-20" },
+    ],
+  });
+  const result = rescheduleTransition(base, {
+    id: 10,
+    refs: [{ id: "t1" }, { id: "t2" }],
+    today: TODAY,
+  });
+  assert.equal(result.outcome.moved.length, 1);
+  assert.deepEqual(result.outcome.moved[0], {
+    ref: { id: "t1", clientId: undefined },
+    previousDeadline: "2026-11-10",
+  });
+  assert.equal(
+    result.state.coachTodos.find((t) => t.id === "t1").deadline,
+    TODAY,
+  );
 });

@@ -28,9 +28,16 @@ import { migrateCoachState } from "./plans/domain";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
 import { localToday } from "./targets/model";
 import {
-  type MoveOutcome,
+  ackOutcome as ackOutcomeList,
+  deleteTransition,
+  duplicateTransition,
   moveTransition,
+  type OpOutcome,
+  queueOutcome,
+  rescheduleTransition,
+  type TaskRef,
   type TaskRefish,
+  toggleTransition,
 } from "./tasks-model";
 import { normalizeTemplateSetups } from "./template-setup";
 import { adoptTrainingLogDemo } from "./training-log-demo";
@@ -56,25 +63,38 @@ type Store = {
   dismiss: () => void;
   media: Record<string, string>;
   attach: (media: Media, blob: Blob) => void;
-  /** Submit a task-move request. The validated write and its outcome are
-   * computed on the current workspace and committed together; consumers
-   * read the committed outcome back from `moveOutcome`. */
+  /** Submit a request-driven operation. The validated write and its
+   * outcome are computed on the current workspace and committed together;
+   * consumers read committed outcomes back from `outcomes`. */
   requestMove: (req: {
     id: number;
     ref: TaskRefish;
     clientId: string | undefined;
     fields?: Partial<TaskFields>;
   }) => void;
-  moveOutcome: MoveOutcome | null;
-  /** Consume a committed move outcome so the next request's result is
-   * never confused with this one. */
-  ackMove: (reqId: number) => void;
+  requestToggle: (req: { id: number; ref: TaskRefish; today: string }) => void;
+  requestDelete: (req: { id: number; ref: TaskRefish }) => void;
+  requestDuplicate: (req: {
+    id: number;
+    ref: TaskRefish;
+    newId: string;
+  }) => void;
+  requestReschedule: (req: {
+    id: number;
+    refs: TaskRef[];
+    today: string;
+  }) => void;
+  /** Committed outcomes, oldest first. Transient — never persisted. */
+  outcomes: OpOutcome[];
+  /** Consume a committed outcome so it cannot be reported twice or
+   * confused with a later request's result. */
+  ackOutcome: (reqId: number) => void;
 };
 const Context = createContext<Store | null>(null);
 
 type CoachCore = {
   workspace: CoachState;
-  moveOutcome: MoveOutcome | null;
+  outcomes: OpOutcome[];
 };
 
 type CoreAction =
@@ -88,7 +108,17 @@ type CoreAction =
         fields?: Partial<TaskFields>;
       };
     }
-  | { type: "ackMove"; reqId: number };
+  | { type: "toggle"; req: { id: number; ref: TaskRefish; today: string } }
+  | { type: "delete"; req: { id: number; ref: TaskRefish } }
+  | {
+      type: "duplicate";
+      req: { id: number; ref: TaskRefish; newId: string };
+    }
+  | {
+      type: "reschedule";
+      req: { id: number; refs: TaskRef[]; today: string };
+    }
+  | { type: "ackOutcome"; reqId: number };
 
 function coachCoreReducer(core: CoachCore, action: CoreAction): CoachCore {
   switch (action.type) {
@@ -105,12 +135,47 @@ function coachCoreReducer(core: CoachCore, action: CoreAction): CoachCore {
       // commit as one — the outcome is the result of this exact write,
       // never a prediction.
       const result = moveTransition(core.workspace, action.req);
-      return { workspace: result.state, moveOutcome: result.outcome };
+      return {
+        workspace: result.state,
+        outcomes: queueOutcome(core.outcomes, {
+          kind: "move",
+          ...result.outcome,
+        }),
+      };
     }
-    case "ackMove":
-      return core.moveOutcome?.reqId === action.reqId
-        ? { ...core, moveOutcome: null }
-        : core;
+    case "toggle": {
+      const result = toggleTransition(core.workspace, action.req);
+      return {
+        workspace: result.state,
+        outcomes: queueOutcome(core.outcomes, result.outcome),
+      };
+    }
+    case "delete": {
+      const result = deleteTransition(core.workspace, action.req);
+      return {
+        workspace: result.state,
+        outcomes: queueOutcome(core.outcomes, result.outcome),
+      };
+    }
+    case "duplicate": {
+      const result = duplicateTransition(core.workspace, action.req);
+      return {
+        workspace: result.state,
+        outcomes: queueOutcome(core.outcomes, result.outcome),
+      };
+    }
+    case "reschedule": {
+      const result = rescheduleTransition(core.workspace, action.req);
+      return {
+        workspace: result.state,
+        outcomes: queueOutcome(core.outcomes, result.outcome),
+      };
+    }
+    case "ackOutcome":
+      return {
+        ...core,
+        outcomes: ackOutcomeList(core.outcomes, action.reqId),
+      };
   }
 }
 
@@ -140,7 +205,7 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     workspace: normalizeTemplateSetups(
       migrateCoachState(seedState()) as CoachState,
     ),
-    moveOutcome: null,
+    outcomes: [],
   }));
   const state = core.workspace;
   const setState: Dispatch<SetStateAction<CoachState>> = useCallback(
@@ -151,8 +216,24 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     (req) => dispatch({ type: "move", req }),
     [],
   );
-  const ackMove = useCallback<Store["ackMove"]>(
-    (reqId) => dispatch({ type: "ackMove", reqId }),
+  const requestToggle = useCallback<Store["requestToggle"]>(
+    (req) => dispatch({ type: "toggle", req }),
+    [],
+  );
+  const requestDelete = useCallback<Store["requestDelete"]>(
+    (req) => dispatch({ type: "delete", req }),
+    [],
+  );
+  const requestDuplicate = useCallback<Store["requestDuplicate"]>(
+    (req) => dispatch({ type: "duplicate", req }),
+    [],
+  );
+  const requestReschedule = useCallback<Store["requestReschedule"]>(
+    (req) => dispatch({ type: "reschedule", req }),
+    [],
+  );
+  const ackOutcome = useCallback<Store["ackOutcome"]>(
+    (reqId) => dispatch({ type: "ackOutcome", reqId }),
     [],
   );
   const [hydrated, setHydrated] = useState(false);
@@ -277,8 +358,12 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         media,
         attach,
         requestMove,
-        moveOutcome: core.moveOutcome,
-        ackMove,
+        requestToggle,
+        requestDelete,
+        requestDuplicate,
+        requestReschedule,
+        outcomes: core.outcomes,
+        ackOutcome,
       }}
     >
       {children}

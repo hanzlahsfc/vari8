@@ -436,6 +436,114 @@ export function moveTransition(
   };
 }
 
+/** A committed outcome for one request-driven operation. Outcomes are
+ * transient: the reducer appends them beside the workspace in the same
+ * commit as the write they describe, and they are consumed in order —
+ * a batched request can never overwrite an un-acknowledged outcome. */
+export type OpOutcome =
+  | ({ kind: "move" } & MoveOutcome)
+  | {
+      kind: "toggle";
+      reqId: number;
+      completed?: boolean;
+      inverse?: ToggleInverse;
+    }
+  | { kind: "delete"; reqId: number; removed?: RemovedTask }
+  | { kind: "duplicate"; reqId: number; created: boolean }
+  | {
+      kind: "reschedule";
+      reqId: number;
+      moved: { ref: TaskRef; previousDeadline: string }[];
+    };
+
+export function queueOutcome(
+  outcomes: OpOutcome[],
+  outcome: OpOutcome,
+): OpOutcome[] {
+  return [...outcomes, outcome];
+}
+
+/** Consume one committed outcome by request id — idempotent, so a
+ * replayed acknowledgement never eats a later request's outcome. */
+export function ackOutcome(outcomes: OpOutcome[], reqId: number): OpOutcome[] {
+  return outcomes.filter((outcome) => outcome.reqId !== reqId);
+}
+
+/** The authoritative toggle transition: the completion write and the
+ * outcome (whether the task completed, plus the exact Undo inverse)
+ * commit in one pass, so "Task completed." can only follow the write
+ * that actually ran. A missing record reports no completion. */
+export function toggleTransition(
+  state: CoachState,
+  request: { id: number; ref: TaskRefish; today: string; now?: string },
+): { state: CoachState; outcome: OpOutcome } {
+  const result = toggleTask(state, request.ref, request.today, request.now);
+  return {
+    state: result.state,
+    outcome: {
+      kind: "toggle",
+      reqId: request.id,
+      completed: result.completed,
+      inverse: result.inverse,
+    },
+  };
+}
+
+/** The authoritative delete transition: removal and the payload needed
+ * to restore it commit together; a stale delete reports nothing removed
+ * instead of claiming success. */
+export function deleteTransition(
+  state: CoachState,
+  request: { id: number; ref: TaskRefish },
+): { state: CoachState; outcome: OpOutcome } {
+  const result = deleteTask(state, refOf(request.ref));
+  return {
+    state: result.state,
+    outcome: { kind: "delete", reqId: request.id, removed: result.removed },
+  };
+}
+
+/** The authoritative duplicate transition: the copy and its outcome
+ * commit together; duplicating a record that no longer exists reports
+ * `created: false` rather than a false success. */
+export function duplicateTransition(
+  state: CoachState,
+  request: { id: number; ref: TaskRefish; newId: string },
+): { state: CoachState; outcome: OpOutcome } {
+  const current = findTask(state, refOf(request.ref));
+  if (!current)
+    return {
+      state,
+      outcome: { kind: "duplicate", reqId: request.id, created: false },
+    };
+  return {
+    state: saveTask(
+      state,
+      { ...current.task, id: request.newId },
+      current.clientId,
+    ),
+    outcome: { kind: "duplicate", reqId: request.id, created: true },
+  };
+}
+
+/** The authoritative overdue-reschedule transition: the moved refs and
+ * their previous deadlines commit with the write, so the Undo payload
+ * always matches what actually rescheduled. */
+export function rescheduleTransition(
+  state: CoachState,
+  request: { id: number; refs: TaskRef[]; today: string },
+): { state: CoachState; outcome: OpOutcome } {
+  const result = rescheduleOverdue(state, request.refs, request.today);
+  return {
+    state: result.state,
+    outcome: {
+      kind: "reschedule",
+      reqId: request.id,
+      moved: result.moved,
+    },
+  };
+}
+
 export function deleteTask(
   state: CoachState,
   ref: TaskRef,

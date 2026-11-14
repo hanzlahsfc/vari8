@@ -43,21 +43,18 @@ import {
 import { useCoach } from "./store";
 import { localToday } from "./targets/model";
 import {
-  deleteTask,
   filterTasks,
-  findTask,
   listTasks,
   localDateTime,
   localDayOf,
   matchAthletes,
   moveLocksEntry,
+  type OpOutcome,
   occurrenceOnOrAfter,
   overdueLabel,
   parseQuickAdd,
-  type RemovedTask,
   relativeDay,
   repeatLabel,
-  rescheduleOverdue,
   resolveTaskParam,
   restoreTask,
   saveTask,
@@ -66,11 +63,9 @@ import {
   type TaskEntry,
   type TaskRef,
   type TaskViewId,
-  type ToggleInverse,
   taskKey,
   taskParam,
   taskViews,
-  toggleTask,
   undoToggle,
   updateTask,
 } from "./tasks-model";
@@ -190,8 +185,12 @@ function TasksView({
     toast,
     navigate,
     requestMove,
-    moveOutcome,
-    ackMove,
+    requestToggle,
+    requestDelete,
+    requestDuplicate,
+    requestReschedule,
+    outcomes,
+    ackOutcome,
   } = useCoach();
   const today = localToday();
   const reduced = useReducedMotion();
@@ -210,11 +209,9 @@ function TasksView({
   // `moveOutcomes` delivers that committed outcome to the right caller.
   const [pendingMove, setPendingMove] = useState<PendingMove | null>(null);
   const pendingMoveRef = useRef(false);
-  const moveSeq = useRef(0);
-  const handledMove = useRef(-1);
-  const moveOutcomes = useRef(
-    new Map<number, (moved: boolean, reason?: string) => void>(),
-  );
+  const opSeq = useRef(0);
+  const handledOps = useRef(new Set<number>());
+  const opOutcomes = useRef(new Map<number, (outcome: OpOutcome) => void>());
   const [dayAdd, setDayAdd] = useState<string | null>(null);
   const [moveEntry, setMoveEntry] = useState<TaskEntry | null>(null);
   const quickRef = useRef<HTMLInputElement>(null);
@@ -313,28 +310,22 @@ function TasksView({
    * happens immediately — the ~600 ms strike-through is display only — so a
    * second activation acts on the advanced/restored record, undo is instant,
    * and a delete or move during the animation can neither resurrect the task
-   * nor revert its owner. */
+   * nor revert its owner. The toast follows the outcome committed with the
+   * write — never a flag read before the reducer ran. */
   const applyToggle = (entry: TaskEntry) => {
-    const ref = { id: entry.task.id, clientId: entry.clientId };
     const key = taskKey(entry);
-    const result: { inverse?: ToggleInverse; completed?: boolean } = {};
-    setState((s) => {
-      const r = toggleTask(s, ref, today);
-      result.inverse = r.inverse;
-      result.completed = r.completed;
-      return r.state;
-    });
-    // The toast follows the transition that actually ran, not the possibly
-    // stale entry that was rendered — a second click during the animation
-    // reopens instead of double-completing.
-    if (result.completed)
+    const id = ++opSeq.current;
+    opOutcomes.current.set(id, (outcome) => {
+      if (outcome.kind !== "toggle" || !outcome.completed) return;
+      const inverse = outcome.inverse;
       toast("Task completed.", () => {
         // Undo removes the strike-through ghost and cancels its timer
         // immediately — no duplicate row lingers for 600 ms.
         clearCompleting(key);
-        if (result.inverse)
-          setState((s) => undoToggle(s, result.inverse as ToggleInverse));
+        if (inverse) setState((s) => undoToggle(s, inverse));
       });
+    });
+    requestToggle({ id, ref: entry, today });
   };
 
   const complete = (entry: TaskEntry) => {
@@ -368,70 +359,74 @@ function TasksView({
   ): boolean => {
     if (pendingMoveRef.current) return false;
     pendingMoveRef.current = true;
-    const id = ++moveSeq.current;
-    moveOutcomes.current.set(id, onDone);
+    const id = ++opSeq.current;
+    opOutcomes.current.set(id, (outcome) => {
+      if (outcome.kind === "move") onDone(outcome.moved, outcome.reason);
+    });
     setPendingMove({ id, entry, clientId });
     requestMove({ id, ref: entry, clientId, fields });
     return true;
   };
 
-  // Acknowledge the outcome that committed WITH the write — the reducer
-  // already produced it on the real base, so this effect only consumes:
-  // it never predicts a result or schedules a write. `handledMove` and
-  // the once-per-request outcome map keep an effect replay from
-  // double-acknowledging.
+  // Acknowledge the outcomes that committed WITH their writes — the
+  // reducer already produced each on the real base, so this effect only
+  // consumes: it never predicts a result or schedules a write. `handledOps`
+  // and the once-per-request callback map keep an effect replay from
+  // double-acknowledging, and the queue keeps batched requests from
+  // overwriting an outcome nobody has seen yet.
   useEffect(() => {
-    const outcome = moveOutcome;
-    if (!outcome || handledMove.current === outcome.reqId) return;
-    handledMove.current = outcome.reqId;
-    pendingMoveRef.current = false;
-    setPendingMove(null);
-    ackMove(outcome.reqId);
-    const done = moveOutcomes.current.get(outcome.reqId);
-    moveOutcomes.current.delete(outcome.reqId);
-    if (outcome.moved) {
-      done?.(true);
-      return;
+    for (const outcome of outcomes) {
+      if (handledOps.current.has(outcome.reqId)) continue;
+      handledOps.current.add(outcome.reqId);
+      ackOutcome(outcome.reqId);
+      if (outcome.kind === "move") {
+        pendingMoveRef.current = false;
+        setPendingMove(null);
+        if (!outcome.moved)
+          toast(
+            outcome.reason === "id-conflict"
+              ? "Move blocked — that scope already has a task with this id."
+              : outcome.reason === "no-destination"
+                ? "Move blocked — that athlete is no longer available."
+                : "Move blocked — the task is no longer there.",
+          );
+      }
+      const done = opOutcomes.current.get(outcome.reqId);
+      opOutcomes.current.delete(outcome.reqId);
+      done?.(outcome);
     }
-    toast(
-      outcome.reason === "id-conflict"
-        ? "Move blocked — that scope already has a task with this id."
-        : outcome.reason === "no-destination"
-          ? "Move blocked — that athlete is no longer available."
-          : "Move blocked — the task is no longer there.",
-    );
-    done?.(false, outcome.reason);
-  }, [moveOutcome, ackMove, toast]);
+  }, [outcomes, ackOutcome, toast]);
 
   const remove = (entry: TaskEntry) => {
     clearCompleting(taskKey(entry));
-    const result: { removed?: RemovedTask } = {};
-    setState((s) => {
-      const r = deleteTask(s, {
-        id: entry.task.id,
-        clientId: entry.clientId,
+    const id = ++opSeq.current;
+    opOutcomes.current.set(id, (outcome) => {
+      if (outcome.kind !== "delete" || !outcome.removed) return;
+      // The undo payload comes from the committed removal — never a
+      // snapshot that could restore a different record.
+      const removed = outcome.removed;
+      if (selected && taskKey(selected) === taskKey(entry)) onSelect(null);
+      toast("Task deleted.", () => {
+        setState((s) => restoreTask(s, removed));
       });
-      result.removed = r.removed;
-      return r.state;
     });
-    if (selected && taskKey(selected) === taskKey(entry)) onSelect(null);
-    toast("Task deleted.", () => {
-      if (result.removed)
-        setState((s) => restoreTask(s, result.removed as RemovedTask));
+    requestDelete({
+      id,
+      ref: { id: entry.task.id, clientId: entry.clientId },
     });
   };
 
   const duplicate = (entry: TaskEntry) => {
-    setState((s) => {
-      const current = findTask(s, {
-        id: entry.task.id,
-        clientId: entry.clientId,
-      });
-      return current
-        ? saveTask(s, { ...current.task, id: uid("task") }, current.clientId)
-        : s;
+    const id = ++opSeq.current;
+    opOutcomes.current.set(id, (outcome) => {
+      if (outcome.kind === "duplicate" && outcome.created)
+        toast("Task duplicated.");
     });
-    toast("Task duplicated.");
+    requestDuplicate({
+      id,
+      ref: { id: entry.task.id, clientId: entry.clientId },
+      newId: uid("task"),
+    });
   };
 
   const moveAllToToday = (items: TaskEntry[]) => {
@@ -439,16 +434,10 @@ function TasksView({
       id: entry.task.id,
       clientId: entry.clientId,
     }));
-    let moved: {
-      ref: { id: string; clientId?: string };
-      previousDeadline: string;
-    }[] = [];
-    setState((s) => {
-      const result = rescheduleOverdue(s, refs, today);
-      moved = result.moved;
-      return result.state;
-    });
-    if (moved.length)
+    const id = ++opSeq.current;
+    opOutcomes.current.set(id, (outcome) => {
+      if (outcome.kind !== "reschedule" || !outcome.moved.length) return;
+      const moved = outcome.moved;
       toast(
         `Moved ${moved.length} ${moved.length === 1 ? "task" : "tasks"} to today.`,
         () =>
@@ -460,6 +449,8 @@ function TasksView({
             ),
           ),
       );
+    });
+    requestReschedule({ id, refs, today });
   };
 
   const openAthlete = (entry: TaskEntry) => {
