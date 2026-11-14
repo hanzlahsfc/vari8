@@ -84,9 +84,22 @@ const themeSource = stripTypeScriptTypes(
   )
   .replaceAll(
     '"./accent-contrast"',
-    JSON.stringify(asModule("export const accentControlColors = () => ({});")),
+    JSON.stringify(
+      asModule(
+        'export const accentControlColors = () => ({}); export const DEFAULT_ACCENT = "#C9CCD3";',
+      ),
+    ),
   );
 const theme = await import(asModule(themeSource));
+// accent-contrast.ts is dependency-free: test its real exports.
+const accentContrast = await import(
+  asModule(
+    stripTypeScriptTypes(
+      await readFile(new URL("./accent-contrast.ts", import.meta.url), "utf8"),
+      { mode: "strip" },
+    ),
+  )
+);
 
 const tinyPng =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
@@ -94,13 +107,7 @@ const tinyPng =
 test("legacy workspaces without any new preference fields load unchanged", () => {
   const a = m.seedState();
   const legacy = { ...a, preferences: { ...a.preferences } };
-  for (const key of [
-    "profile",
-    "brand",
-    "followSystemMode",
-    "notify",
-    "availabilityNote",
-  ])
+  for (const key of ["profile", "brand", "followSystemMode", "notify"])
     delete legacy.preferences[key];
   legacy.clients = a.clients.map(({ appMode, ...client }) => client);
   assert.equal(m.isCoachState(legacy), true);
@@ -131,8 +138,7 @@ test("optional settings fields validate and round-trip; invalid values are rejec
         logoLight: photo,
       },
       followSystemMode: true,
-      notify: { checkIns: false, taskReminders: true, quietHours: false },
-      availabilityNote: "Replies usually within a day",
+      notify: { checkIns: false, taskReminders: true },
     },
     clients: a.clients.map((client, i) =>
       i === 0 ? { ...client, appMode: "light" } : client,
@@ -158,7 +164,6 @@ test("optional settings fields validate and round-trip; invalid values are rejec
     },
     { ...a, preferences: { ...a.preferences, followSystemMode: "yes" } },
     { ...a, preferences: { ...a.preferences, notify: { checkIns: "no" } } },
-    { ...a, preferences: { ...a.preferences, availabilityNote: 42 } },
     {
       ...a,
       clients: a.clients.map((c, i) =>
@@ -269,5 +274,66 @@ test("priority messages first lifts flagged conversations, recency tiebreaks", (
   assert.deepEqual(
     m.sortedConversationClients(older).map((c) => c.id),
     [three.id, one.id, two.id],
+  );
+});
+
+// --- P808 review repairs -----------------------------------------------------
+// Pure tab resolution (settings/tabs.ts has no React deps).
+
+const tabsSource = stripTypeScriptTypes(
+  await readFile(new URL("./settings/tabs.ts", import.meta.url), "utf8"),
+  { mode: "strip" },
+);
+const tabs = await import(asModule(tabsSource));
+
+test("invalid and missing tabs resolve the same way nav, breadcrumb and content do", () => {
+  // Other layouts always land on a category, Profile when none applies.
+  assert.equal(tabs.resolveSettingsTab(undefined, false), "profile");
+  assert.equal(tabs.resolveSettingsTab("bogus", false), "profile");
+  assert.equal(tabs.resolveSettingsTab("branding", false), "branding");
+  // The phone shows the category index until a valid category is chosen.
+  assert.equal(tabs.resolveSettingsTab(undefined, true), null);
+  assert.equal(tabs.resolveSettingsTab("bogus", true), null);
+  assert.equal(tabs.resolveSettingsTab("data", true), "data");
+  assert.equal(tabs.settingsTabLabel("branding"), "Branding");
+  assert.equal(tabs.isSettingsTab("profile"), true);
+  assert.equal(tabs.isSettingsTab("templates"), false);
+});
+
+test("coach and shared theme defaults stay separate", async () => {
+  // The coach default is Platinum and invalid accents fall back to it; the
+  // shared vari8-theme module keeps its own legacy fallback for non-coach
+  // surfaces (source inspection — the constant is not exported).
+  assert.equal(accentContrast.DEFAULT_ACCENT, "#C9CCD3");
+  assert.equal(
+    accentContrast.accentControlColors("nope").background,
+    "#C9CCD3",
+  );
+  const src = await readFile(
+    new URL("../../lib/vari8-theme.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(src, /FALLBACK_ACCENT = "#EB91B8"/);
+});
+
+test("the existing availability value round-trips to its Messages consumer", async () => {
+  const a = m.seedState();
+  const edited = {
+    ...a,
+    preferences: { ...a.preferences, availability: "Replies within a day" },
+  };
+  assert.equal(m.isCoachState(edited), true);
+  const round = JSON.parse(JSON.stringify(edited));
+  assert.equal(round.preferences.availability, "Replies within a day");
+  // Source inspection: the coach Messages caption still renders the field
+  // the settings field writes.
+  const src = await readFile(
+    new URL("./messages.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    src,
+    /preferences\.availability/,
+    "messages.tsx no longer reads preferences.availability",
   );
 });

@@ -840,8 +840,6 @@ export type CoachState = {
       name?: string;
       logoLight?: { name: string; dataUrl: string };
     };
-    /** Free-text availability note shown to athletes. */
-    availabilityNote?: string;
     notify?: {
       checkIns?: boolean;
       taskReminders?: boolean;
@@ -2020,7 +2018,6 @@ export function isCoachState(v: unknown): v is CoachState {
           obj({ name: str, title: opt(str), photo: opt(logoGuard) }),
         ),
         brand: opt(obj({ name: opt(str), logoLight: opt(logoGuard) })),
-        availabilityNote: opt(str),
         notify: opt(obj({ checkIns: opt(bool), taskReminders: opt(bool) })),
       }),
     })(v) &&

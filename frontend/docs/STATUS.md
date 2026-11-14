@@ -1,5 +1,39 @@
 # Frontend status
 
+## 2026-11-05 — P808 Settings Phase 1a review repairs — gates green
+
+- Accent boundary restored: shared `vari8-theme` keeps its legacy
+  `#EB91B8` fallback; the coach default moved to `accent-contrast.ts` as
+  exported `DEFAULT_ACCENT` `#C9CCD3`, which is also the invalid-accent
+  fallback. Invalid-accent expectations updated in both contrast suites.
+- Availability: the Phase-1b `availabilityNote` field and its wiring were
+  removed entirely. The existing `preferences.availability` is editable
+  from Profile via the shared committed field and still feeds the coach
+  Messages caption (and the athlete thread header line).
+- Hydration-safe first render: `useSystemMode` and `useNarrowSettings`
+  resolve matchMedia after hydration so server and first client render
+  agree; live updates, explicit coach/athlete overrides and the phone
+  drill-in are preserved. Tab resolution moved to pure
+  `settings/tabs.ts`; the breadcrumb now uses `resolveSettingsTab` so an
+  invalid tab shows Profile's label on desktop and the plain Settings
+  crumb on the phone index.
+- Storage labelled an estimate throughout: "Storage used (estimate)",
+  "Estimate from the serialized workspace" and "About X of a typical
+  ~5 MB browser budget" — no quota implication.
+- Shared controls: `CommittedInput` now wraps the shared `Input`
+  (accessible label/hint) and guards against double-commit
+  (Enter-then-blur) and stale-draft overwrites. Logo previews render
+  inside nested `v8-theme` frames at their intended `data-mode` — no raw
+  colours, per-background inspection preserved.
+- Tests (settings.test.mjs 9/9): +tab-resolution contract (invalid →
+  Profile on desktop, index on phone), +coach/shared default separation
+  (real `accentControlColors` fallback + vari8-theme source inspection),
+  +availability round-trip with messages.tsx consumer inspection.
+- Gates (Node 24.22.3): `npm run check` exit 0 (331/331); `ui:check`
+  exit 1 with the same 21 baseline violations (none in changed files);
+  `git diff --check` clean. Browser verification still pending
+  authorisation — not claimed.
+
 ## 2026-11-05 — P806 Settings Phase 1a — implemented, gates green, awaiting browser verification
 
 - New routed Settings workspace replaces the preferences dialog:

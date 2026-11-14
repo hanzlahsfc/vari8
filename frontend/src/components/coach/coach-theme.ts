@@ -4,15 +4,13 @@ import { vari8Theme } from "@/lib/vari8-theme";
 import { accentControlColors } from "./accent-contrast";
 import type { CoachState } from "./model";
 
-export const DEFAULT_ACCENT = "#C9CCD3";
+export { DEFAULT_ACCENT } from "./accent-contrast";
 
-/** Live prefers-color-scheme, resolved client-side only. */
+/** Live prefers-color-scheme. Starts dark so the server and first client
+ * render agree; the real system value applies after hydration and stays
+ * live on change. */
 export function useSystemMode(): "light" | "dark" {
-  const [dark, setDark] = useState(
-    () =>
-      typeof window === "undefined" ||
-      window.matchMedia("(prefers-color-scheme: dark)").matches,
-  );
+  const [dark, setDark] = useState(true);
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => setDark(mq.matches);

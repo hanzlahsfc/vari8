@@ -23,10 +23,7 @@ export function MobileMessages({ client }: { client: CoachClient }) {
     .toUpperCase();
   const coachLine = [
     profile?.title || "Coach",
-    state.preferences.availabilityNote ||
-      (state.preferences.availability !== "Weekdays · 09:00–18:00"
-        ? state.preferences.availability
-        : "replies usually within a day"),
+    state.preferences.availability,
   ].join(" · ");
   const today = useLocalToday();
   const [draft, setDraft] = useState("");

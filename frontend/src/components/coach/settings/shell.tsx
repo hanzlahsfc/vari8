@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
+import { Input } from "../../vari8/components";
+import { coachThemeStyle } from "../coach-theme";
 import { processImageFile } from "../image-upload";
 import type { CoachState } from "../model";
 import { useCoach } from "../store";
@@ -15,18 +17,28 @@ import { Button, Surface } from "../ui";
 
 export type Preferences = CoachState["preferences"];
 
-export const SETTINGS_TABS = [
-  { id: "profile", label: "Profile" },
-  { id: "branding", label: "Branding" },
-  { id: "appearance", label: "Appearance" },
-  { id: "notifications", label: "Notifications" },
-  { id: "data", label: "Data" },
-] as const;
-export type SettingsTab = (typeof SETTINGS_TABS)[number]["id"];
-export const isSettingsTab = (value: string): value is SettingsTab =>
-  SETTINGS_TABS.some((tab) => tab.id === value);
-export const settingsTabLabel = (id: string) =>
-  SETTINGS_TABS.find((tab) => tab.id === id)?.label;
+export {
+  isSettingsTab,
+  resolveSettingsTab,
+  SETTINGS_TABS,
+  type SettingsTab,
+  settingsTabLabel,
+} from "./tabs";
+
+/** Narrow layout flag for the Settings drill-in. Starts false so the
+ * server and first client render agree; the real width applies after
+ * hydration and stays live on resize. */
+export function useNarrowSettings() {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return narrow;
+}
 
 /** Merge a patch into preferences; the profile, brand and notify groups
  * merge one level deep so a single field never wipes its siblings. */
@@ -124,16 +136,20 @@ export function SettingRow({
   );
 }
 
-/** Text commit model: blur, Enter or 600 ms without typing commits the
- * draft; an external change refreshes an unfocused field. */
+/** Shared text field with commit-on-blur/Enter/debounce semantics: blur,
+ * Enter or 600 ms without typing commits the draft. Enter-then-blur never
+ * saves twice, and a draft can never overwrite a value that changed under
+ * it — a stale draft is resynced instead. */
 export function CommittedInput({
   label,
+  hint,
   value,
   onCommit,
   maxLength,
   placeholder,
 }: {
   label: string;
+  hint?: string;
   value: string;
   onCommit: (value: string) => void;
   maxLength?: number;
@@ -141,57 +157,76 @@ export function CommittedInput({
 }) {
   const [draft, setDraft] = useState(value);
   const focused = useRef(false);
+  const external = useRef(false);
+  const lastSent = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (!focused.current) setDraft(value);
-  }, [value]);
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
-  const commit = () => {
-    if (timer.current) clearTimeout(timer.current);
-    if (draft !== value) onCommit(draft);
+  // Sync the field from the stored value. Our own commit echo is ignored;
+  // a different value while editing means an outside write landed, which
+  // marks the draft stale so a later blur cannot clobber it.
+  useEffect(() => {
+    if (lastSent.current !== null && value === lastSent.current) {
+      lastSent.current = null;
+      return;
+    }
+    if (focused.current) external.current = true;
+    else setDraft(value);
+  }, [value]);
+  const commit = (next: string) => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    if (external.current) {
+      external.current = false;
+      setDraft(value);
+      return;
+    }
+    if (next !== value && next !== lastSent.current) {
+      lastSent.current = next;
+      onCommit(next);
+    }
   };
   return (
-    <div className="cd-field">
-      <label className="cd-settings-input">
-        <span>{label}</span>
-        <input
-          type="text"
-          value={draft}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          onFocus={() => {
-            focused.current = true;
-          }}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            if (timer.current) clearTimeout(timer.current);
-            timer.current = setTimeout(() => {
-              if (e.target.value !== value) onCommit(e.target.value);
-            }, 600);
-          }}
-          onBlur={() => {
-            focused.current = false;
-            commit();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              commit();
-            }
-          }}
-        />
-      </label>
-    </div>
+    <Input
+      label={label}
+      hint={hint}
+      type="text"
+      value={draft}
+      maxLength={maxLength}
+      placeholder={placeholder}
+      onFocus={() => {
+        focused.current = true;
+      }}
+      onChange={(e) => {
+        const next = e.target.value;
+        setDraft(next);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => commit(next), 600);
+      }}
+      onBlur={() => {
+        focused.current = false;
+        commit(draft);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit(draft);
+        }
+      }}
+    />
   );
 }
 
 /** Shared image slot: preview, upload/remove and the pipeline's inline
- * errors, used by both logo slots and the profile photo. */
+ * errors, used by both logo slots and the profile photo. Logo slots can
+ * pin the preview to a literal light or dark theme frame so the mark is
+ * inspected against the background it is meant for. */
 export function ImageSlot({
   label,
   hint,
@@ -207,6 +242,7 @@ export function ImageSlot({
   background?: "light" | "dark";
   onChange: (image?: { name: string; dataUrl: string }) => void;
 }) {
+  const { state } = useCoach();
   const fileRef = useRef<HTMLInputElement>(null);
   const token = useRef(0);
   const [busy, setBusy] = useState(false);
@@ -234,9 +270,14 @@ export function ImageSlot({
   return (
     <div className="cd-settings-imageslot">
       <span
-        className="cd-settings-imagepreview"
-        data-background={background}
+        className="cd-settings-imagepreview v8-theme"
+        data-mode={background}
         data-square={square || undefined}
+        style={
+          background
+            ? coachThemeStyle({ ...state.preferences, mode: background })
+            : undefined
+        }
       >
         {image ? (
           <Image

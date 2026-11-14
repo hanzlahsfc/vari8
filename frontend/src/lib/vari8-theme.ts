@@ -77,7 +77,7 @@ export const VARI8_SURFACES = [
   "accent-spotlight",
 ] as const satisfies readonly SurfaceRole[];
 
-const FALLBACK_ACCENT = "#C9CCD3";
+const FALLBACK_ACCENT = "#EB91B8";
 const HEX_SHORT = /^[\da-f]{3}$/i;
 const HEX_FULL = /^[\da-f]{6}$/i;
 

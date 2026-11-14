@@ -29,7 +29,11 @@ import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
 import { DEFAULT_COACH_NAME, DEFAULT_COACH_TITLE } from "./settings/profile";
 import { SettingsWorkspace } from "./settings/settings";
-import { settingsTabLabel } from "./settings/shell";
+import {
+  resolveSettingsTab,
+  settingsTabLabel,
+  useNarrowSettings,
+} from "./settings/shell";
 import { CoachProvider, useCoach } from "./store";
 import { TemplateEditor, TemplateLibrary } from "./templates";
 import { Button, IconButton, Transition } from "./ui";
@@ -129,7 +133,12 @@ function Workspace() {
       ? 0
       : state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
-  const settingsTab = route.tab ? settingsTabLabel(route.tab) : undefined;
+  const narrow = useNarrowSettings();
+  // The breadcrumb names the category that is actually rendered: the
+  // requested tab, Profile on other layouts, or nothing on the phone's
+  // category index.
+  const settingsTab =
+    route.section === "settings" ? resolveSettingsTab(route.tab, narrow) : null;
   return (
     <div
       className="coach-root v8-theme"
@@ -260,7 +269,9 @@ function Workspace() {
             {route.section === "settings" && settingsTab && (
               <>
                 <span className="cd-breadcrumb-editor">/</span>
-                <span className="cd-breadcrumb-editor">{settingsTab}</span>
+                <span className="cd-breadcrumb-editor">
+                  {settingsTabLabel(settingsTab)}
+                </span>
               </>
             )}
             {route.editor && (

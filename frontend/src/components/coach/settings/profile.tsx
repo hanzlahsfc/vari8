@@ -68,14 +68,15 @@ export function ProfileSettings() {
         />
       </SettingRow>
       <CommittedInput
-        label="Availability note"
-        value={
-          state.preferences.availabilityNote ?? state.preferences.availability
-        }
+        label="Availability"
+        hint="Shown beside your name in Messages."
+        value={state.preferences.availability}
         maxLength={120}
         placeholder="Weekdays · 09:00–18:00"
-        onCommit={(availabilityNote) => {
-          patch({ availabilityNote: availabilityNote.trim() || undefined });
+        onCommit={(availability) => {
+          patch({
+            availability: availability.trim() || "Weekdays · 09:00–18:00",
+          });
           mark();
         }}
       />

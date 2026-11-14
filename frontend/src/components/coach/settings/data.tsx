@@ -41,14 +41,14 @@ export function DataSettings() {
         description="This workspace is stored in this browser only."
       >
         <SettingRow
-          label="Storage used"
-          hint={`Includes ${formatBytes(imageBytes)} of images (logos and photo).`}
+          label="Storage used (estimate)"
+          hint={`Estimate from the serialized workspace — about ${formatBytes(imageBytes)} of it is images (logos and photo).`}
         >
           <div className="cd-settings-storage">
             <span
               className="cd-settings-storage-bar"
               role="progressbar"
-              aria-label="Storage used"
+              aria-label="Estimated storage used"
               aria-valuemin={0}
               aria-valuemax={STORAGE_BUDGET}
               aria-valuenow={serialized.length}
@@ -60,8 +60,8 @@ export function DataSettings() {
               />
             </span>
             <span className="cd-settings-storage-label">
-              {formatBytes(serialized.length)} of about{" "}
-              {formatBytes(STORAGE_BUDGET)}
+              About {formatBytes(serialized.length)} of a typical ~
+              {formatBytes(STORAGE_BUDGET)} browser budget
             </span>
           </div>
         </SettingRow>

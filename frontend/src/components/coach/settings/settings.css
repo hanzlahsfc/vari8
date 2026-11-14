@@ -119,33 +119,14 @@
     align-items: stretch;
   }
 }
-/* Committed text fields */
-.coach-root .cd-settings-input {
-  display: flex;
-  flex-direction: column;
-  gap: var(--v8-space-2);
-  font-size: var(--v8-font-size-control);
-  color: var(--cd-muted);
-}
-.coach-root .cd-settings-input input {
-  height: var(--v8-control-height-md);
-  padding: 0 var(--v8-space-3);
-  border: 1px solid var(--v8-field-border);
-  border-radius: var(--v8-radius-field);
-  background: var(--v8-field);
-  color: var(--cd-text);
-  font: inherit;
-}
-.coach-root .cd-settings-input input:focus-visible {
-  outline: var(--v8-border-width-emphasis) solid var(--v8-accent-focus);
-  outline-offset: -1px;
-}
 /* Image slots */
 .coach-root .cd-settings-imageslot {
   display: flex;
   align-items: center;
   gap: var(--v8-space-3);
 }
+/* Logo previews render inside a nested theme frame (data-mode + the
+ * coach theme variables) so each mark sits on its intended canvas. */
 .coach-root .cd-settings-imagepreview {
   position: relative;
   display: grid;
@@ -156,12 +137,8 @@
   border: 1px solid var(--cd-line);
   border-radius: var(--v8-radius-field);
   overflow: hidden;
-}
-.coach-root .cd-settings-imagepreview[data-background="dark"] {
-  background: #101010;
-}
-.coach-root .cd-settings-imagepreview[data-background="light"] {
-  background: #ffffff;
+  background: var(--v8-canvas);
+  color: var(--v8-text-secondary);
 }
 .coach-root .cd-settings-imagepreview[data-square] {
   width: 64px;

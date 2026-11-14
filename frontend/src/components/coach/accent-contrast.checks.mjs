@@ -37,7 +37,8 @@ test("accent action foreground remains readable for pale and saturated accents",
 
 test("accent is normalized and malformed values fall back safely", () => {
   assert.equal(accentControlColors("#abc").background, "#AABBCC");
-  assert.ok(accentControlColors("not-a-color").background.startsWith("#"));
+  // The coach default (Platinum) takes over when a stored accent is malformed.
+  assert.equal(accentControlColors("not-a-color").background, "#C9CCD3");
 });
 
 test("action fills and labels stay distinct and readable on light and dark surfaces", () => {
