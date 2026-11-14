@@ -11,13 +11,12 @@ import { questionPoses } from "../coach/check-ins/photos";
 import {
   addDays,
   type CoachClient,
-  formatDate,
   type Question,
   type Submission,
   uid,
   type Variant,
 } from "../coach/model";
-import { useCoach } from "../coach/store";
+import { useCoach, useDisplay } from "../coach/store";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { Button, Empty } from "../coach/ui";
 import { Input, Select } from "../vari8/components";
@@ -83,6 +82,7 @@ export function CheckInForm({
   configuration: Variant;
   client: CoachClient;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -287,6 +287,7 @@ export function CheckInForm({
 }
 
 function CheckInHistory({ history }: { history: Submission[] }) {
+  const { formatDate } = useDisplay();
   if (!history.length) return null;
   return (
     <div className="ca-checkin-history">

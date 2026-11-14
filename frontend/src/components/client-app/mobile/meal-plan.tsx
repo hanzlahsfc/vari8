@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { nutritionForDate } from "../../coach/athlete/timeline";
-import { type CoachClient, formatDate } from "../../coach/model";
+import type { CoachClient } from "../../coach/model";
 import { planFoodMap } from "../../coach/plans/domain";
 import { splitTemporaryNutrition } from "../../coach/plans/temporary-nutrition";
 import type { IifymPlan } from "../../coach/plans/types";
+import { useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import {
   calculateMealNutrients,
@@ -37,6 +38,7 @@ export function MobileMealPlan({
   /** Older-plans link at the bottom (hidden for plan previews). */
   onOpenOlder?: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const today = useLocalToday();
   const resolved = useMemo(
     () => nutritionForDate(client, today),
@@ -406,6 +408,7 @@ function VersionPlanRow({
     archivedOn?: string;
   }) => void;
 }) {
+  const { formatDate } = useDisplay();
   return (
     <button
       type="button"
@@ -453,6 +456,7 @@ function TempPlanRow({
     archivedOn?: string;
   }) => void;
 }) {
+  const { formatDate } = useDisplay();
   return (
     <button
       type="button"
@@ -558,6 +562,7 @@ export function OlderPlanScreen({
     archivedOn?: string;
   };
 }) {
+  const { formatDate } = useDisplay();
   return (
     <>
       <div className="cm-h1" style={{ marginBottom: 4 }}>

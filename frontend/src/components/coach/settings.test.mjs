@@ -519,6 +519,32 @@ test("legacy workspaces without Phase 1b fields keep defaults", () => {
   );
 });
 
+test("displayConfigFor resolves defaults and keeps workspaces isolated", () => {
+  // No module-global display state: each workspace resolves its own config
+  // and absent fields fall back to the documented defaults.
+  assert.deepEqual(m.displayConfigFor({}), {
+    timeZone: "Europe/Vienna",
+    locale: "en-GB",
+    hourCycle: "24",
+  });
+  assert.deepEqual(m.displayConfigFor({ region: undefined }), {
+    timeZone: "Europe/Vienna",
+    locale: "en-GB",
+    hourCycle: "24",
+  });
+  const ny = m.displayConfigFor({
+    region: { timeZone: "America/New_York", locale: "en-US", hourCycle: "12" },
+  });
+  assert.deepEqual(ny, {
+    timeZone: "America/New_York",
+    locale: "en-US",
+    hourCycle: "12",
+  });
+  // A bare workspace right after a configured one still gets defaults —
+  // nothing leaks between workspaces because the config is pure.
+  assert.deepEqual(m.displayConfigFor({}), m.DEFAULT_DISPLAY_CONFIG);
+});
+
 test("date-only values never shift with the configured time zone", () => {
   for (const zone of [
     "Europe/Vienna",
@@ -526,35 +552,42 @@ test("date-only values never shift with the configured time zone", () => {
     "Pacific/Auckland",
     "Pacific/Kiritimati",
   ]) {
-    m.setDisplayConfig({ timeZone: zone });
-    assert.equal(m.formatDate("2026-10-13"), m.formatDate("2026-10-13"));
+    const cfg = m.displayConfigFor({ region: { timeZone: zone } });
+    assert.equal(
+      m.formatDate("2026-10-13", {}, cfg),
+      m.formatDate("2026-10-13", {}, cfg),
+    );
     // The rendered calendar day stays the 13th everywhere.
-    assert.match(m.formatDate("2026-10-13"), /13/);
+    assert.match(m.formatDate("2026-10-13", {}, cfg), /13/);
     // Naive message stamps keep their coach-zone wall time in every zone.
     assert.match(
-      m.formatDate("2026-10-05T08:47", { hour: "2-digit", minute: "2-digit" }),
+      m.formatDate(
+        "2026-10-05T08:47",
+        { hour: "2-digit", minute: "2-digit" },
+        cfg,
+      ),
       /08:47/,
     );
   }
-  m.setDisplayConfig({ timeZone: "Europe/Vienna" });
 });
 
 test("real instants with offsets format in the configured zone", () => {
-  m.setDisplayConfig({ timeZone: "Europe/Vienna" });
-  const out = m.formatDate("2026-10-13T18:30:00Z", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const vienna = m.displayConfigFor({ region: { timeZone: "Europe/Vienna" } });
+  const out = m.formatDate(
+    "2026-10-13T18:30:00Z",
+    { hour: "2-digit", minute: "2-digit" },
+    vienna,
+  );
   assert.match(out, /20:30/); // 18:30 UTC = 20:30 CEST
-  m.setDisplayConfig({ timeZone: "America/New_York" });
+  const ny = m.displayConfigFor({ region: { timeZone: "America/New_York" } });
   assert.match(
-    m.formatDate("2026-10-13T18:30:00Z", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    m.formatDate(
+      "2026-10-13T18:30:00Z",
+      { hour: "2-digit", minute: "2-digit" },
+      ny,
+    ),
     /14:30/, // 18:30 UTC = 14:30 EDT
   );
-  m.setDisplayConfig({ timeZone: "Europe/Vienna" });
 });
 
 test("deadline instant resolves across zones and DST", () => {
@@ -572,13 +605,26 @@ test("deadline instant resolves across zones and DST", () => {
     ).toISOString(),
     "2026-10-14T00:00:00.000Z",
   );
-  // DST switch weekend (US falls back 2026-11-01): 01:30 exists twice; the
-  // convergent solver must still land inside the day at a valid instant.
+  // US falls back 2026-11-01: 01:30 wall time exists twice (05:30Z EDT and
+  // 06:30Z EST). The deadline keeps the FIRST occurrence.
+  const fold = m.deadlineInstant("2026-11-01", "01:30", "America/New_York");
+  assert.equal(new Date(fold).toISOString(), "2026-11-01T05:30:00.000Z");
   const dst = m.deadlineInstant("2026-11-01", "09:00", "America/New_York");
   assert.equal(new Date(dst).toISOString(), "2026-11-01T14:00:00.000Z");
-  // Europe spring forward gap (2026-03-29 02:00 missing in Vienna).
-  const gap = m.deadlineInstant("2026-03-29", "09:00", "Europe/Vienna");
-  assert.equal(new Date(gap).toISOString(), "2026-03-29T07:00:00.000Z");
+  // US springs forward 2026-03-08: 02:30 does not exist. It must not fall
+  // back to an earlier wall time — it resolves to the first real time at
+  // or after it (03:00 EDT = 07:00 UTC).
+  const gap = m.deadlineInstant("2026-03-08", "02:30", "America/New_York");
+  assert.equal(new Date(gap).toISOString(), "2026-03-08T07:00:00.000Z");
+  // Same rule in Europe (2026-03-29 02:00–03:00 missing in Vienna).
+  const gapEu = m.deadlineInstant("2026-03-29", "02:30", "Europe/Vienna");
+  const gapEuWall = new Date(gapEu).toLocaleString("en-US", {
+    timeZone: "Europe/Vienna",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+  assert.equal(gapEuWall, "03:00");
 });
 
 test("check-in overdue honours the configured deadline and zone", () => {
@@ -586,21 +632,23 @@ test("check-in overdue honours the configured deadline and zone", () => {
     region: { timeZone: "Europe/Vienna" },
     rules: { checkInDeadline: "20:00" },
   };
-  // 19:59 Vienna on the day -> not overdue; 20:01 -> overdue.
+  // Due through the whole 20:00 minute; overdue once 20:01 starts.
+  const duringDeadline = new Date("2026-10-13T18:00:30Z"); // 20:00:30 CEST
+  const boundary = new Date("2026-10-13T18:01:00Z"); // 20:01:00 CEST
   const before = new Date("2026-10-13T17:59:00Z"); // 19:59 CEST
-  const after = new Date("2026-10-13T18:01:00Z"); // 20:01 CEST
   assert.equal(m.isCheckInOverdue(prefs, "2026-10-13", before), false);
-  assert.equal(m.isCheckInOverdue(prefs, "2026-10-13", after), true);
+  assert.equal(m.isCheckInOverdue(prefs, "2026-10-13", duringDeadline), false);
+  assert.equal(m.isCheckInOverdue(prefs, "2026-10-13", boundary), true);
   // A far-ahead zone sees the day end sooner: Auckland (UTC+13) 20:00 is
   // 07:00 UTC, already past at 18:01 UTC.
   const auckland = {
     region: { timeZone: "Pacific/Auckland" },
     rules: { checkInDeadline: "20:00" },
   };
-  assert.equal(m.isCheckInOverdue(auckland, "2026-10-13", after), true);
+  assert.equal(m.isCheckInOverdue(auckland, "2026-10-13", boundary), true);
   // Legacy 23:59 keeps the day open almost until midnight.
   const legacy = { region: { timeZone: "Europe/Vienna" } };
-  assert.equal(m.isCheckInOverdue(legacy, "2026-10-13", after), false);
+  assert.equal(m.isCheckInOverdue(legacy, "2026-10-13", boundary), false);
 });
 
 test("working hours validation catches bad ranges and empty weeks", () => {
@@ -756,6 +804,74 @@ test("saved replies: absent falls back, empty stays empty, list persists", () =>
     }),
     true,
   );
+});
+
+test("saved replies keep stable identities, even with duplicate text", () => {
+  // Legacy fallbacks get fixed ids so composer entries key on identity,
+  // not text.
+  assert.deepEqual(
+    m.savedReplies({}).map((r) => r.id),
+    ["reply-default-1", "reply-default-2", "reply-default-3"],
+  );
+  // Two replies with identical text stay independently selectable.
+  const dup = {
+    savedReplies: [
+      { id: "a", text: "Same text" },
+      { id: "b", text: "Same text" },
+    ],
+  };
+  const ids = m.savedReplies(dup).map((r) => r.id);
+  assert.deepEqual(ids, ["a", "b"]);
+  assert.equal(new Set(ids).size, 2);
+});
+
+test("working hours: a range inside a spring gap contributes zero", () => {
+  const zone = "America/New_York";
+  // Sunday 2026-03-08: 02:00–03:00 does not exist (spring forward).
+  const sunGapOnly = [
+    { weekday: 6, ranges: [{ start: "02:00", end: "03:00" }] },
+    { weekday: 0, ranges: [{ start: "09:00", end: "10:00" }] },
+  ];
+  // One working hour from Friday 17:00 EST cannot be earned inside the
+  // missing window, so it lands on Monday.
+  const done = m.addWorkingHours(
+    sunGapOnly,
+    Date.parse("2026-03-06T22:00:00Z"),
+    1,
+    zone,
+  );
+  assert.equal(new Date(done).toISOString(), "2026-03-09T14:00:00.000Z");
+  // A window crossing the transition counts only real elapsed time:
+  // Sunday 01:00–04:00 covers two actual hours, so three working hours
+  // spill one hour into Monday.
+  const crossing = [
+    { weekday: 6, ranges: [{ start: "01:00", end: "04:00" }] },
+    { weekday: 0, ranges: [{ start: "09:00", end: "12:00" }] },
+  ];
+  const done2 = m.addWorkingHours(
+    crossing,
+    Date.parse("2026-03-08T05:30:00Z"), // 00:30 EST Sunday
+    3,
+    zone,
+  );
+  assert.equal(new Date(done2).toISOString(), "2026-03-09T14:00:00.000Z");
+  // Split ranges either side of the gap both earn their real minutes.
+  const split = [
+    {
+      weekday: 6,
+      ranges: [
+        { start: "01:00", end: "02:00" },
+        { start: "03:00", end: "05:00" },
+      ],
+    },
+  ];
+  const done3 = m.addWorkingHours(
+    split,
+    Date.parse("2026-03-08T05:30:00Z"),
+    3,
+    zone,
+  );
+  assert.equal(new Date(done3).toISOString(), "2026-03-08T09:00:00.000Z");
 });
 
 test("athlete availability note migrates only a changed legacy value", () => {

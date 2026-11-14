@@ -4,8 +4,9 @@ import { Check } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { Section } from "@/components/vari8/layouts";
-import { type CoachClient, formatDate, TODAY } from "./model";
+import { type CoachClient, TODAY } from "./model";
 import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
+import { useDisplay } from "./store";
 import { Empty } from "./ui";
 import "./habits-tab.css";
 
@@ -35,6 +36,7 @@ export function HabitsTab({
   done: Record<string, boolean>;
   onToggle: (habitId: string) => void;
 }) {
+  const { formatDate } = useDisplay();
   const reduced = useReducedMotion();
   const [filter, setFilter] = useState<HabitFilter>("all");
   const week = useMemo(() => weekDates(TODAY), []);

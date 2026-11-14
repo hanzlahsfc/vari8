@@ -29,8 +29,6 @@ import {
   type CoachState,
   checkInDeadline,
   DAYS,
-  formatClock,
-  formatDate,
   pickCheckInCard,
   resolvedTimeZone,
   TODAY,
@@ -47,7 +45,7 @@ import {
 import { phaseRanges } from "../plans/phase-planning";
 import { optionDaysLabel } from "../plans/plan-cards-support";
 import { type IifymPlan, resolveTrainingWeek } from "../plans/types";
-import { useCoach } from "../store";
+import { useCoach, useCoachNow, useDisplay } from "../store";
 import {
   addLocalDays,
   type CardioTarget,
@@ -98,6 +96,7 @@ export function AthleteProfileHeader({
   onAssign: () => void;
   onAddDate: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, navigate, route } = useCoach();
   const today = localToday();
   const phase = currentPhase(client.phases, today);
@@ -179,6 +178,7 @@ function ClientSettingsDialog({
   onAddDate: () => void;
   onClose: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
@@ -486,8 +486,10 @@ const weightOn = (client: CoachClient, date: string): number | undefined => {
     undefined) as number | undefined;
 };
 
-const dayLabel = (date: string) =>
-  formatDate(date, { weekday: "short", day: "numeric", month: "short" });
+const dayLabel = (
+  formatDate: (d: string, o?: Intl.DateTimeFormatOptions) => string,
+  date: string,
+) => formatDate(date, { weekday: "short", day: "numeric", month: "short" });
 
 const relDay = (date: string, today: string) => {
   const diff = daysBetween(today, date);
@@ -508,6 +510,7 @@ function PhaseProgressCard({
   today: string;
   onOpen: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const labelsRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState<Set<number>>(new Set());
   const ranges = phaseRanges(client.phases);
@@ -645,10 +648,11 @@ function CheckinCard({
   onOpenTab: () => void;
   onOpenReview: (submissionId: string) => void;
 }) {
+  const { formatDate, formatClock } = useDisplay();
   const waiting = state.submissions
     .filter((s) => s.clientId === client.id && !s.response)
     .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const now = new Date();
+  const now = useCoachNow();
   const coachToday = zonedToday(resolvedTimeZone(state.preferences), now);
   const { overdue, next } = pickCheckInCard(state, client.id, today, now);
   const go = waiting ? () => onOpenReview(waiting.id) : onOpenTab;
@@ -676,7 +680,9 @@ function CheckinCard({
         <>
           <Status tone="warning">Overdue</Status>
           <b className="ap-big">{relDay(overdue.date, coachToday)}</b>
-          <p className="ap-sub">Scheduled {dayLabel(overdue.date)}</p>
+          <p className="ap-sub">
+            Scheduled {dayLabel(formatDate, overdue.date)}
+          </p>
         </>
       ) : next ? (
         <>
@@ -686,7 +692,7 @@ function CheckinCard({
               : "Scheduled"}
           </Status>
           <b className="ap-big">{relDay(next.date, coachToday)}</b>
-          <p className="ap-sub">{dayLabel(next.date)}</p>
+          <p className="ap-sub">{dayLabel(formatDate, next.date)}</p>
         </>
       ) : (
         <p className="ap-sub">Nothing scheduled.</p>
@@ -736,6 +742,7 @@ function NutritionCard({
   today: string;
   onOpen: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const days = lastDays(today, 7);
   const resolved = nutritionForDate(client, today);
   const source = resolved.source;
@@ -993,6 +1000,7 @@ function CalorieCard({
   today: string;
   onOpen: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const [view, setView] = useState<"7d" | "4w">("7d");
   const entries = clientTracking(client);
   const valueOn = (date: string) =>
@@ -1098,6 +1106,7 @@ function BodyweightChart({
 }: {
   rows: { date: string; value: number }[];
 }) {
+  const { formatDate } = useDisplay();
   const [ref, size] = useElementSize();
   if (!rows.length) return null;
   const values = rows.map((r) => r.value);
@@ -1195,6 +1204,7 @@ function BodyweightCard({
   today: string;
   onOpen: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const [range, setRange] = useState<"2w" | "4w" | "12w" | "all">("4w");
   const entries = clientTracking(client)
     .filter((e) => e.values.weight != null && e.date <= today)
@@ -1234,7 +1244,9 @@ function BodyweightCard({
     <Surface className="ap-card ap-w-s8">
       <CardLink
         title="Bodyweight"
-        sub={latest ? `Last entry ${dayLabel(latest.date)}` : undefined}
+        sub={
+          latest ? `Last entry ${dayLabel(formatDate, latest.date)}` : undefined
+        }
         onOpen={onOpen}
       />
       <div className="ap-bw-stats">
@@ -1388,6 +1400,7 @@ function PhysiqueCard({
   onOpenReview: (submissionId: string) => void;
   onOpenTemplate?: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id && s.photos?.length)
     .sort((a, b) => a.date.localeCompare(b.date));
@@ -1490,6 +1503,7 @@ function TrainingCard({
   today: string;
   onOpen: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const plan = client.plans
     ? applicablePlan(client.plans.training, today)
     : undefined;

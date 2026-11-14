@@ -220,6 +220,8 @@ export function attentionItems(
   state: AttentionState,
   client: CoachClient,
   today: string,
+  format: (d: string, o?: Intl.DateTimeFormatOptions) => string = (d, o) =>
+    formatDate(d, o),
 ): AttentionItem[] {
   const items: AttentionItem[] = [];
   for (const submission of state.submissions)
@@ -268,7 +270,7 @@ export function attentionItems(
         items.push({
           kind: "in-progress",
           label: "Unfinished session",
-          detail: `Started ${formatDate(item.date, { weekday: "short" })} · ${String(done)} of ${String(sets.length)} sets`,
+          detail: `Started ${format(item.date, { weekday: "short" })} · ${String(done)} of ${String(sets.length)} sets`,
           date: item.date,
         });
       }

@@ -1,7 +1,7 @@
 "use client";
 
-import { type CoachClient, formatClock, formatDate } from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import type { CoachClient } from "../../coach/model";
+import { useCoach, useCoachNow, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
 import { CheckInForm } from "../check-in";
@@ -14,12 +14,14 @@ export function ClientCheckInSheet({
   client: CoachClient;
   onClose: () => void;
 }) {
+  const { formatDate, formatClock } = useDisplay();
+  const now = useCoachNow();
   const { state } = useCoach();
   const today = useLocalToday();
   const configuration = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
-  const due = nextCheckIn(state, client, today);
+  const due = nextCheckIn(state, client, today, now);
   if (!configuration) return null;
   return (
     <>

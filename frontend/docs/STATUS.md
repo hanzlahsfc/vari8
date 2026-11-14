@@ -1,9 +1,68 @@
 # Frontend status
 
+## 2026-11-14 — P815 repair of Phase 1b review findings — committed pending independent review
+
+Repair pass on beta/p813-settings-phase-1b over b001698 (P813 head);
+Phase 1a, Tasks and the main checkout untouched.
+
+- Display settings are now workspace-scoped: the mutable module-global
+  display config is gone from user-facing formatting. The provider
+  derives a Display object (region + bound formatDate/formatClock) from
+  the active workspace via useDisplay(); formatting APIs in model.ts
+  take the config explicitly. Reset restores Europe/Vienna, en-GB and
+  24-hour. Date-only values still render in UTC; offset-bearing instants
+  format as instants, naive stamps as coach-zone wall time. The
+  hardcoded "Europe/Vienna" caption on the calendar toolbar now reads
+  the configured zone.
+- Deadline/DST: overdue once the deadline minute ends (due through the
+  whole 20:00 minute, overdue from 20:01, coach zone). Spring-forward
+  gap deadlines resolve to the first valid instant after the gap — never
+  an earlier wall time; repeated autumn times keep the first occurrence.
+  A working-hours range entirely inside a spring gap contributes zero
+  elapsed time; split ranges and transition-crossing windows are covered
+  by tests. Submitted check-ins and date-only schedules unchanged.
+- Live updates: a single provider clock (useCoachNow) ticks just past
+  each minute boundary and refreshes on focus/visibility; coach
+  calendar, lists and overview plus both athlete layouts take now from
+  it, so an open screen crosses the cutoff with no reload. No per-row
+  timers; timers clean up on unmount. The feedback chip stays coach-only.
+- Saved replies: composer entries key by stable reply id (identical
+  text stays independently selectable); legacy fallback replies get
+  stable ids. An emptied edit is never persisted — it shows a
+  validation alert and the field restores the stored value. Delete with
+  Undo, the 20-reply cap and intentionally empty lists preserved.
+- Agent-context gate: the P813 STATUS block now records +12 focused
+  cases (not 14) and carries no machine-specific paths.
+- Tests: settings.test.mjs 29/29 including new regressions for display
+  defaults/workspace isolation, the cutoff boundary, DST arithmetic,
+  working-hours gap handling and duplicate-text/blank saved replies.
+- Gates (Node 24.22.3): npm run check exit 0 (351/351 tests, agent
+  context, typecheck, Biome lint, production build); npm run ui:check
+  exit 1 with the same 21 baseline violations as the Phase 1a head,
+  none in changed files; git diff --check clean.
+- Browser evidence (disposable Chrome profile, seeded localStorage):
+  New York/en-US/12-hour workspace renders en-US check-in dates, 12-hour
+  message times, "New York time" on the athlete surface and the
+  configured zone in the calendar caption; reload keeps all of it; Data
+  reset returns Vienna/en-GB/24h and the UI re-renders. New templates
+  seed lb weight units (Unit for Bodyweight = lb). An open coach
+  calendar and an open athlete mobile home both cross a real deadline
+  (Scheduled/Due → Overdue) with no navigation. Duplicate saved replies
+  with identical text store distinct ids and appear as two composer
+  items; a blank edit shows the alert, restores the stored text and
+  leaves storage unchanged. Probes kept in local scratch (outside VCS).
+- Unexercised/labels: live crossing verified on the coach Week view and
+  athlete mobile home; the list/overview and desktop athlete paths share
+  the same clock wiring but were not separately crossed in the browser.
+  Focus/visibility re-eval on tab resume is exercised by the clock's
+  listeners; background-tab throttling was not emulated. Design-system
+  month/day-name internals still format in en-GB (out of scope).
+
+
 ## 2026-11-14 — P813 Settings Phase 1b — implemented, gates green, browser-verified
 
 Built on Phase 1a head a8dafb3 (beta/p806-settings-phase-1a preserved);
-work on beta/p813-settings-phase-1b in /private/tmp/vari8-p813-settings-1b.
+work on beta/p813-settings-phase-1b.
 
 - Region & units: searchable time zone, locale/date format with live
   example, 12/24-hour, body-weight and load units. All display paths go
@@ -35,7 +94,7 @@ work on beta/p813-settings-phase-1b in /private/tmp/vari8-p813-settings-1b.
 - Compatibility: every new preference key is optional in isCoachState;
   forward-compatible guards added for checkInMoves (to: string|null),
   client.appMode and message.auto. Legacy workspaces load unchanged.
-- Tests: settings.test.mjs +14 cases (26/26 in file) covering legacy
+- Tests: settings.test.mjs +12 cases (26/26 in file) covering legacy
   defaults, date-only stability across zones, naive wall-time stability,
   deadline boundaries incl. DST, working-hours validation/inclusion,
   all four feedback targets, template-unit isolation, saved-reply
@@ -52,7 +111,8 @@ work on beta/p813-settings-phase-1b in /private/tmp/vari8-p813-settings-1b.
   coach list and overview widget mark today's check-in Overdue after the
   deadline; athlete mobile home + sheet show "Due today by HH:MM" before
   and "Overdue" after; athlete desktop Check-ins surface matches.
-  Probes: /tmp/v8-verify/p813-*.mjs; shots: /tmp/v8-verify/shots/p813-*.
+  Probe scripts and screenshots kept in the agent's local scratch
+  directory (outside version control).
 - Gaps/labels: vacations and outside-hours auto-replies explicitly not
   built (Phase 1b scope). No athlete-facing feedback promise (spec).
   checkInMoves is guarded for forward compatibility only; move

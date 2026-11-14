@@ -1,7 +1,7 @@
 "use client";
 import { TimePicker } from "../../vari8/inputs";
-import { checkInDeadline, getDisplayConfig } from "../model";
-import { useCoach } from "../store";
+import { checkInDeadline } from "../model";
+import { useCoach, useDisplay } from "../store";
 import { Button, Select } from "../ui";
 import {
   SettingRow,
@@ -15,7 +15,7 @@ export function RulesSettings() {
   const patch = usePatchPreferences();
   const { saved, mark } = useSaved();
   const rules = state.preferences.rules;
-  const hourFormat = getDisplayConfig().hourCycle;
+  const hourFormat = useDisplay().hourCycle;
   return (
     <SettingsCard
       id="settings-rules"

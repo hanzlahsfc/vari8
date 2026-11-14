@@ -1,6 +1,7 @@
 "use client";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
-import { DEFAULT_SAVED_REPLIES, SAVED_REPLIES_LIMIT, uid } from "../model";
+import { useState } from "react";
+import { SAVED_REPLIES_LIMIT, savedReplies, uid } from "../model";
 import { useCoach } from "../store";
 import { Button, IconButton } from "../ui";
 import {
@@ -16,8 +17,10 @@ export function MessagesSettings() {
   const { saved, mark } = useSaved();
   // Absent means the built-in snippets; a saved list (even empty) is used.
   const replies = state.preferences.savedReplies;
-  const list =
-    replies ?? DEFAULT_SAVED_REPLIES.map((text) => ({ id: text, text }));
+  const list = savedReplies(state.preferences);
+  const [emptyError, setEmptyError] = useState(false);
+  // Bump to remount the field so an emptied draft restores the stored text.
+  const [restore, setRestore] = useState(0);
   const write = (next: { id: string; text: string }[]) => {
     patch({ savedReplies: next });
     mark();
@@ -56,16 +59,27 @@ export function MessagesSettings() {
             No saved replies. The composer menu stays empty until you add one.
           </p>
         )}
+        {emptyError && (
+          <p className="cd-settings-error" role="alert">
+            A saved reply cannot be empty — delete it or enter new text.
+          </p>
+        )}
         {list.map((reply, index) => (
-          <div className="cd-settings-reply" key={reply.id}>
+          <div className="cd-settings-reply" key={`${reply.id}:${restore}`}>
             <CommittedInput
               label={`Reply ${index + 1}`}
               value={reply.text}
               normalize={(v) => v.trim()}
               onCommit={(text) => {
-                if (!text) return;
+                if (!text) {
+                  // An emptied field is not saved — the stored reply stays
+                  // and the input restores it; say so clearly.
+                  setEmptyError(true);
+                  setRestore((n) => n + 1);
+                  return;
+                }
+                setEmptyError(false);
                 write(list.map((r, i) => (i === index ? { ...r, text } : r)));
-                mark();
               }}
             />
             <IconButton

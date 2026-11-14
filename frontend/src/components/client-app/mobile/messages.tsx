@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   athleteAvailabilityNote,
   type CoachClient,
-  formatDate,
   type Message,
   resolvedTimeZone,
   resolvedWorkingHours,
@@ -12,10 +11,11 @@ import {
   uid,
   workingHoursSummary,
 } from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 
 export function MobileMessages({ client }: { client: CoachClient }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const profile = state.preferences.profile;
   const coachName = profile?.name ?? "Liliana Mansfeld";

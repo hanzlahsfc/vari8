@@ -4,13 +4,12 @@ import { TimePicker } from "../../vari8/inputs";
 import {
   athleteAvailabilityNote,
   DAYS,
-  getDisplayConfig,
   resolvedWorkingHours,
   uid,
   validateWorkingHours,
   type WorkingHours,
 } from "../model";
-import { useCoach } from "../store";
+import { useCoach, useDisplay } from "../store";
 import { Button, IconButton, Toggle } from "../ui";
 import {
   CommittedInput,
@@ -58,7 +57,7 @@ export function AvailabilitySettings() {
   const { state } = useCoach();
   const patch = usePatchPreferences();
   const { saved, mark } = useSaved();
-  const hourFormat = getDisplayConfig().hourCycle;
+  const hourFormat = useDisplay().hourCycle;
   const [draft, setDraft] = useState<DayDraft[] | null>(null);
   const days = draft ?? toDraft(resolvedWorkingHours(state.preferences));
   const errors = validateWorkingHours(toStored(days));

@@ -42,7 +42,6 @@ import {
   type CoachClient,
   type CoachState,
   eventsBetween,
-  formatDate,
   uid,
 } from "../model";
 import {
@@ -61,7 +60,7 @@ import {
 } from "../plans/phase-planning";
 
 import type { IifymPlan } from "../plans/types";
-import { useCoach } from "../store";
+import { useCoach, useDisplay } from "../store";
 import {
   addLocalDays,
   localToday,
@@ -102,8 +101,10 @@ const mean = (list: (number | undefined)[]) => {
     ? vals.reduce((a, b) => a + b, 0) / vals.length
     : undefined;
 };
-const dayShort = (date: string) =>
-  formatDate(date, { day: "numeric", month: "short" });
+const dayShort = (
+  formatDate: (d: string, o?: Intl.DateTimeFormatOptions) => string,
+  date: string,
+) => formatDate(date, { day: "numeric", month: "short" });
 
 // ─── Per-day/week data helpers ──────────────────────────────────────
 
@@ -403,6 +404,7 @@ type Ctx = {
   state: CoachState;
   client: CoachClient;
   week: Week;
+  formatDate: (d: string, o?: Intl.DateTimeFormatOptions) => string;
   entries: Map<string, DayEntry>;
   today: string;
   compare: boolean;
@@ -750,7 +752,9 @@ const COLS: ColDef[] = [
       ).find((e) => e.clientId === ctx.client.id);
       return {
         value: event?.status ?? "—",
-        sub: event ? formatDate(event.date, { weekday: "short" }) : undefined,
+        sub: event
+          ? ctx.formatDate(event.date, { weekday: "short" })
+          : undefined,
         plain: true,
       };
     },
@@ -1036,6 +1040,7 @@ export function AthleteTimelineTab({
   viewer?: "coach" | "client";
   onOpen?: (tab: string, plan?: string) => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const today = localToday();
   const ranges = useMemo(() => phaseRanges(client.phases), [client.phases]);
@@ -1118,6 +1123,7 @@ export function AthleteTimelineTab({
     state,
     client,
     week,
+    formatDate,
     entries,
     today,
     compare,
@@ -1510,8 +1516,8 @@ export function AthleteTimelineTab({
                   {collapsed && summary && (
                     <span className="apt-phase-summary">
                       {group.range
-                        ? `${dayShort(group.range.startDate)} – ${dayShort(group.range.endDate)}`
-                        : `${dayShort(firstDay)} – ${dayShort(lastDay)}`}
+                        ? `${dayShort(formatDate, group.range.startDate)} – ${dayShort(formatDate, group.range.endDate)}`
+                        : `${dayShort(formatDate, firstDay)} – ${dayShort(formatDate, lastDay)}`}
                       {summary.weight && ` · ${summary.weight}`}
                       {summary.rate && ` · ${summary.rate}`}
                       {summary.kcal && ` · ${summary.kcal}`}
@@ -1612,6 +1618,7 @@ function WeekRow({
   onOpenCheckins: () => void;
   currentRef: RefObject<HTMLDivElement | null>;
 }) {
+  const { formatDate } = useDisplay();
   const { navigate, route, setState } = useCoach();
   const { client, week, state } = ctx;
   const changes = weekChanges(client, week);
@@ -1766,7 +1773,7 @@ function WeekRow({
                   disabled={!canTemp}
                   title={
                     canTemp
-                      ? `Temporary plan from ${dayShort(week.monday)}`
+                      ? `Temporary plan from ${dayShort(formatDate, week.monday)}`
                       : "Past weeks can't get a temporary plan"
                   }
                   onClick={() =>
@@ -2040,6 +2047,7 @@ function PhasePlanDialog({
   onClose: () => void;
   toast: (text: string) => void;
 }) {
+  const { formatDate } = useDisplay();
   const { setState } = useCoach();
   const firstNameRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -2113,7 +2121,7 @@ function PhasePlanDialog({
                   />
                   <span className="apt-phase-dates">
                     {range
-                      ? `${dayShort(range.startDate)} – ${dayShort(range.endDate)}`
+                      ? `${dayShort(formatDate, range.startDate)} – ${dayShort(formatDate, range.endDate)}`
                       : ""}
                   </span>
                 </div>
@@ -2135,7 +2143,7 @@ function PhasePlanDialog({
                   <div className="apt-phase-start">
                     <span className="v8-field__label">Start</span>
                     <span className="apt-phase-startval">
-                      {range ? dayShort(range.startDate) : "—"}
+                      {range ? dayShort(formatDate, range.startDate) : "—"}
                     </span>
                   </div>
                 )}

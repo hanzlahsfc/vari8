@@ -6,13 +6,8 @@ import {
   logoForMode,
   useSystemMode,
 } from "../../coach/coach-theme";
-import {
-  type CoachClient,
-  formatClock,
-  formatDate,
-  type Message,
-} from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import type { CoachClient, Message } from "../../coach/model";
+import { useCoach, useCoachNow, useDisplay } from "../../coach/store";
 import { dosageForQuantity } from "../../coach/supplements/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { IconButton } from "../../coach/ui";
@@ -46,14 +41,16 @@ export function MobileHome({
   onOpenMessages: () => void;
   onOpenSession: () => void;
 }) {
+  const { formatDate, formatClock } = useDisplay();
+  const now = useCoachNow();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const targets = useMemo(() => todayTargets(client, today), [client, today]);
   const steps = useMemo(() => stepsTarget(client, today), [client, today]);
   const cardio = useMemo(() => cardioWeek(client, today), [client, today]);
   const checkIn = useMemo(
-    () => nextCheckIn(state, client, today),
-    [state, client, today],
+    () => nextCheckIn(state, client, today, now),
+    [state, client, today, now],
   );
   const session = useMemo(
     () => todaySession(state, client, today),

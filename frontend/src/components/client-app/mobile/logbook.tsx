@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { type CoachClient, formatDate, uid } from "../../coach/model";
+import { type CoachClient, uid } from "../../coach/model";
 import { applicablePlan } from "../../coach/plans/domain";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
 import {
@@ -31,6 +31,7 @@ export function MobileLogbook({
   item: ScheduledSession;
   onDone: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const plan = client.plans

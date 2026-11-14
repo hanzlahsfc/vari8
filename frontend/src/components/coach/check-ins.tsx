@@ -26,14 +26,13 @@ import {
   type Extra,
   eventsBetween,
   feedbackChipText,
-  formatDate,
   monday,
   type ReviewDraft,
   type Submission,
   submitFeedback,
   TODAY,
 } from "./model";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { templateSetup } from "./template-setup";
 import {
   Avatar,
@@ -51,8 +50,8 @@ import {
 /** "Reply due in …" / "Late by …" chip for submissions still awaiting
  * feedback; null when the feedback target is off. */
 function FeedbackChip({ submission }: { submission: Submission }) {
-  const { state } = useCoach();
-  const chip = feedbackChipText(state.preferences, submission);
+  const { state, now } = useCoach();
+  const chip = feedbackChipText(state.preferences, submission, now);
   if (!chip) return null;
   return (
     <span className={`cd-status cd-fbchip${chip.late ? " is-late" : ""}`}>
@@ -62,7 +61,9 @@ function FeedbackChip({ submission }: { submission: Submission }) {
 }
 
 export function CheckInsWorkspace() {
-  const { state, route, navigate, setState, toast } = useCoach();
+  const display = useDisplay();
+  const { formatDate } = display;
+  const { state, route, navigate, setState, toast, now } = useCoach();
   const [mode, setMode] = useState("Week");
   const [anchor, setAnchor] = useState(TODAY);
   const [client, setClient] = useState(route.client ?? "all");
@@ -102,7 +103,7 @@ export function CheckInsWorkspace() {
     mode === "Month"
       ? monthEnd.toISOString().slice(0, 10)
       : addDays(start, mode === "Agenda" ? 27 : 6);
-  const events = eventsBetween(state, start, end).filter(
+  const events = eventsBetween(state, start, end, now).filter(
     (e) =>
       (client === "all" || e.clientId === client) &&
       (status === "All statuses" || e.status === status),
@@ -347,7 +348,7 @@ export function CheckInsWorkspace() {
         <span className="cd-pending">
           <span>{pending}</span> awaiting feedback
         </span>
-        <span className="cd-caption">Europe/Vienna · Monday first</span>
+        <span className="cd-caption">{display.timeZone} · Monday first</span>
       </div>
       <div className="cd-calendar-stage" ref={stage}>
         <Surface className={`cd-calendar cd-calendar-${mode.toLowerCase()}`}>
@@ -462,6 +463,7 @@ export function CheckInsWorkspace() {
   );
 }
 function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const [visual, setVisual] = useState<string | null>(null);
   const c = state.clients.find((c) => c.id === sub.clientId);

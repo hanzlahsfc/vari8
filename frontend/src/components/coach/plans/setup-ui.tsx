@@ -28,13 +28,12 @@ import {
   ALL_PARAMETERS,
   type CoachClient,
   type FieldConfig,
-  formatDate,
   type HabitFrequency,
   type Template,
   TODAY,
   uid,
 } from "../model";
-import { useCoach } from "../store";
+import { useCoach, useDisplay } from "../store";
 import {
   type ActivityMetric,
   type ActivityTargetVersion,
@@ -360,6 +359,7 @@ export function ClientPlansSummary({
   expanded?: boolean;
   onAssign?: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { navigate, route, setState } = useCoach();
   const activityDate = useLocalToday();
   const [prevOpen, setPrevOpen] = useState(false);

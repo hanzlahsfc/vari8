@@ -36,13 +36,12 @@ import {
   ALL_PARAMETERS,
   type CoachClient,
   type CoachState,
-  formatDate,
   type Route,
 } from "../model";
 import { applicablePlan } from "../plans/domain";
 import { phaseRanges } from "../plans/phase-planning";
 import type { TrainingSessionLog } from "../plans/types";
-import { useCoach } from "../store";
+import { useCoach, useDisplay } from "../store";
 import { addLocalDays, localToday } from "../targets/model";
 import {
   clientTracking,
@@ -393,6 +392,7 @@ export function AthleteTrackerTab({
   viewer?: "coach" | "client";
   onOpen?: (tab: string, plan?: string) => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate } = useCoach();
   const today = localToday();
   const groups = useMemo(() => {

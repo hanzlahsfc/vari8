@@ -22,21 +22,21 @@ import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import {
   type CoachClient,
-  formatDate,
   type Media,
   type Message,
   readConversation,
-  savedReplyTexts,
+  savedReplies,
   sortedConversationClients,
   uid,
   unreadCount,
 } from "./model";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { templateSetup } from "./template-setup";
 import { Avatar, Button, Dialog, Empty, IconButton, SearchBox } from "./ui";
 import "./workspace-polish.css";
 
 export function MessagesWorkspace() {
+  const { formatDate } = useDisplay();
   const { state, setState, route, navigate, attach, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
@@ -512,24 +512,26 @@ export function MessagesWorkspace() {
                     ) : menu === "snippets" ? (
                       <>
                         <h3>Reusable replies</h3>
-                        {savedReplyTexts(state.preferences).length === 0 && (
+                        {savedReplies(state.preferences).length === 0 && (
                           <p className="cd-caption">
                             No saved replies yet — add them in Settings →
                             Messages.
                           </p>
                         )}
-                        {savedReplyTexts(state.preferences).map((s) => (
+                        {savedReplies(state.preferences).map((reply) => (
                           <Button
-                            key={s}
+                            key={reply.id}
                             onClick={() => {
                               setDraft({
-                                text: draft.text ? `${draft.text}\n${s}` : s,
+                                text: draft.text
+                                  ? `${draft.text}\n${reply.text}`
+                                  : reply.text,
                               });
                               setMenu(null);
                               composer.current?.focus();
                             }}
                           >
-                            {s}
+                            {reply.text}
                           </Button>
                         ))}
                       </>
@@ -751,6 +753,7 @@ function AthleteContext({
   client: CoachClient;
   close: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, navigate } = useCoach();
   const next = nextEvent(state, client.id);
   const sub =

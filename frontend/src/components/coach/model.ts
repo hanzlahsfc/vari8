@@ -913,27 +913,11 @@ export type DisplayConfig = {
   hourCycle: "12" | "24";
 };
 export const DEFAULT_TIME_ZONE = "Europe/Vienna";
-const displayConfig: DisplayConfig = {
+export const DEFAULT_DISPLAY_CONFIG: DisplayConfig = {
   timeZone: DEFAULT_TIME_ZONE,
   locale: "en-GB",
   hourCycle: "24",
 };
-/** The rendered app keeps this in sync with preferences.region so the many
- * pure formatDate callers pick up the coach's zone and formats. The shell
- * renders "Opening your workspace…" until hydration, so stored settings
- * only ever format client-side. */
-export function setDisplayConfig(
-  next: Partial<DisplayConfig> | undefined,
-): void {
-  displayConfig.timeZone = timeZoneIsValid(next?.timeZone)
-    ? (next?.timeZone as string)
-    : DEFAULT_TIME_ZONE;
-  if (next?.locale) displayConfig.locale = next.locale;
-  if (next?.hourCycle) displayConfig.hourCycle = next.hourCycle;
-}
-export function getDisplayConfig(): DisplayConfig {
-  return { ...displayConfig };
-}
 export function timeZoneIsValid(zone: unknown): zone is string {
   if (typeof zone !== "string" || !zone) return false;
   try {
@@ -950,9 +934,28 @@ export function resolvedTimeZone(
     ? (preferences?.region?.timeZone as string)
     : DEFAULT_TIME_ZONE;
 }
+/** Display settings resolved per workspace. Absent fields fall back to the
+ * documented defaults (Europe/Vienna, en-GB, 24-hour), so a reset or an
+ * older workspace always renders the same values. Components read this
+ * through the provider's useDisplay hook — there is no shared mutable
+ * display state, so preference changes and workspace switches apply
+ * immediately and cannot leak between workspaces. */
+export function displayConfigFor(
+  preferences: Pick<CoachState["preferences"], "region"> | undefined,
+): DisplayConfig {
+  const region = preferences?.region;
+  return {
+    timeZone: timeZoneIsValid(region?.timeZone)
+      ? (region?.timeZone as string)
+      : DEFAULT_TIME_ZONE,
+    locale: region?.locale ?? "en-GB",
+    hourCycle: region?.hourCycle ?? "24",
+  };
+}
 export function formatDate(
   date: string,
   options: Intl.DateTimeFormatOptions = {},
+  config: DisplayConfig = DEFAULT_DISPLAY_CONFIG,
 ) {
   const dateOnly = date.length === 10;
   // Naive "YYYY-MM-DDTHH:mm" values are stored as coach-zone wall time
@@ -963,20 +966,16 @@ export function formatDate(
   const instant = dateOnly
     ? Date.parse(`${date}T12:00:00Z`)
     : naive
-      ? deadlineInstant(
-          date.slice(0, 10),
-          date.slice(11, 16),
-          displayConfig.timeZone,
-        )
+      ? deadlineInstant(date.slice(0, 10), date.slice(11, 16), config.timeZone)
       : Date.parse(date);
   if (Number.isNaN(instant)) return date;
-  return new Intl.DateTimeFormat(displayConfig.locale, {
+  return new Intl.DateTimeFormat(config.locale, {
     day: "numeric",
     month: "short",
     // A bare calendar day renders as that day in every zone; formatting it
     // in the configured zone could shift it across the dateline.
-    timeZone: dateOnly ? "UTC" : displayConfig.timeZone,
-    hour12: displayConfig.hourCycle === "12",
+    timeZone: dateOnly ? "UTC" : config.timeZone,
+    hour12: config.hourCycle === "12",
     ...options,
   }).format(new Date(instant));
 }
@@ -1006,14 +1005,24 @@ const zoneParts = (instant: number, timeZone: string) => {
 export function zonedToday(timeZone: string, now: Date = new Date()): string {
   return zoneParts(now.getTime(), timeZone).date;
 }
+const wallValue = (p: { date: string; minutes: number }) =>
+  Date.parse(`${p.date}T00:00:00Z`) / 60000 + p.minutes;
 /** The UTC instant at which `hhmm` strikes on `date` inside `timeZone`.
- * Converges across DST: guesses UTC then corrects by the zone offset. */
+ * Converges across DST: guesses UTC then corrects by the zone offset.
+ * Documented transition semantics:
+ * - A wall time inside a spring-forward gap does not exist, so the
+ *   deadline resolves FORWARD to the first real wall time at or after it
+ *   (e.g. a 02:30 deadline on the US changeover acts at 03:00) — never to
+ *   an earlier wall time.
+ * - A wall time that occurs twice during an autumn fold uses its FIRST
+ *   occurrence. */
 export function deadlineInstant(
   date: string,
   hhmm: string,
   timeZone: string,
 ): number {
   const target = Date.parse(`${date}T${hhmm}:00Z`);
+  const targetMinutes = toMinutes(hhmm);
   let instant = target;
   for (let i = 0; i < 3; i += 1) {
     const wall = zoneParts(instant, timeZone);
@@ -1023,6 +1032,39 @@ export function deadlineInstant(
     const delta = target - asUtc;
     if (delta === 0) break;
     instant += delta;
+  }
+  const wall = zoneParts(instant, timeZone);
+  if (wall.date === date && wall.minutes < targetMinutes) {
+    // Converged inside a spring gap: step forward to the first wall time
+    // at or after the requested one.
+    for (let step = 0; step < 240; step += 1) {
+      instant += 60_000;
+      const next = zoneParts(instant, timeZone);
+      if (next.date !== date || next.minutes >= targetMinutes) break;
+    }
+  } else if (wall.date === date && wall.minutes > targetMinutes) {
+    // Overshot a spring gap: walk back to the first real wall time at or
+    // after the requested one.
+    for (let step = 0; step < 240; step += 1) {
+      const earlier = zoneParts(instant - 60_000, timeZone);
+      if (earlier.date !== date || earlier.minutes < targetMinutes) break;
+      instant -= 60_000;
+    }
+  } else if (wall.date === date && wall.minutes === targetMinutes) {
+    // An earlier occurrence exists only when a fold lies just before this
+    // instant; a linear 150-minute drift means none happened.
+    const back = 150;
+    const drift =
+      wallValue(wall) - wallValue(zoneParts(instant - back * 60_000, timeZone));
+    if (drift !== back) {
+      for (let d = 15; d <= back; d += 15) {
+        const earlier = zoneParts(instant - d * 60_000, timeZone);
+        if (earlier.date === date && earlier.minutes === targetMinutes) {
+          instant -= d * 60_000;
+          break;
+        }
+      }
+    }
   }
   return instant;
 }
@@ -1035,8 +1077,10 @@ export function checkInDeadline(
     ? (preferences?.rules?.checkInDeadline as string)
     : "23:59";
 }
-/** A check-in on `date` is overdue once its deadline time passes in the
- * coach's zone — past days count as overdue at any hour. */
+/** A check-in on `date` stays due through its deadline minute and becomes
+ * overdue once the next minute starts in the coach's zone — a 20:00
+ * deadline is due at 20:00:59 and overdue at 20:01:00. Past days count as
+ * overdue at any hour. */
 export function isCheckInOverdue(
   preferences: Pick<CoachState["preferences"], "region" | "rules">,
   date: string,
@@ -1048,13 +1092,17 @@ export function isCheckInOverdue(
       date,
       checkInDeadline(preferences),
       resolvedTimeZone(preferences),
-    )
+    ) +
+      60_000
   );
 }
 /** "HH:mm" rendered for the coach's hour format ("20:00" or "8:00 PM"). */
-export function formatClock(hhmm: string, hourCycle?: "12" | "24"): string {
+export function formatClock(
+  hhmm: string,
+  hourCycle: "12" | "24" = "24",
+): string {
   const [h, m] = hhmm.split(":").map(Number);
-  const cycle = hourCycle ?? displayConfig.hourCycle;
+  const cycle = hourCycle;
   if (cycle === "12")
     return `${h % 12 || 12}:${pad2(m)} ${h >= 12 ? "PM" : "AM"}`;
   return `${pad2(h)}:${pad2(m)}`;
@@ -1284,11 +1332,24 @@ export const DEFAULT_SAVED_REPLIES = [
   "Let’s keep things simple: consistency first, then we’ll build from here.",
 ];
 export const SAVED_REPLIES_LIMIT = 20;
+/** Replies with stable identities: the built-in fallbacks keep fixed ids
+ * so identical text stays independently selectable in the composer. */
+export function savedReplies(
+  preferences: Pick<CoachState["preferences"], "savedReplies">,
+): { id: string; text: string }[] {
+  return (
+    preferences.savedReplies ??
+    DEFAULT_SAVED_REPLIES.map((text, i) => ({
+      id: `reply-default-${i + 1}`,
+      text,
+    }))
+  );
+}
 /** An absent list means the built-in snippets; an empty list stays empty. */
 export function savedReplyTexts(
   preferences: Pick<CoachState["preferences"], "savedReplies">,
 ): string[] {
-  return preferences.savedReplies?.map((r) => r.text) ?? DEFAULT_SAVED_REPLIES;
+  return savedReplies(preferences).map((r) => r.text);
 }
 export function unitsForNewTemplate(
   preferences: Pick<CoachState["preferences"], "region">,

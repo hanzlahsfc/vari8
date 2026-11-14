@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type CoachClient, formatDate } from "../../coach/model";
+import type { CoachClient } from "../../coach/model";
 import { applicablePlan } from "../../coach/plans/domain";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import type { ScheduledSession } from "../training-log/model";
 import {
@@ -26,6 +26,7 @@ export function MobileTraining({
   readOnly?: boolean;
   embedded?: boolean;
 }) {
+  const { formatDate } = useDisplay();
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans

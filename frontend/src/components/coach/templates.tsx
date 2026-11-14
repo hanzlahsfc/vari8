@@ -44,7 +44,6 @@ import {
   type CoachClient,
   clone,
   type FieldConfig,
-  formatDate,
   newTemplate,
   PARAMETERS,
   type Question,
@@ -64,7 +63,7 @@ import {
   type TrainingOptions,
 } from "./plans/training-options";
 import { weeklyRoadmapRows } from "./roadmap-preview";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { trackerOverviewIds } from "./tracker-setup";
 import "./tracker-config.css";
 import "./plans/training-options.css";
@@ -195,6 +194,7 @@ export function PreviewDialog({
   );
 }
 export function TemplateLibrary() {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [menu, setMenu] = useState<string | null>(null);
