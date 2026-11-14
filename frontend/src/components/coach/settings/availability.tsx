@@ -18,6 +18,7 @@ import {
   usePatchPreferences,
   useSaved,
 } from "./shell";
+import { VacationsCard } from "./vacations";
 
 type RangeDraft = { key: string; start: string; end: string };
 type DayDraft = { enabled: boolean; ranges: RangeDraft[] };
@@ -87,113 +88,118 @@ export function AvailabilitySettings() {
     });
 
   return (
-    <SettingsCard
-      id="settings-availability"
-      title="Availability"
-      description="Working hours athletes see in Messages and the hours feedback targets count."
-      saved={saved}
-    >
-      {DAYS.map((name, weekday) => {
-        const day = days[weekday];
-        const dayError = errors.days[weekday];
-        return (
-          <div className="cd-settings-day" key={name}>
-            <div className="cd-settings-day-head">
-              <SettingRow label={name}>
-                <Toggle
-                  label={`${name} is a working day`}
-                  checked={day.enabled}
-                  onChange={(enabled) => setDay(weekday, { enabled })}
-                />
-              </SettingRow>
+    <>
+      <SettingsCard
+        id="settings-availability"
+        title="Availability"
+        description="Working hours athletes see in Messages and the hours feedback targets count."
+        saved={saved}
+      >
+        {DAYS.map((name, weekday) => {
+          const day = days[weekday];
+          const dayError = errors.days[weekday];
+          return (
+            <div className="cd-settings-day" key={name}>
+              <div className="cd-settings-day-head">
+                <SettingRow label={name}>
+                  <Toggle
+                    label={`${name} is a working day`}
+                    checked={day.enabled}
+                    onChange={(enabled) => setDay(weekday, { enabled })}
+                  />
+                </SettingRow>
+                {day.enabled && (
+                  <Button
+                    onClick={() =>
+                      update(
+                        days.map((d, i) =>
+                          i < 5
+                            ? {
+                                enabled: true,
+                                ranges: day.ranges.map((r) => ({
+                                  ...r,
+                                  key: uid("range"),
+                                })),
+                              }
+                            : d,
+                        ),
+                      )
+                    }
+                  >
+                    Copy to all weekdays
+                  </Button>
+                )}
+              </div>
               {day.enabled && (
-                <Button
-                  onClick={() =>
-                    update(
-                      days.map((d, i) =>
-                        i < 5
-                          ? {
-                              enabled: true,
-                              ranges: day.ranges.map((r) => ({
-                                ...r,
-                                key: uid("range"),
-                              })),
-                            }
-                          : d,
-                      ),
-                    )
-                  }
-                >
-                  Copy to all weekdays
-                </Button>
+                <div className="cd-settings-ranges">
+                  {day.ranges.map((range, index) => (
+                    <div className="cd-settings-range" key={range.key}>
+                      <TimePicker
+                        label={`${name} range ${index + 1} start`}
+                        value={range.start}
+                        hourFormat={hourFormat}
+                        onValueChange={(start) =>
+                          setRange(weekday, index, { start })
+                        }
+                      />
+                      <span aria-hidden="true">to</span>
+                      <TimePicker
+                        label={`${name} range ${index + 1} end`}
+                        value={range.end}
+                        hourFormat={hourFormat}
+                        onValueChange={(end) =>
+                          setRange(weekday, index, { end })
+                        }
+                      />
+                      <IconButton
+                        label={`Remove ${name} range ${index + 1}`}
+                        onClick={() =>
+                          setDay(weekday, {
+                            ranges: day.ranges.filter((_, i) => i !== index),
+                          })
+                        }
+                      >
+                        ×
+                      </IconButton>
+                    </div>
+                  ))}
+                  {dayError && (
+                    <p className="cd-settings-error" role="alert">
+                      {dayError}
+                    </p>
+                  )}
+                  <Button
+                    onClick={() =>
+                      setDay(weekday, {
+                        ranges: [...day.ranges, nextRange(day)],
+                      })
+                    }
+                  >
+                    Add range
+                  </Button>
+                </div>
               )}
             </div>
-            {day.enabled && (
-              <div className="cd-settings-ranges">
-                {day.ranges.map((range, index) => (
-                  <div className="cd-settings-range" key={range.key}>
-                    <TimePicker
-                      label={`${name} range ${index + 1} start`}
-                      value={range.start}
-                      hourFormat={hourFormat}
-                      onValueChange={(start) =>
-                        setRange(weekday, index, { start })
-                      }
-                    />
-                    <span aria-hidden="true">to</span>
-                    <TimePicker
-                      label={`${name} range ${index + 1} end`}
-                      value={range.end}
-                      hourFormat={hourFormat}
-                      onValueChange={(end) => setRange(weekday, index, { end })}
-                    />
-                    <IconButton
-                      label={`Remove ${name} range ${index + 1}`}
-                      onClick={() =>
-                        setDay(weekday, {
-                          ranges: day.ranges.filter((_, i) => i !== index),
-                        })
-                      }
-                    >
-                      ×
-                    </IconButton>
-                  </div>
-                ))}
-                {dayError && (
-                  <p className="cd-settings-error" role="alert">
-                    {dayError}
-                  </p>
-                )}
-                <Button
-                  onClick={() =>
-                    setDay(weekday, {
-                      ranges: [...day.ranges, nextRange(day)],
-                    })
-                  }
-                >
-                  Add range
-                </Button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-      {errors.week && (
-        <p className="cd-settings-error" role="alert">
-          {errors.week}
-        </p>
-      )}
-      <CommittedInput
-        label="Note for athletes"
-        hint="Shown under your working hours in the athlete app."
-        value={athleteAvailabilityNote(state.preferences)}
-        normalize={(v) => v.trim()}
-        maxLength={120}
-        onCommit={(availabilityNote) => {
-          patch({ availabilityNote });
-          mark();
-        }}
-      />
-    </SettingsCard>
+          );
+        })}
+        {errors.week && (
+          <p className="cd-settings-error" role="alert">
+            {errors.week}
+          </p>
+        )}
+        <CommittedInput
+          label="Note for athletes"
+          hint="Shown under your working hours in the athlete app."
+          value={athleteAvailabilityNote(state.preferences)}
+          normalize={(v) => v.trim()}
+          maxLength={120}
+          onCommit={(availabilityNote) => {
+            patch({ availabilityNote });
+            mark();
+          }}
+        />
+      </SettingsCard>
+      <VacationsCard />
+    </>
   );
 }

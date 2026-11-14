@@ -745,6 +745,9 @@ export type Message = {
   links?: { label: string; route: Route }[];
   local?: boolean;
   auto?: "vacation" | "off-hours";
+  /** Vacation that produced this message (away auto-reply or a
+   * rescheduling notice) — lets save-undo remove exactly these. */
+  vacationId?: string;
 };
 export type Submission = {
   id: string;
@@ -881,6 +884,16 @@ export type CoachState = {
     };
     /** Editable composer replies; absent means the built-in snippets. */
     savedReplies?: { id: string; text: string }[];
+    /** Coach vacations; check-in moves referencing a vacation keep its id
+     * so a save can be undone. autoMessage.text keeps the {start} {end}
+     * {return} placeholders — they are filled when the reply is sent. */
+    vacations?: {
+      id: string;
+      start: string;
+      end: string;
+      label?: string;
+      autoMessage?: { enabled: boolean; text: string };
+    }[];
   };
 };
 export type Event = {
@@ -892,6 +905,10 @@ export type Event = {
   status: "Scheduled" | "Overdue" | "Awaiting feedback" | "Feedback sent";
   submission?: Submission;
   extra?: Extra;
+  /** Original date when a check-in move re-dated this occurrence. */
+  movedFrom?: string;
+  /** Vacation id that produced the move, when any. */
+  movedByVacation?: string;
 };
 export function clone<T>(value: T): T {
   return structuredClone(value);
@@ -1180,18 +1197,28 @@ export function isWithinWorkingHours(
       wall.minutes >= toMinutes(r.start) && wall.minutes < toMinutes(r.end),
   );
 }
+/** The configured vacation covering `date` (inclusive), if any. */
+export function vacationFor(
+  preferences: Pick<CoachState["preferences"], "vacations"> | undefined,
+  date: string,
+): NonNullable<CoachState["preferences"]["vacations"]>[number] | undefined {
+  return preferences?.vacations?.find((v) => v.start <= date && date <= v.end);
+}
 /** Advance `start` by `hours` of time inside the configured windows only;
  * idle evenings and days off do not count. Used for working-day feedback
- * targets. Walks whole minutes for simplicity (bounds are minute-aligned). */
+ * targets. Walks whole minutes for simplicity (bounds are minute-aligned).
+ * `blocked` marks whole dates that contribute no working time (vacations). */
 export function addWorkingHours(
   hours: WorkingHours,
   start: number,
   amountHours: number,
   timeZone: string,
+  blocked?: (date: string) => boolean,
 ): number {
   let remaining = amountHours * 60;
   let cursor = start;
   const windowsFor = (date: string) => {
+    if (blocked?.(date)) return [];
     const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
     return (hours.find((d) => d.weekday === weekday)?.ranges ?? [])
       .map((r) => ({
@@ -1287,21 +1314,42 @@ export function submissionInstant(
 export function feedbackDueAt(
   preferences: Pick<
     CoachState["preferences"],
-    "region" | "rules" | "workingHours"
+    "region" | "rules" | "workingHours" | "vacations"
   >,
   submission: Pick<Submission, "date" | "submittedAt">,
 ): number | null {
   const target = preferences.rules?.feedbackTarget ?? "48h";
   if (target === "none") return null;
+  const timeZone = resolvedTimeZone(preferences);
+  const blocked = (date: string) =>
+    vacationFor(preferences, date) !== undefined;
   const start = submissionInstant(preferences, submission);
-  if (target === "24h") return start + 24 * 3_600_000;
-  if (target === "48h") return start + 48 * 3_600_000;
-  return addWorkingHours(
-    resolvedWorkingHours(preferences),
-    start,
-    16,
-    resolvedTimeZone(preferences),
-  );
+  if (target === "2-working-days")
+    return addWorkingHours(
+      resolvedWorkingHours(preferences),
+      start,
+      16,
+      timeZone,
+      blocked,
+    );
+  // Wall-clock targets pause while the coach is on vacation: each day that
+  // falls inside a vacation pushes the due instant out by a day (iterated
+  // in case the extension lands inside another vacation).
+  const span = (target === "24h" ? 24 : 48) * 3_600_000;
+  let due = start + span;
+  for (let i = 0; i < 60; i += 1) {
+    let paused = 0;
+    for (
+      let day = zonedToday(timeZone, new Date(start));
+      day <= zonedToday(timeZone, new Date(due));
+      day = addDays(day, 1)
+    )
+      if (blocked(day)) paused += 1;
+    const next = start + span + paused * 86_400_000;
+    if (next === due) return due;
+    due = next;
+  }
+  return due;
 }
 const describeGap = (ms: number) => {
   const minutes = Math.max(1, Math.round(Math.abs(ms) / 60000));
@@ -1670,7 +1718,19 @@ export function eventsBetween(
             : "Scheduled",
     });
   };
-  for (let date = start; date <= end; date = addDays(date, 1)) {
+  // Moves are applied in this one shared path so every consumer agrees:
+  // an occurrence leaves its original date, appears on `to` with the same
+  // event id (so a later submission still attaches), and to:null hides it.
+  const moves = state.checkInMoves ?? [];
+  const genStart = moves.reduce(
+    (d, m) => [m.from, m.to ?? d].reduce((a, b) => (b < a ? b : a), d),
+    start,
+  );
+  const genEnd = moves.reduce(
+    (d, m) => [m.from, m.to ?? d].reduce((a, b) => (b > a ? b : a), d),
+    end,
+  );
+  for (let date = genStart; date <= genEnd; date = addDays(date, 1)) {
     const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
     for (const c of state.clients) {
       const schedule = [...c.schedules]
@@ -1680,11 +1740,13 @@ export function eventsBetween(
         put(`recurring:${c.id}:${date}`, c.id, date, "Recurring", "Full");
     }
   }
-  for (const x of state.extras.filter((e) => e.date >= start && e.date <= end))
+  for (const x of state.extras.filter(
+    (e) => e.date >= genStart && e.date <= genEnd,
+  ))
     put(x.id, x.clientId, x.date, "Additional", x.type, x);
   // Submitted history survives schedule changes; matching is by explicit event ID.
   for (const s of state.submissions.filter(
-    (s) => s.date >= start && s.date <= end,
+    (s) => s.date >= genStart && s.date <= genEnd,
   ))
     if (!events.has(s.eventId))
       put(
@@ -1694,10 +1756,34 @@ export function eventsBetween(
         s.eventId.startsWith("recurring:") ? "Recurring" : "Additional",
         s.type,
       );
-  return [...events.values()].sort(
-    (a, b) =>
-      a.date.localeCompare(b.date) || a.clientId.localeCompare(b.clientId),
-  );
+  for (const m of moves) {
+    const event = events.get(m.eventId);
+    if (!event) continue;
+    // A submission anchors the occurrence to the date the athlete filed
+    // against: submitted check-ins never move, even if a stale move or a
+    // skip record points at them. A submission sent after the move has the
+    // moved date, so the event still renders there.
+    const anchor = event.submission?.date ?? m.to;
+    if (anchor === null) events.delete(m.eventId);
+    else {
+      events.delete(m.eventId);
+      events.set(m.eventId, {
+        ...event,
+        date: anchor,
+        movedFrom:
+          anchor === event.date
+            ? event.movedFrom
+            : (event.movedFrom ?? event.date),
+        movedByVacation: m.vacationId,
+      });
+    }
+  }
+  return [...events.values()]
+    .filter((e) => e.date >= start && e.date <= end)
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) || a.clientId.localeCompare(b.clientId),
+    );
 }
 
 /** The check-in card rule shared by the coach overview and the athlete
@@ -2522,6 +2608,7 @@ export function isCoachState(v: unknown): v is CoachState {
           links: opt(arr(obj({ label: str, route: routeGuard }))),
           local: opt(bool),
           auto: opt(one(["vacation", "off-hours"])),
+          vacationId: opt(str),
         }),
       ),
       drafts: dict(
@@ -2572,6 +2659,17 @@ export function isCoachState(v: unknown): v is CoachState {
           }),
         ),
         savedReplies: opt(arr(obj({ id: str, text: str }))),
+        vacations: opt(
+          arr(
+            obj({
+              id: str,
+              start: str,
+              end: str,
+              label: opt(str),
+              autoMessage: opt(obj({ enabled: bool, text: str })),
+            }),
+          ),
+        ),
       }),
     })(v) &&
     (v as CoachState).clients.every((client) =>

@@ -60,7 +60,16 @@ const executable = stripTypeScriptTypes(shimmed, { mode: "strip" })
   .replaceAll('"./builder/schema"', JSON.stringify(asModule(schemaSource)))
   .replaceAll('"./plans/domain"', JSON.stringify(domainUrl))
   .replaceAll('"./targets/model"', JSON.stringify(targetsUrl));
-const m = await import(asModule(executable));
+const modelUrl = asModule(executable);
+const m = await import(modelUrl);
+const vacations = await import(
+  asModule(
+    stripTypeScriptTypes(
+      await readFile(new URL("./vacations.ts", import.meta.url), "utf8"),
+      { mode: "strip" },
+    ).replaceAll('"./model"', JSON.stringify(modelUrl)),
+  )
+);
 
 // coach-theme.ts only needs react-style hooks for useSystemMode and the
 // theme builders for coachThemeStyle; the pure resolution helpers under test
@@ -909,4 +918,499 @@ test("working hours summary groups consecutive matching days", () => {
     m.workingHoursSummary(hours, "12"),
     "Mon to Fri, 9:00 AM to 6:00 PM · Sat, 10:00 AM to 12:00 PM",
   );
+});
+
+// ── Phase 1c — vacations, check-in moves, away messages ──────────────────────
+const fmtGB = (d, o) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", ...o }).format(
+    new Date(`${d}T12:00:00Z`),
+  );
+const vacState = () => {
+  const s = m.seedState();
+  s.preferences.vacations = [
+    { id: "v1", start: "2026-11-16", end: "2026-11-20", label: "Break" },
+  ];
+  return s;
+};
+
+test("vacationFor covers inclusive bounds only", () => {
+  const prefs = vacState().preferences;
+  assert.equal(m.vacationFor(prefs, "2026-11-15"), undefined);
+  assert.equal(m.vacationFor(prefs, "2026-11-16")?.id, "v1");
+  assert.equal(m.vacationFor(prefs, "2026-11-20")?.id, "v1");
+  assert.equal(m.vacationFor(prefs, "2026-11-21"), undefined);
+});
+
+test("first working day back and last working day before respect the hours", () => {
+  const prefs = vacState().preferences; // default Mon–Fri
+  assert.equal(
+    vacations.vacationBackDay(prefs, { end: "2026-11-20" }),
+    "2026-11-23",
+  );
+  assert.equal(
+    vacations.vacationBackDay(prefs, { end: "2026-11-22" }),
+    "2026-11-23",
+  );
+  assert.equal(
+    vacations.lastWorkingDayBefore(prefs, "2026-11-16"),
+    "2026-11-13",
+  );
+  prefs.workingHours = [
+    { weekday: 2, ranges: [{ start: "09:00", end: "17:00" }] },
+  ]; // Wednesdays only
+  assert.equal(
+    vacations.vacationBackDay(prefs, { end: "2026-11-20" }),
+    "2026-11-25",
+  );
+});
+
+test("affectedCheckIns lists only in-range events and flags submitted ones", () => {
+  const s = vacState();
+  const inRange = vacations.affectedCheckIns(
+    s,
+    "2026-11-16",
+    "2026-11-20",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  assert.ok(inRange.length > 0);
+  for (const { event } of inRange) {
+    assert.ok(event.date >= "2026-11-16" && event.date <= "2026-11-20");
+    assert.equal(
+      !!event.submission,
+      inRange.find((r) => r.event.id === event.id).submitted,
+    );
+  }
+  const before = s.submissions.length;
+  // Seed a submission on one in-range event: it is flagged, never moved.
+  const target = inRange.find((r) => !r.submitted).event;
+  s.submissions.push({
+    id: "sub-test",
+    eventId: target.id,
+    clientId: target.clientId,
+    date: target.date,
+    type: "Full",
+    submittedAt: "2026-11-18T08:00:00",
+    note: "",
+    metrics: {},
+    media: [],
+  });
+  const again = vacations.affectedCheckIns(
+    s,
+    "2026-11-16",
+    "2026-11-20",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  assert.equal(again.find((r) => r.event.id === target.id).submitted, true);
+  assert.equal(s.submissions.length, before + 1);
+});
+
+test("moves keep event ids, show movedFrom and respect range boundaries", () => {
+  const s = vacState();
+  const ev = m
+    .eventsBetween(
+      s,
+      "2026-11-16",
+      "2026-11-20",
+      new Date("2026-11-13T12:00:00Z"),
+    )
+    .find((e) => e.date === "2026-11-16");
+  assert.ok(ev, "demo seed has a Mon 16 Nov check-in");
+  s.checkInMoves = [
+    {
+      eventId: ev.id,
+      clientId: ev.clientId,
+      from: "2026-11-16",
+      to: "2026-11-23",
+      vacationId: "v1",
+    },
+  ];
+  const onDay = m.eventsBetween(
+    s,
+    "2026-11-16",
+    "2026-11-16",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  assert.equal(
+    onDay.some((e) => e.id === ev.id),
+    false,
+  ); // left its day
+  const dest = m.eventsBetween(
+    s,
+    "2026-11-23",
+    "2026-11-23",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  const moved = dest.find((e) => e.id === ev.id);
+  assert.equal(moved.date, "2026-11-23");
+  assert.equal(moved.movedFrom, "2026-11-16");
+  assert.equal(moved.movedByVacation, "v1");
+  // A move INTO the queried range from outside it is included.
+  s.checkInMoves = [
+    {
+      eventId: ev.id,
+      clientId: ev.clientId,
+      from: "2026-11-16",
+      to: "2026-11-14",
+      vacationId: "v1",
+    },
+  ];
+  const into = m.eventsBetween(
+    s,
+    "2026-11-14",
+    "2026-11-14",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  assert.equal(into.find((e) => e.id === ev.id)?.date, "2026-11-14");
+  // to:null skips the occurrence entirely.
+  s.checkInMoves = [
+    {
+      eventId: ev.id,
+      clientId: ev.clientId,
+      from: "2026-11-16",
+      to: null,
+      vacationId: "v1",
+    },
+  ];
+  const all = m.eventsBetween(
+    s,
+    "2026-11-10",
+    "2026-11-30",
+    new Date("2026-11-13T12:00:00Z"),
+  );
+  assert.equal(
+    all.some((e) => e.id === ev.id),
+    false,
+  );
+});
+
+test("a submission still attaches to its moved event; submitted events never move", () => {
+  const s = vacState();
+  const ev = m
+    .eventsBetween(
+      s,
+      "2026-11-16",
+      "2026-11-20",
+      new Date("2026-11-13T12:00:00Z"),
+    )
+    .find((e) => e.date === "2026-11-16");
+  s.checkInMoves = [
+    {
+      eventId: ev.id,
+      clientId: ev.clientId,
+      from: "2026-11-16",
+      to: "2026-11-23",
+      vacationId: "v1",
+    },
+  ];
+  s.submissions.push({
+    id: "sub-moved",
+    eventId: ev.id,
+    clientId: ev.clientId,
+    date: "2026-11-23",
+    type: "Full",
+    submittedAt: "2026-11-23T09:00:00",
+    note: "",
+    metrics: {},
+    media: [],
+  });
+  const moved = m
+    .eventsBetween(
+      s,
+      "2026-11-23",
+      "2026-11-23",
+      new Date("2026-11-23T10:00:00Z"),
+    )
+    .find((e) => e.id === ev.id);
+  assert.equal(moved.submission?.id, "sub-moved");
+  assert.equal(moved.status, "Awaiting feedback");
+  // A move record pointing at an already-submitted occurrence is inert.
+  const s2 = vacState();
+  const ev2 = m
+    .eventsBetween(
+      s2,
+      "2026-11-16",
+      "2026-11-20",
+      new Date("2026-11-13T12:00:00Z"),
+    )
+    .find((e) => e.date === "2026-11-17" || e.date === "2026-11-16");
+  s2.submissions.push({
+    id: "sub-early",
+    eventId: ev2.id,
+    clientId: ev2.clientId,
+    date: ev2.date,
+    type: "Full",
+    submittedAt: "2026-11-17T09:00:00",
+    note: "",
+    metrics: {},
+    media: [],
+  });
+  s2.checkInMoves = [
+    {
+      eventId: ev2.id,
+      clientId: ev2.clientId,
+      from: ev2.date,
+      to: "2026-11-24",
+      vacationId: "v1",
+    },
+  ];
+  const stayed = m
+    .eventsBetween(s2, ev2.date, ev2.date, new Date("2026-11-13T12:00:00Z"))
+    .find((e) => e.id === ev2.id);
+  assert.equal(stayed.date, ev2.date);
+  assert.equal(stayed.movedFrom, undefined);
+  // It also does not appear on the stale move's destination.
+  assert.equal(
+    m
+      .eventsBetween(
+        s2,
+        "2026-11-24",
+        "2026-11-24",
+        new Date("2026-11-13T12:00:00Z"),
+      )
+      .some((e) => e.id === ev2.id),
+    false,
+  );
+});
+
+test("moveClashes blocks occupied destinations and proposals onto one day", () => {
+  const s = vacState();
+  const now = new Date("2026-11-13T12:00:00Z");
+  const ev = m
+    .eventsBetween(s, "2026-11-16", "2026-11-20", now)
+    .find((e) => e.date === "2026-11-16");
+  // Another check-in already lives on the destination for this client.
+  const occupied = m
+    .eventsBetween(s, "2026-11-23", "2026-11-27", now)
+    .find((e) => e.clientId === ev.clientId);
+  const clashes = vacations.moveClashes(
+    s,
+    [{ event: ev, to: occupied.date }],
+    fmtGB,
+    now,
+  );
+  assert.match(clashes.get(ev.id) ?? "", /Already has a check-in/);
+  // Two proposals for the same client onto the same day clash with each other.
+  const sameDay = m
+    .eventsBetween(s, "2026-11-16", "2026-11-20", now)
+    .filter((e) => e.clientId === ev.clientId);
+  if (sameDay.length > 1) {
+    const duo = vacations.moveClashes(
+      s,
+      sameDay.slice(0, 2).map((event) => ({ event, to: "2026-12-01" })),
+      fmtGB,
+      now,
+    );
+    assert.match(duo.get(sameDay[1].id) ?? "", /Two check-ins/);
+  }
+  // A free destination reports nothing.
+  const free = vacations.moveClashes(
+    s,
+    [{ event: ev, to: "2026-12-24" }],
+    fmtGB,
+    now,
+  );
+  assert.equal(free.size, 0);
+});
+
+test("undoVacationSave reverts only that vacation's moves and messages", () => {
+  const s = vacState();
+  s.checkInMoves = [
+    {
+      eventId: "recurring:c1:2026-11-16",
+      clientId: "c1",
+      from: "2026-11-16",
+      to: "2026-11-23",
+      vacationId: "v1",
+    },
+    {
+      eventId: "recurring:c1:2026-11-23",
+      clientId: "c1",
+      from: "2026-11-23",
+      to: "2026-11-25",
+      vacationId: "v2",
+    },
+  ];
+  s.messages.push(
+    {
+      id: "am1",
+      clientId: "c1",
+      text: "away",
+      from: "coach",
+      date: "2026-11-17",
+      read: false,
+      priority: false,
+      attachments: [],
+      auto: "vacation",
+      vacationId: "v1",
+    },
+    {
+      id: "am2",
+      clientId: "c1",
+      text: "later note",
+      from: "coach",
+      date: "2026-11-18",
+      read: false,
+      priority: false,
+      attachments: [],
+    },
+  );
+  const undone = vacations.undoVacationSave(s, "v1");
+  assert.deepEqual(
+    undone.checkInMoves.map((mv) => mv.vacationId),
+    ["v2"],
+  );
+  assert.equal(
+    undone.messages.some((msg) => msg.id === "am1"),
+    false,
+  );
+  assert.ok(undone.messages.some((msg) => msg.id === "am2"));
+  assert.ok(undone.messages.some((msg) => msg.id === "seed-coach-0"));
+  // The original state is untouched (pure).
+  assert.equal(s.checkInMoves.length, 2);
+});
+
+test("the away reply fires once per conversation per vacation, filled dates", () => {
+  const s = vacState();
+  s.preferences.vacations[0].autoMessage = {
+    enabled: true,
+    text: "Away {start}–{end}, back {return}.",
+  };
+  const first = vacations.vacationAutoReply(
+    s,
+    "client-002",
+    "2026-11-17",
+    fmtGB,
+  );
+  assert.equal(first.auto, "vacation");
+  assert.equal(first.vacationId, "v1");
+  assert.equal(first.from, "coach");
+  assert.match(first.text, /Away Mon 16 Nov/);
+  assert.match(first.text, /Fri 20 Nov/);
+  assert.match(first.text, /back Mon 23 Nov/);
+  s.messages.push(first);
+  // Second athlete message in the same vacation: no second reply.
+  assert.equal(
+    vacations.vacationAutoReply(s, "client-002", "2026-11-18", fmtGB),
+    null,
+  );
+  // Another athlete's conversation gets its own copy.
+  assert.equal(
+    vacations.vacationAutoReply(s, "client-003", "2026-11-18", fmtGB)
+      ?.vacationId,
+    "v1",
+  );
+  // A second vacation is a fresh allowance.
+  s.preferences.vacations.push({
+    id: "v2",
+    start: "2026-12-21",
+    end: "2026-12-25",
+    autoMessage: { enabled: true, text: "Away {start}–{end}, back {return}." },
+  });
+  assert.equal(
+    vacations.vacationAutoReply(s, "client-002", "2026-12-22", fmtGB)
+      ?.vacationId,
+    "v2",
+  );
+  // Disabled template and days outside the vacation send nothing.
+  s.preferences.vacations[0].autoMessage.enabled = false;
+  assert.equal(
+    vacations.vacationAutoReply(s, "client-002", "2026-11-19", fmtGB),
+    null,
+  );
+});
+
+test("auto replies stay deduplicated after a save/reload round-trip", () => {
+  const s = vacState();
+  s.preferences.vacations[0].autoMessage = {
+    enabled: true,
+    text: "Away {start}–{end}, back {return}.",
+  };
+  s.messages.push(
+    vacations.vacationAutoReply(s, "client-002", "2026-11-17", fmtGB),
+  );
+  const reloaded = JSON.parse(JSON.stringify(s));
+  assert.equal(m.isCoachState(reloaded), true);
+  assert.equal(
+    vacations.vacationAutoReply(reloaded, "client-002", "2026-11-18", fmtGB),
+    null,
+  );
+});
+
+test("reschedulingMessages sends one coach note per affected athlete", () => {
+  const s = vacState();
+  const vac = s.preferences.vacations[0];
+  const now = new Date("2026-11-13T12:00:00Z");
+  const pair = m
+    .eventsBetween(s, "2026-11-16", "2026-11-20", now)
+    .filter((e) => e.clientId === "client-002")
+    .slice(0, 2);
+  const proposals = [
+    { event: pair[0], to: "2026-11-23" },
+    ...(pair[1] ? [{ event: pair[1], to: null }] : []),
+  ];
+  const msgs = vacations.reschedulingMessages(
+    s,
+    vac,
+    proposals,
+    fmtGB,
+    "2026-11-13",
+  );
+  assert.equal(msgs.length, 1);
+  assert.equal(msgs[0].clientId, "client-002");
+  assert.equal(msgs[0].vacationId, "v1");
+  assert.equal(msgs[0].auto, undefined);
+  assert.match(msgs[0].text, /moves to Mon 23 Nov/);
+  if (pair[1]) assert.match(msgs[0].text, /is skipped while I'm away/);
+});
+
+test("vacation and move preference shapes validate; bad data is rejected", () => {
+  const s = vacState();
+  s.checkInMoves = [
+    {
+      eventId: "e1",
+      clientId: "c1",
+      from: "2026-11-16",
+      to: "2026-11-23",
+      vacationId: "v1",
+    },
+  ];
+  s.messages.push({
+    id: "a1",
+    clientId: "c1",
+    text: "x",
+    from: "coach",
+    date: "2026-11-17",
+    read: false,
+    priority: false,
+    attachments: [],
+    auto: "vacation",
+    vacationId: "v1",
+  });
+  assert.equal(m.isCoachState(JSON.parse(JSON.stringify(s))), true);
+  const badVac = JSON.parse(JSON.stringify(s));
+  badVac.preferences.vacations = [{ id: "v9", start: "16 Nov" }];
+  assert.equal(m.isCoachState(badVac), false);
+  const badMove = JSON.parse(JSON.stringify(s));
+  badMove.checkInMoves = [{ eventId: "e1", to: "2026-11-23" }];
+  assert.equal(m.isCoachState(badMove), false);
+  const badMsg = JSON.parse(JSON.stringify(s));
+  badMsg.messages[badMsg.messages.length - 1].auto = "spam";
+  assert.equal(m.isCoachState(badMsg), false);
+});
+
+test("vacation days pause the feedback target", () => {
+  const s = vacState();
+  s.preferences.rules = { feedbackTarget: "24h" };
+  const submission = {
+    date: "2026-11-16",
+    submittedAt: "2026-11-16T10:00:00",
+  };
+  const paused = m.feedbackDueAt(s.preferences, submission);
+  const plain = m.feedbackDueAt(
+    { ...s.preferences, vacations: [] },
+    submission,
+  );
+  // The 5-day vacation starting the same day pushes the due instant out by
+  // roughly five days versus the uninterrupted target.
+  assert.ok(paused - plain >= 4 * 86_400_000);
 });

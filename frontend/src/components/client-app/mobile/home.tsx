@@ -12,6 +12,7 @@ import { dosageForQuantity } from "../../coach/supplements/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { IconButton } from "../../coach/ui";
 import { findLog } from "../training-log/model";
+import { VacationBanner } from "../vacation-banner";
 import {
   cardioWeek,
   habitsToday,
@@ -179,6 +180,7 @@ export function MobileHome({
         </span>
       </div>
       <div className="cm-h1">Hi {firstName}</div>
+      <VacationBanner />
       {checkIn && (
         <div className="cm-card">
           <div className="cm-row" style={{ gap: 12 }}>

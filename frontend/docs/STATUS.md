@@ -1,5 +1,71 @@
 # Frontend status
 
+## 2026-11-15 — P818 Settings Phase 1c: vacations, rescheduling, away messages — committed pending independent review
+
+Final Phase 1 slice on beta/p818-settings-phase-1c over 20c407b (the
+accepted P815 head); separate worktree; Phase 1a, Tasks and the main
+checkout untouched.
+
+- Vacation editor in Availability (settings/vacations.tsx): add, edit
+  and delete with a list of affected check-ins before saving, per-row
+  and bulk choices (move before, move after — first working day back is
+  the default — pick a date, skip, keep). Submitted check-ins are
+  read-only and never moved. Unresolved clashes — against existing
+  check-ins or between proposals — block saving. Editing shows restore
+  rows for moved events that fall outside the edited range; deleting
+  offers "Delete and restore dates". Saving shows an Undo that reverts
+  only that vacation's moves and the messages it created; later
+  unrelated edits survive.
+- Shared scheduling path: eventsBetween applies checkInMoves in one
+  place so the coach calendar, lists and both athlete layouts agree.
+  Event IDs stay stable so submissions still attach (a submission
+  anchors its occurrence to the date it was filed against; submitted
+  check-ins never move). to:null skips the occurrence; destinations
+  outside the queried range are included. The coach side shows
+  "Moved from …"; check-ins inside a vacation that were never
+  rescheduled get a "During your vacation" chip with inline
+  before/after/date/skip/keep controls that honour clash detection.
+  Vacation days pause the feedback target and contribute no working
+  hours.
+- Away messages: the athlete apps (mobile home + messages, desktop
+  overview + messages) show an away banner with the until/back dates;
+  the coach header shows a vacation chip. An athlete message sent
+  during a vacation triggers one automatic reply per conversation per
+  vacation ({start}/{end}/{return} placeholders filled), labelled
+  "Automatic reply" in both apps and deduplicated across reload via
+  message.vacationId. Optional per-athlete rescheduling notices are
+  sent on save when enabled.
+- Compatibility: vacations, checkInMoves, message.auto and
+  message.vacationId are all optional guarded fields; legacy workspaces
+  load unchanged. No outside-hours replies, no Phase 2 work, no
+  Tasks/Notes/backend changes. P816's three findings carried forward.
+
+Gates (Node 24.22.3): npm run check exit 0 (363 tests, agent-context,
+typecheck, Biome, build); settings.test.mjs 41/41 via the test loader
+(+12 Phase 1c cases covering inclusive bounds, working-day navigation,
+affected selection, submitted protection, move semantics and range
+boundaries, clash detection, undo scoping, reply dedup across reload,
+rescheduling notices, guards and the feedback pause); npm run ui:check
+exit 1 with the same 21 baseline violations; git diff --check clean.
+
+Browser (disposable profile, probe /tmp/v8-verify/p818-vacation.mjs
+18/18): editor lists 17 affected check-ins before save; bulk "move
+all → after" produces real proposed-move clashes that disable saving
+until resolved per-row; vacation + moves persist; toast Undo removes
+them; re-add → coach chip "On vacation until 21 Nov"; athlete banner
+"Your coach is away until Sat 21 Nov. Back on Mon 23 Nov"; athlete
+send → exactly one "Automatic reply" with filled placeholders; second
+send → no second reply; coach thread labels it; delete-and-restore
+clears the vacation and all its moves. p818-movedfrom.mjs: the coach
+calendar event renders "Moved from 16 Nov". Probe caught a real bug —
+submitted rows were being assigned the default choice and moved; fixed
+before commit. Preview for this worktree runs on 3100/3101 (the 1b
+preview on 3000/3001 was left running).
+
+Carried forward: P816 findings; undo removes auto-replies tagged with
+the vacation id as well as save-created notices (an edge acceptable for
+this slice); the delete dialog restores only unsubmitted moves.
+
 ## 2026-11-14 — P815 repair of Phase 1b review findings — committed pending independent review
 
 Repair pass on beta/p813-settings-phase-1b over b001698 (P813 head);

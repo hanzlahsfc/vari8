@@ -379,6 +379,11 @@ export function MessagesWorkspace() {
                               Priority message
                             </span>
                           )}
+                          {m.auto && (
+                            <span className="cd-priority-label cd-auto-label">
+                              Automatic reply
+                            </span>
+                          )}
                           {m.text && <p>{m.text}</p>}
                           {m.attachments.map((a) => (
                             <MediaCard key={a.id} item={a} />

@@ -24,7 +24,13 @@ import {
   useSystemMode,
 } from "./coach-theme";
 import { MessagesWorkspace } from "./messages";
-import { type Section, unreadCount } from "./model";
+import {
+  resolvedTimeZone,
+  type Section,
+  unreadCount,
+  vacationFor,
+  zonedToday,
+} from "./model";
 import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
 import { DEFAULT_COACH_NAME, DEFAULT_COACH_TITLE } from "./settings/profile";
@@ -34,7 +40,7 @@ import {
   settingsTabLabel,
   useNarrowSettings,
 } from "./settings/shell";
-import { CoachProvider, useCoach } from "./store";
+import { CoachProvider, useCoach, useCoachNow, useDisplay } from "./store";
 import { TemplateEditor, TemplateLibrary } from "./templates";
 import { Button, IconButton, Transition } from "./ui";
 import "./coach.css";
@@ -78,6 +84,12 @@ function Workspace() {
   } = useCoach();
   const systemMode = useSystemMode();
   const resolvedMode = coachMode(state.preferences, systemMode);
+  const { formatDate } = useDisplay();
+  const now = useCoachNow();
+  const activeVacation = vacationFor(
+    state.preferences,
+    zonedToday(resolvedTimeZone(state.preferences), now),
+  );
   const profileName = state.preferences.profile?.name ?? DEFAULT_COACH_NAME;
   const profileTitle = state.preferences.profile?.title ?? DEFAULT_COACH_TITLE;
   const profilePhoto = state.preferences.profile?.photo;
@@ -282,6 +294,17 @@ function Workspace() {
             )}
           </div>
           <div className="cd-utility-actions">
+            {activeVacation && (
+              <button
+                type="button"
+                className="cd-vacation-chip"
+                onClick={() =>
+                  navigate({ section: "settings", tab: "availability" })
+                }
+              >
+                On vacation until {formatDate(activeVacation.end)}
+              </button>
+            )}
             <span className="cd-local-indicator">
               {storageOk ? "Local demo" : "Session only · storage unavailable"}
             </span>

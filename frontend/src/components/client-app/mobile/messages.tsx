@@ -13,6 +13,8 @@ import {
 } from "../../coach/model";
 import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
+import { vacationAutoReply } from "../../coach/vacations";
+import { VacationBanner } from "../vacation-banner";
 
 export function MobileMessages({ client }: { client: CoachClient }) {
   const { formatDate } = useDisplay();
@@ -67,23 +69,27 @@ export function MobileMessages({ client }: { client: CoachClient }) {
   const send = () => {
     const text = draft.trim();
     if (!text) return;
-    setState((s) => ({
-      ...s,
-      messages: [
-        ...s.messages,
-        {
-          id: uid("msg"),
-          clientId: client.id,
-          text,
-          from: "client",
-          date: today,
-          read: false,
-          priority: false,
-          attachments: [],
-          local: true,
-        },
-      ],
-    }));
+    setState((s) => {
+      const next = {
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("msg"),
+            clientId: client.id,
+            text,
+            from: "client" as const,
+            date: today,
+            read: false,
+            priority: false,
+            attachments: [],
+            local: true,
+          },
+        ],
+      };
+      const reply = vacationAutoReply(next, client.id, today, formatDate);
+      return reply ? { ...next, messages: [...next.messages, reply] } : next;
+    });
     setDraft("");
   };
   let lastDay = "";
@@ -132,6 +138,7 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           )}
         </div>
       </div>
+      <VacationBanner />
       <div
         style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}
       >
@@ -179,6 +186,9 @@ export function MobileMessages({ client }: { client: CoachClient }) {
                         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                       </svg>
                     </div>
+                  )}
+                  {m.auto && (
+                    <span className="cm-auto-label">Automatic reply</span>
                   )}
                   {m.text}
                 </div>

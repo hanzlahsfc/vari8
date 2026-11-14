@@ -15,6 +15,7 @@ import { Tabs } from "../../vari8/components";
 import { CheckInForm } from "../check-in";
 import { nextCheckIn } from "../mobile/data";
 import { MobileMessages } from "../mobile/messages";
+import { VacationBanner } from "../vacation-banner";
 import { DesktopPlans } from "./plans";
 import "./desktop.css";
 
@@ -97,11 +98,14 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
         }
       >
         {tab === "Overview" && (
-          <AthleteOverview
-            client={client}
-            viewer="client"
-            onOpen={openFromCard}
-          />
+          <>
+            <VacationBanner />
+            <AthleteOverview
+              client={client}
+              viewer="client"
+              onOpen={openFromCard}
+            />
+          </>
         )}
         {tab === "Tracker" && (
           <AthleteTrackerTab
