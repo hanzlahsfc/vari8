@@ -1,5 +1,53 @@
 # Frontend status
 
+## 2026-11-05 — P806 Settings Phase 1a — implemented, gates green, awaiting browser verification
+
+- New routed Settings workspace replaces the preferences dialog:
+  `/coach?section=settings&tab=<category>` with Profile, Branding,
+  Appearance, Notifications and Data. The sidebar account button and the
+  header gear both route there with `aria-current`; Settings stays out of
+  the main NAV. Breadcrumb shows Workspace / Settings / <category>. Invalid
+  or missing tabs fall back to Profile. Phones get category drill-in with
+  a back-to-list control (`hidden`-based, CSS guarded).
+- Profile: coach name, title, photo and availability note — all optional
+  persisted fields — feed the sidebar account block and the athlete app's
+  coach identity (mobile Home + Messages headers, session attribution).
+- Branding: business name, dark + light logo slots on the shared image
+  pipeline (PNG/JPG/WebP, 2 MB, 512 px logo / 256 px square photo, data-URL
+  cap and inline errors preserved), the handoff's 8 named presets plus
+  custom hex, and a coach/athlete × light/dark preview card.
+- Appearance: Platinum `#C9CCD3` is the new seed/reset default; saved
+  accents load unchanged. Light/Dark/Match-system is workspace-only via
+  optional `followSystemMode`; the athlete app resolves its own
+  `client.appMode` (or the phone) through shared `coach-theme` helpers and
+  keeps coach logos + colour. The header sun/moon quick toggle is kept and
+  clears the system-follow flag.
+- Notifications: every toggle has a real consumer on this base — unread
+  badge (`preferences.notifications`), check-ins badge (`notify.checkIns`),
+  task-reminder toasts (`notify.taskReminders`, existing 30 s consumer) and
+  priority-first sorting (`priorityNotifications` → `sortedConversationClients`
+  in model.ts). The caption states no email/system notifications are sent.
+- Data: serialized-state storage estimate with image contribution, dated
+  workspace JSON export, and demo reset via the shared Dialog (no native
+  confirm); reset restores `seedState()` (Platinum).
+- Compatibility: all new fields optional and guarded; legacy workspaces
+  validate and load unchanged (`settings.test.mjs`). Demo export
+  regenerated (workspace.json only). Fixed pink in the demo recorder now
+  reads `preferences.accent`. `appearance-controls.tsx` (the dead dialog
+  control) removed.
+- Tests: `settings.test.mjs` 6/6 — legacy load, optional-field guard,
+  Platinum seed vs preserved saved accents, coach/athlete mode
+  independence, logo resolution, priority sort. `accent-contrast.checks.mjs`
+  now runs all 8 presets through action + surface contrast.
+- Gates (Node 24.22.3): `npm run check` exit 0 (328/328 tests,
+  agent-context, typecheck, lint, build); `npm run ui:check` exit 1 with
+  the 21 unchanged baseline violations (none in settings.css);
+  `git diff --check` clean.
+- Pending: browser verification (preview not authorised for this slice) —
+  category reload/back, phone drill-in, keyboard navigation, both modes,
+  logo backgrounds, athlete Home mode switch, preset contrast, saved
+  feedback, reset modal, notification consumers, export + storage display.
+
 ## 2026-10-27 — client app + coach Plans/Nutrition redesign + meal-plan editor — verified locally
 
 - Client app (`/client`): a polished phone-width client across Home,

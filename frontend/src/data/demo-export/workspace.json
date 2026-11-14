@@ -1715,10 +1715,17 @@
   "editorDrafts": {},
   "preferences": {
     "mode": "dark",
-    "accent": "#EB91B8",
+    "accent": "#C9CCD3",
     "availability": "Weekdays · 09:00–18:00",
     "notifications": true,
-    "priorityNotifications": true
+    "priorityNotifications": true,
+    "profile": {
+      "name": "Liliana Mansfeld",
+      "title": "Coach"
+    },
+    "brand": {
+      "name": "infinity."
+    }
   },
   "exerciseLibrary": [
     {

@@ -12,6 +12,22 @@ import { useLocalToday } from "../../coach/targets/use-local-today";
 
 export function MobileMessages({ client }: { client: CoachClient }) {
   const { state, setState } = useCoach();
+  const profile = state.preferences.profile;
+  const coachName = profile?.name ?? "Liliana Mansfeld";
+  const coachInitials = coachName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  const coachLine = [
+    profile?.title || "Coach",
+    state.preferences.availabilityNote ||
+      (state.preferences.availability !== "Weekdays · 09:00–18:00"
+        ? state.preferences.availability
+        : "replies usually within a day"),
+  ].join(" · ");
   const today = useLocalToday();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -80,12 +96,21 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           className="cm-avt"
           style={{ width: 32, height: 32, fontSize: 12 }}
         >
-          LM
+          {state.preferences.profile?.photo ? (
+            // biome-ignore lint/performance/noImgElement: demo image previews are dynamic data srcs
+            <img
+              src={state.preferences.profile.photo.dataUrl}
+              alt=""
+              className="cm-avt-img"
+            />
+          ) : (
+            coachInitials
+          )}
         </span>
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 600 }}>Liliana</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600 }}>{coachName}</div>
           <div className="cm-mut" style={{ fontSize: 11.5 }}>
-            Coach · replies usually within a day
+            {coachLine}
           </div>
         </div>
       </div>

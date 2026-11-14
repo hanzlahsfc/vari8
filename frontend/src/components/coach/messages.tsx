@@ -26,6 +26,7 @@ import {
   type Media,
   type Message,
   readConversation,
+  sortedConversationClients,
   uid,
   unreadCount,
 } from "./model";
@@ -61,13 +62,7 @@ export function MessagesWorkspace() {
   const priorCount = useRef(0);
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
-  const sortedClients = [...state.clients]
-    .filter((c) => !c.archived)
-    .sort((a, b) =>
-      (lastMessage(b.id)?.date ?? "").localeCompare(
-        lastMessage(a.id)?.date ?? "",
-      ),
-    );
+  const sortedClients = sortedConversationClients(state);
   const selectedId = route.client;
   const client = state.clients.find((c) => c.id === selectedId);
   const draft: { text: string; attachments: Media[]; link?: Message["link"] } =

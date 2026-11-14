@@ -212,6 +212,9 @@ export function MobileSessionOverview({
   readOnly?: boolean;
 }) {
   const { state } = useCoach();
+  const coachFirstName = (state.preferences.profile?.name ?? "Coach").split(
+    " ",
+  )[0];
   const today = useLocalToday();
   const plan = client.plans
     ? applicablePlan(client.plans.training, today)
@@ -244,7 +247,7 @@ export function MobileSessionOverview({
             className="cm-mut"
             style={{ fontSize: 12.5, fontStyle: "italic" }}
           >
-            "Control the eccentric, 2 reps in reserve" — Liliana
+            "Control the eccentric, 2 reps in reserve" — {coachFirstName}
           </div>
         </div>
       )}

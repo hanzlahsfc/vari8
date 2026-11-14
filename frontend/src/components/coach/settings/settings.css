@@ -1,0 +1,333 @@
+/* Settings page (Phase 1a). Layout uses the shared spacing scale and the
+ * semantic color roles; control surfaces reuse the field/action tokens. */
+.coach-root .cd-settings {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--v8-space-8);
+  max-width: 1100px;
+}
+/* `hidden` must win over the flex displays above for the phone drill-in. */
+.coach-root .cd-settings-nav[hidden],
+.coach-root .cd-settings-content[hidden] {
+  display: none;
+}
+.coach-root .cd-settings-nav {
+  flex: 0 0 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-1);
+}
+.coach-root .cd-settings-title {
+  font-size: var(--v8-font-size-page-title);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--v8-space-4);
+}
+.coach-root .cd-settings-category {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v8-space-2);
+  width: 100%;
+  padding: var(--v8-space-2) var(--v8-space-3);
+  border-radius: var(--v8-radius-field);
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-control);
+  text-align: left;
+}
+.coach-root .cd-settings-category:hover {
+  background: var(--v8-surface-interactive);
+}
+.coach-root .cd-settings-category[aria-current="page"] {
+  background: var(--v8-surface-selected);
+  color: var(--cd-text);
+  font-weight: 500;
+}
+.coach-root .cd-settings-category-arrow {
+  color: var(--cd-muted);
+  display: none;
+}
+.coach-root .cd-settings-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-5);
+  container-type: inline-size;
+}
+.coach-root .cd-settings-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--v8-space-3);
+  margin-bottom: var(--v8-space-2);
+}
+.coach-root .cd-settings-card-head h2 {
+  font-size: var(--v8-font-size-section-title);
+  font-weight: 550;
+}
+.coach-root .cd-settings-saved {
+  min-height: 18px;
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+}
+.coach-root .cd-settings-desc {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+  margin: 0 0 var(--v8-space-3);
+}
+.coach-root .cd-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--v8-space-4);
+  padding: var(--v8-space-3) 0;
+}
+.coach-root .cd-settings-row + .cd-settings-row {
+  border-top: 1px solid var(--cd-line);
+}
+.coach-root .cd-settings-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.coach-root .cd-settings-row-label {
+  font-size: var(--v8-font-size-control);
+  font-weight: 500;
+}
+.coach-root .cd-settings-row-hint {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+  line-height: var(--v8-line-height-supporting);
+}
+.coach-root .cd-settings-row-control {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--v8-space-2);
+}
+.coach-root .cd-settings-row-control .cd-accents {
+  margin-top: var(--v8-space-2);
+}
+@container (max-width: 640px) {
+  .coach-root .cd-settings-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+/* Committed text fields */
+.coach-root .cd-settings-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  font-size: var(--v8-font-size-control);
+  color: var(--cd-muted);
+}
+.coach-root .cd-settings-input input {
+  height: var(--v8-control-height-md);
+  padding: 0 var(--v8-space-3);
+  border: 1px solid var(--v8-field-border);
+  border-radius: var(--v8-radius-field);
+  background: var(--v8-field);
+  color: var(--cd-text);
+  font: inherit;
+}
+.coach-root .cd-settings-input input:focus-visible {
+  outline: var(--v8-border-width-emphasis) solid var(--v8-accent-focus);
+  outline-offset: -1px;
+}
+/* Image slots */
+.coach-root .cd-settings-imageslot {
+  display: flex;
+  align-items: center;
+  gap: var(--v8-space-3);
+}
+.coach-root .cd-settings-imagepreview {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 64px;
+  flex: none;
+  border: 1px solid var(--cd-line);
+  border-radius: var(--v8-radius-field);
+  overflow: hidden;
+}
+.coach-root .cd-settings-imagepreview[data-background="dark"] {
+  background: #101010;
+}
+.coach-root .cd-settings-imagepreview[data-background="light"] {
+  background: #ffffff;
+}
+.coach-root .cd-settings-imagepreview[data-square] {
+  width: 64px;
+}
+.coach-root .cd-settings-imageempty {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+}
+.coach-root .cd-settings-imageactions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  min-width: 0;
+}
+.coach-root .cd-settings-imagebuttons {
+  display: flex;
+  gap: var(--v8-space-2);
+  flex-wrap: wrap;
+}
+/* Branding preview frame */
+.coach-root .cd-brandpreview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-3);
+}
+.coach-root .cd-brandpreview-controls {
+  display: flex;
+  gap: var(--v8-space-4);
+  flex-wrap: wrap;
+}
+.coach-root .cd-brandpreview-frame {
+  border: 1px solid var(--v8-border);
+  border-radius: var(--v8-radius-card);
+  background: var(--v8-canvas);
+  color: var(--v8-text);
+  padding: var(--v8-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-3);
+}
+.coach-root .cd-brandpreview-brand {
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.coach-root .cd-brandpreview-logo {
+  max-height: 32px;
+  max-width: 180px;
+  object-fit: contain;
+}
+.coach-root .cd-brandpreview-wordmark {
+  font-size: var(--v8-font-size-section-title);
+  font-weight: 550;
+  letter-spacing: -0.01em;
+}
+.coach-root .cd-brandpreview-nav {
+  display: flex;
+  gap: var(--v8-space-2);
+}
+.coach-root .cd-brandpreview-navitem {
+  padding: var(--v8-space-1) var(--v8-space-3);
+  border-radius: var(--v8-radius-field);
+  color: var(--v8-text-secondary);
+  font-size: var(--v8-font-size-control);
+}
+.coach-root .cd-brandpreview-navitem[data-active] {
+  background: var(--v8-surface-selected);
+  color: var(--v8-text);
+}
+.coach-root .cd-brandpreview-body {
+  display: flex;
+  align-items: center;
+  gap: var(--v8-space-3);
+  flex-wrap: wrap;
+  padding: var(--v8-space-3);
+  border-radius: var(--v8-radius-field);
+  background: var(--v8-surface);
+}
+.coach-root .cd-brandpreview-chip {
+  padding: var(--v8-space-1) var(--v8-space-3);
+  border-radius: 999px;
+  border: 1px solid var(--v8-border);
+  font-size: var(--v8-font-size-supporting);
+  color: var(--v8-text-secondary);
+}
+.coach-root .cd-brandpreview-chip[data-selected] {
+  border-color: var(--v8-accent-border);
+  background: var(--v8-accent-subtle);
+  color: var(--v8-text);
+}
+.coach-root .cd-brandpreview-action {
+  height: var(--v8-control-height-sm);
+  padding: 0 var(--v8-space-4);
+  border-radius: var(--v8-radius-field);
+  background: var(--v8-accent-primary);
+  color: var(--v8-on-accent);
+  font-size: var(--v8-font-size-control);
+  font-weight: 500;
+}
+.coach-root .cd-brandpreview-progress {
+  flex: 1 1 120px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--v8-surface-inset);
+  overflow: hidden;
+}
+.coach-root .cd-brandpreview-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--v8-accent-chart-line);
+}
+/* Storage */
+.coach-root .cd-settings-storage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--v8-space-2);
+  min-width: 200px;
+}
+.coach-root .cd-settings-storage-bar {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--v8-surface-inset);
+  overflow: hidden;
+}
+.coach-root .cd-settings-storage-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--v8-accent-chart-line);
+}
+.coach-root .cd-settings-storage-label {
+  color: var(--cd-muted);
+  font-size: var(--v8-font-size-supporting);
+}
+/* Phone layout */
+.coach-root .cd-settings-back {
+  display: flex;
+  align-items: center;
+  gap: var(--v8-space-1);
+  color: var(--cd-accent-text);
+  font-size: var(--v8-font-size-control);
+  font-weight: 500;
+}
+@media (max-width: 760px) {
+  .coach-root .cd-settings {
+    flex-direction: column;
+    gap: var(--v8-space-4);
+    max-width: none;
+  }
+  .coach-root .cd-settings-nav {
+    flex: none;
+    width: 100%;
+  }
+  .coach-root .cd-settings-category {
+    padding: var(--v8-space-3) var(--v8-space-4);
+    border: 1px solid var(--cd-line);
+    font-size: var(--v8-font-size-body);
+    min-height: 44px;
+  }
+  .coach-root .cd-settings-category-arrow {
+    display: inline;
+  }
+  .coach-root .cd-settings-content {
+    max-width: none;
+    width: 100%;
+  }
+}

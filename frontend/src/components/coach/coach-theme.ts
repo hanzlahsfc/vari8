@@ -1,8 +1,56 @@
-import type { CSSProperties } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 import { themeVariables } from "@/lib/ethereal-appearance";
 import { vari8Theme } from "@/lib/vari8-theme";
 import { accentControlColors } from "./accent-contrast";
 import type { CoachState } from "./model";
+
+export const DEFAULT_ACCENT = "#C9CCD3";
+
+/** Live prefers-color-scheme, resolved client-side only. */
+export function useSystemMode(): "light" | "dark" {
+  const [dark, setDark] = useState(
+    () =>
+      typeof window === "undefined" ||
+      window.matchMedia("(prefers-color-scheme: dark)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => setDark(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return dark ? "dark" : "light";
+}
+
+/** The mode the coach workspace renders: the explicit preference, or the
+ * system when the coach chose to match it. */
+export function coachMode(
+  preferences: CoachState["preferences"],
+  systemMode: "light" | "dark",
+): "light" | "dark" {
+  return preferences.followSystemMode ? systemMode : preferences.mode;
+}
+
+/** The mode one athlete's app renders: their own choice, or their phone's
+ * setting until they pick one. */
+export function athleteMode(
+  client: { appMode?: "light" | "dark" },
+  systemMode: "light" | "dark",
+): "light" | "dark" {
+  return client.appMode ?? systemMode;
+}
+
+/** The logo variant for a rendered background: the dark-background logo is
+ * the default; the light-background logo wins only in light mode. */
+export function logoForMode(
+  preferences: CoachState["preferences"],
+  mode: "light" | "dark",
+): { name: string; dataUrl: string } | undefined {
+  return mode === "light"
+    ? (preferences.brand?.logoLight ?? preferences.logo)
+    : preferences.logo;
+}
 
 export function coachThemeStyle(
   preferences: CoachState["preferences"],

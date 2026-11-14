@@ -80,7 +80,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       section === "clients" ||
       section === "check-ins" ||
       section === "messages" ||
-      section === "notes"
+      section === "notes" ||
+      section === "settings"
         ? section
         : "templates",
     client: params.get("client") ?? undefined,

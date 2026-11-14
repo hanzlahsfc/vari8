@@ -282,6 +282,12 @@
   background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
   color: var(--cd-accent-text);
   font-size: 12px;
+  overflow: hidden;
+}
+.coach-root .cd-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .coach-root .cd-workspace {
   margin-left: var(--cd-sidebar-width);

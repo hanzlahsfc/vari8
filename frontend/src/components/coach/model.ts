@@ -61,7 +61,8 @@ export type Section =
   | "templates"
   | "check-ins"
   | "messages"
-  | "notes";
+  | "notes"
+  | "settings";
 export type Route = {
   section: Section;
   client?: string;
@@ -688,6 +689,8 @@ export type Plan = {
   weeks: number;
 };
 export type CoachClient = WorkspaceClient & {
+  /** The athlete app's own mode; absent follows the phone's setting. */
+  appMode?: "light" | "dark";
   assignment?: Assignment;
   phases?: ClientPhase[];
   contestDate?: string;
@@ -823,6 +826,26 @@ export type CoachState = {
     priorityNotifications: boolean;
     logo?: { name: string; dataUrl: string };
     sidebarCollapsed?: boolean;
+    /** When set the coach workspace follows prefers-color-scheme live;
+     * `mode` stays the last explicitly resolved mode for older readers. */
+    followSystemMode?: boolean;
+    profile?: {
+      name: string;
+      title?: string;
+      photo?: { name: string; dataUrl: string };
+    };
+    /** `logo` above stays the mark for dark backgrounds; `logoLight` is
+     * the optional variant for light backgrounds. */
+    brand?: {
+      name?: string;
+      logoLight?: { name: string; dataUrl: string };
+    };
+    /** Free-text availability note shown to athletes. */
+    availabilityNote?: string;
+    notify?: {
+      checkIns?: boolean;
+      taskReminders?: boolean;
+    };
   };
 };
 export type Event = {
@@ -1203,6 +1226,28 @@ export function unreadCount(state: CoachState, clientId?: string) {
       !m.read && m.from === "client" && (!clientId || m.clientId === clientId),
   ).length;
 }
+/** Sidebar conversation order for Messages: "Priority messages first" lifts
+ * conversations that contain a flagged message above the rest; the latest
+ * message stays the tiebreaker in both groups. */
+export function sortedConversationClients(
+  state: CoachState,
+): CoachState["clients"] {
+  const lastMessage = (id: string) =>
+    state.messages.filter((m) => m.clientId === id).at(-1);
+  const hasPriority = (id: string) =>
+    state.messages.some((m) => m.clientId === id && m.priority);
+  return [...state.clients]
+    .filter((c) => !c.archived)
+    .sort((a, b) => {
+      if (state.preferences.priorityNotifications) {
+        const lifted = Number(hasPriority(b.id)) - Number(hasPriority(a.id));
+        if (lifted) return lifted;
+      }
+      return (lastMessage(b.id)?.date ?? "").localeCompare(
+        lastMessage(a.id)?.date ?? "",
+      );
+    });
+}
 export function readConversation(
   state: CoachState,
   clientId: string,
@@ -1495,10 +1540,12 @@ export function seedState(today: string = localToday()): CoachState {
     editorDrafts: {},
     preferences: {
       mode: "dark",
-      accent: "#EB91B8",
+      accent: "#C9CCD3",
       availability: "Weekdays · 09:00–18:00",
       notifications: true,
       priorityNotifications: true,
+      profile: { name: "Liliana Mansfeld", title: "Coach" },
+      brand: { name: "infinity." },
     },
   };
   return adoptAthleteDataDemo(
@@ -1660,7 +1707,14 @@ const templateGuard: Guard = (v) =>
   (v as Template).variants.length > 0 &&
   (v as Template).variants.some((x) => x.id === (v as Template).defaultVariant);
 const routeGuard = obj({
-  section: one(["clients", "templates", "check-ins", "messages", "notes"]),
+  section: one([
+    "clients",
+    "templates",
+    "check-ins",
+    "messages",
+    "notes",
+    "settings",
+  ]),
   client: opt(str),
   editor: opt(str),
   review: opt(str),
@@ -1698,6 +1752,7 @@ const reviewGuard = obj({
 const clientGuard = obj({
   id: str,
   name: str,
+  appMode: opt(one(["light", "dark"])),
   initials: str,
   label: str,
   phase: str,
@@ -1960,6 +2015,13 @@ export function isCoachState(v: unknown): v is CoachState {
         priorityNotifications: bool,
         logo: opt(logoGuard),
         sidebarCollapsed: opt(bool),
+        followSystemMode: opt(bool),
+        profile: opt(
+          obj({ name: str, title: opt(str), photo: opt(logoGuard) }),
+        ),
+        brand: opt(obj({ name: opt(str), logoLight: opt(logoGuard) })),
+        availabilityNote: opt(str),
+        notify: opt(obj({ checkIns: opt(bool), taskReminders: opt(bool) })),
       }),
     })(v) &&
     (v as CoachState).clients.every((client) =>
