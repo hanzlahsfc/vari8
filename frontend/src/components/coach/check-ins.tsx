@@ -25,6 +25,7 @@ import {
   type Event,
   type Extra,
   eventsBetween,
+  feedbackChipText,
   formatDate,
   monday,
   type ReviewDraft,
@@ -46,6 +47,20 @@ import {
   Status,
   Surface,
 } from "./ui";
+
+/** "Reply due in …" / "Late by …" chip for submissions still awaiting
+ * feedback; null when the feedback target is off. */
+function FeedbackChip({ submission }: { submission: Submission }) {
+  const { state } = useCoach();
+  const chip = feedbackChipText(state.preferences, submission);
+  if (!chip) return null;
+  return (
+    <span className={`cd-status cd-fbchip${chip.late ? " is-late" : ""}`}>
+      {chip.text}
+    </span>
+  );
+}
+
 export function CheckInsWorkspace() {
   const { state, route, navigate, setState, toast } = useCoach();
   const [mode, setMode] = useState("Week");
@@ -118,6 +133,9 @@ export function CheckInsWorkspace() {
         })}
       </p>
       <Status text={e.status} />
+      {e.submission && !e.submission.response && (
+        <FeedbackChip submission={e.submission} />
+      )}
       <div className="cd-stat-row">
         <span>Origin</span>
         <strong>{e.origin}</strong>
@@ -209,6 +227,9 @@ export function CheckInsWorkspace() {
             {e.origin} · {e.type}
           </span>
           <Status text={e.status} />
+          {e.submission && !e.submission.response && (
+            <FeedbackChip submission={e.submission} />
+          )}
         </Popover.Trigger>
         <Popover.Portal container={stage}>
           <Popover.Positioner

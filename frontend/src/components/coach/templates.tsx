@@ -53,6 +53,7 @@ import {
   TODAY,
   TRAINING_FIELDS,
   uid,
+  unitsForNewTemplate,
   type Variant,
 } from "./model";
 import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
@@ -206,7 +207,10 @@ export function TemplateLibrary() {
     `${t.name} ${t.description}`.toLowerCase().includes(search.toLowerCase()),
   );
   const add = () => {
-    const t = newTemplate(uid("template"));
+    const t = newTemplate(
+      uid("template"),
+      unitsForNewTemplate(state.preferences),
+    );
     setState((s) => ({ ...s, editorDrafts: { ...s.editorDrafts, [t.id]: t } }));
     navigate({ section: "templates", editor: t.id });
   };
@@ -460,7 +464,10 @@ const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
 export function TemplateEditor({ id }: { id: string }) {
   const { state, setState, navigate, guard, toast, route } = useCoach();
   const saved = state.templates.find((t) => t.id === id);
-  const fresh = useMemo(() => newTemplate(id), [id]);
+  const fresh = useMemo(
+    () => newTemplate(id, unitsForNewTemplate(state.preferences)),
+    [id, state.preferences],
+  );
   const draft = state.editorDrafts[id] ?? saved ?? fresh;
   const [section, setSection] = useState("Tabs");
   const [preview, setPreview] = useState(false);

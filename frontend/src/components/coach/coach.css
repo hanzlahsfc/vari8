@@ -3052,3 +3052,13 @@
     backdrop-filter: none;
   }
 }
+
+/* Feedback target chip on check-ins awaiting feedback */
+.coach-root .cd-fbchip {
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cd-surface));
+}
+.coach-root .cd-fbchip.is-late {
+  color: var(--v8-warning-text);
+  background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
+}

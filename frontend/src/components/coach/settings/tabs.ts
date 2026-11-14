@@ -2,6 +2,10 @@ export const SETTINGS_TABS = [
   { id: "profile", label: "Profile" },
   { id: "branding", label: "Branding" },
   { id: "appearance", label: "Appearance" },
+  { id: "region", label: "Region & units" },
+  { id: "availability", label: "Availability" },
+  { id: "rules", label: "Coaching rules" },
+  { id: "messages", label: "Messages" },
   { id: "notifications", label: "Notifications" },
   { id: "data", label: "Data" },
 ] as const;

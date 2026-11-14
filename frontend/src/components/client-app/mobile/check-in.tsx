@@ -1,6 +1,6 @@
 "use client";
 
-import { type CoachClient, formatDate } from "../../coach/model";
+import { type CoachClient, formatClock, formatDate } from "../../coach/model";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
@@ -36,7 +36,9 @@ export function ClientCheckInSheet({
             <div style={{ fontSize: 17, fontWeight: 600 }}>Weekly check-in</div>
             <div className="cm-mut" style={{ fontSize: 12 }}>
               {due
-                ? `due ${formatDate(due.date, { weekday: "short", day: "numeric", month: "short" })}`
+                ? due.dueToday
+                  ? `due today by ${formatClock(due.deadline)}`
+                  : `due ${formatDate(due.date, { weekday: "short", day: "numeric", month: "short" })} by ${formatClock(due.deadline)}`
                 : "~5 min"}
             </div>
           </div>

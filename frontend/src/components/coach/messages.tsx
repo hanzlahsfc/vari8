@@ -26,6 +26,7 @@ import {
   type Media,
   type Message,
   readConversation,
+  savedReplyTexts,
   sortedConversationClients,
   uid,
   unreadCount,
@@ -35,11 +36,6 @@ import { templateSetup } from "./template-setup";
 import { Avatar, Button, Dialog, Empty, IconButton, SearchBox } from "./ui";
 import "./workspace-polish.css";
 
-const SNIPPETS = [
-  "Thanks for the update! I’ll review this alongside your check-in.",
-  "Keep the same load this week and focus on controlled reps.",
-  "Let’s keep things simple: consistency first, then we’ll build from here.",
-];
 export function MessagesWorkspace() {
   const { state, setState, route, navigate, attach, toast } = useCoach();
   const [search, setSearch] = useState("");
@@ -516,7 +512,13 @@ export function MessagesWorkspace() {
                     ) : menu === "snippets" ? (
                       <>
                         <h3>Reusable replies</h3>
-                        {SNIPPETS.map((s) => (
+                        {savedReplyTexts(state.preferences).length === 0 && (
+                          <p className="cd-caption">
+                            No saved replies yet — add them in Settings →
+                            Messages.
+                          </p>
+                        )}
+                        {savedReplyTexts(state.preferences).map((s) => (
                           <Button
                             key={s}
                             onClick={() => {

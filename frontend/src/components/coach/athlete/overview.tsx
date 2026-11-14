@@ -27,11 +27,15 @@ import {
   addDays,
   type CoachClient,
   type CoachState,
+  checkInDeadline,
   DAYS,
-  eventsBetween,
+  formatClock,
   formatDate,
+  pickCheckInCard,
+  resolvedTimeZone,
   TODAY,
   unreadCount,
+  zonedToday,
 } from "../model";
 import {
   applicablePlan,
@@ -210,7 +214,9 @@ function ClientSettingsDialog({
           </Button>
         </div>
         <h4>Recurring check-in</h4>
-        <p className="ap-sub">Recurring check-ins · Europe/Vienna</p>
+        <p className="ap-sub">
+          Recurring check-ins · {resolvedTimeZone(state.preferences)}
+        </p>
         <div className="cd-weekdays">
           {DAYS.map((day, index) => (
             <button
@@ -642,13 +648,9 @@ function CheckinCard({
   const waiting = state.submissions
     .filter((s) => s.clientId === client.id && !s.response)
     .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const scheduled = eventsBetween(
-    state,
-    addLocalDays(today, -21),
-    addLocalDays(today, 35),
-  ).filter((e) => e.clientId === client.id && !e.submission);
-  const overdue = scheduled.filter((e) => e.date < today).at(-1);
-  const next = scheduled.find((e) => e.date >= today);
+  const now = new Date();
+  const coachToday = zonedToday(resolvedTimeZone(state.preferences), now);
+  const { overdue, next } = pickCheckInCard(state, client.id, today, now);
   const go = waiting ? () => onOpenReview(waiting.id) : onOpenTab;
   return (
     <Surface className="ap-card ap-w-s3">
@@ -673,15 +675,17 @@ function CheckinCard({
       ) : overdue ? (
         <>
           <Status tone="warning">Overdue</Status>
-          <b className="ap-big">{relDay(overdue.date, today)}</b>
+          <b className="ap-big">{relDay(overdue.date, coachToday)}</b>
           <p className="ap-sub">Scheduled {dayLabel(overdue.date)}</p>
         </>
       ) : next ? (
         <>
-          <Status tone={next.date === today ? "info" : "neutral"}>
-            {next.date === today ? "Due today" : "Scheduled"}
+          <Status tone={next.date === coachToday ? "info" : "neutral"}>
+            {next.date === coachToday
+              ? `Due today by ${formatClock(checkInDeadline(state.preferences))}`
+              : "Scheduled"}
           </Status>
-          <b className="ap-big">{relDay(next.date, today)}</b>
+          <b className="ap-big">{relDay(next.date, coachToday)}</b>
           <p className="ap-sub">{dayLabel(next.date)}</p>
         </>
       ) : (

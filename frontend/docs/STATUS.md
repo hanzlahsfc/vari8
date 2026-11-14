@@ -1,5 +1,65 @@
 # Frontend status
 
+## 2026-11-14 — P813 Settings Phase 1b — implemented, gates green, browser-verified
+
+Built on Phase 1a head a8dafb3 (beta/p806-settings-phase-1a preserved);
+work on beta/p813-settings-phase-1b in /private/tmp/vari8-p813-settings-1b.
+
+- Region & units: searchable time zone, locale/date format with live
+  example, 12/24-hour, body-weight and load units. All display paths go
+  through the store-driven display config; bare YYYY-MM-DD renders in UTC
+  (date-only stays on its calendar day) and naive datetime stamps keep
+  their coach-zone wall time. New-template units come from preferences;
+  stored templates and measurements are untouched.
+- Availability: per-day working hours with multiple ranges, add/remove,
+  copy to weekdays, inline overlap/reversed/malformed validation and an
+  all-off-week rejection. The athlete Messages header shows the grouped
+  summary ("Usually replies Mon to Fri, 09:00 to 18:00, Vienna time")
+  plus the optional availability note. The legacy coach Messages
+  availability field and its caption are preserved. No vacations, no
+  outside-hours auto-replies (out of scope).
+- Coaching rules: editable check-in deadline is the single overdue
+  source for the coach calendar/list, the athlete apps and the coach
+  athlete-overview widget. pickCheckInCard in model.ts shares the card
+  rule: today's own check-in past its deadline shows Overdue instead of
+  being masked by the next future event; an older missed check-in still
+  yields to the upcoming one. "Due today by HH:MM" copy on home, sheet
+  and desktop check-ins surfaces. Feedback target (24h/48h/two working
+  days/none) computes reply-due/late chips over configured working
+  hours and zone, DST-safe. Reset to defaults on the card.
+- Messages: editable saved replies — add, edit, reorder, delete with
+  Undo, 20-reply cap, Reset to default. Workspaces without the field
+  fall back to the three existing snippets; an intentionally empty list
+  stays empty after reload. The composer "Reusable replies" menu now
+  feeds from the saved list.
+- Compatibility: every new preference key is optional in isCoachState;
+  forward-compatible guards added for checkInMoves (to: string|null),
+  client.appMode and message.auto. Legacy workspaces load unchanged.
+- Tests: settings.test.mjs +14 cases (26/26 in file) covering legacy
+  defaults, date-only stability across zones, naive wall-time stability,
+  deadline boundaries incl. DST, working-hours validation/inclusion,
+  all four feedback targets, template-unit isolation, saved-reply
+  absent/empty/persist, note migration and summary grouping.
+- Gates (Node 24.22.3): `npm run check` exit 0 (348/348 tests, agent
+  context, typecheck, lint, build); `npm run ui:check` exit 1 with the
+  same 21 baseline violations, none in changed files; `git diff --check`
+  clean.
+- Browser evidence (disposable Chrome profiles, seeded localStorage):
+  all nine Settings categories render and route, phone drill-in works;
+  availability editor saves valid ranges, blocks invalid ones, enables
+  Saturday; deadline 20:00 persists; athlete Messages shows the
+  working-hours line and note; composer lists/inserts all three replies;
+  coach list and overview widget mark today's check-in Overdue after the
+  deadline; athlete mobile home + sheet show "Due today by HH:MM" before
+  and "Overdue" after; athlete desktop Check-ins surface matches.
+  Probes: /tmp/v8-verify/p813-*.mjs; shots: /tmp/v8-verify/shots/p813-*.
+- Gaps/labels: vacations and outside-hours auto-replies explicitly not
+  built (Phase 1b scope). No athlete-facing feedback promise (spec).
+  checkInMoves is guarded for forward compatibility only; move
+  application through eventsBetween is not part of this slice.
+- Pending: independent OpenCode / DeepSeek V4.1 Flash review.
+
+
 ## 2026-11-05 — P810 Settings Phase 1a scope cleanup — gates green
 
 - Athlete-facing availability deferred to Phase 1b: the mobile Messages

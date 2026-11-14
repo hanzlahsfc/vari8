@@ -41,18 +41,17 @@ export function useNarrowSettings() {
   return narrow;
 }
 
-/** Merge a patch into preferences; the profile, brand and notify groups
- * merge one level deep so a single field never wipes its siblings. */
+/** Merge a patch into preferences; the profile, brand, notify, region and
+ * rules groups merge one level deep so a single field never wipes its
+ * siblings. */
 export function patchPreferences(
   state: CoachState,
   patch: Partial<Preferences>,
 ): Preferences {
   const next = { ...state.preferences, ...patch };
-  if (patch.profile)
-    next.profile = { ...state.preferences.profile, ...patch.profile };
-  if (patch.brand) next.brand = { ...state.preferences.brand, ...patch.brand };
-  if (patch.notify)
-    next.notify = { ...state.preferences.notify, ...patch.notify };
+  for (const key of ["profile", "brand", "notify", "region", "rules"] as const)
+    if (patch[key])
+      next[key] = { ...state.preferences[key], ...patch[key] } as never;
   return next;
 }
 

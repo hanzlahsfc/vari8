@@ -25,6 +25,7 @@ import {
   ALL_PARAMETERS,
   type CoachClient,
   type FieldConfig,
+  getDisplayConfig,
   sampleValue,
   type Template,
   TODAY,
@@ -173,6 +174,7 @@ export function DateTimeField({ label, value, onChange, min }: DateFieldProps) {
       <TimePicker
         label={`${label} time`}
         value={time}
+        hourFormat={getDisplayConfig().hourCycle}
         onValueChange={(nextTime) => update(date, nextTime)}
       />
     </div>

@@ -744,6 +744,7 @@ export type Message = {
   link?: { label: string; route: Route };
   links?: { label: string; route: Route }[];
   local?: boolean;
+  auto?: "vacation" | "off-hours";
 };
 export type Submission = {
   id: string;
@@ -758,6 +759,9 @@ export type Submission = {
   note: string;
   flags: { exercise: string; set: number; date: string; text: string }[];
   response?: { text: string; video?: Media; changes: string[]; date: string };
+  /** Instant the athlete sent the check-in; older entries only carry the
+   * date and count as submitted at that day's deadline. */
+  submittedAt?: string;
 };
 export type ReviewDraft = {
   text: string;
@@ -774,6 +778,14 @@ export type ReviewDraft = {
     after: string | number;
   }[];
 };
+export type CheckInMove = {
+  eventId: string;
+  clientId: string;
+  from: string;
+  to: string | null;
+  vacationId?: string;
+};
+
 export type CoachState = {
   version: 1;
   demoSeeds?: {
@@ -798,6 +810,7 @@ export type CoachState = {
   templates: Template[];
   clients: CoachClient[];
   extras: Extra[];
+  checkInMoves?: CheckInMove[];
   submissions: Submission[];
   trainingLogs?: TrainingSessionLog[];
   /** Coach-wide timeline-tab views (column lists); built-ins are
@@ -844,6 +857,30 @@ export type CoachState = {
       checkIns?: boolean;
       taskReminders?: boolean;
     };
+    /** Coach locale settings: display zone, formats and default units for
+     * new templates. All optional so older workspaces load unchanged. */
+    region?: {
+      timeZone?: string;
+      locale?: "en-GB" | "en-US" | "de-AT";
+      hourCycle?: "12" | "24";
+      bodyWeightUnit?: "kg" | "lb";
+      loadUnit?: "kg" | "lb";
+    };
+    /** Working hours per weekday (0 = Monday), shown to athletes and used
+     * for working-day feedback targets. */
+    workingHours?: {
+      weekday: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+      ranges: { start: string; end: string }[];
+    }[];
+    /** Short availability note shown to athletes under the working hours. */
+    availabilityNote?: string;
+    rules?: {
+      /** "HH:mm" on the check-in day; overdue once it passes. */
+      checkInDeadline?: string;
+      feedbackTarget?: "24h" | "48h" | "2-working-days" | "none";
+    };
+    /** Editable composer replies; absent means the built-in snippets. */
+    savedReplies?: { id: string; text: string }[];
   };
 };
 export type Event = {
@@ -870,16 +907,396 @@ export function addDays(date: string, n: number) {
 export function monday(date: string) {
   return addDays(date, -((new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7));
 }
+export type DisplayConfig = {
+  timeZone: string;
+  locale: "en-GB" | "en-US" | "de-AT";
+  hourCycle: "12" | "24";
+};
+export const DEFAULT_TIME_ZONE = "Europe/Vienna";
+const displayConfig: DisplayConfig = {
+  timeZone: DEFAULT_TIME_ZONE,
+  locale: "en-GB",
+  hourCycle: "24",
+};
+/** The rendered app keeps this in sync with preferences.region so the many
+ * pure formatDate callers pick up the coach's zone and formats. The shell
+ * renders "Opening your workspace…" until hydration, so stored settings
+ * only ever format client-side. */
+export function setDisplayConfig(
+  next: Partial<DisplayConfig> | undefined,
+): void {
+  displayConfig.timeZone = timeZoneIsValid(next?.timeZone)
+    ? (next?.timeZone as string)
+    : DEFAULT_TIME_ZONE;
+  if (next?.locale) displayConfig.locale = next.locale;
+  if (next?.hourCycle) displayConfig.hourCycle = next.hourCycle;
+}
+export function getDisplayConfig(): DisplayConfig {
+  return { ...displayConfig };
+}
+export function timeZoneIsValid(zone: unknown): zone is string {
+  if (typeof zone !== "string" || !zone) return false;
+  try {
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+export function resolvedTimeZone(
+  preferences: Pick<CoachState["preferences"], "region"> | undefined,
+): string {
+  return timeZoneIsValid(preferences?.region?.timeZone)
+    ? (preferences?.region?.timeZone as string)
+    : DEFAULT_TIME_ZONE;
+}
 export function formatDate(
   date: string,
   options: Intl.DateTimeFormatOptions = {},
 ) {
-  return new Intl.DateTimeFormat("en-GB", {
+  const dateOnly = date.length === 10;
+  // Naive "YYYY-MM-DDTHH:mm" values are stored as coach-zone wall time
+  // (message and submission stamps); instants with an offset keep theirs.
+  const naive =
+    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(date) &&
+    !/(Z|[+-]\d{2}:?\d{2})$/.test(date);
+  const instant = dateOnly
+    ? Date.parse(`${date}T12:00:00Z`)
+    : naive
+      ? deadlineInstant(
+          date.slice(0, 10),
+          date.slice(11, 16),
+          displayConfig.timeZone,
+        )
+      : Date.parse(date);
+  if (Number.isNaN(instant)) return date;
+  return new Intl.DateTimeFormat(displayConfig.locale, {
     day: "numeric",
     month: "short",
-    timeZone: "Europe/Vienna",
+    // A bare calendar day renders as that day in every zone; formatting it
+    // in the configured zone could shift it across the dateline.
+    timeZone: dateOnly ? "UTC" : displayConfig.timeZone,
+    hour12: displayConfig.hourCycle === "12",
     ...options,
-  }).format(new Date(date.length === 10 ? `${date}T12:00:00Z` : date));
+  }).format(new Date(instant));
+}
+
+/* --- Region clock helpers -----------------------------------------------
+ * Calendar-day strings ("YYYY-MM-DD") never shift with the zone; instants
+ * resolve through the coach's configured zone so deadline and working-hour
+ * checks survive DST. */
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const zoneParts = (instant: number, timeZone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(instant));
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "00";
+  return {
+    date: `${get("year")}-${get("month")}-${get("day")}`,
+    minutes: Number(get("hour")) * 60 + Number(get("minute")),
+  };
+};
+/** Today's calendar date in the coach's zone. */
+export function zonedToday(timeZone: string, now: Date = new Date()): string {
+  return zoneParts(now.getTime(), timeZone).date;
+}
+/** The UTC instant at which `hhmm` strikes on `date` inside `timeZone`.
+ * Converges across DST: guesses UTC then corrects by the zone offset. */
+export function deadlineInstant(
+  date: string,
+  hhmm: string,
+  timeZone: string,
+): number {
+  const target = Date.parse(`${date}T${hhmm}:00Z`);
+  let instant = target;
+  for (let i = 0; i < 3; i += 1) {
+    const wall = zoneParts(instant, timeZone);
+    const asUtc = Date.parse(
+      `${wall.date}T${pad2(Math.floor(wall.minutes / 60))}:${pad2(wall.minutes % 60)}:00Z`,
+    );
+    const delta = target - asUtc;
+    if (delta === 0) break;
+    instant += delta;
+  }
+  return instant;
+}
+export function checkInDeadline(
+  preferences: Pick<CoachState["preferences"], "rules"> | undefined,
+): string {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(
+    preferences?.rules?.checkInDeadline ?? "",
+  )
+    ? (preferences?.rules?.checkInDeadline as string)
+    : "23:59";
+}
+/** A check-in on `date` is overdue once its deadline time passes in the
+ * coach's zone — past days count as overdue at any hour. */
+export function isCheckInOverdue(
+  preferences: Pick<CoachState["preferences"], "region" | "rules">,
+  date: string,
+  now: Date = new Date(),
+): boolean {
+  return (
+    now.getTime() >=
+    deadlineInstant(
+      date,
+      checkInDeadline(preferences),
+      resolvedTimeZone(preferences),
+    )
+  );
+}
+/** "HH:mm" rendered for the coach's hour format ("20:00" or "8:00 PM"). */
+export function formatClock(hhmm: string, hourCycle?: "12" | "24"): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const cycle = hourCycle ?? displayConfig.hourCycle;
+  if (cycle === "12")
+    return `${h % 12 || 12}:${pad2(m)} ${h >= 12 ? "PM" : "AM"}`;
+  return `${pad2(h)}:${pad2(m)}`;
+}
+
+/* --- Working hours ------------------------------------------------------*/
+export type WorkingHours = NonNullable<
+  CoachState["preferences"]["workingHours"]
+>;
+export const DEFAULT_WORKING_HOURS: WorkingHours = [0, 1, 2, 3, 4].map(
+  (weekday) => ({
+    weekday: weekday as WorkingHours[number]["weekday"],
+    ranges: [{ start: "09:00", end: "18:00" }],
+  }),
+);
+export const DEFAULT_AVAILABILITY = "Weekdays · 09:00–18:00";
+export function resolvedWorkingHours(
+  preferences: Pick<CoachState["preferences"], "workingHours"> | undefined,
+): WorkingHours {
+  return preferences?.workingHours ?? DEFAULT_WORKING_HOURS;
+}
+/** The legacy free-text availability moves to the athlete-facing note only
+ * when the coach changed it from the seed value. */
+export function athleteAvailabilityNote(
+  preferences:
+    | Pick<CoachState["preferences"], "availability" | "availabilityNote">
+    | undefined,
+): string {
+  if (preferences?.availabilityNote !== undefined)
+    return preferences.availabilityNote;
+  if (
+    preferences?.availability &&
+    preferences.availability !== DEFAULT_AVAILABILITY
+  )
+    return preferences.availability;
+  return "";
+}
+const toMinutes = (hhmm: string) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+export type WorkingHoursErrors = {
+  /** Per-weekday error lines keyed by Monday-first weekday index. */
+  days: Partial<Record<number, string>>;
+  /** Whole-week problem, e.g. no working day enabled. */
+  week?: string;
+};
+export function validateWorkingHours(hours: WorkingHours): WorkingHoursErrors {
+  const errors: WorkingHoursErrors = { days: {} };
+  let workingDays = 0;
+  for (const day of hours) {
+    const ranges = [...day.ranges].sort((a, b) =>
+      a.start.localeCompare(b.start),
+    );
+    if (ranges.length > 0) workingDays += 1;
+    if (ranges.some((r) => r.end <= r.start))
+      errors.days[day.weekday] = "End must be after start.";
+    else if (ranges.some((r, i) => i > 0 && r.start < ranges[i - 1].end))
+      errors.days[day.weekday] = "Ranges must not overlap.";
+  }
+  if (workingDays === 0) errors.week = "Add at least one working day.";
+  return errors;
+}
+/** The weekday windows an instant falls inside, in the coach's zone. */
+export function isWithinWorkingHours(
+  hours: WorkingHours,
+  instant: number,
+  timeZone: string,
+): boolean {
+  const wall = zoneParts(instant, timeZone);
+  const weekday = (new Date(`${wall.date}T12:00:00Z`).getUTCDay() + 6) % 7;
+  const day = hours.find((d) => d.weekday === weekday);
+  return (day?.ranges ?? []).some(
+    (r) =>
+      wall.minutes >= toMinutes(r.start) && wall.minutes < toMinutes(r.end),
+  );
+}
+/** Advance `start` by `hours` of time inside the configured windows only;
+ * idle evenings and days off do not count. Used for working-day feedback
+ * targets. Walks whole minutes for simplicity (bounds are minute-aligned). */
+export function addWorkingHours(
+  hours: WorkingHours,
+  start: number,
+  amountHours: number,
+  timeZone: string,
+): number {
+  let remaining = amountHours * 60;
+  let cursor = start;
+  const windowsFor = (date: string) => {
+    const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
+    return (hours.find((d) => d.weekday === weekday)?.ranges ?? [])
+      .map((r) => ({
+        from: deadlineInstant(date, r.start, timeZone),
+        to: deadlineInstant(date, r.end, timeZone),
+      }))
+      .filter((w) => w.to > w.from)
+      .sort((a, b) => a.from - b.from);
+  };
+  let day = zonedToday(timeZone, new Date(cursor));
+  for (let guard = 0; guard < 370 && remaining > 0; guard += 1) {
+    for (const w of windowsFor(day)) {
+      if (w.to <= cursor) continue;
+      const open = Math.max(w.from, cursor);
+      const span = Math.min((w.to - open) / 60000, remaining);
+      if (span > 0) {
+        cursor = open + span * 60000;
+        remaining -= span;
+      }
+      if (remaining <= 0) return cursor;
+    }
+    day = addDays(day, 1);
+  }
+  return cursor;
+}
+const WEEKDAY_SHORT = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+/** "Mon to Fri, 09:00–18:00" — consecutive days sharing one range list are
+ * grouped; differing groups join with a middle dot. */
+export function workingHoursSummary(
+  hours: WorkingHours,
+  hourCycle: "12" | "24" = "24",
+): string {
+  const days = [...hours]
+    .filter((d) => d.ranges.length > 0)
+    .sort((a, b) => a.weekday - b.weekday);
+  if (days.length === 0) return "";
+  const signature = (d: (typeof days)[number]) =>
+    d.ranges
+      .map((r) => `${r.start}-${r.end}`)
+      .sort()
+      .join("+");
+  const rangesText = (d: (typeof days)[number]) =>
+    [...d.ranges]
+      .sort((a, b) => a.start.localeCompare(b.start))
+      .map(
+        (r) =>
+          `${formatClock(r.start, hourCycle)} to ${formatClock(r.end, hourCycle)}`,
+      )
+      .join(" and ");
+  const groups: { from: number; to: number; text: string; sig: string }[] = [];
+  for (const day of days) {
+    const sig = signature(day);
+    const last = groups.at(-1);
+    if (last && sig === last.sig && day.weekday === last.to + 1) {
+      last.to = day.weekday;
+    } else {
+      groups.push({
+        from: day.weekday,
+        to: day.weekday,
+        text: rangesText(day),
+        sig,
+      });
+    }
+  }
+  return groups
+    .map(
+      (g) =>
+        `${WEEKDAY_SHORT[g.from]}${g.to === g.from ? "" : ` to ${WEEKDAY_SHORT[g.to]}`}, ${g.text}`,
+    )
+    .join(" · ");
+}
+export function timeZoneCity(timeZone: string): string {
+  return (timeZone.split("/").at(-1) ?? timeZone).replace(/_/g, " ");
+}
+
+/* --- Feedback target ----------------------------------------------------*/
+/** Instant a submission counts as sent: its recorded timestamp, or the
+ * check-in day's deadline for entries that predate the field. */
+export function submissionInstant(
+  preferences: Pick<CoachState["preferences"], "region" | "rules">,
+  submission: Pick<Submission, "date" | "submittedAt">,
+): number {
+  if (submission.submittedAt) return Date.parse(submission.submittedAt);
+  return deadlineInstant(
+    submission.date,
+    checkInDeadline(preferences),
+    resolvedTimeZone(preferences),
+  );
+}
+/** "2 working days" counts sixteen working hours inside the configured
+ * windows, so a Friday evening submission does not go late over a weekend
+ * off. 24 h and 48 h are plain elapsed hours. */
+export function feedbackDueAt(
+  preferences: Pick<
+    CoachState["preferences"],
+    "region" | "rules" | "workingHours"
+  >,
+  submission: Pick<Submission, "date" | "submittedAt">,
+): number | null {
+  const target = preferences.rules?.feedbackTarget ?? "48h";
+  if (target === "none") return null;
+  const start = submissionInstant(preferences, submission);
+  if (target === "24h") return start + 24 * 3_600_000;
+  if (target === "48h") return start + 48 * 3_600_000;
+  return addWorkingHours(
+    resolvedWorkingHours(preferences),
+    start,
+    16,
+    resolvedTimeZone(preferences),
+  );
+}
+const describeGap = (ms: number) => {
+  const minutes = Math.max(1, Math.round(Math.abs(ms) / 60000));
+  return minutes >= 60 ? `${Math.round(minutes / 60)} h` : `${minutes} min`;
+};
+/** "Reply due in 5 h" while inside the target, "Late by 3 h" once past it;
+ * null when no target is configured. */
+export function feedbackChipText(
+  preferences: Pick<
+    CoachState["preferences"],
+    "region" | "rules" | "workingHours"
+  >,
+  submission: Pick<Submission, "date" | "submittedAt">,
+  now: Date = new Date(),
+): { text: string; late: boolean } | null {
+  const due = feedbackDueAt(preferences, submission);
+  if (due === null) return null;
+  const gap = due - now.getTime();
+  return gap >= 0
+    ? { text: `Reply due in ${describeGap(gap)}`, late: false }
+    : { text: `Late by ${describeGap(gap)}`, late: true };
+}
+
+/* --- Saved replies ------------------------------------------------------*/
+export const DEFAULT_SAVED_REPLIES = [
+  "Thanks for the update! I’ll review this alongside your check-in.",
+  "Keep the same load this week and focus on controlled reps.",
+  "Let’s keep things simple: consistency first, then we’ll build from here.",
+];
+export const SAVED_REPLIES_LIMIT = 20;
+/** An absent list means the built-in snippets; an empty list stays empty. */
+export function savedReplyTexts(
+  preferences: Pick<CoachState["preferences"], "savedReplies">,
+): string[] {
+  return preferences.savedReplies?.map((r) => r.text) ?? DEFAULT_SAVED_REPLIES;
+}
+export function unitsForNewTemplate(
+  preferences: Pick<CoachState["preferences"], "region">,
+): { bodyWeightUnit: "kg" | "lb"; loadUnit: "kg" | "lb" } {
+  return {
+    bodyWeightUnit: preferences.region?.bodyWeightUnit ?? "kg",
+    loadUnit: preferences.region?.loadUnit ?? "kg",
+  };
 }
 export function sampleValue(field: FieldConfig, client?: CoachClient) {
   const p = getParameter(field.id);
@@ -1001,7 +1418,11 @@ export function summaryPreview(
     count: values.length,
   };
 }
-export function newVariant(id = "meal-plan", name = "Meal plan"): Variant {
+export function newVariant(
+  id = "meal-plan",
+  name = "Meal plan",
+  units: { bodyWeightUnit?: "kg" | "lb"; loadUnit?: "kg" | "lb" } = {},
+): Variant {
   return {
     id,
     name,
@@ -1054,7 +1475,10 @@ export function newVariant(id = "meal-plan", name = "Meal plan"): Variant {
       "protein",
     ].map((id) => ({
       id,
-      unit: getParameter(id)?.units[0] ?? "",
+      unit:
+        id === "weight"
+          ? (units.bodyWeightUnit ?? "kg")
+          : (getParameter(id)?.units[0] ?? ""),
     })),
     roadmap: [
       { source: "weight", calculation: "Weekly average", comparison: false },
@@ -1065,6 +1489,7 @@ export function newVariant(id = "meal-plan", name = "Meal plan"): Variant {
     phaseOptions: ["Fat loss", "Maintenance", "Muscle gain", "Recovery"],
     training: {
       fields: [...TRAINING_FIELDS],
+      loadUnit: units.loadUnit ?? "kg",
       volume: true,
       breakdown: "Muscle groups / week",
       presentation: "Table",
@@ -1095,14 +1520,17 @@ export function newVariant(id = "meal-plan", name = "Meal plan"): Variant {
     summaries: ["weight", "calories", "sleep", "habits"],
   };
 }
-export function newTemplate(id: string): Template {
+export function newTemplate(
+  id: string,
+  units: { bodyWeightUnit?: "kg" | "lb"; loadUnit?: "kg" | "lb" } = {},
+): Template {
   return {
     id,
     name: "Untitled template",
     description: "",
     updated: TODAY,
     defaultVariant: "meal-plan",
-    variants: [newVariant()],
+    variants: [newVariant("meal-plan", "Meal plan", units)],
   };
 }
 export function assignTemplate(
@@ -1152,6 +1580,7 @@ export function eventsBetween(
   state: CoachState,
   start: string,
   end: string,
+  now: Date = new Date(),
 ): Event[] {
   const events = new Map<string, Event>();
   const put = (
@@ -1175,7 +1604,7 @@ export function eventsBetween(
         ? "Feedback sent"
         : submission
           ? "Awaiting feedback"
-          : date < TODAY
+          : isCheckInOverdue(state.preferences, date, now)
             ? "Overdue"
             : "Scheduled",
     });
@@ -1208,6 +1637,31 @@ export function eventsBetween(
     (a, b) =>
       a.date.localeCompare(b.date) || a.clientId.localeCompare(b.clientId),
   );
+}
+
+/** The check-in card rule shared by the coach overview and the athlete
+ * app: today's own check-in past its deadline shows Overdue; an older
+ * missed one still yields to the next upcoming check-in. */
+export function pickCheckInCard(
+  state: CoachState,
+  clientId: string,
+  today: string,
+  now: Date = new Date(),
+): { overdue?: Event; next?: Event } {
+  const coachToday = zonedToday(resolvedTimeZone(state.preferences), now);
+  const scheduled = eventsBetween(
+    state,
+    addDays(today, -21),
+    addDays(today, 35),
+    now,
+  ).filter((e) => e.clientId === clientId && !e.submission);
+  const isLate = (e: Event) => isCheckInOverdue(state.preferences, e.date, now);
+  const todays = scheduled.find((e) => e.date === coachToday);
+  if (todays && isLate(todays)) return { overdue: todays };
+  return {
+    overdue: scheduled.filter((e) => e.date < coachToday || isLate(e)).at(-1),
+    next: scheduled.find((e) => e.date >= coachToday && !isLate(e)),
+  };
 }
 export function addExtra(state: CoachState, extra: Extra) {
   if (
@@ -1979,7 +2433,19 @@ export function isCoachState(v: unknown): v is CoachState {
               date: str,
             }),
           ),
+          submittedAt: opt(str),
         }),
+      ),
+      checkInMoves: opt(
+        arr(
+          obj({
+            eventId: str,
+            clientId: str,
+            from: str,
+            to: (v: unknown) => v === null || str(v),
+            vacationId: opt(str),
+          }),
+        ),
       ),
       messages: arr(
         obj({
@@ -1994,6 +2460,7 @@ export function isCoachState(v: unknown): v is CoachState {
           link: opt(obj({ label: str, route: routeGuard })),
           links: opt(arr(obj({ label: str, route: routeGuard }))),
           local: opt(bool),
+          auto: opt(one(["vacation", "off-hours"])),
         }),
       ),
       drafts: dict(
@@ -2019,6 +2486,31 @@ export function isCoachState(v: unknown): v is CoachState {
         ),
         brand: opt(obj({ name: opt(str), logoLight: opt(logoGuard) })),
         notify: opt(obj({ checkIns: opt(bool), taskReminders: opt(bool) })),
+        region: opt(
+          obj({
+            timeZone: opt(str),
+            locale: opt(one(["en-GB", "en-US", "de-AT"])),
+            hourCycle: opt(one(["12", "24"])),
+            bodyWeightUnit: opt(one(["kg", "lb"])),
+            loadUnit: opt(one(["kg", "lb"])),
+          }),
+        ),
+        workingHours: opt(
+          arr(
+            obj({
+              weekday: one([0, 1, 2, 3, 4, 5, 6]),
+              ranges: arr(obj({ start: str, end: str })),
+            }),
+          ),
+        ),
+        availabilityNote: opt(str),
+        rules: opt(
+          obj({
+            checkInDeadline: opt(str),
+            feedbackTarget: opt(one(["24h", "48h", "2-working-days", "none"])),
+          }),
+        ),
+        savedReplies: opt(arr(obj({ id: str, text: str }))),
       }),
     })(v) &&
     (v as CoachState).clients.every((client) =>

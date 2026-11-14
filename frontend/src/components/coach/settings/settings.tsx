@@ -1,10 +1,14 @@
 "use client";
 import { useCoach } from "../store";
 import { AppearanceSettings } from "./appearance";
+import { AvailabilitySettings } from "./availability";
 import { BrandingSettings } from "./branding";
 import { DataSettings } from "./data";
+import { MessagesSettings } from "./messages";
 import { NotificationsSettings } from "./notifications";
 import { ProfileSettings } from "./profile";
+import { RegionSettings } from "./region";
+import { RulesSettings } from "./rules";
 import {
   resolveSettingsTab,
   SETTINGS_TABS,
@@ -50,6 +54,10 @@ export function SettingsWorkspace() {
         {tab === "profile" && <ProfileSettings />}
         {tab === "branding" && <BrandingSettings />}
         {tab === "appearance" && <AppearanceSettings />}
+        {tab === "region" && <RegionSettings />}
+        {tab === "availability" && <AvailabilitySettings />}
+        {tab === "rules" && <RulesSettings />}
+        {tab === "messages" && <MessagesSettings />}
         {tab === "notifications" && <NotificationsSettings />}
         {tab === "data" && <DataSettings />}
       </div>

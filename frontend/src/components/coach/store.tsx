@@ -21,6 +21,7 @@ import {
   type Route,
   STORAGE_KEY,
   seedState,
+  setDisplayConfig,
 } from "./model";
 import { migrateCoachState } from "./plans/domain";
 import { adoptAmaraTrainingExample } from "./plans/training/amara-example";
@@ -131,6 +132,9 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     }
     setHydrated(true);
   }, []);
+  useEffect(() => {
+    setDisplayConfig(state.preferences.region);
+  }, [state.preferences.region]);
   useEffect(() => {
     if (!hydrated || preserveRaw.current) return;
     try {

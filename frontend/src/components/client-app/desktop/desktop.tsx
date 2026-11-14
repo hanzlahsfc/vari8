@@ -6,7 +6,7 @@ import { AthleteOverview } from "../../coach/athlete/overview";
 import { currentPhase } from "../../coach/athlete/timeline";
 import { AthleteTimelineTab } from "../../coach/athlete/timeline-tab";
 import { AthleteTrackerTab } from "../../coach/athlete/tracker-tab";
-import { type CoachClient, formatDate } from "../../coach/model";
+import { type CoachClient, formatClock, formatDate } from "../../coach/model";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
@@ -144,8 +144,10 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
                       </div>
                       <div className="cm-mut" style={{ fontSize: 12.5 }}>
                         {next.overdue
-                          ? `Overdue since ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })}`
-                          : `Due ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })} · in ${next.daysUntil} days`}
+                          ? "Overdue"
+                          : next.dueToday
+                            ? `Due today by ${formatClock(next.deadline)}`
+                            : `Due ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })} · in ${next.daysUntil} days`}
                       </div>
                     </div>
                     <Button primary onClick={() => setCheckinOpen(true)}>

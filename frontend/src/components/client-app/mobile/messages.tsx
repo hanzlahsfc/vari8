@@ -2,10 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  athleteAvailabilityNote,
   type CoachClient,
   formatDate,
   type Message,
+  resolvedTimeZone,
+  resolvedWorkingHours,
+  timeZoneCity,
   uid,
+  workingHoursSummary,
 } from "../../coach/model";
 import { useCoach } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
@@ -21,9 +26,16 @@ export function MobileMessages({ client }: { client: CoachClient }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  // Coach identity only — availability text is a coach-workspace field and
-  // gains an athlete-facing surface in Phase 1b.
+  // Coach identity plus the configured availability: working hours summary
+  // and the optional note. The legacy coach-side availability line stays in
+  // the coach workspace.
   const coachLine = profile?.title || "Coach";
+  const hoursText = workingHoursSummary(
+    resolvedWorkingHours(state.preferences),
+    state.preferences.region?.hourCycle ?? "24",
+  );
+  const hoursCity = timeZoneCity(resolvedTimeZone(state.preferences));
+  const availabilityNote = athleteAvailabilityNote(state.preferences);
   const today = useLocalToday();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
@@ -108,6 +120,16 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           <div className="cm-mut" style={{ fontSize: 11.5 }}>
             {coachLine}
           </div>
+          {hoursText && (
+            <div className="cm-mut" style={{ fontSize: 11.5 }}>
+              Usually replies {hoursText}, {hoursCity} time
+            </div>
+          )}
+          {availabilityNote && (
+            <div className="cm-mut" style={{ fontSize: 11.5 }}>
+              {availabilityNote}
+            </div>
+          )}
         </div>
       </div>
       <div

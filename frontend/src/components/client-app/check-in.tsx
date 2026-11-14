@@ -137,6 +137,7 @@ export function CheckInForm({
       id: uid("submission"),
       clientId: client.id,
       date: today,
+      submittedAt: new Date().toISOString(),
       eventId: nextCheckInEventId(client, today),
       type: "Full",
       answers: answersList,

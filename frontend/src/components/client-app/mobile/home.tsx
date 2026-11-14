@@ -6,7 +6,12 @@ import {
   logoForMode,
   useSystemMode,
 } from "../../coach/coach-theme";
-import { type CoachClient, formatDate, type Message } from "../../coach/model";
+import {
+  type CoachClient,
+  formatClock,
+  formatDate,
+  type Message,
+} from "../../coach/model";
 import { useCoach } from "../../coach/store";
 import { dosageForQuantity } from "../../coach/supplements/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
@@ -24,11 +29,6 @@ import {
   upcomingTemporary,
 } from "./data";
 
-const WEEKDAY = new Intl.DateTimeFormat("en-GB", {
-  weekday: "long",
-  day: "numeric",
-  month: "short",
-});
 const NUM = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
 
 export function MobileHome({
@@ -129,7 +129,7 @@ export function MobileHome({
     <div className="cm-stack">
       <div className="cm-row" style={{ justifyContent: "space-between" }}>
         <span className="cm-mut" style={{ fontSize: 13 }}>
-          {WEEKDAY.format(new Date(`${today}T12:00:00`))}
+          {formatDate(today, { weekday: "long" })}
         </span>
         <span className="cm-home-brand">
           {brandLogo ? (
@@ -213,8 +213,10 @@ export function MobileHome({
                 {checkIn.awaitingFeedback
                   ? `Submitted ${checkIn.submittedDate ? formatDate(checkIn.submittedDate, { weekday: "short", day: "numeric", month: "short" }) : "recently"} · awaiting feedback`
                   : checkIn.overdue
-                    ? `Overdue since ${formatDate(checkIn.date, { day: "numeric", month: "short" })}`
-                    : `Due ${formatDate(checkIn.date, { weekday: "short", day: "numeric", month: "short" })} · in ${checkIn.daysUntil} day${checkIn.daysUntil === 1 ? "" : "s"}`}
+                    ? "Overdue"
+                    : checkIn.dueToday
+                      ? `Due today by ${formatClock(checkIn.deadline)}`
+                      : `Due ${formatDate(checkIn.date, { weekday: "short", day: "numeric", month: "short" })} · in ${checkIn.daysUntil} day${checkIn.daysUntil === 1 ? "" : "s"}`}
               </div>
             </div>
             {!checkIn.awaitingFeedback && (
