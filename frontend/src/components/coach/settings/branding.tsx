@@ -255,9 +255,14 @@ export function BrandingSettings() {
         <CommittedInput
           label="Business name"
           value={brand?.name ?? DEFAULT_BRAND_NAME}
+          normalize={(v) => v.trim() || DEFAULT_BRAND_NAME}
           maxLength={80}
           onCommit={(name) => {
-            patch({ brand: { name: name.trim() || DEFAULT_BRAND_NAME } });
+            patch({
+              brand: {
+                name: name === DEFAULT_BRAND_NAME ? undefined : name,
+              },
+            });
             mark();
           }}
         />

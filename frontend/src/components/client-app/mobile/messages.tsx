@@ -21,10 +21,9 @@ export function MobileMessages({ client }: { client: CoachClient }) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-  const coachLine = [
-    profile?.title || "Coach",
-    state.preferences.availability,
-  ].join(" · ");
+  // Coach identity only — availability text is a coach-workspace field and
+  // gains an athlete-facing surface in Phase 1b.
+  const coachLine = profile?.title || "Coach";
   const today = useLocalToday();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);

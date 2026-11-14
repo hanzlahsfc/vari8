@@ -14,6 +14,7 @@ import { processImageFile } from "../image-upload";
 import type { CoachState } from "../model";
 import { useCoach } from "../store";
 import { Button, Surface } from "../ui";
+import { acknowledgeValue, decideCommit } from "./committed";
 
 export type Preferences = CoachState["preferences"];
 
@@ -137,14 +138,17 @@ export function SettingRow({
 }
 
 /** Shared text field with commit-on-blur/Enter/debounce semantics: blur,
- * Enter or 600 ms without typing commits the draft. Enter-then-blur never
- * saves twice, and a draft can never overwrite a value that changed under
- * it — a stale draft is resynced instead. */
+ * Enter or 600 ms without typing commits the draft through `normalize`
+ * (default identity) so the stored echo is recognised as our own write.
+ * Enter-then-blur never saves twice, and a draft can never overwrite a
+ * value that changed under it — a stale draft is resynced instead. The
+ * reconciliation rules live in committed.ts and are unit-tested. */
 export function CommittedInput({
   label,
   hint,
   value,
   onCommit,
+  normalize,
   maxLength,
   placeholder,
 }: {
@@ -152,6 +156,7 @@ export function CommittedInput({
   hint?: string;
   value: string;
   onCommit: (value: string) => void;
+  normalize?: (value: string) => string;
   maxLength?: number;
   placeholder?: string;
 }) {
@@ -160,21 +165,25 @@ export function CommittedInput({
   const external = useRef(false);
   const lastSent = useRef<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const normalizeRef = useRef(normalize);
+  normalizeRef.current = normalize;
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
     },
     [],
   );
-  // Sync the field from the stored value. Our own commit echo is ignored;
-  // a different value while editing means an outside write landed, which
-  // marks the draft stale so a later blur cannot clobber it.
+  // Sync the field from the stored value. Our own commit echo is dropped;
+  // a different value while editing marks the draft stale so a later blur
+  // cannot clobber the newer write.
   useEffect(() => {
-    if (lastSent.current !== null && value === lastSent.current) {
-      lastSent.current = null;
-      return;
-    }
-    if (focused.current) external.current = true;
+    const ack = acknowledgeValue({
+      value,
+      lastSent: lastSent.current,
+      focused: focused.current,
+    });
+    if (ack.kind === "own") lastSent.current = null;
+    else if (ack.kind === "external") external.current = true;
     else setDraft(value);
   }, [value]);
   const commit = (next: string) => {
@@ -182,14 +191,19 @@ export function CommittedInput({
       clearTimeout(timer.current);
       timer.current = null;
     }
-    if (external.current) {
+    const outcome = decideCommit({
+      draft: next,
+      value,
+      lastSent: lastSent.current,
+      external: external.current,
+      normalize: normalizeRef.current,
+    });
+    if (outcome.action === "discard") {
       external.current = false;
       setDraft(value);
-      return;
-    }
-    if (next !== value && next !== lastSent.current) {
-      lastSent.current = next;
-      onCommit(next);
+    } else if (outcome.action === "save") {
+      lastSent.current = outcome.submitted;
+      onCommit(outcome.submitted);
     }
   };
   return (

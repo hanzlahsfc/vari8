@@ -27,22 +27,24 @@ export function ProfileSettings() {
       <CommittedInput
         label="Name"
         value={profile?.name ?? DEFAULT_COACH_NAME}
+        normalize={(v) => v.trim() || DEFAULT_COACH_NAME}
         maxLength={120}
         onCommit={(name) => {
-          patch({ profile: { name: name.trim() || DEFAULT_COACH_NAME } });
+          patch({ profile: { name } });
           mark();
         }}
       />
       <CommittedInput
         label="Title"
         value={profile?.title ?? DEFAULT_COACH_TITLE}
+        normalize={(v) => v.trim() || DEFAULT_COACH_TITLE}
         maxLength={80}
         placeholder="Prep coach"
         onCommit={(title) => {
           patch({
             profile: {
               name: profile?.name ?? DEFAULT_COACH_NAME,
-              title: title.trim() || undefined,
+              title: title === DEFAULT_COACH_TITLE ? undefined : title,
             },
           });
           mark();
@@ -71,12 +73,11 @@ export function ProfileSettings() {
         label="Availability"
         hint="Shown beside your name in Messages."
         value={state.preferences.availability}
+        normalize={(v) => v.trim() || "Weekdays · 09:00–18:00"}
         maxLength={120}
         placeholder="Weekdays · 09:00–18:00"
         onCommit={(availability) => {
-          patch({
-            availability: availability.trim() || "Weekdays · 09:00–18:00",
-          });
+          patch({ availability });
           mark();
         }}
       />

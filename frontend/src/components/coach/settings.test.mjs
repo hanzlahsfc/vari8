@@ -326,7 +326,8 @@ test("the existing availability value round-trips to its Messages consumer", asy
   const round = JSON.parse(JSON.stringify(edited));
   assert.equal(round.preferences.availability, "Replies within a day");
   // Source inspection: the coach Messages caption still renders the field
-  // the settings field writes.
+  // the settings field writes, and the athlete header no longer does
+  // (deferred to Phase 1b).
   const src = await readFile(
     new URL("./messages.tsx", import.meta.url),
     "utf8",
@@ -335,5 +336,160 @@ test("the existing availability value round-trips to its Messages consumer", asy
     src,
     /preferences\.availability/,
     "messages.tsx no longer reads preferences.availability",
+  );
+  const athlete = await readFile(
+    new URL("../client-app/mobile/messages.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    athlete,
+    /preferences\.availability/,
+    "athlete Messages header still reads preferences.availability",
+  );
+});
+
+// --- P810 review repairs -----------------------------------------------------
+// committed.ts is the pure reconciliation model behind CommittedInput.
+
+const committed = await import(
+  asModule(
+    stripTypeScriptTypes(
+      await readFile(
+        new URL("./settings/committed.ts", import.meta.url),
+        "utf8",
+      ),
+      { mode: "strip" },
+    ),
+  )
+);
+const { decideCommit, acknowledgeValue } = committed;
+const NAME_NORM = (v) => v.trim() || "Liliana Mansfeld";
+
+test("normalized Enter commit then a newer edit still saves", () => {
+  // The reported P809 sequence: type "Liliana ", Enter, keep editing to
+  // "LilianaX", blur — the second edit must still save.
+  const enter = decideCommit({
+    draft: "Liliana ",
+    value: "Liliana Mansfeld",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.deepEqual(enter, { action: "save", submitted: "Liliana" });
+  const lastSent = enter.submitted;
+  // The stored write echoes back through props and is recognised as ours.
+  assert.equal(
+    acknowledgeValue({ value: "Liliana", lastSent, focused: true }).kind,
+    "own",
+  );
+  const blur = decideCommit({
+    draft: "LilianaX",
+    value: "Liliana",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.deepEqual(blur, { action: "save", submitted: "LilianaX" });
+});
+
+test("debounced normalization including an empty draft that falls back", () => {
+  const emptied = decideCommit({
+    draft: "   ",
+    value: "Rae Okonkwo",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.deepEqual(emptied, {
+    action: "save",
+    submitted: "Liliana Mansfeld",
+  });
+  // The echo of that default acknowledges normally.
+  assert.equal(
+    acknowledgeValue({
+      value: "Liliana Mansfeld",
+      lastSent: emptied.submitted,
+      focused: false,
+    }).kind,
+    "own",
+  );
+  // A newer edit after that echo still saves.
+  const newer = decideCommit({
+    draft: "Rae O",
+    value: "Liliana Mansfeld",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.equal(newer.action, "save");
+});
+
+test("Enter then blur with no further edit saves exactly once", () => {
+  const enter = decideCommit({
+    draft: "Liliana ",
+    value: "Liliana Mansfeld",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.equal(enter.action, "save");
+  // Before the echo arrives, blur submits nothing new — the draft
+  // normalizes to what we already sent.
+  const blurBeforeEcho = decideCommit({
+    draft: "Liliana ",
+    value: "Liliana Mansfeld",
+    lastSent: enter.submitted,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.equal(blurBeforeEcho.action, "noop");
+  // After the echo, blur is a noop against the acknowledged value.
+  const blurAfterEcho = decideCommit({
+    draft: "Liliana ",
+    value: "Liliana",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.equal(blurAfterEcho.action, "noop");
+});
+
+test("an unchanged normalized value never triggers a duplicate save", () => {
+  const out = decideCommit({
+    draft: "  Liliana Mansfeld  ",
+    value: "Liliana Mansfeld",
+    lastSent: null,
+    external: false,
+    normalize: NAME_NORM,
+  });
+  assert.equal(out.action, "noop");
+});
+
+test("an external update or reset is never overwritten by an older draft", () => {
+  // Focused field, stored value changes to something we did not send.
+  assert.equal(
+    acknowledgeValue({
+      value: "Rae Okonkwo",
+      lastSent: "Liliana",
+      focused: true,
+    }).kind,
+    "external",
+  );
+  const out = decideCommit({
+    draft: "LilianaX",
+    value: "Rae Okonkwo",
+    lastSent: "Liliana",
+    external: true,
+    normalize: NAME_NORM,
+  });
+  assert.equal(out.action, "discard");
+  // Unfocused fields resync instead of flagging the draft stale.
+  assert.equal(
+    acknowledgeValue({
+      value: "Rae Okonkwo",
+      lastSent: "Liliana",
+      focused: false,
+    }).kind,
+    "resync",
   );
 });

@@ -1,5 +1,32 @@
 # Frontend status
 
+## 2026-11-05 — P810 Settings Phase 1a scope cleanup — gates green
+
+- Athlete-facing availability deferred to Phase 1b: the mobile Messages
+  header no longer reads `preferences.availability`; it keeps the coach
+  profile name, photo and title. The legacy field stays editable in
+  Profile → Availability and still feeds the coach Messages caption.
+  No migration, no working hours.
+- CommittedInput reconciliation fixed: the reported sequence
+  (type "Liliana ", Enter, continue to "LilianaX", blur) previously lost
+  the second edit because the normalized echo was read as an external
+  write. The field now takes a `normalize` prop and the pure
+  `settings/committed.ts` model applies the same rule to submission and
+  acknowledgement — echoes acknowledge, Enter-then-blur saves once, an
+  unchanged normalized draft saves nothing, and a genuine external write
+  or reset still discards a stale draft. Callers (Name, Title,
+  Availability, Business name) pass their projection rule.
+- Regression evidence (settings.test.mjs 14/14): transition-level tests
+  on `decideCommit`/`acknowledgeValue` cover the reported sequence,
+  debounced normalization with empty→default fallback, Enter+blur
+  single-save, no-op on unchanged normalized value, and external-write
+  protection; source inspection asserts the athlete header no longer
+  reads `preferences.availability` while the coach caption still does.
+  No DOM harness exists — rendered interaction remains browser-pending.
+- Gates (Node 24.22.3): `npm run check` exit 0 (336/336); `ui:check`
+  exit 1 with the same 21 baseline violations (none in changed files);
+  `git diff --check` clean.
+
 ## 2026-11-05 — P808 Settings Phase 1a review repairs — gates green
 
 - Accent boundary restored: shared `vari8-theme` keeps its legacy
