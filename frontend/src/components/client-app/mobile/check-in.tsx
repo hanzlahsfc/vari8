@@ -4,7 +4,7 @@ import type { CoachClient } from "../../coach/model";
 import { useCoach, useCoachNow, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
-import { CheckInForm } from "../check-in";
+import { CheckInForm, useCheckInTarget } from "../check-in";
 import { nextCheckIn } from "./data";
 
 export function ClientCheckInSheet({
@@ -22,6 +22,10 @@ export function ClientCheckInSheet({
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
   const due = nextCheckIn(state, client, today, now);
+  // The header shows the occurrence the open form will file against,
+  // not the live pick — the dashboard's next pointer may advance past
+  // a deadline or day boundary while the draft stays bound.
+  const bound = useCheckInTarget(client, due?.event);
   if (!configuration) return null;
   return (
     <>
@@ -37,10 +41,10 @@ export function ClientCheckInSheet({
           <div>
             <div style={{ fontSize: 17, fontWeight: 600 }}>Weekly check-in</div>
             <div className="cm-mut" style={{ fontSize: 12 }}>
-              {due
-                ? due.dueToday
+              {due && bound
+                ? due.dueToday && bound.date === due.date
                   ? `due today by ${formatClock(due.deadline)}`
-                  : `due ${formatDate(due.date, { weekday: "short", day: "numeric", month: "short" })} by ${formatClock(due.deadline)}`
+                  : `due ${formatDate(bound.date, { weekday: "short", day: "numeric", month: "short" })} by ${formatClock(due.deadline)}`
                 : "~5 min"}
             </div>
           </div>
@@ -57,7 +61,7 @@ export function ClientCheckInSheet({
           <CheckInForm
             configuration={configuration}
             client={client}
-            occurrence={due?.event}
+            occurrence={bound}
           />
         </div>
       </div>

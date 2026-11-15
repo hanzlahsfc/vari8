@@ -4,6 +4,7 @@ import { useState } from "react";
 import { SAVED_REPLIES_LIMIT, savedReplies, uid } from "../model";
 import { useCoach } from "../store";
 import { Button, IconButton } from "../ui";
+import { bumpReplyRestore, replyInputKey } from "./replies";
 import {
   CommittedInput,
   SettingsCard,
@@ -19,8 +20,10 @@ export function MessagesSettings() {
   const replies = state.preferences.savedReplies;
   const list = savedReplies(state.preferences);
   const [emptyError, setEmptyError] = useState(false);
-  // Bump to remount the field so an emptied draft restores the stored text.
-  const [restore, setRestore] = useState(0);
+  // Per-reply remount ticks: rejecting an emptied draft remounts only
+  // that field to restore the stored text; other rows keep drafts and
+  // focus.
+  const [restore, setRestore] = useState<Record<string, number>>({});
   const write = (next: { id: string; text: string }[]) => {
     patch({ savedReplies: next });
     mark();
@@ -65,17 +68,18 @@ export function MessagesSettings() {
           </p>
         )}
         {list.map((reply, index) => (
-          <div className="cd-settings-reply" key={`${reply.id}:${restore}`}>
+          <div className="cd-settings-reply" key={reply.id}>
             <CommittedInput
+              key={replyInputKey(reply.id, restore)}
               label={`Reply ${index + 1}`}
               value={reply.text}
               normalize={(v) => v.trim()}
               onCommit={(text) => {
                 if (!text) {
                   // An emptied field is not saved — the stored reply stays
-                  // and the input restores it; say so clearly.
+                  // and only this input remounts to restore it.
                   setEmptyError(true);
-                  setRestore((n) => n + 1);
+                  setRestore((ticks) => bumpReplyRestore(ticks, reply.id));
                   return;
                 }
                 setEmptyError(false);

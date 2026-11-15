@@ -459,3 +459,123 @@ test("activity summary resolves prescriptions at the requested as-of date", () =
   );
   assert.equal(activityFree.target, "No target defined");
 });
+test("check-in submission target rejects stale occurrences and keeps valid ones", () => {
+  const a = m.seedState();
+  const client = a.clients[0];
+  const today = "2026-10-20";
+  const now = new Date("2026-10-20T12:00:00Z");
+  const occurrence = m
+    .eventsBetween(a, "2026-10-19", "2026-10-25", now)
+    .find(
+      (e) =>
+        e.clientId === client.id && e.origin === "Recurring" && !e.submission,
+    );
+  assert.ok(occurrence, "seed should contain an unsubmitted occurrence");
+  const check = (state, target) =>
+    m.checkInSubmissionTarget(state, client.id, target, today, now);
+
+  // Still resolves at the same effective date — the open-overnight case
+  // stays valid even though the occurrence is now in the past.
+  assert.deepEqual(check(a, { id: occurrence.id, date: occurrence.date }), {
+    ok: true,
+  });
+  // No bound occurrence — legacy submissions without an event still file.
+  assert.deepEqual(check(a, undefined), { ok: true });
+  assert.deepEqual(check(a, { id: "", date: today }), { ok: true });
+
+  // Moved: same stable ID, new effective date.
+  const moved = {
+    ...a,
+    checkInMoves: [
+      {
+        eventId: occurrence.id,
+        clientId: client.id,
+        from: occurrence.date,
+        to: "2026-10-23",
+      },
+    ],
+  };
+  assert.deepEqual(check(moved, { id: occurrence.id, date: occurrence.date }), {
+    ok: false,
+    reason: "moved",
+    to: "2026-10-23",
+  });
+  // An athlete who opened the moved occurrence at its new date still files.
+  assert.deepEqual(check(moved, { id: occurrence.id, date: "2026-10-23" }), {
+    ok: true,
+  });
+
+  // Skipped: to:null removes the occurrence entirely.
+  const skipped = {
+    ...a,
+    checkInMoves: [
+      {
+        eventId: occurrence.id,
+        clientId: client.id,
+        from: occurrence.date,
+        to: null,
+      },
+    ],
+  };
+  assert.deepEqual(
+    check(skipped, { id: occurrence.id, date: occurrence.date }),
+    { ok: false, reason: "gone" },
+  );
+
+  // Removed: the schedule no longer generates the occurrence.
+  const removed = {
+    ...a,
+    clients: a.clients.map((c) =>
+      c.id === client.id
+        ? { ...c, schedules: [{ effective: "2026-10-01", weekdays: [] }] }
+        : c,
+    ),
+  };
+  assert.deepEqual(
+    check(removed, { id: occurrence.id, date: occurrence.date }),
+    { ok: false, reason: "gone" },
+  );
+
+  // Already filed: a submission for the same event ID is never overwritten
+  // or silently attached to a different occurrence.
+  const filed = {
+    ...a,
+    submissions: [
+      ...a.submissions,
+      {
+        id: "submission-stale",
+        clientId: client.id,
+        date: occurrence.date,
+        submittedAt: "2026-10-20T10:00:00.000Z",
+        eventId: occurrence.id,
+        type: "Full",
+        answers: [],
+        metrics: [],
+        visuals: [],
+        note: "",
+        flags: [],
+      },
+    ],
+  };
+  assert.deepEqual(check(filed, { id: occurrence.id, date: occurrence.date }), {
+    ok: false,
+    reason: "submitted",
+  });
+
+  // Extra-date check-ins resolve and accept filings; a removed extra is gone.
+  const withExtra = m.addExtra(a, {
+    id: "extra-stale",
+    clientId: client.id,
+    date: "2026-10-21",
+    type: "Custom",
+    note: "Coach-added session",
+  });
+  assert.deepEqual(
+    check(withExtra, { id: "extra-stale", date: "2026-10-21" }),
+    { ok: true },
+  );
+  assert.deepEqual(check(a, { id: "extra-stale", date: "2026-10-21" }), {
+    ok: false,
+    reason: "gone",
+  });
+});

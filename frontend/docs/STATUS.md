@@ -1,5 +1,225 @@
 # Frontend status
 
+## 2026-11-16 — P841 combined candidate: saved-reply scope, check-in staleness, extra-date zone label — committed pending scoped integration review
+
+One candidate branch, beta/p841-accepted-fixes, combining the three
+accepted local repairs onto Settings head 79335092. Source and test
+files were applied byte-identically from each accepted tip — no
+conflicts; the only overlapping file was this status record, merged
+by keeping every fix's entry.
+
+Included tips: beta/p830-reply-drafts at d1068278 (saved-reply remount
+scope, commits cab1435 + d1068278), beta/p833-stale-checkin at
+811676f4 (stale check-in guard, feedback alignment and submit-guard
+release, commits c360caff + a37704a3 + 811676f4),
+beta/p839-timezone-label at f3226362 (extra-date zone label).
+
+Gates on the combined candidate (Node 24.22.3): npm run check exit 0
+(370/370), npm run ui:check exit 1 (21 unchanged baseline
+violations), git diff --check exit 0. Targeted smoke reruns on the
+candidate in a disposable profile: p830-replies-fixed.mjs 11/11,
+p837-guard-release.mjs 8/8 (labelled test-only in-provider injection
+plus the synthetic double activation), p835-double-submit.mjs 4/4,
+p839-tz-label.mjs 6/6. Concurrent-tab storage is unchanged and
+Marcel's decision on it remains pending.
+
+## 2026-11-16 — P837 submit-guard release after rejection — committed pending narrow closure review
+
+Repairs the remaining P836 finding on beta/p833-stale-checkin
+(parent a37704a); #255, #256, the saved-reply branch and the main
+checkout untouched.
+
+1. The P835 in-flight guard never released after a write-time
+   rejection: a genuinely stale attempt rejected inside the updater
+   left the Submit button inert for the life of the form.
+2. The guard now releases when the render that knows filedId
+   commits without the matching submission — React does not render
+   inside a batch, so a missing record there is the settled outcome
+   of that attempt, not a pending one. The draft and the actual
+   rejection stay; a later Submit revalidates against current
+   state, rejects again while the occurrence is still stale, and
+   files once the block clears — never retargeting the draft.
+3. No result is read from inside the updater, no side effect runs
+   there, and the guard is not cleared merely because a submission
+   is not yet visible — the release happens on the render that
+   observes the committed outcome of that attempt.
+
+Gates (Node 24.22.3): npm run check exit 0 (369/369), npm run
+ui:check exit 1 (21 unchanged baseline violations), git diff
+--check exit 0.
+
+Browser evidence (disposable profile): p837-guard-release.mjs —
+the write-time rejection is unreachable through in-session UI, so
+the trigger is a labelled test-only injection: a competing
+submission dispatched into the mounted provider's React state via
+its fiber hook, queued ahead of the form's write in the same
+batch. Parent head (a37704a) 7/8 — rejection alert and draft
+correct, but the unblocked Submit stayed inert (stuck-guard
+defect). Fixed head 8/8 — only the injected record written, alert
+plus draft intact, a still-stale retry revalidates and rejects
+again, and after the block clears the same Submit revalidates and
+files the draft against the bound occurrence. p835-double-submit
+replayed on the fixed head: 4/4 — one stored submission, success
+visible, no false rejection. Midnight matrix not repeated: the
+binding and header path is unchanged.
+
+## 2026-11-16 — P839 extra check-in date label follows the workspace zone — committed pending independent review
+
+Repairs the P816 time-zone label finding on a separate branch,
+beta/p839-timezone-label, from Settings head 79335092; #255, #256
+and the local check-in/saved-reply repairs untouched.
+
+1. Defect reproduced in a disposable browser: Region changed to
+   America/New_York through the real Settings UI, the athlete
+   profile's Add date dialog still labelled the field
+   "Date · Europe/Vienna" — it was hardcoded.
+2. The label now resolves through resolvedTimeZone(state.preferences),
+   the same workspace-scoped source the calendar uses. The Vienna
+   default and date-only storage are unchanged; no scheduling logic
+   or shared weekday/month labels touched.
+3. Verified rendered: label reads "Date · America/New_York" after the
+   zone change and after reload; a picked day in the picker stores
+   exactly that calendar date in extras; resetting the workspace
+   returns the label to "Date · Europe/Vienna".
+
+Gates (Node 24.22.3): npm run check exit 0 (368/368), npm run
+ui:check exit 1 (21 unchanged baseline violations), git diff
+--check exit 0. Browser evidence: p839-tz-label.mjs — 4/6 on the
+base head (the two label checks fail on the hardcoded Vienna),
+6/6 after the fix.
+
+## 2026-11-15 — P835 check-in feedback and due-header alignment — committed pending narrow closure review
+
+Repairs the two low-severity P834 findings on
+beta/p833-stale-checkin (parent c360caff); #255, #256, the
+saved-reply branch and the main checkout untouched.
+
+1. Rapid duplicate submission. Two activations inside the same React
+   batch each passed the pre-check against the uncommitted snapshot;
+   the second write was rejected in-updater and its filedId won, so
+   the form swapped the first submission's success for a false
+   "already submitted" rejection. Reproduced on the parent head with
+   a synthetic double click in a disposable browser (one stored
+   submission, false rejection shown). An in-flight guard now ignores
+   a second activation of the same form; the stored submission still
+   decides which outcome renders, and the updater stays pure — no
+   side effects or result reads inside it. A genuinely stale form
+   still rejects and keeps its draft.
+2. Due header alignment. The occurrence binding moved into a shared
+   useCheckInTarget hook: the mobile sheet header and the new
+   "Filing for <date>" caption inside the form read the same bound
+   id + effective date that submit writes. After the coach-zone day
+   rolls over the dashboard may advance, but the open form's header
+   and caption keep the opened date; reopening binds the newly
+   selected occurrence. Moved recurring and extra-date submissions
+   preserved (p833-valid-paths.mjs still 3/3).
+
+Gates (Node 24.22.3): npm run check exit 0 (369/369), npm run
+ui:check exit 1 (21 unchanged baseline violations), git diff
+--check exit 0.
+
+Browser evidence (disposable profile, labelled): p835-double-submit.mjs
+— parent head stores one submission but shows a false stale
+rejection (2/4, reproduced defect); fixed head stores exactly one
+submission and shows success (4/4). p835-midnight.mjs 16/16 —
+controlled browser clock via CDP Emulation.setVirtualTimePolicy at
+2026-11-15T22:58Z (23:58 in seeded coach zone Europe/Vienna), no
+real midnight waited: mobile sheet header keeps "15 Nov" after the
+zone rolls to 16 Nov, desktop form caption keeps "Filing for Sun 15
+Nov", both file recurring:client-001:2026-11-15 @ 2026-11-15, the
+22 Nov occurrence stays untouched. Stale-rejection coverage stays
+model-level plus the in-updater recheck — the client surface still
+has no in-session trigger; cross-tab snapshots remain unsolved.
+
+## 2026-11-15 — P833 stale check-in submission guard — committed pending independent review
+
+Repair for the P821 stale-open-form finding on beta/p833-stale-checkin,
+branched from beta/p818-settings-phase-1c (head 79335092); #255, #256,
+the saved-reply branch and the main checkout untouched.
+
+1. Finding confirmed through ordinary interaction. The open form
+   re-resolves its occurrence on every render — the occurrence prop
+   follows pickCheckInCard through the shared minute clock — so a
+   filled form left open across the coach-zone day boundary silently
+   retargets to the next occurrence. On a byte-identical base the
+   Sunday 15 Nov check-in submitted as recurring:client-001:2026-11-22;
+   the coach timezone fixture was seeded via storage, the boundary
+   wait and submit were real UI.
+2. The form now binds the opened occurrence (stable id + effective
+   date) on the first render where the local day is real — the
+   local-today hook yields the seeded TODAY constant until its effect
+   runs, another stale snapshot — and revalidates that binding at the
+   point of writing via checkInSubmissionTarget, both before and inside
+   the state updater. Moved, skipped, removed and already-submitted
+   occurrences are rejected; the draft stays visible and explains how
+   to reopen the current check-in from Home. No silent re-attach to
+   the next occurrence and no overwrite of an existing submission.
+3. Reachability limits stated plainly: the athlete app has no
+   in-session mutation that reaches checkInMoves or another
+   submission, so moved/skipped/submitted rejections cannot be
+   triggered through ordinary client-side interaction; they are
+   covered by model tests and the in-updater recheck only. Cross-tab
+   or coach-side changes remain the known stale-snapshot limitation
+   and are out of scope.
+4. Regressions in model.test.mjs: moved (reported with the new date),
+   skipped and removed (gone), already-submitted, plus valid
+   moved-occurrence, extra-date and unbound legacy targets; an
+   occurrence that merely became overdue still files.
+
+Gates (Node 24.22.3): npm run check exit 0 (369/369), npm run ui:check
+exit 1 (21 unchanged baseline violations), git diff --check exit 0.
+
+Browser evidence (disposable profile): p833-stale.mjs — byte-identical
+base head files the next occurrence after the day-boundary tick
+(reproduced defect); fixed head files the opened occurrence (4/4).
+p833-valid-paths.mjs 3/3 — ordinary desktop submit, moved recurring
+occurrence keeping its stable id at the moved date, extra-date
+occurrence. No rendered rejection path exists in the client surface;
+see point 3.
+
+## 2026-11-15 — P830 saved-reply remount scope — committed pending focused review
+
+P816's deferred finding on a separate local branch
+(`beta/p830-reply-drafts`, off `79335092`): rejecting a blank saved
+reply bumped a single `restore` counter baked into EVERY row's key
+(`key={`${reply.id}:${restore}`}`), so all reply inputs remounted.
+
+Reproduction (rendered, disposable Chrome profile, preview :3300,
+buggy head): marking DOM nodes showed all three inputs remount on a
+blank rejection; clicking into another row's field at rejection time
+leaves `document.activeElement` on BODY — the clicked input is
+destroyed mid-click (focus theft). The literal "unsaved draft
+discarded" case is NOT reachable through ordinary interaction: any
+focus change commits a pending draft (blur-commit), so at rejection
+time sibling rows hold committed text only — the remount restored the
+just-saved value and nothing was lost. The <600 ms debounce window in
+which a draft could truly be dropped cannot overlap a rejection from
+another field, since triggering that rejection needs focus on the
+rejecting row — which commits the draft first. Reported as observed;
+no rendered draft-loss claimed.
+
+Fix: rows key by stable `reply.id`; the remount signal is a per-reply
+tick map (`settings/replies.ts`: `bumpReplyRestore`, `replyInputKey`)
+applied to the CommittedInput's key only — a rejected blank edit
+remounts just that field to restore its saved text; sibling rows keep
+their nodes, drafts, debounce timers and focus. Card-level validation
+(`cd-settings-error`) unchanged, storage untouched on rejection.
+
+Regression: settings.test.mjs 47/47 (+1 — a rejection changes only
+that reply's input key). Browser probe `p830-replies-fixed.mjs`
+(11/11, disposable CDP profile): ordinary pointer interaction shows
+the click into another row keeps focus through the rejection;
+test-triggered input events show the affected field remounting and
+restoring while siblings keep their DOM nodes and text, and that a
+pending draft plus its commit timer survive the rejection and write
+to storage; duplicate-text autosave, reorder, delete + Undo all
+preserved.
+
+Gates (Node 24.22.3): `npm run check` — 369/369 tests, agent-context,
+typecheck, lint, build all exit 0 (one format fix after first lint
+run); `npm run ui:check` exit 1 — the same 21 baseline violations,
+none new, none suppressed; `git diff --check` exit 0.
+
 ## 2026-11-15 — P820 vacation submission linkage and scoped Undo — committed pending focused closure review
 
 Repairs P819 findings 1-4 on beta/p818-settings-phase-1c (head

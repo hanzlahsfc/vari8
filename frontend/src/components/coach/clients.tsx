@@ -24,6 +24,7 @@ import {
   assignTemplate,
   type CoachClient,
   eventsBetween,
+  resolvedTimeZone,
   TODAY,
   uid,
   unreadCount,
@@ -769,7 +770,7 @@ export function ExtraDateDialog({
           onChange={setClient}
         />
         <DateField
-          label="Date · Europe/Vienna"
+          label={`Date · ${resolvedTimeZone(state.preferences)}`}
           min={TODAY}
           value={date}
           onChange={setDate}

@@ -1810,6 +1810,39 @@ export function pickCheckInCard(
     next: scheduled.find((e) => e.date >= coachToday && !isLate(e)),
   };
 }
+export type CheckInTargetVerdict =
+  | { ok: true }
+  | { ok: false; reason: "gone" | "moved" | "submitted"; to?: string };
+/** Point-of-write check for an occurrence an athlete opened earlier: the
+ * stable event ID must still resolve to the same effective date with no
+ * submission, or the draft would silently attach to a moved, skipped,
+ * removed or already-filed check-in. The scan window covers every move
+ * endpoint so a re-dated occurrence is still found and reported as
+ * moved rather than gone. */
+export function checkInSubmissionTarget(
+  state: CoachState,
+  clientId: string,
+  target: Pick<Event, "id" | "date"> | undefined,
+  today: string,
+  now: Date = new Date(),
+): CheckInTargetVerdict {
+  if (!target?.id) return { ok: true };
+  const bounds = [target.date, today];
+  for (const m of state.checkInMoves ?? []) {
+    bounds.push(m.from);
+    if (m.to) bounds.push(m.to);
+  }
+  const lo = bounds.reduce((a, d) => (d < a ? d : a), addDays(today, -42));
+  const hi = bounds.reduce((a, d) => (d > a ? d : a), addDays(today, 42));
+  const event = eventsBetween(state, lo, hi, now).find(
+    (e) => e.id === target.id && e.clientId === clientId,
+  );
+  if (!event) return { ok: false, reason: "gone" };
+  if (event.submission) return { ok: false, reason: "submitted" };
+  if (event.date !== target.date)
+    return { ok: false, reason: "moved", to: event.date };
+  return { ok: true };
+}
 export function addExtra(state: CoachState, extra: Extra) {
   if (
     state.extras.some(

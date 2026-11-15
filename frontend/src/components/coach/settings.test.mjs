@@ -70,6 +70,14 @@ const vacations = await import(
     ).replaceAll('"./model"', JSON.stringify(modelUrl)),
   )
 );
+const replies = await import(
+  asModule(
+    stripTypeScriptTypes(
+      await readFile(new URL("./settings/replies.ts", import.meta.url), "utf8"),
+      { mode: "strip" },
+    ),
+  )
+);
 
 // coach-theme.ts only needs react-style hooks for useSystemMode and the
 // theme builders for coachThemeStyle; the pure resolution helpers under test
@@ -1640,4 +1648,23 @@ test("vacation days pause the feedback target", () => {
   // The 5-day vacation starting the same day pushes the due instant out by
   // roughly five days versus the uninterrupted target.
   assert.ok(paused - plain >= 4 * 86_400_000);
+});
+
+test("a rejected blank reply remounts only its own field", () => {
+  // The restore key drives each CommittedInput's remount: bumping one
+  // reply must change only that reply's key — every other row keeps its
+  // component, its uncommitted draft and its focus.
+  let ticks = {};
+  const before = {
+    r1: replies.replyInputKey("r1", ticks),
+    r2: replies.replyInputKey("r2", ticks),
+    r3: replies.replyInputKey("r3", ticks),
+  };
+  ticks = replies.bumpReplyRestore(ticks, "r1");
+  assert.notEqual(replies.replyInputKey("r1", ticks), before.r1);
+  assert.equal(replies.replyInputKey("r2", ticks), before.r2);
+  assert.equal(replies.replyInputKey("r3", ticks), before.r3);
+  // A second rejection on a different reply still leaves r3 alone.
+  ticks = replies.bumpReplyRestore(ticks, "r2");
+  assert.equal(replies.replyInputKey("r3", ticks), before.r3);
 });
