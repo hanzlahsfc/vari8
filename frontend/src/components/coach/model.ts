@@ -1560,6 +1560,9 @@ export function seedState(today: string = localToday()): CoachState {
       today,
     ),
     today,
+    // This is the one genuinely fresh demo build — sample notes and
+    // tasks seed here only, never into a persisted workspace on load.
+    { seedSamples: true },
   );
 }
 

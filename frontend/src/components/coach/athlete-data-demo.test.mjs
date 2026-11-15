@@ -80,7 +80,9 @@ function baseWithoutDataDemo() {
 }
 
 test("adoptAthleteDataDemo seeds tracking, temp plan, notes, focus, photos and sets the flag", () => {
-  const state = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY);
+  const state = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY, {
+    seedSamples: true,
+  });
   assert.equal(state.demoSeeds?.athleteDataDemo, ATHLETE_DATA_DEMO_REVISION);
   const amara = clientOf(state);
 
@@ -178,7 +180,9 @@ test("adopted tracking is deterministic and tracks the planned macros", () => {
 });
 
 test("second adoption is a no-op and coach-made data survives", () => {
-  const once = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY);
+  const once = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY, {
+    seedSamples: true,
+  });
   const twice = adoptAthleteDataDemo(once, TODAY);
   assert.deepEqual(twice, once);
 
@@ -202,6 +206,35 @@ test("second adoption is a no-op and coach-made data survives", () => {
   assert.equal(kept.tracking.entries[0].values.weight, 99);
 });
 
+test("fresh demo builds still seed the sample notes and tasks", () => {
+  const fresh = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY, {
+    seedSamples: true,
+  });
+  const amara = clientOf(fresh);
+  for (const id of [
+    "demo-task-review-checkin",
+    "demo-task-refeed",
+    "demo-task-macros",
+  ])
+    assert.ok(
+      amara.coachTasks.some((t) => t.id === id),
+      id,
+    );
+  for (const id of [
+    "demo-task-posing",
+    "demo-task-bloodwork",
+    "demo-task-triage",
+    "demo-task-hotel",
+    "demo-task-roundup",
+  ])
+    assert.ok(
+      fresh.coachTodos.some((t) => t.id === id),
+      id,
+    );
+  assert.ok(amara.internalNotes.some((n) => n.id === "demo-pinned-note-1"));
+  assert.ok(fresh.coachNotes.some((n) => n.id === "demo-coach-note-peak-week"));
+});
+
 test("other clients are untouched", () => {
   const base = baseWithoutDataDemo();
   const state = adoptAthleteDataDemo(base, TODAY);
@@ -215,7 +248,9 @@ test("other clients are untouched", () => {
 
 test("revision adoption on a used workspace leaves note collections untouched", () => {
   // First adoption seeds the sample notes…
-  const fresh = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY);
+  const fresh = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY, {
+    seedSamples: true,
+  });
   const seeded = clientOf(fresh);
   assert.ok(seeded.internalNotes.some((n) => n.id === "demo-pinned-note-1"));
   assert.ok(fresh.coachNotes.some((n) => n.id === "demo-coach-note-peak-week"));
@@ -283,4 +318,116 @@ test("revision adoption on a used workspace leaves note collections untouched", 
   // Repeated adoption is a no-op once the revision flag is set.
   const again = adoptAthleteDataDemo(adopted, TODAY);
   assert.equal(again, adopted, "repeated reloads do not touch data");
+});
+
+test("revision adoption preserves edited, moved and deleted demo tasks verbatim", () => {
+  // A workspace genuinely seeded by a fresh build…
+  const fresh = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY, {
+    seedSamples: true,
+  });
+  // …used by the coach — demo tasks edited, completed, deleted and
+  // reordered, a coach-written task added — while still on revision 12.
+  const amaraTasks = [
+    // Edited demo task: new title, completed, deadline moved.
+    {
+      id: "demo-task-review-checkin",
+      title: "Renamed by coach",
+      complete: true,
+      completedAt: "2026-10-20T09:00:00",
+      deadline: "2026-11-01",
+      priority: "low",
+      repeat: { unit: "week", interval: 2, weekdays: [0] },
+      reminderAt: "2026-10-31T08:00:00",
+      createdAt: "2026-10-18T09:00:00",
+    },
+    // Coach-written task.
+    { id: "coach-task-1", title: "Coach task", complete: false },
+    // demo-task-refeed deleted, demo-task-macros deleted — they must
+    // not return.
+  ];
+  const todos = [
+    { id: "coach-todo-1", title: "Coach todo", complete: false },
+    // Edited demo todo: moved deadline, completed, reminder kept.
+    {
+      id: "demo-task-posing",
+      title: "Posing video — edited",
+      complete: true,
+      completedAt: "2026-10-21T12:00:00",
+      deadline: "2026-10-30",
+      clientId: "client-014",
+      reminderAt: "2026-10-29T08:00:00",
+      createdAt: "2026-10-20T09:00:00",
+    },
+    // demo-task-bloodwork/-triage/-hotel/-roundup deleted.
+  ];
+  const used = {
+    ...fresh,
+    demoSeeds: { ...fresh.demoSeeds, athleteDataDemo: 12 },
+    coachTodos: todos,
+    clients: fresh.clients.map((c) =>
+      c.id === "client-007" ? { ...c, coachTasks: amaraTasks } : c,
+    ),
+  };
+  const adopted = adoptAthleteDataDemo(used, TODAY);
+  assert.deepEqual(
+    clientOf(adopted).coachTasks,
+    amaraTasks,
+    "athlete task collection stored verbatim — edits, moves and deletions kept",
+  );
+  assert.deepEqual(
+    adopted.coachTodos,
+    todos,
+    "workspace task collection stored verbatim",
+  );
+  assert.equal(
+    clientOf(adopted).coachTasks.some((t) => t.id === "demo-task-refeed"),
+    false,
+    "a deleted demo task is not resurrected",
+  );
+  // A second load is a no-op — nothing is reintroduced.
+  const again = adoptAthleteDataDemo(adopted, TODAY);
+  assert.equal(again, adopted, "repeated reloads do not touch tasks");
+});
+
+test("an unmarked saved workspace is not treated as a fresh demo", () => {
+  // Saved before the revision marker existed: athleteDataDemo is
+  // undefined but the workspace is used, so load-time adoption must not
+  // inject sample notes or tasks.
+  const unmarked = {
+    ...baseWithoutDataDemo(),
+    coachTodos: [{ id: "coach-todo-1", title: "Mine", complete: false }],
+    coachNotes: [{ id: "coach-own-1", text: "My note" }],
+    clients: baseWithoutDataDemo().clients.map((c) =>
+      c.id === "client-007"
+        ? {
+            ...c,
+            internalNotes: [{ id: "amara-note-1", text: "Coach note" }],
+            coachTasks: [
+              { id: "coach-task-1", title: "Mine", complete: false },
+            ],
+          }
+        : c,
+    ),
+  };
+  const adopted = adoptAthleteDataDemo(unmarked, TODAY);
+  const amara = clientOf(adopted);
+  assert.deepEqual(
+    amara.internalNotes,
+    unmarked.clients.find((c) => c.id === "client-007").internalNotes,
+  );
+  assert.deepEqual(amara.coachTasks, [
+    { id: "coach-task-1", title: "Mine", complete: false },
+  ]);
+  assert.deepEqual(adopted.coachTodos, unmarked.coachTodos);
+  assert.deepEqual(adopted.coachNotes, unmarked.coachNotes);
+  assert.equal(
+    adopted.coachTodos.some((t) => t.id.startsWith("demo-task-")),
+    false,
+    "no sample tasks injected on load",
+  );
+  assert.equal(
+    amara.internalNotes.some((n) => n.id.startsWith("demo-pinned-note")),
+    false,
+    "no sample notes injected on load",
+  );
 });

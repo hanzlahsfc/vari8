@@ -1,3 +1,53 @@
+## 2026-11-15 — P827 task preservation through Notes adoption (committed on `beta/p823-notes-phase-1b`, awaiting closure review)
+
+Repaired P826's remaining finding: the rev-12 → 13 bump re-ran
+`demoTasks`, which filtered every stored `demo-task-*` and re-appended
+the seeds — resurrecting deleted demo tasks and replacing edited ones
+in both `client.coachTasks` and `state.coachTodos`.
+
+Fix: sample seeding is now an explicit construction-time signal rather
+than a guess from the missing revision marker.
+`adoptAthleteDataDemo(state, today, opts)` gained `opts.seedSamples`;
+only `seedState()` passes it (its `seeded` literal has no `demoSeeds`,
+so construction is provably fresh). The load path never passes it, so
+an unmarked saved workspace — not necessarily fresh — receives no
+sample records at all. `freshAdoption` now derives from the flag, and
+it gates the notes AND both task collections: on revision adoption all
+three pass through verbatim — edits, moves, deletions, completion
+state, recurrence, reminders and coach-written records — and repeat
+loads are no-ops. The P825 notes repairs, the privacy boundary,
+archived access and the Ethereal scope are unchanged.
+
+Unmarked-workspace behaviour (tested and reported as required): a
+persisted state with `athleteDataDemo` undefined now keeps every note
+and task collection untouched on load — no `demo-task-*` or
+`demo-pinned-note-*`/`demo-coach-note-*` records are injected. The
+non-sample parts of adoption (tracking history on demo-owned dates,
+plan/target seeding, submissions) are unchanged and still run — that
+is the pre-existing adoption contract, not part of this fix. Fresh
+demos built by `seedState()` still get the full intended sample set;
+`npm run export:demo` regenerates byte-identical output.
+
+Regressions (athlete-data-demo suite 8/8, +3): fresh builds seed the
+sample notes/tasks; a rev-12 fixture with renamed, completed,
+deadline-moved, re-recurred, reminded and DELETED demo tasks plus a
+coach-written task in both collections adopts verbatim with a no-op
+second load; an unmarked saved workspace gets no sample injection.
+
+Browser verification (Chrome 157 CDP, disposable profile, preview
+:3200, `/tmp/v8-verify/p827-tasks.mjs`): **9/9** — the same rev-12
+fixture injected into persisted storage was compared before load,
+after first load and after a second reload: `coachTasks` and
+`coachTodos` byte-equal in all three snapshots, the edited task's
+title/deadline/repeat/reminder verbatim, deleted demo ids absent in
+both collections, notes still preserved, and the renamed task renders
+under the athlete profile's Notes & tasks tab. Fresh-seed screenshots
+not used as evidence.
+
+Gates (Node 24.22.3): `npm run check` exit 0 (412/412 tests);
+`git diff --check` exit 0; `npm run ui:check` exit 1 — identical
+20-violation baseline (no CSS changed).
+
 ## 2026-11-15 — P825 Notes data-integrity repairs (committed on `beta/p823-notes-phase-1b`, awaiting closure review)
 
 Repaired OpenCode / DeepSeek V4.1 Flash's five P823 review findings on
