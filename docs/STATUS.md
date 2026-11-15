@@ -1,3 +1,94 @@
+## 2026-11-15 — P823 Notes Phase 1b committed (committed on `beta/p823-notes-phase-1b`, awaiting independent review)
+
+Built the Notes workspace on top of the verified Tasks Phase 1a head
+`cc448506367000839e82a908b361757d5d54931e` in the separate worktree
+`/private/tmp/vari8-p823-notes-1b`. The old `?section=notes` screen (a
+mixed notes/to-dos list with a dialog editor) is replaced by an
+Apple Notes-style list + editor on `state.coachNotes` (General scope)
+and `client.internalNotes` (athlete scope) — storage locations,
+existing ids, text and pins are untouched; the new fields (`pinned`,
+`category`, `createdAt`, `updatedAt`) are optional and
+backwards-guarded. `ClientNote` gained those optional fields in
+`ethereal/clients/model.ts` because `internalNotes` shares the type —
+typing only, no Ethereal behaviour change.
+
+- `notes-model.ts` (new, pure): scoped `{id, clientId?}` refs so
+  duplicate ids in different scopes stay independent; `listNotes`,
+  `findNote`, `updateNote`, `saveNote`, `moveNote`, `deleteNote`,
+  `restoreNote`, `togglePin`, title (first line) / preview (next line),
+  edited-date sorting, search, athlete and category filters. Moves
+  physically relocate the record between `coachNotes` and
+  `client.internalNotes` so the profile and overview card read the same
+  rows; a move into a scope that already holds the id is rejected
+  without writes. Delayed writes resolve the exact scoped ref and no-op
+  when the record is gone — a stale autosave can never recreate a
+  deleted note, overwrite a same-id note in another scope, or write
+  back to a pre-move scope.
+- `notes.tsx` (rewritten): wide screens show the list beside a sticky
+  editor; below 1280px (and in the athlete profile panel) the row
+  drills into the editor with a Back button. Search, athlete
+  combobox filter, provisional-labelled category chips, a Pinned group
+  ahead of edited-date-sorted rows. `New note` and the `N` shortcut
+  (ignored inside fields/dialogs) create in the current filter scope
+  and focus the editor. Text autosaves on a 600 ms debounce; leaving a
+  note — switch, back, section unmount — commits the pending draft in
+  the same atomic `setState` pass that then discards the note if it is
+  still empty, so freshly typed text always lands before the emptiness
+  check and never on the wrong record. Moves carry a pending draft into
+  the destination write. Delete goes through toast Undo.
+  `AthleteNotesPanel` reuses the whole view scoped to one client in the
+  profile "Notes & tasks" tab; the existing task controls beside it are
+  unchanged and no task mutation lives on the Notes page.
+- `clients.tsx` swaps the bespoke private-note list for
+  `AthleteNotesPanel`; `athlete/overview.tsx` still renders its Pinned
+  notes card from `client.internalNotes` (now via shared `noteTitle`),
+  so pins made anywhere update it.
+- Compatibility: legacy `{id, text}` records load unchanged, display
+  category "Other" and show no invented date. The six handoff
+  categories (health, schedule, training, nutrition, prep, other) carry
+  a visible "provisional — not yet approved" hint; no owner approval
+  was assumed. `athlete-data-demo.ts` bumps to revision 13: it stamps
+  dates/categories only on demo-owned `demo-pinned-note-*` records it
+  seeded earlier (never coach-written text), adds one pinned General
+  demo note, and `npm run export:demo` regenerated
+  `demo-export/clients/client-007.json` + `workspace.json`.
+
+Regressions (`notes-model.test.mjs`, 15/15 via the project loader):
+legacy loading, duplicate-id scoped identity, sorting, athlete +
+category filters, pinning in both scopes, General↔athlete relocation,
+delete/restore round-trip, pending-save ordering against deleted and
+moved refs, id-conflict move rejection — all through the same exported
+functions the component calls.
+
+Browser verification (Chrome 157 CDP, isolated disposable profile,
+preview on :3200, driver `/tmp/v8-verify/p823-notes.mjs`): **25/25**
+checks pass — pinned group and General pinned note render; the legacy
+note shows "Other" with no invented date; the provisional hint and the
+coach-private caption are visible; search, athlete filter and category
+chips narrow the list; `N` creates and focuses the editor; the 600 ms
+debounce writes the note; a pending draft flushes onto the typed-on
+record when switching notes; the edited note sorts to the top; a move
+relocates the record into `internalNotes` carrying its unflushed draft;
+pin writes through; delete removes and Undo restores with pin + scope;
+an empty new draft is discarded on switch; at 390px the list drills
+into the editor and Back returns; the profile panel shows only that
+athlete's notes and writes `internalNotes`; pinning there updates the
+overview card. Unexercised: none of the requested flows — every named
+flow ran live; dark-mode/visual inspection beyond spot screenshots is
+not separately evidenced.
+
+Gates (Node 24.22.3): `npm run check` exit 0 (404/404 tests,
+agent-context, typecheck, Biome, build); `git diff --check` exit 0;
+`npm run ui:check` exit 1 with **20** violations — a strict subset of
+the starting head's 21: the `workspace-polish.css:112
+.cd-nt-pin.is-pinned` entry disappeared because the profile pin-button
+markup it targeted was replaced, and `notes.css` adds zero new
+violations. Preview on :3200/:3201 left running; Settings previews on
+:3000/:3100 untouched.
+
+Committed on `beta/p823-notes-phase-1b`. No push, PR, merge or
+deployment — stopping for independent review.
+
 ## 2026-11-14 — P804 Tasks Phase 1a completion toast and Undo restored (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
 
 Repaired the completion-feedback defect P803 demonstrated on

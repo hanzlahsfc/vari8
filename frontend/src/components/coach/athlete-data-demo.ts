@@ -42,7 +42,7 @@ import {
   type StepsTarget,
 } from "./targets/model";
 
-export const ATHLETE_DATA_DEMO_REVISION = 12;
+export const ATHLETE_DATA_DEMO_REVISION = 13;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
@@ -123,9 +123,23 @@ const DEMO_REFEED_EVENT_IDS = new Set([
 ]);
 const DEMO_REFEED_EVENT_NOTES = new Set(["Keep sodium consistent."]);
 const DEMO_PINNED_NOTES = [
-  "Left quad lags — keep unilateral work early in lower sessions.",
-  "Digestion issues with dairy — keep it out pre-show.",
+  {
+    text: "Left quad lags — keep unilateral work early in lower sessions.",
+    category: "training" as const,
+    daysAgo: 34,
+  },
+  {
+    text: "Digestion issues with dairy — keep it out pre-show.",
+    category: "health" as const,
+    daysAgo: 21,
+  },
 ];
+const DEMO_COACH_NOTE = {
+  id: "demo-coach-note-peak-week",
+  text: "Peak week checklist\nWater, sodium and posing calls follow the same script every show.",
+  category: "prep" as const,
+  daysAgo: 12,
+};
 const DEMO_TRAINING_FOCUS = "Hypertrophy · lower-body priority";
 const DEMO_OTHER_TARGETS = [
   {
@@ -962,16 +976,33 @@ export function adoptAthleteDataDemo(
       : client.tracking;
 
   // --- Pinned private notes ---
+  const ago = (days: number, time = "T09:00:00") =>
+    `${addLocalDays(today, -days)}${time}`;
   const existingNotes = new Set(
     client.internalNotes.map((note) => note.text.trim()),
   );
   const internalNotes = [
-    ...client.internalNotes,
-    ...DEMO_PINNED_NOTES.filter((text) => !existingNotes.has(text)).map(
-      (text, i) => ({
+    // Revision 13 upgrades demo-owned notes adopted by earlier revisions —
+    // coach-written records are never touched.
+    ...client.internalNotes.map((note) => {
+      if (!note.id.startsWith("demo-pinned-note-")) return note;
+      const demo = DEMO_PINNED_NOTES.find((d) => d.text === note.text.trim());
+      if (!demo) return note;
+      return {
+        ...note,
+        category: note.category ?? demo.category,
+        createdAt: note.createdAt ?? ago(demo.daysAgo),
+        updatedAt: note.updatedAt ?? ago(Math.max(1, demo.daysAgo - 9)),
+      };
+    }),
+    ...DEMO_PINNED_NOTES.filter((d) => !existingNotes.has(d.text)).map(
+      (d, i) => ({
         id: `demo-pinned-note-${i + 1}`,
-        text,
+        text: d.text,
         pinned: true,
+        category: d.category,
+        createdAt: ago(d.daysAgo),
+        updatedAt: ago(Math.max(1, d.daysAgo - 9)),
       }),
     ),
   ];
@@ -981,8 +1012,6 @@ export function adoptAthleteDataDemo(
     ...list.filter((task) => !task.id.startsWith("demo-task-")),
     ...add,
   ];
-  const ago = (days: number, time = "T09:00:00") =>
-    `${addLocalDays(today, -days)}${time}`;
   const nextClient: CoachClient = {
     ...staged,
     tracking,
@@ -1099,11 +1128,30 @@ export function adoptAthleteDataDemo(
       ),
     );
 
+  // A pinned General note exercises the workspace scope — demo-owned id,
+  // seeded only when absent so coach edits to it are preserved.
+  const coachNotes = (state.coachNotes ?? []).some(
+    (note) => note.id === DEMO_COACH_NOTE.id,
+  )
+    ? state.coachNotes
+    : [
+        ...(state.coachNotes ?? []),
+        {
+          id: DEMO_COACH_NOTE.id,
+          text: DEMO_COACH_NOTE.text,
+          pinned: true,
+          category: DEMO_COACH_NOTE.category,
+          createdAt: ago(DEMO_COACH_NOTE.daysAgo),
+          updatedAt: ago(Math.max(1, DEMO_COACH_NOTE.daysAgo - 5)),
+        },
+      ];
+
   return {
     ...state,
     clients,
     submissions,
     coachTodos,
+    coachNotes,
     demoSeeds: {
       ...state.demoSeeds,
       athleteDataDemo: ATHLETE_DATA_DEMO_REVISION,

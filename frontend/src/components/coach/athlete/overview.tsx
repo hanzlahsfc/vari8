@@ -33,6 +33,7 @@ import {
   TODAY,
   unreadCount,
 } from "../model";
+import { noteTitle } from "../notes-model";
 import {
   applicablePlan,
   planFoodMap,
@@ -708,7 +709,7 @@ function PinnedNotesCard({
             {pinned.slice(0, 3).map((note) => (
               <li key={note.id}>
                 <Pin size={11} aria-hidden="true" />
-                <span>{note.text}</span>
+                <span>{noteTitle(note.text)}</span>
               </li>
             ))}
           </ul>

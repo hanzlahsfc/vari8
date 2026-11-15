@@ -1902,7 +1902,7 @@
     "clientAppDemo": 1,
     "trainingLogDemo": 1,
     "athleteProfileDemo": 1,
-    "athleteDataDemo": 12
+    "athleteDataDemo": 13
   },
   "trainingLogs": [
     {
@@ -4615,6 +4615,16 @@
         "interval": 1
       },
       "createdAt": "day -20T09:00:00"
+    }
+  ],
+  "coachNotes": [
+    {
+      "id": "demo-coach-note-peak-week",
+      "text": "Peak week checklist\nWater, sodium and posing calls follow the same script every show.",
+      "pinned": true,
+      "category": "prep",
+      "createdAt": "day -12T09:00:00",
+      "updatedAt": "day -7T09:00:00"
     }
   ]
 }

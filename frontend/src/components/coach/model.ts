@@ -1,5 +1,6 @@
 import type { TrackerEntry } from "../ethereal/client-tracker/model";
 import {
+  type ClientNote,
   createInitialClients,
   type WorkspaceClient,
 } from "../ethereal/clients/model";
@@ -820,10 +821,10 @@ export type CoachState = {
     clientAppDemo?: 1;
     trainingLogDemo?: 1;
     athleteProfileDemo?: 1;
-    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
+    athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
   };
   exerciseLibrary?: ExerciseDefinition[];
-  coachNotes?: { id: string; text: string }[];
+  coachNotes?: ClientNote[];
   coachTodos?: TaskFields[];
   templates: Template[];
   clients: CoachClient[];
@@ -1746,6 +1747,14 @@ const taskOptionalGuards: Record<string, Guard> = {
   ),
   checklist: opt(arr(obj({ id: str, text: str, done: bool }))),
 };
+const noteOptionalGuards: Record<string, Guard> = {
+  pinned: opt(bool),
+  category: opt(
+    one(["health", "schedule", "training", "nutrition", "prep", "other"]),
+  ),
+  createdAt: opt(str),
+  updatedAt: opt(str),
+};
 const reviewGuard = obj({
   activations: opt(
     arr(
@@ -1772,7 +1781,7 @@ const clientGuard = obj({
   coachingSince: str,
   priorityMessages: bool,
   archived: bool,
-  internalNotes: arr(obj({ id: str, text: str, pinned: opt(bool) })),
+  internalNotes: arr(obj({ id: str, text: str, ...noteOptionalGuards })),
   generalNotes: arr(obj({ id: str, text: str })),
   coachTasks: arr(
     obj({
@@ -1858,7 +1867,9 @@ export function isCoachState(v: unknown): v is CoachState {
           clientAppDemo: opt(one([1])),
           trainingLogDemo: opt(one([1])),
           athleteProfileDemo: opt(one([1])),
-          athleteDataDemo: opt(one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])),
+          athleteDataDemo: opt(
+            one([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]),
+          ),
         }),
       ),
       exerciseLibrary: opt(
@@ -1872,7 +1883,7 @@ export function isCoachState(v: unknown): v is CoachState {
           }),
         ),
       ),
-      coachNotes: opt(arr(obj({ id: str, text: str }))),
+      coachNotes: opt(arr(obj({ id: str, text: str, ...noteOptionalGuards }))),
       timelineViews: opt(
         arr(
           obj({

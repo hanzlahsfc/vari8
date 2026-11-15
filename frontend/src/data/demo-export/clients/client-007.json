@@ -78,12 +78,18 @@
     {
       "id": "demo-pinned-note-1",
       "text": "Left quad lags — keep unilateral work early in lower sessions.",
-      "pinned": true
+      "pinned": true,
+      "category": "training",
+      "createdAt": "day -34T09:00:00",
+      "updatedAt": "day -25T09:00:00"
     },
     {
       "id": "demo-pinned-note-2",
       "text": "Digestion issues with dairy — keep it out pre-show.",
-      "pinned": true
+      "pinned": true,
+      "category": "health",
+      "createdAt": "day -21T09:00:00",
+      "updatedAt": "day -12T09:00:00"
     }
   ],
   "generalNotes": [
