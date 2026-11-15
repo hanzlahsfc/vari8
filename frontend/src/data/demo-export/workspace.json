@@ -1902,7 +1902,7 @@
     "clientAppDemo": 1,
     "trainingLogDemo": 1,
     "athleteProfileDemo": 1,
-    "athleteDataDemo": 11
+    "athleteDataDemo": 13
   },
   "trainingLogs": [
     {
@@ -4571,6 +4571,60 @@
       ],
       "status": "in-progress",
       "startedAt": "day -1T18:00:00"
+    }
+  ],
+  "coachTodos": [
+    {
+      "id": "demo-task-posing",
+      "title": "Ask Theo for posing video",
+      "complete": false,
+      "deadline": "day 1",
+      "clientId": "client-014",
+      "createdAt": "day -4T09:00:00"
+    },
+    {
+      "id": "demo-task-bloodwork",
+      "title": "Book bloodwork 12 weeks out",
+      "complete": false,
+      "deadline": "day 7",
+      "clientId": "client-007",
+      "createdAt": "day -10T09:00:00"
+    },
+    {
+      "id": "demo-task-triage",
+      "title": "Morning check-in triage",
+      "complete": false,
+      "deadline": "day 0",
+      "reminderAt": "day 0T08:00:00",
+      "createdAt": "day -1T09:00:00"
+    },
+    {
+      "id": "demo-task-hotel",
+      "title": "Confirm peak-week hotel booking",
+      "complete": false,
+      "deadline": "day -2",
+      "createdAt": "day -8T09:00:00"
+    },
+    {
+      "id": "demo-task-roundup",
+      "title": "Monthly posing check-in roundup",
+      "complete": false,
+      "deadline": "day 2",
+      "repeat": {
+        "unit": "month",
+        "interval": 1
+      },
+      "createdAt": "day -20T09:00:00"
+    }
+  ],
+  "coachNotes": [
+    {
+      "id": "demo-coach-note-peak-week",
+      "text": "Peak week checklist\nWater, sodium and posing calls follow the same script every show.",
+      "pinned": true,
+      "category": "prep",
+      "createdAt": "day -12T09:00:00",
+      "updatedAt": "day -7T09:00:00"
     }
   ]
 }

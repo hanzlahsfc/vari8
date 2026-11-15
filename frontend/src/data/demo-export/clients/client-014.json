@@ -196,7 +196,16 @@
     "messages": [],
     "extras": [],
     "trainingLogs": [],
-    "coachTodos": [],
+    "coachTodos": [
+      {
+        "id": "demo-task-posing",
+        "title": "Ask Theo for posing video",
+        "complete": false,
+        "deadline": "day 1",
+        "clientId": "client-014",
+        "createdAt": "day -4T09:00:00"
+      }
+    ],
     "reviewDrafts": {}
   }
 }

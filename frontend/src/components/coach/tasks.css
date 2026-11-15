@@ -1,0 +1,329 @@
+.coach-root .cd-tasks {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 24px;
+}
+.coach-root .cd-tasks--split {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+.coach-root .cd-tasks-main {
+  min-width: 0;
+}
+
+/* Quick add */
+
+.coach-root .cd-quickadd {
+  margin-bottom: 20px;
+}
+.coach-root .cd-quickadd-line {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.coach-root .cd-quickadd-line > .v8-field {
+  flex: 1;
+  min-width: 0;
+}
+.coach-root .cd-quickadd-buttons {
+  display: flex;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+.coach-root .cd-quickadd-suggest {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px;
+  border: 1px solid var(--cd-line);
+  border-radius: 12px;
+  background: var(--cd-surface);
+  max-width: 320px;
+}
+.coach-root .cd-quickadd-suggest button {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: none;
+  color: var(--cd-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.coach-root .cd-quickadd-suggest button:hover,
+.coach-root .cd-quickadd-suggest button.is-active {
+  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cd-surface));
+}
+.coach-root .cd-quickadd-tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.coach-root .cd-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid color-mix(in srgb, var(--cd-accent) 24%, var(--cd-line));
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--cd-accent) 8%, var(--cd-surface));
+  color: var(--cd-accent-text);
+  font-size: 12px;
+}
+.coach-root button.cd-token {
+  cursor: pointer;
+}
+.coach-root .cd-token-fixed {
+  border-style: dashed;
+}
+.coach-root .cd-quickadd-picker {
+  margin-top: 10px;
+  max-width: 320px;
+}
+
+/* Toolbar + views */
+
+.coach-root .cd-tasks-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+  align-items: end;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+.coach-root .cd-tasks-views {
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.coach-root .cd-tasks-views::-webkit-scrollbar {
+  display: none;
+}
+.coach-root .cd-tasks-views .v8-segmented {
+  width: fit-content;
+}
+
+/* Groups and rows */
+
+.coach-root .cd-task-group {
+  margin-bottom: 24px;
+}
+.coach-root .cd-task-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.coach-root .cd-task-group-head h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cd-muted);
+}
+.coach-root .cd-task-block .cd-quickadd {
+  margin: 4px 0 8px 30px;
+}
+.coach-root .cd-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.coach-root .cd-task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--cd-line);
+  border-radius: 8px;
+}
+.coach-root .cd-task-row:last-child {
+  border-bottom: 0;
+}
+.coach-root .cd-task-row:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: -2px;
+}
+.coach-root .cd-task-row .v8-checkbox {
+  flex: none;
+}
+.coach-root .cd-task-body {
+  flex: 1;
+  min-width: 0;
+}
+.coach-root .cd-task-main {
+  display: block;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--cd-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.coach-root .cd-task-main:focus-visible {
+  outline: 2px solid var(--cd-accent-ring);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.coach-root .cd-task-title {
+  display: block;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.coach-root .cd-task-flag {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-left: 6px;
+  color: var(--cd-accent-text);
+}
+.coach-root .cd-task-row.is-done .cd-task-title,
+.coach-root .cd-task-row.is-completing .cd-task-title {
+  text-decoration: line-through;
+  color: var(--cd-muted);
+}
+.coach-root .cd-task-row.is-completing {
+  pointer-events: none;
+}
+/* Ghost rows are pure markup — no checkbox, button or link — so the strike
+   through can never be activated twice; these styles only mirror the live
+   row's look for the ~600 ms the snapshot is visible. */
+.coach-root .cd-task-ghost-check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  color: var(--v8-on-accent);
+  background: var(--v8-accent-primary);
+}
+.coach-root .cd-task-ghost-main {
+  display: block;
+  width: 100%;
+  color: var(--cd-text);
+  font: inherit;
+  text-align: left;
+}
+.coach-root .cd-task-preview {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--cd-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coach-root .cd-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cd-task-meta > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.coach-root .cd-task-owner {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--cd-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.coach-root .cd-task-owner:hover {
+  color: var(--cd-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.coach-root .cd-task-overdue {
+  color: var(--v8-danger-text);
+}
+.coach-root .cd-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+@media (hover: hover) and (min-width: 761px) {
+  .coach-root .cd-task-actions {
+    opacity: 0;
+  }
+  .coach-root .cd-task-row:hover .cd-task-actions,
+  .coach-root .cd-task-row:focus-within .cd-task-actions {
+    opacity: 1;
+  }
+}
+
+/* Detail */
+
+.coach-root .cd-task-detail {
+  position: sticky;
+  top: 24px;
+  border: 1px solid var(--cd-line);
+  border-radius: 16px;
+  background: var(--cd-surface);
+  padding: 20px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+}
+.coach-root .cd-task-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.coach-root .cd-task-detail-head h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.coach-root .cd-task-detail-fields {
+  display: grid;
+  gap: 18px;
+}
+.coach-root .cd-task-detail-custom {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.coach-root .cd-task-detail-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--cd-muted);
+}
+.coach-root .cd-task-correction {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--v8-danger-text);
+}
+.coach-root .cd-task-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 760px) {
+  .coach-root .cd-tasks-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .coach-root .cd-task-row {
+    padding: 14px 0;
+  }
+  .coach-root .cd-task-actions .cd-icon-button {
+    display: none;
+  }
+  .coach-root .cd-quickadd .v8-input,
+  .coach-root .cd-quickadd input {
+    font-size: 16px;
+  }
+}

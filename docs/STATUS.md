@@ -1,3 +1,645 @@
+## 2026-11-15 — P827 task preservation through Notes adoption (committed on `beta/p823-notes-phase-1b`, awaiting closure review)
+
+Repaired P826's remaining finding: the rev-12 → 13 bump re-ran
+`demoTasks`, which filtered every stored `demo-task-*` and re-appended
+the seeds — resurrecting deleted demo tasks and replacing edited ones
+in both `client.coachTasks` and `state.coachTodos`.
+
+Fix: sample seeding is now an explicit construction-time signal rather
+than a guess from the missing revision marker.
+`adoptAthleteDataDemo(state, today, opts)` gained `opts.seedSamples`;
+only `seedState()` passes it (its `seeded` literal has no `demoSeeds`,
+so construction is provably fresh). The load path never passes it, so
+an unmarked saved workspace — not necessarily fresh — receives no
+sample records at all. `freshAdoption` now derives from the flag, and
+it gates the notes AND both task collections: on revision adoption all
+three pass through verbatim — edits, moves, deletions, completion
+state, recurrence, reminders and coach-written records — and repeat
+loads are no-ops. The P825 notes repairs, the privacy boundary,
+archived access and the Ethereal scope are unchanged.
+
+Unmarked-workspace behaviour (tested and reported as required): a
+persisted state with `athleteDataDemo` undefined now keeps every note
+and task collection untouched on load — no `demo-task-*` or
+`demo-pinned-note-*`/`demo-coach-note-*` records are injected. The
+non-sample parts of adoption (tracking history on demo-owned dates,
+plan/target seeding, submissions) are unchanged and still run — that
+is the pre-existing adoption contract, not part of this fix. Fresh
+demos built by `seedState()` still get the full intended sample set;
+`npm run export:demo` regenerates byte-identical output.
+
+Regressions (athlete-data-demo suite 8/8, +3): fresh builds seed the
+sample notes/tasks; a rev-12 fixture with renamed, completed,
+deadline-moved, re-recurred, reminded and DELETED demo tasks plus a
+coach-written task in both collections adopts verbatim with a no-op
+second load; an unmarked saved workspace gets no sample injection.
+
+Browser verification (Chrome 157 CDP, disposable profile, preview
+:3200, `/tmp/v8-verify/p827-tasks.mjs`): **9/9** — the same rev-12
+fixture injected into persisted storage was compared before load,
+after first load and after a second reload: `coachTasks` and
+`coachTodos` byte-equal in all three snapshots, the edited task's
+title/deadline/repeat/reminder verbatim, deleted demo ids absent in
+both collections, notes still preserved, and the renamed task renders
+under the athlete profile's Notes & tasks tab. Fresh-seed screenshots
+not used as evidence.
+
+Gates (Node 24.22.3): `npm run check` exit 0 (412/412 tests);
+`git diff --check` exit 0; `npm run ui:check` exit 1 — identical
+20-violation baseline (no CSS changed).
+
+## 2026-11-15 — P825 Notes data-integrity repairs (committed on `beta/p823-notes-phase-1b`, awaiting closure review)
+
+Repaired OpenCode / DeepSeek V4.1 Flash's five P823 review findings on
+the same branch, head `740d23de`.
+
+1. **Only never-saved drafts are discarded.** `NotesView` tracks
+   `freshKeys` — noteKeys of notes created this session that never
+   stored text. `shouldDiscardDraft` (notes-model) allows auto-discard
+   only for a fresh-keyed note that is still empty; an existing note
+   cleared to `""` keeps its id, scope, pin and category through
+   switching, Back and section unmount — explicit Delete is the only
+   removal path. The fresh flag travels with a successful move. One
+   implementation subtlety mattered: the flag must never be mutated
+   *inside* the `setState` updater — React may invoke updaters more
+   than once, and a second pass seeing the key already deleted kept the
+   draft (the exact failure the reviewer demonstrated). Mutations now
+   happen outside the updater only.
+2. **Demo adoption is non-destructive.** Note seeding in
+   `adoptAthleteDataDemo` runs only on first-ever adoption
+   (`demoSeeds.athleteDataDemo === undefined`): the internalNotes
+   rebuild and text-based dedup are gone, and workspaces on an earlier
+   revision keep their note collections verbatim — edits, deletions,
+   moves and pins survive, nothing is re-seeded from missing ids, and
+   re-running adoption is a no-op.
+3. **Rejected moves keep the pending draft.** `attemptMove` no longer
+   consumes `draft.current` before `moveNote` validates the scoped
+   source and destination; on `id-conflict`, `no-destination` or
+   `source-gone` the debounced write stays armed against the original
+   ref (a missing source simply no-ops). The editor's scope select
+   reverts to the real scope on rejection instead of displaying the
+   failed destination.
+4. **Delete Undo restores the pending version.** New `removeNote`
+   folds an unflushed draft into the removed record in the same
+   transition, so Undo restores the text the coach saw — not the last
+   debounce tick — with original scope and metadata. `restoreNote`
+   already refused to overwrite a replacement at the same scoped id;
+   the timer is cleared so no delayed autosave can recreate the record.
+5. **Archived athletes are reachable; Ethereal restored.** The athlete
+   filter lists archived clients under a disabled "Archived" divider
+   with "(archived)" suffixes, `listNotes` runs with
+   `includeArchived: true` in the workspace, and row metas label
+   archived owners. `NoteCategory`/the optional note fields moved to
+   `coach/model.ts` (`CoachNote`, `CoachClient.internalNotes`);
+   `ethereal/clients/model.ts` is byte-identical to the Tasks base.
+
+Regressions: notes-model suite 19/19 (+4: fresh-only discard,
+removeNote-folds-draft + Undo, occupied-scope Undo refusal, archived
+reachability); athlete-data-demo suite +1 (used-workspace adoption
+leaves notes/tasks verbatim, repeat adoption no-ops). 409/409 total.
+
+Browser verification (Chrome 157 CDP, disposable profile, preview
+:3200, `/tmp/v8-verify/p825-notes.mjs`): **18/18** — injected rev-12
+workspace kept edited/deleted notes verbatim through adoption; the
+archived group renders in the combobox and reaches the archived note;
+an id-conflict move toasts "Move blocked", keeps the typed text in the
+editor and the debounce flushes it to the ORIGINAL scope while the
+other scope's same-id note stays untouched; a cleared-to-empty existing
+note survives switch AND section unmount with pin/category/id intact;
+a never-saved empty draft is still discarded on switch; delete+Undo
+restores the typed-not-saved version; a post-delete debounce cannot
+recreate the record. Unexercised: `no-destination` rejection (not
+reachable in the rendered UI — model-covered); storage sync across
+tabs (unchanged, out of scope).
+
+Gates (Node 24.22.3): `npm run check` exit 0; `git diff --check` exit
+0; `npm run ui:check` exit 1 — identical 20-violation set as at commit
+`740d23de` (still one fewer than the 21 Tasks-base violations; nothing
+new, nothing suppressed).
+
+Committed on `beta/p823-notes-phase-1b`. No push, PR, merge or
+deployment — stopping for closure review.
+
+## 2026-11-15 — P823 Notes Phase 1b committed (committed on `beta/p823-notes-phase-1b`, awaiting independent review)
+
+Built the Notes workspace on top of the verified Tasks Phase 1a head
+`cc448506367000839e82a908b361757d5d54931e` in the separate worktree
+`/private/tmp/vari8-p823-notes-1b`. The old `?section=notes` screen (a
+mixed notes/to-dos list with a dialog editor) is replaced by an
+Apple Notes-style list + editor on `state.coachNotes` (General scope)
+and `client.internalNotes` (athlete scope) — storage locations,
+existing ids, text and pins are untouched; the new fields (`pinned`,
+`category`, `createdAt`, `updatedAt`) are optional and
+backwards-guarded. `ClientNote` gained those optional fields in
+`ethereal/clients/model.ts` because `internalNotes` shares the type —
+typing only, no Ethereal behaviour change.
+
+- `notes-model.ts` (new, pure): scoped `{id, clientId?}` refs so
+  duplicate ids in different scopes stay independent; `listNotes`,
+  `findNote`, `updateNote`, `saveNote`, `moveNote`, `deleteNote`,
+  `restoreNote`, `togglePin`, title (first line) / preview (next line),
+  edited-date sorting, search, athlete and category filters. Moves
+  physically relocate the record between `coachNotes` and
+  `client.internalNotes` so the profile and overview card read the same
+  rows; a move into a scope that already holds the id is rejected
+  without writes. Delayed writes resolve the exact scoped ref and no-op
+  when the record is gone — a stale autosave can never recreate a
+  deleted note, overwrite a same-id note in another scope, or write
+  back to a pre-move scope.
+- `notes.tsx` (rewritten): wide screens show the list beside a sticky
+  editor; below 1280px (and in the athlete profile panel) the row
+  drills into the editor with a Back button. Search, athlete
+  combobox filter, provisional-labelled category chips, a Pinned group
+  ahead of edited-date-sorted rows. `New note` and the `N` shortcut
+  (ignored inside fields/dialogs) create in the current filter scope
+  and focus the editor. Text autosaves on a 600 ms debounce; leaving a
+  note — switch, back, section unmount — commits the pending draft in
+  the same atomic `setState` pass that then discards the note if it is
+  still empty, so freshly typed text always lands before the emptiness
+  check and never on the wrong record. Moves carry a pending draft into
+  the destination write. Delete goes through toast Undo.
+  `AthleteNotesPanel` reuses the whole view scoped to one client in the
+  profile "Notes & tasks" tab; the existing task controls beside it are
+  unchanged and no task mutation lives on the Notes page.
+- `clients.tsx` swaps the bespoke private-note list for
+  `AthleteNotesPanel`; `athlete/overview.tsx` still renders its Pinned
+  notes card from `client.internalNotes` (now via shared `noteTitle`),
+  so pins made anywhere update it.
+- Compatibility: legacy `{id, text}` records load unchanged, display
+  category "Other" and show no invented date. The six handoff
+  categories (health, schedule, training, nutrition, prep, other) carry
+  a visible "provisional — not yet approved" hint; no owner approval
+  was assumed. `athlete-data-demo.ts` bumps to revision 13: it stamps
+  dates/categories only on demo-owned `demo-pinned-note-*` records it
+  seeded earlier (never coach-written text), adds one pinned General
+  demo note, and `npm run export:demo` regenerated
+  `demo-export/clients/client-007.json` + `workspace.json`.
+
+Regressions (`notes-model.test.mjs`, 15/15 via the project loader):
+legacy loading, duplicate-id scoped identity, sorting, athlete +
+category filters, pinning in both scopes, General↔athlete relocation,
+delete/restore round-trip, pending-save ordering against deleted and
+moved refs, id-conflict move rejection — all through the same exported
+functions the component calls.
+
+Browser verification (Chrome 157 CDP, isolated disposable profile,
+preview on :3200, driver `/tmp/v8-verify/p823-notes.mjs`): **25/25**
+checks pass — pinned group and General pinned note render; the legacy
+note shows "Other" with no invented date; the provisional hint and the
+coach-private caption are visible; search, athlete filter and category
+chips narrow the list; `N` creates and focuses the editor; the 600 ms
+debounce writes the note; a pending draft flushes onto the typed-on
+record when switching notes; the edited note sorts to the top; a move
+relocates the record into `internalNotes` carrying its unflushed draft;
+pin writes through; delete removes and Undo restores with pin + scope;
+an empty new draft is discarded on switch; at 390px the list drills
+into the editor and Back returns; the profile panel shows only that
+athlete's notes and writes `internalNotes`; pinning there updates the
+overview card. Unexercised: none of the requested flows — every named
+flow ran live; dark-mode/visual inspection beyond spot screenshots is
+not separately evidenced.
+
+Gates (Node 24.22.3): `npm run check` exit 0 (404/404 tests,
+agent-context, typecheck, Biome, build); `git diff --check` exit 0;
+`npm run ui:check` exit 1 with **20** violations — a strict subset of
+the starting head's 21: the `workspace-polish.css:112
+.cd-nt-pin.is-pinned` entry disappeared because the profile pin-button
+markup it targeted was replaced, and `notes.css` adds zero new
+violations. Preview on :3200/:3201 left running; Settings previews on
+:3000/:3100 untouched.
+
+Committed on `beta/p823-notes-phase-1b`. No push, PR, merge or
+deployment — stopping for independent review.
+
+## 2026-11-14 — P804 Tasks Phase 1a completion toast and Undo restored (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the completion-feedback defect P803 demonstrated on
+`beta/p787-tasks-phase-1a` at head `a0b8cc4a`. `applyToggle` wrote the
+result into a closure box inside a deferred `setState` updater and read
+it immediately, so "Task completed." and its Undo never rendered even
+though the write and ghost were correct. Now:
+
+- `tasks-model.ts` exposes committed transitions for every
+  request-driven operation — `toggleTransition`, `deleteTransition`,
+  `duplicateTransition`, `rescheduleTransition` — each computing the
+  workspace write and its `OpOutcome` in one pure pass on the reducer's
+  current base, the same contract `moveTransition` already honoured.
+  `queueOutcome`/`ackOutcome` give a transient, ordered outcome queue
+  so batched requests can never overwrite an un-acknowledged outcome.
+- `store.tsx` reducer cases commit `{workspace, outcome}` atomically
+  for toggle/delete/duplicate/reschedule; `move` now appends to the
+  same queue. `requestToggle`/`requestDelete`/`requestDuplicate`/
+  `requestReschedule`, `outcomes` and `ackOutcome` join the store
+  contract. No toast, callback or side effect runs inside the reducer.
+- `tasks.tsx` consumes outcomes in one acknowledgement effect:
+  `handledOps` (once-per-request set) plus the per-request callback map
+  make effect replays safe, and each outcome is acked exactly once by
+  request id. `applyToggle` toasts "Task completed." only when the
+  committed outcome says the record completed, with the exact inverse
+  that transition produced — a stale or missing record reports nothing.
+  `remove`, `duplicate` and `moveAllToToday` had the same deferred-read
+  pattern and moved to the same mechanism; duplicate no longer toasts
+  unconditionally on a stale source.
+- Undo stays token-bound (`undoToggle` refuses mismatched tokens) and
+  clears the display-only ghost immediately. Ghost rows remain
+  `aria-hidden`, non-interactive snapshots.
+
+Regression evidence (`tasks-model.test.mjs`, model-level, the exact
+functions the production reducer runs): `committed toggle: write and
+outcome with the exact undo inverse arrive together`, `committed
+toggle: a missing record writes nothing and reports no completion`,
+`committed toggle: reopening reports completed: false, not a success
+toast`, `outcome queue: batched requests keep every committed outcome
+until acked` (in-order consumption, idempotent re-ack), `committed
+delete: removal and its undo payload commit together`, `committed
+delete: a stale delete reports nothing removed`, `committed duplicate:
+the copy and its outcome commit together; missing source reports
+false`, `committed reschedule: moved refs and undo payload commit
+together`. The acknowledgement effect itself is source-inspected — no
+DOM harness exists in this repo — but its browser-visible behaviour is
+verified below.
+
+Browser verification (Chrome 157 CDP, isolated disposable profile,
+1440px, preview on :3000, driver `/tmp/v8-verify/v6-completion.mjs`):
+32/32 checks pass — one-off and recurring completions each show one
+"Task completed." toast with a working Undo; Undo during the ghost
+window removes the ghost immediately, restores the record and recovers
+row counts; recurring Undo restores the original deadline and removes
+the completed snapshot copy; a completed-then-undone renamed
+client-scoped task keeps its new title and owner; delete shows
+"Task deleted." with a working Undo; duplicate shows
+"Task duplicated.". Stale Undo against recurring history is not
+reachable through the UI — the inverse is consumed at click time — and
+remains model-covered (`undoToggle` token refusal tests).
+
+Gates: `npm run check` exit 0 (389/389 tests, agent-context, typecheck,
+lint, build, Node 24.22.3 via `npx node@24`); `npm run ui:check` exit 1
+with the 21 unchanged baseline violations (no CSS touched);
+`git diff --check` clean. Preview and the task's Chrome instance were
+stopped after verification.
+
+## 2026-11-14 — P801 Tasks Phase 1a editor lock during pending move (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P800 O1 finding on
+`beta/p787-tasks-phase-1a` at head `0f3879d9`. The P799 lock covered only
+the athlete select and dialog Save — other draft-mutating controls stayed
+editable while a move committed. Now:
+
+- The whole wide-panel editor locks while the request commits: every
+  draft control (`Input`, `SearchableSelect`, `DatePicker`, all repeat
+  `Select`s, `Toggle`s, `DateTimePicker`, Snooze, `TextArea`) renders
+  `disabled`, and the mutation handlers themselves are guarded —
+  `patch()`, `setAthlete()` and `snooze()` return early on
+  `pendingLock.current || movePending`, so an event arriving before
+  React renders the lock cannot mutate the submitted draft. A
+  "Moving task…" state shows while locked.
+- The lock survives the keyed remount on success: `moveLocksEntry`
+  (tasks-model) matches the pending request's source OR destination
+  scope for the same task id — the remounted editor at the new scope is
+  locked until the outcome is consumed, while a same-id record at an
+  unrelated scope is never locked.
+- `pendingLock` (synchronous ref) closes the submit→render gap;
+  `moving` (state) renders the pending state; `movePending` (prop)
+  covers the committed window. On rejection the lock clears, the draft
+  and current scope stay, the real reason surfaces via toast, and the
+  debounce re-arms so autosave resumes. Debounce cleanup still cannot
+  replay the submitted patch at the old scope — consumed keys are
+  cleared on success.
+- Narrow Save/Cancel and row-dialog behavior verified unchanged —
+  only the shared lock plumbing touches those paths.
+
+Regression evidence (`tasks-model.test.mjs`, model-level): new test
+`the editor lock covers source and destination scopes through the keyed
+remount` exercises the production `moveLocksEntry` used at both detail
+call sites — source scope locked, destination scope locked post-remount,
+same-id unrelated scope and different task unlocked, null unlocked.
+Disabled controls, handler guards and the pending indicator are
+React-side and remain source-inspected — no DOM harness exists in this
+repo, so the lock's rendered behavior is pending browser verification.
+
+Gates: `npm run check` exit 0 (381/381 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged; no CSS touched); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
+## 2026-11-14 — P799 Tasks Phase 1a move+outcome atomic commit (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P798 O1 finding on
+`beta/p787-tasks-phase-1a` at head `0c4d4007`. The P797 design still
+resolved the outcome in an effect and then scheduled a second write —
+a committed result could still diverge from what the state actually
+became. The move and its outcome now commit together:
+
+- `CoachProvider`'s workspace `useState` is a `useReducer` holding
+  `{workspace, moveOutcome}`. The `move` action runs `moveTransition`
+  (`tasks-model.ts`) — the pure validated write AND its outcome in one
+  pass on the reducer's true current base. `moveOutcome` sits beside the
+  workspace, never inside it: persistence still serializes `state` only.
+- `requestMove`/`ackMove`/`moveOutcome` join the store contract;
+  `setState` keeps its `Dispatch<SetStateAction<CoachState>>` signature
+  via a thin `apply` wrapper — every existing caller is unchanged.
+- `attemptMove` (all three callers: wide athlete select, narrow dialog
+  Save, row move dialog) dispatches the request; a consumption-only
+  `useEffect` acknowledges the outcome that committed WITH the write.
+  `handledMove` + `ackMove` + the once-per-request callback map prevent
+  replay double-acks; `pendingMoveRef` blocks duplicates until the
+  outcome is consumed.
+- Post-submit window: scope controls disable while `movePending`
+  (athlete select in both detail modes, dialog Save, row dialog select).
+  Field edits made during pending carry through — the wide panel applies
+  leftover `editedRef` keys at the NEW scope on success, the narrow
+  dialog applies only keys that differ from the submitted draft; a
+  rejected move re-arms the debounce so nothing is silently delayed.
+
+Regression evidence (`tasks-model.test.mjs`, model-level — no DOM
+harness; rendered coverage of pending-disable, draft retention, toasts
+and dialog behavior remains pending): 7 tests exercise the exact
+`moveTransition` the reducer runs — write+outcome pairing on success,
+all three rejection paths with untouched state, pending-window
+carry-through, per-request outcome isolation, replay idempotence.
+
+Gates: `npm run check` exit 0 (380/380 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; no CSS touched); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
+## 2026-11-14 — P797 Tasks Phase 1a move-result commit semantics (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P796 O1 finding on
+`beta/p787-tasks-phase-1a` at head `a55a9407`. `attemptMove` no longer
+reads a result box after `setState` — React may defer or replay the
+updater, so the synchronous boolean could report failure before a valid
+move committed. New design:
+
+- Moves are REQUESTS, resolved AFTER commit. `attemptMove` stores a
+  `MoveRequest` (`{id, entry, clientId, fields}`) in component state and
+  returns `false` only while another request is in flight (duplicate
+  submissions blocked via a synchronous ref flag).
+- A `useEffect` keyed on `[state, pendingMove]` resolves the request by
+  calling `applyMoveRequest(committedState, req)` — the pure validated
+  transition from P795 — so the outcome is always evaluated on the
+  committed base, never a snapshot or a destination id lookup. Nothing
+  mutates external state inside a React updater; the application
+  dispatch re-runs the same validation if the base slipped between the
+  observed commit and the write.
+- All three callers wired to `onDone(moved, reason)`: the wide panel's
+  athlete select consumes ONLY the submitted `editedRef` keys on
+  success (later edits of other fields stay pending) and switches scope;
+  the narrow dialog's Save closes only on a committed move and shows the
+  real reason as a correction on rejection (draft intact); the row move
+  dialog closes and toasts only on success. Rejections toast the actual
+  reason once, centrally.
+- Debounce/remount coordination unchanged: `setAthlete` still clears the
+  debounce before submitting; consumed-on-success means the keyed-remount
+  cleanup cannot replay the patch at the old scope, and a rejected move
+  leaves `editedRef` untouched so nothing is silently lost.
+
+Regression evidence (`tasks-model.test.mjs`, model-level — no DOM
+harness exists; rendered coverage of draft retention, toasts and dialog
+behavior is pending and must not be claimed): four deferred-commit
+scenarios exercise the exact `applyMoveRequest` call the effect runs —
+`a successful move keeps submitted edits and unrelated changes` (an
+intervening committed update survives), `a source deleted before
+commit rejects — nothing writes`, `a collision that appears before
+commit rejects`, `a destination removed before commit rejects — source
+stays`. Inspected wiring: `pendingMove`/`handledMove`/`moveOutcomes`
+request lifecycle, `attemptMove` duplicate gate, all three onDone
+consumers.
+
+Gates: `npm run check` exit 0 (377/377 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; zero in tasks.css); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
+## 2026-11-14 — P795 Tasks Phase 1a move/undo validation (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P794 findings (O1,
+O2) on `beta/p787-tasks-phase-1a` at head `2c4519dd`. Dispositions:
+
+- O1 validated moves — `moveTask` is now one shared, explicit-result
+  transition (`MoveResult`): it resolves the exact scoped source, checks
+  the destination EXISTS, and rejects a same-id collision at the
+  destination BEFORE removing, appending or editing anything. Pending
+  `fields` are merged into the verified source only inside a successful
+  move; success is never inferred from an id lookup. All UI call sites
+  (wide panel athlete select, narrow-dialog Save, row "Move to athlete"
+  menu) route through the shared `attemptMove` wrapper: `setAthlete`
+  consumes the pending patch and switches scope ONLY on `moved: true`, a
+  rejected dialog Save keeps the editor open and shows a correction, and
+  every rejection toasts the reason. A missing source writes nothing —
+  the draft is never applied to a different record.
+- O2 validated undo — `undoToggle` verifies the live record still owns
+  the operation's `undoToken` BEFORE touching state or history: a stale,
+  superseded or missing op leaves both the record and its completed copy
+  unchanged. `saveTask`'s create path and `restoreTask` strip `undoToken`
+  so a duplicate or a delete-undo restore cannot be acted on by an old
+  completion undo. Optional field only; no load-time rewrite of saved
+  workspaces. Two prior tests updated to the new contracts: the scoped
+  toggle test now uses a collision-free destination, and delete-during-
+  completion asserts history is also preserved when undo can't verify.
+
+Regressions added in `tasks-model.test.mjs` (model-level — draft
+retention, correction text and editor-open behavior are UI wiring marked
+interaction-pending): `same-id destination collision rejects: both
+records and the draft untouched`, `missing source never writes a same-id
+destination record`, `nonexistent destination rejects without removing
+the source`, `two recurring completions then a stale undo preserve all
+history`, `duplicating or restoring a record never inherits the
+completion token`, `valid undo after move and rename removes only its
+own copy`. Existing `athlete move applies pending edits in one
+transition` updated to the atomic `moveTask(..., fields)` signature.
+
+Gates: `npm run check` exit 0 (373/373 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — the 21 pre-existing baseline
+violations remain (unchanged set; zero in tasks.css); `git diff --check`
+exit 0. Browser checks outstanding — preview kept stopped (not
+authorized).
+
+## 2026-11-14 — P793 Tasks Phase 1a data-integrity repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P792 findings (O1, O2,
+O5) on `beta/p787-tasks-phase-1a` at head `626c5e20`. Dispositions:
+
+- O1 pending edits during an athlete move — `onMove` now carries pending
+  `fields` and applies move + `updateTask` in ONE `setState` transition
+  against the current source record; the new owner gets the edit and no
+  delayed write touches the old scope. `TaskDetail.setAthlete` consumes
+  `editedRef` and cancels the debounce before calling `onMove`, so the
+  keyed-remount cleanup cannot replay the patch at the former scope. If
+  the record could not move, the same transition falls back to writing the
+  draft at the scope where the record still lives (a deleted record keeps
+  no-resurrection semantics). Narrow dialog Save/Cancel contract preserved
+  — explicit Save passes the draft through `onMove` atomically.
+- O2 undo bound to the operation — `toggleTask` stamps a unique `undoToken`
+  (`taskId()`-generated) on the record in every completion path; the token
+  travels with the record through moves and survives field edits, but is
+  never inherited by a replacement record and is overwritten by any
+  superseding toggle. `undoToggle` removes the operation-owned completed
+  copy by its unique `copyId` and restores toggle-touched fields only on a
+  token match — a deleted original stays deleted and a same-id lookalike
+  stays untouched. `undoToken` is an optional field (`taskOptionalGuards`),
+  written lazily at toggle and cleared on undo — no load-time rewrite of
+  saved workspaces.
+- O5 non-interactive ghosts — ghost rows now render display-only markup:
+  no Checkbox, button, link or menu exists in the DOM for a second
+  activation to reach (`aria-hidden`, static spans, distinct
+  `.cd-task-ghost-*` classes that are also unreachable by the arrow-key
+  `.cd-task-main` selector). Undo removes the ghost and cancels its
+  per-key timeout immediately — no duplicate row lingers for 600 ms.
+  Completion stays immediate, counts come from real records, ghosts never
+  enter storage.
+
+Regressions added in `tasks-model.test.mjs` (model-level; no DOM harness —
+ghost interactivity and debounce timing are marked interaction-pending,
+the tests exercise the exact `moveTask`+`updateTask`/`undoToggle`
+transitions the UI runs): `athlete move applies pending edits in one
+transition; old scope stays untouched`, `undo binds to the operation token
+across a move and a rename`, `undo never touches a same-id lookalike
+occupying the old slot`, `undo does nothing when the toggled record was
+deleted`, `a superseded operation cannot undo — the newer toggle owns the
+record`, `undo leaves exactly one live record — the ghost snapshot carries
+no second copy`. The previous signature-refusal test was rewritten as
+`undo resolves same-id lookalikes by op token, not by signature` (the
+token now succeeds where the heuristic refused).
+
+Gates: `npm run check` exit 0 (367/367 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — 21 unapproved violations, all in
+pre-existing baseline files (identical set to base; zero in tasks.css);
+`git diff --check` exit 0. Browser checks outstanding — preview kept
+stopped (not authorized).
+
+## 2026-11-14 — P791 Tasks Phase 1a closure repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the remaining OpenCode / DeepSeek V4.1 Flash P790 findings on
+`beta/p787-tasks-phase-1a` at head `14a139b7`. Dispositions:
+
+- O1 pending detail saves — new `updateTask(state, ref, fields)` merges only
+  edited fields on the record at the exact scoped ref: never creates, never
+  moves, never searches beyond the scope. `TaskDetail` remounts on
+  `key={taskKey(selected)}` (task switch or athlete move) and flushes
+  pending edits through `onSave(ref, fields)` — A's edits land on A, a late
+  save for a deleted task is a no-op, and edits survive an explicit move
+  because the ref carries the current scope. The narrow dialog's explicit
+  Save moves first, then applies the draft at the new scope.
+- O2/O4 scoped identity — `undoToggle` resolves the scoped ref first, then
+  falls back to id + createdAt + title signature (not bare id), refusing
+  ambiguous matches; move-aware undo and no-resurrection behavior preserved.
+  React row keys are `ghost?:taskKey` scoped; transient completing state is
+  keyed by `taskKey`.
+- O3 demo seed boundary — comment in `athlete-data-demo.ts` documents that
+  the weekday-aligned weekly seed applies at adoption; rev-12 workspaces
+  keep stored tasks (demo data never overwrites coach data).
+- O5 strike-through snapshot — `taskViews` takes `ghosts` (pre-toggle
+  `TaskEntry` snapshots flagged `ghost: true`) instead of `keepIds`; ghost
+  rows render inert, cannot complete twice, and never write.
+- O6 IconButton — the shared `IconButton` has no `aria-pressed` styling
+  (only `.v8-button` does); quick-add toggles stay on shared `Button` with
+  `aria-pressed`. Reported as a shared-control gap for owner review rather
+  than adding feature overrides.
+
+Regressions added (model-level; no DOM harness exists in this repo — the
+tests call the exact `updateTask`/`undoToggle`/`taskViews` paths the UI
+uses): `updateTask merges only edited fields on the exact scoped record`,
+`updateTask never creates and never moves — late writes are no-ops`,
+`pending field saves cannot overwrite fields they did not edit`,
+`task-switch: A's flush writes A; B's draft never lands on A`,
+`undo hits the exact occurrence when ids collide across scopes`,
+`undo after a move targets the moved record via signature, not bare id`,
+`undo refuses ambiguous same-id lookalikes rather than corrupting`,
+`ghosts render the struck-through snapshot while the live record moves on`.
+
+Gates: `npm run check` exit 0 (361/361 tests, agent-context, typecheck,
+lint, build); `npm run ui:check` exit 1 — 21 unapproved violations, all in
+pre-existing baseline files (identical set to base; zero in tasks.css);
+`git diff --check` exit 0. Browser checks outstanding — preview kept
+stopped (not authorized).
+
+## 2026-11-14 — P789 Tasks Phase 1a review repairs (committed on `beta/p787-tasks-phase-1a`, awaiting closure review)
+
+Repaired the consolidated OpenCode / DeepSeek V4.1 Flash P788 findings on
+`beta/p787-tasks-phase-1a` off base `501e1134`. All findings addressed:
+
+1. Completion/undo/stale actions — `toggleTask`/`undoToggle` resolve the
+   record by scope+id inside the transition; the write is immediate and the
+   ~600 ms row animation is display-only (`keepIds`, scoped `taskKey`). Undo
+   re-applies only the toggled fields to the current record, so post-toggle
+   edits and moves survive; deleted records are never resurrected.
+2. Notes lifecycle — `notes.tsx` to-dos are read-only with "Open in Tasks"
+   deep links (`scope:id` params); note editing unchanged; no Notes path
+   mutates task records.
+3. Repeat requires a date — quick add un-parses the repeat token with a
+   visible correction when the date is cleared (explicit `null` override);
+   detail editor blocks repeat-without-date saves and drops the rule with a
+   correction when the date is removed.
+4. Detail edits/snooze — panel close flushes the pending debounced save of
+   the latest draft to the latest scope; narrow dialog keeps explicit
+   Save/Cancel, Snooze edits the draft instead of discarding it, and the
+   dialog athlete change is wired to `moveTask` (was a silent no-op).
+5. Reminder rescheduling — `saveTask` clears `reminderShownAt` only when
+   `reminderAt` changes; the marker is preserved through unrelated edits.
+6. Quick-add parity — `@` tokens bind only unique matches (ambiguous stays
+   literal text); suggestion picks set an explicit removable override chip;
+   fixed-profile athlete shows a distinct non-removable chip; flag toggle
+   keeps typed `!`/`p1` tokens, chips and title consistent.
+7. History/keyboard/links — Completed groups on `localDayOf` (same local-day
+   basis as Today); recurring copies keep `createdAt`; `task` route param is
+   `scope:id`-aware via `taskParam`/`resolveTaskParam` with bare-id fallback
+   for unambiguous links; row arrows already traverse all groups.
+8. Demo/UI-system — seeded weekly task deadline lands on its repeat weekday
+   (fixture output unchanged: export anchor is already a Sunday); the two
+   pressed-state CSS exceptions were removed in favour of shared `Button`
+   `aria-pressed` styling; the remaining 16 px phone-input exception now
+   carries owner + removal condition.
+
+Regression coverage added to `tasks-model.test.mjs` (12 new tests, 31 total):
+scoped-ref toggle + stale no-op, immediate undo preserving unrelated edits,
+delete/move during completion, recurring losslessness, pending-save scope,
+reminder rescheduling/snooze/reload, local-midnight grouping, scope-aware
+params, ambiguous quick-add `@`.
+
+Gates (Node v26.13.0): `npm run check` exit 0 (353/353 tests, agent-context,
+typecheck, lint, build). `npm run ui:check` exit 1 — 21 violations, all in
+pre-existing files, identical set to base; zero findings in tasks.css or
+notes.css. `git diff --check` exit 0. Preview kept stopped; browser checks
+still pending. Awaiting OpenCode / DeepSeek V4.1 Flash closure review.
+No push, no PR.
+
+## 2026-11-14 — P787 VARi8 Tasks Phase 1a (committed on `beta/p787-tasks-phase-1a`, awaiting review)
+
+Browser-only `/coach` prototype slice on `beta/p787-tasks-phase-1a` off
+`origin/Vari8-Beta` (`501e1134`). Spec:
+`~/Downloads/notes-and-tasks-handoff.html` sections 5–6 and 10–15.
+
+- New `frontend/src/components/coach/tasks-model.ts` (pure: list/save/move/
+  delete/restore, recurrence + completed-copy, views, quick-add parser,
+  reminder persistence) + `tasks-model.test.mjs` (19 tests, all pass).
+- New `tasks.tsx` + `tasks.css`: Today/Upcoming/Anytime/Completed views,
+  quick add with reversible token chips + mouse buttons, wide detail panel /
+  narrow dialog, keyboard row nav, undo toasts.
+- `coach-app.tsx`: Tasks nav entry + Today badge, reminder effect rewritten
+  to persist `reminderShownAt`, toast actions (Open / Snooze 1 h).
+- `clients.tsx`: profile "Notes & tasks" tab reuses `AthleteTasksPanel`;
+  athlete tasks relabelled "Visible to athlete", status from `localToday()`.
+- `model.ts`/`store.tsx`: `tasks` section, `task` route param, optional
+  task-field guards, toast action labels.
+- `athlete-data-demo.ts`: revision 12, deterministic demo tasks;
+  `npm run export:demo` regenerated fixtures.
+- notes.tsx untouched (Notes rebuild is Phase 1b); `?section=notes` intact.
+
+Gates (Node v26.13.0, `.nvmrc` pins 24): `npm run check` exit 0 (test
+341/341, agent-context, typecheck, lint, build). `npm run ui:check` exit 1 —
+21 pre-existing violations identical to base commit 501e1134; new tasks.css
+rules are exception-registered, net-new violations 0.
+
+Browser checks pending (preview kept stopped per task instruction): both
+modes + pale/dark accents, open pickers/menus, keyboard-only add/complete/
+undo, ≤760px layout, athlete-profile reuse, reminder after reload. Awaiting
+OpenCode / DeepSeek V4.1 Flash independent review and owner UI review.
+No push, no PR.
+
 ## 2026-11-03 — P721 forward-merge onto repaired Beta (#251)
 
 Merged `7e1b93e2` (Vari8-Beta post-#252) into `beta/p671-voice-recording`;

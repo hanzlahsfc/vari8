@@ -4,12 +4,9 @@ import {
   CalendarDays,
   ClipboardCheck,
   MessageCircle,
-  Pin,
-  Trash2,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import {
-  Checkbox,
   SegmentedControl,
   Input as SharedInput,
   Tabs,
@@ -29,8 +26,11 @@ import {
   uid,
   unreadCount,
 } from "./model";
+import { AthleteNotesPanel } from "./notes";
 import { ClientPlansSummary } from "./plans/setup-ui";
 import { useCoach } from "./store";
+import { localToday } from "./targets/model";
+import { AthleteTasksPanel } from "./tasks";
 import { templateSetup } from "./template-setup";
 import "./workspace-polish.css";
 import {
@@ -45,7 +45,6 @@ import {
   Select,
   Status,
   Surface,
-  Toggle,
 } from "./ui";
 export function nextEvent(
   state: ReturnType<typeof useCoach>["state"],
@@ -66,7 +65,9 @@ export function ClientsWorkspace() {
       state.submissions.filter((s) => s.clientId === c.id && !s.response)
         .length +
       unreadCount(state, c.id) +
-      c.clientTasks.filter((t) => t.status === "overdue").length,
+      c.clientTasks.filter(
+        (t) => t.status !== "complete" && t.dueDate < localToday(),
+      ).length,
     [state],
   );
   const list = useMemo(
@@ -231,9 +232,10 @@ export function ClientsWorkspace() {
                             {unreadCount(state, c.id)} unread
                           </span>
                         )}
-                        {c.clientTasks.some((t) => t.status === "overdue") && (
-                          <span>Overdue task</span>
-                        )}
+                        {c.clientTasks.some(
+                          (t) =>
+                            t.status !== "complete" && t.dueDate < localToday(),
+                        ) && <span>Overdue task</span>}
                         {attention(c) === 0 && (
                           <span className="cd-muted">Up to date</span>
                         )}
@@ -296,12 +298,8 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
   const tab = route.tab ?? "Overview";
   const [assign, setAssign] = useState(false);
   const [templateId, setTemplate] = useState(state.templates[0]?.id ?? "");
-  const [noteText, setNoteText] = useState("");
-  const [notePinned, setNotePinned] = useState(false);
-  const [todoText, setTodoText] = useState("");
-  const [todoDue, setTodoDue] = useState("");
   const [taskText, setTaskText] = useState("");
-  const [taskDue, setTaskDue] = useState(addDays(TODAY, 7));
+  const [taskDue, setTaskDue] = useState(addDays(localToday(), 7));
   const [extra, setExtra] = useState(false);
   const update = (fn: (c: CoachClient) => CoachClient) =>
     setState((s) => ({
@@ -370,85 +368,11 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
       {tab === "Notes & tasks" && (
         <div className="cd-nt-grid">
           <Surface>
-            <h2>Private note</h2>
-            <p className="cd-muted">Visible only in your workspace.</p>
-            <TextArea
-              label="Note"
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              rows={3}
-            />
-            <Toggle
-              label="Pin to overview"
-              checked={notePinned}
-              onChange={setNotePinned}
-            />
-            <Button
-              primary
-              disabled={!noteText.trim()}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  internalNotes: [
-                    ...c.internalNotes,
-                    {
-                      id: uid("note"),
-                      text: noteText.trim(),
-                      ...(notePinned ? { pinned: true } : {}),
-                    },
-                  ],
-                }));
-                setNoteText("");
-                setNotePinned(false);
-              }}
-            >
-              Add note
-            </Button>
-            <div className="cd-nt-list">
-              {[...c.internalNotes]
-                .sort(
-                  (a, b) =>
-                    Number(b.pinned ?? false) - Number(a.pinned ?? false),
-                )
-                .map((n) => (
-                  <div className="cd-nt-row" key={n.id}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={n.pinned ? "cd-nt-pin is-pinned" : "cd-nt-pin"}
-                      onClick={() =>
-                        update((c) => ({
-                          ...c,
-                          internalNotes: c.internalNotes.map((x) =>
-                            x.id === n.id ? { ...x, pinned: !x.pinned } : x,
-                          ),
-                        }))
-                      }
-                    >
-                      <Pin
-                        size={13}
-                        aria-hidden="true"
-                        fill={n.pinned ? "currentColor" : "none"}
-                      />
-                      {n.pinned ? "Unpin" : "Pin"}
-                    </Button>
-                    <p data-pinned={n.pinned || undefined}>{n.text}</p>
-                    <IconButton
-                      label="Remove note"
-                      onClick={() =>
-                        update((c) => ({
-                          ...c,
-                          internalNotes: c.internalNotes.filter(
-                            (x) => x.id !== n.id,
-                          ),
-                        }))
-                      }
-                    >
-                      <Trash2 size={14} />
-                    </IconButton>
-                  </div>
-                ))}
-            </div>
+            <h2>Private notes</h2>
+            <p className="cd-muted">
+              Private to you. The same notes appear in the Notes workspace.
+            </p>
+            <AthleteNotesPanel client={c} />
             {c.generalNotes.length > 0 && (
               <details className="cd-nt-general">
                 <summary>General coaching notes</summary>
@@ -461,64 +385,15 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
             )}
           </Surface>
           <Surface>
-            <h2>Coach to-do</h2>
-            <p className="cd-muted">Your own reminders.</p>
-            <SharedInput
-              label="To-do"
-              value={todoText}
-              onChange={(e) => setTodoText(e.target.value)}
-            />
-            <DateField
-              label="Due (optional)"
-              value={todoDue}
-              onChange={setTodoDue}
-            />
-            <Button
-              primary
-              disabled={!todoText.trim()}
-              onClick={() => {
-                update((c) => ({
-                  ...c,
-                  coachTasks: [
-                    ...c.coachTasks,
-                    {
-                      id: uid("task"),
-                      title: todoText.trim(),
-                      complete: false,
-                      ...(todoDue ? { deadline: todoDue } : {}),
-                    },
-                  ],
-                }));
-                setTodoText("");
-                setTodoDue("");
-              }}
-            >
-              Add to-do
-            </Button>
-            <div className="cd-nt-list">
-              {c.coachTasks.map((t) => (
-                <div className="cd-nt-row" key={t.id}>
-                  <Checkbox
-                    className="cd-task"
-                    label={t.title}
-                    checked={t.complete}
-                    onCheckedChange={(checked) =>
-                      update((c) => ({
-                        ...c,
-                        coachTasks: c.coachTasks.map((x) =>
-                          x.id === t.id ? { ...x, complete: checked } : x,
-                        ),
-                      }))
-                    }
-                  />
-                  {t.deadline && <small>Due {formatDate(t.deadline)}</small>}
-                </div>
-              ))}
-            </div>
+            <h2>Coach tasks</h2>
+            <p className="cd-muted">Private to you.</p>
+            <AthleteTasksPanel client={c} />
           </Surface>
           <Surface>
-            <h2>Client task</h2>
-            <p className="cd-muted">Assigned to the client app.</p>
+            <h2>Athlete tasks</h2>
+            <p className="cd-muted">
+              Visible to athlete — assigned to the client app.
+            </p>
             <SharedInput
               label="Task"
               value={taskText}
@@ -551,7 +426,7 @@ function ClientProfile({ client: c }: { client: CoachClient }) {
                 const status =
                   t.status === "complete"
                     ? "Done"
-                    : t.dueDate < TODAY
+                    : t.dueDate < localToday()
                       ? "Overdue"
                       : "Open";
                 return (

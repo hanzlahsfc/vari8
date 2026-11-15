@@ -3,6 +3,7 @@ import {
   CalendarDays,
   Check,
   Layers3,
+  ListChecks,
   MessageCircle,
   Moon,
   NotebookPen,
@@ -14,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Input as Vari8Input } from "../vari8/components";
 import { AppearanceControls } from "./appearance-controls";
 import { CheckInsWorkspace } from "./check-ins";
@@ -25,6 +26,14 @@ import { type Section, seedState, unreadCount } from "./model";
 import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
 import { CoachProvider, useCoach } from "./store";
+import { localToday } from "./targets/model";
+import { TasksWorkspace } from "./tasks";
+import {
+  dueReminders,
+  markRemindersShown,
+  snoozeReminder,
+  todayCount,
+} from "./tasks-model";
 import { TemplateEditor, TemplateLibrary } from "./templates";
 import { Button, Dialog, IconButton, Toggle, Transition } from "./ui";
 import "./coach.css";
@@ -34,7 +43,8 @@ const NAV = [
   { id: "templates", label: "Templates", Icon: Layers3 },
   { id: "check-ins", label: "Check-ins", Icon: CalendarDays },
   { id: "messages", label: "Messages", Icon: MessageCircle },
-  { id: "notes", label: "Notes & to-dos", Icon: NotebookPen },
+  { id: "tasks", label: "Tasks", Icon: ListChecks },
+  { id: "notes", label: "Notes", Icon: NotebookPen },
 ] as const;
 export function CoachApp() {
   return (
@@ -56,47 +66,58 @@ function Workspace() {
     toast,
   } = useCoach();
   const [settings, setSettings] = useState(false);
-  const notifiedReminders = useRef(new Set<string>());
   useEffect(() => {
     if (!hydrated) return;
     const checkReminders = () => {
-      const reminders = [
-        ...(state.coachTodos ?? []).map((todo) => ({
-          ...todo,
-          clientId: todo.clientId ?? "workspace",
-        })),
-        ...state.clients.flatMap((client) =>
-          client.coachTasks.map((todo) => ({
-            ...todo,
-            reminderAt:
-              "reminderAt" in todo && typeof todo.reminderAt === "string"
-                ? todo.reminderAt
-                : undefined,
-            clientId: client.id,
-          })),
-        ),
-      ];
-      const now = Date.now();
-      const due = reminders.find((todo) => {
-        const key = `${todo.clientId}:${todo.id}`;
-        return (
-          !todo.complete &&
-          todo.reminderAt &&
-          Date.parse(todo.reminderAt) <= now &&
-          !notifiedReminders.current.has(key)
-        );
-      });
-      if (!due) return;
-      notifiedReminders.current.add(`${due.clientId}:${due.id}`);
-      toast(`Reminder: ${due.title}`);
+      const due = dueReminders(state, Date.now());
+      if (!due.length) return;
+      setState((s) => markRemindersShown(s, due));
+      const first = due[0];
+      toast(
+        due.length === 1
+          ? `Reminder: ${first.task.title}`
+          : `${due.length} reminders`,
+        undefined,
+        [
+          {
+            label: due.length === 1 ? "Open" : "View",
+            run: () =>
+              navigate(
+                due.length === 1
+                  ? {
+                      section: "tasks",
+                      client: first.clientId,
+                      task: `${first.clientId ?? "general"}:${first.task.id}`,
+                    }
+                  : { section: "tasks" },
+              ),
+          },
+          {
+            label: "Snooze 1 h",
+            run: () =>
+              setState((s) =>
+                due.reduce(
+                  (next, entry) =>
+                    snoozeReminder(
+                      next,
+                      entry,
+                      new Date(Date.now() + 60 * 60 * 1000),
+                    ),
+                  s,
+                ),
+              ),
+          },
+        ],
+      );
     };
     checkReminders();
     const interval = window.setInterval(checkReminders, 30_000);
     return () => window.clearInterval(interval);
-  }, [hydrated, state.coachTodos, state.clients, toast]);
+  }, [hydrated, state, setState, toast, navigate]);
   const selectedClient = state.clients.find((c) => c.id === route.client);
   const pending = state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
+  const dueTasks = todayCount(state, localToday());
   return (
     <div
       className="coach-root v8-theme"
@@ -171,8 +192,21 @@ function Workspace() {
             >
               <Icon size={19} />
               <span className="cd-nav-label">{label}</span>
-              {(id === "check-ins" ? pending : id === "messages" ? unread : 0) >
-                0 && <b>{id === "check-ins" ? pending : unread}</b>}
+              {(id === "check-ins"
+                ? pending
+                : id === "messages"
+                  ? unread
+                  : id === "tasks"
+                    ? dueTasks
+                    : 0) > 0 && (
+                <b>
+                  {id === "check-ins"
+                    ? pending
+                    : id === "messages"
+                      ? unread
+                      : dueTasks}
+                </b>
+              )}
             </button>
           ))}
         </nav>
@@ -280,6 +314,8 @@ function Workspace() {
                 )
               ) : route.section === "check-ins" ? (
                 <CheckInsWorkspace />
+              ) : route.section === "tasks" ? (
+                <TasksWorkspace />
               ) : route.section === "notes" ? (
                 <NotesWorkspace />
               ) : (
@@ -293,6 +329,18 @@ function Workspace() {
         <div className="cd-toast" role="status">
           <Check size={16} />
           <span>{notice.text}</span>
+          {notice.actions?.map((action) => (
+            <Button
+              key={action.label}
+              size="sm"
+              onClick={() => {
+                action.run();
+                dismiss();
+              }}
+            >
+              {action.label}
+            </Button>
+          ))}
           {notice.undo && (
             <Button
               size="sm"

@@ -42,7 +42,7 @@ import {
   type StepsTarget,
 } from "./targets/model";
 
-export const ATHLETE_DATA_DEMO_REVISION = 11;
+export const ATHLETE_DATA_DEMO_REVISION = 13;
 export const ATHLETE_DATA_DEMO_CLIENT_ID = "client-007";
 
 const TRACKING_DAYS = 70;
@@ -123,9 +123,23 @@ const DEMO_REFEED_EVENT_IDS = new Set([
 ]);
 const DEMO_REFEED_EVENT_NOTES = new Set(["Keep sodium consistent."]);
 const DEMO_PINNED_NOTES = [
-  "Left quad lags — keep unilateral work early in lower sessions.",
-  "Digestion issues with dairy — keep it out pre-show.",
+  {
+    text: "Left quad lags — keep unilateral work early in lower sessions.",
+    category: "training" as const,
+    daysAgo: 34,
+  },
+  {
+    text: "Digestion issues with dairy — keep it out pre-show.",
+    category: "health" as const,
+    daysAgo: 21,
+  },
 ];
+const DEMO_COACH_NOTE = {
+  id: "demo-coach-note-peak-week",
+  text: "Peak week checklist\nWater, sodium and posing calls follow the same script every show.",
+  category: "prep" as const,
+  daysAgo: 12,
+};
 const DEMO_TRAINING_FOCUS = "Hypertrophy · lower-body priority";
 const DEMO_OTHER_TARGETS = [
   {
@@ -690,6 +704,7 @@ function demoSubmission(
 export function adoptAthleteDataDemo(
   state: CoachState,
   today: string,
+  opts?: { seedSamples?: boolean },
 ): CoachState {
   if (state.demoSeeds?.athleteDataDemo === ATHLETE_DATA_DEMO_REVISION)
     return state;
@@ -961,28 +976,134 @@ export function adoptAthleteDataDemo(
         }
       : client.tracking;
 
-  // --- Pinned private notes ---
-  const existingNotes = new Set(
-    client.internalNotes.map((note) => note.text.trim()),
-  );
-  const internalNotes = [
-    ...client.internalNotes,
-    ...DEMO_PINNED_NOTES.filter((text) => !existingNotes.has(text)).map(
-      (text, i) => ({
-        id: `demo-pinned-note-${i + 1}`,
-        text,
-        pinned: true,
-      }),
-    ),
-  ];
+  // --- Sample notes and tasks (fresh demo builds only) ---
+  // Seeding sample records is a construction-time concern: seedState()
+  // passes seedSamples while it builds a genuinely fresh demo. On the
+  // load path a missing revision marker is NOT proof of freshness — a
+  // workspace saved before the marker existed is just as unmarked — so
+  // persisted workspaces keep their note and task collections verbatim:
+  // coach edits, moves, deletions, pins and completion state survive,
+  // nothing is rebuilt from text, and a missing demo id is never read as
+  // permission to re-seed.
+  const freshAdoption = opts?.seedSamples === true;
+  const ago = (days: number, time = "T09:00:00") =>
+    `${addLocalDays(today, -days)}${time}`;
+  const demoPinned = DEMO_PINNED_NOTES.map((d, i) => ({
+    id: `demo-pinned-note-${i + 1}`,
+    text: d.text,
+    pinned: true,
+    category: d.category,
+    createdAt: ago(d.daysAgo),
+    updatedAt: ago(Math.max(1, d.daysAgo - 9)),
+  }));
+  const internalNotes = freshAdoption
+    ? [
+        ...client.internalNotes,
+        ...demoPinned.filter(
+          (d) => !client.internalNotes.some((n) => n.id === d.id),
+        ),
+      ]
+    : client.internalNotes;
 
+  // --- Demo tasks (deterministic ids; fresh demo builds only) ---
+  // On revision adoption both task collections pass through verbatim —
+  // an edited or deleted demo task is never regenerated or replaced,
+  // and completion state, recurrence, reminders and coach-written tasks
+  // are preserved exactly.
+  const demoTasks = <T extends { id: string }>(list: T[], add: T[]): T[] => [
+    ...list.filter((task) => !task.id.startsWith("demo-task-")),
+    ...add,
+  ];
+  const clientTaskSeeds = [
+    {
+      id: "demo-task-review-checkin",
+      title: "Review Amara's Sunday check-in and photos",
+      complete: false,
+      // Deadline lands on the repeat's weekday so completion advances
+      // cleanly to the following Sunday. Sample tasks seed only on a
+      // fresh demo build — workspaces adopted earlier keep whatever the
+      // coach has stored.
+      deadline: addLocalDays(
+        today,
+        (7 - new Date(`${today}T12:00:00`).getDay()) % 7,
+      ),
+      priority: "high" as const,
+      repeat: {
+        unit: "week" as const,
+        interval: 1,
+        weekdays: [0] as (0 | 1 | 2 | 3 | 4 | 5 | 6)[],
+      },
+      createdAt: ago(6),
+    },
+    {
+      id: "demo-task-refeed",
+      title: "Prepare refeed plan before diet break",
+      complete: false,
+      deadline: addLocalDays(today, 3),
+      createdAt: ago(2),
+    },
+    {
+      id: "demo-task-macros",
+      title: "Send week-8 macro update",
+      complete: true,
+      completedAt: ago(1, "T17:30:00"),
+      createdAt: ago(9),
+    },
+  ];
   const nextClient: CoachClient = {
     ...staged,
     tracking,
     internalNotes,
+    coachTasks: freshAdoption
+      ? demoTasks(client.coachTasks, clientTaskSeeds)
+      : client.coachTasks,
   };
   const clients = [...state.clients];
   clients[index] = nextClient;
+  const todoTaskSeeds = [
+    {
+      id: "demo-task-posing",
+      title: "Ask Theo for posing video",
+      complete: false,
+      deadline: addLocalDays(today, 1),
+      clientId: "client-014",
+      createdAt: ago(4),
+    },
+    {
+      id: "demo-task-bloodwork",
+      title: "Book bloodwork 12 weeks out",
+      complete: false,
+      deadline: addLocalDays(today, 7),
+      clientId: ATHLETE_DATA_DEMO_CLIENT_ID,
+      createdAt: ago(10),
+    },
+    {
+      id: "demo-task-triage",
+      title: "Morning check-in triage",
+      complete: false,
+      deadline: today,
+      reminderAt: `${today}T08:00:00`,
+      createdAt: ago(1),
+    },
+    {
+      id: "demo-task-hotel",
+      title: "Confirm peak-week hotel booking",
+      complete: false,
+      deadline: addLocalDays(today, -2),
+      createdAt: ago(8),
+    },
+    {
+      id: "demo-task-roundup",
+      title: "Monthly posing check-in roundup",
+      complete: false,
+      deadline: addLocalDays(today, 2),
+      repeat: { unit: "month" as const, interval: 1 },
+      createdAt: ago(20),
+    },
+  ];
+  const coachTodos = freshAdoption
+    ? demoTasks(state.coachTodos ?? [], todoTaskSeeds)
+    : state.coachTodos;
 
   // --- Check-ins: photos on the two existing demo submissions + two more ---
   const questions = variant?.questions ?? [];
@@ -1018,10 +1139,30 @@ export function adoptAthleteDataDemo(
       ),
     );
 
+  // A pinned General note exercises the workspace scope — seeded on first
+  // adoption only so deletions and edits in used workspaces stick.
+  const coachNotes =
+    freshAdoption &&
+    !(state.coachNotes ?? []).some((note) => note.id === DEMO_COACH_NOTE.id)
+      ? [
+          ...(state.coachNotes ?? []),
+          {
+            id: DEMO_COACH_NOTE.id,
+            text: DEMO_COACH_NOTE.text,
+            pinned: true,
+            category: DEMO_COACH_NOTE.category,
+            createdAt: ago(DEMO_COACH_NOTE.daysAgo),
+            updatedAt: ago(Math.max(1, DEMO_COACH_NOTE.daysAgo - 5)),
+          },
+        ]
+      : state.coachNotes;
+
   return {
     ...state,
     clients,
     submissions,
+    coachTodos,
+    coachNotes,
     demoSeeds: {
       ...state.demoSeeds,
       athleteDataDemo: ATHLETE_DATA_DEMO_REVISION,
