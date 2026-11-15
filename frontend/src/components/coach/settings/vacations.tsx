@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { DatePicker, DateRangePicker, TextArea } from "../../vari8/inputs";
-import { type Event, uid } from "../model";
+import { type Event, resolvedTimeZone, uid, zonedToday } from "../model";
 import { useCoach, useDisplay } from "../store";
 import { Button, Dialog, Select, Toggle } from "../ui";
 import {
@@ -200,6 +200,7 @@ function VacationDialog({
     event: row.event,
     // Submitted check-ins are read-only and never moved, whatever the
     // default choice would suggest.
+    submitted: row.submitted,
     to: row.submitted
       ? "keep"
       : row.restoreOnly
@@ -234,17 +235,16 @@ function VacationDialog({
       autoMessage: { enabled: autoEnabled, text: autoText },
     };
     const moves = planMoves(proposals, vacId);
-    const touchedEventIds = new Set(proposals.map((p) => p.event.id));
+    // Submitted rows are read-only: they never produce moves, and their
+    // existing move records stay so the filed submission keeps its date.
+    const touchedEventIds = new Set(
+      proposals.filter((p) => !p.submitted).map((p) => p.event.id),
+    );
     const priorVacation = existing;
     const priorMoves = vacationMoves(state, vacId);
+    const coachDay = zonedToday(resolvedTimeZone(state.preferences), now);
     const notices = notify
-      ? reschedulingMessages(
-          state,
-          vacation,
-          proposals,
-          formatDate,
-          now.toISOString().slice(0, 10),
-        )
+      ? reschedulingMessages(state, vacation, proposals, formatDate, coachDay)
       : [];
     const noticeIds = new Set(notices.map((m) => m.id));
     setState((s) => ({
@@ -261,9 +261,7 @@ function VacationDialog({
       // left alone.
       checkInMoves: [
         ...(s.checkInMoves ?? []).filter(
-          (m) =>
-            !(m.vacationId === vacId && touchedEventIds.has(m.eventId)) &&
-            !(m.vacationId === vacId),
+          (m) => !(m.vacationId === vacId && touchedEventIds.has(m.eventId)),
         ),
         ...moves,
       ],
@@ -271,25 +269,19 @@ function VacationDialog({
     }));
     onClose();
     toast("Vacation saved", () => {
-      // Surgical undo: restore this vacation's previous record and moves,
-      // and remove only the messages this save created — later unrelated
-      // edits survive.
-      setState((s) => ({
-        ...undoVacationSave(s, vacId),
-        preferences: {
-          ...s.preferences,
-          vacations: priorVacation
-            ? (s.preferences.vacations ?? []).map((v) =>
-                v.id === vacId ? priorVacation : v,
-              )
-            : (s.preferences.vacations ?? []).filter((v) => v.id !== vacId),
-        },
-        checkInMoves: [
-          ...(s.checkInMoves ?? []).filter((m) => m.vacationId !== vacId),
-          ...priorMoves,
-        ],
-        messages: s.messages.filter((m) => !noticeIds.has(m.id)),
-      }));
+      // Undo scopes to exactly this save: the record reverts only if it is
+      // still what we wrote, save-created moves are removed and replaced
+      // ones restored without touching later reschedules, and only the
+      // notices this save created are dropped.
+      setState((s) =>
+        undoVacationSave(s, {
+          vacation,
+          priorVacation,
+          savedMoves: moves,
+          priorMoves,
+          messageIds: noticeIds,
+        }),
+      );
     });
   };
 

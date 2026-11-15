@@ -3,6 +3,7 @@ import {
   type CoachClient,
   type CoachState,
   checkInDeadline,
+  type Event,
   pickCheckInCard,
   resolvedTimeZone,
   zonedToday,
@@ -151,6 +152,10 @@ export type NextCheckIn = {
   deadline: string;
   awaitingFeedback: boolean;
   submittedDate: string | undefined;
+  /** The actual occurrence the card refers to — stable ID plus effective
+   * (move-aware) date — so the form files against the same event the
+   * athlete tapped. */
+  event?: Event;
 };
 
 export function nextCheckIn(
@@ -178,6 +183,7 @@ export function nextCheckIn(
     deadline: checkInDeadline(state.preferences),
     awaitingFeedback: !!waiting,
     submittedDate: waiting?.date,
+    event: next ?? overdue,
   };
 }
 

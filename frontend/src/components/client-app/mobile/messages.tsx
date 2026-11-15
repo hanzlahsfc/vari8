@@ -10,9 +10,9 @@ import {
   timeZoneCity,
   uid,
   workingHoursSummary,
+  zonedToday,
 } from "../../coach/model";
 import { useCoach, useDisplay } from "../../coach/store";
-import { useLocalToday } from "../../coach/targets/use-local-today";
 import { vacationAutoReply } from "../../coach/vacations";
 import { VacationBanner } from "../vacation-banner";
 
@@ -38,7 +38,6 @@ export function MobileMessages({ client }: { client: CoachClient }) {
   );
   const hoursCity = timeZoneCity(resolvedTimeZone(state.preferences));
   const availabilityNote = athleteAvailabilityNote(state.preferences);
-  const today = useLocalToday();
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = state.messages
@@ -70,6 +69,9 @@ export function MobileMessages({ client }: { client: CoachClient }) {
     const text = draft.trim();
     if (!text) return;
     setState((s) => {
+      // The away reply and its day stamp follow the coach's day — the same
+      // zone the banner and coach chip use — not the athlete's browser day.
+      const coachDay = zonedToday(resolvedTimeZone(s.preferences), new Date());
       const next = {
         ...s,
         messages: [
@@ -79,7 +81,7 @@ export function MobileMessages({ client }: { client: CoachClient }) {
             clientId: client.id,
             text,
             from: "client" as const,
-            date: today,
+            date: coachDay,
             read: false,
             priority: false,
             attachments: [],
@@ -87,7 +89,7 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           },
         ],
       };
-      const reply = vacationAutoReply(next, client.id, today, formatDate);
+      const reply = vacationAutoReply(next, client.id, coachDay, formatDate);
       return reply ? { ...next, messages: [...next.messages, reply] } : next;
     });
     setDraft("");

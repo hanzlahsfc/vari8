@@ -1212,16 +1212,18 @@ test("moveClashes blocks occupied destinations and proposals onto one day", () =
   assert.equal(free.size, 0);
 });
 
-test("undoVacationSave reverts only that vacation's moves and messages", () => {
+test("undoVacationSave reverts only that save's record, moves and notices", () => {
   const s = vacState();
+  const savedVacation = s.preferences.vacations[0];
+  const savedMove = {
+    eventId: "recurring:c1:2026-11-16",
+    clientId: "c1",
+    from: "2026-11-16",
+    to: "2026-11-23",
+    vacationId: "v1",
+  };
   s.checkInMoves = [
-    {
-      eventId: "recurring:c1:2026-11-16",
-      clientId: "c1",
-      from: "2026-11-16",
-      to: "2026-11-23",
-      vacationId: "v1",
-    },
+    savedMove,
     {
       eventId: "recurring:c1:2026-11-23",
       clientId: "c1",
@@ -1232,15 +1234,14 @@ test("undoVacationSave reverts only that vacation's moves and messages", () => {
   ];
   s.messages.push(
     {
-      id: "am1",
+      id: "n1",
       clientId: "c1",
-      text: "away",
+      text: "rescheduling notice",
       from: "coach",
       date: "2026-11-17",
       read: false,
       priority: false,
       attachments: [],
-      auto: "vacation",
       vacationId: "v1",
     },
     {
@@ -1254,19 +1255,245 @@ test("undoVacationSave reverts only that vacation's moves and messages", () => {
       attachments: [],
     },
   );
-  const undone = vacations.undoVacationSave(s, "v1");
+  const undone = vacations.undoVacationSave(s, {
+    vacation: savedVacation,
+    savedMoves: [savedMove],
+    priorMoves: [],
+    messageIds: new Set(["n1"]),
+  });
+  // Undo-of-add removes the record it wrote; another vacation's move and
+  // later messages stay.
+  assert.equal(undone.preferences.vacations.length, 0);
   assert.deepEqual(
     undone.checkInMoves.map((mv) => mv.vacationId),
     ["v2"],
   );
   assert.equal(
-    undone.messages.some((msg) => msg.id === "am1"),
+    undone.messages.some((msg) => msg.id === "n1"),
     false,
   );
   assert.ok(undone.messages.some((msg) => msg.id === "am2"));
   assert.ok(undone.messages.some((msg) => msg.id === "seed-coach-0"));
   // The original state is untouched (pure).
   assert.equal(s.checkInMoves.length, 2);
+});
+
+test("undo preserves a later inline reschedule and automatic reply", () => {
+  const s = vacState();
+  const savedVacation = s.preferences.vacations[0];
+  const savedMove = {
+    eventId: "recurring:c1:2026-11-16",
+    clientId: "c1",
+    from: "2026-11-16",
+    to: "2026-11-23",
+    vacationId: "v1",
+  };
+  s.checkInMoves = [
+    {
+      ...savedMove,
+      to: "2026-11-24", // a later inline reschedule, same vacation id
+    },
+    {
+      eventId: "recurring:c1:2026-11-17",
+      clientId: "c1",
+      from: "2026-11-17",
+      to: "2026-11-25",
+      vacationId: "v1",
+    },
+  ];
+  s.messages.push(
+    {
+      id: "n1",
+      clientId: "c1",
+      text: "rescheduling notice",
+      from: "coach",
+      date: "2026-11-14",
+      read: false,
+      priority: false,
+      attachments: [],
+      vacationId: "v1",
+    },
+    {
+      id: "ar1",
+      clientId: "c1",
+      text: "auto reply",
+      from: "coach",
+      date: "2026-11-16",
+      read: false,
+      priority: false,
+      attachments: [],
+      auto: "vacation",
+      vacationId: "v1",
+    },
+  );
+  const undone = vacations.undoVacationSave(s, {
+    vacation: savedVacation,
+    savedMoves: [savedMove],
+    priorMoves: [],
+    messageIds: new Set(["n1"]),
+  });
+  // The vacation record goes, but the later reschedules (even tagged with
+  // the same vacation id) and the auto-reply all survive; only the exact
+  // notice this save created is removed.
+  assert.equal(undone.preferences.vacations.length, 0);
+  assert.equal(undone.checkInMoves.length, 2);
+  assert.equal(
+    undone.checkInMoves.find((mv) => mv.eventId === "recurring:c1:2026-11-16")
+      .to,
+    "2026-11-24",
+  );
+  assert.equal(
+    undone.messages.some((msg) => msg.id === "n1"),
+    false,
+  );
+  assert.ok(undone.messages.some((msg) => msg.id === "ar1"));
+});
+
+test("undo of an edit restores the prior record and replaced moves", () => {
+  const s = vacState();
+  const priorVacation = s.preferences.vacations[0];
+  const savedVacation = { ...priorVacation, end: "2026-11-19" };
+  s.preferences.vacations = [savedVacation];
+  const priorMove = {
+    eventId: "e1",
+    clientId: "c1",
+    from: "2026-11-17",
+    to: "2026-11-23",
+    vacationId: "v1",
+  };
+  const savedMove = { ...priorMove, to: "2026-11-24" };
+  s.checkInMoves = [savedMove];
+  const undone = vacations.undoVacationSave(s, {
+    vacation: savedVacation,
+    priorVacation,
+    savedMoves: [savedMove],
+    priorMoves: [priorMove],
+  });
+  assert.equal(undone.preferences.vacations[0].end, "2026-11-20");
+  assert.equal(
+    undone.checkInMoves.find((mv) => mv.eventId === "e1").to,
+    "2026-11-23",
+  );
+});
+
+test("undo leaves the record alone when it was edited after the save", () => {
+  const s = vacState();
+  const savedVacation = s.preferences.vacations[0];
+  s.preferences.vacations = [{ ...savedVacation, label: "edited later" }];
+  const undone = vacations.undoVacationSave(s, {
+    vacation: savedVacation,
+    savedMoves: [],
+    priorMoves: [],
+  });
+  assert.equal(undone.preferences.vacations[0].label, "edited later");
+});
+
+test("submissions file against moved recurring and extra occurrences", () => {
+  const s = vacState();
+  const now = new Date("2026-11-13T12:00:00Z");
+  const ev = m
+    .eventsBetween(s, "2026-11-16", "2026-11-20", now)
+    .find((e) => e.date === "2026-11-16");
+  s.checkInMoves = [
+    {
+      eventId: ev.id,
+      clientId: ev.clientId,
+      from: "2026-11-16",
+      to: "2026-11-23",
+      vacationId: "v1",
+    },
+  ];
+  s.submissions.push({
+    id: "sub-m1",
+    eventId: ev.id,
+    clientId: ev.clientId,
+    date: "2026-11-23",
+    type: "Full",
+    submittedAt: "2026-11-23T09:00:00",
+    note: "",
+    metrics: {},
+    media: [],
+  });
+  const shown = m
+    .eventsBetween(
+      s,
+      "2026-11-23",
+      "2026-11-23",
+      new Date("2026-11-23T10:00:00Z"),
+    )
+    .find((e) => e.id === ev.id);
+  assert.equal(shown.submission.id, "sub-m1");
+  assert.equal(shown.date, "2026-11-23");
+  assert.equal(shown.status, "Awaiting feedback");
+  // The following occurrence for that client is untouched.
+  const nextWeek = m
+    .eventsBetween(s, "2026-11-30", "2026-12-04", now)
+    .filter((e) => e.clientId === ev.clientId);
+  assert.equal(
+    nextWeek.every((e) => e.movedFrom === undefined),
+    true,
+  );
+  // Extras move through the same path: an extra on a vacation day moved to
+  // a clear date links its submission by stable id.
+  s.extras.push({
+    id: "extra-mv",
+    clientId: ev.clientId,
+    date: "2026-11-18",
+    type: "Full",
+    note: "",
+  });
+  s.checkInMoves.push({
+    eventId: "extra-mv",
+    clientId: ev.clientId,
+    from: "2026-11-18",
+    to: "2026-11-25",
+    vacationId: "v1",
+  });
+  s.submissions.push({
+    id: "sub-x1",
+    eventId: "extra-mv",
+    clientId: ev.clientId,
+    date: "2026-11-25",
+    type: "Full",
+    submittedAt: "2026-11-25T09:00:00",
+    note: "",
+    metrics: {},
+    media: [],
+  });
+  const extra = m
+    .eventsBetween(
+      s,
+      "2026-11-25",
+      "2026-11-25",
+      new Date("2026-11-25T10:00:00Z"),
+    )
+    .find((e) => e.id === "extra-mv");
+  assert.equal(extra.submission.id, "sub-x1");
+  assert.equal(extra.date, "2026-11-25");
+});
+
+test("the away reply resolves on the coach day across zone boundaries", () => {
+  const s = vacState();
+  s.preferences.vacations[0].autoMessage = {
+    enabled: true,
+    text: "Away {start}-{end}, back {return}.",
+  };
+  // Same instant: still the vacation's last day in Vienna but the next
+  // day in Karachi — the reply follows the configured (coach) zone.
+  const instant = new Date("2026-11-20T22:30:00Z");
+  assert.equal(m.zonedToday("Europe/Vienna", instant), "2026-11-20");
+  assert.equal(m.zonedToday("Asia/Karachi", instant), "2026-11-21");
+  const coachDay = m.zonedToday(m.resolvedTimeZone(s.preferences), instant);
+  assert.equal(coachDay, "2026-11-20");
+  const reply = vacations.vacationAutoReply(s, "client-002", coachDay, fmtGB);
+  assert.equal(reply.auto, "vacation");
+  // A browser day outside the range does not fire even while inside it
+  // locally, and once past the end the reply stops.
+  s.messages.push(reply);
+  assert.equal(
+    vacations.vacationAutoReply(s, "client-002", "2026-11-21", fmtGB),
+    null,
+  );
 });
 
 test("the away reply fires once per conversation per vacation, filled dates", () => {

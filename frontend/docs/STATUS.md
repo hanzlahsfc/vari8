@@ -1,5 +1,64 @@
 # Frontend status
 
+## 2026-11-15 — P820 vacation submission linkage and scoped Undo — committed pending focused closure review
+
+Repairs P819 findings 1-4 on beta/p818-settings-phase-1c (head
+db66554); same worktree; Phase 1a, Phase 1b, Tasks and the main
+checkout untouched.
+
+1. Submissions bind to the actual occurrence. CheckInForm now accepts
+   the occurrence the athlete opened; the mobile sheet passes the
+   move-aware due event and the desktop app passes its next event.
+   Generic entry points resolve through pickCheckInCard — the same
+   move-aware path as the calendar and cards — covering extras, skips
+   and re-dated moves, and never fall back to another recurring ID.
+   The submission stores the occurrence's stable id and effective date.
+   Submitted occurrences stay protected on later vacation edits,
+   shortening and restore: their move records are kept so the filed
+   submission is never re-dated.
+2. Vacation messaging resolves on the coach's day. The athlete send
+   path computes the coach day via resolvedTimeZone/zonedToday at send
+   time and stamps both the athlete message and the automatic reply
+   with it, matching the banner and coach chip. Rescheduling notices
+   are stamped with the coach day as well.
+3. Undo is scoped to the saved operation. undoVacationSave now takes a
+   save record (saved vacation, optional prior record, saved moves,
+   prior moves, exact notice ids). The record reverts only when it is
+   still what that save wrote; save-created moves are removed and
+   replaced moves restored by exact event/destination identity, so a
+   later inline reschedule — even one carrying the same vacationId —
+   is preserved; only the exact notice messages the save created are
+   removed, leaving later athlete messages and automatic replies alone.
+4. Focused regressions added: moved recurring and extra submissions,
+   coach-zone boundary days, and save Undo after a later reschedule
+   and automatic reply.
+
+Gates (Node 24.22.3): npm run check exit 0 (368/368), settings.test.mjs
+46/46 with the custom loader, npm run ui:check exit 1 (21 unchanged
+baseline violations), git diff --check exit 0.
+
+Browser evidence (disposable profile): p820-submission.mjs 11/11 — a
+real athlete form submitted the moved occurrence and stored
+recurring:client-002:2026-11-17 at the moved date; the coach calendar
+showed it awaiting feedback with "Moved from 17 Nov"; delete+restore
+kept the filed move. p820-boundary.mjs 14/14 — a real timezone
+override put the browser a day behind the coach day both ways:
+banner and reply follow the coach day, stamps match, one reply per
+conversation across reload. p820-undo.mjs 11/11 — save with notices,
+a later same-vacationId inline reschedule, an away reply, then the
+original save Undo: 9/9 save moves reverted, the later reschedule
+preserved, exactly the 9 notices removed.
+
+Remaining gap, labelled: each route mounts its own store provider and
+persists its snapshot on the next write, so a message sent from the
+athlete app while the coach app is open is dropped by the coach tab's
+next write — including the undo write. This predates vacations and
+affects any concurrent write; undo scoping itself preserves
+in-lineage replies (regression "undo preserves a later inline
+reschedule and automatic reply"). P816 carry-forwards and P819's
+low-severity picker/clash items remain open. No push, PR, merge,
+deployment or message to Marcel.
+
 ## 2026-11-15 — P818 Settings Phase 1c: vacations, rescheduling, away messages — committed pending independent review
 
 Final Phase 1 slice on beta/p818-settings-phase-1c over 20c407b (the

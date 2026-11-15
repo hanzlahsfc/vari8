@@ -174,18 +174,73 @@ export function vacationMoves(
 ): CheckInMove[] {
   return (state.checkInMoves ?? []).filter((m) => m.vacationId === vacationId);
 }
-/** Remove a vacation's moves and only the messages it created; unrelated
- * edits made afterwards (other moves, other messages) are untouched. */
+/** Undo exactly one vacation save. The vacation record reverts only when
+ * it still matches what that save wrote (a later edit wins); save-created
+ * move records are removed and the moves they replaced restored, but a
+ * later reschedule of the same occurrence — even one carrying the same
+ * vacation id — is preserved; only the exact notice messages the save
+ * created are dropped, so later athlete messages and automatic replies
+ * survive. */
 export function undoVacationSave(
   state: CoachState,
-  vacationId: string,
+  save: {
+    /** Record this save wrote — the undo only reverts when it is still
+     * the stored record verbatim. */
+    vacation: Vacation;
+    /** Record it replaced; omitted when the save added the vacation. */
+    priorVacation?: Vacation;
+    /** Move records this save created. */
+    savedMoves: CheckInMove[];
+    /** Move records it replaced, used to restore prior dates. */
+    priorMoves: CheckInMove[];
+    /** Exact notice message ids created by this save. */
+    messageIds?: ReadonlySet<string>;
+  },
 ): CoachState {
+  const current = (state.preferences.vacations ?? []).find(
+    (v) => v.id === save.vacation.id,
+  );
+  const stillSaved =
+    current && JSON.stringify(current) === JSON.stringify(save.vacation);
+  const prior = save.priorVacation;
+  const vacations = stillSaved
+    ? prior
+      ? (state.preferences.vacations ?? []).map((v) =>
+          v.id === save.vacation.id ? prior : v,
+        )
+      : (state.preferences.vacations ?? []).filter(
+          (v) => v.id !== save.vacation.id,
+        )
+    : (state.preferences.vacations ?? []);
+  const savedKeys = new Set(
+    save.savedMoves.map((mv) => `${mv.eventId}::${mv.to ?? ""}`),
+  );
+  const checkInMoves: CheckInMove[] = [];
+  const revertedEvents = new Set<string>();
+  for (const m of state.checkInMoves ?? []) {
+    const key = `${m.eventId}::${m.to ?? ""}`;
+    if (m.vacationId === save.vacation.id && savedKeys.has(key)) {
+      // This exact record came from the save — drop it; any different
+      // record for the same occurrence is a later edit and stays.
+      revertedEvents.add(m.eventId);
+      continue;
+    }
+    checkInMoves.push(m);
+  }
+  for (const prior of save.priorMoves)
+    if (
+      revertedEvents.has(prior.eventId) &&
+      !checkInMoves.some((m) => m.eventId === prior.eventId)
+    )
+      checkInMoves.push(prior);
+  const noticeIds = save.messageIds;
   return {
     ...state,
-    checkInMoves: (state.checkInMoves ?? []).filter(
-      (m) => m.vacationId !== vacationId,
-    ),
-    messages: state.messages.filter((m) => m.vacationId !== vacationId),
+    preferences: { ...state.preferences, vacations },
+    checkInMoves,
+    messages: noticeIds
+      ? state.messages.filter((m) => !noticeIds.has(m.id))
+      : state.messages,
   };
 }
 

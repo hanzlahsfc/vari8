@@ -9,8 +9,10 @@ import { Camera, Check, ChevronDown, X } from "lucide-react";
 import { useState } from "react";
 import { questionPoses } from "../coach/check-ins/photos";
 import {
-  addDays,
   type CoachClient,
+  type CoachState,
+  type Event,
+  pickCheckInCard,
   type Question,
   type Submission,
   uid,
@@ -50,17 +52,23 @@ function downscaleImage(file: File): Promise<string> {
   });
 }
 
-function nextCheckInEventId(client: CoachClient, from: string): string {
-  for (let i = 0; i < 14; i += 1) {
-    const date = addDays(from, i);
-    const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
-    const schedule = [...client.schedules]
-      .sort((a, b) => b.effective.localeCompare(a.effective))
-      .find((s) => s.effective <= date);
-    if (schedule?.weekdays.includes(weekday))
-      return `recurring:${client.id}:${date}`;
-  }
-  return "";
+/** Resolve the occurrence a check-in files against through the same
+ * move-aware path as the calendar and cards (pickCheckInCard sees
+ * extras, skips and re-dated moves). Generic entry points — no selected
+ * occurrence — take the next actionable event; a selected occurrence is
+ * used verbatim and never swapped for another recurring ID. */
+function resolveOccurrence(
+  state: CoachState,
+  client: CoachClient,
+  today: string,
+): Pick<Event, "id" | "date"> | undefined {
+  const { overdue, next } = pickCheckInCard(
+    state,
+    client.id,
+    today,
+    new Date(),
+  );
+  return next ?? overdue;
 }
 
 function choiceOptions(question: Question) {
@@ -78,9 +86,12 @@ function choiceOptions(question: Question) {
 export function CheckInForm({
   configuration,
   client,
+  occurrence,
 }: {
   configuration: Variant;
   client: CoachClient;
+  /** The occurrence the athlete opened, when the entry point knows it. */
+  occurrence?: Pick<Event, "id" | "date">;
 }) {
   const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
@@ -133,12 +144,13 @@ export function CheckInForm({
             : (answers[q.id] ?? "").trim(),
       }))
       .filter((a) => a.answer.length > 0);
+    const target = occurrence ?? resolveOccurrence(state, client, today);
     const submission: Submission = {
       id: uid("submission"),
       clientId: client.id,
-      date: today,
+      date: target?.date ?? today,
       submittedAt: new Date().toISOString(),
-      eventId: nextCheckInEventId(client, today),
+      eventId: target?.id ?? "",
       type: "Full",
       answers: answersList,
       metrics: configuration.summaries,

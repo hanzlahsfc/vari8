@@ -163,7 +163,11 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
                 </div>
               )}
               {checkinOpen && configuration && (
-                <CheckInForm configuration={configuration} client={client} />
+                <CheckInForm
+                  configuration={configuration}
+                  client={client}
+                  occurrence={next?.event}
+                />
               )}
             </div>
             <aside className="cd-checkins-side">

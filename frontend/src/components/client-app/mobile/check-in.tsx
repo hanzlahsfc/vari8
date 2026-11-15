@@ -54,7 +54,11 @@ export function ClientCheckInSheet({
           </button>
         </div>
         <div className="cm-sheet-body">
-          <CheckInForm configuration={configuration} client={client} />
+          <CheckInForm
+            configuration={configuration}
+            client={client}
+            occurrence={due?.event}
+          />
         </div>
       </div>
     </>
