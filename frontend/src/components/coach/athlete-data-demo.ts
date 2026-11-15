@@ -975,37 +975,31 @@ export function adoptAthleteDataDemo(
         }
       : client.tracking;
 
-  // --- Pinned private notes ---
+  // --- Pinned private notes (fresh workspaces only) ---
+  // Sample notes seed once, on the first adoption ever. Workspaces already
+  // carrying an earlier athleteDataDemo revision keep their note
+  // collections verbatim — coach edits, moves, deletions and pins all
+  // survive, nothing is rebuilt from text, and a missing demo id is never
+  // read as permission to re-seed.
+  const freshAdoption = state.demoSeeds?.athleteDataDemo === undefined;
   const ago = (days: number, time = "T09:00:00") =>
     `${addLocalDays(today, -days)}${time}`;
-  const existingNotes = new Set(
-    client.internalNotes.map((note) => note.text.trim()),
-  );
-  const internalNotes = [
-    // Revision 13 upgrades demo-owned notes adopted by earlier revisions —
-    // coach-written records are never touched.
-    ...client.internalNotes.map((note) => {
-      if (!note.id.startsWith("demo-pinned-note-")) return note;
-      const demo = DEMO_PINNED_NOTES.find((d) => d.text === note.text.trim());
-      if (!demo) return note;
-      return {
-        ...note,
-        category: note.category ?? demo.category,
-        createdAt: note.createdAt ?? ago(demo.daysAgo),
-        updatedAt: note.updatedAt ?? ago(Math.max(1, demo.daysAgo - 9)),
-      };
-    }),
-    ...DEMO_PINNED_NOTES.filter((d) => !existingNotes.has(d.text)).map(
-      (d, i) => ({
-        id: `demo-pinned-note-${i + 1}`,
-        text: d.text,
-        pinned: true,
-        category: d.category,
-        createdAt: ago(d.daysAgo),
-        updatedAt: ago(Math.max(1, d.daysAgo - 9)),
-      }),
-    ),
-  ];
+  const demoPinned = DEMO_PINNED_NOTES.map((d, i) => ({
+    id: `demo-pinned-note-${i + 1}`,
+    text: d.text,
+    pinned: true,
+    category: d.category,
+    createdAt: ago(d.daysAgo),
+    updatedAt: ago(Math.max(1, d.daysAgo - 9)),
+  }));
+  const internalNotes = freshAdoption
+    ? [
+        ...client.internalNotes,
+        ...demoPinned.filter(
+          (d) => !client.internalNotes.some((n) => n.id === d.id),
+        ),
+      ]
+    : client.internalNotes;
 
   // --- Demo tasks (deterministic ids; coach-written tasks are untouched) ---
   const demoTasks = <T extends { id: string }>(list: T[], add: T[]): T[] => [
@@ -1128,23 +1122,23 @@ export function adoptAthleteDataDemo(
       ),
     );
 
-  // A pinned General note exercises the workspace scope — demo-owned id,
-  // seeded only when absent so coach edits to it are preserved.
-  const coachNotes = (state.coachNotes ?? []).some(
-    (note) => note.id === DEMO_COACH_NOTE.id,
-  )
-    ? state.coachNotes
-    : [
-        ...(state.coachNotes ?? []),
-        {
-          id: DEMO_COACH_NOTE.id,
-          text: DEMO_COACH_NOTE.text,
-          pinned: true,
-          category: DEMO_COACH_NOTE.category,
-          createdAt: ago(DEMO_COACH_NOTE.daysAgo),
-          updatedAt: ago(Math.max(1, DEMO_COACH_NOTE.daysAgo - 5)),
-        },
-      ];
+  // A pinned General note exercises the workspace scope — seeded on first
+  // adoption only so deletions and edits in used workspaces stick.
+  const coachNotes =
+    freshAdoption &&
+    !(state.coachNotes ?? []).some((note) => note.id === DEMO_COACH_NOTE.id)
+      ? [
+          ...(state.coachNotes ?? []),
+          {
+            id: DEMO_COACH_NOTE.id,
+            text: DEMO_COACH_NOTE.text,
+            pinned: true,
+            category: DEMO_COACH_NOTE.category,
+            createdAt: ago(DEMO_COACH_NOTE.daysAgo),
+            updatedAt: ago(Math.max(1, DEMO_COACH_NOTE.daysAgo - 5)),
+          },
+        ]
+      : state.coachNotes;
 
   return {
     ...state,

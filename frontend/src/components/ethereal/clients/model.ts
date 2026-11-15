@@ -24,24 +24,7 @@ export type CheckIn = {
   summary: string;
   feedback: string;
 };
-/** Fixed provisional category set for coach notes — labels await owner
- * approval; uncategorised notes display as Other. Optional everywhere so
- * saved workspaces need no migration. */
-export type NoteCategory =
-  | "health"
-  | "schedule"
-  | "training"
-  | "nutrition"
-  | "prep"
-  | "other";
-export type ClientNote = {
-  id: string;
-  text: string;
-  pinned?: boolean;
-  category?: NoteCategory;
-  createdAt?: string;
-  updatedAt?: string;
-};
+export type ClientNote = { id: string; text: string; pinned?: boolean };
 
 export type WorkspaceClient = Client & {
   email: string;

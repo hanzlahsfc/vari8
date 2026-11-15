@@ -12,9 +12,11 @@ import {
   noteKey,
   notePreview,
   noteTitle,
+  removeNote,
   restoreNote,
   saveNote,
   searchNotes,
+  shouldDiscardDraft,
   sortNotes,
   stampLabel,
   togglePin,
@@ -402,7 +404,119 @@ test("a delayed update to the old scope cannot clobber a moved note", () => {
   assert.equal(clobber.clients[0].internalNotes[0].text, "Moved text");
 });
 
-// --- Labels -----------------------------------------------------------------
+// --- Fresh-draft discard (P825) -----------------------------------------------
+
+test("only never-saved empty drafts are discardable; cleared existing notes stay", () => {
+  const state = workspaceState({
+    coachNotes: [
+      { id: "existing", text: "Coach wrote this long ago" },
+      { id: "fresh-empty", text: "" },
+      { id: "fresh-typed", text: "" },
+    ],
+  });
+  const fresh = new Set([
+    noteKey({ id: "fresh-empty" }),
+    noteKey({ id: "fresh-typed" }),
+  ]);
+
+  // An existing note the coach cleared to empty is never auto-discarded.
+  assert.equal(
+    shouldDiscardDraft(state, { id: "existing" }, fresh),
+    false,
+    "existing notes are not droppable even when empty",
+  );
+  // A never-saved draft still empty is droppable.
+  assert.equal(shouldDiscardDraft(state, { id: "fresh-empty" }, fresh), true);
+  // A fresh draft that received text is a stored record now.
+  const typed = updateNote(state, { id: "fresh-typed" }, { text: "has text" });
+  assert.equal(shouldDiscardDraft(typed, { id: "fresh-typed" }, fresh), false);
+  // A stored note whose key was never marked fresh stays put even at "".
+  const cleared = updateNote(state, { id: "existing" }, { text: "" });
+  assert.equal(
+    shouldDiscardDraft(cleared, { id: "existing" }, fresh),
+    false,
+    "an existing note cleared to empty remains stored",
+  );
+});
+
+// --- Delete Undo restores the pending version (P825) --------------------------
+
+test("removeNote folds a pending draft into the removed record; Undo restores it", () => {
+  const state = workspaceState({
+    coachNotes: [
+      { id: "n1", text: "Stored text", pinned: true, category: "prep" },
+    ],
+  });
+  const { state: deleted, removed } = removeNote(
+    state,
+    { id: "n1" },
+    { text: "Unflushed typed text", updatedAt: "2026-11-13T10:00:00" },
+  );
+  assert.equal(deleted.coachNotes.length, 0);
+  assert.equal(
+    removed.note.text,
+    "Unflushed typed text",
+    "the removed record carries the pending draft, not the stale save",
+  );
+  const restored = restoreNote(deleted, removed);
+  assert.deepEqual(restored.coachNotes[0], {
+    id: "n1",
+    text: "Unflushed typed text",
+    pinned: true,
+    category: "prep",
+    updatedAt: "2026-11-13T10:00:00",
+  });
+});
+
+test("Undo does not overwrite a replacement note at the same scoped id", () => {
+  const state = workspaceState({
+    coachNotes: [{ id: "n1", text: "Original" }],
+  });
+  const { state: deleted, removed } = deleteNote(state, { id: "n1" });
+  const replaced = saveNote(
+    deleted,
+    { id: "n1", text: "Replacement with the same id" },
+    undefined,
+  );
+  const after = restoreNote(replaced, removed);
+  assert.equal(
+    after,
+    replaced,
+    "a scoped-id collision leaves the replacement alone",
+  );
+  assert.equal(after.coachNotes[0].text, "Replacement with the same id");
+});
+
+// --- Archived reachability (P825) ---------------------------------------------
+
+test("archived athletes' notes are reachable through includeArchived", () => {
+  const state = workspaceState({
+    clients: [
+      client("client-001", "Emma Anders", [{ id: "a1", text: "Active note" }]),
+      client(
+        "client-002",
+        "Retired Rory",
+        [{ id: "a2", text: "Archived note" }],
+        true,
+      ),
+    ],
+  });
+  assert.deepEqual(
+    listNotes(state).map((e) => e.note.id),
+    ["a1"],
+    "default listing keeps archived athletes out",
+  );
+  const all = listNotes(state, { includeArchived: true });
+  assert.deepEqual(all.map((e) => e.note.id).sort(), ["a1", "a2"]);
+  const filtered = filterNotes(all, { athlete: "client-002" });
+  assert.deepEqual(
+    filtered.map((e) => e.note.id),
+    ["a2"],
+    "the archived athlete filter reaches their notes",
+  );
+});
+
+// --- Labels -------------------------------------------------------------------------------------------------------------------------------
 
 test("editedLabel and stampLabel show relative recency, undated stays blank", () => {
   assert.equal(editedLabel({ id: "x", text: "t" }, TODAY), "");

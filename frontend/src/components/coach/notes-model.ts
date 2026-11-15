@@ -4,18 +4,23 @@
 // need no migration. Legacy coachNotes entries that carry a clientId are
 // treated as belonging to that athlete, mirroring the task model.
 
-import type { ClientNote, NoteCategory } from "../ethereal/clients/model";
-import { type CoachClient, type CoachState, formatDate } from "./model";
+import {
+  type CoachClient,
+  type CoachNote,
+  type CoachState,
+  formatDate,
+  type NoteCategory,
+} from "./model";
 
 export type NoteEntry = {
   /** Owner athlete id; undefined = General (workspace, no athlete). */
   clientId?: string;
   client?: CoachClient;
-  note: ClientNote;
+  note: CoachNote;
 };
 export type NoteRef = { id: string; clientId?: string };
 /** Stored records may carry a legacy clientId link inside coachNotes. */
-type StoredNote = ClientNote & { clientId?: string };
+type StoredNote = CoachNote & { clientId?: string };
 export type RemovedNote = {
   note: StoredNote;
   clientId?: string;
@@ -39,7 +44,7 @@ export const NOTE_CATEGORIES: { id: NoteCategory; label: string }[] = [
 ];
 const KNOWN = new Set<NoteCategory>(NOTE_CATEGORIES.map((c) => c.id));
 /** Uncategorised (or unrecognised legacy) notes display as Other. */
-export const categoryOf = (note: ClientNote): NoteCategory =>
+export const categoryOf = (note: CoachNote): NoteCategory =>
   note.category && KNOWN.has(note.category) ? note.category : "other";
 export const categoryLabel = (id?: NoteCategory) =>
   NOTE_CATEGORIES.find((c) => c.id === id)?.label ?? "Other";
@@ -117,10 +122,10 @@ function insertAt<T>(list: T[], index: number, item: T): T[] {
 
 /** Merge a field-scoped patch onto the current record; undefined-valued
  * keys delete the field. */
-function applyEdits(at: Located, fields: Partial<ClientNote>): StoredNote {
+function applyEdits(at: Located, fields: Partial<CoachNote>): StoredNote {
   const stored: StoredNote = { ...at.note };
   for (const [key, value] of Object.entries(fields) as [
-    keyof ClientNote,
+    keyof CoachNote,
     unknown,
   ][]) {
     if (value === undefined) delete stored[key];
@@ -165,7 +170,7 @@ function writeLocated(
 export function updateNote(
   state: CoachState,
   ref: NoteRef,
-  fields: Partial<ClientNote>,
+  fields: Partial<CoachNote>,
 ): CoachState {
   const at = locateRecord(state, ref);
   if (!at) return state;
@@ -177,7 +182,7 @@ export function updateNote(
  * create never duplicates. */
 export function saveNote(
   state: CoachState,
-  note: ClientNote,
+  note: CoachNote,
   clientId: string | undefined,
 ): CoachState {
   const at = locateRecord(state, { id: note.id, clientId });
@@ -216,7 +221,7 @@ export function moveNote(
   state: CoachState,
   ref: NoteRef,
   clientId: string | undefined,
-  fields?: Partial<ClientNote>,
+  fields?: Partial<CoachNote>,
 ): NoteMoveResult {
   const at = locateRecord(state, ref);
   if (!at) return { state, moved: false, reason: "source-gone" };
@@ -314,6 +319,20 @@ export function deleteNote(
   };
 }
 
+/** Delete a note while folding `fields` (e.g. an unflushed autosave draft)
+ * into the removed record in the same transition — Delete Undo restores
+ * the version the coach actually saw, not the last debounce tick. */
+export function removeNote(
+  state: CoachState,
+  ref: NoteRef,
+  fields?: Partial<CoachNote>,
+): { state: CoachState; removed?: RemovedNote } {
+  const at = locateRecord(state, ref);
+  if (!at) return { state };
+  const base = fields ? writeLocated(state, at, applyEdits(at, fields)) : state;
+  return deleteNote(base, ref);
+}
+
 /** Restore a deleted note at its original index and scope. A record that
  * now lives at the destination with the same id is left alone instead of
  * duplicated. */
@@ -344,6 +363,21 @@ export function restoreNote(
     ...state,
     coachNotes: insertAt(state.coachNotes ?? [], removed.index, copy),
   };
+}
+
+/** Whether leaving `ref` may discard it: only notes the caller marked as
+ * new, never-saved drafts (by noteKey in `freshKeys`) that are still
+ * empty are droppable. An existing note — or a draft that received text —
+ * cleared to empty stays stored; explicit Delete is the only removal
+ * path for it. */
+export function shouldDiscardDraft(
+  state: CoachState,
+  ref: NoteRef,
+  freshKeys: ReadonlySet<string>,
+): boolean {
+  if (!freshKeys.has(noteKey(ref))) return false;
+  const entry = findNote(state, ref);
+  return !!entry && !entry.note.text.trim();
 }
 
 export function togglePin(state: CoachState, ref: NoteRef): CoachState {
@@ -425,7 +459,7 @@ const dayOf = (value: string) => value.slice(0, 10);
 
 /** "Edited 3 days ago" style label; "" when the note has no updatedAt —
  * legacy notes show no date rather than an invented one. */
-export function editedLabel(note: ClientNote, today: string): string {
+export function editedLabel(note: CoachNote, today: string): string {
   if (!note.updatedAt) return "";
   const diff = dayDiff(today, dayOf(note.updatedAt));
   if (diff <= 0) return "Edited today";
@@ -436,7 +470,7 @@ export function editedLabel(note: ClientNote, today: string): string {
 
 /** "Created 12 Oct · Edited 14 Oct" supporting line for the editor;
  * falls back to whichever stamp exists, "" for legacy notes. */
-export function stampLabel(note: ClientNote, today: string): string {
+export function stampLabel(note: CoachNote, today: string): string {
   const parts: string[] = [];
   if (note.createdAt)
     parts.push(`Created ${formatDate(dayOf(note.createdAt))}`);

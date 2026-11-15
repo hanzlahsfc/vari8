@@ -729,7 +729,23 @@ export type TaskFields = {
   };
   checklist?: { id: string; text: string; done: boolean }[];
 };
-export type CoachClient = WorkspaceClient & {
+/** Coach-only note metadata — the Ethereal `ClientNote` stays {id, text,
+ * pinned?}; these optional extensions belong to the coach workspace so
+ * saved workspaces need no migration and Ethereal keeps its base model. */
+export type NoteCategory =
+  | "health"
+  | "schedule"
+  | "training"
+  | "nutrition"
+  | "prep"
+  | "other";
+export type CoachNote = ClientNote & {
+  category?: NoteCategory;
+  createdAt?: string;
+  updatedAt?: string;
+};
+export type CoachClient = Omit<WorkspaceClient, "internalNotes"> & {
+  internalNotes: CoachNote[];
   coachTasks: TaskFields[];
   assignment?: Assignment;
   phases?: ClientPhase[];
@@ -824,7 +840,7 @@ export type CoachState = {
     athleteDataDemo?: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13;
   };
   exerciseLibrary?: ExerciseDefinition[];
-  coachNotes?: ClientNote[];
+  coachNotes?: CoachNote[];
   coachTodos?: TaskFields[];
   templates: Template[];
   clients: CoachClient[];

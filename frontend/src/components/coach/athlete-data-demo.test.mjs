@@ -212,3 +212,75 @@ test("other clients are untouched", () => {
         base.clients.find((c) => c.id === client.id),
       );
 });
+
+test("revision adoption on a used workspace leaves note collections untouched", () => {
+  // First adoption seeds the sample notes…
+  const fresh = adoptAthleteDataDemo(baseWithoutDataDemo(), TODAY);
+  const seeded = clientOf(fresh);
+  assert.ok(seeded.internalNotes.some((n) => n.id === "demo-pinned-note-1"));
+  assert.ok(fresh.coachNotes.some((n) => n.id === "demo-coach-note-peak-week"));
+
+  // …then the coach edits, deletes, moves and pins on that workspace,
+  // which is still sitting on an earlier revision.
+  const used = {
+    ...fresh,
+    demoSeeds: { ...fresh.demoSeeds, athleteDataDemo: 12 },
+    coachNotes: [
+      // The coach deleted the seeded general note and wrote their own.
+      { id: "coach-own-1", text: "Coach-written general note" },
+    ],
+    clients: fresh.clients.map((c) =>
+      c.id === "client-007"
+        ? {
+            ...c,
+            internalNotes: [
+              // Edited demo-owned text, unpinned by the coach.
+              { id: "demo-pinned-note-1", text: "Edited by coach" },
+              { id: "amara-note-1", text: "Coach note", pinned: true },
+              // demo-pinned-note-2 was deleted — it must not return.
+            ],
+          }
+        : c,
+    ),
+  };
+  const adopted = adoptAthleteDataDemo(used, TODAY);
+  const adoptedAmara = clientOf(adopted);
+  assert.deepEqual(
+    adoptedAmara.internalNotes,
+    used.clients.find((c) => c.id === "client-007").internalNotes,
+    "athlete notes are stored verbatim — no re-seed, no text dedup",
+  );
+  assert.deepEqual(
+    adopted.coachNotes,
+    used.coachNotes,
+    "general notes are stored verbatim",
+  );
+  assert.equal(
+    adoptedAmara.internalNotes.some((n) => n.id === "demo-pinned-note-2"),
+    false,
+    "a deleted demo note is not resurrected",
+  );
+  // Coach tasks survive revision adoption verbatim too.
+  const withTask = {
+    ...used,
+    clients: used.clients.map((c) =>
+      c.id === "client-007"
+        ? {
+            ...c,
+            coachTasks: [
+              { id: "coach-task-1", title: "Coach task", complete: false },
+            ],
+          }
+        : c,
+    ),
+  };
+  const adopted2 = clientOf(adoptAthleteDataDemo(withTask, TODAY));
+  assert.ok(
+    adopted2.coachTasks.some((t) => t.id === "coach-task-1"),
+    "coach-written tasks survive adoption",
+  );
+
+  // Repeated adoption is a no-op once the revision flag is set.
+  const again = adoptAthleteDataDemo(adopted, TODAY);
+  assert.equal(again, adopted, "repeated reloads do not touch data");
+});

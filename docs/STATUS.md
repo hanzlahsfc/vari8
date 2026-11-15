@@ -1,3 +1,75 @@
+## 2026-11-15 — P825 Notes data-integrity repairs (committed on `beta/p823-notes-phase-1b`, awaiting closure review)
+
+Repaired OpenCode / DeepSeek V4.1 Flash's five P823 review findings on
+the same branch, head `740d23de`.
+
+1. **Only never-saved drafts are discarded.** `NotesView` tracks
+   `freshKeys` — noteKeys of notes created this session that never
+   stored text. `shouldDiscardDraft` (notes-model) allows auto-discard
+   only for a fresh-keyed note that is still empty; an existing note
+   cleared to `""` keeps its id, scope, pin and category through
+   switching, Back and section unmount — explicit Delete is the only
+   removal path. The fresh flag travels with a successful move. One
+   implementation subtlety mattered: the flag must never be mutated
+   *inside* the `setState` updater — React may invoke updaters more
+   than once, and a second pass seeing the key already deleted kept the
+   draft (the exact failure the reviewer demonstrated). Mutations now
+   happen outside the updater only.
+2. **Demo adoption is non-destructive.** Note seeding in
+   `adoptAthleteDataDemo` runs only on first-ever adoption
+   (`demoSeeds.athleteDataDemo === undefined`): the internalNotes
+   rebuild and text-based dedup are gone, and workspaces on an earlier
+   revision keep their note collections verbatim — edits, deletions,
+   moves and pins survive, nothing is re-seeded from missing ids, and
+   re-running adoption is a no-op.
+3. **Rejected moves keep the pending draft.** `attemptMove` no longer
+   consumes `draft.current` before `moveNote` validates the scoped
+   source and destination; on `id-conflict`, `no-destination` or
+   `source-gone` the debounced write stays armed against the original
+   ref (a missing source simply no-ops). The editor's scope select
+   reverts to the real scope on rejection instead of displaying the
+   failed destination.
+4. **Delete Undo restores the pending version.** New `removeNote`
+   folds an unflushed draft into the removed record in the same
+   transition, so Undo restores the text the coach saw — not the last
+   debounce tick — with original scope and metadata. `restoreNote`
+   already refused to overwrite a replacement at the same scoped id;
+   the timer is cleared so no delayed autosave can recreate the record.
+5. **Archived athletes are reachable; Ethereal restored.** The athlete
+   filter lists archived clients under a disabled "Archived" divider
+   with "(archived)" suffixes, `listNotes` runs with
+   `includeArchived: true` in the workspace, and row metas label
+   archived owners. `NoteCategory`/the optional note fields moved to
+   `coach/model.ts` (`CoachNote`, `CoachClient.internalNotes`);
+   `ethereal/clients/model.ts` is byte-identical to the Tasks base.
+
+Regressions: notes-model suite 19/19 (+4: fresh-only discard,
+removeNote-folds-draft + Undo, occupied-scope Undo refusal, archived
+reachability); athlete-data-demo suite +1 (used-workspace adoption
+leaves notes/tasks verbatim, repeat adoption no-ops). 409/409 total.
+
+Browser verification (Chrome 157 CDP, disposable profile, preview
+:3200, `/tmp/v8-verify/p825-notes.mjs`): **18/18** — injected rev-12
+workspace kept edited/deleted notes verbatim through adoption; the
+archived group renders in the combobox and reaches the archived note;
+an id-conflict move toasts "Move blocked", keeps the typed text in the
+editor and the debounce flushes it to the ORIGINAL scope while the
+other scope's same-id note stays untouched; a cleared-to-empty existing
+note survives switch AND section unmount with pin/category/id intact;
+a never-saved empty draft is still discarded on switch; delete+Undo
+restores the typed-not-saved version; a post-delete debounce cannot
+recreate the record. Unexercised: `no-destination` rejection (not
+reachable in the rendered UI — model-covered); storage sync across
+tabs (unchanged, out of scope).
+
+Gates (Node 24.22.3): `npm run check` exit 0; `git diff --check` exit
+0; `npm run ui:check` exit 1 — identical 20-violation set as at commit
+`740d23de` (still one fewer than the 21 Tasks-base violations; nothing
+new, nothing suppressed).
+
+Committed on `beta/p823-notes-phase-1b`. No push, PR, merge or
+deployment — stopping for closure review.
+
 ## 2026-11-15 — P823 Notes Phase 1b committed (committed on `beta/p823-notes-phase-1b`, awaiting independent review)
 
 Built the Notes workspace on top of the verified Tasks Phase 1a head
