@@ -1,5 +1,47 @@
 # Frontend status
 
+## 2026-11-16 — P847 count restored dates in vacation conflict validation — committed pending narrow closure review
+
+Repairs the P846 restore-occupancy finding on
+beta/p845-final-schedule. A restore row's action is stored as
+"keep" with its resolved position in `final` (movedFrom), so
+moveClashes freed the date it vacated but never checked occupancy
+at the date it returns to: restoring the 9 Nov check-in and moving
+the 16 Nov check-in onto 9 Nov in one save passed validation and
+would have written two check-ins onto one day.
+
+moveClashes now treats every proposal's resolved final position as
+its landing: an explicit `to` or a `final` that differs from the
+event's date is a landing that must not collide; a skip lands
+nowhere; a keep or submitted row lands where it already sits and
+is counted once by the schedule itself. The vacating set still
+frees dates an event leaves in the same save. Each occurrence is
+counted once, a check-in never collides with itself, and the
+result does not depend on proposal order — the second proposal
+onto a shared destination carries the flag either way. Restore
+rows now render their clash in an error slot (they previously had
+no status line).
+
+Regressions (settings.test.mjs): restore plus a proposal on the
+restored date blocks in either row order; restore onto a date an
+unchanged check-in holds blocks; a valid restore and a move onto
+the vacated date pass. The new test fails on the pre-fix
+moveClashes (verified) and passes after.
+
+Browser replay (disposable seeded athlete, real editor UI): the
+reviewed conflict flags the restore row "Two check-ins would land
+on Mon 9 Nov" and disables Save — an invoked disabled button wrote
+nothing. The valid batch (restore 9 Nov + move 16 Nov onto the
+vacated 25 Nov) saved: the old move record was removed, the new
+move kept its original event id, and the rendered calendar shows
+the check-in back on 9 Nov, 16 Nov empty, and the moved check-in
+on 25 Nov. An unchanged-holder destination still blocks.
+
+Gates (Node 24.22.3): npm run check exit 0 (373/373), npm run
+ui:check exit 1 (same 21 baseline violations), git diff --check
+exit 0.
+
+
 ## 2026-11-16 — P845 validate vacation reschedules against the final schedule — committed pending scoped review
 
 Repairs P819's false-conflict finding on beta/p845-final-schedule

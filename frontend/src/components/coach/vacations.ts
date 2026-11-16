@@ -114,13 +114,16 @@ export function proposedDate(
       return "keep";
   }
 }
-/** Clash text per event id: a proposed date that already has a check-in
- * for that athlete (or that another proposal lands on) blocks saving.
- * Destinations are judged against the batch's final schedule: an event
- * moving, restoring or skipping away from a date frees it in the same
- * save. `final` carries the event's resolved position when the caller
- * knows it (restore rows); otherwise keep stays put, null is gone and a
- * string `to` is the destination. */
+/** Clash text per event id: a proposed landing date that already has a
+ * check-in for that athlete (or that another proposal lands on) blocks
+ * saving. Destinations are judged against the batch's final schedule:
+ * each proposal occupies its resolved `final` position — a restore's
+ * original date, a move's `to`, a keep's current date — while skipped
+ * occurrences occupy nothing. An event whose final position differs
+ * from its current date vacates that date, so a proposal may land
+ * there in the same save. `final` carries the resolved position when
+ * the caller knows it (restore rows); otherwise keep stays put, null
+ * is gone and a string `to` is the destination. */
 export function moveClashes(
   state: CoachState,
   proposals: {
@@ -132,34 +135,40 @@ export function moveClashes(
   now: Date = new Date(),
 ): Map<string, string> {
   const clashes = new Map<string, string>();
-  const taken = new Map<string, string>(); // `${clientId}|${to}` -> eventId
+  const taken = new Map<string, string>(); // `${clientId}|${destination}` -> eventId
+  const finalOf = (p: (typeof proposals)[number]) =>
+    p.final ?? (p.to === "keep" ? p.event.date : p.to);
   const vacating = new Set(
-    proposals
-      .filter(
-        (p) =>
-          (p.final ?? (p.to === "keep" ? p.event.date : p.to)) !== p.event.date,
-      )
-      .map((p) => p.event.id),
+    proposals.filter((p) => finalOf(p) !== p.event.date).map((p) => p.event.id),
   );
-  for (const { event, to } of proposals) {
-    if (to === null || to === "keep") continue;
-    const key = `${event.clientId}|${to}`;
+  for (const p of proposals) {
+    const { event } = p;
+    const destination = finalOf(p);
+    // Skips land nowhere. A keep or a submitted row lands where it
+    // already sits — the schedule itself counts it once — so only an
+    // explicit `to` or a resolved position off the current date is a
+    // landing that can collide.
+    const lands =
+      destination !== null &&
+      ((p.to !== null && p.to !== "keep") || destination !== event.date);
+    if (!lands) continue;
+    const key = `${event.clientId}|${destination}`;
     const holder = taken.get(key);
-    if (holder) {
+    if (holder && holder !== event.id) {
       clashes.set(
         event.id,
-        `Two check-ins would land on ${formatDate(to, { weekday: "short", day: "numeric", month: "short" })}`,
+        `Two check-ins would land on ${formatDate(destination, { weekday: "short", day: "numeric", month: "short" })}`,
       );
       continue;
     }
     taken.set(key, event.id);
-    const existing = eventsOn(state, event.clientId, to, now).find(
+    const existing = eventsOn(state, event.clientId, destination, now).find(
       (e) => e.id !== event.id && !vacating.has(e.id),
     );
     if (existing)
       clashes.set(
         event.id,
-        `Already has a check-in on ${formatDate(to, { weekday: "short", day: "numeric", month: "short" })}`,
+        `Already has a check-in on ${formatDate(destination, { weekday: "short", day: "numeric", month: "short" })}`,
       );
   }
   return clashes;

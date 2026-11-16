@@ -1274,6 +1274,62 @@ test("moveClashes judges the final schedule: a vacated date is free", () => {
   assert.equal(restored.size, 0);
 });
 
+test("moveClashes counts a restore's landing date in the final schedule", () => {
+  const s = vacState();
+  // The 9 Nov check-in is currently moved to 25 Nov by this vacation.
+  s.checkInMoves = [
+    {
+      eventId: "recurring:client-001:2026-11-09",
+      clientId: "client-001",
+      from: "2026-11-09",
+      to: "2026-11-25",
+      vacationId: "v1",
+    },
+  ];
+  const now = new Date("2026-11-13T12:00:00Z");
+  const events = m
+    .eventsBetween(s, "2026-11-02", "2026-11-30", now)
+    .filter((e) => e.clientId === "client-001");
+  const moved = events.find((e) => e.id === "recurring:client-001:2026-11-09");
+  const other = events.find((e) => e.date === "2026-11-16");
+  assert.ok(moved && other);
+  assert.equal(moved.date, "2026-11-25");
+  assert.equal(moved.movedFrom, "2026-11-09");
+  // A restore's action is stored as "keep"; its final position is the
+  // original date it returns to.
+  const restore = { event: moved, to: "keep", final: moved.movedFrom };
+  // Another proposal landing on the restored date blocks the batch,
+  // whichever order the rows are checked in.
+  for (const proposals of [
+    [restore, { event: other, to: "2026-11-09" }],
+    [{ event: other, to: "2026-11-09" }, restore],
+  ]) {
+    const clashes = vacations.moveClashes(s, proposals, fmtGB, now);
+    assert.equal(clashes.size, 1, JSON.stringify([...clashes]));
+    assert.match([...clashes.values()][0] ?? "", /Two check-ins would land on/);
+  }
+  // Restoring onto a date an unchanged check-in still holds blocks too.
+  const held = vacations.moveClashes(
+    s,
+    [
+      { ...restore, final: "2026-11-16" },
+      { event: other, to: "keep" },
+    ],
+    fmtGB,
+    now,
+  );
+  assert.match(held.get(moved.id) ?? "", /Already has a check-in/);
+  // A valid restore frees the date it leaves: another check-in may
+  // land there in the same save.
+  const vacated = vacations.moveClashes(
+    s,
+    [restore, { event: other, to: "2026-11-25" }],
+    fmtGB,
+    now,
+  );
+  assert.equal(vacated.size, 0);
+});
+
 test("undoVacationSave reverts only that save's record, moves and notices", () => {
   const s = vacState();
   const savedVacation = s.preferences.vacations[0];

@@ -376,23 +376,30 @@ function VacationDialog({
                 {row.submitted ? (
                   <span className="cd-caption">Submitted</span>
                 ) : row.restoreOnly ? (
-                  <Select
-                    label={`Restore or keep ${clientsByName(row.event.clientId)}`}
-                    value={choice.choice}
-                    onChange={(v) =>
-                      setChoice(row.event.id, { choice: v as MoveChoice })
-                    }
-                    options={[
-                      {
-                        value: "keep",
-                        label: `Keep at ${fmt(row.event.date)}`,
-                      },
-                      {
-                        value: "skip",
-                        label: `Restore to ${fmt(row.event.movedFrom ?? row.event.date)}`,
-                      },
-                    ]}
-                  />
+                  <>
+                    <Select
+                      label={`Restore or keep ${clientsByName(row.event.clientId)}`}
+                      value={choice.choice}
+                      onChange={(v) =>
+                        setChoice(row.event.id, { choice: v as MoveChoice })
+                      }
+                      options={[
+                        {
+                          value: "keep",
+                          label: `Keep at ${fmt(row.event.date)}`,
+                        },
+                        {
+                          value: "skip",
+                          label: `Restore to ${fmt(row.event.movedFrom ?? row.event.date)}`,
+                        },
+                      ]}
+                    />
+                    {clash && (
+                      <span className="cd-settings-error" role="alert">
+                        {clash}
+                      </span>
+                    )}
+                  </>
                 ) : (
                   <>
                     <Select
