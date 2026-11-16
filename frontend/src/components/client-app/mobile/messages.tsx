@@ -2,17 +2,42 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  athleteAvailabilityNote,
   type CoachClient,
-  formatDate,
   type Message,
+  resolvedTimeZone,
+  resolvedWorkingHours,
+  timeZoneCity,
   uid,
+  workingHoursSummary,
+  zonedToday,
 } from "../../coach/model";
-import { useCoach } from "../../coach/store";
-import { useLocalToday } from "../../coach/targets/use-local-today";
+import { useCoach, useDisplay } from "../../coach/store";
+import { vacationAutoReply } from "../../coach/vacations";
+import { VacationBanner } from "../vacation-banner";
 
 export function MobileMessages({ client }: { client: CoachClient }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
-  const today = useLocalToday();
+  const profile = state.preferences.profile;
+  const coachName = profile?.name ?? "Liliana Mansfeld";
+  const coachInitials = coachName
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  // Coach identity plus the configured availability: working hours summary
+  // and the optional note. The legacy coach-side availability line stays in
+  // the coach workspace.
+  const coachLine = profile?.title || "Coach";
+  const hoursText = workingHoursSummary(
+    resolvedWorkingHours(state.preferences),
+    state.preferences.region?.hourCycle ?? "24",
+  );
+  const hoursCity = timeZoneCity(resolvedTimeZone(state.preferences));
+  const availabilityNote = athleteAvailabilityNote(state.preferences);
   const [draft, setDraft] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
   const msgs = state.messages
@@ -43,23 +68,30 @@ export function MobileMessages({ client }: { client: CoachClient }) {
   const send = () => {
     const text = draft.trim();
     if (!text) return;
-    setState((s) => ({
-      ...s,
-      messages: [
-        ...s.messages,
-        {
-          id: uid("msg"),
-          clientId: client.id,
-          text,
-          from: "client",
-          date: today,
-          read: false,
-          priority: false,
-          attachments: [],
-          local: true,
-        },
-      ],
-    }));
+    setState((s) => {
+      // The away reply and its day stamp follow the coach's day — the same
+      // zone the banner and coach chip use — not the athlete's browser day.
+      const coachDay = zonedToday(resolvedTimeZone(s.preferences), new Date());
+      const next = {
+        ...s,
+        messages: [
+          ...s.messages,
+          {
+            id: uid("msg"),
+            clientId: client.id,
+            text,
+            from: "client" as const,
+            date: coachDay,
+            read: false,
+            priority: false,
+            attachments: [],
+            local: true,
+          },
+        ],
+      };
+      const reply = vacationAutoReply(next, client.id, coachDay, formatDate);
+      return reply ? { ...next, messages: [...next.messages, reply] } : next;
+    });
     setDraft("");
   };
   let lastDay = "";
@@ -80,15 +112,35 @@ export function MobileMessages({ client }: { client: CoachClient }) {
           className="cm-avt"
           style={{ width: 32, height: 32, fontSize: 12 }}
         >
-          LM
+          {state.preferences.profile?.photo ? (
+            // biome-ignore lint/performance/noImgElement: demo image previews are dynamic data srcs
+            <img
+              src={state.preferences.profile.photo.dataUrl}
+              alt=""
+              className="cm-avt-img"
+            />
+          ) : (
+            coachInitials
+          )}
         </span>
         <div>
-          <div style={{ fontSize: 14.5, fontWeight: 600 }}>Liliana</div>
+          <div style={{ fontSize: 14.5, fontWeight: 600 }}>{coachName}</div>
           <div className="cm-mut" style={{ fontSize: 11.5 }}>
-            Coach · replies usually within a day
+            {coachLine}
           </div>
+          {hoursText && (
+            <div className="cm-mut" style={{ fontSize: 11.5 }}>
+              Usually replies {hoursText}, {hoursCity} time
+            </div>
+          )}
+          {availabilityNote && (
+            <div className="cm-mut" style={{ fontSize: 11.5 }}>
+              {availabilityNote}
+            </div>
+          )}
         </div>
       </div>
+      <VacationBanner />
       <div
         style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10 }}
       >
@@ -136,6 +188,9 @@ export function MobileMessages({ client }: { client: CoachClient }) {
                         <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                       </svg>
                     </div>
+                  )}
+                  {m.auto && (
+                    <span className="cm-auto-label">Automatic reply</span>
                   )}
                   {m.text}
                 </div>

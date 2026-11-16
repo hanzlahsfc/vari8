@@ -8,7 +8,7 @@ const source = await readFile(
   "utf8",
 );
 const executable = stripTypeScriptTypes(source, { mode: "strip" });
-const { accentControlColors, contrastRatio } = await import(
+const { accentControlColors, contrastRatio, DEFAULT_ACCENT } = await import(
   `data:text/javascript;base64,${Buffer.from(executable).toString("base64")}`
 );
 
@@ -95,8 +95,9 @@ test("hex normalization and fallback remain deterministic", () => {
     accentControlColors("#D93A7F"),
   );
   assert.deepEqual(accentControlColors("#abc"), accentControlColors("#AABBCC"));
+  // Malformed accents resolve through the coach default (Platinum).
   assert.deepEqual(
     accentControlColors("invalid"),
-    accentControlColors("#EB91B8"),
+    accentControlColors(DEFAULT_ACCENT),
   );
 });

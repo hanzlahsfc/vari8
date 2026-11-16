@@ -6,18 +6,22 @@
 // workspace (check-in calendar, physique comparison) sees it.
 
 import { Camera, Check, ChevronDown, X } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { questionPoses } from "../coach/check-ins/photos";
 import {
-  addDays,
+  type CheckInTargetVerdict,
   type CoachClient,
-  formatDate,
+  type CoachState,
+  checkInSubmissionTarget,
+  type Event,
+  pickCheckInCard,
   type Question,
   type Submission,
   uid,
   type Variant,
 } from "../coach/model";
-import { useCoach } from "../coach/store";
+import { useCoach, useDisplay } from "../coach/store";
+import { localToday } from "../coach/targets/model";
 import { useLocalToday } from "../coach/targets/use-local-today";
 import { Button, Empty } from "../coach/ui";
 import { Input, Select } from "../vari8/components";
@@ -51,17 +55,50 @@ function downscaleImage(file: File): Promise<string> {
   });
 }
 
-function nextCheckInEventId(client: CoachClient, from: string): string {
-  for (let i = 0; i < 14; i += 1) {
-    const date = addDays(from, i);
-    const weekday = (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
-    const schedule = [...client.schedules]
-      .sort((a, b) => b.effective.localeCompare(a.effective))
-      .find((s) => s.effective <= date);
-    if (schedule?.weekdays.includes(weekday))
-      return `recurring:${client.id}:${date}`;
-  }
-  return "";
+/** Resolve the occurrence a check-in files against through the same
+ * move-aware path as the calendar and cards (pickCheckInCard sees
+ * extras, skips and re-dated moves). Generic entry points — no selected
+ * occurrence — take the next actionable event; a selected occurrence is
+ * used verbatim and never swapped for another recurring ID. */
+function resolveOccurrence(
+  state: CoachState,
+  client: CoachClient,
+  today: string,
+): Pick<Event, "id" | "date"> | undefined {
+  const { overdue, next } = pickCheckInCard(
+    state,
+    client.id,
+    today,
+    new Date(),
+  );
+  return next ?? overdue;
+}
+
+/** The occurrence an open check-in draft files against. The first render
+ * can resolve a stale day — useLocalToday yields the seeded constant
+ * until its effect runs — and pickCheckInCard can retarget after a
+ * deadline or day boundary ticks past while the form sits open, so the
+ * candidate freezes on the first settled render. Surrounding UI (sheet
+ * header, form caption) reads the same value so it stays aligned with
+ * what submit writes; remounting binds the newly selected occurrence. */
+export function useCheckInTarget(
+  client: CoachClient,
+  candidate?: Pick<Event, "id" | "date">,
+): Pick<Event, "id" | "date"> | undefined {
+  const { state } = useCoach();
+  const today = useLocalToday();
+  const boundRef = useRef<Pick<Event, "id" | "date"> | null | undefined>(
+    undefined,
+  );
+  const liveTarget = () => {
+    const t = candidate ?? resolveOccurrence(state, client, today);
+    return t ? { id: t.id, date: t.date } : undefined;
+  };
+  if (boundRef.current === undefined && today === localToday())
+    boundRef.current = liveTarget() ?? null;
+  return boundRef.current === undefined
+    ? liveTarget()
+    : (boundRef.current ?? undefined);
 }
 
 function choiceOptions(question: Question) {
@@ -79,10 +116,14 @@ function choiceOptions(question: Question) {
 export function CheckInForm({
   configuration,
   client,
+  occurrence,
 }: {
   configuration: Variant;
   client: CoachClient;
+  /** The occurrence the athlete opened, when the entry point knows it. */
+  occurrence?: Pick<Event, "id" | "date">;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -90,7 +131,17 @@ export function CheckInForm({
     {},
   );
   const [attempted, setAttempted] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+  const [filedId, setFiledId] = useState<string | null>(null);
+  const [stale, setStale] = useState<Extract<
+    CheckInTargetVerdict,
+    { ok: false }
+  > | null>(null);
+  // Once an activation is in flight a second one is ignored: two submit
+  // calls inside the same batch would each pass the pre-check against
+  // the uncommitted snapshot, and the loser's rejected write would swap
+  // the winner's success for a false "already submitted" error.
+  const inFlightRef = useRef(false);
+  const target = useCheckInTarget(client, occurrence);
 
   const history = state.submissions
     .filter((s) => s.clientId === client.id)
@@ -116,7 +167,7 @@ export function CheckInForm({
 
   const submit = () => {
     setAttempted(true);
-    if (!valid) return;
+    if (!valid || inFlightRef.current) return;
     const photoList = configuration.questions
       .filter((q) => q.type === "Visual upload")
       .flatMap((q) =>
@@ -136,8 +187,9 @@ export function CheckInForm({
     const submission: Submission = {
       id: uid("submission"),
       clientId: client.id,
-      date: today,
-      eventId: nextCheckInEventId(client, today),
+      date: target?.date ?? today,
+      submittedAt: new Date().toISOString(),
+      eventId: target?.id ?? "",
       type: "Full",
       answers: answersList,
       metrics: configuration.summaries,
@@ -149,11 +201,44 @@ export function CheckInForm({
       note: "",
       flags: [],
     };
-    setState((s) => ({ ...s, submissions: [...s.submissions, submission] }));
-    setSubmitted(true);
+    // The recheck inside the updater is the point-of-write guard: it
+    // sees any move, skip, removal or submission that landed after the
+    // last render. A rejected write leaves the draft untouched instead
+    // of attaching it to a different occurrence; the filed flag plus
+    // the stored submission decide which outcome renders.
+    const verdict = checkInSubmissionTarget(state, client.id, target, today);
+    if (!verdict.ok) {
+      setStale(verdict);
+      return;
+    }
+    inFlightRef.current = true;
+    setStale(null);
+    setFiledId(submission.id);
+    setState((s) =>
+      checkInSubmissionTarget(s, client.id, target, today).ok
+        ? { ...s, submissions: [...s.submissions, submission] }
+        : s,
+    );
   };
 
-  if (submitted)
+  const filed =
+    filedId != null && state.submissions.some((s) => s.id === filedId);
+  // A render that knows filedId has already committed the matching
+  // write — React does not render inside a batch — so a missing
+  // submission here is the settled outcome of that attempt, not a
+  // pending one. Release the guard so a later Submit revalidates
+  // against current state instead of silently doing nothing.
+  if (filedId != null && !filed) inFlightRef.current = false;
+  // A filed attempt whose submission never landed means the in-updater
+  // recheck rejected it — recompute the verdict for the reason.
+  const rejectedVerdict =
+    filedId != null && !filed
+      ? checkInSubmissionTarget(state, client.id, target, today)
+      : null;
+  const staleView =
+    stale ?? (rejectedVerdict && !rejectedVerdict.ok ? rejectedVerdict : null);
+
+  if (filed)
     return (
       <section className="cd-preview-section" aria-label="Check-in">
         <div className="ca-checkin-done">
@@ -175,6 +260,16 @@ export function CheckInForm({
       <p className="cd-muted">
         Answer your coach&apos;s questions for this week.
       </p>
+      {target && (
+        <p className="cd-muted">
+          Filing for{" "}
+          {formatDate(target.date, {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          })}
+        </p>
+      )}
       <div className="ca-checkin-form">
         {configuration.questions.map((q) => (
           <div className="ca-checkin-field" key={q.id}>
@@ -276,6 +371,15 @@ export function CheckInForm({
         {attempted && !valid && (
           <p className="ca-photo-error">Please answer the required fields.</p>
         )}
+        {staleView && (
+          <p className="ca-photo-error" role="alert">
+            {staleView.reason === "moved"
+              ? `This check-in moved to ${formatDate(staleView.to ?? today, { day: "numeric", month: "short" })}. Close this form and open it again from Home or the calendar — your answers are still here.`
+              : staleView.reason === "submitted"
+                ? "This check-in was already submitted. Your answers are still here if you want to copy them into a message."
+                : "This check-in is no longer scheduled. Close this form and open the current one from Home — your answers are still here."}
+          </p>
+        )}
         <Button primary className="ca-checkin-submit" onClick={submit}>
           Submit check-in
         </Button>
@@ -286,6 +390,7 @@ export function CheckInForm({
 }
 
 function CheckInHistory({ history }: { history: Submission[] }) {
+  const { formatDate } = useDisplay();
   if (!history.length) return null;
   return (
     <div className="ca-checkin-history">

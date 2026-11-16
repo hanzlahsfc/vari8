@@ -2,18 +2,14 @@
 
 import { Check, ChevronLeft, Flag, StickyNote } from "lucide-react";
 import { useState } from "react";
-import {
-  type CoachClient,
-  formatDate,
-  uid,
-  type Variant,
-} from "../../coach/model";
+import { type CoachClient, uid, type Variant } from "../../coach/model";
 import type {
   LoggedSet,
   TrainingExercise,
   TrainingPlan,
   TrainingSessionLog,
 } from "../../coach/plans/types";
+import { useDisplay } from "../../coach/store";
 import {
   Button,
   Card,
@@ -130,6 +126,7 @@ export function SessionLogger({
   writeLog: (log: TrainingSessionLog) => void;
   onBack: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const log = findLog(logs, plan.id, item.date, item.occurrenceKey);
   const [editing, setEditing] = useState(log?.status !== "finished");
   const [confirmFinish, setConfirmFinish] = useState(false);

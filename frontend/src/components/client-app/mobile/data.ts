@@ -2,8 +2,11 @@ import { nutritionForDate } from "../../coach/athlete/timeline";
 import {
   type CoachClient,
   type CoachState,
+  checkInDeadline,
   type Event,
-  eventsBetween,
+  pickCheckInCard,
+  resolvedTimeZone,
+  zonedToday,
 } from "../../coach/model";
 import {
   applicablePlan,
@@ -145,36 +148,42 @@ export type NextCheckIn = {
   date: string;
   daysUntil: number;
   overdue: boolean;
+  dueToday: boolean;
+  deadline: string;
   awaitingFeedback: boolean;
   submittedDate: string | undefined;
+  /** The actual occurrence the card refers to — stable ID plus effective
+   * (move-aware) date — so the form files against the same event the
+   * athlete tapped. */
+  event?: Event;
 };
 
 export function nextCheckIn(
   state: CoachState,
   client: CoachClient,
   today: string,
+  now: Date = new Date(),
 ): NextCheckIn | undefined {
   const waiting = state.submissions
     .filter((s) => s.clientId === client.id && !s.response)
     .sort((a, b) => b.date.localeCompare(a.date))[0];
-  const scheduled = eventsBetween(
-    state,
-    addLocalDays(today, -21),
-    addLocalDays(today, 35),
-  ).filter((e: Event) => e.clientId === client.id && !e.submission);
-  const overdue = scheduled.filter((e) => e.date < today).at(-1);
-  const next = scheduled.find((e) => e.date >= today);
+  const zone = resolvedTimeZone(state.preferences);
+  const coachToday = zonedToday(zone, now);
+  const { overdue, next } = pickCheckInCard(state, client.id, today, now);
   const date = next?.date ?? overdue?.date;
   if (!date && !waiting) return undefined;
   const days = date
-    ? Math.round((Date.parse(date) - Date.parse(today)) / 86400000)
+    ? Math.round((Date.parse(date) - Date.parse(coachToday)) / 86400000)
     : 0;
   return {
-    date: date ?? today,
+    date: date ?? coachToday,
     daysUntil: days,
     overdue: !!overdue && !next,
+    dueToday: !!next && next.date === coachToday,
+    deadline: checkInDeadline(state.preferences),
     awaitingFeedback: !!waiting,
     submittedDate: waiting?.date,
+    event: next ?? overdue,
   };
 }
 

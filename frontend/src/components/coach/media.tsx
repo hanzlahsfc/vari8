@@ -133,7 +133,7 @@ export function DemoRecorder({
   kind: "voice" | "video";
   onAttach: (item: Media) => void;
 }) {
-  const { attach } = useCoach();
+  const { attach, state } = useCoach();
   const [phase, setPhase] = useState<"idle" | "recording" | "preview">("idle");
   const [seconds, setSeconds] = useState(0);
   const [item, setItem] = useState<Media | null>(null);
@@ -188,17 +188,26 @@ export function DemoRecorder({
       c.height = 360;
       const ctx = c.getContext("2d");
       if (!ctx) throw new Error("Canvas unavailable");
+      // The demo recording wears the coach's brand, not a fixed color.
+      const accent = state.preferences.accent;
+      const initials = (state.preferences.profile?.name ?? "Coach")
+        .split(/\s+/)
+        .map((part) => part[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
       const draw = () => {
         const t = Date.now() / 1000;
         ctx.fillStyle = "#151216";
         ctx.fillRect(0, 0, 640, 360);
-        ctx.fillStyle = "#eb91b8";
+        ctx.fillStyle = accent;
         ctx.font = "24px sans-serif";
         ctx.fillText("Your weekly check-in", 38, 58);
         ctx.fillStyle = "#eee";
         ctx.font = "17px sans-serif";
         ctx.fillText("Review · progress · next steps", 38, 94);
-        ctx.strokeStyle = "#eb91b8";
+        ctx.strokeStyle = accent;
         ctx.lineWidth = 3;
         ctx.beginPath();
         for (let i = 0; i < 18; i++) {
@@ -211,13 +220,13 @@ export function DemoRecorder({
         ctx.fillStyle = "#b5a9b0";
         ctx.font = "14px sans-serif";
         ctx.fillText("Local demo recording · no camera or microphone", 38, 325);
-        ctx.fillStyle = "#eb91b8";
+        ctx.fillStyle = accent;
         ctx.beginPath();
         ctx.arc(555, 95, 32, 0, Math.PI * 2);
         ctx.fill();
         ctx.fillStyle = "#251820";
         ctx.font = "17px sans-serif";
-        ctx.fillText("LM", 541, 101);
+        ctx.fillText(initials, 541 - (initials.length - 2) * 9, 101);
         frame.current = requestAnimationFrame(draw);
       };
       draw();

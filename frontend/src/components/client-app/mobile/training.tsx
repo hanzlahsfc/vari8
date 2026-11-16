@@ -1,9 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type CoachClient, formatDate } from "../../coach/model";
+import type { CoachClient } from "../../coach/model";
 import { applicablePlan } from "../../coach/plans/domain";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import type { ScheduledSession } from "../training-log/model";
 import {
@@ -26,6 +26,7 @@ export function MobileTraining({
   readOnly?: boolean;
   embedded?: boolean;
 }) {
+  const { formatDate } = useDisplay();
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans
@@ -212,6 +213,9 @@ export function MobileSessionOverview({
   readOnly?: boolean;
 }) {
   const { state } = useCoach();
+  const coachFirstName = (state.preferences.profile?.name ?? "Coach").split(
+    " ",
+  )[0];
   const today = useLocalToday();
   const plan = client.plans
     ? applicablePlan(client.plans.training, today)
@@ -244,7 +248,7 @@ export function MobileSessionOverview({
             className="cm-mut"
             style={{ fontSize: 12.5, fontStyle: "italic" }}
           >
-            "Control the eccentric, 2 reps in reserve" — Liliana
+            "Control the eccentric, 2 reps in reserve" — {coachFirstName}
           </div>
         </div>
       )}

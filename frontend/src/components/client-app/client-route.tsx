@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { coachThemeStyle } from "../coach/coach-theme";
+import {
+  athleteMode,
+  coachThemeStyle,
+  useSystemMode,
+} from "../coach/coach-theme";
 import { CoachProvider, useCoach } from "../coach/store";
 import { templateSetup } from "../coach/template-setup";
 import { Button, Empty } from "../coach/ui";
@@ -44,14 +48,20 @@ function ClientRouteInner() {
   const client = clientId
     ? state.clients.find((candidate) => candidate.id === clientId)
     : undefined;
+  const systemMode = useSystemMode();
+  // The athlete app follows the athlete's own light/dark choice, then the
+  // phone — never the coach's workspace mode. Brand color still comes from
+  // the coach's settings.
+  const appMode = athleteMode(client ?? {}, systemMode);
+  const themePrefs = { ...state.preferences, mode: appMode };
   const configuration = client?.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
   return (
     <div
       className="coach-root v8-theme client-app-route"
-      data-mode={state.preferences.mode}
-      style={coachThemeStyle(state.preferences)}
+      data-mode={appMode}
+      style={coachThemeStyle(themePrefs)}
     >
       {!hydrated ? (
         <div className="client-app-loading" role="status">

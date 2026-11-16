@@ -1,11 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { type CoachClient, formatDate, type Message } from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import {
+  athleteMode,
+  logoForMode,
+  useSystemMode,
+} from "../../coach/coach-theme";
+import type { CoachClient, Message } from "../../coach/model";
+import { useCoach, useCoachNow, useDisplay } from "../../coach/store";
 import { dosageForQuantity } from "../../coach/supplements/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
+import { IconButton } from "../../coach/ui";
 import { findLog } from "../training-log/model";
+import { VacationBanner } from "../vacation-banner";
 import {
   cardioWeek,
   habitsToday,
@@ -18,11 +25,6 @@ import {
   upcomingTemporary,
 } from "./data";
 
-const WEEKDAY = new Intl.DateTimeFormat("en-GB", {
-  weekday: "long",
-  day: "numeric",
-  month: "short",
-});
 const NUM = new Intl.NumberFormat("en", { maximumFractionDigits: 0 });
 
 export function MobileHome({
@@ -40,14 +42,16 @@ export function MobileHome({
   onOpenMessages: () => void;
   onOpenSession: () => void;
 }) {
+  const { formatDate, formatClock } = useDisplay();
+  const now = useCoachNow();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const targets = useMemo(() => todayTargets(client, today), [client, today]);
   const steps = useMemo(() => stepsTarget(client, today), [client, today]);
   const cardio = useMemo(() => cardioWeek(client, today), [client, today]);
   const checkIn = useMemo(
-    () => nextCheckIn(state, client, today),
-    [state, client, today],
+    () => nextCheckIn(state, client, today, now),
+    [state, client, today, now],
   );
   const session = useMemo(
     () => todaySession(state, client, today),
@@ -97,6 +101,20 @@ export function MobileHome({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const systemMode = useSystemMode();
+  const appMode = athleteMode(client, systemMode);
+  const brandLogo = logoForMode(state.preferences, appMode);
+  const brandName = state.preferences.brand?.name || "infinity.";
+  const coachName = state.preferences.profile?.name ?? "Liliana Mansfeld";
+  const toggleMode = () =>
+    setState((s) => ({
+      ...s,
+      clients: s.clients.map((c) =>
+        c.id === client.id
+          ? { ...c, appMode: appMode === "dark" ? "light" : "dark" }
+          : c,
+      ),
+    }));
   const cardioPips = cardio
     ? Array.from({ length: cardio.sessionsTarget }, (_, i) => i)
     : [];
@@ -109,11 +127,60 @@ export function MobileHome({
     <div className="cm-stack">
       <div className="cm-row" style={{ justifyContent: "space-between" }}>
         <span className="cm-mut" style={{ fontSize: 13 }}>
-          {WEEKDAY.format(new Date(`${today}T12:00:00`))}
+          {formatDate(today, { weekday: "long" })}
         </span>
-        <span className="cm-avt">{initials}</span>
+        <span className="cm-home-brand">
+          {brandLogo ? (
+            // biome-ignore lint/performance/noImgElement: demo image previews are dynamic data srcs
+            <img src={brandLogo.dataUrl} alt={`${brandName} logo`} />
+          ) : (
+            <span className="cm-home-brand-name">{brandName}</span>
+          )}
+        </span>
+        <span className="cm-row" style={{ gap: 6 }}>
+          <IconButton
+            label={
+              appMode === "dark"
+                ? "Switch to light mode"
+                : "Switch to dark mode"
+            }
+            onClick={toggleMode}
+          >
+            {appMode === "dark" ? (
+              <svg
+                aria-hidden="true"
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              >
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+              </svg>
+            ) : (
+              <svg
+                aria-hidden="true"
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+              </svg>
+            )}
+          </IconButton>
+          <span className="cm-avt">{initials}</span>
+        </span>
       </div>
       <div className="cm-h1">Hi {firstName}</div>
+      <VacationBanner />
       {checkIn && (
         <div className="cm-card">
           <div className="cm-row" style={{ gap: 12 }}>
@@ -145,8 +212,10 @@ export function MobileHome({
                 {checkIn.awaitingFeedback
                   ? `Submitted ${checkIn.submittedDate ? formatDate(checkIn.submittedDate, { weekday: "short", day: "numeric", month: "short" }) : "recently"} · awaiting feedback`
                   : checkIn.overdue
-                    ? `Overdue since ${formatDate(checkIn.date, { day: "numeric", month: "short" })}`
-                    : `Due ${formatDate(checkIn.date, { weekday: "short", day: "numeric", month: "short" })} · in ${checkIn.daysUntil} day${checkIn.daysUntil === 1 ? "" : "s"}`}
+                    ? "Overdue"
+                    : checkIn.dueToday
+                      ? `Due today by ${formatClock(checkIn.deadline)}`
+                      : `Due ${formatDate(checkIn.date, { weekday: "short", day: "numeric", month: "short" })} · in ${checkIn.daysUntil} day${checkIn.daysUntil === 1 ? "" : "s"}`}
               </div>
             </div>
             {!checkIn.awaitingFeedback && (
@@ -512,11 +581,26 @@ export function MobileHome({
               className="cm-avt"
               style={{ width: 26, height: 26, fontSize: 11 }}
             >
-              LM
+              {state.preferences.profile?.photo ? (
+                // biome-ignore lint/performance/noImgElement: demo image previews are dynamic data srcs
+                <img
+                  src={state.preferences.profile.photo.dataUrl}
+                  alt=""
+                  className="cm-avt-img"
+                />
+              ) : (
+                coachName
+                  .split(/\s+/)
+                  .map((w) => w[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase()
+              )}
             </span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12.5, fontWeight: 600 }}>
-                Liliana{" "}
+                {coachName.split(" ")[0]}{" "}
                 <span className="cm-mut" style={{ fontWeight: 400 }}>
                   · coach
                 </span>

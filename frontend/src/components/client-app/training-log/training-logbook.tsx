@@ -5,13 +5,12 @@ import { useMemo, useState } from "react";
 import {
   addDays,
   type CoachClient,
-  formatDate,
   uid,
   type Variant,
 } from "../../coach/model";
 import { applicablePlan } from "../../coach/plans/domain";
 import type { TrainingPlan, TrainingSessionLog } from "../../coach/plans/types";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { Empty } from "../../coach/ui";
 import {
@@ -51,6 +50,7 @@ export function TrainingLogbook({
   client: CoachClient;
   configuration: Variant;
 }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const plan: TrainingPlan | undefined = client.plans

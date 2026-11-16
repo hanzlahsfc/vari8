@@ -22,24 +22,21 @@ import { nextEvent } from "./clients";
 import { DemoRecorder, MediaCard } from "./media";
 import {
   type CoachClient,
-  formatDate,
   type Media,
   type Message,
   readConversation,
+  savedReplies,
+  sortedConversationClients,
   uid,
   unreadCount,
 } from "./model";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { templateSetup } from "./template-setup";
 import { Avatar, Button, Dialog, Empty, IconButton, SearchBox } from "./ui";
 import "./workspace-polish.css";
 
-const SNIPPETS = [
-  "Thanks for the update! I’ll review this alongside your check-in.",
-  "Keep the same load this week and focus on controlled reps.",
-  "Let’s keep things simple: consistency first, then we’ll build from here.",
-];
 export function MessagesWorkspace() {
+  const { formatDate } = useDisplay();
   const { state, setState, route, navigate, attach, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
@@ -61,13 +58,7 @@ export function MessagesWorkspace() {
   const priorCount = useRef(0);
   const lastMessage = (id: string) =>
     state.messages.filter((m) => m.clientId === id).at(-1);
-  const sortedClients = [...state.clients]
-    .filter((c) => !c.archived)
-    .sort((a, b) =>
-      (lastMessage(b.id)?.date ?? "").localeCompare(
-        lastMessage(a.id)?.date ?? "",
-      ),
-    );
+  const sortedClients = sortedConversationClients(state);
   const selectedId = route.client;
   const client = state.clients.find((c) => c.id === selectedId);
   const draft: { text: string; attachments: Media[]; link?: Message["link"] } =
@@ -388,6 +379,11 @@ export function MessagesWorkspace() {
                               Priority message
                             </span>
                           )}
+                          {m.auto && (
+                            <span className="cd-priority-label cd-auto-label">
+                              Automatic reply
+                            </span>
+                          )}
                           {m.text && <p>{m.text}</p>}
                           {m.attachments.map((a) => (
                             <MediaCard key={a.id} item={a} />
@@ -521,18 +517,26 @@ export function MessagesWorkspace() {
                     ) : menu === "snippets" ? (
                       <>
                         <h3>Reusable replies</h3>
-                        {SNIPPETS.map((s) => (
+                        {savedReplies(state.preferences).length === 0 && (
+                          <p className="cd-caption">
+                            No saved replies yet — add them in Settings →
+                            Messages.
+                          </p>
+                        )}
+                        {savedReplies(state.preferences).map((reply) => (
                           <Button
-                            key={s}
+                            key={reply.id}
                             onClick={() => {
                               setDraft({
-                                text: draft.text ? `${draft.text}\n${s}` : s,
+                                text: draft.text
+                                  ? `${draft.text}\n${reply.text}`
+                                  : reply.text,
                               });
                               setMenu(null);
                               composer.current?.focus();
                             }}
                           >
-                            {s}
+                            {reply.text}
                           </Button>
                         ))}
                       </>
@@ -754,6 +758,7 @@ function AthleteContext({
   client: CoachClient;
   close: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state, navigate } = useCoach();
   const next = nextEvent(state, client.id);
   const sub =

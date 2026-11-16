@@ -44,7 +44,6 @@ import {
   type CoachClient,
   clone,
   type FieldConfig,
-  formatDate,
   newTemplate,
   PARAMETERS,
   type Question,
@@ -53,6 +52,7 @@ import {
   TODAY,
   TRAINING_FIELDS,
   uid,
+  unitsForNewTemplate,
   type Variant,
 } from "./model";
 import { habitFrequencyLabel, parseHabitFrequency } from "./plans/habits";
@@ -63,7 +63,7 @@ import {
   type TrainingOptions,
 } from "./plans/training-options";
 import { weeklyRoadmapRows } from "./roadmap-preview";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { trackerOverviewIds } from "./tracker-setup";
 import "./tracker-config.css";
 import "./plans/training-options.css";
@@ -194,6 +194,7 @@ export function PreviewDialog({
   );
 }
 export function TemplateLibrary() {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const [search, setSearch] = useState("");
   const [menu, setMenu] = useState<string | null>(null);
@@ -206,7 +207,10 @@ export function TemplateLibrary() {
     `${t.name} ${t.description}`.toLowerCase().includes(search.toLowerCase()),
   );
   const add = () => {
-    const t = newTemplate(uid("template"));
+    const t = newTemplate(
+      uid("template"),
+      unitsForNewTemplate(state.preferences),
+    );
     setState((s) => ({ ...s, editorDrafts: { ...s.editorDrafts, [t.id]: t } }));
     navigate({ section: "templates", editor: t.id });
   };
@@ -460,7 +464,10 @@ const PREVIEW_TAB_BY_SECTION: Record<string, string> = {
 export function TemplateEditor({ id }: { id: string }) {
   const { state, setState, navigate, guard, toast, route } = useCoach();
   const saved = state.templates.find((t) => t.id === id);
-  const fresh = useMemo(() => newTemplate(id), [id]);
+  const fresh = useMemo(
+    () => newTemplate(id, unitsForNewTemplate(state.preferences)),
+    [id, state.preferences],
+  );
   const draft = state.editorDrafts[id] ?? saved ?? fresh;
   const [section, setSection] = useState("Tabs");
   const [preview, setPreview] = useState(false);

@@ -31,6 +31,7 @@ import {
   type Variant,
 } from "./model";
 import { planTargets } from "./plans/domain";
+import { useDisplay } from "./store";
 export function Button({
   children,
   className = "",
@@ -145,6 +146,7 @@ export function DateField({ label, value, onChange, min }: DateFieldProps) {
 }
 
 export function DateTimeField({ label, value, onChange, min }: DateFieldProps) {
+  const { hourCycle } = useDisplay();
   const [date, setDate] = useState(value.slice(0, 10));
   const [time, setTime] = useState(
     value.length >= 16 ? value.slice(11, 16) : "",
@@ -173,6 +175,7 @@ export function DateTimeField({ label, value, onChange, min }: DateFieldProps) {
       <TimePicker
         label={`${label} time`}
         value={time}
+        hourFormat={hourCycle}
         onValueChange={(nextTime) => update(date, nextTime)}
       />
     </div>

@@ -6,8 +6,8 @@ import { AthleteOverview } from "../../coach/athlete/overview";
 import { currentPhase } from "../../coach/athlete/timeline";
 import { AthleteTimelineTab } from "../../coach/athlete/timeline-tab";
 import { AthleteTrackerTab } from "../../coach/athlete/tracker-tab";
-import { type CoachClient, formatDate } from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import type { CoachClient } from "../../coach/model";
+import { useCoach, useCoachNow, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import { templateSetup } from "../../coach/template-setup";
 import { Avatar, Button } from "../../coach/ui";
@@ -15,6 +15,7 @@ import { Tabs } from "../../vari8/components";
 import { CheckInForm } from "../check-in";
 import { nextCheckIn } from "../mobile/data";
 import { MobileMessages } from "../mobile/messages";
+import { VacationBanner } from "../vacation-banner";
 import { DesktopPlans } from "./plans";
 import "./desktop.css";
 
@@ -37,6 +38,8 @@ const SLUGS: Record<Tab, string> = {
 };
 
 export function ClientDesktop({ client }: { client: CoachClient }) {
+  const { formatDate, formatClock } = useDisplay();
+  const now = useCoachNow();
   const { state } = useCoach();
   const today = useLocalToday();
   const router = useRouter();
@@ -66,7 +69,7 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
   const configuration = client.assignment
     ? templateSetup(client.assignment.snapshot, client.assignment.variantId)
     : undefined;
-  const next = nextCheckIn(state, client, today);
+  const next = nextCheckIn(state, client, today, now);
   const submissions = state.submissions
     .filter((s) => s.clientId === client.id)
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -95,11 +98,14 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
         }
       >
         {tab === "Overview" && (
-          <AthleteOverview
-            client={client}
-            viewer="client"
-            onOpen={openFromCard}
-          />
+          <>
+            <VacationBanner />
+            <AthleteOverview
+              client={client}
+              viewer="client"
+              onOpen={openFromCard}
+            />
+          </>
         )}
         {tab === "Tracker" && (
           <AthleteTrackerTab
@@ -144,8 +150,10 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
                       </div>
                       <div className="cm-mut" style={{ fontSize: 12.5 }}>
                         {next.overdue
-                          ? `Overdue since ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })}`
-                          : `Due ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })} · in ${next.daysUntil} days`}
+                          ? "Overdue"
+                          : next.dueToday
+                            ? `Due today by ${formatClock(next.deadline)}`
+                            : `Due ${formatDate(next.date, { weekday: "short", day: "numeric", month: "short" })} · in ${next.daysUntil} days`}
                       </div>
                     </div>
                     <Button primary onClick={() => setCheckinOpen(true)}>
@@ -155,7 +163,11 @@ export function ClientDesktop({ client }: { client: CoachClient }) {
                 </div>
               )}
               {checkinOpen && configuration && (
-                <CheckInForm configuration={configuration} client={client} />
+                <CheckInForm
+                  configuration={configuration}
+                  client={client}
+                  occurrence={next?.event}
+                />
               )}
             </div>
             <aside className="cd-checkins-side">

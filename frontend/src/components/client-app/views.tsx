@@ -22,7 +22,6 @@ import { TrackingView } from "../coach/client-tracker-preview/tracking-view";
 import {
   ALL_PARAMETERS,
   type CoachClient,
-  formatDate,
   monday,
   PARAMETERS,
   TODAY,
@@ -35,7 +34,7 @@ import {
   ActiveClientTraining,
 } from "../coach/plans/workspace";
 import { weeklyRoadmapRows } from "../coach/roadmap-preview";
-import { useCoach } from "../coach/store";
+import { useCoach, useDisplay } from "../coach/store";
 import {
   type ActivityMetric,
   type ActivitySegment,
@@ -275,6 +274,7 @@ export function RoadmapTab({
   configuration: Variant;
   client: CoachClient;
 }) {
+  const { formatDate } = useDisplay();
   const liveToday = useLocalToday();
   const rows = useMemo(
     () => weeklyRoadmapRows(configuration, client, { asOf: liveToday }),
@@ -443,6 +443,7 @@ export function NutritionTab(props: {
   );
 }
 function ClientNutritionTab({ client }: { client: CoachClient }) {
+  const { formatDate } = useDisplay();
   const liveToday = useLocalToday();
   const [date, setDate] = useState(liveToday);
   const resolved = nutritionForDate(client, date);

@@ -282,6 +282,12 @@
   background: color-mix(in srgb, var(--cd-accent) 8%, transparent);
   color: var(--cd-accent-text);
   font-size: 12px;
+  overflow: hidden;
+}
+.coach-root .cd-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 .coach-root .cd-workspace {
   margin-left: var(--cd-sidebar-width);
@@ -3045,4 +3051,100 @@
     background: var(--cd-bg);
     backdrop-filter: none;
   }
+}
+
+/* Feedback target chip on check-ins awaiting feedback */
+.coach-root .cd-fbchip {
+  color: var(--cd-accent-text);
+  background: color-mix(in srgb, var(--cd-accent) 10%, var(--cd-surface));
+}
+.coach-root .cd-fbchip.is-late {
+  color: var(--v8-warning-text);
+  background: color-mix(in srgb, var(--v8-warning) 14%, var(--cd-surface));
+}
+/* Phase 1c — vacations */
+.cd-vacation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cd-muted);
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.cd-vac-chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--cd-muted);
+  border: 1px solid var(--cd-line);
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.cd-vac-reschedule {
+  margin-top: 8px;
+}
+.cd-vac-reschedule-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.cd-vac-reschedule .cd-field {
+  margin-top: 6px;
+}
+.cd-vac-err {
+  color: var(--cd-danger, #b4452f);
+  font-size: 11px;
+}
+.cd-vac-ok {
+  color: var(--cd-muted);
+  font-size: 11px;
+}
+.cd-calendar-day[data-vacation="true"] .cd-cal-day-in {
+  background: var(--cd-wash);
+}
+.cd-vacation-list .cd-card-body > * + * {
+  border-top: 1px solid var(--cd-line);
+}
+.cd-vacation-rows {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+.cd-vacation-preview {
+  display: block;
+  margin-top: 4px;
+}
+.cd-moved-from {
+  font-size: 10.5px;
+  color: var(--cd-muted);
+}
+.cd-vacation-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.cm-vacation-banner {
+  font-size: 12.5px;
+  color: var(--cd-muted);
+  border: 1px dashed var(--cd-line);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 12px;
+}
+.cm-auto-label,
+.cd-auto-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--cd-muted);
+  margin-bottom: 2px;
 }

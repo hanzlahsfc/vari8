@@ -5,8 +5,8 @@ import { useMemo, useState } from "react";
 import type { MealPlan, MealPlanVariant } from "../../ethereal/mealplan/model";
 import { Input } from "../../vari8/components";
 import { DatePicker } from "../../vari8/inputs";
-import { addDays, type CoachClient, formatDate, TODAY, uid } from "../model";
-import { useCoach } from "../store";
+import { addDays, type CoachClient, TODAY, uid } from "../model";
+import { useCoach, useDisplay } from "../store";
 import { localToday } from "../targets/model";
 import { templateSetup } from "../template-setup";
 import { Button, PageTitle, Select } from "../ui";
@@ -42,6 +42,7 @@ export function TemporaryPlanEditor({
   existingId?: string;
   initialStartDate?: string;
 }) {
+  const { formatDate } = useDisplay();
   const { route, setState, navigate, toast } = useCoach();
   const today = localToday() ?? TODAY;
   const plans = client.plans;

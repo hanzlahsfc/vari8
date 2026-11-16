@@ -12,8 +12,8 @@ import {
 } from "../../ethereal/mealplan/model";
 import { Input, SegmentedControl } from "../../vari8/components";
 import { DatePicker } from "../../vari8/inputs";
-import { addDays, type CoachClient, formatDate, TODAY } from "../model";
-import { useCoach } from "../store";
+import { addDays, type CoachClient, TODAY } from "../model";
+import { useCoach, useDisplay } from "../store";
 import { localToday } from "../targets/model";
 import { templateSetup } from "../template-setup";
 import { Button, Dialog } from "../ui";
@@ -73,6 +73,7 @@ export function TemporaryPlanDialog({
   initialStartDate?: string;
   onClose: () => void;
 }) {
+  const { formatDate } = useDisplay();
   const { setState, toast } = useCoach();
   const today = localToday();
   const plans = client.plans ?? emptyClientPlans();

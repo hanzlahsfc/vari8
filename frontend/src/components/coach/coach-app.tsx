@@ -14,19 +14,35 @@ import {
   X,
 } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { Input as Vari8Input } from "../vari8/components";
-import { AppearanceControls } from "./appearance-controls";
+import { useEffect, useRef } from "react";
 import { CheckInsWorkspace } from "./check-ins";
 import { ClientsWorkspace } from "./clients";
-import { coachThemeStyle } from "./coach-theme";
+import {
+  coachMode,
+  coachThemeStyle,
+  logoForMode,
+  useSystemMode,
+} from "./coach-theme";
 import { MessagesWorkspace } from "./messages";
-import { type Section, seedState, unreadCount } from "./model";
+import {
+  resolvedTimeZone,
+  type Section,
+  unreadCount,
+  vacationFor,
+  zonedToday,
+} from "./model";
 import { NotesWorkspace } from "./notes";
 import { IndividualPlanWorkspace } from "./plans/workspace";
-import { CoachProvider, useCoach } from "./store";
+import { DEFAULT_COACH_NAME, DEFAULT_COACH_TITLE } from "./settings/profile";
+import { SettingsWorkspace } from "./settings/settings";
+import {
+  resolveSettingsTab,
+  settingsTabLabel,
+  useNarrowSettings,
+} from "./settings/shell";
+import { CoachProvider, useCoach, useCoachNow, useDisplay } from "./store";
 import { TemplateEditor, TemplateLibrary } from "./templates";
-import { Button, Dialog, IconButton, Toggle, Transition } from "./ui";
+import { Button, IconButton, Transition } from "./ui";
 import "./coach.css";
 
 const NAV = [
@@ -43,6 +59,17 @@ export function CoachApp() {
     </CoachProvider>
   );
 }
+function initialsOf(name: string) {
+  return (
+    name
+      .split(/\s+/)
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
 function Workspace() {
   const {
     state,
@@ -55,10 +82,22 @@ function Workspace() {
     dismiss,
     toast,
   } = useCoach();
-  const [settings, setSettings] = useState(false);
+  const systemMode = useSystemMode();
+  const resolvedMode = coachMode(state.preferences, systemMode);
+  const { formatDate } = useDisplay();
+  const now = useCoachNow();
+  const activeVacation = vacationFor(
+    state.preferences,
+    zonedToday(resolvedTimeZone(state.preferences), now),
+  );
+  const profileName = state.preferences.profile?.name ?? DEFAULT_COACH_NAME;
+  const profileTitle = state.preferences.profile?.title ?? DEFAULT_COACH_TITLE;
+  const profilePhoto = state.preferences.profile?.photo;
+  const brandLogo = logoForMode(state.preferences, resolvedMode);
+  const brandName = state.preferences.brand?.name || "infinity.";
   const notifiedReminders = useRef(new Set<string>());
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || state.preferences.notify?.taskReminders === false) return;
     const checkReminders = () => {
       const reminders = [
         ...(state.coachTodos ?? []).map((todo) => ({
@@ -93,16 +132,34 @@ function Workspace() {
     checkReminders();
     const interval = window.setInterval(checkReminders, 30_000);
     return () => window.clearInterval(interval);
-  }, [hydrated, state.coachTodos, state.clients, toast]);
-  const selectedClient = state.clients.find((c) => c.id === route.client);
-  const pending = state.submissions.filter((s) => !s.response).length;
+  }, [
+    hydrated,
+    state.coachTodos,
+    state.clients,
+    state.preferences.notify?.taskReminders,
+    toast,
+  ]);
+  const selectedClient = state.clients.find((c) => route.client === c.id);
+  const pending =
+    state.preferences.notify?.checkIns === false
+      ? 0
+      : state.submissions.filter((s) => !s.response).length;
   const unread = state.preferences.notifications ? unreadCount(state) : 0;
+  const narrow = useNarrowSettings();
+  // The breadcrumb names the category that is actually rendered: the
+  // requested tab, Profile on other layouts, or nothing on the phone's
+  // category index.
+  const settingsTab =
+    route.section === "settings" ? resolveSettingsTab(route.tab, narrow) : null;
   return (
     <div
       className="coach-root v8-theme"
-      data-mode={state.preferences.mode}
+      data-mode={resolvedMode}
       data-sidebar-collapsed={Boolean(state.preferences.sidebarCollapsed)}
-      style={coachThemeStyle(state.preferences)}
+      style={coachThemeStyle({
+        ...state.preferences,
+        mode: resolvedMode,
+      })}
     >
       <a className="cd-skip" href="#coach-main">
         Skip to workspace
@@ -134,11 +191,11 @@ function Workspace() {
           )}
         </IconButton>
         <div className="cd-brand">
-          {state.preferences.logo ? (
+          {brandLogo ? (
             <span className="cd-brand-logo">
               <Image
-                src={state.preferences.logo.dataUrl}
-                alt="Workspace logo"
+                src={brandLogo.dataUrl}
+                alt={`${brandName} logo`}
                 fill
                 unoptimized
                 sizes="172px"
@@ -152,9 +209,7 @@ function Workspace() {
                 <i />
                 <i />
               </span>
-              <span className="cd-brand-wordmark">
-                infinity<span className="cd-brand-period">.</span>
-              </span>
+              <span className="cd-brand-wordmark">{brandName}</span>
             </>
           )}
         </div>
@@ -180,14 +235,22 @@ function Workspace() {
           <button
             type="button"
             className="cd-account"
-            aria-label="Workspace preferences for Liliana Mansfeld"
-            title="Workspace preferences for Liliana Mansfeld"
-            onClick={() => setSettings(true)}
+            aria-label={`Settings for ${profileName}`}
+            title={`Settings for ${profileName}`}
+            aria-current={route.section === "settings" ? "page" : undefined}
+            onClick={() => navigate({ section: "settings" })}
           >
-            <span className="cd-account-avatar">LM</span>
+            <span className="cd-account-avatar">
+              {profilePhoto ? (
+                // biome-ignore lint/performance/noImgElement: demo image previews are dynamic data srcs
+                <img src={profilePhoto.dataUrl} alt="" />
+              ) : (
+                initialsOf(profileName)
+              )}
+            </span>
             <span className="cd-account-copy">
-              <strong>Liliana Mansfeld</strong>
-              <small>Coach</small>
+              <strong>{profileName}</strong>
+              <small>{profileTitle}</small>
             </span>
             <Settings2 size={17} />
           </button>
@@ -196,11 +259,11 @@ function Workspace() {
       <div className="cd-workspace">
         <header className="cd-utility-header">
           <div className="cd-breadcrumb">
-            {state.preferences.logo && (
+            {brandLogo && (
               <span className="cd-mobile-logo">
                 <Image
-                  src={state.preferences.logo.dataUrl}
-                  alt="Workspace logo"
+                  src={brandLogo.dataUrl}
+                  alt={`${brandName} logo`}
                   fill
                   unoptimized
                   sizes="72px"
@@ -210,7 +273,19 @@ function Workspace() {
             )}
             <span className="cd-breadcrumb-workspace">Workspace</span>
             <span className="cd-breadcrumb-workspace">/</span>
-            <strong>{NAV.find((n) => n.id === route.section)?.label}</strong>
+            <strong>
+              {route.section === "settings"
+                ? "Settings"
+                : NAV.find((n) => n.id === route.section)?.label}
+            </strong>
+            {route.section === "settings" && settingsTab && (
+              <>
+                <span className="cd-breadcrumb-editor">/</span>
+                <span className="cd-breadcrumb-editor">
+                  {settingsTabLabel(settingsTab)}
+                </span>
+              </>
+            )}
             {route.editor && (
               <>
                 <span className="cd-breadcrumb-editor">/</span>
@@ -219,12 +294,23 @@ function Workspace() {
             )}
           </div>
           <div className="cd-utility-actions">
+            {activeVacation && (
+              <button
+                type="button"
+                className="cd-vacation-chip"
+                onClick={() =>
+                  navigate({ section: "settings", tab: "availability" })
+                }
+              >
+                On vacation until {formatDate(activeVacation.end)}
+              </button>
+            )}
             <span className="cd-local-indicator">
               {storageOk ? "Local demo" : "Session only · storage unavailable"}
             </span>
             <IconButton
               label={
-                state.preferences.mode === "dark"
+                resolvedMode === "dark"
                   ? "Switch to light mode"
                   : "Switch to dark mode"
               }
@@ -233,20 +319,18 @@ function Workspace() {
                   ...s,
                   preferences: {
                     ...s.preferences,
-                    mode: s.preferences.mode === "dark" ? "light" : "dark",
+                    followSystemMode: false,
+                    mode: resolvedMode === "dark" ? "light" : "dark",
                   },
                 }))
               }
             >
-              {state.preferences.mode === "dark" ? (
-                <Sun size={17} />
-              ) : (
-                <Moon size={17} />
-              )}
+              {resolvedMode === "dark" ? <Sun size={17} /> : <Moon size={17} />}
             </IconButton>
             <IconButton
-              label="Workspace preferences"
-              onClick={() => setSettings(true)}
+              label="Workspace settings"
+              aria-current={route.section === "settings" ? "page" : undefined}
+              onClick={() => navigate({ section: "settings" })}
             >
               <Settings2 size={17} />
             </IconButton>
@@ -282,6 +366,8 @@ function Workspace() {
                 <CheckInsWorkspace />
               ) : route.section === "notes" ? (
                 <NotesWorkspace />
+              ) : route.section === "settings" ? (
+                <SettingsWorkspace />
               ) : (
                 <MessagesWorkspace />
               )}
@@ -308,84 +394,6 @@ function Workspace() {
             <X size={15} />
           </IconButton>
         </div>
-      )}
-      {settings && (
-        <Dialog
-          title="Workspace preferences"
-          onClose={() => setSettings(false)}
-        >
-          <AppearanceControls
-            preferences={state.preferences}
-            onChange={(patch) =>
-              setState((s) => ({
-                ...s,
-                preferences: { ...s.preferences, ...patch },
-              }))
-            }
-          />
-          <h3>Availability</h3>
-          <Vari8Input
-            label="Shown in your workspace"
-            value={state.preferences.availability}
-            onChange={(e) =>
-              setState((s) => ({
-                ...s,
-                preferences: {
-                  ...s.preferences,
-                  availability: e.target.value,
-                },
-              }))
-            }
-          />
-          <h3>In-app notification preferences</h3>
-          <Toggle
-            label="Unread message attention"
-            checked={state.preferences.notifications}
-            onChange={(notifications) =>
-              setState((s) => ({
-                ...s,
-                preferences: { ...s.preferences, notifications },
-              }))
-            }
-          />
-          <Toggle
-            label="Permitted priority message attention"
-            checked={state.preferences.priorityNotifications}
-            onChange={(priorityNotifications) =>
-              setState((s) => ({
-                ...s,
-                preferences: { ...s.preferences, priorityNotifications },
-              }))
-            }
-          />
-          <p className="cd-caption">
-            Preferences are saved locally. System notifications are not used.
-          </p>
-          <details className="cd-reset">
-            <summary>Reset this mockup</summary>
-            <p>Resets this coach workspace only.</p>
-            <Button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Reset this coach workspace? Local templates, messages and feedback will return to their starting examples.",
-                  )
-                ) {
-                  setState(seedState());
-                  setSettings(false);
-                  navigate({ section: "templates" });
-                }
-              }}
-            >
-              Reset coach workspace
-            </Button>
-          </details>
-          <div className="cd-dialog-actions">
-            <Button primary onClick={() => setSettings(false)}>
-              Done
-            </Button>
-          </div>
-        </Dialog>
       )}
     </div>
   );

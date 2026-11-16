@@ -8,6 +8,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -16,6 +17,10 @@ import { adoptAthleteProfileDemo } from "./athlete-profile-demo";
 import { adoptClientAppDemo } from "./client-app-demo";
 import {
   type CoachState,
+  type DisplayConfig,
+  displayConfigFor,
+  formatClock,
+  formatDate,
   isCoachState,
   type Media,
   type Route,
@@ -28,6 +33,13 @@ import { localToday } from "./targets/model";
 import { normalizeTemplateSetups } from "./template-setup";
 import { adoptTrainingLogDemo } from "./training-log-demo";
 
+/** Workspace-scoped display settings plus bound formatters; every render
+ * uses the active workspace's region, so edits, resets and workspace
+ * switches apply immediately without module-global state. */
+export type Display = DisplayConfig & {
+  formatDate: (date: string, options?: Intl.DateTimeFormatOptions) => string;
+  formatClock: (hhmm: string, hourCycle?: "12" | "24") => string;
+};
 type Store = {
   state: CoachState;
   setState: Dispatch<SetStateAction<CoachState>>;
@@ -35,6 +47,11 @@ type Store = {
   storageOk: boolean;
   route: Route;
   navigate: (route: Route) => void;
+  display: Display;
+  /** Shared clock ticking once per displayed minute; deadline status and
+   * feedback countdowns re-render on open screens without a timer per
+   * row. Refreshes immediately when a background tab resumes. */
+  now: Date;
   guard: React.MutableRefObject<((route: Route) => boolean) | null>;
   toast: (text: string, undo?: () => void) => void;
   notice: { text: string; undo?: () => void } | null;
@@ -47,6 +64,12 @@ export function useCoach() {
   const value = useContext(Context);
   if (!value) throw new Error("Coach provider required");
   return value;
+}
+export function useDisplay() {
+  return useCoach().display;
+}
+export function useCoachNow() {
+  return useCoach().now;
 }
 export function routeUrl(route: Route) {
   const q = new URLSearchParams({ section: route.section });
@@ -80,7 +103,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
       section === "clients" ||
       section === "check-ins" ||
       section === "messages" ||
-      section === "notes"
+      section === "notes" ||
+      section === "settings"
         ? section
         : "templates",
     client: params.get("client") ?? undefined,
@@ -130,6 +154,36 @@ export function CoachProvider({ children }: { children: ReactNode }) {
     }
     setHydrated(true);
   }, []);
+  const display = useMemo<Display>(() => {
+    const config = displayConfigFor(state.preferences);
+    return {
+      ...config,
+      formatDate: (date, options) => formatDate(date, options, config),
+      formatClock: (hhmm, hourCycle) =>
+        formatClock(hhmm, hourCycle ?? config.hourCycle),
+    };
+  }, [state.preferences]);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    let timer = 0;
+    const tick = () => {
+      setNow(new Date());
+      // Re-arm to just past the next minute boundary so deadline cut-offs
+      // cross exactly on the minute rather than a fixed interval.
+      timer = window.setTimeout(tick, 60_000 - (Date.now() % 60_000) + 250);
+    };
+    timer = window.setTimeout(tick, 60_000 - (Date.now() % 60_000) + 250);
+    const resume = () => {
+      if (!document.hidden) setNow(new Date());
+    };
+    window.addEventListener("focus", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
+  }, []);
   useEffect(() => {
     if (!hydrated || preserveRaw.current) return;
     try {
@@ -175,6 +229,8 @@ export function CoachProvider({ children }: { children: ReactNode }) {
         hydrated,
         storageOk,
         route,
+        display,
+        now,
         navigate,
         guard,
         toast,

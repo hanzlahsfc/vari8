@@ -25,14 +25,15 @@ import {
   type Event,
   type Extra,
   eventsBetween,
-  formatDate,
+  feedbackChipText,
   monday,
   type ReviewDraft,
   type Submission,
   submitFeedback,
   TODAY,
+  vacationFor,
 } from "./model";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { templateSetup } from "./template-setup";
 import {
   Avatar,
@@ -46,8 +47,122 @@ import {
   Status,
   Surface,
 } from "./ui";
+import { moveClashes, proposedDate } from "./vacations";
+
+/** Inline reschedule row controls for a check-in that fell inside a
+ * vacation without being rescheduled — the same choices the vacation
+ * editor offers, written straight to checkInMoves. */
+function VacationReschedule({ event }: { event: Event }) {
+  const { state, setState } = useCoach();
+  const { formatDate } = useDisplay();
+  const vacation = vacationFor(state.preferences, event.date);
+  const [picked, setPicked] = useState("");
+  const [choice, setChoice] = useState("");
+  if (!vacation) return null;
+  const dateMissing = choice === "date" && picked === "";
+  const to =
+    choice === "" || dateMissing
+      ? undefined
+      : proposedDate(
+          {
+            choice: choice as "before" | "after" | "date" | "skip" | "keep",
+            date: picked,
+          },
+          event,
+          vacation,
+          state.preferences,
+        );
+  const apply = () => {
+    if (to === undefined) return;
+    setState((s) => ({
+      ...s,
+      checkInMoves: [
+        ...(s.checkInMoves ?? []).filter((m) => m.eventId !== event.id),
+        ...(to === "keep"
+          ? []
+          : [
+              {
+                eventId: event.id,
+                clientId: event.clientId,
+                from: event.movedFrom ?? event.date,
+                to,
+                vacationId: vacation.id,
+              },
+            ]),
+      ],
+    }));
+  };
+  return (
+    <div className="cd-vac-reschedule">
+      <span className="cd-vac-chip">During your vacation</span>
+      <Select
+        label="Reschedule"
+        value={choice}
+        onChange={setChoice}
+        options={[
+          { value: "", label: "Choose…" },
+          { value: "before", label: "Move to last working day before" },
+          { value: "after", label: "Move to first working day back" },
+          { value: "date", label: "Pick a date" },
+          { value: "skip", label: "Skip this check-in" },
+          { value: "keep", label: "Keep the date" },
+        ]}
+      />
+      {choice === "date" && (
+        <input
+          type="date"
+          aria-label="New check-in date"
+          value={picked}
+          onChange={(e) => setPicked(e.target.value)}
+        />
+      )}
+      {dateMissing && (
+        <span className="cd-vac-err" role="alert">
+          Pick a date to move this check-in.
+        </span>
+      )}
+      {to !== undefined &&
+        to !== "keep" &&
+        to !== null &&
+        (() => {
+          const clash = moveClashes(state, [{ event, to }], formatDate).get(
+            event.id,
+          );
+          return clash ? (
+            <span className="cd-vac-err" role="alert">
+              {clash}
+            </span>
+          ) : null;
+        })()}
+      {to !== undefined &&
+        to !== "keep" &&
+        (to === null ||
+          !moveClashes(state, [{ event, to }], formatDate).has(event.id)) && (
+          <Button onClick={apply}>
+            {to === null ? "Skip it" : `Move to ${to}`}
+          </Button>
+        )}
+    </div>
+  );
+}
+
+/** "Reply due in …" / "Late by …" chip for submissions still awaiting
+ * feedback; null when the feedback target is off. */
+function FeedbackChip({ submission }: { submission: Submission }) {
+  const { state, now } = useCoach();
+  const chip = feedbackChipText(state.preferences, submission, now);
+  if (!chip) return null;
+  return (
+    <span className={`cd-status cd-fbchip${chip.late ? " is-late" : ""}`}>
+      {chip.text}
+    </span>
+  );
+}
+
 export function CheckInsWorkspace() {
-  const { state, route, navigate, setState, toast } = useCoach();
+  const display = useDisplay();
+  const { formatDate } = display;
+  const { state, route, navigate, setState, toast, now } = useCoach();
   const [mode, setMode] = useState("Week");
   const [anchor, setAnchor] = useState(TODAY);
   const [client, setClient] = useState(route.client ?? "all");
@@ -87,7 +202,7 @@ export function CheckInsWorkspace() {
     mode === "Month"
       ? monthEnd.toISOString().slice(0, 10)
       : addDays(start, mode === "Agenda" ? 27 : 6);
-  const events = eventsBetween(state, start, end).filter(
+  const events = eventsBetween(state, start, end, now).filter(
     (e) =>
       (client === "all" || e.clientId === client) &&
       (status === "All statuses" || e.status === status),
@@ -118,6 +233,22 @@ export function CheckInsWorkspace() {
         })}
       </p>
       <Status text={e.status} />
+      {e.movedFrom && (
+        <span className="cd-caption">
+          Moved from{" "}
+          {formatDate(e.movedFrom, {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+          })}
+        </span>
+      )}
+      {vacationFor(state.preferences, e.date) &&
+        !e.submission &&
+        !e.movedFrom && <VacationReschedule event={e} />}
+      {e.submission && !e.submission.response && (
+        <FeedbackChip submission={e.submission} />
+      )}
       <div className="cd-stat-row">
         <span>Origin</span>
         <strong>{e.origin}</strong>
@@ -207,8 +338,23 @@ export function CheckInsWorkspace() {
           </span>
           <span className="cd-event-type">
             {e.origin} · {e.type}
+            {e.movedFrom && (
+              <span className="cd-moved-from">
+                {" "}
+                · Moved from{" "}
+                {formatDate(e.movedFrom, { day: "numeric", month: "short" })}
+              </span>
+            )}
           </span>
           <Status text={e.status} />
+          {vacationFor(state.preferences, e.date) &&
+            !e.submission &&
+            !e.movedFrom && (
+              <span className="cd-vac-chip">During your vacation</span>
+            )}
+          {e.submission && !e.submission.response && (
+            <FeedbackChip submission={e.submission} />
+          )}
         </Popover.Trigger>
         <Popover.Portal container={stage}>
           <Popover.Positioner
@@ -326,7 +472,7 @@ export function CheckInsWorkspace() {
         <span className="cd-pending">
           <span>{pending}</span> awaiting feedback
         </span>
-        <span className="cd-caption">Europe/Vienna · Monday first</span>
+        <span className="cd-caption">{display.timeZone} · Monday first</span>
       </div>
       <div className="cd-calendar-stage" ref={stage}>
         <Surface className={`cd-calendar cd-calendar-${mode.toLowerCase()}`}>
@@ -340,6 +486,7 @@ export function CheckInsWorkspace() {
                     className="cd-calendar-day"
                     key={date}
                     data-today={date === TODAY}
+                    data-vacation={!!vacationFor(state.preferences, date)}
                   >
                     <header>
                       <span>{DAYS[i].slice(0, 3)}</span>
@@ -441,6 +588,7 @@ export function CheckInsWorkspace() {
   );
 }
 function ReviewWorkspace({ submission: sub }: { submission: Submission }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, toast } = useCoach();
   const [visual, setVisual] = useState<string | null>(null);
   const c = state.clients.find((c) => c.id === sub.clientId);

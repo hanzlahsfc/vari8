@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { nutritionForDate } from "../../coach/athlete/timeline";
-import { type CoachClient, formatDate } from "../../coach/model";
+import type { CoachClient } from "../../coach/model";
 import { applicablePlan } from "../../coach/plans/domain";
 import type { IifymPlan } from "../../coach/plans/types";
-import { useCoach } from "../../coach/store";
+import { useCoach, useDisplay } from "../../coach/store";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import type { MealPlan } from "../../ethereal/mealplan/model";
 import {
@@ -140,6 +140,7 @@ function PlansHome({
   client: CoachClient;
   push: (s: Screen) => void;
 }) {
+  const { formatDate } = useDisplay();
   const { state } = useCoach();
   const today = useLocalToday();
   const plan = client.plans

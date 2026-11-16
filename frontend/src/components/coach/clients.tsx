@@ -24,13 +24,13 @@ import {
   assignTemplate,
   type CoachClient,
   eventsBetween,
-  formatDate,
+  resolvedTimeZone,
   TODAY,
   uid,
   unreadCount,
 } from "./model";
 import { ClientPlansSummary } from "./plans/setup-ui";
-import { useCoach } from "./store";
+import { useCoach, useDisplay } from "./store";
 import { templateSetup } from "./template-setup";
 import "./workspace-polish.css";
 import {
@@ -56,6 +56,7 @@ export function nextEvent(
   );
 }
 export function ClientsWorkspace() {
+  const { formatDate } = useDisplay();
   const { state, navigate, route } = useCoach();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All athletes");
@@ -292,6 +293,7 @@ export function ClientsWorkspace() {
   );
 }
 function ClientProfile({ client: c }: { client: CoachClient }) {
+  const { formatDate } = useDisplay();
   const { state, setState, navigate, route } = useCoach();
   const tab = route.tab ?? "Overview";
   const [assign, setAssign] = useState(false);
@@ -768,7 +770,7 @@ export function ExtraDateDialog({
           onChange={setClient}
         />
         <DateField
-          label="Date · Europe/Vienna"
+          label={`Date · ${resolvedTimeZone(state.preferences)}`}
           min={TODAY}
           value={date}
           onChange={setDate}

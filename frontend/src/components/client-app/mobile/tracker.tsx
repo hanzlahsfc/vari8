@@ -2,12 +2,8 @@
 
 import { type CSSProperties, useMemo, useRef, useState } from "react";
 import { buildGroups, type Col } from "../../coach/athlete/tracker-columns";
-import {
-  ALL_PARAMETERS,
-  type CoachClient,
-  formatDate,
-} from "../../coach/model";
-import { useCoach } from "../../coach/store";
+import { ALL_PARAMETERS, type CoachClient } from "../../coach/model";
+import { useCoach, useDisplay } from "../../coach/store";
 import { addLocalDays } from "../../coach/targets/model";
 import { useLocalToday } from "../../coach/targets/use-local-today";
 import {
@@ -125,6 +121,7 @@ function RatingSlider({
 }
 
 export function MobileTracker({ client }: { client: CoachClient }) {
+  const { formatDate } = useDisplay();
   const { state, setState } = useCoach();
   const today = useLocalToday();
   const [date, setDate] = useState(today);

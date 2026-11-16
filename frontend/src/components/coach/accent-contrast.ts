@@ -1,4 +1,7 @@
-const DEFAULT_ACCENT = "#EB91B8";
+/** The coach workspace's own default accent (Platinum). Invalid stored
+ * accents fall back here; the shared vari8-theme module keeps its own
+ * legacy fallback for non-coach surfaces. */
+export const DEFAULT_ACCENT = "#C9CCD3";
 const MIN_TEXT_CONTRAST = 4.5;
 const WHITE = "#FFFFFF";
 const BLACK = "#000000";
