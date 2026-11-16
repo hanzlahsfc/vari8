@@ -1,5 +1,46 @@
 # Frontend status
 
+## 2026-11-16 — P845 validate vacation reschedules against the final schedule — committed pending scoped review
+
+Repairs P819's false-conflict finding on beta/p845-final-schedule
+(base: beta/p843-vacation-date cadc81e0). moveClashes judged every
+proposed destination against the starting schedule, so a batch that
+moved check-in A onto B's current date while moving B to a free date
+in the same vacation save was blocked — B still occupied that date
+in the unadjusted state.
+
+Reproduced on the pre-fix head in a disposable seeded athlete: a
+two-row batch (A -> B's date, B -> a genuinely free date) flagged A
+with "Already has a check-in" and left Save disabled, even though
+the saved final schedule would have had no collision.
+
+moveClashes now evaluates destinations against the batch's final
+positions: each proposal's resolved end date (the caller-supplied
+`final`, else keep stays put, null/skip is gone, a string `to` is
+the destination) determines which events vacate their dates, and a
+destination held only by a vacating event is free. The vacation
+editor passes a `final` for every row — restore-only rows return to
+movedFrom, submitted rows stay put — so restore batches are judged
+consistently. Duplicate destinations for one athlete, destinations
+held by unchanged or submitted check-ins, and blank "Pick a date"
+rows (P843) still block, and a blocked save writes nothing.
+
+Regression (settings.test.mjs): a batch where B vacates is allowed
+(moved or skipped), the same destination stays blocked while B is
+kept or untouched, and an explicit `final` restore position frees
+the date it leaves.
+
+Browser replay (disposable seeded athlete, real editor UI): the
+valid two-move batch saved both moves tied to the original event
+ids (A -> B's vacated date, B -> free date) with a single
+reschedule notice; a held-date batch (A -> B's date, B stays) and
+two proposals on one date remained blocked and wrote nothing.
+
+Gates (Node 24.22.3): npm run check exit 0 (372/372), npm run
+ui:check exit 1 (same 21 baseline violations), git diff --check
+exit 0.
+
+
 ## 2026-11-16 — P843 require a picked date when rescheduling a vacation check-in — committed pending scoped review
 
 Repairs P819's finding on beta/p843-vacation-date (base: the

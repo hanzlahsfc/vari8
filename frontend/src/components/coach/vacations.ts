@@ -115,15 +115,32 @@ export function proposedDate(
   }
 }
 /** Clash text per event id: a proposed date that already has a check-in
- * for that athlete (or that another proposal lands on) blocks saving. */
+ * for that athlete (or that another proposal lands on) blocks saving.
+ * Destinations are judged against the batch's final schedule: an event
+ * moving, restoring or skipping away from a date frees it in the same
+ * save. `final` carries the event's resolved position when the caller
+ * knows it (restore rows); otherwise keep stays put, null is gone and a
+ * string `to` is the destination. */
 export function moveClashes(
   state: CoachState,
-  proposals: { event: Event; to: string | null | "keep" }[],
+  proposals: {
+    event: Event;
+    to: string | null | "keep";
+    final?: string | null;
+  }[],
   formatDate: (date: string, o?: Intl.DateTimeFormatOptions) => string,
   now: Date = new Date(),
 ): Map<string, string> {
   const clashes = new Map<string, string>();
   const taken = new Map<string, string>(); // `${clientId}|${to}` -> eventId
+  const vacating = new Set(
+    proposals
+      .filter(
+        (p) =>
+          (p.final ?? (p.to === "keep" ? p.event.date : p.to)) !== p.event.date,
+      )
+      .map((p) => p.event.id),
+  );
   for (const { event, to } of proposals) {
     if (to === null || to === "keep") continue;
     const key = `${event.clientId}|${to}`;
@@ -137,7 +154,7 @@ export function moveClashes(
     }
     taken.set(key, event.id);
     const existing = eventsOn(state, event.clientId, to, now).find(
-      (e) => e.id !== event.id,
+      (e) => e.id !== event.id && !vacating.has(e.id),
     );
     if (existing)
       clashes.set(

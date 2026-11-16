@@ -196,26 +196,36 @@ function VacationDialog({
   const setChoice = (eventId: string, row: RowChoice) =>
     setChoices((c) => ({ ...c, [eventId]: row }));
 
-  const proposals = rows.map((row) => ({
-    event: row.event,
-    // Submitted check-ins are read-only and never moved, whatever the
-    // default choice would suggest.
-    submitted: row.submitted,
-    to: row.submitted
-      ? "keep"
+  const proposals = rows.map((row) => {
+    const to = row.submitted
+      ? ("keep" as const)
       : row.restoreOnly
         ? // "Restore" removes the move (no new record); "Keep at"
           // re-creates it on the current date after old moves are dropped.
           choiceFor(row).choice === "skip"
-          ? "keep"
+          ? ("keep" as const)
           : row.event.date
         : proposedDate(
             choiceFor(row),
             row.event,
             { start, end },
             state.preferences,
-          ),
-  }));
+          );
+    // The position this event holds after the save: a restoreOnly "Restore"
+    // returns to movedFrom, everything else lands on its `to` (or stays).
+    const final = row.submitted
+      ? row.event.date
+      : row.restoreOnly
+        ? choiceFor(row).choice === "skip"
+          ? (row.event.movedFrom ?? row.event.date)
+          : row.event.date
+        : to === "keep"
+          ? row.event.date
+          : to;
+    // Submitted check-ins are read-only and never moved, whatever the
+    // default choice would suggest.
+    return { event: row.event, submitted: row.submitted, to, final };
+  });
   // A "Pick a date" row with no date picked is not a proposal: it is
   // missing input, never a keep, and it must not clash-check or save.
   const missingDate = rows.some(

@@ -1220,6 +1220,60 @@ test("moveClashes blocks occupied destinations and proposals onto one day", () =
   assert.equal(free.size, 0);
 });
 
+test("moveClashes judges the final schedule: a vacated date is free", () => {
+  const s = vacState();
+  const now = new Date("2026-11-13T12:00:00Z");
+  const [a, b] = m
+    .eventsBetween(s, "2026-11-16", "2026-11-27", now)
+    .filter((e) => e.clientId === "client-001");
+  // A onto B's current date while B leaves in the same save: allowed.
+  const batch = vacations.moveClashes(
+    s,
+    [
+      { event: a, to: b.date },
+      { event: b, to: "2026-12-24" },
+    ],
+    fmtGB,
+    now,
+  );
+  assert.equal(batch.size, 0);
+  // A skipped check-in frees its date the same way.
+  const skipped = vacations.moveClashes(
+    s,
+    [
+      { event: a, to: b.date },
+      { event: b, to: null },
+    ],
+    fmtGB,
+    now,
+  );
+  assert.equal(skipped.size, 0);
+  // A date is still held while its check-in stays put or is untouched.
+  for (const proposals of [
+    [
+      { event: a, to: b.date },
+      { event: b, to: "keep" },
+    ],
+    [{ event: a, to: b.date }],
+  ])
+    assert.match(
+      vacations.moveClashes(s, proposals, fmtGB, now).get(a.id) ?? "",
+      /Already has a check-in/,
+    );
+  // An explicit final position (a restore row returning to movedFrom)
+  // vacates the date it leaves.
+  const restored = vacations.moveClashes(
+    s,
+    [
+      { event: a, to: "keep", final: "2026-11-25" },
+      { event: b, to: a.date },
+    ],
+    fmtGB,
+    now,
+  );
+  assert.equal(restored.size, 0);
+});
+
 test("undoVacationSave reverts only that save's record, moves and notices", () => {
   const s = vacState();
   const savedVacation = s.preferences.vacations[0];
