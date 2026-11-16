@@ -59,8 +59,9 @@ function VacationReschedule({ event }: { event: Event }) {
   const [picked, setPicked] = useState("");
   const [choice, setChoice] = useState("");
   if (!vacation) return null;
+  const dateMissing = choice === "date" && picked === "";
   const to =
-    choice === ""
+    choice === "" || dateMissing
       ? undefined
       : proposedDate(
           {
@@ -114,6 +115,11 @@ function VacationReschedule({ event }: { event: Event }) {
           value={picked}
           onChange={(e) => setPicked(e.target.value)}
         />
+      )}
+      {dateMissing && (
+        <span className="cd-vac-err" role="alert">
+          Pick a date to move this check-in.
+        </span>
       )}
       {to !== undefined &&
         to !== "keep" &&

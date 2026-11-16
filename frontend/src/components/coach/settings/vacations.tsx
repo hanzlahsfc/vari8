@@ -216,14 +216,24 @@ function VacationDialog({
             state.preferences,
           ),
   }));
-  const clashes = moveClashes(state, proposals, formatDate, now);
+  // A "Pick a date" row with no date picked is not a proposal: it is
+  // missing input, never a keep, and it must not clash-check or save.
+  const missingDate = rows.some(
+    (r) => !r.submitted && choiceFor(r).choice === "date" && !choiceFor(r).date,
+  );
+  const clashes = moveClashes(
+    state,
+    proposals.filter((p) => p.to !== ""),
+    formatDate,
+    now,
+  );
   const dateError =
     !start || !end
       ? "Pick the first and last day away."
       : start > end
         ? "The last day must be on or after the first day."
         : "";
-  const canSave = !dateError && clashes.size === 0;
+  const canSave = !dateError && !missingDate && clashes.size === 0;
   const changedCount = proposals.filter((p) => p.to !== "keep").length;
 
   const save = () => {
@@ -396,15 +406,25 @@ function VacationDialog({
                       />
                     )}
                     <span
-                      className={clash ? "cd-settings-error" : "cd-caption"}
-                      role={clash ? "alert" : undefined}
+                      className={
+                        clash || (choice.choice === "date" && !choice.date)
+                          ? "cd-settings-error"
+                          : "cd-caption"
+                      }
+                      role={
+                        clash || (choice.choice === "date" && !choice.date)
+                          ? "alert"
+                          : undefined
+                      }
                     >
                       {clash ??
-                        (to === "keep"
-                          ? "Stays put"
-                          : to === null
-                            ? "Skipped"
-                            : `→ ${fmt(to as string)}`)}
+                        (choice.choice === "date" && !choice.date
+                          ? "Pick a date to move this check-in."
+                          : to === "keep"
+                            ? "Stays put"
+                            : to === null
+                              ? "Skipped"
+                              : `→ ${fmt(to as string)}`)}
                     </span>
                   </>
                 )}

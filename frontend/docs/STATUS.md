@@ -1,5 +1,49 @@
 # Frontend status
 
+## 2026-11-16 — P843 require a picked date when rescheduling a vacation check-in — committed pending scoped review
+
+Repairs P819's finding on beta/p843-vacation-date (base: the
+accepted P841 candidate cdc69a5d). Two surfaces shared the defect:
+a "Pick a date" choice with no date picked produced an empty-string
+proposal, and nothing validated it.
+
+Inline "During your vacation" row (check-ins.tsx): proposedDate
+returned "" for the blank pick, so the row rendered a bare "Move to"
+button that could write a move to ""; worse, the clash check ran
+eventsOn("") during render and threw on the invalid date, crashing
+the whole check-ins workspace to the error boundary. The row now
+treats the blank pick as missing input (to stays undefined): the
+Apply affordance never renders, a role="alert" message reads "Pick
+a date to move this check-in.", the editor stays open and nothing
+is written, moved, skipped or sent.
+
+Vacation editor (settings/vacations.tsx): the same blank pick made
+the row read "Stays put" while Save stayed enabled, so saving
+silently treated the check-in as Keep. A per-row missing-date check
+now shows "Pick a date to move this check-in." in the error slot and
+blocks Save; empty-string proposals are also excluded from
+moveClashes so a cleared picker cannot crash the dialog.
+
+Regression (settings.test.mjs): proposedDate keeps "" as an invalid
+sentinel — it must never collapse into "keep".
+
+Gates (Node 24.22.3): npm run check exit 0 (371/371), npm run
+ui:check exit 1 (same 21 baseline violations, set identical to the
+starting head), git diff --check exit 0.
+
+Browser (disposable profile, labelled fixture seed: Monday-only
+client + two vacations over clean check-ins): p843-buggy.mjs on the
+pre-fix head reproduced both defects 5/5 — inline "Pick a date"
+blank crashed the workspace ("This page couldn't load") and the
+editor saved the blank pick silently as keep (no move, no notice).
+p843-vacation-date.mjs on the fixed head 13/13 — inline: error +
+no Apply + no write, explicit Keep untouched, valid pick moved the
+same event id; editor: row error + Save blocked, valid pick saved
+the same event id (one reschedule notice for the valid save only).
+Select options were driven by keyboard for determinism; the pointer
+"dismissal" seen while investigating on the buggy head was the render
+crash itself, not a focus quirk.
+
 ## 2026-11-16 — P841 combined candidate: saved-reply scope, check-in staleness, extra-date zone label — committed pending scoped integration review
 
 One candidate branch, beta/p841-accepted-fixes, combining the three

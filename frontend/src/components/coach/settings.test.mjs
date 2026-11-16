@@ -1668,3 +1668,20 @@ test("a rejected blank reply remounts only its own field", () => {
   ticks = replies.bumpReplyRestore(ticks, "r2");
   assert.equal(replies.replyInputKey("r3", ticks), before.r3);
 });
+
+test("a blank picked date stays an invalid proposal, never keep", () => {
+  const s = vacState();
+  // "" is the in-progress UI value: proposedDate surfaces it verbatim so
+  // the row and the editor can demand a real date. Normalizing it to
+  // "keep" would silently treat an unpicked date as Keep, and passing it
+  // to clash checks or writes would corrupt the schedule.
+  assert.equal(
+    vacations.proposedDate(
+      { choice: "date", date: "" },
+      {},
+      { start: "2026-11-16", end: "2026-11-20" },
+      s.preferences,
+    ),
+    "",
+  );
+});
